@@ -71,7 +71,7 @@ function useReveal() {
 function BtnPrimary({
   children,
   as = "link",
-  to = "/signup",
+  to = "/register",
   ariaLabel,
 }: {
   children: React.ReactNode;
@@ -139,9 +139,6 @@ function Navbar() {
     >
       <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
         <a href="#top" className="flex items-center gap-2.5" aria-label="مِهلة">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--color-mehla-primary)] text-white">
-            <Timer className="h-4.5 w-4.5" strokeWidth={2.2} />
-          </span>
           <span className="flex flex-col leading-none">
             <span className="text-lg font-bold tracking-tight text-[color:var(--color-mehla-ink)]">
               مِهلة
@@ -166,7 +163,7 @@ function Navbar() {
 
         <div className="hidden items-center gap-2.5 lg:flex">
           <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
-          <BtnPrimary to="/signup">ابدأ الآن</BtnPrimary>
+          <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>
         </div>
 
         <button
@@ -196,7 +193,7 @@ function Navbar() {
             </nav>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
-              <BtnPrimary to="/signup">ابدأ الآن</BtnPrimary>
+              <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>
             </div>
           </div>
         </div>
@@ -1006,9 +1003,6 @@ function MehlaLanding() {
           <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--color-mehla-primary)] text-white">
-                  <Timer className="h-4.5 w-4.5" />
-                </span>
                 <span className="flex flex-col leading-none">
                   <span className="text-lg font-bold text-[color:var(--color-mehla-ink)]">مِهلة</span>
                   <span className="mt-0.5 text-[10px] font-medium tracking-[0.18em] text-[color:var(--color-mehla-muted)]">
