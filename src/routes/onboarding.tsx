@@ -18,7 +18,7 @@ function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && !session) navigate({ to: "/login", replace: true });
+    if (!loading && !session) navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
     if (!loading && memberships.length > 0) navigate({ to: "/dashboard", replace: true });
   }, [loading, session, memberships, navigate]);
 

@@ -79,7 +79,7 @@ function RegisterPage() {
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-[#123C32]/70">
-        لديك حساب بالفعل؟ <Link to="/login" className="font-semibold text-[#123C32] underline">تسجيل الدخول</Link>
+        لديك حساب بالفعل؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold text-[#123C32] underline">تسجيل الدخول</Link>
       </p>
     </AuthShell>
   );
