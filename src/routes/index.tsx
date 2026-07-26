@@ -607,7 +607,7 @@ function MehlaLanding() {
                 مِهلة تجمع قضاياك وجلساتك ومهامك ومواعيدك القانونية في مكان واحد، حتى تعرف كل صباح ما الذي يحتاج إلى إجراء.
               </p>
               <div className="mehla-reveal mt-8 flex flex-wrap items-center gap-3">
-                <BtnPrimary to="/signup">ابدأ تجربتك</BtnPrimary>
+                <BtnPrimary to="/register">ابدأ تجربتك</BtnPrimary>
                 <BtnGhost to="#demo">شاهد كيف تعمل</BtnGhost>
               </div>
               <div className="mehla-reveal mt-6 flex items-center gap-2 text-[13px] text-[color:var(--color-mehla-muted)]">
@@ -980,7 +980,7 @@ function MehlaLanding() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <a
-                  href="/signup"
+                  href="/register"
                   className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[color:var(--color-mehla-primary)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--color-mehla-bg)]"
                 >
                   ابدأ الآن
