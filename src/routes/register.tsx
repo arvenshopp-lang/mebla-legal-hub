@@ -25,6 +25,7 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState<string | null>(null);
 
   useEffect(() => {
     if (session) navigate({ to: "/onboarding", replace: true });
@@ -34,20 +35,43 @@ function RegisterPage() {
     e.preventDefault();
     if (password.length < 8) return toast.error("كلمة المرور يجب أن تكون 8 خانات على الأقل");
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin + "/onboarding",
+        emailRedirectTo: window.location.origin + "/auth/callback",
       },
     });
     setLoading(false);
     if (error) return toast.error("تعذّر إنشاء الحساب", { description: error.message });
-    await refresh();
-    toast.success("تم إنشاء الحساب");
-    navigate({ to: "/onboarding", replace: true });
+    if (data.session) {
+      await refresh();
+      toast.success("تم إنشاء الحساب");
+      navigate({ to: "/onboarding", replace: true });
+    } else {
+      setEmailSent(email);
+      toast.success("تم إرسال رابط التفعيل إلى بريدك");
+    }
   };
+
+  if (emailSent) {
+    return (
+      <AuthShell title="تحقق من بريدك" subtitle="أرسلنا رابط تفعيل الحساب">
+        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+          أرسلنا رسالة تفعيل إلى <b>{emailSent}</b>. افتح الرابط داخل الرسالة لإكمال إنشاء حسابك، ثم عُد لتسجيل الدخول.
+        </div>
+        <div className="mt-6 flex flex-col gap-2">
+          <Link to="/login" search={{ redirect: "/dashboard" }} className="w-full rounded-xl bg-[#123C32] py-3 text-center text-sm font-semibold text-white hover:bg-[#0d2e26] transition">
+            الذهاب لتسجيل الدخول
+          </Link>
+          <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-[#123C32]/60 hover:text-[#123C32]">
+            استخدام بريد آخر
+          </button>
+        </div>
+      </AuthShell>
+    );
+  }
 
   const google = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
