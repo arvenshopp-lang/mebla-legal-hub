@@ -105,7 +105,7 @@ function Page() {
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-[#F5F3EE]/60">
-                  <tr><Th>الاسم</Th><Th>النوع</Th><Th>الجوال</Th><Th>المدينة</Th><Th>تاريخ الإضافة</Th><Th></Th></tr>
+                  <tr><Th>الاسم</Th><Th>النوع</Th><Th>الجوال</Th><Th>المدينة</Th><Th>تاريخ الإضافة</Th><Th>{" "}</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-[#123C32]/5">
                   {data.rows.map((c) => (
