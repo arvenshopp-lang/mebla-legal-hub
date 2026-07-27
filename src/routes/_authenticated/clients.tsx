@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,7 @@ import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -111,7 +111,7 @@ function Page() {
                   {data.rows.map((c) => (
                     <tr key={c.id} className="hover:bg-[#F5F3EE]/40">
                       <Td className="font-medium">
-                        <Link to="/clients/$id" params={{ id: c.id }} className="hover:underline">{c.full_name}</Link>
+                        {c.full_name}
                         {c.company_name && <div className="text-xs text-[#123C32]/60">{c.company_name}</div>}
                       </Td>
                       <Td><Badge>{CLIENT_TYPE[c.client_type] ?? c.client_type}</Badge></Td>
@@ -120,7 +120,6 @@ function Page() {
                       <Td>{fmtDate(c.created_at)}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          <Link to="/clients/$id" params={{ id: c.id }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Eye className="h-4 w-4" /></Link>
                           {canEdit(activeRole) && (
                             <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]">
                               <Pencil className="h-4 w-4" />
