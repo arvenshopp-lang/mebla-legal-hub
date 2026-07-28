@@ -239,7 +239,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
         .select().single();
       if (!error && data) {
         await supabase.from("case_updates").insert({
-          organization_id: activeOrgId, case_id: data.id, update_type: "case_created",
+          organization_id: activeOrgId!, case_id: data.id, update_type: "case_created",
           title: "تم إنشاء القضية", event_date: new Date().toISOString(), created_by: user?.id,
         });
       }
