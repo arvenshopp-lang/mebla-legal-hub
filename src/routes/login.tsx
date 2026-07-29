@@ -22,15 +22,16 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect } = useSearch({ from: "/login" });
-  const { session, refresh } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, refresh } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session) navigate({ to: redirect || "/dashboard", replace: true });
-  }, [session, redirect, navigate]);
+    if (authLoading || organizationLoading || !session) return;
+    navigate({ to: memberships.length > 0 ? redirect || "/dashboard" : "/onboarding", replace: true });
+  }, [authLoading, organizationLoading, session, memberships.length, redirect, navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,17 +42,28 @@ function LoginPage() {
       toast.error("تعذّر تسجيل الدخول", { description: error.message });
       return;
     }
-    await refresh();
+    const refreshed = await refresh();
     toast.success("مرحباً بعودتك");
-    navigate({ to: redirect || "/dashboard", replace: true });
+    navigate({ to: refreshed.memberships.length > 0 ? redirect || "/dashboard" : "/onboarding", replace: true });
   };
 
   const google = async () => {
+    sessionStorage.setItem("mehla_auth_redirect", redirect || "/dashboard");
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     if (result.error) toast.error("تعذّر الدخول عبر Google");
   };
+
+  if (authLoading || organizationLoading) {
+    return (
+      <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل عرض صفحة الدخول">
+        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+          لحظات قليلة…
+        </div>
+      </AuthShell>
+    );
+  }
 
   return <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
     <button onClick={google} className="w-full rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] hover:bg-[#123C32]/5 transition">
@@ -67,6 +79,11 @@ function LoginPage() {
       <Field label="كلمة المرور">
         <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
       </Field>
+      <div className="text-left">
+        <Link to="/forgot-password" className="text-xs font-medium text-[#123C32]/70 underline hover:text-[#123C32]">
+          نسيت كلمة المرور؟
+        </Link>
+      </div>
       <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
         {loading ? "جاري الدخول…" : "دخول"}
       </button>

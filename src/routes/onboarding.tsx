@@ -11,11 +11,12 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
-  const { session, loading, memberships, refresh, setActiveOrgId } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, refresh, setActiveOrgId } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const loading = authLoading || organizationLoading;
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
@@ -24,42 +25,55 @@ function OnboardingPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!session?.user) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) return toast.error("يرجى إدخال اسم المكتب");
     setSubmitting(true);
-    const { data: org, error } = await supabase
-      .from("organizations")
-      .insert({ name, city: city || null, created_by: session.user.id })
-      .select()
-      .single();
-    if (error || !org) {
-      setSubmitting(false);
-      return toast.error("تعذّر إنشاء المكتب", { description: error?.message });
-    }
-    const { error: memErr } = await supabase.from("organization_members").insert({
-      organization_id: org.id,
-      user_id: session.user.id,
-      role: "owner",
+    const { data, error } = await supabase.rpc("create_organization_with_owner", {
+      _name: trimmedName,
+      _city: city.trim() || undefined,
     });
-    if (memErr) {
+
+    if (error || !data?.[0]?.organization_id) {
       setSubmitting(false);
-      return toast.error("تعذّر إضافة العضوية", { description: memErr.message });
+      const isDuplicate = error?.message?.includes("already belongs") || error?.message?.includes("already");
+      return toast.error(isDuplicate ? "لديك مكتب مُفعّل بالفعل" : "تعذّر إنشاء المكتب", {
+        description: isDuplicate ? "سنوجهك إلى لوحة التحكم." : error?.message,
+      });
     }
-    setActiveOrgId(org.id);
-    await refresh();
-    toast.success("تم إنشاء مكتبك");
+    setActiveOrgId(data[0].organization_id);
+    const refreshed = await refresh();
+    if (refreshed.memberships.length === 0) {
+      setSubmitting(false);
+      return toast.error("تم إنشاء المكتب لكن لم تظهر العضوية بعد", {
+        description: "حدّث الصفحة أو حاول تسجيل الدخول مرة أخرى.",
+      });
+    }
+    toast.success(data[0].already_exists ? "تم العثور على مكتبك" : "تم إنشاء مكتبك بنجاح");
     navigate({ to: "/dashboard", replace: true });
   };
+
+  if (loading) {
+    return (
+      <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك ومكتبك قبل المتابعة">
+        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+          لحظات قليلة…
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title="أنشئ مكتبك" subtitle="ستدير قضايا مكتبك بشكل مستقل تماماً">
       <form onSubmit={submit} className="space-y-4">
         <Field label="اسم المكتب">
-          <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="مثال: مكتب المحامي عبدالله للاستشارات" />
+          <input required disabled={submitting} value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="مثال: مكتب المحامي عبدالله للاستشارات" />
         </Field>
         <Field label="المدينة (اختياري)">
-          <input value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="الرياض" />
+          <input disabled={submitting} value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="الرياض" />
         </Field>
-        <button disabled={submitting} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+        <button disabled={submitting || !name.trim()} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
           {submitting ? "جاري الإنشاء…" : "إنشاء المكتب والمتابعة"}
         </button>
       </form>

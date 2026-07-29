@@ -19,7 +19,7 @@ export const Route = createFileRoute("/register")({
 });
 
 function RegisterPage() {
-  const { session, refresh } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, refresh } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,8 +28,9 @@ function RegisterPage() {
   const [emailSent, setEmailSent] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) navigate({ to: "/onboarding", replace: true });
-  }, [session, navigate]);
+    if (authLoading || organizationLoading || !session) return;
+    navigate({ to: memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
+  }, [authLoading, organizationLoading, session, memberships.length, navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +47,9 @@ function RegisterPage() {
     setLoading(false);
     if (error) return toast.error("تعذّر إنشاء الحساب", { description: error.message });
     if (data.session) {
-      await refresh();
+      const refreshed = await refresh();
       toast.success("تم إنشاء الحساب");
-      navigate({ to: "/onboarding", replace: true });
+      navigate({ to: refreshed.memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
     } else {
       setEmailSent(email);
       toast.success("تم إرسال رابط التفعيل إلى بريدك");
@@ -74,11 +75,22 @@ function RegisterPage() {
   }
 
   const google = async () => {
+    sessionStorage.setItem("mehla_auth_redirect", "/onboarding");
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     if (result.error) toast.error("تعذّر الدخول عبر Google");
   };
+
+  if (authLoading || organizationLoading) {
+    return (
+      <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل إنشاء حساب جديد">
+        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+          لحظات قليلة…
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title="إنشاء حساب جديد" subtitle="ابدأ بتنظيم قضايا مكتبك في دقائق">
