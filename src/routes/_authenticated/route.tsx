@@ -49,11 +49,11 @@ function AuthGate() {
   if (authError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5F3EE] px-4">
-        <div className="max-w-md rounded-2xl border border-[#7A2E20]/25 bg-white p-6 text-center">
-          <p className="text-sm leading-7 text-[#7A2E20]">{authError}</p>
+        <div className="max-w-md rounded-2xl border border-danger/25 bg-surface p-6 text-center">
+          <p className="text-sm leading-7 text-danger">{authError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-xl bg-[#123C32] px-5 py-2.5 text-sm font-semibold text-white"
+            className="mt-4 rounded-xl bg-[#123C32] px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
             إعادة المحاولة
           </button>

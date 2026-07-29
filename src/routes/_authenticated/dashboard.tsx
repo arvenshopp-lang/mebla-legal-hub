@@ -53,19 +53,19 @@ function DashboardHome() {
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-[#123C32]/10 bg-white p-6">
+        <section className="rounded-2xl border border-border bg-surface p-6">
           <h2 className="mb-4 text-base font-bold">الجلسات القادمة</h2>
-          <div className="divide-y divide-[#123C32]/10">
+          <div className="divide-y divide-border">
             {(stats?.upcomingHearings ?? []).length === 0 && (
-              <p className="py-6 text-center text-sm text-[#123C32]/50">لا توجد جلسات قادمة</p>
+              <p className="py-6 text-center text-sm text-text-muted">لا توجد جلسات قادمة</p>
             )}
             {stats?.upcomingHearings?.map((h) => (
               <div key={h.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{h.case?.case_title ?? h.title}</div>
-                  <div className="text-xs text-[#123C32]/60">{h.court_name ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">{h.court_name ?? "—"}</div>
                 </div>
-                <div className="text-xs text-[#123C32]/70">
+                <div className="text-xs text-muted-foreground">
                   {new Date(h.hearing_date).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
                 </div>
               </div>
@@ -73,19 +73,19 @@ function DashboardHome() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[#123C32]/10 bg-white p-6">
+        <section className="rounded-2xl border border-border bg-surface p-6">
           <h2 className="mb-4 text-base font-bold">المهل النشطة</h2>
-          <div className="divide-y divide-[#123C32]/10">
+          <div className="divide-y divide-border">
             {(stats?.activeDeadlines ?? []).length === 0 && (
-              <p className="py-6 text-center text-sm text-[#123C32]/50">لا توجد مهل نشطة</p>
+              <p className="py-6 text-center text-sm text-text-muted">لا توجد مهل نشطة</p>
             )}
             {stats?.activeDeadlines?.map((d) => (
               <div key={d.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{d.title}</div>
-                  <div className="text-xs text-[#123C32]/60">{d.case?.case_title ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">{d.case?.case_title ?? "—"}</div>
                 </div>
-                <div className="text-xs text-[#123C32]/70">
+                <div className="text-xs text-muted-foreground">
                   {new Date(d.due_date).toLocaleDateString("ar-SA", { dateStyle: "medium" })}
                 </div>
               </div>

@@ -50,22 +50,22 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
 
   const SidebarInner = (
     <>
-      <div className="border-b border-[#123C32]/10 px-5 py-5 flex items-center justify-between">
+      <div className="border-b border-border px-5 py-5 flex items-center justify-between">
         <Link to="/dashboard" className="text-xl font-bold">
-          مِهلة <span className="text-[#C9A961]">·</span> MEHLA
+          مِهلة <span className="text-gold">·</span> MEHLA
         </Link>
         <button className="lg:hidden" onClick={() => setMobileOpen(false)} aria-label="إغلاق">
           <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="border-b border-[#123C32]/10 px-3 py-3">
+      <div className="border-b border-border px-3 py-3">
         <button
           onClick={() => setOrgOpen((v) => !v)}
           className="flex w-full items-center justify-between rounded-xl bg-[#F5F3EE] px-3 py-2.5 text-right"
         >
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{active?.organization?.name ?? "—"}</div>
-            <div className="text-xs text-[#123C32]/60">{activeRole ? ROLE_LABELS[activeRole] : ""}</div>
+            <div className="text-xs text-muted-foreground">{activeRole ? ROLE_LABELS[activeRole] : ""}</div>
           </div>
           <ChevronDown className="h-4 w-4 opacity-60" />
         </button>
@@ -94,7 +94,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
               to={to}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                isActive ? "bg-[#123C32] text-white" : "text-[#123C32] hover:bg-[#F5F3EE]"
+                isActive ? "bg-[#123C32] text-primary-foreground" : "text-[#123C32] hover:bg-[#F5F3EE]"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -103,11 +103,11 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
           );
         })}
       </nav>
-      <div className="border-t border-[#123C32]/10 p-3">
-        <div className="mb-2 px-2 text-xs text-[#123C32]/60 truncate">{user?.email}</div>
+      <div className="border-t border-border p-3">
+        <div className="mb-2 px-2 text-xs text-muted-foreground truncate">{user?.email}</div>
         <button
           onClick={onSignOut}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#123C32]/70 hover:bg-[#F5F3EE]"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-[#F5F3EE]"
         >
           <LogOut className="h-4 w-4" />
           تسجيل الخروج
@@ -118,21 +118,21 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
 
   return (
     <div className="min-h-screen bg-[#F5F3EE] text-[#123C32]" dir="rtl">
-      <aside className="fixed inset-y-0 right-0 z-30 hidden w-64 flex-col border-l border-[#123C32]/10 bg-white lg:flex">
+      <aside className="fixed inset-y-0 right-0 z-30 hidden w-64 flex-col border-l border-border bg-surface lg:flex">
         {SidebarInner}
       </aside>
 
       {mobileOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-72 flex-col border-l border-[#123C32]/10 bg-white lg:hidden">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-72 flex-col border-l border-border bg-surface lg:hidden">
             {SidebarInner}
           </aside>
         </>
       )}
 
       <main className="lg:mr-64">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#123C32]/10 bg-white/80 px-6 py-4 backdrop-blur">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/80 px-6 py-4 backdrop-blur">
           <div className="flex items-center gap-3">
             <button className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="القائمة">
               <Menu className="h-5 w-5" />
@@ -161,16 +161,16 @@ export function StatCard({
   tone?: "default" | "warn" | "danger" | "gold";
 }) {
   const tones: Record<string, string> = {
-    default: "bg-white",
-    warn: "bg-[#F6E9CC]",
-    danger: "bg-[#F4D9D2]",
-    gold: "bg-[#123C32] text-white",
+    default: "bg-surface",
+    warn: "bg-warning-soft",
+    danger: "bg-danger-soft",
+    gold: "bg-[#123C32] text-primary-foreground",
   };
   return (
-    <div className={`rounded-2xl border border-[#123C32]/10 p-5 ${tones[tone]}`}>
-      <div className={`text-sm ${tone === "gold" ? "text-white/70" : "text-[#123C32]/60"}`}>{label}</div>
+    <div className={`rounded-2xl border border-border p-5 ${tones[tone]}`}>
+      <div className={`text-sm ${tone === "gold" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{label}</div>
       <div className="mt-2 text-3xl font-bold">{value}</div>
-      {hint && <div className={`mt-1 text-xs ${tone === "gold" ? "text-white/70" : "text-[#123C32]/50"}`}>{hint}</div>}
+      {hint && <div className={`mt-1 text-xs ${tone === "gold" ? "text-primary-foreground/70" : "text-text-muted"}`}>{hint}</div>}
     </div>
   );
 }

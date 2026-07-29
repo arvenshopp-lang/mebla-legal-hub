@@ -108,13 +108,13 @@ function Page() {
                 <thead className="bg-[#F5F3EE]/60">
                   <tr><Th>العنوان</Th><Th>القضية</Th><Th>النوع</Th><Th>الاستحقاق</Th><Th>الأيام المتبقية</Th><Th>الحالة</Th><Th>الأولوية</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((d: any) => {
                     const days = daysUntil(d.due_date);
                     const isOverdue = d.status === "active" && days !== null && days < 0;
                     const isSoon = d.status === "active" && days !== null && days >= 0 && days <= 3;
                     return (
-                      <tr key={d.id} className={`hover:bg-[#F5F3EE]/40 ${isOverdue ? "bg-[#FBEDE9]/40" : isSoon ? "bg-[#F6E9CC]/40" : ""}`}>
+                      <tr key={d.id} className={`hover:bg-[#F5F3EE]/40 ${isOverdue ? "bg-danger-soft/40" : isSoon ? "bg-warning-soft/40" : ""}`}>
                         <Td className="font-medium">{d.title}</Td>
                         <Td>{d.case?.case_title ?? "—"}</Td>
                         <Td>{DEADLINE_TYPE[d.deadline_type] ?? d.deadline_type}</Td>
@@ -130,10 +130,10 @@ function Page() {
                         <Td>
                           <div className="flex justify-end gap-1">
                             {canEdit(activeRole) && d.status === "active" && (
-                              <button onClick={() => complete.mutate(d.id)} className="rounded-lg p-1.5 text-[#123C32] hover:bg-[#DCE9E3]" title="إنجاز"><Check className="h-4 w-4" /></button>
+                              <button onClick={() => complete.mutate(d.id)} className="rounded-lg p-1.5 text-[#123C32] hover:bg-primary-soft" title="إنجاز"><Check className="h-4 w-4" /></button>
                             )}
                             {canEdit(activeRole) && <button onClick={() => { setEditing(d); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>}
-                            {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>}
+                            {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                           </div>
                         </Td>
                       </tr>
@@ -209,7 +209,7 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="العنوان *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
-          {errors.title && <span className="text-xs text-[#7A2E20]">{errors.title}</span>}
+          {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
         </FormField></div>
         <FormField label="النوع *">
           <select value={form.deadline_type ?? "custom"} onChange={(e) => setForm({ ...form, deadline_type: e.target.value as any })} className={inputCls}>
@@ -224,7 +224,7 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
         </FormField>
         <FormField label="تاريخ الاستحقاق *">
           <input type="datetime-local" value={form.due_date ?? ""} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={inputCls} />
-          {errors.due_date && <span className="text-xs text-[#7A2E20]">{errors.due_date}</span>}
+          {errors.due_date && <span className="text-xs text-danger">{errors.due_date}</span>}
         </FormField>
         <FormField label="الحالة *">
           <select value={form.status ?? "active"} onChange={(e) => setForm({ ...form, status: e.target.value as any })} className={inputCls}>

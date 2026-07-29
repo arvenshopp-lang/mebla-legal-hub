@@ -77,15 +77,15 @@ function Page() {
                 <thead className="bg-[#F5F3EE]/60">
                   <tr><Th>الملف</Th><Th>القضية</Th><Th>العميل</Th><Th>التصنيف</Th><Th>الحجم</Th><Th>التاريخ</Th><Th>الرافع</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((d: any) => (
                     <tr key={d.id} className="hover:bg-[#F5F3EE]/40">
                       <Td className="font-medium">
                         <div className="flex items-center gap-2">
-                          {d.is_confidential && <Lock className="h-3.5 w-3.5 text-[#7A5A18]" />}
+                          {d.is_confidential && <Lock className="h-3.5 w-3.5 text-warning" />}
                           <span>{d.file_name}</span>
                         </div>
-                        {d.description && <div className="text-xs text-[#123C32]/60">{d.description}</div>}
+                        {d.description && <div className="text-xs text-muted-foreground">{d.description}</div>}
                       </Td>
                       <Td>{d.case?.case_title ?? "—"}</Td>
                       <Td>{d.client?.full_name ?? "—"}</Td>
@@ -96,7 +96,7 @@ function Page() {
                       <Td>
                         <div className="flex justify-end gap-1">
                           <button onClick={() => download(d)} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Download className="h-4 w-4" /></button>
-                          {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>}
+                          {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                         </div>
                       </Td>
                     </tr>
@@ -179,7 +179,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="الملف *">
           <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
-          {file && <span className="mt-1 block text-xs text-[#123C32]/60">{file.name} · {fmtSize(file.size)}</span>}
+          {file && <span className="mt-1 block text-xs text-muted-foreground">{file.name} · {fmtSize(file.size)}</span>}
         </FormField></div>
         <FormField label="القضية">
           <select value={caseId} onChange={(e) => setCaseId(e.target.value)} className={inputCls}>

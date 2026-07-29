@@ -99,12 +99,12 @@ function Page() {
                 <thead className="bg-[#F5F3EE]/60">
                   <tr><Th>العنوان</Th><Th>القضية</Th><Th>المسؤول</Th><Th>الاستحقاق</Th><Th>الحالة</Th><Th>الأولوية</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((t: any) => {
                     const days = daysUntil(t.due_date);
                     const isOverdue = t.status !== "completed" && t.status !== "cancelled" && days !== null && days < 0;
                     return (
-                      <tr key={t.id} className={`hover:bg-[#F5F3EE]/40 ${isOverdue ? "bg-[#FBEDE9]/40" : ""}`}>
+                      <tr key={t.id} className={`hover:bg-[#F5F3EE]/40 ${isOverdue ? "bg-danger-soft/40" : ""}`}>
                         <Td className="font-medium">{t.title}</Td>
                         <Td>{t.case?.case_title ?? "—"}</Td>
                         <Td>{t.assignee?.full_name ?? "—"}</Td>
@@ -114,10 +114,10 @@ function Page() {
                         <Td>
                           <div className="flex justify-end gap-1">
                             {canEdit(activeRole) && t.status !== "completed" && (
-                              <button onClick={() => complete.mutate(t.id)} className="rounded-lg p-1.5 hover:bg-[#DCE9E3]" title="إنجاز"><Check className="h-4 w-4" /></button>
+                              <button onClick={() => complete.mutate(t.id)} className="rounded-lg p-1.5 hover:bg-primary-soft" title="إنجاز"><Check className="h-4 w-4" /></button>
                             )}
                             {canEdit(activeRole) && <button onClick={() => { setEditing(t); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>}
-                            {canManage(activeRole) && <button onClick={() => setDeleting(t)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>}
+                            {canManage(activeRole) && <button onClick={() => setDeleting(t)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                           </div>
                         </Td>
                       </tr>
@@ -191,7 +191,7 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="العنوان *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
-          {errors.title && <span className="text-xs text-[#7A2E20]">{errors.title}</span>}
+          {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
         </FormField></div>
         <FormField label="القضية">
           <select value={form.case_id ?? ""} onChange={(e) => setForm({ ...form, case_id: e.target.value || null })} className={inputCls}>

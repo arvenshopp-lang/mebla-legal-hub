@@ -104,26 +104,26 @@ function Page() {
 
   if (isLoading) return <DashboardShell title="القضية"><LoadingBlock /></DashboardShell>;
   if (error) return <DashboardShell title="القضية"><ErrorBlock message={(error as any).message} /></DashboardShell>;
-  if (!data) return <DashboardShell title="القضية"><div className="rounded-2xl bg-white p-10 text-center">القضية غير موجودة</div></DashboardShell>;
+  if (!data) return <DashboardShell title="القضية"><div className="rounded-2xl bg-surface p-10 text-center">القضية غير موجودة</div></DashboardShell>;
 
   return (
     <DashboardShell title={data.case_title}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Link to="/cases" className="flex items-center gap-1 text-sm text-[#123C32]/70 hover:text-[#123C32]"><ArrowRight className="h-4 w-4" /> عودة للقضايا</Link>
+        <Link to="/cases" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-[#123C32]"><ArrowRight className="h-4 w-4" /> عودة للقضايا</Link>
         <div className="flex-1" />
         {canEdit(activeRole) && <Btn onClick={() => setEditOpen(true)} variant="outline"><Pencil className="ms-1 inline h-4 w-4" /> تعديل</Btn>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-2xl border border-[#123C32]/10 bg-white p-5 lg:col-span-2">
+        <section className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Badge>{CASE_STATUS[data.status] ?? data.status}</Badge>
             <Badge tone={data.priority === "urgent" ? "red" : data.priority === "high" ? "warn" : "muted"}>{CASE_PRIORITY[data.priority] ?? data.priority}</Badge>
-            {data.case_number && <span className="text-xs text-[#123C32]/60">رقم: {data.case_number}</span>}
+            {data.case_number && <span className="text-xs text-muted-foreground">رقم: {data.case_number}</span>}
             {data.public_code && (
               <button
                 onClick={() => { navigator.clipboard?.writeText(data.public_code!); toast.success("تم نسخ رمز القضية"); }}
-                className="inline-flex items-center gap-1 rounded-full bg-[#F6E9CC] px-2.5 py-1 text-[11px] font-medium text-[#7A5A18] hover:bg-[#f0dfb8]"
+                className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning hover:bg-[#f0dfb8]"
                 title="رمز متابعة القضية للعميل"
               >
                 <Copy className="h-3 w-3" /> رمز المتابعة: {data.public_code}
@@ -142,17 +142,17 @@ function Page() {
             <Info label="المحامي المسؤول" value={data.lawyer?.full_name} />
             <Info label="تاريخ الفتح" value={fmtDate(data.opened_at)} />
           </dl>
-          {data.description && <div className="mt-4 border-t border-[#123C32]/10 pt-3 text-sm"><div className="mb-1 text-xs font-semibold text-[#123C32]/60">الوصف</div>{data.description}</div>}
-          {data.internal_notes && <div className="mt-3 border-t border-[#123C32]/10 pt-3 text-sm"><div className="mb-1 text-xs font-semibold text-[#123C32]/60">ملاحظات داخلية</div>{data.internal_notes}</div>}
+          {data.description && <div className="mt-4 border-t border-border pt-3 text-sm"><div className="mb-1 text-xs font-semibold text-muted-foreground">الوصف</div>{data.description}</div>}
+          {data.internal_notes && <div className="mt-3 border-t border-border pt-3 text-sm"><div className="mb-1 text-xs font-semibold text-muted-foreground">ملاحظات داخلية</div>{data.internal_notes}</div>}
         </section>
 
-        <section className="rounded-2xl border border-[#123C32]/10 bg-white p-5">
+        <section className="rounded-2xl border border-border bg-surface p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
             {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Plus className="h-4 w-4" /></button>}
           </div>
           {(parties ?? []).length === 0 ? (
-            <p className="text-center text-xs text-[#123C32]/50 py-4">لا يوجد أطراف</p>
+            <p className="text-center text-xs text-text-muted py-4">لا يوجد أطراف</p>
           ) : (
             <ul className="space-y-2">
               {parties!.map((p: any) => (
@@ -160,13 +160,13 @@ function Page() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-medium">{p.party_name}</div>
-                      <div className="text-xs text-[#123C32]/60">{[p.party_type, p.legal_role].filter(Boolean).join(" · ") || "—"}</div>
+                      <div className="text-xs text-muted-foreground">{[p.party_type, p.legal_role].filter(Boolean).join(" · ") || "—"}</div>
                       {p.phone && <div className="text-xs mt-1">📞 {p.phone}</div>}
                     </div>
                     {canEdit(activeRole) && (
                       <div className="flex gap-1">
-                        <button onClick={() => { setEditingParty(p); setPartyOpen(true); }} className="rounded p-1 hover:bg-white"><Pencil className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => setDeletingParty(p)} className="rounded p-1 text-[#7A2E20] hover:bg-white"><Trash2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => { setEditingParty(p); setPartyOpen(true); }} className="rounded p-1 hover:bg-surface"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setDeletingParty(p)} className="rounded p-1 text-danger hover:bg-surface"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     )}
                   </div>
@@ -181,7 +181,7 @@ function Page() {
         <RelatedList title="الجلسات" empty="لا توجد جلسات">
           {(hearings ?? []).map((h: any) => (
             <div key={h.id} className="flex items-center justify-between py-2 text-sm">
-              <div className="min-w-0"><div className="font-medium truncate">{h.title}</div><div className="text-xs text-[#123C32]/60">{fmtDateTime(h.hearing_date)} · {h.court_name ?? "—"}</div></div>
+              <div className="min-w-0"><div className="font-medium truncate">{h.title}</div><div className="text-xs text-muted-foreground">{fmtDateTime(h.hearing_date)} · {h.court_name ?? "—"}</div></div>
               <Badge tone={h.status === "completed" ? "green" : h.status === "missed" ? "red" : "muted"}>{HEARING_STATUS[h.status] ?? h.status}</Badge>
             </div>
           ))}
@@ -189,7 +189,7 @@ function Page() {
         <RelatedList title="المهل" empty="لا توجد مهل">
           {(deadlines ?? []).map((d: any) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
-              <div className="min-w-0"><div className="font-medium truncate">{d.title}</div><div className="text-xs text-[#123C32]/60">{fmtDate(d.due_date)}</div></div>
+              <div className="min-w-0"><div className="font-medium truncate">{d.title}</div><div className="text-xs text-muted-foreground">{fmtDate(d.due_date)}</div></div>
               <Badge tone={d.status === "overdue" ? "red" : d.status === "completed" ? "green" : "muted"}>{DEADLINE_STATUS[d.status] ?? d.status}</Badge>
             </div>
           ))}
@@ -197,7 +197,7 @@ function Page() {
         <RelatedList title="المهام" empty="لا توجد مهام">
           {(tasks ?? []).map((t: any) => (
             <div key={t.id} className="flex items-center justify-between py-2 text-sm">
-              <div className="min-w-0"><div className="font-medium truncate">{t.title}</div><div className="text-xs text-[#123C32]/60">{t.due_date ? fmtDate(t.due_date) : "—"}</div></div>
+              <div className="min-w-0"><div className="font-medium truncate">{t.title}</div><div className="text-xs text-muted-foreground">{t.due_date ? fmtDate(t.due_date) : "—"}</div></div>
               <Badge>{TASK_STATUS[t.status] ?? t.status}</Badge>
             </div>
           ))}
@@ -205,38 +205,38 @@ function Page() {
         <RelatedList title="المستندات" empty="لا توجد مستندات">
           {(docs ?? []).map((d: any) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
-              <div className="min-w-0"><div className="font-medium truncate">{d.file_name}</div><div className="text-xs text-[#123C32]/60">{d.document_category ?? "—"}</div></div>
-              <span className="text-xs text-[#123C32]/60">{fmtDate(d.created_at)}</span>
+              <div className="min-w-0"><div className="font-medium truncate">{d.file_name}</div><div className="text-xs text-muted-foreground">{d.document_category ?? "—"}</div></div>
+              <span className="text-xs text-muted-foreground">{fmtDate(d.created_at)}</span>
             </div>
           ))}
         </RelatedList>
       </div>
 
-      <section className="mt-4 rounded-2xl border border-[#123C32]/10 bg-white p-5">
+      <section className="mt-4 rounded-2xl border border-border bg-surface p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-bold">الخط الزمني</h3>
           {canEdit(activeRole) && <Btn size="sm" variant="outline" onClick={() => setUpdateOpen(true)}><Plus className="ms-1 inline h-4 w-4" /> إضافة تحديث</Btn>}
         </div>
         {(updates ?? []).length === 0 ? (
-          <p className="py-4 text-center text-xs text-[#123C32]/50">لا يوجد تحديثات</p>
+          <p className="py-4 text-center text-xs text-text-muted">لا يوجد تحديثات</p>
         ) : (
-          <ol className="relative border-r border-[#123C32]/10 pr-4 space-y-4">
+          <ol className="relative border-r border-border pr-4 space-y-4">
             {updates!.map((u: any) => (
               <li key={u.id} className="relative">
-                <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-[#C9A961]" />
+                <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-gold" />
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium">{u.title}</span>
                   {u.is_client_visible
                     ? <Badge tone="green">مرئي للعميل</Badge>
                     : <Badge tone="muted">داخلي فقط</Badge>}
                 </div>
-                {u.description && <div className="text-xs text-[#123C32]/70">{u.description}</div>}
+                {u.description && <div className="text-xs text-muted-foreground">{u.description}</div>}
                 <div className="mt-0.5 flex flex-wrap items-center gap-3">
-                  <span className="text-[11px] text-[#123C32]/50">{fmtDateTime(u.event_date)}</span>
+                  <span className="text-[11px] text-text-muted">{fmtDateTime(u.event_date)}</span>
                   {canEdit(activeRole) && (
                     <button
                       onClick={() => toggleVisibility.mutate(u)}
-                      className="inline-flex items-center gap-1 text-[11px] text-[#123C32]/70 hover:text-[#123C32]"
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[#123C32]"
                     >
                       {u.is_client_visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       {u.is_client_visible ? "إخفاء عن العميل" : "إظهار للعميل"}
@@ -269,7 +269,7 @@ function Page() {
 function Info({ label, value }: { label: string; value: any }) {
   return (
     <div>
-      <dt className="text-xs text-[#123C32]/60">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-medium">{value || "—"}</dd>
     </div>
   );
@@ -279,9 +279,9 @@ function RelatedList({ title, empty, children }: { title: string; empty: string;
   const arr = Array.isArray(children) ? children : [children];
   const has = arr.filter(Boolean).length > 0;
   return (
-    <section className="rounded-2xl border border-[#123C32]/10 bg-white p-5">
+    <section className="rounded-2xl border border-border bg-surface p-5">
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      {has ? <div className="divide-y divide-[#123C32]/10">{children}</div> : <p className="py-4 text-center text-xs text-[#123C32]/50">{empty}</p>}
+      {has ? <div className="divide-y divide-border">{children}</div> : <p className="py-4 text-center text-xs text-text-muted">{empty}</p>}
     </section>
   );
 }
@@ -335,14 +335,14 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="الاسم *">
           <input value={form.party_name ?? ""} onChange={(e) => setForm({ ...form, party_name: e.target.value })} className={inputCls} />
-          {errors.party_name && <span className="text-xs text-[#7A2E20]">{errors.party_name}</span>}
+          {errors.party_name && <span className="text-xs text-danger">{errors.party_name}</span>}
         </FormField>
         <FormField label="النوع"><input value={form.party_type ?? ""} onChange={(e) => setForm({ ...form, party_type: e.target.value })} className={inputCls} placeholder="فرد / شركة" /></FormField>
         <FormField label="الصفة القانونية"><input value={form.legal_role ?? ""} onChange={(e) => setForm({ ...form, legal_role: e.target.value })} className={inputCls} placeholder="مدّعى عليه / شاهد…" /></FormField>
         <FormField label="رقم الهوية"><input value={form.national_id ?? ""} onChange={(e) => setForm({ ...form, national_id: e.target.value })} className={inputCls} /></FormField>
         <FormField label="السجل التجاري"><input value={form.commercial_registration ?? ""} onChange={(e) => setForm({ ...form, commercial_registration: e.target.value })} className={inputCls} /></FormField>
         <FormField label="الجوال"><input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></FormField>
-        <FormField label="البريد"><input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />{errors.email && <span className="text-xs text-[#7A2E20]">{errors.email}</span>}</FormField>
+        <FormField label="البريد"><input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />{errors.email && <span className="text-xs text-danger">{errors.email}</span>}</FormField>
         <FormField label="اسم الممثل"><input value={form.representative_name ?? ""} onChange={(e) => setForm({ ...form, representative_name: e.target.value })} className={inputCls} /></FormField>
         <div className="md:col-span-2"><FormField label="ملاحظات"><textarea rows={2} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls} /></FormField></div>
       </div>

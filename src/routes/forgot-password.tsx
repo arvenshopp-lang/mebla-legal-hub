@@ -33,10 +33,10 @@ function ForgotPage() {
   if (sent)
     return (
       <AuthShell title="تحقق من بريدك" subtitle="أرسلنا رابط إعادة تعيين كلمة المرور">
-        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm">
+        <div className="rounded-xl border border-border bg-[#F5F3EE] p-5 text-sm">
           إن كان <b>{email}</b> مسجّلاً لدينا، فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور.
         </div>
-        <Link to="/login" search={{ redirect: "/dashboard" }} className="mt-6 block w-full rounded-xl bg-[#123C32] py-3 text-center text-sm font-semibold text-white">
+        <Link to="/login" search={{ redirect: "/dashboard" }} className="mt-6 block w-full rounded-xl bg-[#123C32] py-3 text-center text-sm font-semibold text-primary-foreground">
           العودة لتسجيل الدخول
         </Link>
       </AuthShell>
@@ -48,11 +48,11 @@ function ForgotPage() {
         <Field label="البريد الإلكتروني">
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         </Field>
-        <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] disabled:opacity-60">
+        <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
           {loading ? "جاري الإرسال…" : "إرسال الرابط"}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-[#123C32]/70">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         تذكّرت كلمة المرور؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold underline">تسجيل الدخول</Link>
       </p>
     </AuthShell>

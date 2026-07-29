@@ -36,7 +36,7 @@ function PendingAccessPage() {
   if (loading || !session) {
     return (
       <AuthShell title="جاري التحقق">
-        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">لحظات قليلة…</div>
+        <div className="rounded-xl border border-border bg-[#F5F3EE] p-5 text-sm text-[#123C32]">لحظات قليلة…</div>
       </AuthShell>
     );
   }
@@ -50,7 +50,7 @@ function PendingAccessPage() {
           : "دعوتك للانضمام إلى المكتب لم تُفعّل بعد"
       }
     >
-      <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm leading-7 text-[#123C32]">
+      <div className="rounded-xl border border-border bg-[#F5F3EE] p-5 text-sm leading-7 text-[#123C32]">
         {suspended
           ? "أوقف مالك المكتب أو المدير وصولك مؤقتاً. تواصل معه لإعادة تفعيل حسابك."
           : "بمجرد تفعيل عضويتك من مالك المكتب ستتمكن من الدخول مباشرة إلى لوحة التحكم."}
@@ -58,17 +58,17 @@ function PendingAccessPage() {
       <div className="mt-6 flex flex-col gap-3">
         <button
           onClick={() => window.location.assign("/pending-access")}
-          className="w-full rounded-xl border border-[#123C32]/20 py-3 text-sm font-medium text-[#123C32] hover:bg-[#123C32]/5"
+          className="w-full rounded-xl border border-border py-3 text-sm font-medium text-[#123C32] hover:bg-surface-muted"
         >
           تحديث الحالة
         </button>
         <button
           onClick={() => void signOut().then(() => navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true }))}
-          className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26]"
+          className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           تسجيل الخروج
         </button>
-        <Link to="/" className="text-center text-xs text-[#123C32]/60 underline">
+        <Link to="/" className="text-center text-xs text-muted-foreground underline">
           العودة إلى الصفحة الرئيسية
         </Link>
       </div>

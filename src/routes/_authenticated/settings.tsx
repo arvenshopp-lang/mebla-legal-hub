@@ -17,14 +17,14 @@ function Page() {
 
   return (
     <DashboardShell title="الإعدادات">
-      <div className="mb-5 flex gap-2 border-b border-[#123C32]/10">
+      <div className="mb-5 flex gap-2 border-b border-border">
         {[
           { k: "profile", l: "حسابي" },
           { k: "organization", l: "المكتب" },
           { k: "notifications", l: "التنبيهات" },
         ].map((t) => (
           <button key={t.k} onClick={() => setTab(t.k as any)}
-            className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-[#123C32] text-[#123C32]" : "text-[#123C32]/60"}`}>
+            className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-[#123C32] text-[#123C32]" : "text-muted-foreground"}`}>
             {t.l}
           </button>
         ))}
@@ -59,7 +59,7 @@ function ProfileTab({ userId }: { userId?: string }) {
 
   if (isLoading) return <LoadingBlock />;
   return (
-    <div className="max-w-2xl rounded-2xl border border-[#123C32]/10 bg-white p-6">
+    <div className="max-w-2xl rounded-2xl border border-border bg-surface p-6">
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="الاسم الكامل"><input value={form.full_name ?? ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} /></FormField>
         <FormField label="البريد"><input value={form.email ?? ""} disabled className={inputCls + " bg-[#F5F3EE]"} /></FormField>
@@ -96,8 +96,8 @@ function OrgTab({ orgId, canManage: canEdit }: { orgId: string | null; canManage
 
   if (isLoading) return <LoadingBlock />;
   return (
-    <div className="max-w-3xl rounded-2xl border border-[#123C32]/10 bg-white p-6">
-      {!canEdit && <div className="mb-4 rounded-xl bg-[#F5F3EE] p-3 text-xs text-[#123C32]/70">التعديل متاح للمدراء فقط.</div>}
+    <div className="max-w-3xl rounded-2xl border border-border bg-surface p-6">
+      {!canEdit && <div className="mb-4 rounded-xl bg-[#F5F3EE] p-3 text-xs text-muted-foreground">التعديل متاح للمدراء فقط.</div>}
       <fieldset disabled={!canEdit} className="grid gap-4 md:grid-cols-2 disabled:opacity-70">
         <FormField label="اسم المكتب *"><input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} /></FormField>
         <FormField label="الاسم القانوني"><input value={form.legal_name ?? ""} onChange={(e) => setForm({ ...form, legal_name: e.target.value })} className={inputCls} /></FormField>
@@ -144,7 +144,7 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
 
   if (isLoading) return <LoadingBlock />;
   const Tog = ({ k, l }: { k: string; l: string }) => (
-    <label className="flex items-center justify-between rounded-xl border border-[#123C32]/10 bg-white p-3">
+    <label className="flex items-center justify-between rounded-xl border border-border bg-surface p-3">
       <span className="text-sm">{l}</span>
       <input type="checkbox" checked={!!form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} />
     </label>
