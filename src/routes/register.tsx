@@ -147,16 +147,41 @@ function RegisterPage() {
         <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
       </div>
       <form onSubmit={submit} className="space-y-4">
+        {formError && (
+          <div role="alert" className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+            {formError}
+          </div>
+        )}
         <Field label="الاسم الكامل">
           <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
         </Field>
         <Field label="البريد الإلكتروني">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         </Field>
-        <Field label="كلمة المرور">
-          <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
-        </Field>
-        <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+        <div>
+          <Field label="كلمة المرور">
+            <input
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onFocus={() => setPasswordTouched(true)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (!passwordTouched) setPasswordTouched(true);
+              }}
+              className={inputCls}
+            />
+          </Field>
+          {(passwordTouched || password.length > 0) && <PasswordChecklist password={password} />}
+        </div>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          aria-busy={loading}
+          className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white transition hover:bg-[#0d2e26] disabled:cursor-not-allowed disabled:bg-[#123C32]/35 disabled:hover:bg-[#123C32]/35"
+        >
           {loading ? "جاري الإنشاء…" : "إنشاء الحساب"}
         </button>
       </form>
