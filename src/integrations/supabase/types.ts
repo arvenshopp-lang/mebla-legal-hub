@@ -1056,6 +1056,22 @@ export type Database = {
         Args: { _case: string; _user: string }
         Returns: boolean
       }
+      create_organization_with_owner: {
+        Args: {
+          _address?: string
+          _city?: string
+          _commercial_registration?: string
+          _email?: string
+          _legal_name?: string
+          _name: string
+          _phone?: string
+          _tax_number?: string
+        }
+        Returns: {
+          already_exists: boolean
+          organization_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _org: string; _user: string }
         Returns: Database["public"]["Enums"]["app_role"]
