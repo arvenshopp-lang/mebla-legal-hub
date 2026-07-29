@@ -97,16 +97,16 @@ function Page() {
         !filtered.length ? <EmptyState title="لا يوجد أعضاء" /> : (
         <DataCard>
           <table className="min-w-full">
-            <thead className="bg-[#F5F3EE]/60">
+            <thead className="bg-surface-muted/60">
               <tr><Th>الاسم</Th><Th>البريد</Th><Th>المسمى</Th><Th>الدور</Th><Th>الحالة</Th><Th>تاريخ الانضمام</Th><Th>{" "}</Th></tr>
             </thead>
-            <tbody className="divide-y divide-[#123C32]/5">
+            <tbody className="divide-y divide-border">
               {filtered.map((m: any) => {
                 const isSelf = m.user_id === user?.id;
                 const isOwner = m.role === "owner";
                 return (
-                  <tr key={m.id} className="hover:bg-[#F5F3EE]/40">
-                    <Td className="font-medium">{m.profile?.full_name ?? "—"} {isSelf && <span className="text-xs text-[#123C32]/50">(أنت)</span>}</Td>
+                  <tr key={m.id} className="hover:bg-surface-muted/40">
+                    <Td className="font-medium">{m.profile?.full_name ?? "—"} {isSelf && <span className="text-xs text-text-muted">(أنت)</span>}</Td>
                     <Td>{m.profile?.email ?? "—"}</Td>
                     <Td>{m.profile?.job_title ?? "—"}</Td>
                     <Td>
@@ -124,7 +124,7 @@ function Page() {
                     <Td>{fmtDate(m.joined_at)}</Td>
                     <Td>
                       {admin && !isOwner && !isSelf && (
-                        <button onClick={() => setRemoving(m)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => setRemoving(m)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>
                       )}
                     </Td>
                   </tr>
@@ -137,30 +137,30 @@ function Page() {
 
       {admin && (invitations ?? []).length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-base font-bold text-[#123C32]">الدعوات</h2>
+          <h2 className="mb-3 text-base font-bold text-foreground">الدعوات</h2>
           <DataCard>
             <table className="min-w-full">
-              <thead className="bg-[#F5F3EE]/60">
+              <thead className="bg-surface-muted/60">
                 <tr><Th>البريد</Th><Th>الدور</Th><Th>الحالة</Th><Th>تنتهي في</Th><Th>الرابط</Th><Th>{" "}</Th></tr>
               </thead>
-              <tbody className="divide-y divide-[#123C32]/5">
+              <tbody className="divide-y divide-border">
                 {invitations!.map((inv: any) => {
                   const link = `${window.location.origin}/register?invite=${inv.token}`;
                   return (
-                    <tr key={inv.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={inv.id} className="hover:bg-surface-muted/40">
                       <Td>{inv.email}</Td>
                       <Td><Badge tone="muted">{ROLE_LABELS[inv.role as keyof typeof ROLE_LABELS]}</Badge></Td>
                       <Td><Badge tone={inv.status === "pending" ? "warn" : inv.status === "accepted" ? "green" : "muted"}>{INVITATION_STATUS[inv.status]}</Badge></Td>
                       <Td>{fmtDate(inv.expires_at)}</Td>
                       <Td>
                         {inv.status === "pending" && (
-                          <button onClick={() => { navigator.clipboard.writeText(link); toast.success("تم نسخ الرابط"); }} className="inline-flex items-center gap-1 text-xs text-[#123C32] underline">
+                          <button onClick={() => { navigator.clipboard.writeText(link); toast.success("تم نسخ الرابط"); }} className="inline-flex items-center gap-1 text-xs text-foreground underline">
                             <Copy className="h-3 w-3" /> نسخ
                           </button>
                         )}
                       </Td>
                       <Td>
-                        {inv.status === "pending" && <button onClick={() => setRevoking(inv)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>}
+                        {inv.status === "pending" && <button onClick={() => setRevoking(inv)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                       </Td>
                     </tr>
                   );
@@ -215,8 +215,8 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     <Modal open={open} onClose={() => { reset(); onClose(); }} title="دعوة عضو جديد">
       {link ? (
         <div className="space-y-4">
-          <p className="text-sm text-[#123C32]/80">شارك الرابط التالي مع العضو ليتمكن من الانضمام:</p>
-          <div className="flex items-center gap-2 rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-3">
+          <p className="text-sm text-muted-foreground">شارك الرابط التالي مع العضو ليتمكن من الانضمام:</p>
+          <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
             <code className="flex-1 truncate text-xs">{link}</code>
             <Btn size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success("تم النسخ"); }}>
               <Copy className="h-3 w-3" /> نسخ
@@ -229,7 +229,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
           <div className="grid gap-4">
             <FormField label="البريد الإلكتروني *">
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="user@example.com" />
-              {errors.email && <span className="text-xs text-[#7A2E20]">{errors.email}</span>}
+              {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
             </FormField>
             <FormField label="الدور *">
               <select value={role} onChange={(e) => setRole(e.target.value as any)} className={inputCls}>

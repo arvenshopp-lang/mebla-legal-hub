@@ -25,29 +25,29 @@ const SECTIONS = [
 
 function Page() {
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#F5F3EE] px-4 py-10 text-[#123C32] sm:py-16">
+    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-10 text-foreground sm:py-16">
       <div className="mx-auto w-full max-w-3xl">
         <div className="text-center">
           <div className="text-xl font-extrabold tracking-tight">مِهلة</div>
           <h1 className="mt-4 text-3xl font-bold">مركز المساعدة</h1>
-          <p className="mt-2 text-sm text-[#123C32]/65">
+          <p className="mt-2 text-sm text-muted-foreground">
             نعمل على إثراء هذا المركز بالمحتوى الكامل. تجد أدناه أقسام الدعم الرسمية للمنصة.
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
-            <section key={s.title} className="rounded-3xl border border-[#123C32]/10 bg-white p-6">
-              <s.icon className="h-5 w-5 text-[#C9A961]" />
+            <section key={s.title} className="rounded-[var(--radius-l)] border border-border bg-surface p-6">
+              <s.icon className="h-5 w-5 text-gold" />
               <h2 className="mt-3 text-sm font-bold">{s.title}</h2>
-              <p className="mt-1.5 text-xs leading-6 text-[#123C32]/70">{s.body}</p>
-              <span className="mt-3 inline-block rounded-full bg-[#F5F3EE] px-2.5 py-1 text-[10px] text-[#123C32]/60">قريباً</span>
+              <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{s.body}</p>
+              <span className="mt-3 inline-block rounded-full bg-surface-muted px-2.5 py-1 text-[10px] text-muted-foreground">قريباً</span>
             </section>
           ))}
         </div>
 
         <div className="mt-8 text-center">
-          <Link to="/" className="text-xs text-[#123C32]/60 hover:text-[#123C32]">العودة للموقع الرئيسي</Link>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">العودة للموقع الرئيسي</Link>
         </div>
       </div>
     </main>

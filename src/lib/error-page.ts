@@ -1,30 +1,45 @@
 export function renderErrorPage(): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <title>This page didn't load</title>
+    <title>تعذّر عرض الصفحة | مِهلة</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
-      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
-      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
-      h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
-      p { color: #4b5563; margin: 0 0 1.5rem; }
-      .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-      a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
-      .primary { background: #111; color: #fff; }
-      .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      :root { --primary:#173F35; --bg:#F7F8F6; --surface:#FFFFFF; --border:#DDE3DF; --text:#15201C; --muted:#5E6B65; }
+      * { box-sizing: border-box; }
+      body { margin:0; padding:1.5rem; min-height:100dvh; display:grid; place-items:center;
+             background:var(--bg); color:var(--text);
+             font:15px/1.8 "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif; }
+      .card { width:100%; max-width:30rem; background:var(--surface); border:1px solid var(--border);
+              border-radius:12px; padding:2rem; }
+      .brand { font-size:15px; font-weight:700; letter-spacing:-0.01em; margin:0 0 1.5rem; }
+      h1 { font-size:1.25rem; margin:0 0 .5rem; line-height:1.4; }
+      p { color:var(--muted); margin:0 0 1.75rem; }
+      .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+      a, button { min-height:44px; display:inline-flex; align-items:center; justify-content:center;
+                  padding:0 1.25rem; border-radius:8px; font:inherit; font-weight:600; cursor:pointer;
+                  text-decoration:none; border:1px solid transparent; }
+      .primary { background:var(--primary); color:#fff; }
+      .primary:hover { background:#12332B; }
+      .secondary { background:var(--surface); color:var(--text); border-color:var(--border); }
+      .secondary:hover { background:var(--bg); }
+      a:focus-visible, button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+    <main class="card">
+      <p class="brand">مِهلة · MEHLA</p>
+      <h1>تعذّر عرض هذه الصفحة</h1>
+      <p>حدث خطأ غير متوقع أثناء تحميل الصفحة. يمكنك المحاولة مرة أخرى أو العودة إلى الصفحة الرئيسية.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <button class="primary" onclick="location.reload()">إعادة المحاولة</button>
+        <a class="secondary" href="/">العودة للرئيسية</a>
       </div>
-    </div>
+    </main>
   </body>
 </html>`;
 }

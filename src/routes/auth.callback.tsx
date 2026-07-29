@@ -44,7 +44,7 @@ function AuthCallback() {
   }, [navigate, refresh]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F3EE] text-[#123C32]">
+    <div className="min-h-dvh flex items-center justify-center bg-surface-muted text-foreground">
       جاري إكمال تسجيل الدخول…
     </div>
   );

@@ -50,17 +50,17 @@ function Page() {
   };
 
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#F5F3EE] px-4 py-8 text-[#123C32] sm:py-14">
+    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-8 text-foreground sm:py-14">
       <div className="mx-auto w-full max-w-2xl">
-        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-xs text-[#123C32]/60 hover:text-[#123C32]">
+        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowRight className="h-3.5 w-3.5" /> العودة للرئيسية
         </Link>
 
-        <div className="rounded-3xl border border-[#123C32]/10 bg-white p-6 shadow-[0_1px_2px_rgba(18,60,50,0.04)] sm:p-9">
+        <div className="rounded-[var(--radius-l)] border border-border bg-surface p-6 shadow-[0_1px_2px_rgba(18,60,50,0.04)] sm:p-9">
           <div className="text-center">
             <div className="text-xl font-extrabold tracking-tight">مِهلة</div>
             <h1 className="mt-4 text-2xl font-bold">تحقق من حالة قضيتك</h1>
-            <p className="mt-2 text-sm text-[#123C32]/65">أدخل رمز القضية المكوّن من 10 أرقام الذي زوّدك به مكتبك.</p>
+            <p className="mt-2 text-sm text-muted-foreground">أدخل رمز القضية المكوّن من 10 أرقام الذي زوّدك به مكتبك.</p>
           </div>
 
           <form onSubmit={submit} className="mx-auto mt-7 max-w-md space-y-3">
@@ -71,28 +71,28 @@ function Page() {
               autoComplete="off"
               placeholder="أدخل رمز القضية"
               dir="ltr"
-              className="w-full rounded-2xl border border-[#123C32]/15 bg-[#F5F3EE]/60 px-4 py-4 text-center text-lg tracking-[0.35em] outline-none focus:border-[#123C32]"
+              className="w-full rounded-[var(--radius-l)] border border-border bg-surface-muted/60 px-4 py-4 text-center text-lg tracking-[0.35em] outline-none focus:border-primary"
             />
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#123C32] px-5 py-3.5 text-sm font-semibold text-white hover:bg-[#0d2e26] disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-l)] bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} تحقق
             </button>
-            {err && <p className="rounded-xl bg-[#FBEDE9] px-4 py-3 text-center text-sm text-[#7A2E20]">{err}</p>}
+            {err && <p className="rounded-[var(--radius-m)] bg-danger-soft px-4 py-3 text-center text-sm text-danger">{err}</p>}
           </form>
         </div>
 
         {result?.state === "found" && (
           <div className="mt-5 space-y-4">
-            <section className="rounded-3xl border border-[#123C32]/10 bg-white p-6 sm:p-8">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#123C32]/10 pb-4">
+            <section className="rounded-[var(--radius-l)] border border-border bg-surface p-6 sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                 <div>
-                  <div className="text-[11px] text-[#123C32]/55">رقم القضية</div>
+                  <div className="text-[11px] text-muted-foreground">رقم القضية</div>
                   <div className="text-lg font-bold tracking-widest" dir="ltr">{result.code}</div>
                 </div>
-                <span className="rounded-full bg-[#DCE9E3] px-3 py-1.5 text-xs font-semibold text-[#123C32]">
+                <span className="rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-foreground">
                   {CASE_STATUS[result.status] ?? result.status}
                 </span>
               </div>
@@ -106,25 +106,25 @@ function Page() {
               </dl>
             </section>
 
-            <section className="rounded-3xl border border-[#123C32]/10 bg-white p-6 sm:p-8">
+            <section className="rounded-[var(--radius-l)] border border-border bg-surface p-6 sm:p-8">
               <h2 className="mb-4 text-sm font-bold">آخر الإجراءات</h2>
               {result.updates.length === 0 ? (
-                <p className="py-4 text-center text-xs text-[#123C32]/55">لا توجد تحديثات معلنة حالياً.</p>
+                <p className="py-4 text-center text-xs text-muted-foreground">لا توجد تحديثات معلنة حالياً.</p>
               ) : (
-                <ol className="relative space-y-4 border-r border-[#123C32]/10 pr-4">
+                <ol className="relative space-y-4 border-r border-border pr-4">
                   {result.updates.map((u, i) => (
                     <li key={i} className="relative">
-                      <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-[#C9A961]" />
+                      <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-gold" />
                       <div className="text-sm font-medium">{u.title}</div>
-                      {u.description && <div className="text-xs leading-6 text-[#123C32]/70">{u.description}</div>}
-                      <div className="mt-0.5 text-[11px] text-[#123C32]/50">{fmtDateTime(u.date)}</div>
+                      {u.description && <div className="text-xs leading-6 text-muted-foreground">{u.description}</div>}
+                      <div className="mt-0.5 text-[11px] text-text-muted">{fmtDateTime(u.date)}</div>
                     </li>
                   ))}
                 </ol>
               )}
             </section>
 
-            <p className="flex items-center justify-center gap-1.5 pb-4 text-[11px] text-[#123C32]/55">
+            <p className="flex items-center justify-center gap-1.5 pb-4 text-[11px] text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" /> تُعرض هنا المعلومات المصرّح بمشاركتها من مكتبك فقط.
             </p>
           </div>
@@ -136,10 +136,10 @@ function Page() {
 
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-[#F5F3EE]/70 p-4">
-      <span className="mt-0.5 text-[#123C32]/50">{icon}</span>
+    <div className="flex items-start gap-3 rounded-[var(--radius-l)] bg-surface-muted/70 p-4">
+      <span className="mt-0.5 text-text-muted">{icon}</span>
       <div>
-        <dt className="text-[11px] text-[#123C32]/55">{label}</dt>
+        <dt className="text-[11px] text-muted-foreground">{label}</dt>
         <dd className="text-sm font-medium">{value}</dd>
       </div>
     </div>

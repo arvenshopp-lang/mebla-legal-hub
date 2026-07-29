@@ -1,33 +1,33 @@
 import { PASSWORD_RULES, evaluatePassword, type StrengthLevel } from "@/lib/password-policy";
 
 const BAR_COLORS: Record<StrengthLevel, string> = {
-  0: "bg-[#123C32]/15",
-  1: "bg-[#B3261E]",
-  2: "bg-[#C9862B]",
-  3: "bg-[#2E7D5B]",
-  4: "bg-[#123C32]",
+  0: "bg-primary/15",
+  1: "bg-danger",
+  2: "bg-warning",
+  3: "bg-success",
+  4: "bg-primary",
 };
 
 const LABEL_COLORS: Record<StrengthLevel, string> = {
-  0: "text-[#123C32]/40",
-  1: "text-[#B3261E]",
-  2: "text-[#C9862B]",
-  3: "text-[#2E7D5B]",
-  4: "text-[#123C32]",
+  0: "text-text-muted",
+  1: "text-danger",
+  2: "text-warning",
+  3: "text-success",
+  4: "text-foreground",
 };
 
 export function PasswordChecklist({ password }: { password: string }) {
   const { results, score, label, valid } = evaluatePassword(password);
 
   return (
-    <div className="mt-3 rounded-2xl border border-[#123C32]/10 bg-[#F5F3EE]/70 p-4">
+    <div className="mt-3 rounded-[var(--radius-l)] border border-border bg-surface-muted/70 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-1 gap-1.5" aria-hidden="true">
           {[1, 2, 3, 4].map((step) => (
             <span
               key={step}
               className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ease-out ${
-                score >= step ? BAR_COLORS[score] : "bg-[#123C32]/12"
+                score >= step ? BAR_COLORS[score] : "bg-primary/12"
               }`}
             />
           ))}
@@ -47,8 +47,8 @@ export function PasswordChecklist({ password }: { password: string }) {
               <span
                 className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-all duration-300 ease-out ${
                   ok
-                    ? "border-[#2E7D5B] bg-[#2E7D5B] text-white"
-                    : "border-[#123C32]/25 bg-white text-transparent"
+                    ? "border-[#2E7D5B] bg-success text-primary-foreground"
+                    : "border-border bg-surface text-transparent"
                 }`}
                 aria-hidden="true"
               >
@@ -58,7 +58,7 @@ export function PasswordChecklist({ password }: { password: string }) {
               </span>
               <span
                 className={`transition-colors duration-300 ${
-                  ok ? "font-medium text-[#2E7D5B]" : "text-[#123C32]/55"
+                  ok ? "font-medium text-success" : "text-muted-foreground"
                 }`}
               >
                 {rule.label}

@@ -49,7 +49,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
   });
 
   return (
-    <section className="mt-4 rounded-2xl border border-[#123C32]/10 bg-white p-5">
+    <section className="mt-4 rounded-[var(--radius-l)] border border-border bg-surface p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-bold">طلبات المستندات</h3>
         {canEdit(activeRole) && (
@@ -60,13 +60,13 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
       </div>
 
       {(rows ?? []).length === 0 ? (
-        <p className="py-6 text-center text-xs text-[#123C32]/50">
+        <p className="py-6 text-center text-xs text-text-muted">
           لا توجد طلبات. أنشئ رابطاً آمناً يستخدم مرة واحدة لطلب مستندات من العميل.
         </p>
       ) : (
         <ul className="space-y-3">
           {rows!.map((r: any) => (
-            <li key={r.id} className="rounded-xl border border-[#123C32]/10 bg-[#F5F3EE]/50 p-4">
+            <li key={r.id} className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -75,22 +75,22 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
                       {DOC_REQUEST_STATUS[r.status] ?? r.status}
                     </Badge>
                   </div>
-                  <div className="mt-1 text-[11px] text-[#123C32]/60">
+                  <div className="mt-1 text-[11px] text-muted-foreground">
                     أُنشئ {fmtDateTime(r.created_at)} · بواسطة {r.creator?.full_name ?? "—"}
                     {r.expires_at ? ` · ينتهي ${fmtDateTime(r.expires_at)}` : ""}
                   </div>
-                  <div className="mt-1 text-[11px] text-[#123C32]/60">الملفات المرفوعة: {r.file_count}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">الملفات المرفوعة: {r.file_count}</div>
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                    className="rounded-lg p-1.5 hover:bg-white"
+                    className="rounded-lg p-1.5 hover:bg-surface"
                     title="السجل"
                   >
                     {expanded === r.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                   {r.status === "active" && canEdit(activeRole) && (
-                    <button onClick={() => setRevoking(r)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-white" title="إلغاء الرابط">
+                    <button onClick={() => setRevoking(r)} className="rounded-lg p-1.5 text-danger hover:bg-surface" title="إلغاء الرابط">
                       <Ban className="h-4 w-4" />
                     </button>
                   )}
@@ -123,14 +123,14 @@ function RequestLog({ requestId }: { requestId: string }) {
       (await supabase.from("document_request_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false })).data ?? [],
   });
   return (
-    <div className="mt-3 border-t border-[#123C32]/10 pt-3">
-      <div className="mb-2 text-[11px] font-semibold text-[#123C32]/60">سجل العمليات</div>
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="mb-2 text-[11px] font-semibold text-muted-foreground">سجل العمليات</div>
       {(data ?? []).length === 0 ? (
-        <p className="text-[11px] text-[#123C32]/50">لا يوجد سجل بعد.</p>
+        <p className="text-[11px] text-text-muted">لا يوجد سجل بعد.</p>
       ) : (
         <ul className="space-y-1">
           {data!.map((e: any) => (
-            <li key={e.id} className="flex flex-wrap justify-between gap-2 text-[11px] text-[#123C32]/70">
+            <li key={e.id} className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
               <span>{EVENT_LABEL[e.event] ?? e.event}{e.detail?.files ? ` (${e.detail.files} ملف)` : ""}</span>
               <span>{fmtDateTime(e.created_at)}</span>
             </li>
@@ -200,11 +200,11 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
     <Modal open={open} onClose={() => { reset(); onClose(); }} title={link ? "الرابط جاهز" : "إنشاء طلب مستندات"} size="lg">
       {link ? (
         <div className="space-y-4">
-          <p className="text-sm text-[#123C32]/80">
+          <p className="text-sm text-muted-foreground">
             هذا الرابط يعمل <strong>مرة واحدة فقط</strong> ولن يظهر مجدداً. انسخه الآن وأرسله للعميل.
           </p>
-          <div className="flex items-center gap-2 rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-3">
-            <Link2 className="h-4 w-4 shrink-0 text-[#123C32]/60" />
+          <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
+            <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 break-all text-xs" dir="ltr">{link}</span>
           </div>
           <div className="flex flex-wrap gap-2">

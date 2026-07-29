@@ -104,15 +104,15 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>الاسم</Th><Th>النوع</Th><Th>الجوال</Th><Th>المدينة</Th><Th>تاريخ الإضافة</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((c) => (
-                    <tr key={c.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={c.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
                         {c.full_name}
-                        {c.company_name && <div className="text-xs text-[#123C32]/60">{c.company_name}</div>}
+                        {c.company_name && <div className="text-xs text-muted-foreground">{c.company_name}</div>}
                       </Td>
                       <Td><Badge>{CLIENT_TYPE[c.client_type] ?? c.client_type}</Badge></Td>
                       <Td>{c.phone ?? "—"}</Td>
@@ -121,12 +121,12 @@ function Page() {
                       <Td>
                         <div className="flex justify-end gap-1">
                           {canEdit(activeRole) && (
-                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]">
+                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted">
                               <Pencil className="h-4 w-4" />
                             </button>
                           )}
                           {canManage(activeRole) && (
-                            <button onClick={() => setDeleting(c)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]">
+                            <button onClick={() => setDeleting(c)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           )}
@@ -205,7 +205,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="الاسم الكامل *">
           <input value={form.full_name ?? ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} />
-          {errors.full_name && <span className="text-xs text-[#7A2E20]">{errors.full_name}</span>}
+          {errors.full_name && <span className="text-xs text-danger">{errors.full_name}</span>}
         </FormField>
         <FormField label="نوع العميل *">
           <select value={form.client_type ?? "individual"} onChange={(e) => setForm({ ...form, client_type: e.target.value as any })} className={inputCls}>
@@ -231,7 +231,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
         </FormField>
         <FormField label="البريد الإلكتروني">
           <input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
-          {errors.email && <span className="text-xs text-[#7A2E20]">{errors.email}</span>}
+          {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
         </FormField>
         <FormField label="المدينة">
           <input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />

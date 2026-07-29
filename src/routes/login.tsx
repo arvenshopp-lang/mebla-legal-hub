@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
 import { lookupSignInMethods } from "@/lib/auth-lookup.functions";
 import { GoogleIcon } from "@/components/google-icon";
+import { inputCls as fieldInputCls } from "@/lib/list-utils";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -120,7 +121,7 @@ function LoginPage() {
   if (session && (authLoading || organizationLoading)) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل المتابعة">
-        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           لحظات قليلة…
         </div>
       </AuthShell>
@@ -133,52 +134,52 @@ function LoginPage() {
       onClick={google}
       disabled={googleLoading}
       aria-busy={googleLoading}
-      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-[#123C32]/5 active:scale-[0.99] disabled:opacity-60"
+      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
     >
       <GoogleIcon />
       <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
     </button>
-    <p className="mt-2 text-center text-[11px] leading-5 text-[#123C32]/45">
+    <p className="mt-2 text-center text-[11px] leading-5 text-text-muted">
       دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
     </p>
-    <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
-      <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
+    <div className="my-5 flex items-center gap-3 text-xs text-text-muted">
+      <div className="h-px flex-1 bg-surface-muted" /> أو <div className="h-px flex-1 bg-surface-muted" />
     </div>
     <form onSubmit={submit} noValidate className="space-y-4">
       {formError && (
-        <div role="alert" className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+        <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-[12.5px] leading-6 text-danger">
           {formError}
         </div>
       )}
       <Field label="البريد الإلكتروني">
-        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInputCls} />
       </Field>
       <Field label="كلمة المرور">
-        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
       </Field>
       <div className="text-left">
-        <Link to="/forgot-password" className="text-xs font-medium text-[#123C32]/70 underline hover:text-[#123C32]">
+        <Link to="/forgot-password" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
           نسيت كلمة المرور؟
         </Link>
       </div>
-      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
         {loading ? "جاري تسجيل الدخول…" : "دخول"}
       </button>
     </form>
-    <p className="mt-6 text-center text-sm text-[#123C32]/70">
-      ليس لديك حساب؟ <Link to="/register" className="font-semibold text-[#123C32] underline">إنشاء حساب</Link>
+    <p className="mt-6 text-center text-sm text-muted-foreground">
+      ليس لديك حساب؟ <Link to="/register" className="font-semibold text-foreground underline">إنشاء حساب</Link>
     </p>
   </AuthShell>;
 }
 
-export const inputCls =
-  "w-full rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] px-4 py-3 text-[#123C32] outline-none focus:border-[#123C32] focus:bg-white transition";
+export { inputCls } from "@/lib/list-utils";
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-[#123C32]">{label}</span>
+      <span className="text-label mb-1.5 block text-foreground">{label}</span>
       {children}
+      {hint && <span className="text-caption mt-1 block">{hint}</span>}
     </label>
   );
 }
@@ -193,16 +194,20 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#F5F3EE] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Link to="/" className="mb-8 block text-center text-2xl font-bold tracking-tight text-[#123C32]">
-          مِهلة <span className="text-[#C9A961]">·</span> MEHLA
+    <div dir="rtl" className="flex min-h-dvh flex-col bg-background px-4 py-10">
+      <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center">
+        <Link to="/" className="mb-8 block text-center text-[17px] font-bold tracking-tight text-foreground">
+          مِهلة <span className="text-text-muted">·</span>{" "}
+          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </Link>
-        <div className="rounded-3xl border border-[#123C32]/10 bg-white p-8 shadow-[0_20px_60px_-20px_rgba(18,60,50,0.15)]">
-          <h1 className="text-2xl font-bold text-[#123C32]">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-[#123C32]/60">{subtitle}</p>}
-          <div className="mt-6">{children}</div>
+        <div className="surface-card p-6 shadow-sm sm:p-8">
+          <h1 className="text-h2">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-body-sm text-muted-foreground">{subtitle}</p>}
+          <div className="mt-7">{children}</div>
         </div>
+        <p className="mt-6 text-center text-[12px] text-text-muted">
+          منصة مِهلة لإدارة الممارسة القانونية · mehlalex.com
+        </p>
       </div>
     </div>
   );

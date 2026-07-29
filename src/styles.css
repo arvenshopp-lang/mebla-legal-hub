@@ -4,49 +4,118 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* MEHLA design tokens */
-@theme {
-  --font-sans: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --color-mehla-primary: #123c32;
-  --color-mehla-primary-dark: #0d2c25;
-  --color-mehla-primary-soft: #2d6656;
-  --color-mehla-ink: #101716;
-  --color-mehla-bg: #f5f3ee;
-  --color-mehla-surface: #ffffff;
-  --color-mehla-border: #d8ddd9;
-  --color-mehla-muted: #6b7772;
-  --color-mehla-sand: #c89b3c;
+/* ==========================================================================
+   MEHLA · نظام التصميم (Design Tokens)
+   مرجع واحد لكل الألوان والمسافات والظلال والانتقالات في المنصة.
+   ممنوع كتابة قيم لونية مباشرة داخل المكونات.
+   ========================================================================== */
+
+:root {
+  /* Brand & semantic colors */
+  --color-primary-raw: oklch(0.3357 0.0486 174.3);
+  --primary: oklch(0.3357 0.0486 174.3);
+  --primary-hover: oklch(0.2937 0.0416 175.02);
+  --primary-active: oklch(0.2465 0.0333 175.56);
+  --primary-soft: oklch(0.952 0.0084 168.75);
+  --primary-foreground: oklch(1 0 0);
+
+  --background: oklch(0.9778 0.0028 128.49);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.9621 0.0034 145.55);
+
+  --border: oklch(0.9101 0.0084 157.08);
+  --border-strong: oklch(0.8389 0.0137 159.86);
+
+  --text-primary: oklch(0.2315 0.0175 170.34);
+  --text-secondary: oklch(0.5149 0.0184 166.17);
+  --text-muted: oklch(0.647 0.0137 164.58);
+
+  --success: oklch(0.5273 0.1371 150.07);
+  --success-soft: oklch(0.954 0.0149 158.25);
+  --warning: oklch(0.6264 0.1248 70.45);
+  --warning-soft: oklch(0.9612 0.0261 82.39);
+  --danger: oklch(0.5568 0.1718 24.65);
+  --danger-soft: oklch(0.9497 0.0174 17.46);
+  --info: oklch(0.4956 0.1257 253.45);
+  --info-soft: oklch(0.9487 0.0149 251.16);
+  --gold: oklch(0.6558 0.096 79.6);
+
+  /* shadcn semantic aliases */
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface);
+  --popover-foreground: var(--text-primary);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--primary-soft);
+  --accent-foreground: var(--primary);
+  --destructive: var(--danger);
+  --destructive-foreground: oklch(1 0 0);
+  --input: var(--border);
+  --ring: var(--primary);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--surface-muted);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary);
+  --chart-1: var(--primary);
+  --chart-2: oklch(0.5149 0.0184 166.17);
+  --chart-3: var(--gold);
+  --chart-4: var(--info);
+  --chart-5: var(--warning);
+
+  /* Radius scale */
+  --radius: 0.625rem;
+  --radius-xs: 4px;
+  --radius-s: 6px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+  --radius-xl2: 16px;
+
+  /* Shadow scale — هادئة ومؤسسية */
+  --elevation-xs: 0 1px 2px oklch(0.2315 0.0175 170.34 / 0.05);
+  --elevation-s: 0 1px 3px oklch(0.2315 0.0175 170.34 / 0.07), 0 1px 2px oklch(0.2315 0.0175 170.34 / 0.04);
+  --elevation-m: 0 4px 12px oklch(0.2315 0.0175 170.34 / 0.07);
+  --elevation-l: 0 12px 32px -8px oklch(0.2315 0.0175 170.34 / 0.14);
+  --elevation-overlay: 0 24px 64px -16px oklch(0.2315 0.0175 170.34 / 0.24);
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-sidebar: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
 }
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -57,14 +126,20 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-gold: var(--gold);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -73,95 +148,67 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-s);
+  --shadow-md: var(--elevation-m);
+  --shadow-lg: var(--elevation-l);
+  --shadow-xl: var(--elevation-overlay);
 }
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
-
+/* الوضع الداكن غير مفعّل في المنتج حالياً؛ يبقى المخطط اللوني موحداً. */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  color-scheme: light;
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
-  }
-
-  body {
-    background-color: var(--color-mehla-bg);
-    color: var(--color-mehla-ink);
-    font-family: var(--font-sans);
-    font-feature-settings: "kern", "liga";
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    border-color: var(--border);
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-feature-settings: "kern", "liga";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-s);
+  }
+
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -176,51 +223,114 @@
   }
 }
 
-/* Reveal on scroll */
-@layer utilities {
-  .mehla-reveal {
-    opacity: 0;
-    transform: translateY(24px);
-    transition:
-      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: opacity, transform;
+/* ==========================================================================
+   Typography scale
+   ========================================================================== */
+@utility text-display {
+  font-size: clamp(2.25rem, 1.4rem + 3.4vw, 3.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+@utility text-h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+@utility text-h2 {
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+@utility text-h3 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+@utility text-h4 {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+@utility text-body-lg {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+}
+@utility text-body {
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+@utility text-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+@utility text-caption {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+@utility text-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+@utility text-table {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+@utility measure {
+  max-width: 64ch;
+}
+
+/* ==========================================================================
+   Layout primitives
+   ========================================================================== */
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 1200px;
+  padding-inline: 1.25rem;
+  @media (min-width: 768px) {
+    padding-inline: 2rem;
   }
-  .mehla-reveal.is-visible {
+}
+
+@utility surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+}
+
+@utility hairline {
+  border-color: var(--border);
+}
+
+@utility section-y {
+  padding-block: clamp(3.5rem, 2rem + 6vw, 6.5rem);
+}
+
+/* خطوط هندسية هادئة تُستخدم كخلفية بدل الزخارف */
+@utility grid-lines {
+  background-image:
+    linear-gradient(to left, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+@utility reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 600ms var(--ease-out),
+    transform 600ms var(--ease-out);
+  &.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
-
-  .mehla-float {
-    animation: mehla-float 6s ease-in-out infinite;
-  }
-
-  .mehla-pulse-dot {
-    position: relative;
-  }
-  .mehla-pulse-dot::after {
-    content: "";
-    position: absolute;
-    inset: -6px;
-    border-radius: 9999px;
-    border: 2px solid currentColor;
-    opacity: 0;
-    animation: mehla-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-  }
-
-  .mehla-pattern {
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0),
-      linear-gradient(135deg, transparent 46%, rgba(255, 255, 255, 0.04) 46% 54%, transparent 54%);
-    background-size: 24px 24px, 48px 48px;
-  }
-}
-
-@keyframes mehla-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-@keyframes mehla-pulse {
-  0% { transform: scale(0.6); opacity: 0.6; }
-  100% { transform: scale(1.6); opacity: 0; }
 }

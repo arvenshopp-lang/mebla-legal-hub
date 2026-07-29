@@ -141,12 +141,12 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>العنوان</Th><Th>الرقم</Th><Th>العميل</Th><Th>المحكمة</Th><Th>الحالة</Th><Th>الأولوية</Th><Th>المسؤول</Th><Th>آخر نشاط</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((c) => (
-                    <tr key={c.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={c.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
                         <Link to="/cases/$id" params={{ id: c.id }} className="hover:underline">{c.case_title}</Link>
                       </Td>
@@ -159,12 +159,12 @@ function Page() {
                       <Td>{fmtDate(c.last_activity_at)}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          <Link to="/cases/$id" params={{ id: c.id }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><ExternalLink className="h-4 w-4" /></Link>
+                          <Link to="/cases/$id" params={{ id: c.id }} className="rounded-lg p-1.5 hover:bg-surface-muted"><ExternalLink className="h-4 w-4" /></Link>
                           {canEdit(activeRole) && (
-                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>
+                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>
                           )}
                           {canManage(activeRole) && c.status !== "archived" && (
-                            <button onClick={() => setArchiving(c)} className="rounded-lg p-1.5 text-[#7A5A18] hover:bg-[#F6E9CC]"><Archive className="h-4 w-4" /></button>
+                            <button onClick={() => setArchiving(c)} className="rounded-lg p-1.5 text-warning hover:bg-warning-soft"><Archive className="h-4 w-4" /></button>
                           )}
                         </div>
                       </Td>
@@ -262,7 +262,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
         <div className="md:col-span-2">
           <FormField label="عنوان القضية *">
             <input value={form.case_title ?? ""} onChange={(e) => setForm({ ...form, case_title: e.target.value })} className={inputCls} />
-            {errors.case_title && <span className="text-xs text-[#7A2E20]">{errors.case_title}</span>}
+            {errors.case_title && <span className="text-xs text-danger">{errors.case_title}</span>}
           </FormField>
         </div>
         <FormField label="رقم القضية">

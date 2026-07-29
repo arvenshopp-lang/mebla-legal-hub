@@ -109,12 +109,12 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>العنوان</Th><Th>القضية</Th><Th>العميل</Th><Th>التاريخ والوقت</Th><Th>المحكمة</Th><Th>الحالة</Th><Th>{" "}</Th></tr>
                 </thead>
-                <tbody className="divide-y divide-[#123C32]/5">
+                <tbody className="divide-y divide-border">
                   {data.rows.map((h: any) => (
-                    <tr key={h.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={h.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">{h.title}</Td>
                       <Td>{h.case?.case_title ?? "—"}</Td>
                       <Td>{h.case?.client?.full_name ?? "—"}</Td>
@@ -123,8 +123,8 @@ function Page() {
                       <Td><Badge tone={h.status === "completed" ? "green" : h.status === "missed" ? "red" : h.status === "postponed" ? "warn" : "muted"}>{HEARING_STATUS[h.status] ?? h.status}</Badge></Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          {canEdit(activeRole) && <button onClick={() => { setEditing(h); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>}
-                          {canManage(activeRole) && <button onClick={() => setDeleting(h)} className="rounded-lg p-1.5 text-[#7A2E20] hover:bg-[#FBEDE9]"><Trash2 className="h-4 w-4" /></button>}
+                          {canEdit(activeRole) && <button onClick={() => { setEditing(h); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>}
+                          {canManage(activeRole) && <button onClick={() => setDeleting(h)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                         </div>
                       </Td>
                     </tr>
@@ -194,15 +194,15 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
             <option value="">— اختر —</option>
             {(cases ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.case_title}{c.case_number ? ` (${c.case_number})` : ""}</option>)}
           </select>
-          {errors.case_id && <span className="text-xs text-[#7A2E20]">{errors.case_id}</span>}
+          {errors.case_id && <span className="text-xs text-danger">{errors.case_id}</span>}
         </FormField></div>
         <div className="md:col-span-2"><FormField label="عنوان الجلسة *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
-          {errors.title && <span className="text-xs text-[#7A2E20]">{errors.title}</span>}
+          {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
         </FormField></div>
         <FormField label="التاريخ والوقت *">
           <input type="datetime-local" value={form.hearing_date ?? ""} onChange={(e) => setForm({ ...form, hearing_date: e.target.value })} className={inputCls} />
-          {errors.hearing_date && <span className="text-xs text-[#7A2E20]">{errors.hearing_date}</span>}
+          {errors.hearing_date && <span className="text-xs text-danger">{errors.hearing_date}</span>}
         </FormField>
         <FormField label="الحالة *">
           <select value={form.status ?? "scheduled"} onChange={(e) => setForm({ ...form, status: e.target.value as any })} className={inputCls}>

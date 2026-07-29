@@ -90,14 +90,14 @@ function RegisterPage() {
   if (emailSent) {
     return (
       <AuthShell title="تحقق من بريدك" subtitle="أرسلنا رابط تفعيل الحساب">
-        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           أرسلنا رسالة تفعيل إلى <b>{emailSent}</b>. افتح الرابط داخل الرسالة لإكمال إنشاء حسابك، ثم عُد لتسجيل الدخول.
         </div>
         <div className="mt-6 flex flex-col gap-2">
-          <Link to="/login" search={{ redirect: "/dashboard" }} className="w-full rounded-xl bg-[#123C32] py-3 text-center text-sm font-semibold text-white hover:bg-[#0d2e26] transition">
+          <Link to="/login" search={{ redirect: "/dashboard" }} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition">
             الذهاب لتسجيل الدخول
           </Link>
-          <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-[#123C32]/60 hover:text-[#123C32]">
+          <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-muted-foreground hover:text-foreground">
             استخدام بريد آخر
           </button>
         </div>
@@ -121,7 +121,7 @@ function RegisterPage() {
   if (session && (authLoading || organizationLoading)) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل إنشاء حساب جديد">
-        <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           لحظات قليلة…
         </div>
       </AuthShell>
@@ -135,20 +135,20 @@ function RegisterPage() {
         onClick={google}
         disabled={googleLoading}
         aria-busy={googleLoading}
-        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-[#123C32]/5 active:scale-[0.99] disabled:opacity-60"
+        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
       >
         <GoogleIcon />
         <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
       </button>
-      <p className="mt-2 text-center text-[11px] leading-5 text-[#123C32]/45">
+      <p className="mt-2 text-center text-[11px] leading-5 text-text-muted">
         إنشاء حساب آمن عبر Google خلال ثوانٍ.
       </p>
-      <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
-        <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
+      <div className="my-5 flex items-center gap-3 text-xs text-text-muted">
+        <div className="h-px flex-1 bg-surface-muted" /> أو <div className="h-px flex-1 bg-surface-muted" />
       </div>
       <form onSubmit={submit} className="space-y-4">
         {formError && (
-          <div role="alert" className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+          <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-xs leading-6 text-danger">
             {formError}
           </div>
         )}
@@ -180,13 +180,13 @@ function RegisterPage() {
           type="submit"
           disabled={!canSubmit}
           aria-busy={loading}
-          className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white transition hover:bg-[#0d2e26] disabled:cursor-not-allowed disabled:bg-[#123C32]/35 disabled:hover:bg-[#123C32]/35"
+          className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-primary/35 disabled:hover:bg-primary/35"
         >
           {loading ? "جاري الإنشاء…" : "إنشاء الحساب"}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-[#123C32]/70">
-        لديك حساب بالفعل؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold text-[#123C32] underline">تسجيل الدخول</Link>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        لديك حساب بالفعل؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold text-foreground underline">تسجيل الدخول</Link>
       </p>
     </AuthShell>
   );
