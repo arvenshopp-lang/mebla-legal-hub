@@ -608,6 +608,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_requests_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
