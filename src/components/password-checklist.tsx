@@ -1,11 +1,11 @@
 import { PASSWORD_RULES, evaluatePassword, type StrengthLevel } from "@/lib/password-policy";
 
 const BAR_COLORS: Record<StrengthLevel, string> = {
-  0: "bg-[#123C32]/15",
+  0: "bg-primary/15",
   1: "bg-[#B3261E]",
   2: "bg-[#C9862B]",
   3: "bg-success",
-  4: "bg-[#123C32]",
+  4: "bg-primary",
 };
 
 const LABEL_COLORS: Record<StrengthLevel, string> = {
@@ -13,21 +13,21 @@ const LABEL_COLORS: Record<StrengthLevel, string> = {
   1: "text-danger",
   2: "text-warning",
   3: "text-success",
-  4: "text-[#123C32]",
+  4: "text-foreground",
 };
 
 export function PasswordChecklist({ password }: { password: string }) {
   const { results, score, label, valid } = evaluatePassword(password);
 
   return (
-    <div className="mt-3 rounded-[var(--radius-l)] border border-border bg-[#F5F3EE]/70 p-4">
+    <div className="mt-3 rounded-[var(--radius-l)] border border-border bg-surface-muted/70 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-1 gap-1.5" aria-hidden="true">
           {[1, 2, 3, 4].map((step) => (
             <span
               key={step}
               className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ease-out ${
-                score >= step ? BAR_COLORS[score] : "bg-[#123C32]/12"
+                score >= step ? BAR_COLORS[score] : "bg-primary/12"
               }`}
             />
           ))}

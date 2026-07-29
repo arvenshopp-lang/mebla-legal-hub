@@ -50,9 +50,9 @@ function Page() {
   };
 
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#F5F3EE] px-4 py-8 text-[#123C32] sm:py-14">
+    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-8 text-foreground sm:py-14">
       <div className="mx-auto w-full max-w-2xl">
-        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-[#123C32]">
+        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowRight className="h-3.5 w-3.5" /> العودة للرئيسية
         </Link>
 
@@ -71,12 +71,12 @@ function Page() {
               autoComplete="off"
               placeholder="أدخل رمز القضية"
               dir="ltr"
-              className="w-full rounded-[var(--radius-l)] border border-border bg-[#F5F3EE]/60 px-4 py-4 text-center text-lg tracking-[0.35em] outline-none focus:border-[#123C32]"
+              className="w-full rounded-[var(--radius-l)] border border-border bg-surface-muted/60 px-4 py-4 text-center text-lg tracking-[0.35em] outline-none focus:border-primary"
             />
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-l)] bg-[#123C32] px-5 py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-l)] bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} تحقق
             </button>
@@ -92,7 +92,7 @@ function Page() {
                   <div className="text-[11px] text-muted-foreground">رقم القضية</div>
                   <div className="text-lg font-bold tracking-widest" dir="ltr">{result.code}</div>
                 </div>
-                <span className="rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-[#123C32]">
+                <span className="rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-foreground">
                   {CASE_STATUS[result.status] ?? result.status}
                 </span>
               </div>
@@ -136,7 +136,7 @@ function Page() {
 
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-[var(--radius-l)] bg-[#F5F3EE]/70 p-4">
+    <div className="flex items-start gap-3 rounded-[var(--radius-l)] bg-surface-muted/70 p-4">
       <span className="mt-0.5 text-text-muted">{icon}</span>
       <div>
         <dt className="text-[11px] text-muted-foreground">{label}</dt>

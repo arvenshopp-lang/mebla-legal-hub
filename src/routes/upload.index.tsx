@@ -14,9 +14,9 @@ export const Route = createFileRoute("/upload/")({
 
 function Page() {
   return (
-    <main dir="rtl" className="grid min-h-dvh place-items-center bg-[#F5F3EE] px-4 text-[#123C32]">
+    <main dir="rtl" className="grid min-h-dvh place-items-center bg-surface-muted px-4 text-foreground">
       <div className="w-full max-w-md rounded-[var(--radius-l)] border border-border bg-surface p-8 text-center">
-        <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-[var(--radius-l)] bg-[#F5F3EE]">
+        <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-[var(--radius-l)] bg-surface-muted">
           <ShieldCheck className="h-6 w-6 text-muted-foreground" />
         </div>
         <div className="text-lg font-extrabold tracking-tight">مِهلة</div>

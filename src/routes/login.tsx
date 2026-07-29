@@ -121,7 +121,7 @@ function LoginPage() {
   if (session && (authLoading || organizationLoading)) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل المتابعة">
-        <div className="rounded-[var(--radius-m)] border border-border bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           لحظات قليلة…
         </div>
       </AuthShell>
@@ -134,7 +134,7 @@ function LoginPage() {
       onClick={google}
       disabled={googleLoading}
       aria-busy={googleLoading}
-      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-[#123C32] shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
+      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
     >
       <GoogleIcon />
       <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
@@ -158,16 +158,16 @@ function LoginPage() {
         <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
       </Field>
       <div className="text-left">
-        <Link to="/forgot-password" className="text-xs font-medium text-muted-foreground underline hover:text-[#123C32]">
+        <Link to="/forgot-password" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
           نسيت كلمة المرور؟
         </Link>
       </div>
-      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-[#123C32] py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
+      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
         {loading ? "جاري تسجيل الدخول…" : "دخول"}
       </button>
     </form>
     <p className="mt-6 text-center text-sm text-muted-foreground">
-      ليس لديك حساب؟ <Link to="/register" className="font-semibold text-[#123C32] underline">إنشاء حساب</Link>
+      ليس لديك حساب؟ <Link to="/register" className="font-semibold text-foreground underline">إنشاء حساب</Link>
     </p>
   </AuthShell>;
 }

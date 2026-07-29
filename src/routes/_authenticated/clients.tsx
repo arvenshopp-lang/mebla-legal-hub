@@ -104,12 +104,12 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>الاسم</Th><Th>النوع</Th><Th>الجوال</Th><Th>المدينة</Th><Th>تاريخ الإضافة</Th><Th>{" "}</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.rows.map((c) => (
-                    <tr key={c.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={c.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
                         {c.full_name}
                         {c.company_name && <div className="text-xs text-muted-foreground">{c.company_name}</div>}
@@ -121,7 +121,7 @@ function Page() {
                       <Td>
                         <div className="flex justify-end gap-1">
                           {canEdit(activeRole) && (
-                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]">
+                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted">
                               <Pencil className="h-4 w-4" />
                             </button>
                           )}

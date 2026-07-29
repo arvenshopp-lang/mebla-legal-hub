@@ -63,7 +63,7 @@ function OnboardingPage() {
   if (loading) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك ومكتبك قبل المتابعة">
-        <div className="rounded-[var(--radius-m)] border border-border bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           لحظات قليلة…
         </div>
       </AuthShell>
@@ -79,7 +79,7 @@ function OnboardingPage() {
         <Field label="المدينة (اختياري)">
           <input disabled={submitting} value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="الرياض" />
         </Field>
-        <button type="submit" disabled={submitting || !name.trim()} className="w-full rounded-[var(--radius-m)] bg-[#123C32] py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
+        <button type="submit" disabled={submitting || !name.trim()} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
           {submitting ? "جاري الإنشاء…" : "إنشاء المكتب والمتابعة"}
         </button>
       </form>

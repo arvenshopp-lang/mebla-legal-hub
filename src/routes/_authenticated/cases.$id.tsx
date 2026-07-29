@@ -109,7 +109,7 @@ function Page() {
   return (
     <DashboardShell title={data.case_title}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Link to="/cases" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-[#123C32]"><ArrowRight className="h-4 w-4" /> عودة للقضايا</Link>
+        <Link to="/cases" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowRight className="h-4 w-4" /> عودة للقضايا</Link>
         <div className="flex-1" />
         {canEdit(activeRole) && <Btn onClick={() => setEditOpen(true)} variant="outline"><Pencil className="ms-1 inline h-4 w-4" /> تعديل</Btn>}
       </div>
@@ -149,19 +149,19 @@ function Page() {
         <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
-            {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Plus className="h-4 w-4" /></button>}
+            {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Plus className="h-4 w-4" /></button>}
           </div>
           {(parties ?? []).length === 0 ? (
             <p className="text-center text-xs text-text-muted py-4">لا يوجد أطراف</p>
           ) : (
             <ul className="space-y-2">
               {parties!.map((p: any) => (
-                <li key={p.id} className="rounded-[var(--radius-m)] bg-[#F5F3EE]/60 p-3 text-sm">
+                <li key={p.id} className="rounded-[var(--radius-m)] bg-surface-muted/60 p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-medium">{p.party_name}</div>
                       <div className="text-xs text-muted-foreground">{[p.party_type, p.legal_role].filter(Boolean).join(" · ") || "—"}</div>
-                      {p.phone && <div className="text-xs mt-1">📞 {p.phone}</div>}
+                      {p.phone && <div className="text-xs mt-1">{p.phone}</div>}
                     </div>
                     {canEdit(activeRole) && (
                       <div className="flex gap-1">
@@ -236,7 +236,7 @@ function Page() {
                   {canEdit(activeRole) && (
                     <button
                       onClick={() => toggleVisibility.mutate(u)}
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[#123C32]"
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
                     >
                       {u.is_client_visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       {u.is_client_visible ? "إخفاء عن العميل" : "إظهار للعميل"}
@@ -404,7 +404,7 @@ function UpdateDialog({ open, onClose, caseId, orgId }: { open: boolean; onClose
         <FormField label="التفاصيل">
           <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
         </FormField>
-        <label className="flex items-center gap-2 rounded-[var(--radius-m)] bg-[#F5F3EE] p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-[var(--radius-m)] bg-surface-muted p-3 text-sm">
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
           <span>إظهار هذا التحديث للعميل في بوابة المتابعة</span>
         </label>

@@ -25,7 +25,7 @@ const SECTIONS = [
 
 function Page() {
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#F5F3EE] px-4 py-10 text-[#123C32] sm:py-16">
+    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-10 text-foreground sm:py-16">
       <div className="mx-auto w-full max-w-3xl">
         <div className="text-center">
           <div className="text-xl font-extrabold tracking-tight">مِهلة</div>
@@ -41,13 +41,13 @@ function Page() {
               <s.icon className="h-5 w-5 text-gold" />
               <h2 className="mt-3 text-sm font-bold">{s.title}</h2>
               <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{s.body}</p>
-              <span className="mt-3 inline-block rounded-full bg-[#F5F3EE] px-2.5 py-1 text-[10px] text-muted-foreground">قريباً</span>
+              <span className="mt-3 inline-block rounded-full bg-surface-muted px-2.5 py-1 text-[10px] text-muted-foreground">قريباً</span>
             </section>
           ))}
         </div>
 
         <div className="mt-8 text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-[#123C32]">العودة للموقع الرئيسي</Link>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">العودة للموقع الرئيسي</Link>
         </div>
       </div>
     </main>

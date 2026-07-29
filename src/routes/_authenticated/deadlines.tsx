@@ -105,7 +105,7 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>العنوان</Th><Th>القضية</Th><Th>النوع</Th><Th>الاستحقاق</Th><Th>الأيام المتبقية</Th><Th>الحالة</Th><Th>الأولوية</Th><Th>{" "}</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -114,7 +114,7 @@ function Page() {
                     const isOverdue = d.status === "active" && days !== null && days < 0;
                     const isSoon = d.status === "active" && days !== null && days >= 0 && days <= 3;
                     return (
-                      <tr key={d.id} className={`hover:bg-[#F5F3EE]/40 ${isOverdue ? "bg-danger-soft/40" : isSoon ? "bg-warning-soft/40" : ""}`}>
+                      <tr key={d.id} className={`hover:bg-surface-muted/40 ${isOverdue ? "bg-danger-soft/40" : isSoon ? "bg-warning-soft/40" : ""}`}>
                         <Td className="font-medium">{d.title}</Td>
                         <Td>{d.case?.case_title ?? "—"}</Td>
                         <Td>{DEADLINE_TYPE[d.deadline_type] ?? d.deadline_type}</Td>
@@ -130,9 +130,9 @@ function Page() {
                         <Td>
                           <div className="flex justify-end gap-1">
                             {canEdit(activeRole) && d.status === "active" && (
-                              <button onClick={() => complete.mutate(d.id)} className="rounded-lg p-1.5 text-[#123C32] hover:bg-primary-soft" title="إنجاز"><Check className="h-4 w-4" /></button>
+                              <button onClick={() => complete.mutate(d.id)} className="rounded-lg p-1.5 text-foreground hover:bg-primary-soft" title="إنجاز"><Check className="h-4 w-4" /></button>
                             )}
-                            {canEdit(activeRole) && <button onClick={() => { setEditing(d); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>}
+                            {canEdit(activeRole) && <button onClick={() => { setEditing(d); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>}
                             {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                           </div>
                         </Td>

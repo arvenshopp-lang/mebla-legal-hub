@@ -84,7 +84,7 @@ function Page() {
   };
 
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#F5F3EE] px-4 py-8 text-[#123C32] sm:py-14">
+    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-8 text-foreground sm:py-14">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6 text-center">
           <div className="text-2xl font-extrabold tracking-tight">مِهلة</div>
@@ -114,7 +114,7 @@ function Page() {
                 {data.orgLogo ? (
                   <img src={data.orgLogo} alt={data.orgName} className="h-11 w-11 rounded-[var(--radius-m)] object-cover" />
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-m)] bg-[#123C32] text-sm font-bold text-primary-foreground">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-m)] bg-primary text-sm font-bold text-primary-foreground">
                     {(data.orgName || "م").slice(0, 1)}
                   </div>
                 )}
@@ -138,9 +138,9 @@ function Page() {
                   {data.items.map((item, i) => {
                     const count = picked.filter((p) => p.label === item).length;
                     return (
-                      <li key={i} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-m)] bg-[#F5F3EE]/70 p-3">
+                      <li key={i} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-m)] bg-surface-muted/70 p-3">
                         <div className="flex items-center gap-2 text-sm">
-                          {count > 0 && <CheckCircle2 className="h-4 w-4 text-[#123C32]" />}
+                          {count > 0 && <CheckCircle2 className="h-4 w-4 text-foreground" />}
                           <span>{item}</span>
                           {count > 0 && <span className="text-[11px] text-muted-foreground">({count} ملف)</span>}
                         </div>
@@ -157,7 +157,7 @@ function Page() {
 
             <Card>
               <h2 className="mb-3 text-sm font-bold">ملفات إضافية</h2>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-l)] border-2 border-dashed border-border p-6 text-center hover:border-[#123C32]/40">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-l)] border-2 border-dashed border-border p-6 text-center hover:border-text-muted">
                 <FileUp className="h-6 w-6 text-text-muted" />
                 <span className="text-sm font-medium">اختر ملفات للرفع</span>
                 <span className="text-[11px] text-muted-foreground">PDF أو صور أو مستندات Office · حتى 20 ميجابايت للملف</span>
@@ -167,7 +167,7 @@ function Page() {
               {picked.length > 0 && (
                 <ul className="mt-4 space-y-2">
                   {picked.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-m)] bg-[#F5F3EE]/70 px-3 py-2 text-sm">
+                    <li key={p.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-m)] bg-surface-muted/70 px-3 py-2 text-sm">
                       <div className="min-w-0">
                         <div className="truncate">{p.file.name}</div>
                         <div className="text-[11px] text-muted-foreground">{fmtSize(p.file.size)}{p.label ? ` · ${p.label}` : ""}</div>
@@ -185,7 +185,7 @@ function Page() {
               <button
                 onClick={send}
                 disabled={sending || picked.length === 0}
-                className="mt-5 w-full rounded-[var(--radius-m)] bg-[#123C32] px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50"
+                className="mt-5 w-full rounded-[var(--radius-m)] bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50"
               >
                 {sending ? "جاري الإرسال…" : "إرسال المستندات"}
               </button>
@@ -208,8 +208,8 @@ function Notice({ title, body, tone = "muted" }: { title: string; body: string; 
   return (
     <Card>
       <div className="py-6 text-center">
-        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-l)] ${tone === "success" ? "bg-primary-soft" : "bg-[#F5F3EE]"}`}>
-          {tone === "success" ? <CheckCircle2 className="h-6 w-6 text-[#123C32]" /> : <ShieldCheck className="h-6 w-6 text-muted-foreground" />}
+        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-l)] ${tone === "success" ? "bg-primary-soft" : "bg-surface-muted"}`}>
+          {tone === "success" ? <CheckCircle2 className="h-6 w-6 text-foreground" /> : <ShieldCheck className="h-6 w-6 text-muted-foreground" />}
         </div>
         <h1 className="text-lg font-bold">{title}</h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">{body}</p>

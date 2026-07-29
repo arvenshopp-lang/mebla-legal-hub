@@ -109,12 +109,12 @@ function Page() {
           <>
             <DataCard>
               <table className="min-w-full">
-                <thead className="bg-[#F5F3EE]/60">
+                <thead className="bg-surface-muted/60">
                   <tr><Th>العنوان</Th><Th>القضية</Th><Th>العميل</Th><Th>التاريخ والوقت</Th><Th>المحكمة</Th><Th>الحالة</Th><Th>{" "}</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.rows.map((h: any) => (
-                    <tr key={h.id} className="hover:bg-[#F5F3EE]/40">
+                    <tr key={h.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">{h.title}</Td>
                       <Td>{h.case?.case_title ?? "—"}</Td>
                       <Td>{h.case?.client?.full_name ?? "—"}</Td>
@@ -123,7 +123,7 @@ function Page() {
                       <Td><Badge tone={h.status === "completed" ? "green" : h.status === "missed" ? "red" : h.status === "postponed" ? "warn" : "muted"}>{HEARING_STATUS[h.status] ?? h.status}</Badge></Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          {canEdit(activeRole) && <button onClick={() => { setEditing(h); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Pencil className="h-4 w-4" /></button>}
+                          {canEdit(activeRole) && <button onClick={() => { setEditing(h); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>}
                           {canManage(activeRole) && <button onClick={() => setDeleting(h)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
                         </div>
                       </Td>
