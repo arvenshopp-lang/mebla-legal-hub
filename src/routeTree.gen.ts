@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrackRouteImport } from './routes/track'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PendingAccessRouteImport } from './routes/pending-access'
@@ -30,6 +31,11 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/_authenticated/clients'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -271,12 +283,20 @@ export interface RootRouteChildren {
   PendingAccessRoute: typeof PendingAccessRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   UploadTokenRoute: typeof UploadTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -458,6 +478,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendingAccessRoute: PendingAccessRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   UploadTokenRoute: UploadTokenRoute,
 }
