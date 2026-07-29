@@ -65,6 +65,45 @@ export type Database = {
           },
         ]
       }
+      case_code_registry: {
+        Row: {
+          code: string
+          created_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      case_lookup_attempts: {
+        Row: {
+          code_attempt: string | null
+          created_at: string
+          id: string
+          ip_hash: string
+          success: boolean
+        }
+        Insert: {
+          code_attempt?: string | null
+          created_at?: string
+          id?: string
+          ip_hash: string
+          success?: boolean
+        }
+        Update: {
+          code_attempt?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       case_parties: {
         Row: {
           case_id: string
@@ -136,6 +175,7 @@ export type Database = {
           description: string | null
           event_date: string
           id: string
+          is_client_visible: boolean
           organization_id: string
           title: string
           update_type: Database["public"]["Enums"]["update_type"]
@@ -147,6 +187,7 @@ export type Database = {
           description?: string | null
           event_date?: string
           id?: string
+          is_client_visible?: boolean
           organization_id: string
           title: string
           update_type: Database["public"]["Enums"]["update_type"]
@@ -158,6 +199,7 @@ export type Database = {
           description?: string | null
           event_date?: string
           id?: string
+          is_client_visible?: boolean
           organization_id?: string
           title?: string
           update_type?: Database["public"]["Enums"]["update_type"]
@@ -211,6 +253,7 @@ export type Database = {
           opponent_name: string | null
           organization_id: string
           priority: Database["public"]["Enums"]["case_priority"]
+          public_code: string | null
           status: Database["public"]["Enums"]["case_status"]
           updated_at: string
         }
@@ -238,6 +281,7 @@ export type Database = {
           opponent_name?: string | null
           organization_id: string
           priority?: Database["public"]["Enums"]["case_priority"]
+          public_code?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           updated_at?: string
         }
@@ -265,6 +309,7 @@ export type Database = {
           opponent_name?: string | null
           organization_id?: string
           priority?: Database["public"]["Enums"]["case_priority"]
+          public_code?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           updated_at?: string
         }
@@ -451,13 +496,135 @@ export type Database = {
           },
         ]
       }
+      document_request_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          event: string
+          id: string
+          ip: string | null
+          organization_id: string
+          request_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          event: string
+          id?: string
+          ip?: string | null
+          organization_id: string
+          request_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          event?: string
+          id?: string
+          ip?: string | null
+          organization_id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_request_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "document_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_requests: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          file_count: number
+          id: string
+          message: string | null
+          organization_id: string
+          requested_items: Json
+          status: string
+          submitted_ip: string | null
+          submitted_user_agent: string | null
+          title: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          file_count?: number
+          id?: string
+          message?: string | null
+          organization_id: string
+          requested_items?: Json
+          status?: string
+          submitted_ip?: string | null
+          submitted_user_agent?: string | null
+          title: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          file_count?: number
+          id?: string
+          message?: string | null
+          organization_id?: string
+          requested_items?: Json
+          status?: string
+          submitted_ip?: string | null
+          submitted_user_agent?: string | null
+          title?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           case_id: string | null
           client_id: string | null
+          client_ip: string | null
           created_at: string
           description: string | null
           document_category: string | null
+          document_request_id: string | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -465,14 +632,17 @@ export type Database = {
           id: string
           is_confidential: boolean
           organization_id: string
+          source: string
           uploaded_by: string | null
         }
         Insert: {
           case_id?: string | null
           client_id?: string | null
+          client_ip?: string | null
           created_at?: string
           description?: string | null
           document_category?: string | null
+          document_request_id?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -480,14 +650,17 @@ export type Database = {
           id?: string
           is_confidential?: boolean
           organization_id: string
+          source?: string
           uploaded_by?: string | null
         }
         Update: {
           case_id?: string | null
           client_id?: string | null
+          client_ip?: string | null
           created_at?: string
           description?: string | null
           document_category?: string | null
+          document_request_id?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
@@ -495,6 +668,7 @@ export type Database = {
           id?: string
           is_confidential?: boolean
           organization_id?: string
+          source?: string
           uploaded_by?: string | null
         }
         Relationships: [
@@ -510,6 +684,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_request_id_fkey"
+            columns: ["document_request_id"]
+            isOneToOne: false
+            referencedRelation: "document_requests"
             referencedColumns: ["id"]
           },
           {
