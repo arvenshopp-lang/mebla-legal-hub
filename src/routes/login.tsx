@@ -30,6 +30,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const safeRedirect =
@@ -101,11 +102,15 @@ function LoginPage() {
   };
 
   const google = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setFormError(null);
     sessionStorage.setItem("mehla_auth_redirect", safeRedirect);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
     });
     if (result.error) {
+      setGoogleLoading(false);
       setFormError("تعذر بدء تسجيل الدخول عبر Google. حاول مرة أخرى.");
       logAuthEvent({ route: "/login", action: "sign_in_google", sanitizedMessage: "oauth_start_failed" });
     }
@@ -123,10 +128,19 @@ function LoginPage() {
   }
 
   return <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
-    <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] transition hover:bg-[#123C32]/5">
+    <button
+      type="button"
+      onClick={google}
+      disabled={googleLoading}
+      aria-busy={googleLoading}
+      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-[#123C32]/5 active:scale-[0.99] disabled:opacity-60"
+    >
       <GoogleIcon />
-      <span>المتابعة عبر Google</span>
+      <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
     </button>
+    <p className="mt-2 text-center text-[11px] leading-5 text-[#123C32]/45">
+      دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
+    </p>
     <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
       <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
     </div>

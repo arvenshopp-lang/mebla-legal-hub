@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /clients
+Disallow: /cases
+Disallow: /hearings
+Disallow: /deadlines
+Disallow: /tasks
+Disallow: /documents
+Disallow: /team
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /pending-access
+Disallow: /reset-password
+Disallow: /auth
+Disallow: /upload
+
+Sitemap: https://mehlalex.com/sitemap.xml
