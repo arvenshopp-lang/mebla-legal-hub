@@ -1052,10 +1052,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_access_case: {
-        Args: { _case: string; _user: string }
-        Returns: boolean
-      }
       create_organization_with_owner: {
         Args: {
           _address?: string
@@ -1071,22 +1067,6 @@ export type Database = {
           already_exists: boolean
           organization_id: string
         }[]
-      }
-      get_user_role: {
-        Args: { _org: string; _user: string }
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_organization_role: {
-        Args: {
-          _org: string
-          _roles: Database["public"]["Enums"]["app_role"][]
-          _user: string
-        }
-        Returns: boolean
-      }
-      is_organization_member: {
-        Args: { _org: string; _user: string }
-        Returns: boolean
       }
     }
     Enums: {
