@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
 import { lookupSignInMethods } from "@/lib/auth-lookup.functions";
 import { GoogleIcon } from "@/components/google-icon";
+import { inputCls as fieldInputCls } from "@/lib/list-utils";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -146,15 +147,15 @@ function LoginPage() {
     </div>
     <form onSubmit={submit} noValidate className="space-y-4">
       {formError && (
-        <div role="alert" className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-xs leading-6 text-danger">
+        <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-[12.5px] leading-6 text-danger">
           {formError}
         </div>
       )}
       <Field label="البريد الإلكتروني">
-        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInputCls} />
       </Field>
       <Field label="كلمة المرور">
-        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
       </Field>
       <div className="text-left">
         <Link to="/forgot-password" className="text-xs font-medium text-muted-foreground underline hover:text-[#123C32]">
@@ -171,14 +172,14 @@ function LoginPage() {
   </AuthShell>;
 }
 
-export const inputCls =
-  "w-full rounded-xl border border-border bg-[#F5F3EE] px-4 py-3 text-[#123C32] outline-none focus:border-[#123C32] focus:bg-surface transition";
+export { inputCls } from "@/lib/list-utils";
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-[#123C32]">{label}</span>
+      <span className="text-label mb-1.5 block text-foreground">{label}</span>
       {children}
+      {hint && <span className="text-caption mt-1 block">{hint}</span>}
     </label>
   );
 }
@@ -193,16 +194,20 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#F5F3EE] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Link to="/" className="mb-8 block text-center text-2xl font-bold tracking-tight text-[#123C32]">
-          مِهلة <span className="text-gold">·</span> MEHLA
+    <div dir="rtl" className="flex min-h-dvh flex-col bg-background px-4 py-10">
+      <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center">
+        <Link to="/" className="mb-8 block text-center text-[17px] font-bold tracking-tight text-foreground">
+          مِهلة <span className="text-text-muted">·</span>{" "}
+          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </Link>
-        <div className="rounded-3xl border border-border bg-surface p-8 shadow-[0_20px_60px_-20px_rgba(18,60,50,0.15)]">
-          <h1 className="text-2xl font-bold text-[#123C32]">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-          <div className="mt-6">{children}</div>
+        <div className="surface-card p-6 shadow-sm sm:p-8">
+          <h1 className="text-h2">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-body-sm text-muted-foreground">{subtitle}</p>}
+          <div className="mt-7">{children}</div>
         </div>
+        <p className="mt-6 text-center text-[12px] text-text-muted">
+          منصة مِهلة لإدارة الممارسة القانونية · mehlalex.com
+        </p>
       </div>
     </div>
   );
