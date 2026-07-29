@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { GoogleIcon } from "@/components/google-icon";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -66,8 +67,9 @@ function LoginPage() {
   }
 
   return <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
-    <button onClick={google} className="w-full rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] hover:bg-[#123C32]/5 transition">
-      المتابعة عبر Google
+    <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] transition hover:bg-[#123C32]/5">
+      <GoogleIcon />
+      <span>المتابعة عبر Google</span>
     </button>
     <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
       <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
