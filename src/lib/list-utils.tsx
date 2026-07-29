@@ -347,7 +347,7 @@ export function FormField({
 }
 
 export const inputCls =
-  "w-full rounded-[var(--radius-m)] border border-border bg-surface px-3 py-2.5 text-sm text-foreground " +
+  "w-full min-h-11 rounded-[var(--radius-m)] border border-border bg-surface px-3 py-2.5 text-sm text-foreground " +
   "placeholder:text-text-muted shadow-xs outline-none transition-colors duration-[var(--duration-fast)] " +
   "hover:border-border-strong focus:border-primary focus:ring-2 focus:ring-primary/15 " +
   "disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-muted-foreground";
