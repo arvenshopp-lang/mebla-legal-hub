@@ -281,7 +281,7 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
         className={cn(
-          "flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[var(--radius-xl2)] bg-surface shadow-[var(--shadow-overlay)] outline-none",
+          "flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[var(--radius-xl2)] bg-surface shadow-xl outline-none",
           "sm:max-h-[88dvh] sm:rounded-[var(--radius-l)]",
           size === "lg" ? "sm:max-w-3xl" : "sm:max-w-lg",
         )}

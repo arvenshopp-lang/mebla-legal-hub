@@ -155,7 +155,7 @@ function Header({ loginHref, registerHref }: { loginHref: string; registerHref: 
 /** معاينة واقعية لواجهة النظام — مبنية بعناصر حقيقية لا برسوم زخرفية. */
 function AppPreview() {
   return (
-    <div className="surface-card overflow-hidden shadow-[var(--shadow-l)]">
+    <div className="surface-card overflow-hidden shadow-lg">
       <div className="flex items-center justify-between border-b border-border bg-surface-muted/70 px-4 py-2.5">
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-border-strong" aria-hidden />
