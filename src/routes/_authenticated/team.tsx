@@ -193,7 +193,9 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     if (!res.success) {
       const errs: Record<string, string> = {};
       res.error.issues.forEach((i) => { errs[i.path[0] as string] = i.message; });
-      return setErrors(errs);
+      setErrors(errs);
+      toast.error("تحقق من الحقول المطلوبة", { description: Object.values(errs)[0] as string });
+      return;
     }
     setSaving(true);
     const token = crypto.randomUUID().replace(/-/g, "");
