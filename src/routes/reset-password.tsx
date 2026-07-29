@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
+import { PasswordChecklist } from "@/components/password-checklist";
+import { evaluatePassword } from "@/lib/password-policy";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -15,6 +18,8 @@ function ResetPage() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const check = evaluatePassword(password);
+  const canSubmit = check.valid && password === confirm && !loading;
 
   useEffect(() => {
     (async () => {
@@ -35,12 +40,12 @@ function ResetPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) return toast.error("كلمة المرور يجب 8 خانات على الأقل");
+    if (!check.valid) return toast.error("يرجى استيفاء جميع شروط كلمة المرور قبل المتابعة");
     if (password !== confirm) return toast.error("كلمتا المرور غير متطابقتين");
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) return toast.error("تعذّر تحديث كلمة المرور", { description: error.message });
+    if (error) return toast.error(translateAuthError(error));
     toast.success("تم تحديث كلمة المرور");
     navigate({ to: "/dashboard", replace: true });
   };
@@ -51,13 +56,19 @@ function ResetPage() {
   return (
     <AuthShell title="كلمة مرور جديدة" subtitle="أدخل كلمة مرور جديدة لحسابك">
       <form onSubmit={submit} className="space-y-4">
-        <Field label="كلمة المرور الجديدة">
-          <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
-        </Field>
+        <div>
+          <Field label="كلمة المرور الجديدة">
+            <input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+          </Field>
+          {password.length > 0 && <PasswordChecklist password={password} />}
+        </div>
         <Field label="تأكيد كلمة المرور">
-          <input type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+          <input type="password" autoComplete="new-password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
         </Field>
-        <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white disabled:opacity-60">
+        {confirm.length > 0 && password !== confirm && (
+          <p className="text-xs text-[#7A2E20]">كلمتا المرور غير متطابقتين</p>
+        )}
+        <button disabled={!canSubmit} className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#123C32]/35">
           {loading ? "جاري التحديث…" : "تحديث كلمة المرور"}
         </button>
       </form>
