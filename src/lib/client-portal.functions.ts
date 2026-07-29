@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import {
   MAX_FILES_PER_REQUEST,
@@ -26,7 +26,7 @@ const fileMetaSchema = z.object({
 export const getUploadRequest = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp } = await import("./client-portal.server");
     const found = await loadRequestByToken(data.token);
     if (!found) return { state: "invalid" as const };
 
@@ -85,7 +85,7 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp } = await import("./client-portal.server");
     const found = await loadRequestByToken(data.token);
     if (!found || found.effectiveStatus !== "active") {
       throw new Error("هذا الرابط لم يعد صالحاً للاستخدام.");
@@ -104,7 +104,7 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
     const rows = data.files.map((f) => ({
       organization_id: req.organization_id,
       case_id: req.case_id,
-      client_id: req.client_id ?? null,
+      client_id: found.clientId,
       file_name: sanitizeFileName(f.name),
       file_path: f.path,
       file_type: f.type || null,
@@ -156,7 +156,7 @@ const codeSchema = z.object({ code: z.string().trim().regex(/^[0-9]{10}$/, "ال
 export const lookupCaseStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => codeSchema.parse(d))
   .handler(async ({ data }) => {
-    const { hashText, checkLookupRateLimit, recordLookupAttempt } = await import("./client-portal.server");
+    const { hashText, checkLookupRateLimit, recordLookupAttempt, clientIp } = await import("./client-portal.server");
     const ip = clientIp();
     const ipHash = await hashText(`lookup:${ip}`);
 
@@ -223,10 +223,3 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
     };
   });
 
-function clientIp() {
-  try {
-    return (getRequestIP({ xForwardedFor: true }) ?? "unknown").slice(0, 60);
-  } catch {
-    return "unknown";
-  }
-}
