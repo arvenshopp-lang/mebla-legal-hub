@@ -13,7 +13,7 @@ import {
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/cases")({
+export const Route = createFileRoute("/_authenticated/cases/")({
   component: Page,
 });
 
