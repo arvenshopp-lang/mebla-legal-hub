@@ -123,7 +123,7 @@ function Page() {
             {data.public_code && (
               <button
                 onClick={() => { navigator.clipboard?.writeText(data.public_code!); toast.success("تم نسخ رمز القضية"); }}
-                className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning hover:bg-[#f0dfb8]"
+                className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning hover:brightness-95"
                 title="رمز متابعة القضية للعميل"
               >
                 <Copy className="h-3 w-3" /> رمز المتابعة: {data.public_code}

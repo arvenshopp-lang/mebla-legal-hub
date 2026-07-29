@@ -43,7 +43,7 @@ function VerifiedPage() {
         </div>
         <div className="rounded-[var(--radius-l)] border border-border bg-surface p-8 shadow-[0_20px_60px_-20px_rgba(18,60,50,0.15)]">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="#C9A961" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>

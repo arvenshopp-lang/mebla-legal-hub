@@ -2,8 +2,8 @@ import { PASSWORD_RULES, evaluatePassword, type StrengthLevel } from "@/lib/pass
 
 const BAR_COLORS: Record<StrengthLevel, string> = {
   0: "bg-primary/15",
-  1: "bg-[#B3261E]",
-  2: "bg-[#C9862B]",
+  1: "bg-danger",
+  2: "bg-warning",
   3: "bg-success",
   4: "bg-primary",
 };
