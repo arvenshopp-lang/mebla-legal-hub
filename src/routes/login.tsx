@@ -28,6 +28,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
@@ -37,10 +38,18 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setFormError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error("تعذّر تسجيل الدخول", { description: error.message });
+      const msg = (error.message || "").toLowerCase();
+      const friendly = msg.includes("invalid login credentials")
+        ? "البريد الإلكتروني أو كلمة المرور غير صحيحة. إذا كنت قد أنشأت حسابك عبر Google، استخدم زر «المتابعة عبر Google» أعلاه، أو اضبط كلمة مرور جديدة من «نسيت كلمة المرور؟»."
+        : msg.includes("email not confirmed")
+          ? "لم يتم تأكيد بريدك الإلكتروني بعد."
+          : error.message;
+      setFormError(friendly);
+      toast.error("تعذّر تسجيل الدخول", { description: friendly });
       return;
     }
     const refreshed = await refresh();
@@ -56,7 +65,7 @@ function LoginPage() {
     if (result.error) toast.error("تعذّر الدخول عبر Google");
   };
 
-  if (authLoading || organizationLoading) {
+  if (authLoading || (session && organizationLoading)) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل عرض صفحة الدخول">
         <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
@@ -75,11 +84,16 @@ function LoginPage() {
       <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
     </div>
     <form onSubmit={submit} className="space-y-4">
+      {formError && (
+        <div className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+          {formError}
+        </div>
+      )}
       <Field label="البريد الإلكتروني">
-        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value.trim())} className={inputCls} />
       </Field>
       <Field label="كلمة المرور">
-        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
       </Field>
       <div className="text-left">
         <Link to="/forgot-password" className="text-xs font-medium text-[#123C32]/70 underline hover:text-[#123C32]">

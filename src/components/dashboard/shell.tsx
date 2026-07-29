@@ -45,7 +45,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
     await queryClient.cancelQueries();
     queryClient.clear();
     await signOut();
-    navigate({ to: "/login", replace: true });
+    navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true });
   };
 
   const SidebarInner = (
