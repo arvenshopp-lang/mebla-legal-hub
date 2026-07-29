@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -68,6 +69,11 @@ function useReveal() {
 }
 
 /* ---------- Primitives ---------- */
+function TrackLink({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+  const href = useSurfaceHref("/track");
+  return <a href={href} className={className} onClick={onClick}>{children}</a>;
+}
+
 function BtnPrimary({
   children,
   as = "link",
@@ -81,17 +87,19 @@ function BtnPrimary({
 }) {
   const cls =
     "inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--color-mehla-primary)] px-5 py-3 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_10px_24px_-16px_rgba(18,60,50,0.65)] transition-all duration-300 hover:bg-[color:var(--color-mehla-primary-dark)] hover:-translate-y-[1px] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-mehla-primary-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-mehla-bg)] disabled:opacity-50";
+  const href = useSurfaceHref(to);
   if (as === "button") return <button className={cls} aria-label={ariaLabel}>{children}</button>;
   return (
-    <a href={to} className={cls} aria-label={ariaLabel}>
+    <a href={href} className={cls} aria-label={ariaLabel}>
       {children}
     </a>
   );
 }
 function BtnGhost({ children, to = "/login" }: { children: React.ReactNode; to?: string }) {
+  const href = useSurfaceHref(to);
   return (
     <a
-      href={to}
+      href={href}
       className="inline-flex items-center justify-center gap-2 rounded-xl border border-[color:var(--color-mehla-border)] bg-transparent px-5 py-3 text-sm font-semibold text-[color:var(--color-mehla-ink)] transition-all duration-300 hover:border-[color:var(--color-mehla-primary)] hover:text-[color:var(--color-mehla-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-mehla-primary-soft)]"
     >
       {children}
@@ -162,12 +170,11 @@ function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 lg:flex">
-          <Link
-            to="/track"
+          <TrackLink
             className="rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--color-mehla-ink)]/80 transition-colors hover:text-[color:var(--color-mehla-primary)]"
           >
             تحقق من قضية
-          </Link>
+          </TrackLink>
           <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
           <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>
         </div>
@@ -197,13 +204,12 @@ function Navbar() {
                 </a>
               ))}
             </nav>
-            <Link
-              to="/track"
+            <TrackLink
               onClick={() => setOpen(false)}
               className="mt-3 block rounded-xl bg-[color:var(--color-mehla-surface)] py-3 text-center text-sm font-medium text-[color:var(--color-mehla-ink)]"
             >
               تحقق من قضية
-            </Link>
+            </TrackLink>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
               <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>

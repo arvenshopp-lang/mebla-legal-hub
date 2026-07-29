@@ -44,15 +44,7 @@ export const SURFACES: SurfaceDef[] = [
     ],
     requiresLawyerAuth: true,
   },
-  {
-    id: "client",
-    subdomain: "client",
-    label: "بوابة العميل",
-    description: "متابعة القضية والتحديثات المسموح بها ورفع المستندات المطلوبة.",
-    entry: "/track",
-    allow: ["/track", "/upload"],
-    requiresLawyerAuth: false,
-  },
+
   {
     id: "upload",
     subdomain: "upload",
@@ -69,6 +61,15 @@ export const SURFACES: SurfaceDef[] = [
     description: "إدخال رمز القضية وعرض التحديثات المصرّح بها فقط.",
     entry: "/track",
     allow: ["/track"],
+    requiresLawyerAuth: false,
+  },
+  {
+    id: "client",
+    subdomain: "client",
+    label: "بوابة العميل",
+    description: "متابعة القضية والتحديثات المسموح بها ورفع المستندات المطلوبة.",
+    entry: "/track",
+    allow: ["/track", "/upload"],
     requiresLawyerAuth: false,
   },
   {
@@ -96,7 +97,8 @@ export const SURFACES: SurfaceDef[] = [
     label: "الموقع التسويقي",
     description: "الصفحة الرئيسية والمميزات والأسعار وتسجيل الدخول وإنشاء الحساب.",
     entry: "/",
-    allow: ["/", "/login", "/register", "/forgot-password", "/reset-password", "/auth", "/docs", "/track"],
+    // تسجيل الدخول يتم على نطاق واحد فقط (app) لضمان جلسة موحدة وآمنة.
+    allow: ["/"],
     requiresLawyerAuth: false,
   },
   // ————— نطاقات محجوزة للتوسع المستقبلي (تُفعّل بإزالة planned) —————

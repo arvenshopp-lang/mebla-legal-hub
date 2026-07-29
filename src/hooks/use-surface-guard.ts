@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { isPathAllowed, isUniversalPath, ownerSurface, resolveSurface, surfaceUrl } from "@/config/surfaces";
 
@@ -30,4 +30,22 @@ export function useSurfaceGuard() {
     const target = surfaceUrl(owner.id, `${clean}${window.location.search}`, host);
     if (target) window.location.replace(target);
   }, [pathname]);
+}
+
+/**
+ * يحوّل مساراً داخلياً إلى رابط النطاق الفرعي المالك له عند العمل على الدومين الرسمي،
+ * ويبقيه مساراً نسبياً في بيئات التطوير والمعاينة.
+ */
+export function useSurfaceHref(path: string) {
+  const [href, setHref] = useState(path);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const host = window.location.host;
+    const current = resolveSurface(host);
+    const clean = path.split("?")[0].split("#")[0];
+    if (!current || isPathAllowed(current, clean)) { setHref(path); return; }
+    const target = surfaceUrl(ownerSurface(clean).id, path, host);
+    setHref(target || path);
+  }, [path]);
+  return href;
 }
