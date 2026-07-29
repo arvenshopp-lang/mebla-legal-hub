@@ -32,7 +32,7 @@ function OnboardingPage() {
     setSubmitting(true);
     const { data, error } = await supabase.rpc("create_organization_with_owner", {
       _name: trimmedName,
-      _city: city.trim() || null,
+      _city: city.trim() || undefined,
     });
 
     if (error || !data?.[0]?.organization_id) {
