@@ -353,3 +353,66 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
     </Modal>
   );
 }
+const UPDATE_TYPES: Array<[string, string]> = [
+  ["note", "ملاحظة"], ["hearing", "جلسة"], ["memorandum", "مذكرة"], ["document", "مستند"],
+  ["call", "اتصال"], ["meeting", "اجتماع"], ["court_update", "تحديث من المحكمة"],
+  ["judgment", "حكم"], ["status_change", "تغيير الحالة"],
+];
+
+function UpdateDialog({ open, onClose, caseId, orgId }: { open: boolean; onClose: () => void; caseId: string; orgId: string }) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState("note");
+  const [visible, setVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => { setTitle(""); setDescription(""); setType("note"); setVisible(false); };
+
+  const save = async () => {
+    if (title.trim().length < 2) return toast.error("أدخل عنوان التحديث");
+    setSaving(true);
+    const { error } = await supabase.from("case_updates").insert({
+      organization_id: orgId,
+      case_id: caseId,
+      update_type: type as any,
+      title: title.trim(),
+      description: description.trim() || null,
+      event_date: new Date().toISOString(),
+      is_client_visible: visible,
+      created_by: user?.id ?? null,
+    });
+    setSaving(false);
+    if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    toast.success("تمت الإضافة");
+    qc.invalidateQueries({ queryKey: ["case-updates", caseId] });
+    reset(); onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={() => { reset(); onClose(); }} title="إضافة تحديث">
+      <div className="grid gap-4">
+        <FormField label="العنوان *">
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+        </FormField>
+        <FormField label="النوع">
+          <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+            {UPDATE_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </FormField>
+        <FormField label="التفاصيل">
+          <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
+        </FormField>
+        <label className="flex items-center gap-2 rounded-xl bg-[#F5F3EE] p-3 text-sm">
+          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+          <span>إظهار هذا التحديث للعميل في بوابة المتابعة</span>
+        </label>
+      </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
+        <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
+      </div>
+    </Modal>
+  );
+}
