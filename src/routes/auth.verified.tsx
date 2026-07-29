@@ -41,8 +41,8 @@ function VerifiedPage() {
         <div className="mb-8 text-2xl font-bold tracking-tight text-foreground">
           مِهلة <span className="text-gold">·</span> MEHLA
         </div>
-        <div className="rounded-[var(--radius-l)] border border-border bg-surface p-8 shadow-[0_20px_60px_-20px_rgba(18,60,50,0.15)]">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary">
+        <div className="rounded-[var(--radius-l)] border border-border bg-surface p-8 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M20 6 9 17l-5-5" />
             </svg>
