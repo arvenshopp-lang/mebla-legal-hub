@@ -6,7 +6,13 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const ROOT_DOMAIN = "mehlalex.com";
+
 export default defineConfig({
+  // يسمح باختبار بنية النطاقات الفرعية محلياً (app/client/upload/status/api/docs/www)
+  vite: {
+    server: { allowedHosts: [`.${ROOT_DOMAIN}`] },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
