@@ -13,7 +13,7 @@ import {
 import {
   LoadingBlock, ErrorBlock, Btn, Badge, Modal, FormField, inputCls, ConfirmDialog,
 } from "@/lib/list-utils";
-import { CaseDialog } from "./cases";
+import { CaseDialog } from "./cases.index";
 import { ArrowRight, Pencil, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
