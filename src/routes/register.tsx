@@ -27,6 +27,7 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
@@ -76,14 +77,19 @@ function RegisterPage() {
   }
 
   const google = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
     sessionStorage.setItem("mehla_auth_redirect", "/onboarding");
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
     });
-    if (result.error) toast.error("تعذّر الدخول عبر Google");
+    if (result.error) {
+      setGoogleLoading(false);
+      toast.error("تعذّر الدخول عبر Google");
+    }
   };
 
-  if (authLoading || organizationLoading) {
+  if (session && (authLoading || organizationLoading)) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل إنشاء حساب جديد">
         <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
@@ -95,10 +101,19 @@ function RegisterPage() {
 
   return (
     <AuthShell title="إنشاء حساب جديد" subtitle="ابدأ بتنظيم قضايا مكتبك في دقائق">
-      <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] transition hover:bg-[#123C32]/5">
-      <GoogleIcon />
-      <span>المتابعة عبر Google</span>
-    </button>
+      <button
+        type="button"
+        onClick={google}
+        disabled={googleLoading}
+        aria-busy={googleLoading}
+        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-xl border border-[#123C32]/20 bg-white py-3 text-sm font-medium text-[#123C32] shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-[#123C32]/5 active:scale-[0.99] disabled:opacity-60"
+      >
+        <GoogleIcon />
+        <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
+      </button>
+      <p className="mt-2 text-center text-[11px] leading-5 text-[#123C32]/45">
+        إنشاء حساب آمن عبر Google خلال ثوانٍ.
+      </p>
       <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
         <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
       </div>
