@@ -6,6 +6,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
 import { GoogleIcon } from "@/components/google-icon";
+import { PasswordChecklist } from "@/components/password-checklist";
+import { evaluatePassword } from "@/lib/password-policy";
+import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -28,6 +31,11 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const passwordCheck = evaluatePassword(password);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSubmit = passwordCheck.valid && emailValid && fullName.trim().length >= 3 && !loading;
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
@@ -36,25 +44,46 @@ function RegisterPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) return toast.error("كلمة المرور يجب أن تكون 8 خانات على الأقل");
+    if (loading) return;
+    setFormError(null);
+    // لا يُرسل أي طلب للخادم قبل استيفاء كل الشروط
+    if (fullName.trim().length < 3) {
+      setFormError("يرجى إدخال الاسم الكامل");
+      return;
+    }
+    if (!emailValid) {
+      setFormError("يرجى إدخال بريد إلكتروني صحيح");
+      return;
+    }
+    if (!passwordCheck.valid) {
+      setPasswordTouched(true);
+      setFormError("يرجى استيفاء جميع شروط كلمة المرور قبل المتابعة");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName.trim() },
         emailRedirectTo: window.location.origin + "/auth/callback",
       },
     });
     setLoading(false);
-    if (error) return toast.error("تعذّر إنشاء الحساب", { description: error.message });
+    if (error) {
+      const friendly = translateAuthError(error);
+      logAuthEvent({ route: "/register", action: "sign_up", sanitizedMessage: friendly });
+      setFormError(friendly);
+      toast.error(friendly);
+      return;
+    }
     if (data.session) {
       const refreshed = await refresh();
-      toast.success("تم إنشاء الحساب");
+      toast.success("تم إنشاء حسابك بنجاح");
       navigate({ to: refreshed.memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
     } else {
-      setEmailSent(email);
-      toast.success("تم إرسال رابط التفعيل إلى بريدك");
+      setEmailSent(email.trim().toLowerCase());
+      toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
     }
   };
 
@@ -118,16 +147,41 @@ function RegisterPage() {
         <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
       </div>
       <form onSubmit={submit} className="space-y-4">
+        {formError && (
+          <div role="alert" className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+            {formError}
+          </div>
+        )}
         <Field label="الاسم الكامل">
           <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
         </Field>
         <Field label="البريد الإلكتروني">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         </Field>
-        <Field label="كلمة المرور">
-          <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
-        </Field>
-        <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+        <div>
+          <Field label="كلمة المرور">
+            <input
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onFocus={() => setPasswordTouched(true)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (!passwordTouched) setPasswordTouched(true);
+              }}
+              className={inputCls}
+            />
+          </Field>
+          {(passwordTouched || password.length > 0) && <PasswordChecklist password={password} />}
+        </div>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          aria-busy={loading}
+          className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white transition hover:bg-[#0d2e26] disabled:cursor-not-allowed disabled:bg-[#123C32]/35 disabled:hover:bg-[#123C32]/35"
+        >
           {loading ? "جاري الإنشاء…" : "إنشاء الحساب"}
         </button>
       </form>

@@ -11,7 +11,10 @@ export const AUTH_MESSAGES = {
   profileLoadFailed:
     "تم تسجيل الدخول ولكن تعذر تحميل بيانات الحساب. حاول مرة أخرى أو تواصل مع الدعم",
   organizationLoadFailed: "تم تسجيل الدخول ولكن تعذر تحميل بيانات المنشأة",
-  weakPassword: "كلمة المرور ضعيفة. استخدم 8 أحرف على الأقل مع أرقام ورموز",
+  weakPassword:
+    "كلمة المرور المستخدمة ضعيفة أو شائعة الاستخدام، يرجى اختيار كلمة مرور أقوى",
+  signUpFailed: "تعذر إنشاء الحساب، يرجى المحاولة مرة أخرى",
+  emailInvalid: "البريد الإلكتروني غير صحيح، يرجى التحقق منه",
   emailTaken: "هذا البريد مسجّل مسبقاً. سجّل الدخول بدلاً من إنشاء حساب",
   generic: "حدث خطأ غير متوقع. حاول مرة أخرى",
 } as const;
@@ -29,9 +32,26 @@ export function translateAuthError(error: AuthErrorLike): string {
   if (code === "user_not_found" || msg.includes("user not found")) return AUTH_MESSAGES.userNotFound;
   if (error.status === 429 || code.includes("over_") || msg.includes("too many"))
     return AUTH_MESSAGES.tooManyRequests;
-  if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("already been registered"))
+  if (
+    code === "user_already_exists" ||
+    code === "email_exists" ||
+    msg.includes("already registered") ||
+    msg.includes("already been registered") ||
+    msg.includes("user already exists")
+  )
     return AUTH_MESSAGES.emailTaken;
-  if (code === "weak_password" || msg.includes("password should be")) return AUTH_MESSAGES.weakPassword;
+  if (
+    code === "weak_password" ||
+    msg.includes("password should be") ||
+    msg.includes("known to be weak") ||
+    msg.includes("pwned") ||
+    msg.includes("password is too short") ||
+    msg.includes("data breach")
+  )
+    return AUTH_MESSAGES.weakPassword;
+  if (code === "email_address_invalid" || msg.includes("invalid email") || msg.includes("unable to validate email"))
+    return AUTH_MESSAGES.emailInvalid;
+  if (code === "signup_disabled" || msg.includes("signups not allowed")) return AUTH_MESSAGES.signUpFailed;
   if (msg.includes("session") && (msg.includes("expired") || msg.includes("missing")))
     return AUTH_MESSAGES.sessionExpired;
   if (
