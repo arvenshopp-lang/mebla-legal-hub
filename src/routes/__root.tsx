@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../hooks/use-auth";
+import { useSurfaceGuard } from "../hooks/use-surface-guard";
 import "../lib/zod-ar";
 import { Toaster } from "sonner";
 
@@ -125,6 +126,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useSurfaceGuard();
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { surfaceGuard } from "./lib/surface-guard.server";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
@@ -25,7 +26,14 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+// حارس بنية النطاقات الفرعية (app / client / upload / status / api / docs / www)
+const surfaceMiddleware = createMiddleware().server(async ({ next }) => {
+  const blocked = surfaceGuard();
+  if (blocked) return blocked as any;
+  return next();
+});
+
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  requestMiddleware: [errorMiddleware, csrfMiddleware, surfaceMiddleware],
 }));
