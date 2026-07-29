@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
+import { GoogleIcon } from "@/components/google-icon";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
