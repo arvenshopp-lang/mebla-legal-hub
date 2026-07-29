@@ -14,7 +14,8 @@ import {
   LoadingBlock, ErrorBlock, Btn, Badge, Modal, FormField, inputCls, ConfirmDialog,
 } from "@/lib/list-utils";
 import { CaseDialog } from "./cases.index";
-import { ArrowRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
+import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
   component: Page,
@@ -29,6 +30,7 @@ function Page() {
   const [partyOpen, setPartyOpen] = useState(false);
   const [editingParty, setEditingParty] = useState<any | null>(null);
   const [deletingParty, setDeletingParty] = useState<any | null>(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["case", id],
@@ -90,6 +92,16 @@ function Page() {
     onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
   });
 
+  const toggleVisibility = useMutation({
+    mutationFn: async (u: any) => {
+      const { error } = await supabase.from("case_updates")
+        .update({ is_client_visible: !u.is_client_visible }).eq("id", u.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-updates", id] }); toast.success("تم التحديث"); },
+    onError: (e: any) => toast.error("تعذّر التحديث", { description: e.message }),
+  });
+
   if (isLoading) return <DashboardShell title="القضية"><LoadingBlock /></DashboardShell>;
   if (error) return <DashboardShell title="القضية"><ErrorBlock message={(error as any).message} /></DashboardShell>;
   if (!data) return <DashboardShell title="القضية"><div className="rounded-2xl bg-white p-10 text-center">القضية غير موجودة</div></DashboardShell>;
@@ -108,6 +120,15 @@ function Page() {
             <Badge>{CASE_STATUS[data.status] ?? data.status}</Badge>
             <Badge tone={data.priority === "urgent" ? "red" : data.priority === "high" ? "warn" : "muted"}>{CASE_PRIORITY[data.priority] ?? data.priority}</Badge>
             {data.case_number && <span className="text-xs text-[#123C32]/60">رقم: {data.case_number}</span>}
+            {data.public_code && (
+              <button
+                onClick={() => { navigator.clipboard?.writeText(data.public_code!); toast.success("تم نسخ رمز القضية"); }}
+                className="inline-flex items-center gap-1 rounded-full bg-[#F6E9CC] px-2.5 py-1 text-[11px] font-medium text-[#7A5A18] hover:bg-[#f0dfb8]"
+                title="رمز متابعة القضية للعميل"
+              >
+                <Copy className="h-3 w-3" /> رمز المتابعة: {data.public_code}
+              </button>
+            )}
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <Info label="نوع القضية" value={data.case_type} />
@@ -192,7 +213,10 @@ function Page() {
       </div>
 
       <section className="mt-4 rounded-2xl border border-[#123C32]/10 bg-white p-5">
-        <h3 className="mb-4 text-sm font-bold">الخط الزمني</h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-bold">الخط الزمني</h3>
+          {canEdit(activeRole) && <Btn size="sm" variant="outline" onClick={() => setUpdateOpen(true)}><Plus className="ms-1 inline h-4 w-4" /> إضافة تحديث</Btn>}
+        </div>
         {(updates ?? []).length === 0 ? (
           <p className="py-4 text-center text-xs text-[#123C32]/50">لا يوجد تحديثات</p>
         ) : (
@@ -200,15 +224,34 @@ function Page() {
             {updates!.map((u: any) => (
               <li key={u.id} className="relative">
                 <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-[#C9A961]" />
-                <div className="text-sm font-medium">{u.title}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">{u.title}</span>
+                  {u.is_client_visible
+                    ? <Badge tone="green">مرئي للعميل</Badge>
+                    : <Badge tone="muted">داخلي فقط</Badge>}
+                </div>
                 {u.description && <div className="text-xs text-[#123C32]/70">{u.description}</div>}
-                <div className="text-[11px] text-[#123C32]/50 mt-0.5">{fmtDateTime(u.event_date)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-3">
+                  <span className="text-[11px] text-[#123C32]/50">{fmtDateTime(u.event_date)}</span>
+                  {canEdit(activeRole) && (
+                    <button
+                      onClick={() => toggleVisibility.mutate(u)}
+                      className="inline-flex items-center gap-1 text-[11px] text-[#123C32]/70 hover:text-[#123C32]"
+                    >
+                      {u.is_client_visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {u.is_client_visible ? "إخفاء عن العميل" : "إظهار للعميل"}
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ol>
         )}
       </section>
 
+      <DocumentRequestsSection caseId={id} />
+
+      <UpdateDialog open={updateOpen} onClose={() => setUpdateOpen(false)} caseId={id} orgId={activeOrgId!} />
       <CaseDialog open={editOpen} onClose={() => { setEditOpen(false); qc.invalidateQueries({ queryKey: ["case", id] }); }} editing={data as any} members={members ?? []} />
       <PartyDialog open={partyOpen} onClose={() => setPartyOpen(false)} editing={editingParty} caseId={id} orgId={activeOrgId!} />
       <ConfirmDialog
@@ -305,6 +348,69 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
+        <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
+      </div>
+    </Modal>
+  );
+}
+const UPDATE_TYPES: Array<[string, string]> = [
+  ["note", "ملاحظة"], ["hearing", "جلسة"], ["memorandum", "مذكرة"], ["document", "مستند"],
+  ["call", "اتصال"], ["meeting", "اجتماع"], ["court_update", "تحديث من المحكمة"],
+  ["judgment", "حكم"], ["status_change", "تغيير الحالة"],
+];
+
+function UpdateDialog({ open, onClose, caseId, orgId }: { open: boolean; onClose: () => void; caseId: string; orgId: string }) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState("note");
+  const [visible, setVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => { setTitle(""); setDescription(""); setType("note"); setVisible(false); };
+
+  const save = async () => {
+    if (title.trim().length < 2) return toast.error("أدخل عنوان التحديث");
+    setSaving(true);
+    const { error } = await supabase.from("case_updates").insert({
+      organization_id: orgId,
+      case_id: caseId,
+      update_type: type as any,
+      title: title.trim(),
+      description: description.trim() || null,
+      event_date: new Date().toISOString(),
+      is_client_visible: visible,
+      created_by: user?.id ?? null,
+    });
+    setSaving(false);
+    if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    toast.success("تمت الإضافة");
+    qc.invalidateQueries({ queryKey: ["case-updates", caseId] });
+    reset(); onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={() => { reset(); onClose(); }} title="إضافة تحديث">
+      <div className="grid gap-4">
+        <FormField label="العنوان *">
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+        </FormField>
+        <FormField label="النوع">
+          <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+            {UPDATE_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </FormField>
+        <FormField label="التفاصيل">
+          <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
+        </FormField>
+        <label className="flex items-center gap-2 rounded-xl bg-[#F5F3EE] p-3 text-sm">
+          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+          <span>إظهار هذا التحديث للعميل في بوابة المتابعة</span>
+        </label>
+      </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
       </div>
     </Modal>

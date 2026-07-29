@@ -162,6 +162,12 @@ function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 lg:flex">
+          <Link
+            to="/track"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--color-mehla-ink)]/80 transition-colors hover:text-[color:var(--color-mehla-primary)]"
+          >
+            تحقق من قضية
+          </Link>
           <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
           <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>
         </div>
@@ -191,6 +197,13 @@ function Navbar() {
                 </a>
               ))}
             </nav>
+            <Link
+              to="/track"
+              onClick={() => setOpen(false)}
+              className="mt-3 block rounded-xl bg-[color:var(--color-mehla-surface)] py-3 text-center text-sm font-medium text-[color:var(--color-mehla-ink)]"
+            >
+              تحقق من قضية
+            </Link>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <BtnGhost to="/login">تسجيل الدخول</BtnGhost>
               <BtnPrimary to="/register">ابدأ الآن</BtnPrimary>
@@ -1067,5 +1080,3 @@ function MehlaLanding() {
   );
 }
 
-// Silence unused import warning when Link isn't used directly
-void Link;

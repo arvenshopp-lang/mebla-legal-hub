@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrackRouteImport } from './routes/track'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PendingAccessRouteImport } from './routes/pending-access'
@@ -17,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UploadTokenRouteImport } from './routes/upload.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -29,6 +31,11 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -66,6 +73,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadTokenRoute = UploadTokenRouteImport.update({
+  id: '/upload/$token',
+  path: '/upload/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -132,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -141,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/upload/$token': typeof UploadTokenRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
 }
@@ -152,6 +166,7 @@ export interface FileRoutesByTo {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -161,6 +176,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/upload/$token': typeof UploadTokenRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
 }
@@ -174,6 +190,7 @@ export interface FileRoutesById {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/track': typeof TrackRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -183,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/upload/$token': typeof UploadTokenRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
 }
@@ -196,6 +214,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -205,6 +224,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team'
     | '/auth/callback'
+    | '/upload/$token'
     | '/cases/$id'
     | '/cases/'
   fileRoutesByTo: FileRoutesByTo
@@ -216,6 +236,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -225,6 +246,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team'
     | '/auth/callback'
+    | '/upload/$token'
     | '/cases/$id'
     | '/cases'
   id:
@@ -237,6 +259,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/track'
     | '/_authenticated/clients'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -246,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/team'
     | '/auth/callback'
+    | '/upload/$token'
     | '/_authenticated/cases/$id'
     | '/_authenticated/cases/'
   fileRoutesById: FileRoutesById
@@ -259,11 +283,20 @@ export interface RootRouteChildren {
   PendingAccessRoute: typeof PendingAccessRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  UploadTokenRoute: typeof UploadTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -318,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload/$token': {
+      id: '/upload/$token'
+      path: '/upload/$token'
+      fullPath: '/upload/$token'
+      preLoaderRoute: typeof UploadTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -438,7 +478,9 @@ const rootRouteChildren: RootRouteChildren = {
   PendingAccessRoute: PendingAccessRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  UploadTokenRoute: UploadTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
