@@ -18,6 +18,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NAV: { to: string; label: string; Icon: typeof LayoutDashboard }[] = [
   { to: "/dashboard", label: "الرئيسية", Icon: LayoutDashboard },
@@ -37,11 +38,14 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
   const [orgOpen, setOrgOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const active = memberships.find((m) => m.organization_id === activeOrgId);
 
   const onSignOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await signOut();
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/login", replace: true });
   };
 
   const SidebarInner = (

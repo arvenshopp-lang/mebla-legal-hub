@@ -20,11 +20,16 @@ function AuthCallback() {
       if (code) {
         try { await supabase.auth.exchangeCodeForSession(window.location.href); } catch {}
       }
-      await refresh();
+      const refreshed = await refresh();
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        // Landed after email confirmation or OAuth — route to onboarding; auth gate will redirect to /dashboard if already onboarded
-        navigate({ to: "/onboarding", replace: true });
+        const storedRedirect = sessionStorage.getItem("mehla_auth_redirect");
+        sessionStorage.removeItem("mehla_auth_redirect");
+        const safeRedirect = storedRedirect?.startsWith("/") && !storedRedirect.startsWith("//")
+          ? storedRedirect
+          : "/dashboard";
+        const target = refreshed.memberships.length > 0 ? safeRedirect : "/onboarding";
+        navigate({ to: target, replace: true });
       } else {
         navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true });
       }
