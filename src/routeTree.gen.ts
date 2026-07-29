@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrackRouteImport } from './routes/track'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PendingAccessRouteImport } from './routes/pending-access'
@@ -37,6 +38,11 @@ import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticate
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
   path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track': typeof TrackRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/pending-access': typeof PendingAccessRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track': typeof TrackRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/track'
     | '/clients'
     | '/dashboard'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/track'
     | '/clients'
     | '/dashboard'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/pending-access'
     | '/register'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/track'
     | '/_authenticated/clients'
     | '/_authenticated/dashboard'
@@ -320,6 +332,7 @@ export interface RootRouteChildren {
   PendingAccessRoute: typeof PendingAccessRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   UploadTokenRoute: typeof UploadTokenRoute
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       path: '/track'
       fullPath: '/track'
       preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -539,6 +559,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendingAccessRoute: PendingAccessRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   UploadTokenRoute: UploadTokenRoute,
