@@ -17,6 +17,8 @@ function AuthCallback() {
       // Supabase handles both PKCE (?code=) and hash (#access_token) flows internally
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
+      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+      const flowType = url.searchParams.get("type") ?? hashParams.get("type");
       if (code) {
         try { await supabase.auth.exchangeCodeForSession(window.location.href); } catch {}
       }
@@ -28,7 +30,12 @@ function AuthCallback() {
         const safeRedirect = storedRedirect?.startsWith("/") && !storedRedirect.startsWith("//")
           ? storedRedirect
           : "/dashboard";
-        const target = refreshed.memberships.length > 0 ? safeRedirect : "/onboarding";
+        const target =
+          flowType === "signup" || flowType === "email_change"
+            ? "/auth/verified"
+            : refreshed.memberships.length > 0
+              ? safeRedirect
+              : "/onboarding";
         navigate({ to: target, replace: true });
       } else {
         navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true });

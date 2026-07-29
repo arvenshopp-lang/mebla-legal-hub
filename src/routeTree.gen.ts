@@ -22,6 +22,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
+import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -97,6 +98,11 @@ const UploadIndexRoute = UploadIndexRouteImport.update({
 const UploadTokenRoute = UploadTokenRouteImport.update({
   id: '/upload/$token',
   path: '/upload/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
+  id: '/auth/verified',
+  path: '/auth/verified',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/verified': typeof AuthVerifiedRoute
   '/upload/$token': typeof UploadTokenRoute
   '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/verified': typeof AuthVerifiedRoute
   '/upload/$token': typeof UploadTokenRoute
   '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/verified': typeof AuthVerifiedRoute
   '/upload/$token': typeof UploadTokenRoute
   '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team'
     | '/auth/callback'
+    | '/auth/verified'
     | '/upload/$token'
     | '/upload/'
     | '/cases/$id'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/team'
     | '/auth/callback'
+    | '/auth/verified'
     | '/upload/$token'
     | '/upload'
     | '/cases/$id'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/team'
     | '/auth/callback'
+    | '/auth/verified'
     | '/upload/$token'
     | '/upload/'
     | '/_authenticated/cases/$id'
@@ -335,6 +347,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthVerifiedRoute: typeof AuthVerifiedRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/upload/$token'
       fullPath: '/upload/$token'
       preLoaderRoute: typeof UploadTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verified': {
+      id: '/auth/verified'
+      path: '/auth/verified'
+      fullPath: '/auth/verified'
+      preLoaderRoute: typeof AuthVerifiedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -562,6 +582,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthVerifiedRoute: AuthVerifiedRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
@@ -569,13 +590,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
