@@ -49,7 +49,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
   });
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-5">
+    <section className="mt-4 rounded-[var(--radius-l)] border border-border bg-surface p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-bold">طلبات المستندات</h3>
         {canEdit(activeRole) && (
@@ -66,7 +66,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
       ) : (
         <ul className="space-y-3">
           {rows!.map((r: any) => (
-            <li key={r.id} className="rounded-xl border border-border bg-[#F5F3EE]/50 p-4">
+            <li key={r.id} className="rounded-[var(--radius-m)] border border-border bg-[#F5F3EE]/50 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -203,7 +203,7 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
           <p className="text-sm text-muted-foreground">
             هذا الرابط يعمل <strong>مرة واحدة فقط</strong> ولن يظهر مجدداً. انسخه الآن وأرسله للعميل.
           </p>
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-[#F5F3EE] p-3">
+          <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-[#F5F3EE] p-3">
             <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 break-all text-xs" dir="ltr">{link}</span>
           </div>

@@ -20,7 +20,7 @@ export function PasswordChecklist({ password }: { password: string }) {
   const { results, score, label, valid } = evaluatePassword(password);
 
   return (
-    <div className="mt-3 rounded-2xl border border-border bg-[#F5F3EE]/70 p-4">
+    <div className="mt-3 rounded-[var(--radius-l)] border border-border bg-[#F5F3EE]/70 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-1 gap-1.5" aria-hidden="true">
           {[1, 2, 3, 4].map((step) => (

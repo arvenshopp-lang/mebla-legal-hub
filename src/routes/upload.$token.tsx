@@ -112,9 +112,9 @@ function Page() {
             <Card>
               <div className="flex items-center gap-3 border-b border-border pb-4">
                 {data.orgLogo ? (
-                  <img src={data.orgLogo} alt={data.orgName} className="h-11 w-11 rounded-xl object-cover" />
+                  <img src={data.orgLogo} alt={data.orgName} className="h-11 w-11 rounded-[var(--radius-m)] object-cover" />
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#123C32] text-sm font-bold text-primary-foreground">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-m)] bg-[#123C32] text-sm font-bold text-primary-foreground">
                     {(data.orgName || "م").slice(0, 1)}
                   </div>
                 )}
@@ -138,13 +138,13 @@ function Page() {
                   {data.items.map((item, i) => {
                     const count = picked.filter((p) => p.label === item).length;
                     return (
-                      <li key={i} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F5F3EE]/70 p-3">
+                      <li key={i} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-m)] bg-[#F5F3EE]/70 p-3">
                         <div className="flex items-center gap-2 text-sm">
                           {count > 0 && <CheckCircle2 className="h-4 w-4 text-[#123C32]" />}
                           <span>{item}</span>
                           {count > 0 && <span className="text-[11px] text-muted-foreground">({count} ملف)</span>}
                         </div>
-                        <label className="cursor-pointer rounded-xl border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface/70">
+                        <label className="cursor-pointer rounded-[var(--radius-m)] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface/70">
                           <FileUp className="ms-1 inline h-3.5 w-3.5" /> رفع
                           <input type="file" multiple accept={ACCEPT_ATTR} className="hidden" onChange={(e) => { add(e.target.files, item); e.target.value = ""; }} />
                         </label>
@@ -157,7 +157,7 @@ function Page() {
 
             <Card>
               <h2 className="mb-3 text-sm font-bold">ملفات إضافية</h2>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border p-6 text-center hover:border-[#123C32]/40">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-l)] border-2 border-dashed border-border p-6 text-center hover:border-[#123C32]/40">
                 <FileUp className="h-6 w-6 text-text-muted" />
                 <span className="text-sm font-medium">اختر ملفات للرفع</span>
                 <span className="text-[11px] text-muted-foreground">PDF أو صور أو مستندات Office · حتى 20 ميجابايت للملف</span>
@@ -167,7 +167,7 @@ function Page() {
               {picked.length > 0 && (
                 <ul className="mt-4 space-y-2">
                   {picked.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl bg-[#F5F3EE]/70 px-3 py-2 text-sm">
+                    <li key={p.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-m)] bg-[#F5F3EE]/70 px-3 py-2 text-sm">
                       <div className="min-w-0">
                         <div className="truncate">{p.file.name}</div>
                         <div className="text-[11px] text-muted-foreground">{fmtSize(p.file.size)}{p.label ? ` · ${p.label}` : ""}</div>
@@ -185,7 +185,7 @@ function Page() {
               <button
                 onClick={send}
                 disabled={sending || picked.length === 0}
-                className="mt-5 w-full rounded-xl bg-[#123C32] px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50"
+                className="mt-5 w-full rounded-[var(--radius-m)] bg-[#123C32] px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50"
               >
                 {sending ? "جاري الإرسال…" : "إرسال المستندات"}
               </button>
@@ -201,14 +201,14 @@ function Page() {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <section className="rounded-3xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(18,60,50,0.04)] sm:p-7">{children}</section>;
+  return <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(18,60,50,0.04)] sm:p-7">{children}</section>;
 }
 
 function Notice({ title, body, tone = "muted" }: { title: string; body: string; tone?: "muted" | "success" }) {
   return (
     <Card>
       <div className="py-6 text-center">
-        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${tone === "success" ? "bg-primary-soft" : "bg-[#F5F3EE]"}`}>
+        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-l)] ${tone === "success" ? "bg-primary-soft" : "bg-[#F5F3EE]"}`}>
           {tone === "success" ? <CheckCircle2 className="h-6 w-6 text-[#123C32]" /> : <ShieldCheck className="h-6 w-6 text-muted-foreground" />}
         </div>
         <h1 className="text-lg font-bold">{title}</h1>

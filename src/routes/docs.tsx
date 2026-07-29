@@ -37,7 +37,7 @@ function Page() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
-            <section key={s.title} className="rounded-3xl border border-border bg-surface p-6">
+            <section key={s.title} className="rounded-[var(--radius-l)] border border-border bg-surface p-6">
               <s.icon className="h-5 w-5 text-gold" />
               <h2 className="mt-3 text-sm font-bold">{s.title}</h2>
               <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{s.body}</p>

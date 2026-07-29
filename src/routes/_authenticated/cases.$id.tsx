@@ -104,7 +104,7 @@ function Page() {
 
   if (isLoading) return <DashboardShell title="القضية"><LoadingBlock /></DashboardShell>;
   if (error) return <DashboardShell title="القضية"><ErrorBlock message={(error as any).message} /></DashboardShell>;
-  if (!data) return <DashboardShell title="القضية"><div className="rounded-2xl bg-surface p-10 text-center">القضية غير موجودة</div></DashboardShell>;
+  if (!data) return <DashboardShell title="القضية"><div className="rounded-[var(--radius-l)] bg-surface p-10 text-center">القضية غير موجودة</div></DashboardShell>;
 
   return (
     <DashboardShell title={data.case_title}>
@@ -115,7 +115,7 @@ function Page() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
+        <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5 lg:col-span-2">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Badge>{CASE_STATUS[data.status] ?? data.status}</Badge>
             <Badge tone={data.priority === "urgent" ? "red" : data.priority === "high" ? "warn" : "muted"}>{CASE_PRIORITY[data.priority] ?? data.priority}</Badge>
@@ -146,7 +146,7 @@ function Page() {
           {data.internal_notes && <div className="mt-3 border-t border-border pt-3 text-sm"><div className="mb-1 text-xs font-semibold text-muted-foreground">ملاحظات داخلية</div>{data.internal_notes}</div>}
         </section>
 
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
             {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-[#F5F3EE]"><Plus className="h-4 w-4" /></button>}
@@ -156,7 +156,7 @@ function Page() {
           ) : (
             <ul className="space-y-2">
               {parties!.map((p: any) => (
-                <li key={p.id} className="rounded-xl bg-[#F5F3EE]/60 p-3 text-sm">
+                <li key={p.id} className="rounded-[var(--radius-m)] bg-[#F5F3EE]/60 p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-medium">{p.party_name}</div>
@@ -212,7 +212,7 @@ function Page() {
         </RelatedList>
       </div>
 
-      <section className="mt-4 rounded-2xl border border-border bg-surface p-5">
+      <section className="mt-4 rounded-[var(--radius-l)] border border-border bg-surface p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-bold">الخط الزمني</h3>
           {canEdit(activeRole) && <Btn size="sm" variant="outline" onClick={() => setUpdateOpen(true)}><Plus className="ms-1 inline h-4 w-4" /> إضافة تحديث</Btn>}
@@ -279,7 +279,7 @@ function RelatedList({ title, empty, children }: { title: string; empty: string;
   const arr = Array.isArray(children) ? children : [children];
   const has = arr.filter(Boolean).length > 0;
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
+    <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
       {has ? <div className="divide-y divide-border">{children}</div> : <p className="py-4 text-center text-xs text-text-muted">{empty}</p>}
     </section>
@@ -404,7 +404,7 @@ function UpdateDialog({ open, onClose, caseId, orgId }: { open: boolean; onClose
         <FormField label="التفاصيل">
           <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
         </FormField>
-        <label className="flex items-center gap-2 rounded-xl bg-[#F5F3EE] p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-[var(--radius-m)] bg-[#F5F3EE] p-3 text-sm">
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
           <span>إظهار هذا التحديث للعميل في بوابة المتابعة</span>
         </label>

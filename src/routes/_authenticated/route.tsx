@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function Splash({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F5F3EE]">
+    <div className="flex min-h-dvh items-center justify-center bg-[#F5F3EE]">
       <div className="text-sm font-medium text-[#123C32]">{text}</div>
     </div>
   );
@@ -48,12 +48,12 @@ function AuthGate() {
 
   if (authError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F3EE] px-4">
-        <div className="max-w-md rounded-2xl border border-danger/25 bg-surface p-6 text-center">
+      <div className="flex min-h-dvh items-center justify-center bg-[#F5F3EE] px-4">
+        <div className="max-w-md rounded-[var(--radius-l)] border border-danger/25 bg-surface p-6 text-center">
           <p className="text-sm leading-7 text-danger">{authError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-xl bg-[#123C32] px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+            className="mt-4 rounded-[var(--radius-m)] bg-[#123C32] px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
             إعادة المحاولة
           </button>

@@ -216,7 +216,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       {link ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">شارك الرابط التالي مع العضو ليتمكن من الانضمام:</p>
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-[#F5F3EE] p-3">
+          <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-[#F5F3EE] p-3">
             <code className="flex-1 truncate text-xs">{link}</code>
             <Btn size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success("تم النسخ"); }}>
               <Copy className="h-3 w-3" /> نسخ
