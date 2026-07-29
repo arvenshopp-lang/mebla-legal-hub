@@ -16,8 +16,10 @@ import { Route as PendingAccessRouteImport } from './routes/pending-access'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -29,6 +31,7 @@ import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 
 const TrackRoute = TrackRouteImport.update({
@@ -66,6 +69,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -73,6 +81,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadIndexRoute = UploadIndexRouteImport.update({
+  id: '/upload/',
+  path: '/upload/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UploadTokenRoute = UploadTokenRouteImport.update({
@@ -130,6 +143,11 @@ const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   path: '/cases/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   id: '/cases/$id',
   path: '/cases/$id',
@@ -138,6 +156,7 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -155,11 +174,14 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -177,13 +199,16 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -201,13 +226,16 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/docs'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -225,11 +253,14 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/upload/$token'
+    | '/upload/'
     | '/cases/$id'
+    | '/api/public/health'
     | '/cases/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/docs'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -247,12 +278,15 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/upload/$token'
+    | '/upload'
     | '/cases/$id'
+    | '/api/public/health'
     | '/cases'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/docs'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -270,13 +304,16 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/auth/callback'
     | '/upload/$token'
+    | '/upload/'
     | '/_authenticated/cases/$id'
+    | '/api/public/health'
     | '/_authenticated/cases/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  DocsRoute: typeof DocsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -286,6 +323,8 @@ export interface RootRouteChildren {
   TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   UploadTokenRoute: typeof UploadTokenRoute
+  UploadIndexRoute: typeof UploadIndexRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -339,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -351,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload/': {
+      id: '/upload/'
+      path: '/upload'
+      fullPath: '/upload/'
+      preLoaderRoute: typeof UploadIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/upload/$token': {
@@ -430,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/cases/$id': {
       id: '/_authenticated/cases/$id'
       path: '/cases/$id'
@@ -472,6 +532,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  DocsRoute: DocsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
@@ -481,7 +542,19 @@ const rootRouteChildren: RootRouteChildren = {
   TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   UploadTokenRoute: UploadTokenRoute,
+  UploadIndexRoute: UploadIndexRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
