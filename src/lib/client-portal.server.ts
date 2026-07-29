@@ -47,12 +47,12 @@ export async function loadRequestByToken(token: string): Promise<LoadedRequest |
   };
 }
 
-export async function logEvent(request: any, event: string, detail: Record<string, unknown>, ip: string) {
+export async function logEvent(request: any, event: string, detail: Record<string, any>, ip: string) {
   await supabaseAdmin.from("document_request_events").insert({
     organization_id: request.organization_id,
     request_id: request.id,
     event,
-    detail,
+    detail: detail as any,
     ip,
   });
 }
