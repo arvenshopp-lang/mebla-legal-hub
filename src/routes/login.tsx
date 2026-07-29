@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
+import { lookupSignInMethods } from "@/lib/auth-lookup.functions";
 import { GoogleIcon } from "@/components/google-icon";
 
 export const Route = createFileRoute("/login")({
@@ -23,51 +24,97 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect } = useSearch({ from: "/login" });
-  const { session, authLoading, organizationLoading, memberships, refresh } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, allMemberships, refresh, signIn } =
+    useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const safeRedirect =
+    typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
+      ? redirect
+      : "/dashboard";
+
+  const destinationFor = (active: number, all: number) => {
+    if (active > 0) return safeRedirect;
+    return all > 0 ? "/pending-access" : "/onboarding";
+  };
+
+  // Already signed in: send the user where they belong (never render the form).
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
-    navigate({ to: memberships.length > 0 ? redirect || "/dashboard" : "/onboarding", replace: true });
-  }, [authLoading, organizationLoading, session, memberships.length, redirect, navigate]);
+    navigate({
+      to: destinationFor(memberships.length, allMemberships.length),
+      replace: true,
+    } as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, organizationLoading, session, memberships.length, allMemberships.length, safeRedirect]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setFormError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      const msg = (error.message || "").toLowerCase();
-      const friendly = msg.includes("invalid login credentials")
-        ? "البريد الإلكتروني أو كلمة المرور غير صحيحة. إذا كنت قد أنشأت حسابك عبر Google، استخدم زر «المتابعة عبر Google» أعلاه، أو اضبط كلمة مرور جديدة من «نسيت كلمة المرور؟»."
-        : msg.includes("email not confirmed")
-          ? "لم يتم تأكيد بريدك الإلكتروني بعد."
-          : error.message;
-      setFormError(friendly);
-      toast.error("تعذّر تسجيل الدخول", { description: friendly });
+    if (loading) return;
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setFormError("يرجى إدخال بريد إلكتروني صحيح");
       return;
     }
+    if (!password) {
+      setFormError("يرجى إدخال كلمة المرور");
+      return;
+    }
+    setLoading(true);
+    setFormError(null);
+
+    const { error } = await signIn(cleanEmail, password);
+    if (error) {
+      let friendly = error;
+      if (error === AUTH_MESSAGES.invalidCredentials) {
+        // Distinguish "wrong password" from "this account signs in with Google".
+        try {
+          const info = await lookupSignInMethods({ data: { email: cleanEmail } });
+          if (info.exists && !info.hasPassword && info.providers.length > 0) {
+            friendly =
+              "هذا الحساب مرتبط بتسجيل الدخول عبر Google. استخدم زر «المتابعة عبر Google» أعلاه، أو عيّن كلمة مرور عبر «نسيت كلمة المرور؟».";
+          } else if (!info.exists) {
+            friendly = AUTH_MESSAGES.userNotFound;
+          }
+        } catch {
+          /* keep the generic credentials message */
+        }
+      }
+      logAuthEvent({ route: "/login", action: "sign_in_password", sanitizedMessage: friendly });
+      setLoading(false);
+      setFormError(friendly);
+      return;
+    }
+
+    // Wait for session + profile + membership before navigating (no flash, no loop).
     const refreshed = await refresh();
+    setLoading(false);
     toast.success("مرحباً بعودتك");
-    navigate({ to: refreshed.memberships.length > 0 ? redirect || "/dashboard" : "/onboarding", replace: true });
+    navigate({
+      to: destinationFor(refreshed.memberships.length, refreshed.allMemberships.length),
+      replace: true,
+    } as never);
   };
 
   const google = async () => {
-    sessionStorage.setItem("mehla_auth_redirect", redirect || "/dashboard");
+    sessionStorage.setItem("mehla_auth_redirect", safeRedirect);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
     });
-    if (result.error) toast.error("تعذّر الدخول عبر Google");
+    if (result.error) {
+      setFormError("تعذر بدء تسجيل الدخول عبر Google. حاول مرة أخرى.");
+      logAuthEvent({ route: "/login", action: "sign_in_google", sanitizedMessage: "oauth_start_failed" });
+    }
   };
 
-  if (authLoading || (session && organizationLoading)) {
+  // Only show the verification screen when a session actually exists.
+  if (session && (authLoading || organizationLoading)) {
     return (
-      <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل عرض صفحة الدخول">
+      <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك قبل المتابعة">
         <div className="rounded-xl border border-[#123C32]/15 bg-[#F5F3EE] p-5 text-sm text-[#123C32]">
           لحظات قليلة…
         </div>
@@ -83,14 +130,14 @@ function LoginPage() {
     <div className="my-5 flex items-center gap-3 text-xs text-[#123C32]/50">
       <div className="h-px flex-1 bg-[#123C32]/10" /> أو <div className="h-px flex-1 bg-[#123C32]/10" />
     </div>
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} noValidate className="space-y-4">
       {formError && (
-        <div className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
+        <div role="alert" className="rounded-xl border border-[#7A2E20]/25 bg-[#7A2E20]/5 p-3 text-xs leading-6 text-[#7A2E20]">
           {formError}
         </div>
       )}
       <Field label="البريد الإلكتروني">
-        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value.trim())} className={inputCls} />
+        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
       </Field>
       <Field label="كلمة المرور">
         <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
@@ -100,8 +147,8 @@ function LoginPage() {
           نسيت كلمة المرور؟
         </Link>
       </div>
-      <button disabled={loading} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
-        {loading ? "جاري الدخول…" : "دخول"}
+      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+        {loading ? "جاري تسجيل الدخول…" : "دخول"}
       </button>
     </form>
     <p className="mt-6 text-center text-sm text-[#123C32]/70">

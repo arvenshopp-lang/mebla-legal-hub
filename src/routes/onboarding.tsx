@@ -11,7 +11,8 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
-  const { session, authLoading, organizationLoading, memberships, refresh, setActiveOrgId } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, allMemberships, refresh, setActiveOrgId } =
+    useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -19,9 +20,14 @@ function OnboardingPage() {
   const loading = authLoading || organizationLoading;
 
   useEffect(() => {
-    if (!loading && !session) navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
-    if (!loading && memberships.length > 0) navigate({ to: "/dashboard", replace: true });
-  }, [loading, session, memberships, navigate]);
+    if (loading) return;
+    if (!session) {
+      navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
+      return;
+    }
+    if (memberships.length > 0) navigate({ to: "/dashboard", replace: true });
+    else if (allMemberships.length > 0) navigate({ to: "/pending-access", replace: true });
+  }, [loading, session, memberships.length, allMemberships.length, navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +79,7 @@ function OnboardingPage() {
         <Field label="المدينة (اختياري)">
           <input disabled={submitting} value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="الرياض" />
         </Field>
-        <button disabled={submitting || !name.trim()} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
+        <button type="submit" disabled={submitting || !name.trim()} className="w-full rounded-xl bg-[#123C32] py-3 text-sm font-semibold text-white hover:bg-[#0d2e26] transition disabled:opacity-60">
           {submitting ? "جاري الإنشاء…" : "إنشاء المكتب والمتابعة"}
         </button>
       </form>

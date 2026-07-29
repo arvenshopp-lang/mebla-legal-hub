@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { AUTH_MESSAGES, logAuthEvent, translateAuthError } from "@/lib/auth-errors";
 
 type Profile = {
   id: string;
@@ -11,10 +12,20 @@ type Profile = {
   job_title: string | null;
 };
 
+export type AppRole = "owner" | "admin" | "lawyer" | "legal_assistant" | "viewer";
+export type MemberStatus = "active" | "pending" | "suspended";
+
 type OrgMembership = {
   organization_id: string;
-  role: "owner" | "admin" | "lawyer" | "legal_assistant" | "viewer";
+  role: AppRole;
+  status: MemberStatus;
   organization: { id: string; name: string } | null;
+};
+
+type LoadResult = {
+  session: Session | null;
+  memberships: OrgMembership[];
+  allMemberships: OrgMembership[];
 };
 
 type AuthContextValue = {
@@ -24,50 +35,60 @@ type AuthContextValue = {
   authLoading: boolean;
   profileLoading: boolean;
   organizationLoading: boolean;
+  authError: string | null;
   membership: OrgMembership | null;
   loading: boolean;
+  /** active memberships only */
   memberships: OrgMembership[];
+  /** every membership, whatever the status */
+  allMemberships: OrgMembership[];
   activeOrgId: string | null;
-  activeRole: OrgMembership["role"] | null;
+  activeRole: AppRole | null;
   setActiveOrgId: (id: string) => void;
-  refresh: () => Promise<{ session: Session | null; memberships: OrgMembership[] }>;
+  refresh: () => Promise<LoadResult>;
+  refreshAuthContext: () => Promise<LoadResult>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const ACTIVE_ORG_KEY = "mehla_active_org";
+const EMPTY: LoadResult = { session: null, memberships: [], allMemberships: [] };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [memberships, setMemberships] = useState<OrgMembership[]>([]);
+  const [allMemberships, setAllMemberships] = useState<OrgMembership[]>([]);
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [organizationLoading, setOrganizationLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const requestId = useRef(0);
 
-  const setActiveOrgId = (id: string) => {
+  const setActiveOrgId = useCallback((id: string) => {
     setActiveOrgIdState(id);
     if (typeof window !== "undefined") localStorage.setItem(ACTIVE_ORG_KEY, id);
-  };
+  }, []);
 
   const clearUserData = useCallback(() => {
     setProfile(null);
-    setMemberships([]);
+    setAllMemberships([]);
     setActiveOrgIdState(null);
     setProfileLoading(false);
     setOrganizationLoading(false);
+    setAuthError(null);
     if (typeof window !== "undefined") localStorage.removeItem(ACTIVE_ORG_KEY);
   }, []);
 
-  const applyMemberships = useCallback((list: OrgMembership[]) => {
-    setMemberships(list);
-    if (list.length > 0) {
+  const applyMemberships = useCallback((all: OrgMembership[]) => {
+    setAllMemberships(all);
+    const active = all.filter((m) => m.status === "active");
+    if (active.length > 0) {
       const stored = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_ORG_KEY) : null;
-      const found = list.find((m) => m.organization_id === stored);
-      const nextOrgId = found?.organization_id ?? list[0].organization_id;
+      const found = active.find((m) => m.organization_id === stored);
+      const nextOrgId = found?.organization_id ?? active[0].organization_id;
       setActiveOrgIdState(nextOrgId);
       if (typeof window !== "undefined") localStorage.setItem(ACTIVE_ORG_KEY, nextOrgId);
     } else {
@@ -76,73 +97,150 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadUserData = useCallback(async (user: User, currentRequestId: number) => {
-    setProfileLoading(true);
-    setOrganizationLoading(true);
+  /** Loads profile + memberships. Never signs the user out on failure. */
+  const loadUserData = useCallback(
+    async (currentUser: User, currentRequestId: number): Promise<OrgMembership[]> => {
+      setProfileLoading(true);
+      setOrganizationLoading(true);
 
-    const [profileResult, membershipResult] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, avatar_url, job_title")
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("organization_members")
-        .select("organization_id, role, organization:organizations(id,name)")
-        .eq("user_id", user.id)
-        .eq("status", "active"),
-    ]);
+      const [profileResult, membershipResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, email, phone, avatar_url, job_title")
+          .eq("id", currentUser.id)
+          .maybeSingle(),
+        supabase
+          .from("organization_members")
+          .select("organization_id, role, status, organization:organizations(id,name)")
+          .eq("user_id", currentUser.id),
+      ]);
 
-    if (requestId.current !== currentRequestId) {
-      return [];
-    }
+      if (requestId.current !== currentRequestId) return [];
 
-    setProfile((profileResult.data ?? null) as Profile | null);
-    const list = (membershipResult.data ?? []) as unknown as OrgMembership[];
-    applyMemberships(list);
-    setProfileLoading(false);
-    setOrganizationLoading(false);
-    return list;
-  }, [applyMemberships]);
+      let loadError: string | null = null;
+
+      if (profileResult.error) {
+        loadError = AUTH_MESSAGES.profileLoadFailed;
+        logAuthEvent({
+          route: "auth-provider",
+          action: "load_profile",
+          errorCode: profileResult.error.code,
+          sanitizedMessage: AUTH_MESSAGES.profileLoadFailed,
+          userId: currentUser.id,
+        });
+      } else if (!profileResult.data) {
+        // Session without a profile row: self-heal through the RLS-protected
+        // "insert own profile" policy instead of dropping the user to /login.
+        const meta = (currentUser.user_metadata ?? {}) as Record<string, unknown>;
+        const fullName =
+          (typeof meta.full_name === "string" && meta.full_name) ||
+          (typeof meta.name === "string" && meta.name) ||
+          currentUser.email?.split("@")[0] ||
+          "مستخدم";
+        const { data: created, error: createError } = await supabase
+          .from("profiles")
+          .insert({ id: currentUser.id, full_name: fullName, email: currentUser.email ?? null })
+          .select("id, full_name, email, phone, avatar_url, job_title")
+          .maybeSingle();
+        if (createError) {
+          loadError = AUTH_MESSAGES.profileLoadFailed;
+          logAuthEvent({
+            route: "auth-provider",
+            action: "create_profile",
+            errorCode: createError.code,
+            sanitizedMessage: AUTH_MESSAGES.profileLoadFailed,
+            userId: currentUser.id,
+          });
+        }
+        if (requestId.current !== currentRequestId) return [];
+        setProfile((created ?? null) as Profile | null);
+      } else {
+        setProfile(profileResult.data as Profile);
+      }
+
+      if (membershipResult.error) {
+        loadError = AUTH_MESSAGES.organizationLoadFailed;
+        logAuthEvent({
+          route: "auth-provider",
+          action: "load_memberships",
+          errorCode: membershipResult.error.code,
+          sanitizedMessage: AUTH_MESSAGES.organizationLoadFailed,
+          userId: currentUser.id,
+        });
+      }
+
+      const all = (membershipResult.data ?? []) as unknown as OrgMembership[];
+      applyMemberships(all);
+      setAuthError(loadError);
+      setProfileLoading(false);
+      setOrganizationLoading(false);
+      return all;
+    },
+    [applyMemberships],
+  );
+
+  const runLoad = useCallback(
+    async (nextSession: Session | null): Promise<LoadResult> => {
+      const currentRequestId = ++requestId.current;
+      setSession(nextSession);
+      let all: OrgMembership[] = [];
+      if (nextSession?.user) {
+        all = await loadUserData(nextSession.user, currentRequestId);
+      } else {
+        clearUserData();
+      }
+      if (requestId.current !== currentRequestId) return EMPTY;
+      setAuthLoading(false);
+      return {
+        session: nextSession,
+        memberships: all.filter((m) => m.status === "active"),
+        allMemberships: all,
+      };
+    },
+    [clearUserData, loadUserData],
+  );
 
   const refresh = useCallback(async () => {
-    const currentRequestId = ++requestId.current;
-    setAuthLoading(true);
     const { data } = await supabase.auth.getSession();
-    if (requestId.current !== currentRequestId) {
-      return { session: null, memberships: [] };
-    }
-    setSession(data.session);
-    let nextMemberships: OrgMembership[] = [];
-    if (data.session?.user) {
-      nextMemberships = await loadUserData(data.session.user, currentRequestId);
-    } else {
-      clearUserData();
-    }
-    if (requestId.current === currentRequestId) setAuthLoading(false);
-    return { session: data.session, memberships: nextMemberships };
-  }, [clearUserData, loadUserData]);
+    return runLoad(data.session ?? null);
+  }, [runLoad]);
 
   useEffect(() => {
-    refresh();
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-      const currentRequestId = ++requestId.current;
-      setAuthLoading(true);
-      setSession(s);
-      if (s?.user) await loadUserData(s.user, currentRequestId);
-      else clearUserData();
-      if (requestId.current === currentRequestId) setAuthLoading(false);
+    let mounted = true;
+    // A single listener is the only source of truth. Supabase emits
+    // INITIAL_SESSION right after subscribing, so no extra bootstrap call is
+    // needed (which would double-load and cause the login-page flash).
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+      if (event === "TOKEN_REFRESHED") {
+        setSession(nextSession);
+        return;
+      }
+      void runLoad(nextSession ?? null);
     });
     return () => {
+      mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, [clearUserData, loadUserData, refresh]);
+  }, [runLoad]);
 
-  const signOut = async () => {
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) return { error: translateAuthError(error) };
+    return { error: null };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    requestId.current++;
     await supabase.auth.signOut();
     clearUserData();
-  };
+    setSession(null);
+  }, [clearUserData]);
 
+  const memberships = allMemberships.filter((m) => m.status === "active");
   const membership = memberships.find((m) => m.organization_id === activeOrgId) ?? null;
   const activeRole = membership?.role ?? null;
   const loading = authLoading || profileLoading || organizationLoading;
@@ -156,13 +254,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authLoading,
         profileLoading,
         organizationLoading,
+        authError,
         membership,
         loading,
         memberships,
+        allMemberships,
         activeOrgId,
         activeRole,
         setActiveOrgId,
         refresh,
+        refreshAuthContext: refresh,
+        signIn,
         signOut,
       }}
     >
@@ -177,7 +279,7 @@ export function useAuth() {
   return ctx;
 }
 
-export const ROLE_LABELS: Record<OrgMembership["role"], string> = {
+export const ROLE_LABELS: Record<AppRole, string> = {
   owner: "مالك",
   admin: "مدير",
   lawyer: "محامٍ",
@@ -185,9 +287,9 @@ export const ROLE_LABELS: Record<OrgMembership["role"], string> = {
   viewer: "مشاهد",
 };
 
-export function canManage(role: OrgMembership["role"] | null) {
+export function canManage(role: AppRole | null) {
   return role === "owner" || role === "admin";
 }
-export function canEdit(role: OrgMembership["role"] | null) {
+export function canEdit(role: AppRole | null) {
   return role === "owner" || role === "admin" || role === "lawyer" || role === "legal_assistant";
 }

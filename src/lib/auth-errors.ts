@@ -1,0 +1,59 @@
+export type AuthErrorLike = { message?: string; status?: number; code?: string } | null | undefined;
+
+export const AUTH_MESSAGES = {
+  invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+  emailNotConfirmed: "يجب تأكيد البريد الإلكتروني قبل تسجيل الدخول",
+  userNotFound: "لا يوجد حساب مرتبط بهذا البريد",
+  tooManyRequests: "كثرت المحاولات. حاول مرة أخرى بعد قليل",
+  network: "تعذر الاتصال بالخدمة. تحقق من الإنترنت ثم أعد المحاولة",
+  sessionExpired: "انتهت الجلسة. سجل الدخول مرة أخرى",
+  accessDenied: "لا تملك صلاحية الدخول إلى هذه المنشأة",
+  profileLoadFailed:
+    "تم تسجيل الدخول ولكن تعذر تحميل بيانات الحساب. حاول مرة أخرى أو تواصل مع الدعم",
+  organizationLoadFailed: "تم تسجيل الدخول ولكن تعذر تحميل بيانات المنشأة",
+  weakPassword: "كلمة المرور ضعيفة. استخدم 8 أحرف على الأقل مع أرقام ورموز",
+  emailTaken: "هذا البريد مسجّل مسبقاً. سجّل الدخول بدلاً من إنشاء حساب",
+  generic: "حدث خطأ غير متوقع. حاول مرة أخرى",
+} as const;
+
+/** Translates a Supabase/GoTrue error into a clear Arabic message (no technical details leaked). */
+export function translateAuthError(error: AuthErrorLike): string {
+  if (!error) return AUTH_MESSAGES.generic;
+  const code = (error.code || "").toLowerCase();
+  const msg = (error.message || "").toLowerCase();
+
+  if (code === "invalid_credentials" || msg.includes("invalid login credentials"))
+    return AUTH_MESSAGES.invalidCredentials;
+  if (code === "email_not_confirmed" || msg.includes("email not confirmed"))
+    return AUTH_MESSAGES.emailNotConfirmed;
+  if (code === "user_not_found" || msg.includes("user not found")) return AUTH_MESSAGES.userNotFound;
+  if (error.status === 429 || code.includes("over_") || msg.includes("too many"))
+    return AUTH_MESSAGES.tooManyRequests;
+  if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("already been registered"))
+    return AUTH_MESSAGES.emailTaken;
+  if (code === "weak_password" || msg.includes("password should be")) return AUTH_MESSAGES.weakPassword;
+  if (msg.includes("session") && (msg.includes("expired") || msg.includes("missing")))
+    return AUTH_MESSAGES.sessionExpired;
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("network") ||
+    msg.includes("load failed") ||
+    error.status === 0 ||
+    (error.status ?? 0) >= 500
+  )
+    return AUTH_MESSAGES.network;
+  return AUTH_MESSAGES.generic;
+}
+
+/** Structured, PII-safe log line for auth failures. Never logs passwords or tokens. */
+export function logAuthEvent(entry: {
+  route: string;
+  action: string;
+  errorCode?: string;
+  sanitizedMessage: string;
+  userId?: string | null;
+  organizationId?: string | null;
+  requestId?: string | null;
+}) {
+  console.warn("[auth]", JSON.stringify({ ...entry, occurred_at: new Date().toISOString() }));
+}
