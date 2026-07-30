@@ -365,6 +365,9 @@ export function Modal({
   description?: string;
   children: ReactNode;
   size?: "md" | "lg";
+  /** يعرض طبقة انتظار داخل النافذة أثناء جلب بياناتها أو حفظها */
+  busy?: boolean;
+  busyLabel?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
