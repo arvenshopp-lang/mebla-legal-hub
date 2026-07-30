@@ -358,6 +358,8 @@ export function Modal({
   description,
   children,
   size = "md",
+  busy = false,
+  busyLabel = "جاري التحميل…",
 }: {
   open: boolean;
   onClose: () => void;
@@ -424,7 +426,20 @@ export function Modal({
             <X className="h-4 w-4" aria-hidden />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">{children}</div>
+        <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+          {children}
+          {busy && (
+            <div
+              role="status"
+              className="absolute inset-0 z-10 flex items-center justify-center bg-surface/70 backdrop-blur-[1px]"
+            >
+              <span className="inline-flex items-center gap-2 text-body-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {busyLabel}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
