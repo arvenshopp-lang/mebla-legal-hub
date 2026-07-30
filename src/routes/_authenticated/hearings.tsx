@@ -154,7 +154,7 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
   const key = editing?.id ?? "new";
   const [k, setK] = useState(key);
 
-  const { data: cases } = useQuery({
+  const { data: cases, isLoading: loadingCases } = useQuery({
     queryKey: ["cases-basic", activeOrgId],
     enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("cases").select("id, case_title, case_number").eq("organization_id", activeOrgId!).order("last_activity_at", { ascending: false })).data ?? [],
@@ -191,7 +191,7 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "تعديل جلسة" : "جلسة جديدة"} size="lg">
+    <Modal open={open} onClose={onClose} title={editing ? "تعديل جلسة" : "جلسة جديدة"} size="lg" busy={loadingCases} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="القضية *">
           <select value={form.case_id ?? ""} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className={inputCls}>

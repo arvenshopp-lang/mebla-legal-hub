@@ -208,7 +208,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   const key = editing?.id ?? "new";
   const [formKey, setFormKey] = useState(key);
 
-  const { data: clients } = useQuery({
+  const { data: clients, isLoading: loadingClients } = useQuery({
     queryKey: ["clients-basic", activeOrgId],
     enabled: !!activeOrgId && open,
     queryFn: async () => {
@@ -261,7 +261,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "تعديل قضية" : "قضية جديدة"} size="lg">
+    <Modal open={open} onClose={onClose} title={editing ? "تعديل قضية" : "قضية جديدة"} size="lg" busy={loadingClients} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <FormField label="عنوان القضية *">
