@@ -6,7 +6,7 @@ import { Copy, Link2, Plus, Share2, Ban, ChevronDown, ChevronUp } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit } from "@/hooks/use-auth";
 import { fmtDateTime } from "@/lib/enums";
-import { Badge, Btn, ConfirmDialog, FormField, Modal, inputCls } from "@/lib/list-utils";
+import { Badge, Btn, ConfirmDialog, FormField, IconBtn, Modal, SectionLoader, inputCls } from "@/lib/list-utils";
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
 
@@ -25,7 +25,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const revokeFn = useServerFn(revokeDocumentRequest);
 
-  const { data: rows } = useQuery({
+  const { data: rows, isLoading } = useQuery({
     queryKey: ["doc-requests", caseId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,7 +59,9 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
         )}
       </div>
 
-      {(rows ?? []).length === 0 ? (
+      {isLoading ? (
+        <SectionLoader label="جاري تحميل الطلبات…" rows={3} />
+      ) : (rows ?? []).length === 0 ? (
         <p className="py-6 text-center text-xs text-text-muted">
           لا توجد طلبات. أنشئ رابطاً آمناً يستخدم مرة واحدة لطلب مستندات من العميل.
         </p>
@@ -90,9 +92,15 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
                     {expanded === r.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                   {r.status === "active" && canEdit(activeRole) && (
-                    <button onClick={() => setRevoking(r)} className="rounded-lg p-1.5 text-danger hover:bg-surface" title="إلغاء الرابط">
+                    <IconBtn
+                      tone="danger"
+                      title="إلغاء الرابط"
+                      aria-label="إلغاء الرابط"
+                      loading={revoke.isPending && revoking?.id === r.id}
+                      onClick={() => setRevoking(r)}
+                    >
                       <Ban className="h-4 w-4" />
-                    </button>
+                    </IconBtn>
                   )}
                 </div>
               </div>
@@ -117,7 +125,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
 }
 
 function RequestLog({ requestId }: { requestId: string }) {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["doc-request-events", requestId],
     queryFn: async () =>
       (await supabase.from("document_request_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false })).data ?? [],
@@ -125,7 +133,9 @@ function RequestLog({ requestId }: { requestId: string }) {
   return (
     <div className="mt-3 border-t border-border pt-3">
       <div className="mb-2 text-[11px] font-semibold text-muted-foreground">سجل العمليات</div>
-      {(data ?? []).length === 0 ? (
+      {isLoading ? (
+        <SectionLoader label="جاري تحميل السجل…" rows={2} />
+      ) : (data ?? []).length === 0 ? (
         <p className="text-[11px] text-text-muted">لا يوجد سجل بعد.</p>
       ) : (
         <ul className="space-y-1">
@@ -232,7 +242,7 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
-            <Btn onClick={submit} disabled={saving}>{saving ? "جاري…" : "إنشاء الرابط"}</Btn>
+            <Btn onClick={submit} loading={saving}>{saving ? "جاري إنشاء الرابط…" : "إنشاء الرابط"}</Btn>
           </div>
         </>
       )}
