@@ -26,6 +26,7 @@ function Page() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<any | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const q = useDebounced(search);
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -45,9 +46,14 @@ function Page() {
   });
 
   const download = async (d: any) => {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
-    if (error) return toast.error("تعذّر التحميل", { description: error.message });
-    window.open(data.signedUrl, "_blank");
+    setDownloadingId(d.id);
+    try {
+      const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
+      if (error) return toast.error("تعذّر التحميل", { description: error.message });
+      window.open(data.signedUrl, "_blank");
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const del = useMutation({
@@ -98,7 +104,7 @@ function Page() {
                       <Td>{d.uploader?.full_name ?? "—"}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => download(d)} className="rounded-lg p-1.5 hover:bg-surface-muted"><Download className="h-4 w-4" /></button>
+                          <IconBtn aria-label="تحميل" title="تحميل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
                           {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
@@ -130,11 +136,11 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   const [progress, setProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: cases } = useQuery({
+  const { data: cases, isLoading: loadingCases } = useQuery({
     queryKey: ["cases-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("cases").select("id, case_title").eq("organization_id", activeOrgId!)).data ?? [],
   });
-  const { data: clients } = useQuery({
+  const { data: clients, isLoading: loadingClients } = useQuery({
     queryKey: ["clients-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("clients").select("id, full_name").eq("organization_id", activeOrgId!)).data ?? [],
   });
@@ -179,7 +185,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   };
 
   return (
-    <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg">
+    <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg" busy={loadingCases || loadingClients} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="الملف *">
           <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
