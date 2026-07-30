@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
-import { Badge, Btn, EmptyState, ErrorBlock, SectionCard } from "@/lib/list-utils";
+import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
 import { ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -13,20 +13,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const dateTime = (v: string) =>
   new Date(v).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" });
 const dateOnly = (v: string) => new Date(v).toLocaleDateString("ar-SA", { dateStyle: "medium" });
-
-function RowSkeleton() {
-  return (
-    <div className="space-y-3 py-2" role="status" aria-live="polite">
-      <span className="sr-only">جاري التحميل…</span>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex items-center justify-between gap-4">
-          <div className="h-3.5 w-1/2 animate-pulse rounded bg-surface-muted" />
-          <div className="h-3.5 w-24 animate-pulse rounded bg-surface-muted" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function DashboardHome() {
   const { activeOrgId } = useAuth();
@@ -72,10 +58,10 @@ function DashboardHome() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="قضايا مفتوحة" value={isLoading ? "…" : stats!.openCases} />
-            <StatCard label="جلسات اليوم" value={isLoading ? "…" : stats!.hearingsToday} tone="gold" />
-            <StatCard label="مهل خلال 7 أيام" value={isLoading ? "…" : stats!.deadlinesSoon} tone="warn" />
-            <StatCard label="مهام متأخرة" value={isLoading ? "…" : stats!.overdueTasks} tone="danger" />
+            <StatCard label="قضايا مفتوحة" loading={isLoading} value={stats?.openCases ?? 0} />
+            <StatCard label="جلسات اليوم" loading={isLoading} value={stats?.hearingsToday ?? 0} tone="gold" />
+            <StatCard label="مهل خلال 7 أيام" loading={isLoading} value={stats?.deadlinesSoon ?? 0} tone="warn" />
+            <StatCard label="مهام متأخرة" loading={isLoading} value={stats?.overdueTasks ?? 0} tone="danger" />
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -90,7 +76,7 @@ function DashboardHome() {
               }
             >
               {isLoading ? (
-                <RowSkeleton />
+                <SectionLoader label="جاري تحميل البيانات…" />
               ) : stats!.upcomingHearings.length === 0 ? (
                 <EmptyState title="لا توجد جلسات قادمة" hint="ستظهر هنا الجلسات المجدولة تلقائياً." />
               ) : (
@@ -119,7 +105,7 @@ function DashboardHome() {
               }
             >
               {isLoading ? (
-                <RowSkeleton />
+                <SectionLoader label="جاري تحميل البيانات…" />
               ) : stats!.activeDeadlines.length === 0 ? (
                 <EmptyState title="لا توجد مهل نشطة" hint="أضف مهلة نظامية لمتابعة تواريخها." />
               ) : (
@@ -149,7 +135,7 @@ function DashboardHome() {
               }
             >
               {isLoading ? (
-                <RowSkeleton />
+                <SectionLoader label="جاري تحميل البيانات…" />
               ) : stats!.pendingTasks.length === 0 ? (
                 <EmptyState title="لا توجد مهام مفتوحة" hint="كل المهام مكتملة حالياً." />
               ) : (
