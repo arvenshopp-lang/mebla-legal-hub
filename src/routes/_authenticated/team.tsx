@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canManage, ROLE_LABELS } from "@/hooks/use-auth";
 import { APP_ROLE, INVITATION_STATUS, asOptions, fmtDate } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
+  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, ConfirmDialog,
 } from "@/lib/list-utils";
 import { Trash2, Copy } from "lucide-react";
@@ -31,7 +31,8 @@ function Page() {
   const [revoking, setRevoking] = useState<any | null>(null);
   const admin = canManage(activeRole);
 
-  const { data: members, isLoading, error } = useQuery({
+  const { data: members, isLoading, isFetching, error } = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["team-members", activeOrgId],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -88,6 +89,7 @@ function Page() {
   return (
     <DashboardShell title="الفريق">
       <PageToolbar
+        searching={isFetching && !isLoading}
         search={search} setSearch={setSearch}
         canAdd={admin}
         onAdd={() => setInviteOpen(true)}
@@ -95,7 +97,8 @@ function Page() {
       />
       {isLoading ? <LoadingBlock /> : error ? <ErrorBlock message={(error as any).message} /> :
         !filtered.length ? <EmptyState title="لا يوجد أعضاء" /> : (
-        <DataCard>
+        <BusyOverlay busy={isFetching && !isLoading}>
+            <DataCard>
           <table className="min-w-full">
             <thead className="bg-surface-muted/60">
               <tr><Th>الاسم</Th><Th>البريد</Th><Th>المسمى</Th><Th>الدور</Th><Th>الحالة</Th><Th>تاريخ الانضمام</Th><Th>{" "}</Th></tr>
@@ -124,7 +127,7 @@ function Page() {
                     <Td>{fmtDate(m.joined_at)}</Td>
                     <Td>
                       {admin && !isOwner && !isSelf && (
-                        <button onClick={() => setRemoving(m)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>
+                        <IconBtn tone="danger" aria-label="إزالة العضو" title="إزالة العضو" loading={remove.isPending && removing?.id === m.id} onClick={() => setRemoving(m)}><Trash2 className="h-4 w-4" /></IconBtn>
                       )}
                     </Td>
                   </tr>
@@ -132,7 +135,8 @@ function Page() {
               })}
             </tbody>
           </table>
-        </DataCard>
+            </DataCard>
+          </BusyOverlay>
       )}
 
       {admin && (invitations ?? []).length > 0 && (
@@ -160,7 +164,7 @@ function Page() {
                         )}
                       </Td>
                       <Td>
-                        {inv.status === "pending" && <button onClick={() => setRevoking(inv)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
+                        {inv.status === "pending" && <IconBtn tone="danger" aria-label="إلغاء الدعوة" title="إلغاء الدعوة" loading={revoke.isPending && revoking?.id === inv.id} onClick={() => setRevoking(inv)}><Trash2 className="h-4 w-4" /></IconBtn>}
                       </Td>
                     </tr>
                   );
@@ -241,7 +245,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
-            <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "إنشاء الدعوة"}</Btn>
+            <Btn onClick={save} loading={saving}>{saving ? "جاري الإنشاء…" : "إنشاء الدعوة"}</Btn>
           </div>
         </>
       )}

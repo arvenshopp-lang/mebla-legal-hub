@@ -122,6 +122,7 @@ export function PageToolbar({
   filters,
   canAdd = true,
   placeholder = "بحث…",
+  searching = false,
 }: {
   search: string;
   setSearch: (v: string) => void;
@@ -130,6 +131,8 @@ export function PageToolbar({
   filters?: ReactNode;
   canAdd?: boolean;
   placeholder?: string;
+  /** يعرض مؤشراً داخل حقل البحث أثناء جلب النتائج */
+  searching?: boolean;
 }) {
   const id = useId();
   return (
@@ -148,8 +151,17 @@ export function PageToolbar({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={placeholder}
-          className={cn(inputCls, "h-11 pr-10")}
+          className={cn(inputCls, "h-11 pr-10", searching && "pl-10")}
         />
+        {searching && (
+          <span
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            role="status"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            <span className="sr-only">جاري البحث…</span>
+          </span>
+        )}
       </div>
       {filters}
       {onAdd && canAdd && (
@@ -177,18 +189,124 @@ export function EmptyState({ title, hint, action }: { title: string; hint?: stri
   );
 }
 
-export function LoadingBlock({ rows = 5 }: { rows?: number }) {
+/** لبنة هيكل عظمي أساسية (Skeleton) — تحترم prefers-reduced-motion عبر animate-pulse. */
+export function Skeleton({ className }: { className?: string }) {
+  return <div aria-hidden className={cn("animate-pulse rounded-[var(--radius-s)] bg-surface-muted", className)} />;
+}
+
+/** أسطر نصية هيكلية بعرض متدرّج. */
+export function SkeletonText({ lines = 3, className }: { lines?: number; className?: string }) {
   return (
-    <div className="surface-card divide-y divide-border" role="status" aria-live="polite">
+    <div className={cn("space-y-2", className)} aria-hidden>
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} className={cn("h-3.5", i === lines - 1 ? "w-1/2" : i % 2 ? "w-5/6" : "w-full")} />
+      ))}
+    </div>
+  );
+}
+
+/** هيكل عظمي لجدول داخل بطاقة — يستخدم أثناء التحميل الأول للقوائم. */
+export function LoadingBlock({ rows = 5, cols = 3 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="surface-card divide-y divide-border" role="status" aria-live="polite" aria-busy="true">
       <span className="sr-only">جاري التحميل…</span>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-5 py-4">
-          <div className="h-4 flex-1 animate-pulse rounded bg-surface-muted" />
-          <div className="hidden h-4 w-32 animate-pulse rounded bg-surface-muted sm:block" />
-          <div className="h-4 w-16 animate-pulse rounded bg-surface-muted" />
+      <div className="flex items-center gap-4 bg-surface-muted/50 px-5 py-3.5">
+        {Array.from({ length: cols }).map((_, i) => (
+          <Skeleton key={i} className={cn("h-3", i === 0 ? "flex-1" : "hidden w-24 sm:block")} />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex items-center gap-4 px-5 py-4">
+          <Skeleton className="h-4 flex-1" />
+          {Array.from({ length: Math.max(0, cols - 2) }).map((_, i) => (
+            <Skeleton key={i} className="hidden h-4 w-24 sm:block" />
+          ))}
+          <Skeleton className="h-4 w-16" />
         </div>
       ))}
     </div>
+  );
+}
+
+/** هيكل عظمي لبطاقات الإحصاءات. */
+export function StatsSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" role="status" aria-busy="true">
+      <span className="sr-only">جاري تحميل الإحصاءات…</span>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="surface-card p-5">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="mt-3 h-7 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** حالة تحميل لقسم داخلي (بطاقة/تبويب) مع نص وصفي. */
+export function SectionLoader({ label = "جاري التحميل…", rows = 3 }: { label?: string; rows?: number }) {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite" className="py-2">
+      <span className="sr-only">{label}</span>
+      <SkeletonText lines={rows} />
+    </div>
+  );
+}
+
+/**
+ * غلاف يعرض طبقة تحميل خفيفة فوق محتوى موجود (بحث/فلترة/ترقيم صفحات)
+ * مع إبقاء البيانات السابقة ظاهرة لتفادي وميض التخطيط.
+ */
+export function BusyOverlay({
+  busy,
+  children,
+  label = "جاري تحديث النتائج…",
+}: {
+  busy: boolean;
+  children: ReactNode;
+  label?: string;
+}) {
+  return (
+    <div className="relative" aria-busy={busy || undefined}>
+      <div className={cn("transition-opacity duration-[var(--duration-fast)]", busy && "pointer-events-none opacity-55")}>
+        {children}
+      </div>
+      {busy && (
+        <div className="absolute inset-0 z-10 flex items-start justify-center pt-10" role="status">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground shadow-sm">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            {label}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** زر أيقونة بحالة تحميل — يستخدم لعمليات الصف (تحميل/حذف). */
+export function IconBtn({
+  loading = false,
+  tone = "default",
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean; tone?: "default" | "danger" }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      disabled={props.disabled || loading}
+      aria-busy={loading || undefined}
+      className={cn(
+        "rounded-[var(--radius-s)] p-1.5 transition-colors duration-[var(--duration-fast)]",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "disabled:opacity-50",
+        tone === "danger" ? "text-danger hover:bg-danger-soft" : "text-foreground hover:bg-surface-muted",
+        className,
+      )}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : children}
+    </button>
   );
 }
 
@@ -240,6 +358,8 @@ export function Modal({
   description,
   children,
   size = "md",
+  busy = false,
+  busyLabel = "جاري التحميل…",
 }: {
   open: boolean;
   onClose: () => void;
@@ -247,6 +367,9 @@ export function Modal({
   description?: string;
   children: ReactNode;
   size?: "md" | "lg";
+  /** يعرض طبقة انتظار داخل النافذة أثناء جلب بياناتها أو حفظها */
+  busy?: boolean;
+  busyLabel?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -303,7 +426,20 @@ export function Modal({
             <X className="h-4 w-4" aria-hidden />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">{children}</div>
+        <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+          {children}
+          {busy && (
+            <div
+              role="status"
+              className="absolute inset-0 z-10 flex items-center justify-center bg-surface/70 backdrop-blur-[1px]"
+            >
+              <span className="inline-flex items-center gap-2 text-body-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {busyLabel}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

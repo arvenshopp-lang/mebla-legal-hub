@@ -11,7 +11,7 @@ import {
   TASK_STATUS, fmtDate, fmtDateTime,
 } from "@/lib/enums";
 import {
-  LoadingBlock, ErrorBlock, Btn, Badge, Modal, FormField, inputCls, ConfirmDialog,
+  LoadingBlock, ErrorBlock, Btn, Badge, Modal, FormField, inputCls, ConfirmDialog, IconBtn, SectionLoader,
 } from "@/lib/list-utils";
 import { CaseDialog } from "./cases.index";
 import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
@@ -54,7 +54,7 @@ function Page() {
     },
   });
 
-  const { data: parties } = useQuery({
+  const { data: parties, isLoading: loadingParties } = useQuery({
     queryKey: ["case-parties", id],
     queryFn: async () => {
       const { data } = await supabase.from("case_parties").select("*").eq("case_id", id).order("created_at");
@@ -62,23 +62,23 @@ function Page() {
     },
   });
 
-  const { data: hearings } = useQuery({
+  const { data: hearings, isLoading: loadingHearings } = useQuery({
     queryKey: ["case-hearings", id],
     queryFn: async () => (await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false })).data ?? [],
   });
-  const { data: deadlines } = useQuery({
+  const { data: deadlines, isLoading: loadingDeadlines } = useQuery({
     queryKey: ["case-deadlines", id],
     queryFn: async () => (await supabase.from("deadlines").select("*").eq("case_id", id).order("due_date")).data ?? [],
   });
-  const { data: tasks } = useQuery({
+  const { data: tasks, isLoading: loadingTasks } = useQuery({
     queryKey: ["case-tasks", id],
     queryFn: async () => (await supabase.from("tasks").select("*").eq("case_id", id).order("created_at", { ascending: false })).data ?? [],
   });
-  const { data: docs } = useQuery({
+  const { data: docs, isLoading: loadingDocs } = useQuery({
     queryKey: ["case-docs", id],
     queryFn: async () => (await supabase.from("documents").select("*").eq("case_id", id).order("created_at", { ascending: false })).data ?? [],
   });
-  const { data: updates } = useQuery({
+  const { data: updates, isLoading: loadingUpdates } = useQuery({
     queryKey: ["case-updates", id],
     queryFn: async () => (await supabase.from("case_updates").select("*").eq("case_id", id).order("event_date", { ascending: false })).data ?? [],
   });
@@ -151,7 +151,9 @@ function Page() {
             <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
             {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Plus className="h-4 w-4" /></button>}
           </div>
-          {(parties ?? []).length === 0 ? (
+          {loadingParties ? (
+            <SectionLoader rows={2} />
+          ) : (parties ?? []).length === 0 ? (
             <p className="text-center text-xs text-text-muted py-4">لا يوجد أطراف</p>
           ) : (
             <ul className="space-y-2">
@@ -166,7 +168,7 @@ function Page() {
                     {canEdit(activeRole) && (
                       <div className="flex gap-1">
                         <button onClick={() => { setEditingParty(p); setPartyOpen(true); }} className="rounded p-1 hover:bg-surface"><Pencil className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => setDeletingParty(p)} className="rounded p-1 text-danger hover:bg-surface"><Trash2 className="h-3.5 w-3.5" /></button>
+                        <IconBtn tone="danger" aria-label="حذف الطرف" title="حذف" loading={delParty.isPending && deletingParty?.id === p.id} onClick={() => setDeletingParty(p)}><Trash2 className="h-3.5 w-3.5" /></IconBtn>
                       </div>
                     )}
                   </div>
@@ -178,7 +180,7 @@ function Page() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <RelatedList title="الجلسات" empty="لا توجد جلسات">
+        <RelatedList loading={loadingHearings} title="الجلسات" empty="لا توجد جلسات">
           {(hearings ?? []).map((h: any) => (
             <div key={h.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0"><div className="font-medium truncate">{h.title}</div><div className="text-xs text-muted-foreground">{fmtDateTime(h.hearing_date)} · {h.court_name ?? "—"}</div></div>
@@ -186,7 +188,7 @@ function Page() {
             </div>
           ))}
         </RelatedList>
-        <RelatedList title="المهل" empty="لا توجد مهل">
+        <RelatedList loading={loadingDeadlines} title="المهل" empty="لا توجد مهل">
           {(deadlines ?? []).map((d: any) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0"><div className="font-medium truncate">{d.title}</div><div className="text-xs text-muted-foreground">{fmtDate(d.due_date)}</div></div>
@@ -194,7 +196,7 @@ function Page() {
             </div>
           ))}
         </RelatedList>
-        <RelatedList title="المهام" empty="لا توجد مهام">
+        <RelatedList loading={loadingTasks} title="المهام" empty="لا توجد مهام">
           {(tasks ?? []).map((t: any) => (
             <div key={t.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0"><div className="font-medium truncate">{t.title}</div><div className="text-xs text-muted-foreground">{t.due_date ? fmtDate(t.due_date) : "—"}</div></div>
@@ -202,7 +204,7 @@ function Page() {
             </div>
           ))}
         </RelatedList>
-        <RelatedList title="المستندات" empty="لا توجد مستندات">
+        <RelatedList loading={loadingDocs} title="المستندات" empty="لا توجد مستندات">
           {(docs ?? []).map((d: any) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0"><div className="font-medium truncate">{d.file_name}</div><div className="text-xs text-muted-foreground">{d.document_category ?? "—"}</div></div>
@@ -217,7 +219,9 @@ function Page() {
           <h3 className="text-sm font-bold">الخط الزمني</h3>
           {canEdit(activeRole) && <Btn size="sm" variant="outline" onClick={() => setUpdateOpen(true)}><Plus className="ms-1 inline h-4 w-4" /> إضافة تحديث</Btn>}
         </div>
-        {(updates ?? []).length === 0 ? (
+        {loadingUpdates ? (
+          <SectionLoader rows={3} />
+        ) : (updates ?? []).length === 0 ? (
           <p className="py-4 text-center text-xs text-text-muted">لا يوجد تحديثات</p>
         ) : (
           <ol className="relative border-r border-border pr-4 space-y-4">
@@ -275,13 +279,19 @@ function Info({ label, value }: { label: string; value: any }) {
   );
 }
 
-function RelatedList({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {
+function RelatedList({ title, empty, loading = false, children }: { title: string; empty: string; loading?: boolean; children: React.ReactNode }) {
   const arr = Array.isArray(children) ? children : [children];
   const has = arr.filter(Boolean).length > 0;
   return (
     <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      {has ? <div className="divide-y divide-border">{children}</div> : <p className="py-4 text-center text-xs text-text-muted">{empty}</p>}
+      {loading ? (
+        <SectionLoader rows={3} />
+      ) : has ? (
+        <div className="divide-y divide-border">{children}</div>
+      ) : (
+        <p className="py-4 text-center text-xs text-text-muted">{empty}</p>
+      )}
     </section>
   );
 }
@@ -348,7 +358,7 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
+        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>
     </Modal>
   );
@@ -411,7 +421,7 @@ function UpdateDialog({ open, onClose, caseId, orgId }: { open: boolean; onClose
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
+        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>
     </Modal>
   );

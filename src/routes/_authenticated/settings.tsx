@@ -66,7 +66,7 @@ function ProfileTab({ userId }: { userId?: string }) {
         <FormField label="الجوال"><input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></FormField>
         <FormField label="المسمى الوظيفي"><input value={form.job_title ?? ""} onChange={(e) => setForm({ ...form, job_title: e.target.value })} className={inputCls} /></FormField>
       </div>
-      <div className="mt-5 flex justify-end"><Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn></div>
+      <div className="mt-5 flex justify-end"><Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn></div>
     </div>
   );
 }
@@ -108,7 +108,7 @@ function OrgTab({ orgId, canManage: canEdit }: { orgId: string | null; canManage
         <FormField label="المدينة"><input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} /></FormField>
         <FormField label="العنوان"><input value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} /></FormField>
       </fieldset>
-      {canEdit && <div className="mt-5 flex justify-end"><Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn></div>}
+      {canEdit && <div className="mt-5 flex justify-end"><Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn></div>}
     </div>
   );
 }
@@ -183,7 +183,7 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
           <Tog k="inactive_cases" l="قضايا خاملة" />
         </div>
       </div>
-      <div className="flex justify-end"><Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn></div>
+      <div className="flex justify-end"><Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn></div>
     </div>
   );
 }

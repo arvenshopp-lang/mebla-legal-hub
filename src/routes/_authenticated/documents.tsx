@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
+  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Download, Trash2, Upload, Lock } from "lucide-react";
@@ -26,9 +26,11 @@ function Page() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<any | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const q = useDebounced(search);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["documents", activeOrgId, q, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -44,9 +46,14 @@ function Page() {
   });
 
   const download = async (d: any) => {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
-    if (error) return toast.error("تعذّر التحميل", { description: error.message });
-    window.open(data.signedUrl, "_blank");
+    setDownloadingId(d.id);
+    try {
+      const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
+      if (error) return toast.error("تعذّر التحميل", { description: error.message });
+      window.open(data.signedUrl, "_blank");
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const del = useMutation({
@@ -62,6 +69,7 @@ function Page() {
   return (
     <DashboardShell title="المستندات">
       <PageToolbar
+        searching={isFetching && !isLoading}
         search={search} setSearch={(v) => { setSearch(v); setPage(1); }}
         canAdd={canEdit(activeRole)}
         onAdd={() => setOpen(true)}
@@ -72,6 +80,7 @@ function Page() {
           <EmptyState title="لا توجد مستندات" hint="ارفع أول مستند لمكتبك" action={canEdit(activeRole) && <Btn onClick={() => setOpen(true)}><Upload className="inline h-4 w-4 me-1" /> رفع مستند</Btn>} />
         ) : (
           <>
+            <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
@@ -95,8 +104,8 @@ function Page() {
                       <Td>{d.uploader?.full_name ?? "—"}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => download(d)} className="rounded-lg p-1.5 hover:bg-surface-muted"><Download className="h-4 w-4" /></button>
-                          {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
+                          <IconBtn aria-label="تحميل" title="تحميل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
+                          {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
                     </tr>
@@ -104,6 +113,7 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
+            </BusyOverlay>
             <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
           </>
         )}
@@ -126,11 +136,11 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   const [progress, setProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: cases } = useQuery({
+  const { data: cases, isLoading: loadingCases } = useQuery({
     queryKey: ["cases-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("cases").select("id, case_title").eq("organization_id", activeOrgId!)).data ?? [],
   });
-  const { data: clients } = useQuery({
+  const { data: clients, isLoading: loadingClients } = useQuery({
     queryKey: ["clients-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("clients").select("id, full_name").eq("organization_id", activeOrgId!)).data ?? [],
   });
@@ -175,7 +185,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   };
 
   return (
-    <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg">
+    <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg" busy={loadingCases || loadingClients} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="الملف *">
           <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
@@ -202,7 +212,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={uploading}>إلغاء</Btn>
-        <Btn onClick={upload} disabled={uploading || !file}>{uploading ? "جاري الرفع…" : "رفع"}</Btn>
+        <Btn onClick={upload} loading={uploading} disabled={!file}>{uploading ? "جاري الرفع…" : "رفع"}</Btn>
       </div>
     </Modal>
   );

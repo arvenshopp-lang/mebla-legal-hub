@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { TASK_STATUS, TASK_PRIORITY, asOptions, fmtDate, daysUntil } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
+  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2, Check } from "lucide-react";
@@ -42,7 +42,8 @@ function Page() {
   const [deleting, setDeleting] = useState<any | null>(null);
   const q = useDebounced(search);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["tasks", activeOrgId, q, status, mine, user?.id, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -73,6 +74,7 @@ function Page() {
   return (
     <DashboardShell title="المهام">
       <PageToolbar
+        searching={isFetching && !isLoading}
         search={search} setSearch={(v) => { setSearch(v); setPage(1); }}
         canAdd={canEdit(activeRole)}
         onAdd={() => { setEditing(null); setOpen(true); }}
@@ -94,6 +96,7 @@ function Page() {
           <EmptyState title="لا توجد مهام" action={canEdit(activeRole) && <Btn onClick={() => { setEditing(null); setOpen(true); }}>إضافة مهمة</Btn>} />
         ) : (
           <>
+            <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
@@ -117,7 +120,7 @@ function Page() {
                               <button onClick={() => complete.mutate(t.id)} className="rounded-lg p-1.5 hover:bg-primary-soft" title="إنجاز"><Check className="h-4 w-4" /></button>
                             )}
                             {canEdit(activeRole) && <button onClick={() => { setEditing(t); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>}
-                            {canManage(activeRole) && <button onClick={() => setDeleting(t)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
+                            {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === t.id} onClick={() => setDeleting(t)}><Trash2 className="h-4 w-4" /></IconBtn>}
                           </div>
                         </Td>
                       </tr>
@@ -126,6 +129,7 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
+            </BusyOverlay>
             <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
           </>
         )}
@@ -144,11 +148,11 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
   const key = editing?.id ?? "new";
   const [k, setK] = useState(key);
 
-  const { data: cases } = useQuery({
+  const { data: cases, isLoading: loadingCases } = useQuery({
     queryKey: ["cases-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => (await supabase.from("cases").select("id, case_title").eq("organization_id", activeOrgId!)).data ?? [],
   });
-  const { data: members } = useQuery({
+  const { data: members, isLoading: loadingMembers } = useQuery({
     queryKey: ["members-basic", activeOrgId], enabled: !!activeOrgId && open,
     queryFn: async () => {
       const { data } = await supabase.from("organization_members").select("user_id, profile:profiles(full_name)").eq("organization_id", activeOrgId!).eq("status", "active");
@@ -187,7 +191,7 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "تعديل مهمة" : "مهمة جديدة"} size="lg">
+    <Modal open={open} onClose={onClose} title={editing ? "تعديل مهمة" : "مهمة جديدة"} size="lg" busy={loadingCases || loadingMembers} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="العنوان *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
@@ -220,7 +224,7 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "حفظ"}</Btn>
+        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>
     </Modal>
   );
