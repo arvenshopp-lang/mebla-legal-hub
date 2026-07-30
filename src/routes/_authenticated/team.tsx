@@ -127,7 +127,7 @@ function Page() {
                     <Td>{fmtDate(m.joined_at)}</Td>
                     <Td>
                       {admin && !isOwner && !isSelf && (
-                        <button onClick={() => setRemoving(m)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>
+                        <IconBtn tone="danger" aria-label="إزالة العضو" title="إزالة العضو" loading={remove.isPending && removing?.id === m.id} onClick={() => setRemoving(m)}><Trash2 className="h-4 w-4" /></IconBtn>
                       )}
                     </Td>
                   </tr>
@@ -135,7 +135,8 @@ function Page() {
               })}
             </tbody>
           </table>
-        </DataCard>
+            </DataCard>
+          </BusyOverlay>
       )}
 
       {admin && (invitations ?? []).length > 0 && (
@@ -163,7 +164,7 @@ function Page() {
                         )}
                       </Td>
                       <Td>
-                        {inv.status === "pending" && <button onClick={() => setRevoking(inv)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
+                        {inv.status === "pending" && <IconBtn tone="danger" aria-label="إلغاء الدعوة" title="إلغاء الدعوة" loading={revoke.isPending && revoking?.id === inv.id} onClick={() => setRevoking(inv)}><Trash2 className="h-4 w-4" /></IconBtn>}
                       </Td>
                     </tr>
                   );
@@ -171,7 +172,6 @@ function Page() {
               </tbody>
             </table>
           </DataCard>
-            </BusyOverlay>
         </div>
       )}
 
