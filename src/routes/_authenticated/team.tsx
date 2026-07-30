@@ -245,7 +245,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
-            <Btn onClick={save} disabled={saving}>{saving ? "جاري…" : "إنشاء الدعوة"}</Btn>
+            <Btn onClick={save} loading={saving}>{saving ? "جاري الإنشاء…" : "إنشاء الدعوة"}</Btn>
           </div>
         </>
       )}

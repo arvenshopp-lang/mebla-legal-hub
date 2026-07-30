@@ -212,7 +212,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={uploading}>إلغاء</Btn>
-        <Btn onClick={upload} disabled={uploading || !file}>{uploading ? "جاري الرفع…" : "رفع"}</Btn>
+        <Btn onClick={upload} loading={uploading} disabled={!file}>{uploading ? "جاري الرفع…" : "رفع"}</Btn>
       </div>
     </Modal>
   );

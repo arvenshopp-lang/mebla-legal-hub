@@ -334,7 +334,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} disabled={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
+        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>
     </Modal>
   );
