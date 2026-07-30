@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { CASE_STATUS, CASE_PRIORITY, CLIENT_ROLE, asOptions, fmtDate } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
+  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
@@ -72,7 +72,8 @@ function Page() {
     },
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["cases", activeOrgId, q, status, caseType, court, lawyer, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -114,6 +115,7 @@ function Page() {
   return (
     <DashboardShell title="القضايا">
       <PageToolbar
+        searching={isFetching && !isLoading}
         search={search}
         setSearch={(v) => { setSearch(v); setPage(1); }}
         canAdd={canEdit(activeRole)}
@@ -139,6 +141,7 @@ function Page() {
           <EmptyState title="لا توجد قضايا بعد" hint="ابدأ بإضافة أول قضية" action={canEdit(activeRole) && <Btn onClick={() => { setEditing(null); setOpen(true); }}>إضافة قضية</Btn>} />
         ) : (
           <>
+            <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
@@ -173,6 +176,7 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
+            </BusyOverlay>
             <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
           </>
         )}

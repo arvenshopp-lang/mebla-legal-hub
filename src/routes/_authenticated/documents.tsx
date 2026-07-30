@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td,
+  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Download, Trash2, Upload, Lock } from "lucide-react";
@@ -28,7 +28,8 @@ function Page() {
   const [deleting, setDeleting] = useState<any | null>(null);
   const q = useDebounced(search);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["documents", activeOrgId, q, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -62,6 +63,7 @@ function Page() {
   return (
     <DashboardShell title="المستندات">
       <PageToolbar
+        searching={isFetching && !isLoading}
         search={search} setSearch={(v) => { setSearch(v); setPage(1); }}
         canAdd={canEdit(activeRole)}
         onAdd={() => setOpen(true)}
@@ -72,6 +74,7 @@ function Page() {
           <EmptyState title="لا توجد مستندات" hint="ارفع أول مستند لمكتبك" action={canEdit(activeRole) && <Btn onClick={() => setOpen(true)}><Upload className="inline h-4 w-4 me-1" /> رفع مستند</Btn>} />
         ) : (
           <>
+            <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
@@ -96,7 +99,7 @@ function Page() {
                       <Td>
                         <div className="flex justify-end gap-1">
                           <button onClick={() => download(d)} className="rounded-lg p-1.5 hover:bg-surface-muted"><Download className="h-4 w-4" /></button>
-                          {canManage(activeRole) && <button onClick={() => setDeleting(d)} className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"><Trash2 className="h-4 w-4" /></button>}
+                          {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
                     </tr>
@@ -104,6 +107,7 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
+            </BusyOverlay>
             <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
           </>
         )}
