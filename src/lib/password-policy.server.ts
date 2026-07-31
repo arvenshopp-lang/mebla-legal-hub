@@ -47,18 +47,20 @@ export async function fetchBreachRange(prefix: string): Promise<string | null> {
 
 async function zxcvbnScore(password: string, ctx: PasswordContext): Promise<StrengthLevel> {
   try {
-    const [{ zxcvbn, zxcvbnOptions }, common, en] = await Promise.all([
+    const [{ ZxcvbnFactory }, common, en] = await Promise.all([
       import("@zxcvbn-ts/core"),
       import("@zxcvbn-ts/language-common"),
       import("@zxcvbn-ts/language-en"),
     ]);
-    zxcvbnOptions.setOptions({
+    const zxcvbn = new ZxcvbnFactory({
       dictionary: { ...common.dictionary, ...en.dictionary },
       graphs: common.adjacencyGraphs,
       translations: en.translations,
     });
-    const userInputs = [ctx.name, ctx.email].filter((v): v is string => Boolean(v));
-    return zxcvbn(password, userInputs).score as StrengthLevel;
+    const userInputs = [ctx.name, ctx.email, "mehla", "mehlalex"].filter(
+      (v): v is string => Boolean(v),
+    );
+    return zxcvbn.check(password, userInputs).score as StrengthLevel;
   } catch {
     return heuristicScore(password, ctx);
   }

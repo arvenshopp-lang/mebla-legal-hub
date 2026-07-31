@@ -27,14 +27,14 @@ function loadScorer(): Promise<ZxcvbnScorer> {
       import("@zxcvbn-ts/language-common"),
       import("@zxcvbn-ts/language-en"),
     ])
-      .then(([{ zxcvbn, zxcvbnOptions }, common, en]) => {
-        zxcvbnOptions.setOptions({
+      .then(([{ ZxcvbnFactory }, common, en]) => {
+        const zxcvbn = new ZxcvbnFactory({
           dictionary: { ...common.dictionary, ...en.dictionary },
           graphs: common.adjacencyGraphs,
           translations: en.translations,
         });
         const scorer: ZxcvbnScorer = (password, userInputs) =>
-          zxcvbn(password, userInputs).score as StrengthLevel;
+          zxcvbn.check(password, userInputs).score as StrengthLevel;
         return scorer;
       })
       .catch((error) => {
