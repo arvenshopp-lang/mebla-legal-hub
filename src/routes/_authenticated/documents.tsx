@@ -213,7 +213,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg" busy={loadingCases || loadingClients} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="الملف *">
-          <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
+          <input ref={fileRef} type="file" accept={ACCEPT_ATTR} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
           {file && <span className="mt-1 block text-xs text-muted-foreground">{file.name} · {fmtSize(file.size)}</span>}
         </FormField></div>
         <FormField label="القضية">
