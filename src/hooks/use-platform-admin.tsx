@@ -35,20 +35,20 @@ export function usePlatformStaffQuery() {
       const { data, error } = await supabase
         .from("platform_staff")
         .select(
-          "id, user_id, full_name, email, job_title, role, status, permissions, role_id, platform_roles(name, permissions)",
+          "id, user_id, full_name, email, job_title, role, status, permissions, role_id, platform_roles(name_ar, permissions)",
         )
         .eq("user_id", auth.user.id)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
       const row = data as unknown as PlatformStaff & {
-        platform_roles: { name: string; permissions: string[] | null } | null;
+        platform_roles: { name_ar: string; permissions: string[] | null } | null;
       };
       return {
         ...row,
         permissions: row.permissions ?? [],
         rolePermissions: row.platform_roles?.permissions ?? [],
-        roleName: row.platform_roles?.name ?? null,
+        roleName: row.platform_roles?.name_ar ?? null,
       };
     },
   });

@@ -251,7 +251,7 @@ export const requestSupportAccess = createServerFn({ method: "POST" })
       .from("support_access_grants")
       .insert({
         organization_id: data.organizationId,
-        staff_id: staff.user_id,
+        staff_user_id: staff.user_id,
         staff_email: staff.email,
         reason: data.reason,
         scope: data.scope,
