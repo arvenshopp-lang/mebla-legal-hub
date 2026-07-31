@@ -373,21 +373,26 @@ export function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  // نحتفظ بأحدث onClose داخل ref حتى لا يُعاد تشغيل التأثير عند كل إعادة رسم.
+  // (كان تمرير دالة مضمّنة يعيد تنفيذ التأثير بعد كل حرف ويسحب التركيز من الحقل.)
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onEsc);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // التركيز يُضبط مرة واحدة فقط عند الفتح، ولا يُعاد أثناء الكتابة.
     panelRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", onEsc);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
