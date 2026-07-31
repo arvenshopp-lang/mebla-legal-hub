@@ -17,7 +17,6 @@ import { Route as PendingAccessRouteImport } from './routes/pending-access'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as FocusProbeRouteImport } from './routes/focus-probe'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as MehlaAdminRouteRouteImport } from './routes/mehla-admin/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -82,11 +81,6 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FocusProbeRoute = FocusProbeRouteImport.update({
-  id: '/focus-probe',
-  path: '/focus-probe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -218,7 +212,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/mehla-admin': typeof MehlaAdminRouteRouteWithChildren
   '/docs': typeof DocsRoute
-  '/focus-probe': typeof FocusProbeRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -252,7 +245,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
-  '/focus-probe': typeof FocusProbeRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -289,7 +281,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/mehla-admin': typeof MehlaAdminRouteRouteWithChildren
   '/docs': typeof DocsRoute
-  '/focus-probe': typeof FocusProbeRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -326,7 +317,6 @@ export interface FileRouteTypes {
     | '/'
     | '/mehla-admin'
     | '/docs'
-    | '/focus-probe'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -360,7 +350,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/docs'
-    | '/focus-probe'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -396,7 +385,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/mehla-admin'
     | '/docs'
-    | '/focus-probe'
     | '/forgot-password'
     | '/login'
     | '/onboarding'
@@ -433,7 +421,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   MehlaAdminRouteRoute: typeof MehlaAdminRouteRouteWithChildren
   DocsRoute: typeof DocsRoute
-  FocusProbeRoute: typeof FocusProbeRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -505,13 +492,6 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/focus-probe': {
-      id: '/focus-probe'
-      path: '/focus-probe'
-      fullPath: '/focus-probe'
-      preLoaderRoute: typeof FocusProbeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -748,7 +728,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   MehlaAdminRouteRoute: MehlaAdminRouteRouteWithChildren,
   DocsRoute: DocsRoute,
-  FocusProbeRoute: FocusProbeRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
