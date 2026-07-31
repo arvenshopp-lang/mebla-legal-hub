@@ -7,7 +7,7 @@ import { Ban, Plus } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { activateSubscription, cancelSubscription } from "@/lib/admin.functions";
-import { PLAN_PRESETS, SUBSCRIPTION_STATUS_LABELS } from "@/lib/admin-permissions";
+import { SUBSCRIPTION_STATUS_LABELS } from "@/lib/admin-permissions";
 import {
   Badge,
   Btn,
@@ -198,9 +198,7 @@ function ActivateDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const planLabel =
     planCode === "custom"
       ? customLabel.trim() || "باقة مخصصة"
-      : (plans ?? []).find((p: { code: string; name_ar: string }) => p.code === planCode)?.name_ar ??
-        PLAN_PRESETS.find((p) => p.code === planCode)?.label ??
-        planCode;
+      : ((plans ?? []).find((p: { code: string; name_ar: string }) => p.code === planCode)?.name_ar ?? planCode);
 
   const reset = () => {
     setEmail("");
