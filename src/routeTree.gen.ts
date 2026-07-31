@@ -24,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
+import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
 import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
@@ -116,6 +117,11 @@ const UploadTokenRoute = UploadTokenRouteImport.update({
   id: '/upload/$token',
   path: '/upload/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MehlaAdminUsersRoute = MehlaAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const MehlaAdminSupportRoute = MehlaAdminSupportRouteImport.update({
   id: '/support',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
@@ -340,6 +349,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
+    | '/mehla-admin/users'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
+    | '/mehla-admin/users'
     | '/upload/$token'
     | '/mehla-admin'
     | '/upload'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
+    | '/mehla-admin/users'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
@@ -542,6 +554,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/upload/$token'
       preLoaderRoute: typeof UploadTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/mehla-admin/users': {
+      id: '/mehla-admin/users'
+      path: '/users'
+      fullPath: '/mehla-admin/users'
+      preLoaderRoute: typeof MehlaAdminUsersRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/support': {
       id: '/mehla-admin/support'
@@ -707,6 +726,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminStaffRoute: typeof MehlaAdminStaffRoute
   MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
   MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
+  MehlaAdminUsersRoute: typeof MehlaAdminUsersRoute
   MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
 }
 
@@ -716,6 +736,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminStaffRoute: MehlaAdminStaffRoute,
   MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
   MehlaAdminSupportRoute: MehlaAdminSupportRoute,
+  MehlaAdminUsersRoute: MehlaAdminUsersRoute,
   MehlaAdminIndexRoute: MehlaAdminIndexRoute,
 }
 
