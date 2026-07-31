@@ -10,6 +10,7 @@ import { PasswordChecklist } from "@/components/password-checklist";
 import { PasswordInput } from "@/components/password-input";
 import { usePasswordStrength } from "@/hooks/use-password-strength";
 import { validatePasswordPolicy } from "@/lib/password-policy.functions";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/register")({
