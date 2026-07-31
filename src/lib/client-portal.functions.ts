@@ -26,14 +26,19 @@ const fileMetaSchema = z.object({
 export const getUploadRequest = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent, clientIp } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const ipAddress = clientIp();
+    const guard = await guardUploadToken(ipAddress);
+    if (guard.limited) return { state: "rate_limited" as const };
+
     const found = await loadRequestByToken(data.token);
+    await guard.record(!!found);
     if (!found) return { state: "invalid" as const };
 
     const { request, org } = found;
     const state = found.effectiveStatus;
     if (state === "active") {
-      await logEvent(request, "opened", {}, clientIp());
+      await logEvent(request, "opened", {}, ipAddress);
     }
     return {
       state,
@@ -54,8 +59,11 @@ export const createUploadSlots = createServerFn({ method: "POST" })
     tokenSchema.extend({ files: z.array(fileMetaSchema).min(1).max(MAX_FILES_PER_REQUEST) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const { loadRequestByToken } = await import("./client-portal.server");
+    const { loadRequestByToken, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const guard = await guardUploadToken(clientIp());
+    if (guard.limited) throw new Error("تم تجاوز عدد المحاولات المسموح بها، حاول لاحقاً.");
     const found = await loadRequestByToken(data.token);
+    await guard.record(!!found && found.effectiveStatus === "active");
     if (!found || found.effectiveStatus !== "active") {
       throw new Error("هذا الرابط لم يعد صالحاً للاستخدام.");
     }
@@ -85,8 +93,11 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent, clientIp } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const guard = await guardUploadToken(clientIp());
+    if (guard.limited) throw new Error("تم تجاوز عدد المحاولات المسموح بها، حاول لاحقاً.");
     const found = await loadRequestByToken(data.token);
+    await guard.record(!!found && found.effectiveStatus === "active");
     if (!found || found.effectiveStatus !== "active") {
       throw new Error("هذا الرابط لم يعد صالحاً للاستخدام.");
     }
