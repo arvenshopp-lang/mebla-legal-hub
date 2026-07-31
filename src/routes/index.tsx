@@ -72,6 +72,7 @@ function useScrolled() {
 const NAV = [
   { href: "#product", label: "المنتج" },
   { href: "#capabilities", label: "المزايا" },
+  { href: "#how", label: "كيف تعمل" },
   { href: "#workflow", label: "سير العمل" },
   { href: "#security", label: "الأمان" },
 ];
