@@ -82,6 +82,35 @@ export async function recordLookupAttempt(ipHash: string, code: string, success:
   });
 }
 
+/**
+ * Rate limit for the public upload-link endpoints.
+ * Uses the same ledger as case lookups with a namespaced ip hash so that
+ * brute-forcing tokens is bounded per IP and every attempt is recorded.
+ */
+const UPLOAD_MAX_ATTEMPTS = 30;
+const UPLOAD_MAX_FAILURES = 8;
+
+export async function guardUploadToken(rawIp: string) {
+  const ipHash = await hashText(`upload:${rawIp}`);
+  const since = new Date(Date.now() - WINDOW_MINUTES * 60_000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("case_lookup_attempts")
+    .select("success")
+    .eq("ip_hash", ipHash)
+    .gte("created_at", since)
+    .limit(200);
+  const rows = data ?? [];
+  const failures = rows.filter((r) => !r.success).length;
+  return {
+    limited: rows.length >= UPLOAD_MAX_ATTEMPTS || failures >= UPLOAD_MAX_FAILURES,
+    record: async (success: boolean) => {
+      await supabaseAdmin
+        .from("case_lookup_attempts")
+        .insert({ ip_hash: ipHash, code_attempt: "upload-token", success });
+    },
+  };
+}
+
 /** Cryptographically strong, URL-safe single-use token. */
 export function generateToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
