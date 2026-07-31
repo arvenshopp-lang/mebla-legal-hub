@@ -110,8 +110,10 @@ function LogsPage() {
                     <Badge tone="info">{ACTION_LABELS[l.action] ?? l.action}</Badge>
                   </Td>
                   <Td>{ENTITY_LABELS[l.entity_type] ?? l.entity_type}</Td>
-                  <Td className="max-w-[280px] truncate text-[12px] text-muted-foreground" title={l.description ?? ""}>
-                    {l.description ?? "—"}
+                  <Td className="max-w-[280px] text-[12px] text-muted-foreground">
+                    <span className="block truncate" title={l.description ?? ""}>
+                      {l.description ?? "—"}
+                    </span>
                   </Td>
                   <Td className="text-left text-[12px] text-muted-foreground">{l.ip ?? "—"}</Td>
                 </tr>
