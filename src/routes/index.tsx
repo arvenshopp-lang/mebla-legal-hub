@@ -327,6 +327,242 @@ function Capabilities() {
   );
 }
 
+/* ------------------------------------------------------- كيف تعمل مِهلة */
+
+type HowStep = {
+  key: string;
+  label: string;
+  title: string;
+  body: string;
+  example: {
+    kind: string;
+    heading: string;
+    rows: [string, string][];
+    timeline: { label: string; note: string; state: "done" | "now" | "next" }[];
+    alert?: string;
+  };
+};
+
+const HOW_STEPS: HowStep[] = [
+  {
+    key: "case",
+    label: "١. القضية",
+    title: "افتح القضية مرة واحدة",
+    body: "تُسجّل بيانات القضية والمحكمة والعميل، فيصبح لكل جلسة ومهلة ومستند مكان واضح مرتبط بها.",
+    example: {
+      kind: "ملف قضية",
+      heading: "مطالبة مالية · 4512/1447",
+      rows: [
+        ["المحكمة", "المحكمة التجارية — الرياض"],
+        ["الموكل", "شركة نماء التجارية"],
+        ["الدائرة", "الدائرة الثالثة"],
+        ["رمز متابعة العميل", "8043 512 917"],
+      ],
+      timeline: [
+        { label: "إنشاء الملف", note: "اليوم", state: "done" },
+        { label: "إضافة الأطراف", note: "خطوة تالية", state: "now" },
+        { label: "جدولة الجلسة", note: "بانتظار الموعد", state: "next" },
+      ],
+    },
+  },
+  {
+    key: "hearing",
+    label: "٢. الجلسة",
+    title: "سجّل الجلسة وتابع نتيجتها",
+    body: "تُضاف الجلسة بموعدها ومكانها، وتُذكّرك المنصة قبلها، ثم تُدوّن نتيجتها فتتحوّل تلقائياً إلى المهلة المترتبة عليها.",
+    example: {
+      kind: "جلسة قادمة",
+      heading: "الجلسة الثانية · الأحد ١٤ رجب",
+      rows: [
+        ["الوقت", "١٠:٣٠ صباحاً"],
+        ["النوع", "مرافعة — حضور أصالة"],
+        ["الحاضر عن المكتب", "أ. سارة الدوسري"],
+        ["نتيجة الجلسة السابقة", "تأجيل لتقديم مذكرة"],
+      ],
+      timeline: [
+        { label: "الجلسة الأولى", note: "تمت — تأجيل", state: "done" },
+        { label: "الجلسة الثانية", note: "بعد ٦ أيام", state: "now" },
+        { label: "مذكرة جوابية", note: "مهلة مرتبطة", state: "next" },
+      ],
+      alert: "تذكير تلقائي قبل الجلسة بـ ٤٨ ساعة وقبلها بيوم واحد.",
+    },
+  },
+  {
+    key: "deadline",
+    label: "٣. المهلة",
+    title: "لا تفوتك مهلة نظامية",
+    body: "تُحسب المهلة من تاريخ بدايتها وعدد أيامها، وتظهر في لوحة التحكم بترتيب القرب مع تمييز واضح للمهل الحرجة.",
+    example: {
+      kind: "مهلة نظامية",
+      heading: "تقديم مذكرة جوابية",
+      rows: [
+        ["بدء المهلة", "٨ رجب"],
+        ["المدة النظامية", "١٤ يوماً"],
+        ["تاريخ الانتهاء", "٢٢ رجب"],
+        ["المسؤول", "أ. عبدالله القحطاني"],
+      ],
+      timeline: [
+        { label: "المسودة الأولى", note: "مكتملة", state: "done" },
+        { label: "متبقٍ ٣ أيام", note: "حالة حرجة", state: "now" },
+        { label: "الرفع للمحكمة", note: "قبل ٢٢ رجب", state: "next" },
+      ],
+      alert: "تتحول المهلة إلى اللون التحذيري تلقائياً عند تبقّي ثلاثة أيام أو أقل.",
+    },
+  },
+  {
+    key: "client",
+    label: "٤. العميل",
+    title: "أبلغ العميل بما تختاره فقط",
+    body: "بعد كل جلسة أو مهلة تحدّد ما يظهر للعميل، فيتابع قضيته برمزه دون اتصالات متكررة ودون كشف أي بيانات سرية.",
+    example: {
+      kind: "بوابة المتابعة",
+      heading: "الرمز 8043 512 917",
+      rows: [
+        ["حالة القضية", "منظورة أمام الدائرة الثالثة"],
+        ["آخر تحديث ظاهر", "تم حضور الجلسة الأولى"],
+        ["الجلسة القادمة", "١٤ رجب — ١٠:٣٠ ص"],
+        ["مستندات مطلوبة", "صورة السجل التجاري"],
+      ],
+      timeline: [
+        { label: "تحديث منشور", note: "ظاهر للعميل", state: "done" },
+        { label: "ملاحظة داخلية", note: "مخفية", state: "next" },
+        { label: "طلب مستند", note: "رابط مؤقت", state: "now" },
+      ],
+      alert: "المذكرات والملاحظات الداخلية لا تظهر في البوابة إطلاقاً.",
+    },
+  },
+];
+
+const STATE_STYLE: Record<"done" | "now" | "next", { dot: string; text: string }> = {
+  done: { dot: "bg-primary", text: "text-muted-foreground" },
+  now: { dot: "bg-accent", text: "text-foreground font-medium" },
+  next: { dot: "bg-border-strong", text: "text-text-muted" },
+};
+
+function HowItWorks() {
+  const [active, setActive] = useState(0);
+  const step = HOW_STEPS[active];
+
+  return (
+    <section id="how" className="section-y border-b border-border bg-surface">
+      <div className="container-page">
+        <div className="reveal measure">
+          <p className="text-label">كيف تعمل مِهلة</p>
+          <h2 className="text-h2 mt-2">من فتح القضية إلى إبلاغ العميل — بمثال حقيقي</h2>
+          <p className="mt-3 text-body text-muted-foreground">
+            اختر أي خطوة لترى كيف تظهر داخل المنصة فعلياً: جلسة مجدولة، مهلة نظامية تُحسب تلقائياً، وتحديث
+            يصل للعميل بإذنك.
+          </p>
+        </div>
+
+        <div className="reveal mt-10 grid gap-px overflow-hidden rounded-[var(--radius-l)] border border-border bg-border lg:grid-cols-[minmax(0,320px)_1fr]">
+          {/* الخطوات */}
+          <div
+            role="tablist"
+            aria-label="خطوات عمل المنصة"
+            aria-orientation="vertical"
+            className="flex gap-px overflow-x-auto bg-border lg:flex-col lg:overflow-visible"
+          >
+            {HOW_STEPS.map((s, i) => {
+              const isActive = i === active;
+              return (
+                <button
+                  key={s.key}
+                  role="tab"
+                  id={`how-tab-${s.key}`}
+                  aria-selected={isActive}
+                  aria-controls={`how-panel-${s.key}`}
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={() => setActive(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+                      e.preventDefault();
+                      setActive((active + 1) % HOW_STEPS.length);
+                    }
+                    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+                      e.preventDefault();
+                      setActive((active - 1 + HOW_STEPS.length) % HOW_STEPS.length);
+                    }
+                  }}
+                  className={cn(
+                    "min-w-[190px] shrink-0 px-5 py-4 text-right transition-colors duration-[var(--duration-base)] lg:min-w-0 lg:flex-1 lg:px-6 lg:py-6",
+                    isActive ? "bg-primary text-primary-foreground" : "bg-surface hover:bg-surface-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-[12px] font-semibold tabular-nums",
+                      isActive ? "text-primary-foreground/70" : "text-text-muted",
+                    )}
+                  >
+                    {s.label}
+                  </span>
+                  <span className="text-h4 mt-1 block">{s.title}</span>
+                  <span
+                    className={cn(
+                      "mt-1.5 hidden text-body-sm lg:block",
+                      isActive ? "text-primary-foreground/80" : "text-muted-foreground",
+                    )}
+                  >
+                    {s.body}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* المعاينة */}
+          <div
+            role="tabpanel"
+            id={`how-panel-${step.key}`}
+            aria-labelledby={`how-tab-${step.key}`}
+            className="bg-surface p-6 md:p-8"
+          >
+            <p className="text-body-sm text-muted-foreground lg:hidden">{step.body}</p>
+
+            <div className="mt-5 rounded-[var(--radius-m)] border border-border bg-background lg:mt-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
+                <span className="rounded-full border border-border bg-surface px-3 py-1 text-[12px] text-muted-foreground">
+                  {step.example.kind}
+                </span>
+                <span className="text-[14px] font-semibold">{step.example.heading}</span>
+              </div>
+
+              <dl className="grid gap-px bg-border sm:grid-cols-2">
+                {step.example.rows.map(([k, v]) => (
+                  <div key={k} className="bg-background px-5 py-4">
+                    <dt className="text-[12px] text-text-muted">{k}</dt>
+                    <dd className="mt-1 text-[13.5px] font-medium">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <ol className="space-y-4 border-t border-border px-5 py-5">
+                {step.example.timeline.map((t) => (
+                  <li key={t.label} className="flex items-start gap-3">
+                    <span
+                      className={cn("mt-[7px] h-2 w-2 shrink-0 rounded-full", STATE_STYLE[t.state].dot)}
+                      aria-hidden
+                    />
+                    <span className={cn("text-[13.5px]", STATE_STYLE[t.state].text)}>{t.label}</span>
+                    <span className="ms-auto text-[12.5px] text-text-muted">{t.note}</span>
+                  </li>
+                ))}
+              </ol>
+
+              {step.example.alert && (
+                <p className="border-t border-border bg-surface-muted px-5 py-4 text-[13px] text-muted-foreground">
+                  {step.example.alert}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const STEPS = [
   ["فتح القضية", "سجّل بيانات القضية ورقمها والمحكمة المختصة."],
   ["ربط العميل", "أضف العميل وبيانات التواصل والأطراف ذات العلاقة."],
