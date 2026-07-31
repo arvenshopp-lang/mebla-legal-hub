@@ -346,8 +346,10 @@ export type AuditLogRow = {
   description: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any> | null;
-  before_data: unknown;
-  after_data: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  before_data: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  after_data: any;
   ip: string | null;
   device: string | null;
   browser: string | null;
