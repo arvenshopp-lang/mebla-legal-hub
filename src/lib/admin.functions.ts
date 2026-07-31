@@ -1,72 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import type { AdminPermission } from "@/lib/admin-permissions";
 
 /* ------------------------------------------------------------------ helpers */
 
-type StaffRow = {
-  id: string;
-  user_id: string;
-  full_name: string;
-  email: string;
-  role: "super_admin" | "staff";
-  status: "active" | "suspended";
-  permissions: string[];
-};
-
-async function requireStaff(
-  supabase: { from: (t: string) => any },
-  userId: string,
-  permission: AdminPermission,
-): Promise<StaffRow> {
-  const { data, error } = await supabase
-    .from("platform_staff")
-    .select("id, user_id, full_name, email, role, status, permissions")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
-  const staff = data as StaffRow | null;
-  if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
-  if (staff.role !== "super_admin" && !(staff.permissions ?? []).includes(permission)) {
-    throw new Error("لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.");
-  }
-  return staff;
-}
-
-function requestMeta() {
-  try {
-    const req = getRequest();
-    return {
-      ip:
-        req.headers.get("cf-connecting-ip") ??
-        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-        "",
-      userAgent: req.headers.get("user-agent") ?? "",
-    };
-  } catch {
-    return { ip: "", userAgent: "" };
-  }
-}
-
-async function writeAudit(
-  supabase: { from: (t: string) => any },
-  staff: StaffRow,
-  entry: { action: string; entity_type: string; entity_id?: string | null; description?: string; metadata?: Record<string, unknown> },
-) {
-  const { ip, userAgent } = requestMeta();
-  await supabase.from("admin_audit_logs").insert({
-    actor_email: staff.email,
-    action: entry.action,
-    entity_type: entry.entity_type,
-    entity_id: entry.entity_id ?? null,
-    description: entry.description ?? null,
-    metadata: entry.metadata ?? {},
-    ip,
-    user_agent: userAgent,
-  });
-}
+type Guard = typeof import("@/lib/admin-guard.server");
+const guard = (): Promise<Guard> => import("@/lib/admin-guard.server");
 
 /* ------------------------------------------------------- subscriber lookup */
 
@@ -76,7 +15,7 @@ export const lookupSubscriber = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { email: string }) => emailSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
       .from("profiles")
@@ -118,7 +57,7 @@ export const activateSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => activateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const staff = await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: profile } = await supabaseAdmin
@@ -178,7 +117,7 @@ export const activateSubscription = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error("تعذّر إنشاء الاشتراك.");
 
-    await writeAudit(context.supabase, staff, {
+    await (await guard()).writeAudit(context.supabase, staff, {
       action: "subscription.activate",
       entity_type: "subscription",
       entity_id: created.id,
@@ -200,13 +139,13 @@ export const cancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => cancelSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const staff = await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
     const { error } = await context.supabase
       .from("subscriptions")
       .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error("تعذّر إلغاء الاشتراك.");
-    await writeAudit(context.supabase, staff, {
+    await (await guard()).writeAudit(context.supabase, staff, {
       action: "subscription.cancel",
       entity_type: "subscription",
       entity_id: data.id,
@@ -228,7 +167,7 @@ export const createStaffMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => staffSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const staff = await requireStaff(context.supabase, context.userId, "staff.manage");
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "staff.manage");
     if (data.role === "super_admin" && staff.role !== "super_admin") {
       throw new Error("لا يمكن منح صلاحية مالك المنصة إلا من مالك المنصة.");
     }
@@ -255,7 +194,7 @@ export const createStaffMember = createServerFn({ method: "POST" })
     );
     if (error) throw new Error("تعذّر حفظ بيانات الموظف.");
 
-    await writeAudit(context.supabase, staff, {
+    await (await guard()).writeAudit(context.supabase, staff, {
       action: "staff.upsert",
       entity_type: "platform_staff",
       description: `إضافة/تحديث الموظف ${data.email}`,
@@ -277,7 +216,7 @@ export const updateStaffMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => staffUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const staff = await requireStaff(context.supabase, context.userId, "staff.manage");
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "staff.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: target } = await supabaseAdmin
@@ -305,7 +244,7 @@ export const updateStaffMember = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error("تعذّر تحديث بيانات الموظف.");
 
-    await writeAudit(context.supabase, staff, {
+    await (await guard()).writeAudit(context.supabase, staff, {
       action: "staff.update",
       entity_type: "platform_staff",
       entity_id: data.id,
@@ -327,7 +266,7 @@ export const replyToTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => replySchema.parse(input))
   .handler(async ({ data, context }) => {
-    const staff = await requireStaff(context.supabase, context.userId, "tickets.reply");
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "tickets.reply");
 
     const { error: msgError } = await context.supabase.from("support_ticket_messages").insert({
       ticket_id: data.ticketId,
@@ -349,7 +288,7 @@ export const replyToTicket = createServerFn({ method: "POST" })
       .eq("id", data.ticketId);
     if (ticketError) throw new Error("تعذّر تحديث حالة التذكرة.");
 
-    await writeAudit(context.supabase, staff, {
+    await (await guard()).writeAudit(context.supabase, staff, {
       action: "ticket.reply",
       entity_type: "support_ticket",
       entity_id: data.ticketId,
@@ -434,5 +373,97 @@ export const getPlatformOverview = createServerFn({ method: "GET" })
       },
       recentSignups: recentSignups ?? [],
       recentSubs: recentSubs ?? [],
+    };
+  });
+/* ------------------------------------------- تمديد / تعليق / إعادة تفعيل الاشتراك */
+
+export const extendSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), days: z.number().int().min(1).max(3650) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const db = await g.admin();
+    const { data: before } = await db
+      .from("subscriptions")
+      .select("id, email, plan_label, ends_at, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!before) throw new Error("الاشتراك غير موجود.");
+    const base = new Date(before.ends_at);
+    const from = base.getTime() > Date.now() ? base : new Date();
+    const ends = new Date(from.getTime() + data.days * 86400_000).toISOString();
+    const { error } = await db
+      .from("subscriptions")
+      .update({ ends_at: ends, status: "active", cancelled_at: null })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تمديد الاشتراك.");
+    await g.writeAudit(db, staff, {
+      action: "subscription.extend",
+      entity_type: "subscription",
+      entity_id: data.id,
+      description: `تمديد اشتراك ${before.email} بمقدار ${data.days} يوماً`,
+      before: { ends_at: before.ends_at, status: before.status },
+      after: { ends_at: ends, status: "active" },
+    });
+    return { ok: true as const };
+  });
+
+export const setSubscriptionStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["active", "expired", "cancelled", "trial"]),
+        note: z.string().trim().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const db = await g.admin();
+    const { data: before } = await db
+      .from("subscriptions")
+      .select("id, email, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!before) throw new Error("الاشتراك غير موجود.");
+    const { error } = await db
+      .from("subscriptions")
+      .update({
+        status: data.status,
+        cancelled_at: data.status === "cancelled" ? new Date().toISOString() : null,
+        billing_note: data.note ?? undefined,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تحديث حالة الاشتراك.");
+    await g.writeAudit(db, staff, {
+      action: "subscription.status",
+      entity_type: "subscription",
+      entity_id: data.id,
+      description: `تغيير حالة اشتراك ${before.email} إلى ${data.status}`,
+      before: { status: before.status },
+      after: { status: data.status, note: data.note ?? null },
+    });
+    return { ok: true as const };
+  });
+
+export const getRevenueSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const g = await guard();
+    await g.requireStaff(context.supabase, context.userId, "revenue.read");
+    const db = await g.admin();
+    const { data, error } = await db.rpc("admin_revenue_summary");
+    if (error) throw new Error("تعذّر جلب التقارير المالية.");
+    return data as {
+      today: number; week: number; month: number; year: number; total: number; active_count: number;
+      by_plan: { label: string; count: number; amount: number }[];
+      by_month: { month: string; amount: number; count: number }[];
+      by_organization: { label: string; amount: number; count: number }[];
     };
   });
