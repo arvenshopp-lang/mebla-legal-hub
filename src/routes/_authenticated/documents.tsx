@@ -169,8 +169,10 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   const upload = async () => {
     if (!file) return toast.error("اختر ملفاً");
     if (file.size > MAX_SIZE) return toast.error(`الحد الأقصى ${fmtSize(MAX_SIZE)}`);
+    const typeError = validateClientFile({ name: file.name, size: file.size, type: file.type || "" });
+    if (typeError) return toast.error("ملف غير مسموح به", { description: typeError });
     setUploading(true); setProgress(10);
-    const ext = file.name.split(".").pop() ?? "bin";
+    const ext = fileExtension(file.name) || "bin";
     const path = `${orgId}/${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type });
     if (upErr) { setUploading(false); return toast.error("تعذّر الرفع", { description: upErr.message }); }
@@ -194,6 +196,13 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       return toast.error("تعذّر الحفظ", { description: dbErr.message });
     }
     toast.success("تم الرفع");
+    await audit({
+      organizationId: orgId,
+      action: "document.upload",
+      entityType: "document",
+      description: `رفع المستند: ${file.name}`,
+      metadata: { size: file.size, type: file.type || null, confidential },
+    });
     qc.invalidateQueries({ queryKey: ["documents"] });
     qc.invalidateQueries({ queryKey: ["case-documents"] });
     reset(); onClose();
