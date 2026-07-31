@@ -1,134 +1,43 @@
-# مِهلة | MEHLA — المرحلة الثانية
+# إكمال لوحة إدارة منصة مِهلة — خطة تنفيذ على مراحل
 
-## نطاق المرحلة
-بناء الطبقة الخلفية الكاملة (Lovable Cloud / Supabase) + نظام المصادقة + لوحة التحكم الداخلية بجميع صفحاتها مربوطة فعلياً بقاعدة البيانات مع RLS وعزل المكاتب. الصفحة الرئيسية الحالية تبقى كما هي مع حذف أيقونة الساعة فقط.
+## ملاحظات صدق فنية (قبل البدء)
+- **SMTP مخصص غير متاح**: البريد يُدار عبر بنية البريد المُدارة في المنصة (نطاق مُوثّق + قوالب). سأبني إدارة القوالب واسم/بريد المُرسل والـ Reply-To واختبار الإرسال وسجل الإرسال، لكن لن أضع حقول SMTP وهمية.
+- **النسخ الاحتياطي/الاستعادة**: النسخ الاحتياطي للقاعدة يُدار على مستوى المنصة السحابية ولا توجد واجهة برمجية للاستعادة. سأعرض حالة النسخ ومساحة القاعدة وتاريخ آخر لقطة معلومة + تصدير CSV يدوي، ولن أضع زر "استعادة" لا يعمل.
+- **مراقبة GitHub/SSL**: سأراقب القاعدة والتخزين والبريد والدوال والنطاق/SSL عبر فحوص حقيقية (HEAD/زمن استجابة/شهادة). حالة GitHub تُعرض فقط إن توفّر توكن؛ وإلا تُخفى بدل عرض حالة مزيفة.
+- **آخر تسجيل دخول / إعادة إرسال التفعيل / إعادة تعيين كلمة المرور**: عبر Auth Admin API داخل دوال خادم محمية.
 
-## 1. تنظيف الصفحة الرئيسية (تعديل بسيط فقط)
-- إزالة أيقونة الساعة/المؤقت من شعار "مِهلة MEHLA" في الهيدر والفوتر وأي مكان آخر.
-- ربط أزرار "تسجيل الدخول" بـ `/login`، "ابدأ الآن" وأزرار الباقات بـ `/register`.
-- عدم تعديل الألوان أو الخطوط أو الأقسام.
+## المرحلة أ — الأساس: الصلاحيات والخصوصية والتدقيق
+1. **نظام Permissions حقيقي**: جداول `platform_roles` (أدوار مخصصة) و`platform_role_permissions`، وربط الموظف بدور + صلاحيات إضافية. مفاتيح: `users.read/create/update/delete`, `organizations.read/update/delete`, `subscriptions.manage`, `plans.manage`, `tickets.view/reply/assign`, `audit.read/export`, `settings.manage`, `seo.manage`, `email.manage`, `notifications.send`, `revenue.read`, `monitoring.read`, `support_access.request`.
+   - التحقق **على الخادم** في كل دالة إدارية (لا تحقق واجهة فقط) عبر دالة `platform_has_permission`.
+2. **Support Access مؤقت**: جدول `support_access_grants` (المكتب، الموظف، السبب، مدة، منح/سحب المكتب، تاريخ الانتهاء) + طلب من الإدارة وموافقة المكتب من `/settings`. بدون منحة سارية تبقى القضايا/المستندات/العملاء محجوبة تماماً (RLS كما هي اليوم: لا سياسة تسمح للموظف).
+3. **Audit Log كامل**: توسيع `admin_audit_logs` بـ `before`/`after`/`device`/`browser` (IP وUA مثبّتان من التريجر)، وكتابة تلقائية من كل دالة إدارية، مع بحث/فلترة/تصدير CSV.
 
-## 2. تفعيل Lovable Cloud
-- تفعيل Cloud (Supabase) قبل أي شيء آخر.
-- إنشاء المخطط عبر migrations، والبيانات (RLS/دوال/تريجرات) وفق قواعد Lovable.
+## المرحلة ب — المستخدمون والمكاتب
+4. `/mehla-admin/users`: جدول بجميع المستخدمين (اسم، بريد، مكتب، باقة، حالة، تاريخ التسجيل، آخر دخول، عدد أعضاء المكتب) + بحث/فلترة/فرز/ترقيم صفحات.
+   - إجراءات: تفعيل/إيقاف/حذف، إعادة إرسال التفعيل، إعادة تعيين كلمة المرور، تغيير الباقة، تمديد/تعليق الاشتراك، ملاحظات داخلية (`platform_user_notes`). كلها بدوال خادم + تدقيق.
+5. `/mehla-admin/organizations`: كل مكتب مع عدد المحامين/القضايا/العملاء/المستخدمين (عبر عدّادات مُجمّعة فقط، لا محتوى)، الباقة، حالة الاشتراك، التخزين المستخدم.
+   - إجراءات: إيقاف/إعادة تفعيل/تغيير باقة/تعديل بيانات المكتب/حذف (بتأكيد مزدوج).
 
-## 3. قاعدة البيانات (Migrations)
+## المرحلة ج — الإيرادات والاشتراكات والباقات
+6. تطوير `/subscriptions`: أيام متبقية، طريقة التفعيل، آخر تعديل، وإجراءات (تمديد، تغيير باقة/سعر/تاريخ، تعليق، إلغاء، اشتراك مجاني مؤقت).
+7. تطوير `/plans`: إنشاء/تعديل/حذف/إخفاء/ترتيب + لون + مدة + حدود (قضايا، عملاء، مستندات، تخزين، أعضاء) + مزايا (OCR، AI، بحث PDF، توقيع إلكتروني، API).
+8. `/mehla-admin/revenue`: إيراد اليوم/الأسبوع/الشهر/السنة + رسوم بيانية + تقارير حسب الباقة/الشهر/المكتب + تصدير.
 
-### Enums
-- `app_role`: owner, admin, lawyer, legal_assistant, viewer
-- `case_status`, `case_priority`, `client_role`, `client_type`, `hearing_status`, `deadline_status`, `deadline_type`, `task_status`, `update_type`, `invitation_status`, `member_status`
+## المرحلة د — الدعم والبريد والإشعارات
+9. إكمال `/support`: أولوية، حالة، مسؤول، أوقات الإنشاء/آخر رد/الإغلاق؛ رد، تغيير حالة، تحويل، إغلاق/إعادة فتح؛ وكل رد يرسل بريداً للعميل عبر قالب.
+10. `/mehla-admin/email`: اسم المُرسل، بريد المُرسل، Reply-To، اختبار إرسال، حالة النطاق، سجل الإرسال، وإدارة القوالب (تسجيل، تفعيل، إعادة تعيين، اشتراك، انتهاء اشتراك، دعم) مع محرر محتوى آمن (بدون HTML خام غير مُنقّى).
+11. `/mehla-admin/notifications`: إرسال لمستخدم/مكتب/الجميع، داخل النظام و/أو بريد، مع سجل الإرسال.
 
-### الجداول
-1. `profiles` (مربوط بـ auth.users) + trigger `handle_new_user`
-2. `organizations`
-3. `organization_members` (unique organization_id + user_id) — يحمل الدور
-4. `organization_invitations`
-5. `clients`
-6. `cases`
-7. `case_parties`
-8. `hearings`
-9. `deadlines`
-10. `tasks`
-11. `case_updates`
-12. `documents`
-13. `notifications`
-14. `activity_logs`
-15. `user_notification_preferences`
+## المرحلة هـ — الإعدادات والـ SEO والمراقبة
+12. `/mehla-admin/settings`: اسم المنصة، الشعار، Favicon، البريد، الهاتف، العنوان، روابط التواصل، الخصوصية والشروط (تُقرأ فعلياً في الموقع).
+13. `/mehla-admin/seo`: Meta Title/Description/Keywords، Open Graph، Twitter Cards، robots.txt، sitemap.xml (تُخدَّم من القاعدة عبر مسارات الخادم).
+14. `/mehla-admin/monitoring`: فحوص حقيقية للقاعدة، التخزين، البريد، الدوال، النطاق/SSL + تنبيهات.
+15. `/mehla-admin/backups`: حالة النسخ ومساحة القاعدة + تصدير بيانات تشغيلية (حسب ملاحظة الصدق أعلاه).
 
-- كل جدول (عدا profiles) يحمل `organization_id` مع فهرس.
-- فهارس على: case_id, client_id, assigned_lawyer_id, assigned_to, hearing_date, due_date, status, created_at.
-- GRANTs للـ authenticated و service_role (لا anon).
+## المرحلة و — الجودة والاختبار
+- Responsive كامل (جوال/تابلت)، Dark Mode للوحة الإدارة، Skeletons، Error Boundaries، Toasts عربية، Empty States، حوارات تأكيد.
+- اختبار فعلي عبر متصفح آلي لكل صفحة (تحميل، بحث، فلترة، إجراء واحد على الأقل بكل صفحة) + التحقق من كتابة سجلات التدقيق + التحقق من حجب بيانات القضايا بدون Support Access.
+- تقرير نهائي: الصفحات المنشأة، المربوطة بالقاعدة، ما تم اختباره، ما لم يكتمل وسببه، تأكيد عدم وجود بيانات وهمية.
 
-### الدوال الأمنية (SECURITY DEFINER, search_path=public)
-- `is_organization_member(_org uuid, _user uuid)`
-- `has_organization_role(_org uuid, _user uuid, _roles app_role[])`
-- `get_user_organizations(_user uuid)` — قائمة org_ids للمستخدم
-- `can_access_case(_case uuid, _user uuid)`
-- `current_user_orgs()` helper
-
-### RLS
-- تفعيل RLS على كل الجداول.
-- سياسات: SELECT/INSERT/UPDATE/DELETE مقيدة بعضوية المكتب.
-- owner/admin: كل شيء داخل المكتب.
-- lawyer: يرى القضايا المسندة إليه + ما ينشئه.
-- legal_assistant: مهام/مستندات/تحديثات ضمن قضايا المكتب.
-- viewer: SELECT فقط.
-- documents/notifications/tasks: قيود إضافية على المستخدم.
-
-### Triggers
-- `handle_new_user` → إنشاء profile.
-- `updated_at` trigger عام.
-- عند إنشاء case/hearing/deadline/document/status change → إدراج في `case_updates` و`activity_logs`.
-
-### Storage
-- Bucket `case-documents` (Private) عبر أداة Cloud.
-- سياسات storage.objects: قراءة/كتابة/حذف مقيدة بعضوية المكتب (المسار يبدأ بـ organization_id).
-
-## 4. نظام المصادقة
-- `src/routes/auth/login.tsx` → `/login`
-- `src/routes/auth/register.tsx` → `/register`
-- `/forgot-password`, `/reset-password`
-- `/onboarding` — إنشاء المكتب (owner)
-- استخدام Supabase Auth + email/password (بدون Google في هذه المرحلة لعدم طلبها).
-- Zod + React Hook Form.
-- Route guard: layout `_authenticated` مُدار من التكامل. إعادة توجيه من `/onboarding` تلقائياً إذا لم يكن للمستخدم مكتب.
-- Bearer middleware في `src/start.ts` (attach).
-
-## 5. لوحة التحكم (تحت `_authenticated`)
-Layout مستقل:
-- Sidebar يميناً (RTL) قابل للطي، Drawer على الجوال.
-- روابط: الرئيسية، القضايا، العملاء، التقويم، المهام، المهل، المستندات، الفريق، التنبيهات، الإعدادات.
-- Footer: اسم المستخدم + المكتب + تسجيل خروج.
-
-### المسارات
-- `/dashboard` — بطاقات + عاجل اليوم + خلال أسبوع + آخر تحديثات
-- `/cases`, `/cases/new`, `/cases/$id` (Tabs: نظرة عامة/الخط الزمني/الجلسات/المهل/المهام/المستندات/الأطراف/الملاحظات)
-- `/clients`, `/clients/new`, `/clients/$id`
-- `/calendar` (شهري + أسبوعي)
-- `/tasks`
-- `/deadlines`
-- `/documents`
-- `/team` (owner/admin فقط) — دعوات
-- `/notifications`
-- `/settings` (حساب/مكتب/تنبيهات/أدوار/سجل نشاط)
-
-كل الصفحات: Loading/Empty/Error states + Skeleton + Toasts عربية + Pagination (20) + بحث Debounced.
-
-## 6. الخدمات والـ Hooks
-- `services/*.service.ts` لكل كيان.
-- `hooks/useAuth`, `useOrganization`, `usePermissions`, `useCases`, `useClients`, …
-- `lib/supabase.ts`, `permissions.ts`, `date-utils.ts`, `constants.ts`.
-- `schemas/*.schema.ts` (Zod).
-- `types/*.ts`.
-
-## 7. التنبيهات التلقائية
-- Server route (بديل Edge Function): `src/routes/api/public/cron/generate-reminders.ts`
-- يُشغَّل يومياً عبر pg_cron لاحقاً (توثيق فقط).
-- يبحث ويُنشئ notifications دون تكرار (unique metadata key).
-
-## 8. سجل النشاط
-- خدمة `activity.service.ts` تُضاف عند كل عملية مؤثرة.
-- عرض للـ owner/admin فقط.
-
-## 9. الأمان
-- كل الاستعلامات عبر RLS باستخدام client المُصادق.
-- بدون service role في المتصفح.
-- Signed URLs للمستندات.
-- تحقق نوع/حجم الملف (≤20MB, PDF/DOC/DOCX/XLS/XLSX/JPG/PNG).
-- تنقية النصوص، لا `dangerouslySetInnerHTML`.
-- soft-archive بدلاً من الحذف للقضايا والعملاء.
-
-## 10. مؤجل للمرحلة الثالثة
-- المدفوعات/الاشتراكات، ناجز، WhatsApp/SMS، AI، تقارير مالية، مذكرات قانونية، البريد الفعلي.
-
-## ملاحظات تقنية
-- المشروع TanStack Start v1، routes ملفية تحت `src/routes/`. سنستخدم:
-  - Public: `login.tsx`, `register.tsx`, `forgot-password.tsx`, `reset-password.tsx`
-  - Protected: `_authenticated/onboarding.tsx`, `_authenticated/dashboard.tsx`, `_authenticated/cases.*`, إلخ. (route.tsx مُدار من التكامل)
-- استخدام TanStack Query + Suspense pattern.
-- كل ذلك RTL مع الخط الحالي `IBM Plex Sans Arabic`.
-
-## المخرجات
-تقرير نهائي في المحادثة يغطي: الجداول، العلاقات، RLS، المسارات، الملفات، الوظائف العاملة، المؤجل، النقاط التي تحتاج إعداداً يدوياً (تفعيل تأكيد البريد، جدولة cron)، خطوات الاختبار، تأكيد إزالة أيقونة الساعة.
-
-هل أبدأ التنفيذ؟
+## التسليم
+سأنفّذ المراحل بالترتيب (أ ← و) وأبلّغك عند نهاية كل مرحلة، حتى لا تتعطل اللوحة في أي لحظة.
