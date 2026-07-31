@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
+import { audit } from "@/lib/audit";
 import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
@@ -50,6 +51,13 @@ function Page() {
     try {
       const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
       if (error) return toast.error("تعذّر التحميل", { description: error.message });
+      await audit({
+        organizationId: d.organization_id,
+        action: "document.download",
+        entityType: "document",
+        entityId: d.id,
+        description: `تحميل المستند: ${d.file_name}`,
+      });
       window.open(data.signedUrl, "_blank");
     } finally {
       setDownloadingId(null);
@@ -61,6 +69,13 @@ function Page() {
       await supabase.storage.from("documents").remove([d.file_path]);
       const { error } = await supabase.from("documents").delete().eq("id", d.id);
       if (error) throw error;
+      await audit({
+        organizationId: d.organization_id,
+        action: "document.delete",
+        entityType: "document",
+        entityId: d.id,
+        description: `حذف المستند: ${d.file_name}`,
+      });
     },
     onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["documents"] }); setDeleting(null); },
     onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
