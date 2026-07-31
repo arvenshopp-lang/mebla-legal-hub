@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
 import { GoogleIcon } from "@/components/google-icon";
 import { PasswordChecklist } from "@/components/password-checklist";
-import { evaluatePassword } from "@/lib/password-policy";
+import { PasswordInput } from "@/components/password-input";
+import { usePasswordStrength } from "@/hooks/use-password-strength";
+import { validatePasswordPolicy } from "@/lib/password-policy.functions";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/register")({
@@ -28,14 +30,18 @@ function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const passwordCheck = evaluatePassword(password);
+
+  const strength = usePasswordStrength(password, { name: fullName, email });
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const canSubmit = passwordCheck.valid && emailValid && fullName.trim().length >= 3 && !loading;
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const formIsValid = emailValid && fullName.trim().length >= 3 && passwordsMatch;
+  const canSubmit = formIsValid && strength.acceptable && !loading;
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
@@ -55,12 +61,43 @@ function RegisterPage() {
       setFormError("يرجى إدخال بريد إلكتروني صحيح");
       return;
     }
-    if (!passwordCheck.valid) {
+    if (!strength.acceptable) {
       setPasswordTouched(true);
-      setFormError("يرجى استيفاء جميع شروط كلمة المرور قبل المتابعة");
+      setFormError(
+        strength.reason ??
+          (strength.breachStatus === "checking"
+            ? "جارٍ التحقق من أمان كلمة المرور، لحظات قليلة…"
+            : "يرجى استيفاء جميع شروط كلمة المرور قبل المتابعة"),
+      );
+      return;
+    }
+    if (!passwordsMatch) {
+      setFormError("كلمتا المرور غير متطابقتين");
       return;
     }
     setLoading(true);
+
+    // تحقق نهائي على الخادم (لا يُسجَّل ولا يُخزَّن أي شيء من كلمة المرور)
+    try {
+      const verdict = await validatePasswordPolicy({
+        data: { password, name: fullName.trim(), email: email.trim().toLowerCase() },
+      });
+      if (!verdict.ok) {
+        setLoading(false);
+        const message = verdict.reason ?? "كلمة المرور غير مقبولة، اختر كلمة أقوى";
+        setPasswordTouched(true);
+        setFormError(message);
+        toast.error(message);
+        return;
+      }
+    } catch {
+      logAuthEvent({
+        route: "/register",
+        action: "password_policy_server_check",
+        sanitizedMessage: "server_validation_unavailable",
+      });
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
