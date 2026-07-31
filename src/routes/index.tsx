@@ -435,7 +435,7 @@ const HOW_STEPS: HowStep[] = [
 
 const STATE_STYLE: Record<"done" | "now" | "next", { dot: string; text: string }> = {
   done: { dot: "bg-primary", text: "text-muted-foreground" },
-  now: { dot: "bg-accent", text: "text-foreground font-medium" },
+  now: { dot: "bg-gold", text: "text-foreground font-medium" },
   next: { dot: "bg-border-strong", text: "text-text-muted" },
 };
 
