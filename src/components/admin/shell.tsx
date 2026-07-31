@@ -10,6 +10,15 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
+  Building2,
+  TrendingUp,
+  Mail,
+  BellRing,
+  Settings,
+  Search,
+  Activity,
+  KeyRound,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,16 +33,35 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: "التشغيل",
     items: [
       { to: "/mehla-admin", label: "لوحة المؤشرات", Icon: Gauge },
+      { to: "/mehla-admin/users", label: "المستخدمون", Icon: Users, permission: "users.read" },
+      { to: "/mehla-admin/organizations", label: "المكاتب", Icon: Building2, permission: "organizations.read" },
       { to: "/mehla-admin/subscriptions", label: "الاشتراكات", Icon: CreditCard, permission: "subscriptions.manage" },
       { to: "/mehla-admin/plans", label: "الباقات", Icon: Layers, permission: "plans.manage" },
+      { to: "/mehla-admin/revenue", label: "الإيرادات والتقارير", Icon: TrendingUp, permission: "revenue.read" },
       { to: "/mehla-admin/support", label: "مركز الدعم", Icon: LifeBuoy, permission: "tickets.view" },
     ],
   },
   {
-    label: "الإدارة",
+    label: "المراسلات",
+    items: [
+      { to: "/mehla-admin/email", label: "البريد والقوالب", Icon: Mail, permission: "email.manage" },
+      { to: "/mehla-admin/notifications", label: "الإشعارات", Icon: BellRing, permission: "notifications.send" },
+    ],
+  },
+  {
+    label: "المنصة",
+    items: [
+      { to: "/mehla-admin/settings", label: "الإعدادات العامة", Icon: Settings, permission: "settings.manage" },
+      { to: "/mehla-admin/seo", label: "إدارة SEO", Icon: Search, permission: "seo.manage" },
+      { to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" },
+    ],
+  },
+  {
+    label: "الأمان والفريق",
     items: [
       { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
-      { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "logs.view" },
+      { to: "/mehla-admin/roles", label: "الأدوار المخصصة", Icon: KeyRound, permission: "roles.manage" },
+      { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
     ],
   },
 ];
