@@ -1,0 +1,438 @@
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+import type { AdminPermission } from "@/lib/admin-permissions";
+
+/* ------------------------------------------------------------------ helpers */
+
+type StaffRow = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  role: "super_admin" | "staff";
+  status: "active" | "suspended";
+  permissions: string[];
+};
+
+async function requireStaff(
+  supabase: { from: (t: string) => any },
+  userId: string,
+  permission: AdminPermission,
+): Promise<StaffRow> {
+  const { data, error } = await supabase
+    .from("platform_staff")
+    .select("id, user_id, full_name, email, role, status, permissions")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
+  const staff = data as StaffRow | null;
+  if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
+  if (staff.role !== "super_admin" && !(staff.permissions ?? []).includes(permission)) {
+    throw new Error("لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.");
+  }
+  return staff;
+}
+
+function requestMeta() {
+  try {
+    const req = getRequest();
+    return {
+      ip:
+        req.headers.get("cf-connecting-ip") ??
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        "",
+      userAgent: req.headers.get("user-agent") ?? "",
+    };
+  } catch {
+    return { ip: "", userAgent: "" };
+  }
+}
+
+async function writeAudit(
+  supabase: { from: (t: string) => any },
+  staff: StaffRow,
+  entry: { action: string; entity_type: string; entity_id?: string | null; description?: string; metadata?: Record<string, unknown> },
+) {
+  const { ip, userAgent } = requestMeta();
+  await supabase.from("admin_audit_logs").insert({
+    actor_email: staff.email,
+    action: entry.action,
+    entity_type: entry.entity_type,
+    entity_id: entry.entity_id ?? null,
+    description: entry.description ?? null,
+    metadata: entry.metadata ?? {},
+    ip,
+    user_agent: userAgent,
+  });
+}
+
+/* ------------------------------------------------------- subscriber lookup */
+
+const emailSchema = z.object({ email: z.string().trim().toLowerCase().email("بريد إلكتروني غير صالح") });
+
+export const lookupSubscriber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { email: string }) => emailSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .ilike("email", data.email)
+      .maybeSingle();
+    if (!profile) return { found: false as const };
+    const { data: org } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id, organizations(name)")
+      .eq("user_id", profile.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    return {
+      found: true as const,
+      userId: profile.id,
+      fullName: profile.full_name,
+      email: profile.email ?? data.email,
+      organizationId: org?.organization_id ?? null,
+      organizationName: (org as { organizations?: { name?: string } } | null)?.organizations?.name ?? null,
+    };
+  });
+
+/* ------------------------------------------------- subscription activation */
+
+const activateSchema = z.object({
+  email: z.string().trim().toLowerCase().email("بريد إلكتروني غير صالح"),
+  planCode: z.string().trim().min(1, "اختر الباقة"),
+  planLabel: z.string().trim().min(1),
+  amount: z.number().min(0, "المبلغ غير صالح"),
+  currency: z.string().trim().min(1).default("SAR"),
+  startsAt: z.string().min(1),
+  endsAt: z.string().min(1),
+  note: z.string().trim().max(500).optional().nullable(),
+});
+
+export const activateSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => activateSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .ilike("email", data.email)
+      .maybeSingle();
+    if (!profile) {
+      return { ok: false as const, reason: "not_registered" as const };
+    }
+
+    const startsAt = new Date(data.startsAt);
+    const endsAt = new Date(data.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+      throw new Error("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية.");
+    }
+
+    const { data: org } = await supabaseAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", profile.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    const { data: plan } = await supabaseAdmin
+      .from("platform_plans")
+      .select("id")
+      .eq("code", data.planCode)
+      .maybeSingle();
+
+    // أي اشتراك نشط سابق يُعتبر مستبدلاً بالاشتراك الجديد.
+    await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+      .eq("user_id", profile.id)
+      .eq("status", "active");
+
+    const { data: created, error } = await supabaseAdmin
+      .from("subscriptions")
+      .insert({
+        user_id: profile.id,
+        email: profile.email ?? data.email,
+        organization_id: org?.organization_id ?? null,
+        plan_id: plan?.id ?? null,
+        plan_code: data.planCode,
+        plan_label: data.planLabel,
+        amount: data.amount,
+        currency: data.currency,
+        billing_note: data.note ?? null,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        status: "active",
+        created_by: staff.user_id,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error("تعذّر إنشاء الاشتراك.");
+
+    await writeAudit(context.supabase, staff, {
+      action: "subscription.activate",
+      entity_type: "subscription",
+      entity_id: created.id,
+      description: `تفعيل ${data.planLabel} للمشترك ${profile.email ?? data.email}`,
+      metadata: { amount: data.amount, currency: data.currency, ends_at: endsAt.toISOString() },
+    });
+
+    return {
+      ok: true as const,
+      subscriptionId: created.id,
+      subscriberName: profile.full_name,
+      email: profile.email ?? data.email,
+    };
+  });
+
+const cancelSchema = z.object({ id: z.string().uuid() });
+
+export const cancelSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => cancelSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { error } = await context.supabase
+      .from("subscriptions")
+      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر إلغاء الاشتراك.");
+    await writeAudit(context.supabase, staff, {
+      action: "subscription.cancel",
+      entity_type: "subscription",
+      entity_id: data.id,
+    });
+    return { ok: true as const };
+  });
+
+/* -------------------------------------------------------- staff management */
+
+const staffSchema = z.object({
+  email: z.string().trim().toLowerCase().email("بريد إلكتروني غير صالح"),
+  fullName: z.string().trim().min(2, "الاسم مطلوب").max(120),
+  jobTitle: z.string().trim().max(120).optional().nullable(),
+  role: z.enum(["super_admin", "staff"]),
+  permissions: z.array(z.string()).max(40),
+});
+
+export const createStaffMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => staffSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await requireStaff(context.supabase, context.userId, "staff.manage");
+    if (data.role === "super_admin" && staff.role !== "super_admin") {
+      throw new Error("لا يمكن منح صلاحية مالك المنصة إلا من مالك المنصة.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email")
+      .ilike("email", data.email)
+      .maybeSingle();
+    if (!profile) return { ok: false as const, reason: "not_registered" as const };
+
+    const { error } = await supabaseAdmin.from("platform_staff").upsert(
+      {
+        user_id: profile.id,
+        full_name: data.fullName,
+        email: profile.email ?? data.email,
+        job_title: data.jobTitle ?? null,
+        role: data.role,
+        status: "active",
+        permissions: data.permissions,
+        created_by: staff.user_id,
+      },
+      { onConflict: "user_id" },
+    );
+    if (error) throw new Error("تعذّر حفظ بيانات الموظف.");
+
+    await writeAudit(context.supabase, staff, {
+      action: "staff.upsert",
+      entity_type: "platform_staff",
+      description: `إضافة/تحديث الموظف ${data.email}`,
+      metadata: { role: data.role, permissions: data.permissions },
+    });
+    return { ok: true as const };
+  });
+
+const staffUpdateSchema = z.object({
+  id: z.string().uuid(),
+  fullName: z.string().trim().min(2).max(120),
+  jobTitle: z.string().trim().max(120).optional().nullable(),
+  role: z.enum(["super_admin", "staff"]),
+  status: z.enum(["active", "suspended"]),
+  permissions: z.array(z.string()).max(40),
+});
+
+export const updateStaffMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => staffUpdateSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await requireStaff(context.supabase, context.userId, "staff.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: target } = await supabaseAdmin
+      .from("platform_staff")
+      .select("id, user_id, role, email")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!target) throw new Error("الموظف غير موجود.");
+    if (staff.role !== "super_admin" && (target.role === "super_admin" || data.role === "super_admin")) {
+      throw new Error("لا يمكن تعديل صلاحيات مالك المنصة إلا من مالك المنصة.");
+    }
+    if (target.user_id === staff.user_id && (data.status !== "active" || data.role !== staff.role)) {
+      throw new Error("لا يمكنك تعديل دورك أو إيقاف حسابك بنفسك.");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("platform_staff")
+      .update({
+        full_name: data.fullName,
+        job_title: data.jobTitle ?? null,
+        role: data.role,
+        status: data.status,
+        permissions: data.permissions,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تحديث بيانات الموظف.");
+
+    await writeAudit(context.supabase, staff, {
+      action: "staff.update",
+      entity_type: "platform_staff",
+      entity_id: data.id,
+      description: `تحديث صلاحيات ${target.email}`,
+      metadata: { role: data.role, status: data.status, permissions: data.permissions },
+    });
+    return { ok: true as const };
+  });
+
+/* --------------------------------------------------------- support replies */
+
+const replySchema = z.object({
+  ticketId: z.string().uuid(),
+  body: z.string().trim().min(2, "نص الرد مطلوب").max(5000),
+  status: z.enum(["new", "awaiting_reply", "in_progress", "closed"]),
+});
+
+export const replyToTicket = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => replySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await requireStaff(context.supabase, context.userId, "tickets.reply");
+
+    const { error: msgError } = await context.supabase.from("support_ticket_messages").insert({
+      ticket_id: data.ticketId,
+      author_id: staff.user_id,
+      author_name: staff.full_name,
+      is_staff: true,
+      body: data.body,
+    });
+    if (msgError) throw new Error("تعذّر حفظ الرد.");
+
+    const { error: ticketError } = await context.supabase
+      .from("support_tickets")
+      .update({
+        status: data.status,
+        last_reply_at: new Date().toISOString(),
+        assigned_to: staff.user_id,
+        closed_at: data.status === "closed" ? new Date().toISOString() : null,
+      })
+      .eq("id", data.ticketId);
+    if (ticketError) throw new Error("تعذّر تحديث حالة التذكرة.");
+
+    await writeAudit(context.supabase, staff, {
+      action: "ticket.reply",
+      entity_type: "support_ticket",
+      entity_id: data.ticketId,
+      metadata: { status: data.status },
+    });
+    return { ok: true as const };
+  });
+
+/* ------------------------------------------------------ platform overview */
+
+export const getPlatformOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // لوحة المؤشرات متاحة لأي موظف نشط في إدارة المنصة.
+    const { data: me } = await context.supabase
+      .from("platform_staff")
+      .select("status")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!me || me.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date();
+    const in14Days = new Date(now.getTime() + 14 * 86400000).toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+    const db = supabaseAdmin as unknown as { from: (t: string) => any };
+    const count = async (table: string, build: (q: any) => any) => {
+      const { count: c } = await build(db.from(table).select("*", { count: "exact", head: true }));
+      return (c as number | null) ?? 0;
+    };
+
+    const [totalSubs, activeSubs, expiredSubs, expiringSoon, openTickets, closedTickets, orgs, newUsers] =
+      await Promise.all([
+        count("subscriptions", (q) => q),
+        count("subscriptions", (q) => q.eq("status", "active").gt("ends_at", now.toISOString())),
+        count("subscriptions", (q) => q.lte("ends_at", now.toISOString())),
+        count("subscriptions", (q) => q.eq("status", "active").gt("ends_at", now.toISOString()).lte("ends_at", in14Days)),
+        count("support_tickets", (q) => q.neq("status", "closed")),
+        count("support_tickets", (q) => q.eq("status", "closed")),
+        count("organizations", (q) => q.eq("is_active", true)),
+        count("profiles", (q) => q.gte("created_at", monthStart)),
+      ]);
+
+    const { data: monthRevenueRows } = await db
+      .from("subscriptions")
+      .select("amount")
+      .gte("created_at", monthStart)
+      .neq("status", "cancelled");
+    const { data: yearRevenueRows } = await db
+      .from("subscriptions")
+      .select("amount")
+      .gte("created_at", yearStart)
+      .neq("status", "cancelled");
+    const sum = (rows: { amount: number | string }[] | null) =>
+      (rows ?? []).reduce((t, r) => t + Number(r.amount ?? 0), 0);
+
+    const { data: recentSignups } = await db
+      .from("profiles")
+      .select("id, full_name, email, created_at")
+      .order("created_at", { ascending: false })
+      .limit(6);
+    const { data: recentSubs } = await db
+      .from("subscriptions")
+      .select("id, email, plan_label, amount, currency, created_at")
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    return {
+      stats: {
+        totalSubs,
+        activeSubs,
+        expiredSubs,
+        expiringSoon,
+        openTickets,
+        closedTickets,
+        organizations: orgs,
+        newUsers,
+        monthRevenue: sum(monthRevenueRows as never),
+        yearRevenue: sum(yearRevenueRows as never),
+      },
+      recentSignups: recentSignups ?? [],
+      recentSubs: recentSubs ?? [],
+    };
+  });

@@ -71,6 +71,48 @@ export type Database = {
           },
         ]
       }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip: string | null
+          metadata: Json
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       case_code_registry: {
         Row: {
           code: string
@@ -1053,6 +1095,141 @@ export type Database = {
           },
         ]
       }
+      platform_plans: {
+        Row: {
+          ai_enabled: boolean
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          is_public: boolean
+          max_branches: number | null
+          max_cases: number | null
+          max_documents: number | null
+          max_users: number | null
+          name_ar: string
+          name_en: string | null
+          price_monthly: number
+          price_yearly: number
+          sort_order: number
+          storage_gb: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_enabled?: boolean
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          max_branches?: number | null
+          max_cases?: number | null
+          max_documents?: number | null
+          max_users?: number | null
+          name_ar: string
+          name_en?: string | null
+          price_monthly?: number
+          price_yearly?: number
+          sort_order?: number
+          storage_gb?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_enabled?: boolean
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          max_branches?: number | null
+          max_cases?: number | null
+          max_documents?: number | null
+          max_users?: number | null
+          name_ar?: string
+          name_en?: string | null
+          price_monthly?: number
+          price_yearly?: number
+          sort_order?: number
+          storage_gb?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          is_public: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          is_public?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          is_public?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      platform_staff: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          job_title: string | null
+          permissions: string[]
+          role: Database["public"]["Enums"]["platform_role"]
+          status: Database["public"]["Enums"]["platform_staff_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          job_title?: string | null
+          permissions?: string[]
+          role?: Database["public"]["Enums"]["platform_role"]
+          status?: Database["public"]["Enums"]["platform_staff_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          job_title?: string | null
+          permissions?: string[]
+          role?: Database["public"]["Enums"]["platform_role"]
+          status?: Database["public"]["Enums"]["platform_staff_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1088,6 +1265,181 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          billing_note: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          email: string
+          ends_at: string
+          id: string
+          organization_id: string | null
+          plan_code: string
+          plan_id: string | null
+          plan_label: string
+          starts_at: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          billing_note?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          email: string
+          ends_at: string
+          id?: string
+          organization_id?: string | null
+          plan_code: string
+          plan_id?: string | null
+          plan_label: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_note?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          email?: string
+          ends_at?: string
+          id?: string
+          organization_id?: string | null
+          plan_code?: string
+          plan_id?: string | null
+          plan_label?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "platform_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_messages: {
+        Row: {
+          attachments: Json
+          author_id: string | null
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          is_staff: boolean
+          ticket_id: string
+        }
+        Insert: {
+          attachments?: Json
+          author_id?: string | null
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          is_staff?: boolean
+          ticket_id: string
+        }
+        Update: {
+          attachments?: Json
+          author_id?: string | null
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_staff?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          closed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          last_reply_at: string
+          organization_id: string | null
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          reference: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          last_reply_at?: string
+          organization_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          reference?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          last_reply_at?: string
+          organization_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          reference?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -1302,6 +1654,9 @@ export type Database = {
         | "missed"
       invitation_status: "pending" | "accepted" | "revoked" | "expired"
       member_status: "active" | "suspended" | "pending"
+      platform_role: "super_admin" | "staff"
+      platform_staff_status: "active" | "suspended"
+      subscription_status: "active" | "expired" | "cancelled" | "trial"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status:
         | "pending"
@@ -1309,6 +1664,8 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "overdue"
+      ticket_priority: "low" | "medium" | "high" | "urgent"
+      ticket_status: "new" | "awaiting_reply" | "in_progress" | "closed"
       update_type:
         | "case_created"
         | "hearing"
@@ -1491,6 +1848,9 @@ export const Constants = {
       ],
       invitation_status: ["pending", "accepted", "revoked", "expired"],
       member_status: ["active", "suspended", "pending"],
+      platform_role: ["super_admin", "staff"],
+      platform_staff_status: ["active", "suspended"],
+      subscription_status: ["active", "expired", "cancelled", "trial"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: [
         "pending",
@@ -1499,6 +1859,8 @@ export const Constants = {
         "cancelled",
         "overdue",
       ],
+      ticket_priority: ["low", "medium", "high", "urgent"],
+      ticket_status: ["new", "awaiting_reply", "in_progress", "closed"],
       update_type: [
         "case_created",
         "hearing",
