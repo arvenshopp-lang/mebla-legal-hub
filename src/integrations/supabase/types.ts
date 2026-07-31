@@ -76,8 +76,12 @@ export type Database = {
           action: string
           actor_email: string | null
           actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          browser: string | null
           created_at: string
           description: string | null
+          device: string | null
           entity_id: string | null
           entity_type: string
           id: string
@@ -89,8 +93,12 @@ export type Database = {
           action: string
           actor_email?: string | null
           actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          browser?: string | null
           created_at?: string
           description?: string | null
+          device?: string | null
           entity_id?: string | null
           entity_type: string
           id?: string
@@ -102,8 +110,12 @@ export type Database = {
           action?: string
           actor_email?: string | null
           actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          browser?: string | null
           created_at?: string
           description?: string | null
+          device?: string | null
           entity_id?: string | null
           entity_type?: string
           id?: string
@@ -1050,6 +1062,8 @@ export type Database = {
           logo_url: string | null
           name: string
           phone: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
           tax_number: string | null
           updated_at: string
         }
@@ -1066,6 +1080,8 @@ export type Database = {
           logo_url?: string | null
           name: string
           phone?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           tax_number?: string | null
           updated_at?: string
         }
@@ -1082,6 +1098,8 @@ export type Database = {
           logo_url?: string | null
           name?: string
           phone?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           tax_number?: string | null
           updated_at?: string
         }
@@ -1095,13 +1113,104 @@ export type Database = {
           },
         ]
       }
+      platform_broadcasts: {
+        Row: {
+          audience: string
+          body: string
+          channels: string[]
+          created_at: string
+          email_sent_count: number
+          id: string
+          recipients_count: number
+          sent_by: string | null
+          sent_by_name: string | null
+          target_organization_id: string | null
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          audience: string
+          body: string
+          channels?: string[]
+          created_at?: string
+          email_sent_count?: number
+          id?: string
+          recipients_count?: number
+          sent_by?: string | null
+          sent_by_name?: string | null
+          target_organization_id?: string | null
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          channels?: string[]
+          created_at?: string
+          email_sent_count?: number
+          id?: string
+          recipients_count?: number
+          sent_by?: string | null
+          sent_by_name?: string | null
+          target_organization_id?: string | null
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_broadcasts_target_organization_id_fkey"
+            columns: ["target_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_email_templates: {
+        Row: {
+          body_html: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          subject: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body_html: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          subject: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body_html?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       platform_plans: {
         Row: {
           ai_enabled: boolean
           code: string
+          color: string
           created_at: string
           currency: string
           description: string | null
+          duration_months: number
           features: Json
           id: string
           is_active: boolean
@@ -1121,9 +1230,11 @@ export type Database = {
         Insert: {
           ai_enabled?: boolean
           code: string
+          color?: string
           created_at?: string
           currency?: string
           description?: string | null
+          duration_months?: number
           features?: Json
           id?: string
           is_active?: boolean
@@ -1143,9 +1254,11 @@ export type Database = {
         Update: {
           ai_enabled?: boolean
           code?: string
+          color?: string
           created_at?: string
           currency?: string
           description?: string | null
+          duration_months?: number
           features?: Json
           id?: string
           is_active?: boolean
@@ -1160,6 +1273,39 @@ export type Database = {
           price_yearly?: number
           sort_order?: number
           storage_gb?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_roles: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean
+          name_ar: string
+          permissions: string[]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name_ar: string
+          permissions?: string[]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name_ar?: string
+          permissions?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -1198,6 +1344,7 @@ export type Database = {
           job_title: string | null
           permissions: string[]
           role: Database["public"]["Enums"]["platform_role"]
+          role_id: string | null
           status: Database["public"]["Enums"]["platform_staff_status"]
           updated_at: string
           user_id: string
@@ -1211,6 +1358,7 @@ export type Database = {
           job_title?: string | null
           permissions?: string[]
           role?: Database["public"]["Enums"]["platform_role"]
+          role_id?: string | null
           status?: Database["public"]["Enums"]["platform_staff_status"]
           updated_at?: string
           user_id: string
@@ -1224,8 +1372,47 @@ export type Database = {
           job_title?: string | null
           permissions?: string[]
           role?: Database["public"]["Enums"]["platform_role"]
+          role_id?: string | null
           status?: Database["public"]["Enums"]["platform_staff_status"]
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_staff_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "platform_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_user_notes: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          user_email?: string
           user_id?: string
         }
         Relationships: []
@@ -1268,6 +1455,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          activation_method: string
           amount: number
           billing_note: string | null
           cancelled_at: string | null
@@ -1277,16 +1465,21 @@ export type Database = {
           email: string
           ends_at: string
           id: string
+          last_modified_at: string | null
+          last_modified_by: string | null
           organization_id: string | null
           plan_code: string
           plan_id: string | null
           plan_label: string
           starts_at: string
           status: Database["public"]["Enums"]["subscription_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          activation_method?: string
           amount?: number
           billing_note?: string | null
           cancelled_at?: string | null
@@ -1296,16 +1489,21 @@ export type Database = {
           email: string
           ends_at: string
           id?: string
+          last_modified_at?: string | null
+          last_modified_by?: string | null
           organization_id?: string | null
           plan_code: string
           plan_id?: string | null
           plan_label: string
           starts_at?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          activation_method?: string
           amount?: number
           billing_note?: string | null
           cancelled_at?: string | null
@@ -1315,12 +1513,16 @@ export type Database = {
           email?: string
           ends_at?: string
           id?: string
+          last_modified_at?: string | null
+          last_modified_by?: string | null
           organization_id?: string | null
           plan_code?: string
           plan_id?: string | null
           plan_label?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1337,6 +1539,68 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "platform_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_access_grants: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          reason: string
+          requested_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          scope: string[]
+          staff_email: string
+          staff_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          reason: string
+          requested_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string[]
+          staff_email: string
+          staff_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          reason?: string
+          requested_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string[]
+          staff_email?: string
+          staff_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_access_grants_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1598,6 +1862,67 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_organization_directory: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: {
+          address: string
+          cases_count: number
+          city: string
+          clients_count: number
+          commercial_registration: string
+          created_at: string
+          documents_count: number
+          email: string
+          id: string
+          is_active: boolean
+          lawyers_count: number
+          legal_name: string
+          name: string
+          phone: string
+          plan_code: string
+          plan_label: string
+          storage_bytes: number
+          subscription_ends_at: string
+          subscription_status: string
+          suspended_at: string
+          suspension_reason: string
+          tax_number: string
+          total_count: number
+          users_count: number
+        }[]
+      }
+      admin_revenue_summary: { Args: never; Returns: Json }
+      admin_user_directory: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _sort?: string
+          _status?: string
+        }
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          is_platform_staff: boolean
+          org_member_count: number
+          organization_id: string
+          organization_name: string
+          phone: string
+          plan_code: string
+          plan_label: string
+          subscription_ends_at: string
+          subscription_status: string
+          total_count: number
+        }[]
+      }
       create_organization_with_owner: {
         Args: {
           _address?: string
