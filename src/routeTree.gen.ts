@@ -29,6 +29,7 @@ import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/supp
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
 import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
 import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
+import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
 import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -143,6 +144,11 @@ const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminOrganizationsRoute = MehlaAdminOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const MehlaAdminLogsRoute = MehlaAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/mehla-admin/logs'
+    | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/mehla-admin/logs'
+    | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/mehla-admin/logs'
+    | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -590,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminPlansRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/organizations': {
+      id: '/mehla-admin/organizations'
+      path: '/organizations'
+      fullPath: '/mehla-admin/organizations'
+      preLoaderRoute: typeof MehlaAdminOrganizationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/mehla-admin/logs': {
       id: '/mehla-admin/logs'
       path: '/logs'
@@ -722,6 +741,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface MehlaAdminRouteRouteChildren {
   MehlaAdminLogsRoute: typeof MehlaAdminLogsRoute
+  MehlaAdminOrganizationsRoute: typeof MehlaAdminOrganizationsRoute
   MehlaAdminPlansRoute: typeof MehlaAdminPlansRoute
   MehlaAdminStaffRoute: typeof MehlaAdminStaffRoute
   MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
@@ -732,6 +752,7 @@ interface MehlaAdminRouteRouteChildren {
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminLogsRoute: MehlaAdminLogsRoute,
+  MehlaAdminOrganizationsRoute: MehlaAdminOrganizationsRoute,
   MehlaAdminPlansRoute: MehlaAdminPlansRoute,
   MehlaAdminStaffRoute: MehlaAdminStaffRoute,
   MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
