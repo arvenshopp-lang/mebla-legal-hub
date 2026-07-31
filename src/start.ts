@@ -2,6 +2,7 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 import { surfaceGuard } from "./lib/surface-guard.server";
+import { applySecurityHeaders } from "./lib/security-headers.server";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
@@ -12,11 +13,22 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
-    return new Response(renderErrorPage(), {
-      status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
+    return applySecurityHeaders(
+      new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      }),
+    );
   }
+});
+
+// رؤوس الحماية (CSP / HSTS / anti-sniffing / anti-clickjacking) على كل استجابة
+const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
+  const result = await next();
+  const response = (result as { response?: Response }).response;
+  if (response instanceof Response) applySecurityHeaders(response);
+  else if (result instanceof Response) applySecurityHeaders(result);
+  return result;
 });
 
 // Start installs this automatically when src/start.ts is absent; defining the
@@ -35,5 +47,5 @@ const surfaceMiddleware = createMiddleware().server(async ({ next }) => {
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware, surfaceMiddleware],
+  requestMiddleware: [errorMiddleware, securityHeadersMiddleware, csrfMiddleware, surfaceMiddleware],
 }));
