@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import { audit } from "@/lib/audit";
+import { validateClientFile, fileExtension, ACCEPT_ATTR, MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
 import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/documents")({
 });
 
 const PAGE_SIZE = 20;
-const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_SIZE = MAX_UPLOAD_SIZE;
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
