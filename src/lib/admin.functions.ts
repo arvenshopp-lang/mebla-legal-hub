@@ -375,3 +375,95 @@ export const getPlatformOverview = createServerFn({ method: "GET" })
       recentSubs: recentSubs ?? [],
     };
   });
+/* ------------------------------------------- تمديد / تعليق / إعادة تفعيل الاشتراك */
+
+export const extendSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), days: z.number().int().min(1).max(3650) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const db = await g.admin();
+    const { data: before } = await db
+      .from("subscriptions")
+      .select("id, email, plan_label, ends_at, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!before) throw new Error("الاشتراك غير موجود.");
+    const base = new Date(before.ends_at);
+    const from = base.getTime() > Date.now() ? base : new Date();
+    const ends = new Date(from.getTime() + data.days * 86400_000).toISOString();
+    const { error } = await db
+      .from("subscriptions")
+      .update({ ends_at: ends, status: "active", cancelled_at: null })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تمديد الاشتراك.");
+    await g.writeAudit(db, staff, {
+      action: "subscription.extend",
+      entity_type: "subscription",
+      entity_id: data.id,
+      description: `تمديد اشتراك ${before.email} بمقدار ${data.days} يوماً`,
+      before: { ends_at: before.ends_at, status: before.status },
+      after: { ends_at: ends, status: "active" },
+    });
+    return { ok: true as const };
+  });
+
+export const setSubscriptionStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["active", "expired", "cancelled", "trial"]),
+        note: z.string().trim().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const db = await g.admin();
+    const { data: before } = await db
+      .from("subscriptions")
+      .select("id, email, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!before) throw new Error("الاشتراك غير موجود.");
+    const { error } = await db
+      .from("subscriptions")
+      .update({
+        status: data.status,
+        cancelled_at: data.status === "cancelled" ? new Date().toISOString() : null,
+        billing_note: data.note ?? undefined,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تحديث حالة الاشتراك.");
+    await g.writeAudit(db, staff, {
+      action: "subscription.status",
+      entity_type: "subscription",
+      entity_id: data.id,
+      description: `تغيير حالة اشتراك ${before.email} إلى ${data.status}`,
+      before: { status: before.status },
+      after: { status: data.status, note: data.note ?? null },
+    });
+    return { ok: true as const };
+  });
+
+export const getRevenueSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const g = await guard();
+    await g.requireStaff(context.supabase, context.userId, "revenue.read");
+    const db = await g.admin();
+    const { data, error } = await db.rpc("admin_revenue_summary");
+    if (error) throw new Error("تعذّر جلب التقارير المالية.");
+    return data as {
+      today: number; week: number; month: number; year: number; total: number; active_count: number;
+      by_plan: { label: string; count: number; amount: number }[];
+      by_month: { month: string; amount: number; count: number }[];
+      by_organization: { label: string; amount: number; count: number }[];
+    };
+  });

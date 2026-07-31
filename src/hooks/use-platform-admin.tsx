@@ -12,6 +12,9 @@ export type PlatformStaff = {
   role: "super_admin" | "staff";
   status: "active" | "suspended";
   permissions: string[];
+  role_id: string | null;
+  rolePermissions: string[];
+  roleName: string | null;
 };
 
 type Ctx = {
@@ -31,11 +34,22 @@ export function usePlatformStaffQuery() {
       if (!auth.user) return null;
       const { data, error } = await supabase
         .from("platform_staff")
-        .select("id, user_id, full_name, email, job_title, role, status, permissions")
+        .select(
+          "id, user_id, full_name, email, job_title, role, status, permissions, role_id, platform_roles(name, permissions)",
+        )
         .eq("user_id", auth.user.id)
         .maybeSingle();
       if (error) throw error;
-      return (data as PlatformStaff | null) ?? null;
+      if (!data) return null;
+      const row = data as unknown as PlatformStaff & {
+        platform_roles: { name: string; permissions: string[] | null } | null;
+      };
+      return {
+        ...row,
+        permissions: row.permissions ?? [],
+        rolePermissions: row.platform_roles?.permissions ?? [],
+        roleName: row.platform_roles?.name ?? null,
+      };
     },
   });
 }
