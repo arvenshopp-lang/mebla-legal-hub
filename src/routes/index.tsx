@@ -666,6 +666,7 @@ function Footer({ loginHref, registerHref }: { loginHref: string; registerHref: 
           <ul className="space-y-2 text-body-sm text-muted-foreground">
             <li><a className="transition hover:text-foreground" href="#product">المنتج</a></li>
             <li><a className="transition hover:text-foreground" href="#capabilities">المزايا</a></li>
+            <li><a className="transition hover:text-foreground" href="#how">كيف تعمل</a></li>
             <li><a className="transition hover:text-foreground" href="#workflow">سير العمل</a></li>
             <li><a className="transition hover:text-foreground" href="#security">الأمان</a></li>
           </ul>
@@ -709,6 +710,7 @@ function MehlaLanding() {
       <main id="product">
         <Hero loginHref={loginHref} registerHref={registerHref} />
         <Capabilities />
+        <HowItWorks />
         <Workflow />
         <Security />
         <CTA registerHref={registerHref} />
