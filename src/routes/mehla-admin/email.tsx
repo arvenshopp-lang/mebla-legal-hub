@@ -199,7 +199,7 @@ function EmailPage() {
                       {canManage && (
                         <>
                           <IconBtn
-                            label="تعديل القالب"
+                            aria-label="تعديل القالب"
                             onClick={() =>
                               setForm({
                                 id: t.id,
@@ -213,7 +213,7 @@ function EmailPage() {
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
-                          <IconBtn label="حذف القالب" onClick={() => setToDelete({ id: t.id, name: t.name_ar })}>
+                          <IconBtn aria-label="حذف القالب" tone="danger" onClick={() => setToDelete({ id: t.id, name: t.name_ar })}>
                             <Trash2 className="h-4 w-4 text-danger" aria-hidden />
                           </IconBtn>
                         </>
