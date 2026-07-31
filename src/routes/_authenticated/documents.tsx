@@ -6,6 +6,8 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
+import { audit } from "@/lib/audit";
+import { validateClientFile, fileExtension, ACCEPT_ATTR, MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
 import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
@@ -17,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/documents")({
 });
 
 const PAGE_SIZE = 20;
-const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_SIZE = MAX_UPLOAD_SIZE;
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
@@ -50,6 +52,13 @@ function Page() {
     try {
       const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
       if (error) return toast.error("تعذّر التحميل", { description: error.message });
+      await audit({
+        organizationId: d.organization_id,
+        action: "document.download",
+        entityType: "document",
+        entityId: d.id,
+        description: `تحميل المستند: ${d.file_name}`,
+      });
       window.open(data.signedUrl, "_blank");
     } finally {
       setDownloadingId(null);
@@ -61,6 +70,13 @@ function Page() {
       await supabase.storage.from("documents").remove([d.file_path]);
       const { error } = await supabase.from("documents").delete().eq("id", d.id);
       if (error) throw error;
+      await audit({
+        organizationId: d.organization_id,
+        action: "document.delete",
+        entityType: "document",
+        entityId: d.id,
+        description: `حذف المستند: ${d.file_name}`,
+      });
     },
     onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["documents"] }); setDeleting(null); },
     onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
@@ -154,8 +170,10 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   const upload = async () => {
     if (!file) return toast.error("اختر ملفاً");
     if (file.size > MAX_SIZE) return toast.error(`الحد الأقصى ${fmtSize(MAX_SIZE)}`);
+    const typeError = validateClientFile({ name: file.name, size: file.size, type: file.type || "" });
+    if (typeError) return toast.error("ملف غير مسموح به", { description: typeError });
     setUploading(true); setProgress(10);
-    const ext = file.name.split(".").pop() ?? "bin";
+    const ext = fileExtension(file.name) || "bin";
     const path = `${orgId}/${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type });
     if (upErr) { setUploading(false); return toast.error("تعذّر الرفع", { description: upErr.message }); }
@@ -179,6 +197,13 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       return toast.error("تعذّر الحفظ", { description: dbErr.message });
     }
     toast.success("تم الرفع");
+    await audit({
+      organizationId: orgId,
+      action: "document.upload",
+      entityType: "document",
+      description: `رفع المستند: ${file.name}`,
+      metadata: { size: file.size, type: file.type || null, confidential },
+    });
     qc.invalidateQueries({ queryKey: ["documents"] });
     qc.invalidateQueries({ queryKey: ["case-documents"] });
     reset(); onClose();
@@ -188,7 +213,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     <Modal open={open} onClose={() => { if (!uploading) { reset(); onClose(); } }} title="رفع مستند" size="lg" busy={loadingCases || loadingClients} busyLabel="جاري تجهيز النموذج…">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="الملف *">
-          <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
+          <input ref={fileRef} type="file" accept={ACCEPT_ATTR} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
           {file && <span className="mt-1 block text-xs text-muted-foreground">{file.name} · {fmtSize(file.size)}</span>}
         </FormField></div>
         <FormField label="القضية">

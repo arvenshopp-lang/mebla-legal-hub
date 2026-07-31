@@ -22,8 +22,10 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           id: string
+          ip: string | null
           metadata: Json
           organization_id: string
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
@@ -33,8 +35,10 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: string
+          ip?: string | null
           metadata?: Json
           organization_id: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
@@ -44,8 +48,10 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: string
+          ip?: string | null
           metadata?: Json
           organization_id?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
