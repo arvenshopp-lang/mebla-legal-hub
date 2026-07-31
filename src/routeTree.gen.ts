@@ -18,10 +18,15 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as MehlaAdminRouteRouteImport } from './routes/mehla-admin/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
+import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
+import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
+import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
+import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -81,6 +86,11 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MehlaAdminRouteRoute = MehlaAdminRouteRouteImport.update({
+  id: '/mehla-admin',
+  path: '/mehla-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -95,10 +105,30 @@ const UploadIndexRoute = UploadIndexRouteImport.update({
   path: '/upload/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MehlaAdminIndexRoute = MehlaAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const UploadTokenRoute = UploadTokenRouteImport.update({
   id: '/upload/$token',
   path: '/upload/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MehlaAdminSupportRoute = MehlaAdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSubscriptionsRoute = MehlaAdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
   id: '/auth/verified',
@@ -168,6 +198,7 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/mehla-admin': typeof MehlaAdminRouteRouteWithChildren
   '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -187,7 +218,11 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
@@ -214,7 +249,11 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
@@ -224,6 +263,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/mehla-admin': typeof MehlaAdminRouteRouteWithChildren
   '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -243,7 +283,11 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/upload/$token': typeof UploadTokenRoute
+  '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
@@ -253,6 +297,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/mehla-admin'
     | '/docs'
     | '/forgot-password'
     | '/login'
@@ -272,7 +317,11 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/plans'
+    | '/mehla-admin/subscriptions'
+    | '/mehla-admin/support'
     | '/upload/$token'
+    | '/mehla-admin/'
     | '/upload/'
     | '/cases/$id'
     | '/api/public/health'
@@ -299,7 +348,11 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/plans'
+    | '/mehla-admin/subscriptions'
+    | '/mehla-admin/support'
     | '/upload/$token'
+    | '/mehla-admin'
     | '/upload'
     | '/cases/$id'
     | '/api/public/health'
@@ -308,6 +361,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/mehla-admin'
     | '/docs'
     | '/forgot-password'
     | '/login'
@@ -327,7 +381,11 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/plans'
+    | '/mehla-admin/subscriptions'
+    | '/mehla-admin/support'
     | '/upload/$token'
+    | '/mehla-admin/'
     | '/upload/'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
@@ -337,6 +395,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  MehlaAdminRouteRoute: typeof MehlaAdminRouteRouteWithChildren
   DocsRoute: typeof DocsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -418,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mehla-admin': {
+      id: '/mehla-admin'
+      path: '/mehla-admin'
+      fullPath: '/mehla-admin'
+      preLoaderRoute: typeof MehlaAdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -439,12 +505,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mehla-admin/': {
+      id: '/mehla-admin/'
+      path: '/'
+      fullPath: '/mehla-admin/'
+      preLoaderRoute: typeof MehlaAdminIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/upload/$token': {
       id: '/upload/$token'
       path: '/upload/$token'
       fullPath: '/upload/$token'
       preLoaderRoute: typeof UploadTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/mehla-admin/support': {
+      id: '/mehla-admin/support'
+      path: '/support'
+      fullPath: '/mehla-admin/support'
+      preLoaderRoute: typeof MehlaAdminSupportRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/subscriptions': {
+      id: '/mehla-admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/mehla-admin/subscriptions'
+      preLoaderRoute: typeof MehlaAdminSubscriptionsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/plans': {
+      id: '/mehla-admin/plans'
+      path: '/plans'
+      fullPath: '/mehla-admin/plans'
+      preLoaderRoute: typeof MehlaAdminPlansRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
     '/auth/verified': {
       id: '/auth/verified'
@@ -569,9 +663,28 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface MehlaAdminRouteRouteChildren {
+  MehlaAdminPlansRoute: typeof MehlaAdminPlansRoute
+  MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
+  MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
+  MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
+}
+
+const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
+  MehlaAdminPlansRoute: MehlaAdminPlansRoute,
+  MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
+  MehlaAdminSupportRoute: MehlaAdminSupportRoute,
+  MehlaAdminIndexRoute: MehlaAdminIndexRoute,
+}
+
+const MehlaAdminRouteRouteWithChildren = MehlaAdminRouteRoute._addFileChildren(
+  MehlaAdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  MehlaAdminRouteRoute: MehlaAdminRouteRouteWithChildren,
   DocsRoute: DocsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
