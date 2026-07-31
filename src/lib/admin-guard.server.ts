@@ -4,7 +4,6 @@
  * يحمل البيانات قبل وبعد التعديل مع IP والجهاز والمتصفح (تُثبّتها قاعدة البيانات).
  */
 import { getRequest } from "@tanstack/react-start/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AdminPermission } from "@/lib/admin-permissions";
 import { expandPermissions } from "@/lib/admin-permissions";
 
@@ -20,10 +19,11 @@ export type StaffRow = {
   platform_roles: { permissions: string[] | null } | null;
 };
 
-type AnyClient = { from: (t: string) => any; rpc?: (n: string, a?: unknown) => any };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = any;
 
 export async function requireStaff(
-  supabase: AnyClient | SupabaseClient,
+  supabase: AnyClient,
   userId: string,
   permission: AdminPermission,
 ): Promise<StaffRow> {

@@ -18,14 +18,16 @@ export const getPlatformSettings = createServerFn({ method: "POST" })
     await g.requireActiveStaff(context.supabase, context.userId);
     const db = await g.admin();
     const { data } = await db.from("platform_settings").select("key, value, is_public");
-    const map: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map: Record<string, any> = {};
     for (const row of (data ?? []) as { key: string; value: unknown }[]) map[row.key] = row.value;
     return { settings: map };
   });
 
 const settingsPayload = z.object({
   group: z.enum(["general", "seo", "email"]),
-  values: z.record(z.string(), z.unknown()),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  values: z.record(z.string(), z.any()),
 });
 
 export const savePlatformSettings = createServerFn({ method: "POST" })
@@ -342,7 +344,8 @@ export type AuditLogRow = {
   entity_type: string;
   entity_id: string | null;
   description: string | null;
-  metadata: Record<string, unknown> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: Record<string, any> | null;
   before_data: unknown;
   after_data: unknown;
   ip: string | null;
