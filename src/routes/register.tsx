@@ -196,22 +196,35 @@ function RegisterPage() {
           <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         </Field>
         <div>
-          <Field label="كلمة المرور">
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onFocus={() => setPasswordTouched(true)}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (!passwordTouched) setPasswordTouched(true);
-              }}
-              className={inputCls}
-            />
-          </Field>
-          {(passwordTouched || password.length > 0) && <PasswordChecklist password={password} />}
+          <PasswordInput
+            label="كلمة المرور"
+            autoComplete="new-password"
+            required
+            minLength={PASSWORD_MIN_LENGTH}
+            value={password}
+            onFocus={() => setPasswordTouched(true)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (!passwordTouched) setPasswordTouched(true);
+            }}
+          />
+          {(passwordTouched || password.length > 0) && (
+            <PasswordChecklist password={password} state={strength} />
+          )}
+        </div>
+        <div>
+          <PasswordInput
+            label="تأكيد كلمة المرور"
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          {confirmPassword.length > 0 && !passwordsMatch && (
+            <p role="alert" className="mt-1.5 text-[12.5px] text-danger">
+              كلمتا المرور غير متطابقتين
+            </p>
+          )}
         </div>
         <button
           type="submit"
