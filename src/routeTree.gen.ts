@@ -29,6 +29,7 @@ import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/supp
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
 import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
 import { Route as MehlaAdminSettingsRouteImport } from './routes/mehla-admin/settings'
+import { Route as MehlaAdminSeoRouteImport } from './routes/mehla-admin/seo'
 import { Route as MehlaAdminRevenueRouteImport } from './routes/mehla-admin/revenue'
 import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
 import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
@@ -147,6 +148,11 @@ const MehlaAdminStaffRoute = MehlaAdminStaffRouteImport.update({
 const MehlaAdminSettingsRoute = MehlaAdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSeoRoute = MehlaAdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const MehlaAdminRevenueRoute = MehlaAdminRevenueRouteImport.update({
@@ -279,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
+  '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
+  '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -362,6 +370,7 @@ export interface FileRoutesById {
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
+  '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
@@ -405,6 +414,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/revenue'
+    | '/mehla-admin/seo'
     | '/mehla-admin/settings'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/revenue'
+    | '/mehla-admin/seo'
     | '/mehla-admin/settings'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/revenue'
+    | '/mehla-admin/seo'
     | '/mehla-admin/settings'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
@@ -660,6 +672,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/mehla-admin/settings'
       preLoaderRoute: typeof MehlaAdminSettingsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/seo': {
+      id: '/mehla-admin/seo'
+      path: '/seo'
+      fullPath: '/mehla-admin/seo'
+      preLoaderRoute: typeof MehlaAdminSeoRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/revenue': {
@@ -842,6 +861,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminOrganizationsRoute: typeof MehlaAdminOrganizationsRoute
   MehlaAdminPlansRoute: typeof MehlaAdminPlansRoute
   MehlaAdminRevenueRoute: typeof MehlaAdminRevenueRoute
+  MehlaAdminSeoRoute: typeof MehlaAdminSeoRoute
   MehlaAdminSettingsRoute: typeof MehlaAdminSettingsRoute
   MehlaAdminStaffRoute: typeof MehlaAdminStaffRoute
   MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
@@ -858,6 +878,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminOrganizationsRoute: MehlaAdminOrganizationsRoute,
   MehlaAdminPlansRoute: MehlaAdminPlansRoute,
   MehlaAdminRevenueRoute: MehlaAdminRevenueRoute,
+  MehlaAdminSeoRoute: MehlaAdminSeoRoute,
   MehlaAdminSettingsRoute: MehlaAdminSettingsRoute,
   MehlaAdminStaffRoute: MehlaAdminStaffRoute,
   MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
