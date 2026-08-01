@@ -16,6 +16,9 @@ import {
   Mail,
   BellRing,
   Activity,
+  Settings,
+  Search,
+  KeyRound,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,12 +50,17 @@ const NAV: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "المنصة",
-    items: [{ to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" }],
+    items: [
+      { to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" },
+      { to: "/mehla-admin/settings", label: "إعدادات المنصة", Icon: Settings, permission: "settings.manage" },
+      { to: "/mehla-admin/seo", label: "إدارة SEO", Icon: Search, permission: "seo.manage" },
+    ],
   },
   {
     label: "الأمان والفريق",
     items: [
       { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
+      { to: "/mehla-admin/roles", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
     ],
   },
