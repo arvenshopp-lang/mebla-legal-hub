@@ -179,15 +179,17 @@ function SettingsPage() {
                 disabled={!canManage}
               />
             </FormField>
-            <FormField label="العنوان" className="sm:col-span-2">
-              <input
-                className={inputCls}
-                value={form.address}
-                onChange={(e) => set("address", e.target.value)}
-                placeholder="الرياض، المملكة العربية السعودية"
-                disabled={!canManage}
-              />
-            </FormField>
+            <div className="sm:col-span-2">
+              <FormField label="العنوان">
+                <input
+                  className={inputCls}
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder="الرياض، المملكة العربية السعودية"
+                  disabled={!canManage}
+                />
+              </FormField>
+            </div>
           </div>
         </SectionCard>
 
