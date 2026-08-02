@@ -36,7 +36,34 @@ export const Route = createFileRoute("/mehla-admin/sms")({
   }),
 });
 
-type Draft = Parameters<typeof updateSmsSettingsAdmin>[0]["data"];
+type Draft = {
+  enabled: boolean;
+  active_provider: SmsProvider;
+  provider_label: string | null;
+  base_url: string | null;
+  application_id: string | null;
+  service_sid: string | null;
+  sender_id: string | null;
+  sender_name: string | null;
+  default_country: string;
+  default_dial_code: string;
+  code_length: number;
+  code_ttl_minutes: number;
+  resend_wait_seconds: number;
+  max_verify_attempts: number;
+  rate_limit_per_hour: number;
+  message_template: string;
+  message_language: "ar" | "en";
+  test_mode: boolean;
+  signup_mode: SignupMode;
+  show_phone_field: boolean;
+  require_phone: boolean;
+  hide_phone_when_disabled: boolean;
+  allow_signup_during_outage: boolean;
+  show_outage_notice: boolean;
+  emergency_email_only: boolean;
+  alert_admin_on_failure: boolean;
+};
 
 const PROVIDERS = Object.keys(SMS_PROVIDER_LABELS) as SmsProvider[];
 const MODES = Object.keys(SIGNUP_MODE_LABELS) as SignupMode[];
@@ -87,11 +114,11 @@ function Toggle({
   );
 }
 
-const HEALTH_TONE: Record<SmsHealthStatus, "success" | "warning" | "danger" | "neutral"> = {
-  operational: "success",
-  degraded: "warning",
-  unavailable: "danger",
-  disabled: "neutral",
+const HEALTH_TONE: Record<SmsHealthStatus, "green" | "warn" | "red" | "muted"> = {
+  operational: "green",
+  degraded: "warn",
+  unavailable: "red",
+  disabled: "muted",
 };
 
 function SmsSettingsPage() {
@@ -109,7 +136,7 @@ function SmsSettingsPage() {
     const s = data.settings;
     setDraft({
       enabled: s.enabled,
-      active_provider: s.active_provider,
+      active_provider: s.active_provider as SmsProvider,
       provider_label: s.provider_label,
       base_url: s.base_url,
       application_id: s.application_id,
@@ -126,7 +153,7 @@ function SmsSettingsPage() {
       message_template: s.message_template,
       message_language: s.message_language === "en" ? "en" : "ar",
       test_mode: s.test_mode,
-      signup_mode: s.signup_mode,
+      signup_mode: s.signup_mode as SignupMode,
       show_phone_field: s.show_phone_field,
       require_phone: s.require_phone,
       hide_phone_when_disabled: s.hide_phone_when_disabled,
@@ -157,7 +184,7 @@ function SmsSettingsPage() {
   });
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
-    setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setDraft((prev: Draft | null) => (prev ? { ...prev, [key]: value } : prev));
 
   return (
     <AdminShell
@@ -172,7 +199,7 @@ function SmsSettingsPage() {
       }
     >
       {isLoading || !draft ? (
-        <LoadingBlock label="جاري تحميل الإعدادات…" />
+        <LoadingBlock />
       ) : error ? (
         <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-4 text-sm text-danger">
           {(error as Error).message}
@@ -184,10 +211,10 @@ function SmsSettingsPage() {
               <Badge tone={HEALTH_TONE[data!.settings.health_status]}>
                 {SMS_HEALTH_LABELS[data!.settings.health_status]}
               </Badge>
-              <Badge tone={data!.credentials.hasKey ? "success" : "danger"}>
+              <Badge tone={data!.credentials.hasKey ? "green" : "red"}>
                 {data!.credentials.hasKey ? "مفتاح المزوّد مُعرَّف" : "مفتاح المزوّد غير مُعرَّف"}
               </Badge>
-              {draft.test_mode && <Badge tone="warning">وضع الاختبار — لا تُرسل رسائل فعلية</Badge>}
+              {draft.test_mode && <Badge tone="warn">وضع الاختبار — لا تُرسل رسائل فعلية</Badge>}
             </div>
             {data!.settings.last_error_reason && (
               <p className="text-[12px] leading-6 text-text-muted">
@@ -422,7 +449,7 @@ function SmsSettingsPage() {
                     <span className="text-text-muted">
                       {log.action} · {log.provider}
                     </span>
-                    <Badge tone={log.outcome === "success" ? "success" : "danger"}>{log.outcome}</Badge>
+                    <Badge tone={log.outcome === "success" ? "green" : "red"}>{log.outcome}</Badge>
                     <span className="text-text-muted">{fmtDateTime(log.created_at)}</span>
                   </li>
                 ))}
