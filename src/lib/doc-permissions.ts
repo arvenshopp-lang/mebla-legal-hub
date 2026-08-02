@@ -6,6 +6,11 @@ import type { AppRole } from "@/hooks/use-auth";
  * office role decides what a user may do — never the client alone.
  */
 export type DocumentPermission =
+  | "documents.view"
+  | "documents.download"
+  | "documents.share"
+  | "documents.print"
+  | "documents.export"
   | "documents.search"
   | "documents.view_extracted_text"
   | "documents.run_ocr"
@@ -23,6 +28,11 @@ export type DocumentPermission =
   | "voice_notes.delete";
 
 const MATRIX: Record<DocumentPermission, AppRole[]> = {
+  "documents.view": ["owner", "admin", "lawyer", "legal_assistant", "viewer"],
+  "documents.download": ["owner", "admin", "lawyer", "legal_assistant"],
+  "documents.share": ["owner", "admin", "lawyer"],
+  "documents.print": ["owner", "admin", "lawyer", "legal_assistant", "viewer"],
+  "documents.export": ["owner", "admin", "lawyer", "legal_assistant"],
   "documents.search": ["owner", "admin", "lawyer", "legal_assistant", "viewer"],
   "documents.view_extracted_text": ["owner", "admin", "lawyer", "legal_assistant", "viewer"],
   "documents.run_ocr": ["owner", "admin", "lawyer", "legal_assistant"],
@@ -41,6 +51,11 @@ const MATRIX: Record<DocumentPermission, AppRole[]> = {
 };
 
 export const DOCUMENT_PERMISSION_LABELS: Record<DocumentPermission, string> = {
+  "documents.view": "عرض المستندات",
+  "documents.download": "تنزيل المستندات",
+  "documents.share": "مشاركة المستندات",
+  "documents.print": "طباعة المستندات",
+  "documents.export": "تصدير المستندات",
   "documents.search": "البحث في المستندات",
   "documents.view_extracted_text": "عرض النص المستخرج",
   "documents.run_ocr": "تشغيل القراءة الضوئية",

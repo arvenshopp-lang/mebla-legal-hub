@@ -12,10 +12,14 @@ import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
-import { Download, Trash2, Upload, Lock, ScanText } from "lucide-react";
-import { ExportStampedButton } from "@/components/print/print-controls";
-import { isStampableForExport } from "@/lib/print/print.shared";
-import { canDo } from "@/lib/doc-permissions";
+import { Trash2, Upload, Lock, ScanText } from "lucide-react";
+import {
+  SecureDocActions,
+  SecureDocumentViewer,
+  ShareDocumentDialog,
+  useSecureDocument,
+  type SecureDoc,
+} from "@/components/documents/secure-document";
 import { describeMutationError } from "@/lib/subscription.shared";
 import {
   ExtractedTextDialog, ProcessingBadge, RetryButton, useDocumentIndexing, useProcessingJobs,
@@ -37,9 +41,10 @@ function Page() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<any | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState<SecureDoc | null>(null);
   const [viewingText, setViewingText] = useState<DocumentRow | null>(null);
   const q = useDebounced(search);
+  const secure = useSecureDocument();
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
@@ -59,24 +64,6 @@ function Page() {
 
   const jobs = useProcessingJobs((data?.rows ?? []).map((d: any) => d.id));
   const jobFor = (id: string) => (jobs.data ?? []).find((j) => j.document_id === id);
-
-  const download = async (d: any) => {
-    setDownloadingId(d.id);
-    try {
-      const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_path, 60);
-      if (error) return toast.error("تعذّر التحميل", { description: error.message });
-      await audit({
-        organizationId: d.organization_id,
-        action: "document.download",
-        entityType: "document",
-        entityId: d.id,
-        description: `تحميل المستند: ${d.file_name}`,
-      });
-      window.open(data.signedUrl, "_blank");
-    } finally {
-      setDownloadingId(null);
-    }
-  };
 
   const del = useMutation({
     mutationFn: async (d: any) => {
@@ -147,15 +134,11 @@ function Page() {
                               <RetryButton doc={d as DocumentRow} />
                             </>
                           )}
-                          {canDo(activeRole, "print.download") && (
-                            <IconBtn aria-label="تحميل الأصل" title="تحميل الأصل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
-                          )}
-                          {isStampableForExport(d.file_name, d.file_type) ? (
-                            <ExportStampedButton
-                              file={d}
-                              documentType={d.case_id ? "case_file" : "document"}
-                            />
-                          ) : null}
+                          <SecureDocActions
+                            doc={d as SecureDoc}
+                            engine={secure}
+                            onShare={(target) => setSharing(target)}
+                          />
                           {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
@@ -170,6 +153,14 @@ function Page() {
         )}
       <UploadDialog open={open} onClose={() => setOpen(false)} orgId={activeOrgId!} userId={user?.id} />
       <ExtractedTextDialog doc={viewingText} onClose={() => setViewingText(null)} />
+      {secure.viewing && (
+        <SecureDocumentViewer
+          doc={secure.viewing.doc}
+          url={secure.viewing.url}
+          onClose={secure.closeViewer}
+        />
+      )}
+      <ShareDocumentDialog doc={sharing} onClose={() => setSharing(null)} />
       <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} onConfirm={() => deleting && del.mutate(deleting)} loading={del.isPending} title="حذف المستند" message={`سيتم حذف "${deleting?.file_name}" نهائياً.`} />
     </DashboardShell>
   );

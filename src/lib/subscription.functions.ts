@@ -59,3 +59,28 @@ export const recordOcrUsage = createServerFn({ method: "POST" })
     }
     return { used: Number(used ?? 0) };
   });
+/**
+ * رابط فاتورة قصير الصلاحية. القراءة من المستودع تحدث على الخادم فقط بعد
+ * التحقق من عضوية المكتب وارتباط الفاتورة به.
+ */
+export const signInvoiceUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ organizationId: z.string().uuid(), invoiceId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: invoice, error } = await context.supabase
+      .from("invoices")
+      .select("id, pdf_path")
+      .eq("id", data.invoiceId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (error || !invoice?.pdf_path) throw new Error("الفاتورة غير متوفرة للتنزيل.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error: signError } = await supabaseAdmin.storage
+      .from("documents")
+      .createSignedUrl(invoice.pdf_path, 60);
+    if (signError || !signed) throw new Error("تعذّر تجهيز رابط الفاتورة.");
+    return { url: signed.signedUrl };
+  });
