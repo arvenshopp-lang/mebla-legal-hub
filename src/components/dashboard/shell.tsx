@@ -18,6 +18,7 @@ import {
   CreditCard,
   FileSearch,
   Printer,
+  LifeBuoy,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
 import { PrintGuard } from "@/components/print/print-guard";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard };
 
@@ -54,6 +56,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { to: "/team", label: "الفريق", Icon: UsersRound },
       { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
+      { to: "/support", label: "الدعم الفني", Icon: LifeBuoy },
       { to: "/settings", label: "الإعدادات", Icon: Settings },
     ],
   },
@@ -260,7 +263,10 @@ export function DashboardShell({
                 {description && <p className="truncate text-[12px] text-muted-foreground">{description}</p>}
               </div>
             </div>
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+              <NotificationBell />
+            </div>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 md:py-8">

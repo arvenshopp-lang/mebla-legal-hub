@@ -2190,6 +2190,11 @@ export type Database = {
           last_reply_at: string
           organization_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
+          rated_at: string | null
+          rated_staff_id: string | null
+          rated_staff_name: string | null
+          rating: number | null
+          rating_comment: string | null
           reference: string
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
@@ -2206,6 +2211,11 @@ export type Database = {
           last_reply_at?: string
           organization_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          rated_at?: string | null
+          rated_staff_id?: string | null
+          rated_staff_name?: string | null
+          rating?: number | null
+          rating_comment?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
@@ -2222,6 +2232,11 @@ export type Database = {
           last_reply_at?: string
           organization_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          rated_at?: string | null
+          rated_staff_id?: string | null
+          rated_staff_name?: string | null
+          rating?: number | null
+          rating_comment?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
