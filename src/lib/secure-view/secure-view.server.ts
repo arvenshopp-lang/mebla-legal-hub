@@ -137,6 +137,26 @@ export type ResolvedToken = {
   usedCount: number;
 };
 
+export type StorageReadTrace = {
+  bucket: "documents";
+  storagePath: string;
+  signedUrlHost: string | null;
+  status: number | null;
+  contentType: string | null;
+  finalUrl: string | null;
+  errorCode: string | null;
+};
+
+export class StorageReadError extends Error {
+  constructor(
+    message: string,
+    readonly trace: StorageReadTrace,
+  ) {
+    super(message);
+    this.name = "StorageReadError";
+  }
+}
+
 /** يتحقق من التذكرة ويستهلك استخداماً واحداً. يرمي رسالة عربية عند الفشل. */
 export async function consumeAccessToken(token: string): Promise<ResolvedToken> {
   const db = await admin();
@@ -212,12 +232,102 @@ export async function logDocumentAccess(input: AccessLogInput): Promise<void> {
   if (error) throw new Error("تعذّر تسجيل عملية الوصول، ولم تُنفَّذ العملية.");
 }
 
-/** قراءة الملف الأصلي بصلاحية الخادم — لا يُمرَّر مساره للمتصفح أبداً. */
-export async function readOriginal(filePath: string): Promise<Uint8Array> {
+function beginsWithHtml(bytes: Uint8Array): boolean {
+  const prefix = new TextDecoder().decode(bytes.slice(0, 256)).trimStart().toLowerCase();
+  return prefix.startsWith("<!doctype html") || prefix.startsWith("<html");
+}
+
+function matchesStoredFile(bytes: Uint8Array, contentType: string): boolean {
+  if (contentType.startsWith("application/pdf")) {
+    return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
+  }
+  if (contentType.startsWith("image/png")) {
+    return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  }
+  if (contentType.startsWith("image/jpeg")) return bytes[0] === 0xff && bytes[1] === 0xd8;
+  return false;
+}
+
+/**
+ * ينشئ رابطاً موقّعاً جديداً داخل الخادم لكل فتح، ثم يجلب الملف ويتحقق من
+ * الاستجابة والبايتات. لا يُعاد الرابط الموقّع أو مسار التخزين إلى المتصفح.
+ */
+export async function readOriginal(
+  filePath: string,
+  options: { allowProcessingFormat?: boolean } = {},
+): Promise<{ bytes: Uint8Array; trace: StorageReadTrace }> {
   const db = await admin();
-  const { data, error } = await db.storage.from("documents").download(filePath);
-  if (error || !data) throw new Error("تعذّر قراءة الملف من المخزن.");
-  return new Uint8Array(await data.arrayBuffer());
+  const trace: StorageReadTrace = {
+    bucket: "documents",
+    storagePath: filePath,
+    signedUrlHost: null,
+    status: null,
+    contentType: null,
+    finalUrl: null,
+    errorCode: null,
+  };
+  const { data, error } = await db.storage.from(trace.bucket).createSignedUrl(filePath, 60, {
+    download: false,
+  });
+  if (error || !data?.signedUrl) {
+    trace.errorCode = error?.name ?? "SIGNED_URL_MISSING";
+    throw new StorageReadError("تعذّر إنشاء رابط التخزين المؤقت.", trace);
+  }
+
+  let signedUrl: URL;
+  try {
+    signedUrl = new URL(data.signedUrl);
+    trace.signedUrlHost = signedUrl.host;
+  } catch {
+    trace.errorCode = "SIGNED_URL_INVALID";
+    throw new StorageReadError("رابط التخزين المؤقت غير صالح.", trace);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(signedUrl, {
+      redirect: "follow",
+      headers: { Accept: "application/pdf, image/png, image/jpeg" },
+    });
+  } catch (error) {
+    trace.errorCode = error instanceof Error ? error.name : "STORAGE_FETCH_FAILED";
+    throw new StorageReadError("تعذّر الاتصال بمخزن المستندات.", trace);
+  }
+
+  trace.status = response.status;
+  trace.contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  try {
+    trace.finalUrl = new URL(response.url).host;
+  } catch {
+    trace.finalUrl = null;
+  }
+  if (!response.ok) {
+    trace.errorCode = `HTTP_${response.status}`;
+    throw new StorageReadError("الملف غير متاح في المخزن.", trace);
+  }
+  const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(trace.contentType);
+  if (trace.contentType.includes("text/html") || (!supportedViewerType && !options.allowProcessingFormat)) {
+    trace.errorCode = "UNSUPPORTED_CONTENT_TYPE";
+    throw new StorageReadError("نوع الملف المسترجع غير صالح للعرض.", trace);
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const validSignature = options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
+  if (!bytes.length || beginsWithHtml(bytes) || !validSignature) {
+    trace.errorCode = beginsWithHtml(bytes) ? "HTML_BODY_REJECTED" : "FILE_SIGNATURE_MISMATCH";
+    throw new StorageReadError("محتوى الملف المسترجع غير صالح للعرض.", trace);
+  }
+
+  console.info("[secure-document-storage]", {
+    bucket: trace.bucket,
+    storage_path: trace.storagePath,
+    signed_url_host: trace.signedUrlHost,
+    response_status: trace.status,
+    content_type: trace.contentType,
+    final_response_host: trace.finalUrl,
+    error_code: trace.errorCode,
+  });
+  return { bytes, trace };
 }
 
 /** يجمع بيانات المستند + هوية العارض لبناء العلامة المائية. */

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { fetchWatermarkedPdf } from "@/lib/secure-view/fetch-watermarked";
 
 /**
  * Public share surface. The recipient only ever sees the watermarked copy that
@@ -39,19 +40,12 @@ function SharePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch(`/api/public/doc/${token}`, { cache: "no-store" });
-        if (!response.ok) {
-          const message = (await response.text().catch(() => "")).trim();
-          throw new Error(message || "تعذّر فتح النسخة المائية لهذا الرابط.");
-        }
-        const blob = await response.blob();
+        const nextObjectUrl = await fetchWatermarkedPdf(`/api/public/doc/${encodeURIComponent(token)}`);
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(
-          blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" }),
-        );
+        objectUrl = nextObjectUrl;
         setSource(objectUrl);
       } catch (cause) {
-        if (!cancelled) setError((cause as Error).message);
+        if (!cancelled) setError(cause instanceof Error ? cause.message : "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح.");
       }
     })();
     return () => {
@@ -84,6 +78,7 @@ function SharePage() {
           <iframe
             title="المستند المشترك"
             src={source}
+            sandbox="allow-same-origin allow-downloads"
             className="h-[78vh] w-full rounded-xl border border-border bg-surface shadow-sm"
           />
         )}

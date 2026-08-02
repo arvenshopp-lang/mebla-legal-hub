@@ -35,6 +35,14 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+function apiErrorResponse(request: Request): Response | null {
+  if (!new URL(request.url).pathname.startsWith("/api/")) return null;
+  return Response.json(
+    { error: "internal_error", message: "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح." },
+    { status: 500, headers: { "cache-control": "no-store" } },
+  );
+}
+
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
     const payload = JSON.parse(body) as { unhandled?: unknown; message?: unknown };
@@ -52,6 +60,8 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
+      const apiError = apiErrorResponse(request);
+      if (apiError) return apiError;
       return new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
