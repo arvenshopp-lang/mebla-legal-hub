@@ -15,6 +15,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../hooks/use-auth";
 import { useSurfaceGuard } from "../hooks/use-surface-guard";
 import { initAnalytics, trackPageView } from "../lib/analytics";
+import { getThemeCacheVersion } from "../lib/design/theme.functions";
+import { pageKeyForPath } from "../lib/design/pages";
 import "../lib/zod-ar";
 import { Toaster } from "sonner";
 
@@ -83,7 +85,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  loader: async () => {
+    try {
+      return await getThemeCacheVersion();
+    } catch {
+      return { cacheVersion: 0, hasTheme: false };
+    }
+  },
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -117,6 +126,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      // حزمة تصميم المنصة المنشورة — مفتاح Cache يتغير مع كل نشر
+      ...(loaderData?.hasTheme
+        ? [{ rel: "stylesheet", href: `/api/public/theme.css?v=${loaderData.cacheVersion}` }]
+        : []),
       { rel: "icon", href: "/favicon-mehla-v2.ico", type: "image/x-icon" },
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v2.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v2.png" },
@@ -136,8 +149,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pageKey = pageKeyForPath(pathname);
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-page={pageKey}>
       <head>
         <HeadContent />
       </head>

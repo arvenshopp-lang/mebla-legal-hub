@@ -44,6 +44,7 @@ import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/m
 import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
 import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
+import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -59,6 +60,7 @@ import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
@@ -238,6 +240,11 @@ const MehlaAdminEmailRoute = MehlaAdminEmailRouteImport.update({
   path: '/email',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
   id: '/auth/verified',
   path: '/auth/verified',
@@ -314,6 +321,11 @@ const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   path: '/cases/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
+  id: '/api/public/theme.css',
+  path: '/api/public/theme.css',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -364,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -387,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -418,6 +432,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -441,6 +456,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -475,6 +491,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -498,6 +515,7 @@ export interface FileRoutesById {
   '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -532,6 +550,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -555,6 +574,7 @@ export interface FileRouteTypes {
     | '/upload/'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -586,6 +606,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -609,6 +630,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/cases'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -642,6 +664,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -665,6 +688,7 @@ export interface FileRouteTypes {
     | '/upload/'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/_authenticated/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -691,6 +715,7 @@ export interface RootRouteChildren {
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
@@ -942,6 +967,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminEmailRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/design': {
+      id: '/mehla-admin/design'
+      path: '/design'
+      fullPath: '/mehla-admin/design'
+      preLoaderRoute: typeof MehlaAdminDesignRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/auth/verified': {
       id: '/auth/verified'
       path: '/auth/verified'
@@ -1047,6 +1079,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/theme.css': {
+      id: '/api/public/theme.css'
+      path: '/api/public/theme.css'
+      fullPath: '/api/public/theme.css'
+      preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -1116,6 +1155,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface MehlaAdminRouteRouteChildren {
+  MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
   MehlaAdminEmailRoute: typeof MehlaAdminEmailRoute
   MehlaAdminFailuresRoute: typeof MehlaAdminFailuresRoute
   MehlaAdminLogsRoute: typeof MehlaAdminLogsRoute
@@ -1137,6 +1177,7 @@ interface MehlaAdminRouteRouteChildren {
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
+  MehlaAdminDesignRoute: MehlaAdminDesignRoute,
   MehlaAdminEmailRoute: MehlaAdminEmailRoute,
   MehlaAdminFailuresRoute: MehlaAdminFailuresRoute,
   MehlaAdminLogsRoute: MehlaAdminLogsRoute,
@@ -1182,6 +1223,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
