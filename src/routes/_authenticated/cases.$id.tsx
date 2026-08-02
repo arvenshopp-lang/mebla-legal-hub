@@ -18,6 +18,9 @@ import {
 import { CaseDialog } from "./cases.index";
 import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
 import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { saveCasePartySecure } from "@/lib/pii.functions";
+import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
   component: Page,
@@ -323,8 +326,6 @@ const partySchema = z.object({
   party_name: z.string().trim().min(2).max(200),
   party_type: z.string().max(80).optional().nullable(),
   legal_role: z.string().max(80).optional().nullable(),
-  national_id: z.string().max(30).optional().nullable(),
-  commercial_registration: z.string().max(30).optional().nullable(),
   phone: z.string().max(30).optional().nullable(),
   email: z.string().email().optional().or(z.literal("")).nullable(),
   representative_name: z.string().max(150).optional().nullable(),
@@ -336,9 +337,12 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
   const [form, setForm] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const savePartySecure = useServerFn(saveCasePartySecure);
+  const { data: mask } = useMaskedPii(orgId, "case_party", editing?.id);
+  const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
   const key = editing?.id ?? "new";
   const [k, setK] = useState(key);
-  if (open && k !== key) { setK(key); setErrors({}); setForm(editing ? { ...editing } : {}); }
+  if (open && k !== key) { setK(key); setErrors({}); setPiiEdit(null); setForm(editing ? { ...editing } : {}); }
 
   const save = async () => {
     const res = partySchema.safeParse(form);
@@ -350,17 +354,25 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
       return;
     }
     setSaving(true);
-    const payload: any = { ...res.data };
-    Object.keys(payload).forEach((k) => { if (payload[k] === "") payload[k] = null; });
-    const q = editing
-      ? supabase.from("case_parties").update(payload).eq("id", editing.id)
-      : supabase.from("case_parties").insert({ ...payload, organization_id: orgId, case_id: caseId });
-    const { error } = await q;
-    setSaving(false);
-    if (error) return toast.error("تعذّر الحفظ", { description: error.message });
-    toast.success(editing ? "تم التحديث" : "تمت الإضافة");
-    qc.invalidateQueries({ queryKey: ["case-parties", caseId] });
-    onClose();
+    try {
+      await savePartySecure({
+        data: {
+          organizationId: orgId,
+          caseId,
+          ...(editing ? { id: editing.id as string } : {}),
+          values: res.data as never,
+          ...(piiEdit ? { pii: { [piiEdit.field]: piiEdit.value.trim() || null } } : {}),
+        },
+      });
+      toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+      qc.invalidateQueries({ queryKey: ["case-parties", caseId] });
+      qc.invalidateQueries({ queryKey: ["pii-mask"] });
+      onClose();
+    } catch (error) {
+      toast.error("تعذّر الحفظ", { description: error instanceof Error ? error.message : undefined });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -372,8 +384,24 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
         </FormField>
         <FormField label="النوع"><input value={form.party_type ?? ""} onChange={(e) => setForm({ ...form, party_type: e.target.value })} className={inputCls} placeholder="فرد / شركة" /></FormField>
         <FormField label="الصفة القانونية"><input value={form.legal_role ?? ""} onChange={(e) => setForm({ ...form, legal_role: e.target.value })} className={inputCls} placeholder="مدّعى عليه / شاهد…" /></FormField>
-        <FormField label="رقم الهوية"><input value={form.national_id ?? ""} onChange={(e) => setForm({ ...form, national_id: e.target.value })} className={inputCls} /></FormField>
-        <FormField label="السجل التجاري"><input value={form.commercial_registration ?? ""} onChange={(e) => setForm({ ...form, commercial_registration: e.target.value })} className={inputCls} /></FormField>
+        <PiiSecureInput
+          label="رقم الهوية"
+          mask={(mask?.national_id ?? "—") as string}
+          value={piiEdit?.field === "national_id" ? piiEdit.value : ""}
+          editing={piiEdit?.field === "national_id" || (!editing && !piiEdit)}
+          onChange={(next) => setPiiEdit({ field: "national_id", value: next })}
+          onStartEdit={() => setPiiEdit({ field: "national_id", value: "" })}
+          onCancelEdit={() => setPiiEdit(null)}
+        />
+        <PiiSecureInput
+          label="السجل التجاري"
+          mask={(mask?.commercial_registration ?? "—") as string}
+          value={piiEdit?.field === "commercial_registration" ? piiEdit.value : ""}
+          editing={piiEdit?.field === "commercial_registration"}
+          onChange={(next) => setPiiEdit({ field: "commercial_registration", value: next })}
+          onStartEdit={() => setPiiEdit({ field: "commercial_registration", value: "" })}
+          onCancelEdit={() => setPiiEdit(null)}
+        />
         <FormField label="الجوال"><input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></FormField>
         <FormField label="البريد"><input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />{errors.email && <span className="text-xs text-danger">{errors.email}</span>}</FormField>
         <FormField label="اسم الممثل"><input value={form.representative_name ?? ""} onChange={(e) => setForm({ ...form, representative_name: e.target.value })} className={inputCls} /></FormField>
