@@ -59,6 +59,7 @@ import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
@@ -314,6 +315,11 @@ const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   path: '/cases/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
+  id: '/api/public/theme.css',
+  path: '/api/public/theme.css',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -387,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -498,6 +506,7 @@ export interface FileRoutesById {
   '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -555,6 +564,7 @@ export interface FileRouteTypes {
     | '/upload/'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/cases'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/upload/'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
+    | '/api/public/theme.css'
     | '/_authenticated/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -691,6 +703,7 @@ export interface RootRouteChildren {
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
@@ -1047,6 +1060,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/theme.css': {
+      id: '/api/public/theme.css'
+      path: '/api/public/theme.css'
+      fullPath: '/api/public/theme.css'
+      preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -1182,6 +1202,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
