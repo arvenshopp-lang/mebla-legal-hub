@@ -22,6 +22,7 @@ import {
   KeyRound,
   Lock,
   MessageSquare,
+  Plug,
   Palette,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
