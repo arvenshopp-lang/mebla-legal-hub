@@ -2033,15 +2033,20 @@ export type Database = {
           created_at: string
           delivery_status: string
           device: string | null
+          dispatch_source: string | null
+          dispatch_trace: string | null
           email: string | null
           expires_at: string
           id: string
+          idempotency_key: string | null
+          integration_id: string | null
           ip: string | null
           max_attempts: number
           phone_e164: string
           provider: string | null
           provider_reference: string | null
           purpose: string
+          remote_verification: boolean
           trace_ref: string | null
           user_agent: string | null
           user_id: string | null
@@ -2053,15 +2058,20 @@ export type Database = {
           created_at?: string
           delivery_status?: string
           device?: string | null
+          dispatch_source?: string | null
+          dispatch_trace?: string | null
           email?: string | null
           expires_at: string
           id?: string
+          idempotency_key?: string | null
+          integration_id?: string | null
           ip?: string | null
           max_attempts?: number
           phone_e164: string
           provider?: string | null
           provider_reference?: string | null
           purpose: string
+          remote_verification?: boolean
           trace_ref?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -2073,20 +2083,33 @@ export type Database = {
           created_at?: string
           delivery_status?: string
           device?: string | null
+          dispatch_source?: string | null
+          dispatch_trace?: string | null
           email?: string | null
           expires_at?: string
           id?: string
+          idempotency_key?: string | null
+          integration_id?: string | null
           ip?: string | null
           max_attempts?: number
           phone_e164?: string
           provider?: string | null
           provider_reference?: string | null
           purpose?: string
+          remote_verification?: boolean
           trace_ref?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "otp_verifications_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pii_access_logs: {
         Row: {
