@@ -18,6 +18,11 @@ import {
   removeMfaFactor,
   startTotpEnrollment,
 } from "@/lib/mfa";
+import {
+  MFA_OPTIONAL_HEADLINE,
+  MFA_OPTIONAL_INVITE,
+  MFA_OPTIONAL_NOTE,
+} from "@/lib/security/security-policy";
 
 export function SecurityTab({ orgId, isOrgAdmin }: { orgId: string | null; isOrgAdmin: boolean }) {
   return (
@@ -85,7 +90,8 @@ function MfaCard() {
   const verified = (factors ?? []).filter((f) => f.status === "verified");
 
   return (
-    <Card title="التحقق بخطوتين (2FA)" icon={<KeyRound className="h-4 w-4 text-primary" />}>
+    <Card title={MFA_OPTIONAL_HEADLINE} icon={<KeyRound className="h-4 w-4 text-primary" />}>
+      <p className="mb-4 text-[12.5px] leading-6 text-text-muted">{MFA_OPTIONAL_NOTE}</p>
       {isLoading ? (
         <LoadingBlock />
       ) : verified.length ? (
@@ -147,9 +153,10 @@ function MfaCard() {
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-2 text-sm text-text-muted">
-            <ShieldAlert className="mt-0.5 h-4 w-4 text-warning" aria-hidden />
+            <ShieldAlert className="mt-0.5 h-4 w-4 text-primary" aria-hidden />
             <p>
-              التحقق بخطوتين يمنع الدخول إلى ملفات مكتبك حتى لو تسربت كلمة المرور. نوصي بتفعيله لكل من يملك صلاحية على القضايا والمستندات.
+              {MFA_OPTIONAL_INVITE} — يُطلب الرمز عند تسجيل الدخول فقط، ولا يؤثر على وصولك إلى القضايا
+              أو المستندات أو أي عملية تسمح بها صلاحيات دورك.
             </p>
           </div>
           <Btn onClick={() => begin.mutate()} loading={begin.isPending}>تفعيل التحقق بخطوتين</Btn>
@@ -163,7 +170,7 @@ function MfaCard() {
         loading={remove.isPending}
         title="إلغاء التحقق بخطوتين"
         confirmLabel="إلغاء التحقق"
-        message="سيصبح حسابك محمياً بكلمة المرور فقط. هل ترغب في المتابعة؟"
+        message="سيصبح حسابك محمياً بكلمة المرور فقط، وتبقى جميع صلاحياتك على المنصة كما هي. هل ترغب في المتابعة؟"
       />
     </Card>
   );
