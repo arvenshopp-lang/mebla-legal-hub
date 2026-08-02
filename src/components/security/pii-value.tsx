@@ -2,14 +2,15 @@
  * عرض وتحرير الحقول الحساسة المشفّرة (رقم الهوية / السجل التجاري).
  * القيمة الصريحة لا تصل المتصفح إلا بطلب كشف صريح يُسجَّل في سجل التدقيق.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Eye, Lock, ShieldCheck } from "lucide-react";
+import { Eye, Lock, ShieldAlert, ShieldCheck } from "lucide-react";
 import { getMaskedPii, revealPii } from "@/lib/pii.functions";
 import { PII_FIELD_LABEL, type PiiField } from "@/lib/crypto/pii.shared";
-import { inputCls } from "@/lib/list-utils";
+import { inputCls, Modal } from "@/lib/list-utils";
+import { PII_REVEAL_LIMITS, isMfaRequiredError } from "@/lib/security/security-policy";
 
 type Entity = "client" | "case_party";
 
@@ -28,7 +29,10 @@ export function useMaskedPii(organizationId: string | null | undefined, entity: 
   });
 }
 
-/** عرض للقراءة فقط مع زر كشف مُدقَّق. */
+/**
+ * عرض للقراءة فقط مع كشف مُدقَّق: يطلب سبباً إلزامياً قبل الطلب، ثم يُظهر القيمة
+ * في الذاكرة فقط ويخفيها تلقائياً — لا تُخزَّن في المتصفح ولا في الرابط.
+ */
 export function PiiReveal({
   organizationId,
   entity,
@@ -47,40 +51,133 @@ export function PiiReveal({
   const reveal = useServerFn(revealPii);
   const [value, setValue] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (mask === "—") return <span className="text-text-muted">—</span>;
+  useEffect(
+    () => () => {
+      if (timer.current) clearInterval(timer.current);
+    },
+    [],
+  );
+
+  const startAutoHide = () => {
+    setSecondsLeft(PII_REVEAL_LIMITS.autoHideSeconds);
+    if (timer.current) clearInterval(timer.current);
+    timer.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          if (timer.current) clearInterval(timer.current);
+          setValue(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const onReveal = async () => {
+    if (reason.trim().length < PII_REVEAL_LIMITS.minReasonLength) {
+      toast.error("سبب الكشف إلزامي", {
+        description: `اكتب سبباً واضحاً (${PII_REVEAL_LIMITS.minReasonLength} أحرف على الأقل) — يُسجَّل في سجل التدقيق.`,
+      });
+      return;
+    }
     setLoading(true);
     try {
-      const res = await reveal({ data: { organizationId, entity, entityId, field } });
+      const res = await reveal({
+        data: { organizationId, entity, entityId, field, reason: reason.trim() },
+      });
       setValue(res.value);
+      setAskOpen(false);
+      setReason("");
+      startAutoHide();
       toast.success("تم الكشف وتسجيل العملية في سجل التدقيق");
     } catch (error) {
-      toast.error("تعذّر الكشف", {
-        description: error instanceof Error ? error.message : undefined,
-      });
+      if (isMfaRequiredError(error)) {
+        toast.error("مطلوب تحقق بخطوتين", {
+          description: "فعّل التحقق بخطوتين من الإعدادات ← الأمان ثم أعد المحاولة.",
+        });
+      } else {
+        toast.error("تعذّر الكشف", {
+          description: error instanceof Error ? error.message : undefined,
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  if (mask === "—") return <span className="text-text-muted">—</span>;
+
   return (
-    <span className="inline-flex items-center gap-2 font-mono text-sm" dir="ltr">
-      {value ?? mask}
-      {!value && canReveal && (
-        <button
-          type="button"
-          onClick={onReveal}
-          disabled={loading}
-          aria-label={`كشف ${PII_FIELD_LABEL[field]}`}
-          title={`كشف ${PII_FIELD_LABEL[field]} — تُسجَّل العملية`}
-          className="rounded-md p-1 text-text-muted transition hover:bg-surface-muted hover:text-foreground disabled:opacity-50"
-        >
-          <Eye className="h-3.5 w-3.5" />
-        </button>
-      )}
-    </span>
+    <>
+      <span className="inline-flex items-center gap-2 font-mono text-sm" dir="ltr">
+        {value ?? mask}
+        {value && (
+          <span className="text-[11px] text-text-muted" dir="rtl">
+            يُخفى بعد {secondsLeft} ثانية
+          </span>
+        )}
+        {!value && canReveal && (
+          <button
+            type="button"
+            onClick={() => setAskOpen(true)}
+            aria-label={`كشف ${PII_FIELD_LABEL[field]}`}
+            title={`كشف ${PII_FIELD_LABEL[field]} — يتطلب سبباً وتحققاً بخطوتين`}
+            className="rounded-md p-1 text-text-muted transition hover:bg-surface-muted hover:text-foreground"
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
+      </span>
+
+      <Modal
+        open={askOpen}
+        onClose={() => setAskOpen(false)}
+        title={`كشف ${PII_FIELD_LABEL[field]}`}
+        description="عملية حساسة: تتطلب تحققاً بخطوتين وسبباً يُسجَّل باسمك في سجل التدقيق."
+        size="sm"
+      >
+        <div className="grid gap-3">
+          <label className="grid gap-1.5 text-sm font-medium">
+            سبب الكشف
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={300}
+              placeholder="مثال: التحقق من هوية الموكل قبل تقديم مذكرة الدفاع"
+              className={inputCls}
+            />
+          </label>
+          <p className="flex items-start gap-2 rounded-[var(--radius-m)] bg-surface-muted/60 p-3 text-[12px] text-muted-foreground">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+            تُخفى القيمة تلقائياً بعد {PII_REVEAL_LIMITS.autoHideSeconds} ثانية، ولا تُحفظ في المتصفح، وعدد
+            عمليات الكشف محدود لكل مستخدم.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setAskOpen(false)}
+              className="h-10 rounded-[var(--radius-m)] border border-border px-4 text-sm font-medium"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={onReveal}
+              disabled={loading}
+              className="h-10 rounded-[var(--radius-m)] bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {loading ? "جارٍ الكشف…" : "كشف وتسجيل"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
 
