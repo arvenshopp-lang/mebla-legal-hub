@@ -11,6 +11,11 @@ export type DocumentPermission =
   | "documents.run_ocr"
   | "documents.retry_ocr"
   | "documents.edit_extracted_text"
+  | "print.print"
+  | "print.export_pdf"
+  | "print.download"
+  | "print.watermark_override"
+  | "print.confidential"
   | "voice_notes.create"
   | "voice_notes.listen"
   | "voice_notes.transcribe"
@@ -23,6 +28,11 @@ const MATRIX: Record<DocumentPermission, AppRole[]> = {
   "documents.run_ocr": ["owner", "admin", "lawyer", "legal_assistant"],
   "documents.retry_ocr": ["owner", "admin", "lawyer", "legal_assistant"],
   "documents.edit_extracted_text": ["owner", "admin", "lawyer"],
+  "print.print": ["owner", "admin", "lawyer", "legal_assistant", "viewer"],
+  "print.export_pdf": ["owner", "admin", "lawyer", "legal_assistant"],
+  "print.download": ["owner", "admin", "lawyer", "legal_assistant"],
+  "print.watermark_override": ["owner"],
+  "print.confidential": ["owner", "admin", "lawyer"],
   "voice_notes.create": ["owner", "admin", "lawyer", "legal_assistant"],
   "voice_notes.listen": ["owner", "admin", "lawyer", "legal_assistant"],
   "voice_notes.transcribe": ["owner", "admin", "lawyer", "legal_assistant"],
@@ -36,6 +46,11 @@ export const DOCUMENT_PERMISSION_LABELS: Record<DocumentPermission, string> = {
   "documents.run_ocr": "تشغيل القراءة الضوئية",
   "documents.retry_ocr": "إعادة محاولة المعالجة",
   "documents.edit_extracted_text": "تعديل النص المستخرج",
+  "print.print": "طباعة المستندات",
+  "print.export_pdf": "تصدير PDF",
+  "print.download": "تنزيل المستندات",
+  "print.watermark_override": "تجاوز العلامة المائية",
+  "print.confidential": "طباعة المستندات السرّية",
   "voice_notes.create": "تسجيل ملاحظة صوتية",
   "voice_notes.listen": "الاستماع للتسجيلات",
   "voice_notes.transcribe": "تحويل الصوت إلى نص",
