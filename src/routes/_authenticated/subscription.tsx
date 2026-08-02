@@ -5,6 +5,7 @@ import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { LimitBar, FeatureLine, NoticeBanner, StateBadge } from "@/components/subscription/subscription-ui";
+import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { signInvoiceUrl } from "@/lib/subscription.functions";
 import { Badge, Btn, DataCard, EmptyState, ErrorBlock, SectionCard, SectionLoader, Td, Th } from "@/lib/list-utils";
@@ -40,6 +41,7 @@ const HISTORY_TONE: Record<string, "green" | "red" | "muted" | "info" | "warn"> 
 };
 
 function SubscriptionPage() {
+  const { activeOrgId } = useAuth();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
 
   return (
