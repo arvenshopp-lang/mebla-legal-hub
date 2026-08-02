@@ -149,8 +149,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pageKey = pageKeyForPath(pathname);
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-page={pageKey}>
       <head>
         <HeadContent />
       </head>
