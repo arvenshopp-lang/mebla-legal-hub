@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { PrintButton } from "@/components/print/print-controls";
+import { buildCaseSheetHtml } from "@/lib/print/case-sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import {
@@ -111,6 +113,27 @@ function Page() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link to="/cases" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowRight className="h-4 w-4" /> عودة للقضايا</Link>
         <div className="flex-1" />
+        <PrintButton
+          variant="button"
+          label="طباعة ملف القضية"
+          target={{
+            documentType: "case_file",
+            documentId: data.id,
+            documentRef: data.case_number ?? data.public_code ?? null,
+            title: data.case_title,
+            classification: "confidential",
+          }}
+          buildHtml={() =>
+            buildCaseSheetHtml({
+              caseRow: data as never,
+              parties: parties ?? [],
+              hearings: hearings ?? [],
+              deadlines: deadlines ?? [],
+              tasks: tasks ?? [],
+              updates: updates ?? [],
+            })
+          }
+        />
         {canEdit(activeRole) && <Btn onClick={() => setEditOpen(true)} variant="outline"><Pencil className="ms-1 inline h-4 w-4" /> تعديل</Btn>}
       </div>
 
