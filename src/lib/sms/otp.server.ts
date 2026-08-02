@@ -584,6 +584,29 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
 export async function sendTestMessage(phone: string): Promise<{ traceRef: string; reference: string | null }> {
   const settings = await loadSmsSettings();
   const traceRef = newSmsTraceRef();
+  // الاختبار يمر بنفس مسار الإرسال الحقيقي: التكامل المعتمد أولاً.
+  const dispatch = await import("@/lib/integrations/otp-dispatch.server");
+  const target = await dispatch.resolveDispatchTarget();
+  if (target.mode === "blocked") {
+    throw new SmsFlowError(target.code, target.message, traceRef);
+  }
+  if (target.mode === "integration") {
+    const outcome = await dispatch.sendIntegrationTest(target.integrationId, phone);
+    await logSms({
+      provider: target.providerKey,
+      purpose: "phone_verification",
+      action: "test",
+      phone,
+      outcome: outcome.ok ? "success" : "failure",
+      errorCode: outcome.code,
+      errorMessage: outcome.ok ? null : outcome.message,
+      referenceId: outcome.reference,
+      traceRef: outcome.traceId,
+    });
+    if (!outcome.ok) throw new SmsFlowError(outcome.code ?? "SEND_FAILED", outcome.message, outcome.traceId);
+    await recordHealth("operational", { reason: null, traceRef: outcome.traceId });
+    return { traceRef: outcome.traceId, reference: outcome.reference };
+  }
   try {
     const result = await sendSms(providerConfig(settings), {
       to: phone,
