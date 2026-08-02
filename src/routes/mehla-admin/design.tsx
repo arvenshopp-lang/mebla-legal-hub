@@ -408,7 +408,10 @@ function DesignStudioPage() {
   const state = studio.data?.state;
   const groups = TOKEN_GROUPS;
   const activeGroup = groups.find((g) => g.id === tab);
-  const pageGroups = Object.groupBy?.(DESIGN_PAGES, (p) => p.group) ?? null;
+  const pageGroups = DESIGN_PAGES.reduce<Record<string, typeof DESIGN_PAGES>>((acc, p) => {
+    (acc[p.group] ??= []).push(p);
+    return acc;
+  }, {});
 
   return (
     <AdminShell
@@ -522,12 +525,9 @@ function DesignStudioPage() {
                 aria-label="اختيار نطاق التخصيص"
                 className={inputCls}
               >
-                {(pageGroups
-                  ? Object.entries(pageGroups)
-                  : [["الصفحات", DESIGN_PAGES] as [string, typeof DESIGN_PAGES]]
-                ).map(([group, items]) => (
+                {Object.entries(pageGroups).map(([group, items]) => (
                   <optgroup key={group} label={group}>
-                    {(items ?? []).map((p) => (
+                    {items.map((p) => (
                       <option key={p.key} value={p.key}>
                         {p.label} — {p.key}
                       </option>
