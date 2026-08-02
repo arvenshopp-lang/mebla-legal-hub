@@ -44,6 +44,7 @@ import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/m
 import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
 import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
+import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -239,6 +240,11 @@ const MehlaAdminEmailRoute = MehlaAdminEmailRouteImport.update({
   path: '/email',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
   id: '/auth/verified',
   path: '/auth/verified',
@@ -370,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -425,6 +432,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -483,6 +491,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
@@ -541,6 +550,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -596,6 +606,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -653,6 +664,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
     | '/mehla-admin/logs'
@@ -955,6 +967,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminEmailRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/design': {
+      id: '/mehla-admin/design'
+      path: '/design'
+      fullPath: '/mehla-admin/design'
+      preLoaderRoute: typeof MehlaAdminDesignRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/auth/verified': {
       id: '/auth/verified'
       path: '/auth/verified'
@@ -1136,6 +1155,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface MehlaAdminRouteRouteChildren {
+  MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
   MehlaAdminEmailRoute: typeof MehlaAdminEmailRoute
   MehlaAdminFailuresRoute: typeof MehlaAdminFailuresRoute
   MehlaAdminLogsRoute: typeof MehlaAdminLogsRoute
@@ -1157,6 +1177,7 @@ interface MehlaAdminRouteRouteChildren {
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
+  MehlaAdminDesignRoute: MehlaAdminDesignRoute,
   MehlaAdminEmailRoute: MehlaAdminEmailRoute,
   MehlaAdminFailuresRoute: MehlaAdminFailuresRoute,
   MehlaAdminLogsRoute: MehlaAdminLogsRoute,
