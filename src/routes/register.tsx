@@ -12,6 +12,14 @@ import { usePasswordStrength } from "@/hooks/use-password-strength";
 import { validatePasswordPolicy } from "@/lib/password-policy.functions";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
+import { useQuery } from "@tanstack/react-query";
+import { getSmsPublicConfig, requestPhoneCode, verifyPhoneCode } from "@/lib/sms/sms.functions";
+import {
+  SMS_DISABLED_CONFIG,
+  SMS_MESSAGES,
+  normalizePhone,
+  phoneFieldVisible,
+} from "@/lib/sms/sms.shared";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -37,12 +45,71 @@ function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneBusy, setPhoneBusy] = useState(false);
+
+  const { data: smsConfig } = useQuery({
+    queryKey: ["sms-public-config"],
+    queryFn: () => getSmsPublicConfig(),
+    staleTime: 60_000,
+  });
+  const sms = smsConfig ?? SMS_DISABLED_CONFIG;
+  const showPhone = phoneFieldVisible(sms);
+  const phoneRequired = showPhone && sms.requirePhone;
+  const verificationRequired = showPhone && sms.requireVerification && !sms.outage;
+  const phoneParsed = normalizePhone(phone, sms.defaultDialCode);
 
   const strength = usePasswordStrength(password, { name: fullName, email });
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const formIsValid = emailValid && fullName.trim().length >= 3 && passwordsMatch;
+  const phoneOk =
+    !showPhone ||
+    (!phoneRequired && phone.trim() === "") ||
+    (phoneParsed.ok && (!verificationRequired || phoneVerified));
+  const formIsValid = emailValid && fullName.trim().length >= 3 && passwordsMatch && phoneOk;
   const canSubmit = formIsValid && strength.acceptable && !loading;
+
+  const sendPhoneCode = async () => {
+    if (phoneBusy) return;
+    if (!phoneParsed.ok) {
+      setFormError(phoneParsed.message);
+      return;
+    }
+    setPhoneBusy(true);
+    setFormError(null);
+    try {
+      const result = await requestPhoneCode({
+        data: { phone: phoneParsed.e164, purpose: "signup", email: emailValid ? email.trim().toLowerCase() : undefined },
+      });
+      setCodeSent(true);
+      setPhoneCode("");
+      toast.success("تم إرسال رمز التحقق إلى جوالك", {
+        description: result.testMode ? "الخدمة في وضع الاختبار حالياً." : undefined,
+      });
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : SMS_MESSAGES.sendFailed);
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  const confirmPhoneCode = async () => {
+    if (phoneBusy || !phoneParsed.ok) return;
+    setPhoneBusy(true);
+    setFormError(null);
+    try {
+      await verifyPhoneCode({ data: { phone: phoneParsed.e164, code: phoneCode, purpose: "signup" } });
+      setPhoneVerified(true);
+      toast.success(SMS_MESSAGES.verified);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : SMS_MESSAGES.invalidCode);
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
@@ -76,6 +143,14 @@ function RegisterPage() {
       setFormError("كلمتا المرور غير متطابقتين");
       return;
     }
+    if (phoneRequired && !phoneParsed.ok) {
+      setFormError(phoneParsed.ok ? null : phoneParsed.message);
+      return;
+    }
+    if (verificationRequired && !phoneVerified) {
+      setFormError("يرجى توثيق رقم الجوال برمز التحقق قبل إكمال التسجيل.");
+      return;
+    }
     setLoading(true);
 
     // تحقق نهائي على الخادم (لا يُسجَّل ولا يُخزَّن أي شيء من كلمة المرور)
@@ -99,11 +174,23 @@ function RegisterPage() {
       });
     }
 
+    // حالة رقم الجوال مستقلة تماماً عن التحقق بخطوتين
+    const phoneStatus = !showPhone || !phoneParsed.ok
+      ? "not_required"
+      : phoneVerified
+        ? "verified"
+        : "pending";
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { full_name: fullName.trim() },
+        data: {
+          full_name: fullName.trim(),
+          ...(phoneParsed.ok && showPhone
+            ? { phone: phoneParsed.e164, phone_verification_status: phoneStatus }
+            : {}),
+        },
         emailRedirectTo: window.location.origin + "/auth/callback",
       },
     });
@@ -196,6 +283,78 @@ function RegisterPage() {
         <Field label="البريد الإلكتروني">
           <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         </Field>
+        {showPhone && (
+          <div className="space-y-3">
+            <Field
+              label={phoneRequired ? "رقم الجوال" : "رقم الجوال (اختياري)"}
+              hint={
+                verificationRequired
+                  ? "سنرسل رمز تحقق لمرة واحدة لتوثيق الرقم."
+                  : "يُستخدم للتواصل والتنبيهات، ويمكن توثيقه لاحقاً من الإعدادات."
+              }
+            >
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                dir="ltr"
+                placeholder="05XXXXXXXX"
+                required={phoneRequired}
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setPhoneVerified(false);
+                  setCodeSent(false);
+                }}
+                className={inputCls + " text-center tracking-[0.12em]"}
+              />
+            </Field>
+
+            {sms.showOutageNotice && (
+              <div role="status" className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3 text-[12px] leading-6 text-warning">
+                {SMS_MESSAGES.outage}
+              </div>
+            )}
+
+            {verificationRequired && !phoneVerified && (
+              <div className="flex flex-wrap items-end gap-2">
+                <button
+                  type="button"
+                  onClick={sendPhoneCode}
+                  disabled={phoneBusy || !phoneParsed.ok}
+                  className="min-h-[42px] rounded-[var(--radius-m)] border border-border bg-surface px-4 text-[13px] font-medium text-foreground transition hover:bg-surface-muted disabled:opacity-60"
+                >
+                  {codeSent ? "إعادة إرسال الرمز" : "إرسال رمز التحقق"}
+                </button>
+                {codeSent && (
+                  <>
+                    <input
+                      value={phoneCode}
+                      onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, "").slice(0, sms.codeLength))}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      dir="ltr"
+                      aria-label="رمز التحقق"
+                      className={inputCls + " max-w-[150px] text-center font-mono tracking-[0.4em]"}
+                    />
+                    <button
+                      type="button"
+                      onClick={confirmPhoneCode}
+                      disabled={phoneBusy || phoneCode.length < sms.codeLength}
+                      className="min-h-[42px] rounded-[var(--radius-m)] bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-60"
+                    >
+                      تأكيد الرمز
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {phoneVerified && (
+              <p className="text-[12.5px] font-medium text-success">تم توثيق رقم الجوال بنجاح.</p>
+            )}
+          </div>
+        )}
         <div>
           <PasswordInput
             label="كلمة المرور"
