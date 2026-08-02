@@ -3,10 +3,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Ban, Plus } from "lucide-react";
+import { Ban, Eye, PauseCircle, PlayCircle, Plus, RefreshCcw } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
-import { activateSubscription, cancelSubscription } from "@/lib/admin.functions";
+import {
+  activateSubscription,
+  cancelSubscription,
+  getSubscriptionAdminDetail,
+  resumeSubscription,
+  setSubscriptionAutoRenew,
+  suspendSubscription,
+} from "@/lib/admin.functions";
 import { SUBSCRIPTION_STATUS_LABELS } from "@/lib/admin-permissions";
 import {
   Badge,
@@ -23,7 +30,7 @@ import {
   inputCls,
   useDebounced,
 } from "@/lib/list-utils";
-import { fmtDate } from "@/lib/enums";
+import { fmtDate, fmtDateTime, fmtSize } from "@/lib/enums";
 
 export const Route = createFileRoute("/mehla-admin/subscriptions")({
   head: () => ({ meta: [{ title: "الاشتراكات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -44,8 +51,12 @@ function SubscriptionsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [cancelling, setCancelling] = useState<{ id: string; email: string } | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState<{ id: string; email: string } | null>(null);
   const debounced = useDebounced(search);
   const cancelFn = useServerFn(cancelSubscription);
+  const resumeFn = useServerFn(resumeSubscription);
+  const autoRenewFn = useServerFn(setSubscriptionAutoRenew);
 
   const { data: rows, isLoading, isFetching } = useQuery({
     queryKey: ["admin-subscriptions", debounced, statusFilter],
@@ -67,6 +78,24 @@ function SubscriptionsPage() {
       setCancelling(null);
     },
     onError: (e: Error) => toast.error("تعذّر الإلغاء", { description: e.message }),
+  });
+
+  const resume = useMutation({
+    mutationFn: async (id: string) => resumeFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("تم إعادة تفعيل الاشتراك");
+      qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+    },
+    onError: (e: Error) => toast.error("تعذّر إعادة التفعيل", { description: e.message }),
+  });
+
+  const toggleRenew = useMutation({
+    mutationFn: async (v: { id: string; autoRenew: boolean }) => autoRenewFn({ data: v }),
+    onSuccess: () => {
+      toast.success("تم تحديث التجديد التلقائي");
+      qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+    },
+    onError: (e: Error) => toast.error("تعذّر التحديث", { description: e.message }),
   });
 
   return (
@@ -116,13 +145,19 @@ function SubscriptionsPage() {
                 <Th>البداية</Th>
                 <Th>الانتهاء</Th>
                 <Th>الحالة</Th>
+                <Th>التجديد التلقائي</Th>
                 <Th className="text-left">إجراءات</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows!.map((s) => {
                 const expired = new Date(String(s.ends_at)) < new Date();
-                const status = s.status === "active" && expired ? "expired" : String(s.status);
+                const suspended = !!s.suspended_at;
+                const status = suspended
+                  ? "suspended"
+                  : s.status === "active" && expired
+                    ? "expired"
+                    : String(s.status);
                 return (
                   <tr key={String(s.id)} className="hover:bg-surface-muted/60">
                     <Td>{String(s.email)}</Td>
@@ -133,19 +168,68 @@ function SubscriptionsPage() {
                     <Td>{fmtDate(String(s.starts_at))}</Td>
                     <Td>{fmtDate(String(s.ends_at))}</Td>
                     <Td>
-                      <Badge tone={status === "active" ? "green" : status === "expired" ? "red" : "muted"}>
-                        {SUBSCRIPTION_STATUS_LABELS[status] ?? status}
+                      <Badge
+                        tone={
+                          status === "active"
+                            ? "green"
+                            : status === "expired"
+                              ? "red"
+                              : status === "suspended"
+                                ? "warn"
+                                : "muted"
+                        }
+                      >
+                        {status === "suspended" ? "موقوف" : (SUBSCRIPTION_STATUS_LABELS[status] ?? status)}
                       </Badge>
+                      {suspended && s.suspension_reason && (
+                        <span className="mt-1 block max-w-[220px] truncate text-[11px] text-muted-foreground">
+                          {String(s.suspension_reason)}
+                        </span>
+                      )}
+                    </Td>
+                    <Td>
+                      <button
+                        onClick={() => toggleRenew.mutate({ id: String(s.id), autoRenew: !s.auto_renew })}
+                        className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
+                        {s.auto_renew ? "مفعّل" : "غير مفعّل"}
+                      </button>
                     </Td>
                     <Td className="text-left">
-                      {s.status === "active" && (
+                      <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => setCancelling({ id: String(s.id), email: String(s.email) })}
-                          className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
+                          onClick={() => setDetailId(String(s.id))}
+                          className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
                         >
-                          <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
+                          <Eye className="h-3.5 w-3.5" aria-hidden /> تفاصيل
                         </button>
-                      )}
+                        {suspended ? (
+                          <button
+                            onClick={() => resume.mutate(String(s.id))}
+                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-success hover:bg-success-soft"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5" aria-hidden /> إعادة تفعيل
+                          </button>
+                        ) : (
+                          s.status === "active" && (
+                            <button
+                              onClick={() => setSuspending({ id: String(s.id), email: String(s.email) })}
+                              className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-warning hover:bg-warning-soft"
+                            >
+                              <PauseCircle className="h-3.5 w-3.5" aria-hidden /> إيقاف
+                            </button>
+                          )
+                        )}
+                        {s.status === "active" && (
+                          <button
+                            onClick={() => setCancelling({ id: String(s.id), email: String(s.email) })}
+                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
+                          >
+                            <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
+                          </button>
+                        )}
+                      </div>
                     </Td>
                   </tr>
                 );
@@ -156,6 +240,15 @@ function SubscriptionsPage() {
       )}
 
       <ActivateDialog open={open} onClose={() => setOpen(false)} />
+      <DetailDialog id={detailId} onClose={() => setDetailId(null)} />
+      <SuspendDialog
+        target={suspending}
+        onClose={() => setSuspending(null)}
+        onDone={() => {
+          setSuspending(null);
+          qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+        }}
+      />
       <ConfirmDialog
         open={!!cancelling}
         onClose={() => setCancelling(null)}
@@ -170,6 +263,139 @@ function SubscriptionsPage() {
 }
 
 function ActivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return <ActivateDialogInner open={open} onClose={onClose} />;
+}
+
+function SuspendDialog({
+  target,
+  onClose,
+  onDone,
+}: {
+  target: { id: string; email: string } | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const suspendFn = useServerFn(suspendSubscription);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const run = useMutation({
+    mutationFn: async () => suspendFn({ data: { id: target!.id, reason: reason.trim() } }),
+    onSuccess: () => {
+      toast.success("تم إيقاف الاشتراك");
+      setReason("");
+      onDone();
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
+  return (
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title="إيقاف الاشتراك"
+      description={`سيتم تعليق صلاحيات ${target?.email ?? ""} مع الاحتفاظ ببياناته.`}
+    >
+      <div className="space-y-4">
+        <FormField label="سبب الإيقاف" required hint="يظهر للمشترك داخل صفحة الاشتراك.">
+          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
+        </FormField>
+        {error && (
+          <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2 pt-2">
+          <Btn variant="ghost" onClick={onClose}>
+            إلغاء
+          </Btn>
+          <Btn
+            onClick={() => {
+              setError(null);
+              if (reason.trim().length < 3) return setError("اذكر سبب الإيقاف.");
+              run.mutate();
+            }}
+            loading={run.isPending}
+          >
+            إيقاف الاشتراك
+          </Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function DetailDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const detailFn = useServerFn(getSubscriptionAdminDetail);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-subscription-detail", id],
+    enabled: !!id,
+    queryFn: async () => detailFn({ data: { id: id! } }),
+  });
+
+  const limits: [string, number, number | null][] = data
+    ? [
+        ["المستخدمون", data.usage.users, data.plan?.max_users ?? null],
+        ["القضايا", data.usage.cases, data.plan?.max_cases ?? null],
+        ["العملاء", data.usage.clients, data.plan?.max_clients ?? null],
+        ["المستندات", data.usage.documents, data.plan?.max_documents ?? null],
+      ]
+    : [];
+
+  return (
+    <Modal open={!!id} onClose={onClose} title="تفاصيل الاشتراك" description="بيانات تشغيلية فقط دون أي محتوى قانوني.">
+      {isLoading || !data ? (
+        <LoadingBlock rows={4} cols={2} />
+      ) : (
+        <div className="space-y-5 text-[13px]">
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <Row label="المشترك">{data.subscription.email}</Row>
+            <Row label="المكتب">{data.organizationName ?? "—"}</Row>
+            <Row label="الباقة">{data.plan?.name_ar ?? data.subscription.plan_label}</Row>
+            <Row label="طريقة التفعيل">{data.subscription.activation_method}</Row>
+            <Row label="البداية">{fmtDate(data.subscription.starts_at)}</Row>
+            <Row label="الانتهاء">{fmtDate(data.subscription.ends_at)}</Row>
+            <Row label="التجديد التلقائي">{data.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}</Row>
+            <Row label="مساحة التخزين">{fmtSize(data.usage.storage_bytes)}</Row>
+            {data.subscription.suspended_at && (
+              <Row label="موقوف بتاريخ">{fmtDateTime(data.subscription.suspended_at)}</Row>
+            )}
+            {data.subscription.suspension_reason && (
+              <Row label="سبب الإيقاف">{data.subscription.suspension_reason}</Row>
+            )}
+            <Row label="آخر تعديل">
+              {data.subscription.last_modified_at ? fmtDateTime(data.subscription.last_modified_at) : "—"}
+              {data.lastModifiedByName ? ` · ${data.lastModifiedByName}` : ""}
+            </Row>
+          </dl>
+
+          <div className="space-y-2">
+            <p className="text-[12px] font-semibold text-muted-foreground">الاستخدام مقابل حدود الباقة</p>
+            {limits.map(([label, used, max]) => (
+              <div key={label} className="flex items-center justify-between rounded-[var(--radius-m)] bg-surface-muted px-3 py-2">
+                <span>{label}</span>
+                <span className="tabular-nums">
+                  {used} / {max === null ? "غير محدود" : max}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-[12px] text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const activateFn = useServerFn(activateSubscription);
   const [email, setEmail] = useState("");

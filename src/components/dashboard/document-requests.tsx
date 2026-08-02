@@ -9,6 +9,7 @@ import { fmtDateTime } from "@/lib/enums";
 import { Badge, Btn, ConfirmDialog, FormField, IconBtn, Modal, SectionLoader, inputCls } from "@/lib/list-utils";
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 const EVENT_LABEL: Record<string, string> = {
   created: "إنشاء الرابط",
@@ -181,7 +182,7 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
       qc.invalidateQueries({ queryKey: ["doc-requests", caseId] });
       toast.success("تم إنشاء الرابط");
     } catch (e: any) {
-      toast.error("تعذّر إنشاء الرابط", { description: e?.message });
+      toast.error("تعذّر إنشاء الرابط", { description: describeMutationError(e?.message) });
     } finally {
       setSaving(false);
     }

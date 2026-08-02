@@ -13,6 +13,7 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Download, Trash2, Upload, Lock } from "lucide-react";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
@@ -194,7 +195,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     setUploading(false); setProgress(100);
     if (dbErr) {
       await supabase.storage.from("documents").remove([path]);
-      return toast.error("تعذّر الحفظ", { description: dbErr.message });
+      return toast.error("تعذّر الحفظ", { description: describeMutationError(dbErr.message) });
     }
     toast.success("تم الرفع");
     await audit({

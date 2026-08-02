@@ -12,6 +12,7 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/cases/")({
   component: Page,
@@ -252,7 +253,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
       result = { data, error };
     }
     setSaving(false);
-    if (result.error) return toast.error("تعذّر الحفظ", { description: result.error.message });
+    if (result.error) return toast.error("تعذّر الحفظ", { description: describeMutationError(result.error.message) });
     toast.success(editing ? "تم التحديث" : "تم إنشاء القضية");
     qc.invalidateQueries({ queryKey: ["cases"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });

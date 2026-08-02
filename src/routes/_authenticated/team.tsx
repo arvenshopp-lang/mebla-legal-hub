@@ -12,6 +12,7 @@ import {
   Modal, FormField, inputCls, Btn, Badge, ConfirmDialog,
 } from "@/lib/list-utils";
 import { Trash2, Copy } from "lucide-react";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -209,7 +210,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       token, status: "pending", expires_at: expires.toISOString(), invited_by: userId,
     }).select().single();
     setSaving(false);
-    if (error) return toast.error("تعذّر الإرسال", { description: error.message });
+    if (error) return toast.error("تعذّر الإرسال", { description: describeMutationError(error.message) });
     setLink(`${window.location.origin}/register?invite=${data.token}`);
     toast.success("تم إنشاء الدعوة");
     qc.invalidateQueries({ queryKey: ["team-invitations"] });
