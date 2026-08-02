@@ -164,10 +164,10 @@ function SecurityCenterPage() {
         <div className="grid gap-6">
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric
-              label="تغطية التحقق بخطوتين (فريق المنصة)"
+              label="تغطية التحقق بخطوتين (اختياري — فريق المنصة)"
               value={`${overview.mfa.coverage}%`}
               hint={`${overview.mfa.enrolled} من ${overview.mfa.total} عضواً`}
-              tone={overview.mfa.coverage === 100 ? "success" : "danger"}
+              tone={overview.mfa.coverage === 100 ? "success" : "warn"}
             />
             <Metric
               label="محاولات كشف مرفوضة (٧ أيام)"
@@ -189,7 +189,7 @@ function SecurityCenterPage() {
           {overview.mfa.pending.length > 0 && (
             <Panel
               title="أعضاء لم يفعّلوا التحقق بخطوتين"
-              description="لا يستطيع هؤالء تنفيذ أي عملية إدارية حساسة حتى التفعيل."
+              description="التحقق بخطوتين اختياري ولا يمنع أي عملية — هذه قائمة للتوصية بتعزيز الحماية فقط."
             >
               <ul className="divide-y divide-border">
                 {overview.mfa.pending.map((member) => (
