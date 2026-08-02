@@ -26,6 +26,7 @@ import {
   type DocumentRow,
 } from "@/components/documents/text-intel";
 import { extractableKind } from "@/lib/document-ai.shared";
+import { DocumentRepairButton } from "@/components/documents/repair-panel";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
@@ -90,6 +91,7 @@ function Page() {
         canAdd={canEdit(activeRole)}
         onAdd={() => setOpen(true)}
         addLabel="رفع مستند"
+        filters={<DocumentRepairButton />}
       />
       {isLoading ? <LoadingBlock /> : error ? <ErrorBlock message={(error as any).message} /> :
         !data?.rows.length ? (
