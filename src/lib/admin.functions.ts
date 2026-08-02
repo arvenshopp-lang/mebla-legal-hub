@@ -125,6 +125,27 @@ export const activateSubscription = createServerFn({ method: "POST" })
       metadata: { amount: data.amount, currency: data.currency, ends_at: endsAt.toISOString() },
     });
 
+    // فاتورة تلقائية لكل تفعيل مدفوع حتى يظهر السجل للمشترك.
+    if (data.amount > 0) {
+      const stamp = new Date();
+      const number = `MEH-${stamp.getFullYear()}${String(stamp.getMonth() + 1).padStart(2, "0")}-${created.id
+        .slice(0, 6)
+        .toUpperCase()}`;
+      await supabaseAdmin.from("invoices").insert({
+        organization_id: org?.organization_id ?? null,
+        subscription_id: created.id,
+        user_id: profile.id,
+        number,
+        amount: data.amount,
+        currency: data.currency,
+        status: "paid",
+        payment_method: "تحويل بنكي",
+        paid_at: stamp.toISOString(),
+        issued_at: stamp.toISOString(),
+        notes: data.note ?? null,
+      });
+    }
+
     return {
       ok: true as const,
       subscriptionId: created.id,
@@ -151,6 +172,148 @@ export const cancelSubscription = createServerFn({ method: "POST" })
       entity_id: data.id,
     });
     return { ok: true as const };
+  });
+
+/* -------------------------------------------- suspend / resume / auto-renew */
+
+const suspendSchema = z.object({
+  id: z.string().uuid(),
+  reason: z.string().trim().min(3, "اذكر سبب الإيقاف").max(300),
+});
+
+export const suspendSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => suspendSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { error } = await context.supabase
+      .from("subscriptions")
+      .update({
+        suspended_at: new Date().toISOString(),
+        suspension_reason: data.reason,
+        last_modified_by: staff.user_id,
+        last_modified_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر إيقاف الاشتراك.");
+    await (await guard()).writeAudit(context.supabase, staff, {
+      action: "subscription.suspend",
+      entity_type: "subscription",
+      entity_id: data.id,
+      description: `إيقاف الاشتراك: ${data.reason}`,
+    });
+    return { ok: true as const };
+  });
+
+export const resumeSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => cancelSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { error } = await context.supabase
+      .from("subscriptions")
+      .update({
+        suspended_at: null,
+        suspension_reason: null,
+        last_modified_by: staff.user_id,
+        last_modified_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر إعادة تفعيل الاشتراك.");
+    await (await guard()).writeAudit(context.supabase, staff, {
+      action: "subscription.resume",
+      entity_type: "subscription",
+      entity_id: data.id,
+    });
+    return { ok: true as const };
+  });
+
+export const setSubscriptionAutoRenew = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), autoRenew: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const staff = await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { error } = await context.supabase
+      .from("subscriptions")
+      .update({
+        auto_renew: data.autoRenew,
+        last_modified_by: staff.user_id,
+        last_modified_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error("تعذّر تحديث التجديد التلقائي.");
+    await (await guard()).writeAudit(context.supabase, staff, {
+      action: "subscription.auto_renew",
+      entity_type: "subscription",
+      entity_id: data.id,
+      metadata: { auto_renew: data.autoRenew },
+    });
+    return { ok: true as const };
+  });
+
+/**
+ * Operational detail for the admin table: plan limits, real usage and the last
+ * editor. Deliberately excludes any case, document or client content.
+ */
+export const getSubscriptionAdminDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => cancelSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await (await guard()).requireStaff(context.supabase, context.userId, "subscriptions.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions")
+      .select(
+        "id, email, plan_code, plan_label, status, amount, currency, starts_at, ends_at, auto_renew, suspended_at, suspension_reason, cancelled_at, last_modified_at, last_modified_by, organization_id, activation_method",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!sub) throw new Error("الاشتراك غير موجود.");
+
+    const [{ data: plan }, { data: editor }] = await Promise.all([
+      supabaseAdmin
+        .from("platform_plans")
+        .select("name_ar, max_users, max_cases, max_clients, max_documents, storage_gb, ocr_pages_monthly")
+        .eq("code", sub.plan_code)
+        .maybeSingle(),
+      sub.last_modified_by
+        ? supabaseAdmin.from("profiles").select("full_name").eq("id", sub.last_modified_by).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    let usage = { users: 0, cases: 0, clients: 0, documents: 0, storage_bytes: 0 };
+    let organizationName: string | null = null;
+    if (sub.organization_id) {
+      const [members, cases, clients, docs, org] = await Promise.all([
+        supabaseAdmin
+          .from("organization_members")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", sub.organization_id)
+          .neq("status", "suspended"),
+        supabaseAdmin.from("cases").select("id", { count: "exact", head: true }).eq("organization_id", sub.organization_id),
+        supabaseAdmin.from("clients").select("id", { count: "exact", head: true }).eq("organization_id", sub.organization_id),
+        supabaseAdmin.from("documents").select("file_size").eq("organization_id", sub.organization_id),
+        supabaseAdmin.from("organizations").select("name").eq("id", sub.organization_id).maybeSingle(),
+      ]);
+      const files = (docs.data ?? []) as { file_size: number | null }[];
+      usage = {
+        users: members.count ?? 0,
+        cases: cases.count ?? 0,
+        clients: clients.count ?? 0,
+        documents: files.length,
+        storage_bytes: files.reduce((sum, f) => sum + (f.file_size ?? 0), 0),
+      };
+      organizationName = org.data?.name ?? null;
+    }
+
+    return {
+      subscription: sub,
+      plan: plan ?? null,
+      usage,
+      organizationName,
+      lastModifiedByName: (editor as { full_name?: string } | null)?.full_name ?? null,
+    };
   });
 
 /* -------------------------------------------------------- staff management */
