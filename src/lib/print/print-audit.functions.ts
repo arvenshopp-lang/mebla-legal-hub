@@ -53,8 +53,8 @@ export const openPrintEvent = createServerFn({ method: "POST" })
       context.supabase.from("organizations").select("name").eq("id", data.organizationId).maybeSingle(),
       context.supabase.rpc("print_copy_number", {
         _organization_id: data.organizationId,
-        _document_id: data.documentId ?? null,
-        _document_ref: data.documentRef ?? null,
+        ...(data.documentId ? { _document_id: data.documentId } : {}),
+        ...(data.documentRef ? { _document_ref: data.documentRef } : {}),
       }),
     ]);
 
