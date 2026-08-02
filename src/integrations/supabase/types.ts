@@ -168,46 +168,61 @@ export type Database = {
         Row: {
           case_id: string
           commercial_registration: string | null
+          commercial_registration_bidx: string | null
+          commercial_registration_enc: string | null
           created_at: string
           email: string | null
           id: string
           legal_role: string | null
           national_id: string | null
+          national_id_bidx: string | null
+          national_id_enc: string | null
           notes: string | null
           organization_id: string
           party_name: string
           party_type: string | null
           phone: string | null
+          pii_key_version: number | null
           representative_name: string | null
         }
         Insert: {
           case_id: string
           commercial_registration?: string | null
+          commercial_registration_bidx?: string | null
+          commercial_registration_enc?: string | null
           created_at?: string
           email?: string | null
           id?: string
           legal_role?: string | null
           national_id?: string | null
+          national_id_bidx?: string | null
+          national_id_enc?: string | null
           notes?: string | null
           organization_id: string
           party_name: string
           party_type?: string | null
           phone?: string | null
+          pii_key_version?: number | null
           representative_name?: string | null
         }
         Update: {
           case_id?: string
           commercial_registration?: string | null
+          commercial_registration_bidx?: string | null
+          commercial_registration_enc?: string | null
           created_at?: string
           email?: string | null
           id?: string
           legal_role?: string | null
           national_id?: string | null
+          national_id_bidx?: string | null
+          national_id_enc?: string | null
           notes?: string | null
           organization_id?: string
           party_name?: string
           party_type?: string | null
           phone?: string | null
+          pii_key_version?: number | null
           representative_name?: string | null
         }
         Relationships: [
@@ -410,6 +425,8 @@ export type Database = {
           city: string | null
           client_type: Database["public"]["Enums"]["client_type"]
           commercial_registration: string | null
+          commercial_registration_bidx: string | null
+          commercial_registration_enc: string | null
           company_name: string | null
           created_at: string
           created_by: string | null
@@ -417,9 +434,12 @@ export type Database = {
           full_name: string
           id: string
           national_id: string | null
+          national_id_bidx: string | null
+          national_id_enc: string | null
           notes: string | null
           organization_id: string
           phone: string | null
+          pii_key_version: number | null
           status: string
           updated_at: string
         }
@@ -428,6 +448,8 @@ export type Database = {
           city?: string | null
           client_type?: Database["public"]["Enums"]["client_type"]
           commercial_registration?: string | null
+          commercial_registration_bidx?: string | null
+          commercial_registration_enc?: string | null
           company_name?: string | null
           created_at?: string
           created_by?: string | null
@@ -435,9 +457,12 @@ export type Database = {
           full_name: string
           id?: string
           national_id?: string | null
+          national_id_bidx?: string | null
+          national_id_enc?: string | null
           notes?: string | null
           organization_id: string
           phone?: string | null
+          pii_key_version?: number | null
           status?: string
           updated_at?: string
         }
@@ -446,6 +471,8 @@ export type Database = {
           city?: string | null
           client_type?: Database["public"]["Enums"]["client_type"]
           commercial_registration?: string | null
+          commercial_registration_bidx?: string | null
+          commercial_registration_enc?: string | null
           company_name?: string | null
           created_at?: string
           created_by?: string | null
@@ -453,9 +480,12 @@ export type Database = {
           full_name?: string
           id?: string
           national_id?: string | null
+          national_id_bidx?: string | null
+          national_id_enc?: string | null
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          pii_key_version?: number | null
           status?: string
           updated_at?: string
         }
@@ -1114,6 +1144,54 @@ export type Database = {
           },
         ]
       }
+      encryption_key_registry: {
+        Row: {
+          activated_at: string
+          algorithm: string
+          created_at: string
+          derivation: string
+          id: string
+          key_version: number
+          notes: string | null
+          purpose: string
+          retired_at: string | null
+          rotated_by: string | null
+          secret_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string
+          algorithm: string
+          created_at?: string
+          derivation: string
+          id?: string
+          key_version: number
+          notes?: string | null
+          purpose: string
+          retired_at?: string | null
+          rotated_by?: string | null
+          secret_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string
+          algorithm?: string
+          created_at?: string
+          derivation?: string
+          id?: string
+          key_version?: number
+          notes?: string | null
+          purpose?: string
+          retired_at?: string | null
+          rotated_by?: string | null
+          secret_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hearings: {
         Row: {
           case_id: string
@@ -1516,6 +1594,56 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pii_access_logs: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          field: string
+          id: string
+          ip: string | null
+          key_version: number | null
+          organization_id: string
+          reason: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          field: string
+          id?: string
+          ip?: string | null
+          key_version?: number | null
+          organization_id: string
+          reason?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          field?: string
+          id?: string
+          ip?: string | null
+          key_version?: number | null
+          organization_id?: string
+          reason?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pii_access_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
