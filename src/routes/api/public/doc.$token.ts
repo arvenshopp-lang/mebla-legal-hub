@@ -58,8 +58,9 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           }
 
           const kind = shared.viewableKind(doc.file_name, doc.file_type);
-          const fallbackText =
-            kind === "text" ? await secure.loadExtractedText(resolved.documentId) : null;
+          // النص المستخرج يُستخدم كنسخة عرض للصيغ غير القابلة للختم، وكذلك
+          // كخطة بديلة إن كان الملف الأصلي تالفاً أو غير قابل للقراءة.
+          const fallbackText = await secure.loadExtractedText(resolved.documentId);
 
           const pdf = await stamp.buildWatermarkedPdf({
             bytes: original,
@@ -91,6 +92,8 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             headers: {
               ...NO_STORE,
               "content-type": "application/pdf",
+              "content-length": String(pdf.byteLength),
+              "accept-ranges": "none",
               "content-disposition": `${download ? "attachment" : "inline"}; filename="${encodeURIComponent(fileName)}"`,
             },
           });

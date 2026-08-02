@@ -10,7 +10,7 @@ import { watermarkFontBytes } from "./watermark-font";
  */
 
 const ANGLE = -35;
-const OPACITY = 0.07;
+const OPACITY = 0.12;
 const TILE_X = 260;
 const TILE_Y = 190;
 const FONT_SIZE = 11;
@@ -175,10 +175,33 @@ export async function buildWatermarkedPdf(input: StampInput): Promise<Uint8Array
   let pdf: PDFDocument;
 
   if (input.kind === "pdf") {
-    pdf = await PDFDocument.load(input.bytes, { ignoreEncryption: true });
-    pdf.registerFontkit(fontkit);
+    try {
+      pdf = await PDFDocument.load(input.bytes, {
+        ignoreEncryption: true,
+        throwOnInvalidObject: false,
+        updateMetadata: false,
+      });
+      if (!pdf.getPageCount()) throw new Error("EMPTY_PDF");
+      pdf.registerFontkit(fontkit);
+    } catch {
+      // ملف PDF تالف أو غير قابل للقراءة: نُخرج نسخة مائية تحمل النص المستخرج
+      // إن وُجد، بدل إفشال العرض كاملاً.
+      pdf = await buildTextPdf(
+        input.fallbackText?.trim() ||
+          "تعذّر عرض هذا الملف مباشرةً لأن نسخته الأصلية تالفة أو محمية. يمكن تنزيله من مصدره الأصلي أو إعادة رفعه.",
+        input.title,
+      );
+    }
   } else if (input.kind === "image") {
-    pdf = await buildImagePdf(input.bytes, input.mimeType);
+    try {
+      pdf = await buildImagePdf(input.bytes, input.mimeType);
+    } catch {
+      pdf = await buildTextPdf(
+        input.fallbackText?.trim() ||
+          "تعذّر عرض هذه الصورة مباشرةً لأن صيغتها غير مدعومة في العرض الآمن.",
+        input.title,
+      );
+    }
   } else {
     pdf = await buildTextPdf(input.fallbackText ?? "", input.title);
   }

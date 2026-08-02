@@ -37,14 +37,43 @@ const PERMISSION: Record<AccessKind, DocumentPermission> = {
   print: "documents.print",
 };
 
+/**
+ * تُجلب النسخة المائية مرة واحدة كـ Blob ثم تُعرض من الذاكرة. هذا يمنع طلبات
+ * المتصفح المتكررة على تذكرة العرض المؤقتة (وهي محدودة الاستخدام)، ويُظهر رسالة
+ * الخادم الحقيقية بدلاً من رسالة "تعذّر تحميل المستند" العامة من عارض PDF.
+ */
+async function fetchWatermarked(url: string): Promise<string> {
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+  if (!response.ok) {
+    const message = (await response.text().catch(() => "")).trim();
+    throw new Error(message || "تعذّر تجهيز النسخة المائية، حاول مرة أخرى.");
+  }
+  const blob = await response.blob();
+  if (!blob.size) throw new Error("النسخة المائية وصلت فارغة، حاول مرة أخرى.");
+  return URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: "application/pdf" }));
+}
+
 export function useSecureDocument() {
   const { activeOrgId, activeRole } = useAuth();
   const request = useServerFn(requestDocumentAccess);
   const [busy, setBusy] = useState<{ id: string; kind: AccessKind } | null>(null);
   const [viewing, setViewing] = useState<{ doc: SecureDoc; url: string } | null>(null);
   const printFrame = useRef<HTMLIFrameElement | null>(null);
+  const objectUrls = useRef<string[]>([]);
 
-  useEffect(() => () => printFrame.current?.remove(), []);
+  const trackUrl = useCallback((url: string) => {
+    objectUrls.current.push(url);
+    return url;
+  }, []);
+
+  useEffect(
+    () => () => {
+      printFrame.current?.remove();
+      objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrls.current = [];
+    },
+    [],
+  );
 
   const can = useCallback(
     (permission: DocumentPermission) => canDo(activeRole, permission),
@@ -76,13 +105,14 @@ export function useSecureDocument() {
       setBusy({ id: doc.id, kind });
       try {
         const result = await ticket(doc, kind);
+        const blobUrl = trackUrl(await fetchWatermarked(result.url));
         if (kind === "view") {
-          setViewing({ doc, url: result.url });
+          setViewing({ doc, url: blobUrl });
           return;
         }
         if (kind === "download") {
           const link = document.createElement("a");
-          link.href = result.url;
+          link.href = blobUrl;
           link.download = result.fileName;
           link.rel = "noopener";
           document.body.appendChild(link);
@@ -95,7 +125,7 @@ export function useSecureDocument() {
         const frame = document.createElement("iframe");
         frame.setAttribute("aria-hidden", "true");
         frame.style.cssText = "position:fixed;inset:0;width:0;height:0;border:0;opacity:0;";
-        frame.src = result.url;
+        frame.src = blobUrl;
         document.body.appendChild(frame);
         printFrame.current = frame;
         frame.onload = () => {
@@ -109,7 +139,7 @@ export function useSecureDocument() {
         setBusy(null);
       }
     },
-    [can, ticket],
+    [can, ticket, trackUrl],
   );
 
   const isBusy = useCallback(
