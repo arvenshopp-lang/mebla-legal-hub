@@ -36,16 +36,6 @@ const KIND_ACTION = {
   process: "VIEW",
 } as const;
 
-/** العمليات التي لا تُنفَّذ إلا بجلسة تحقق بخطوتين (AAL2). */
-const KIND_SENSITIVE_OPERATION = {
-  view: null,
-  preview: null,
-  process: null,
-  download: "documents.download",
-  print: "documents.print",
-  export: "documents.export",
-} as const;
-
 /** يفتح عملية وصول مُصرَّحاً بها ويُعيد رابط النسخة المائية المؤقتة. */
 export const requestDocumentAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -65,7 +55,6 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
       KIND_PERMISSION[data.kind],
     );
 
-    const sensitive = KIND_SENSITIVE_OPERATION[data.kind];
     const traceRef = guard.newTraceRef("MD");
 
     const { data: doc, error } = await context.supabase
@@ -75,26 +64,6 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
       .eq("organization_id", data.organizationId)
       .maybeSingle();
     if (error || !doc) throw new Error("المستند غير موجود داخل هذا المكتب.");
-
-    if (sensitive && !guard.hasAal2(context.claims)) {
-      const { mfaRequiredMessage } = await import("@/lib/security/security-policy");
-      const message = mfaRequiredMessage(sensitive);
-      await secure.logDocumentAccess({
-        organizationId: data.organizationId,
-        documentId: doc.id,
-        documentName: doc.file_name,
-        userId: context.userId,
-        userName: null,
-        officeName: null,
-        action: KIND_ACTION[data.kind],
-        sessionId: data.sessionId ?? null,
-        sourcePage: data.sourcePage ?? null,
-        outcome: "denied",
-        denialReason: "MFA_REQUIRED",
-        traceRef,
-      });
-      throw new Error(`${message} (مرجع: ${traceRef})`);
-    }
 
     const classification = shared.classificationOf(doc.is_confidential, doc.document_category);
     if (classification !== "internal") {
@@ -195,24 +164,6 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
       .eq("organization_id", data.organizationId)
       .maybeSingle();
     if (error || !doc) throw new Error("المستند غير موجود داخل هذا المكتب.");
-
-    if (!guard.hasAal2(context.claims)) {
-      const { mfaRequiredMessage } = await import("@/lib/security/security-policy");
-      await secure.logDocumentAccess({
-        organizationId: data.organizationId,
-        documentId: doc.id,
-        documentName: doc.file_name,
-        userId: context.userId,
-        userName: null,
-        officeName: null,
-        action: "SHARE",
-        sourcePage: "documents",
-        outcome: "denied",
-        denialReason: "MFA_REQUIRED",
-        traceRef,
-      });
-      throw new Error(`${mfaRequiredMessage("documents.share")} (مرجع: ${traceRef})`);
-    }
 
     const classification = shared.classificationOf(doc.is_confidential, doc.document_category);
     if (classification !== "internal") {
