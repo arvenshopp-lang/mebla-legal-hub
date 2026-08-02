@@ -15,11 +15,14 @@ import {
   X,
   PanelRightClose,
   PanelRightOpen,
+  CreditCard,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useSubscription } from "@/hooks/use-subscription";
+import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
 
 type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard };
 
@@ -45,6 +48,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "المكتب",
     items: [
       { to: "/team", label: "الفريق", Icon: UsersRound },
+      { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
       { to: "/settings", label: "الإعدادات", Icon: Settings },
     ],
   },
@@ -71,6 +75,7 @@ export function DashboardShell({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const active = memberships.find((m) => m.organization_id === activeOrgId);
+  const { overview } = useSubscription();
 
   useEffect(() => {
     setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
@@ -252,7 +257,10 @@ export function DashboardShell({
             {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
           </div>
         </header>
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 md:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 md:py-8">
+          {pathname !== "/subscription" && <SubscriptionAlert overview={overview} />}
+          {children}
+        </main>
       </div>
     </div>
   );

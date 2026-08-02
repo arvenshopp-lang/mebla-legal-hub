@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, CreditCard, Download, RefreshCw } from "lucide-react";
+import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { LimitBar, FeatureLine, NoticeBanner, StateBadge } from "@/components/subscription/subscription-ui";
@@ -287,5 +287,3 @@ function InvoiceDownload({ path }: { path: string }) {
     </Btn>
   );
 }
-
-export const SubscriptionIcon = CreditCard;
