@@ -169,9 +169,15 @@ function MfaCard() {
   );
 }
 
-function EncryptionCard() {
-  return null as never;
+/** رمز QR يصل من خدمة المصادقة إما كـ SVG نصي أو كـ data URI. */
+function qrImageSrc(qr: string): string {
+  if (qr.trim().startsWith("<svg")) {
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(qr)))}`;
+  }
+  return qr;
 }
+
+function EncryptionCard() {
   return (
     <Card title="تشفير البيانات الحساسة" icon={<ShieldCheck className="h-4 w-4 text-primary" />}>
       <ul className="space-y-2 text-sm text-text-muted">
