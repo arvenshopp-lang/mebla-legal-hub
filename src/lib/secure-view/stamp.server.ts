@@ -193,7 +193,15 @@ export async function buildWatermarkedPdf(input: StampInput): Promise<Uint8Array
       );
     }
   } else if (input.kind === "image") {
-    pdf = await buildImagePdf(input.bytes, input.mimeType);
+    try {
+      pdf = await buildImagePdf(input.bytes, input.mimeType);
+    } catch {
+      pdf = await buildTextPdf(
+        input.fallbackText?.trim() ||
+          "تعذّر عرض هذه الصورة مباشرةً لأن صيغتها غير مدعومة في العرض الآمن.",
+        input.title,
+      );
+    }
   } else {
     pdf = await buildTextPdf(input.fallbackText ?? "", input.title);
   }
