@@ -2,8 +2,7 @@
  * Shared vocabulary for the secure document pipeline.
  *
  * Nothing sensitive ever reaches the paper: the watermark carries only the
- * office name and the person who opened the file. Every technical detail (IP,
- * browser, session, document id, timestamps) stays in the internal audit log.
+ * office and viewer identity. Network and device details remain in the audit log.
  */
 
 export type DocumentAccessAction = "VIEW" | "PREVIEW" | "DOWNLOAD" | "SHARE" | "PRINT" | "EXPORT";
@@ -59,7 +58,7 @@ export const TOKEN_MAX_USES: Record<SecureTokenKind, number> = {
   print: 8,
   download: 4,
   export: 4,
-  process: 1,
+  process: 2,
   share: 50,
 };
 
@@ -68,11 +67,24 @@ export function watermarkLinesFor(
   officeName: string,
   userName: string,
   kind: SecureTokenKind,
+  detail: { email?: string; sessionId?: string; openedAt?: Date } = {},
 ): [string, string] {
   const office = officeName.trim() || "مِهلة للمحاماة";
   const user = userName.trim() || "مستخدم غير معروف";
   const prefix = kind === "share" ? "تمت المشاركة بواسطة" : "فتح بواسطة";
-  return [office, `${prefix}: ${user}`];
+  const email = detail.email?.trim() ? ` | ${detail.email.trim()}` : "";
+  const openedAt = (detail.openedAt ?? new Date()).toLocaleString("en-GB", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const session = detail.sessionId?.trim() ? ` | Session: ${detail.sessionId.trim().slice(0, 36)}` : "";
+  return [office, `${prefix}: ${user}${email} | ${openedAt}${session}`];
 }
 
 export function classificationOf(

@@ -76,6 +76,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           try {
             storageRead = await secure.readOriginal(doc.file_path, {
               allowProcessingFormat: resolved.kind === "process",
+              documentId: resolved.documentId,
             });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
@@ -160,13 +161,14 @@ export const Route = createFileRoute("/api/public/doc/$token")({
 
           const download = new URL(request.url).searchParams.get("dl") === "1";
           const fileName = shared.safePdfName(doc.file_name);
+          const asciiFileName = "mehla-watermarked-document.pdf";
           return new Response(pdf as unknown as BodyInit, {
             headers: {
               ...NO_STORE,
               "content-type": "application/pdf",
               "content-length": String(pdf.byteLength),
               "accept-ranges": "none",
-              "content-disposition": `${download ? "attachment" : "inline"}; filename="${encodeURIComponent(fileName)}"`,
+              "content-disposition": `${download ? "attachment" : "inline"}; filename="${asciiFileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
             },
           });
         } catch (error) {

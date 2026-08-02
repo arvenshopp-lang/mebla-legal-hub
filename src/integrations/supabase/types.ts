@@ -1027,11 +1027,13 @@ export type Database = {
           file_name: string
           file_path: string
           file_size: number | null
+          file_status: string
           file_type: string | null
           id: string
           is_confidential: boolean
           organization_id: string
           source: string
+          storage_verified_at: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -1045,11 +1047,13 @@ export type Database = {
           file_name: string
           file_path: string
           file_size?: number | null
+          file_status?: string
           file_type?: string | null
           id?: string
           is_confidential?: boolean
           organization_id: string
           source?: string
+          storage_verified_at?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -1063,11 +1067,13 @@ export type Database = {
           file_name?: string
           file_path?: string
           file_size?: number | null
+          file_status?: string
           file_type?: string | null
           id?: string
           is_confidential?: boolean
           organization_id?: string
           source?: string
+          storage_verified_at?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
