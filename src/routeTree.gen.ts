@@ -55,6 +55,7 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
+import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 
 const TrackRoute = TrackRouteImport.update({
@@ -287,6 +288,12 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   path: '/cases/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHooksCleanupSecureArtifactsRoute =
+  ApiPublicHooksCleanupSecureArtifactsRouteImport.update({
+    id: '/api/public/hooks/cleanup-secure-artifacts',
+    path: '/api/public/hooks/cleanup-secure-artifacts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
   id: '/api/public/doc/$token',
   path: '/api/public/doc/$token',
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
+  '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -387,6 +395,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
+  '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -437,6 +446,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
+  '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/cases/'
     | '/api/public/doc/$token'
+    | '/api/public/hooks/cleanup-secure-artifacts'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/cases'
     | '/api/public/doc/$token'
+    | '/api/public/hooks/cleanup-secure-artifacts'
   id:
     | '__root__'
     | '/'
@@ -583,6 +595,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/_authenticated/cases/'
     | '/api/public/doc/$token'
+    | '/api/public/hooks/cleanup-secure-artifacts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -605,6 +618,7 @@ export interface RootRouteChildren {
   UploadIndexRoute: typeof UploadIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
+  ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -931,6 +945,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/cleanup-secure-artifacts': {
+      id: '/api/public/hooks/cleanup-secure-artifacts'
+      path: '/api/public/hooks/cleanup-secure-artifacts'
+      fullPath: '/api/public/hooks/cleanup-secure-artifacts'
+      preLoaderRoute: typeof ApiPublicHooksCleanupSecureArtifactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/doc/$token': {
       id: '/api/public/doc/$token'
       path: '/api/public/doc/$token'
@@ -1036,6 +1057,8 @@ const rootRouteChildren: RootRouteChildren = {
   UploadIndexRoute: UploadIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
+  ApiPublicHooksCleanupSecureArtifactsRoute:
+    ApiPublicHooksCleanupSecureArtifactsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
