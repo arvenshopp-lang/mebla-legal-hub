@@ -1280,6 +1280,176 @@ export type Database = {
           },
         ]
       }
+      integration_definitions: {
+        Row: {
+          adapter_type: string
+          capabilities: Json
+          category: string
+          category_label: string
+          created_at: string
+          default_base_url: string | null
+          display_name: string
+          display_name_ar: string
+          health_hint: string | null
+          id: string
+          is_active: boolean
+          is_builtin: boolean
+          logo_path: string | null
+          optional_fields: string[]
+          provider_key: string
+          required_fields: string[]
+          sort_order: number
+          supported_auth_types: string[]
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          adapter_type: string
+          capabilities?: Json
+          category?: string
+          category_label?: string
+          created_at?: string
+          default_base_url?: string | null
+          display_name: string
+          display_name_ar: string
+          health_hint?: string | null
+          id?: string
+          is_active?: boolean
+          is_builtin?: boolean
+          logo_path?: string | null
+          optional_fields?: string[]
+          provider_key: string
+          required_fields?: string[]
+          sort_order?: number
+          supported_auth_types?: string[]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          adapter_type?: string
+          capabilities?: Json
+          category?: string
+          category_label?: string
+          created_at?: string
+          default_base_url?: string | null
+          display_name?: string
+          display_name_ar?: string
+          health_hint?: string | null
+          id?: string
+          is_active?: boolean
+          is_builtin?: boolean
+          logo_path?: string | null
+          optional_fields?: string[]
+          provider_key?: string
+          required_fields?: string[]
+          sort_order?: number
+          supported_auth_types?: string[]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      integration_health_logs: {
+        Row: {
+          actor_id: string | null
+          check_kind: string
+          checked_at: string
+          id: string
+          integration_id: string | null
+          internal_name: string | null
+          latency_ms: number | null
+          provider_key: string
+          result: string
+          safe_error_code: string | null
+          safe_error_detail: string | null
+          status_code: number | null
+          trace_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          check_kind?: string
+          checked_at?: string
+          id?: string
+          integration_id?: string | null
+          internal_name?: string | null
+          latency_ms?: number | null
+          provider_key: string
+          result: string
+          safe_error_code?: string | null
+          safe_error_detail?: string | null
+          status_code?: number | null
+          trace_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          check_kind?: string
+          checked_at?: string
+          id?: string
+          integration_id?: string | null
+          internal_name?: string | null
+          latency_ms?: number | null
+          provider_key?: string
+          result?: string
+          safe_error_code?: string | null
+          safe_error_detail?: string | null
+          status_code?: number | null
+          trace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_health_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_secrets: {
+        Row: {
+          ciphertext: string
+          created_at: string
+          created_by: string | null
+          field_key: string
+          id: string
+          key_version: number
+          masked_hint: string
+          revoked_at: string | null
+          rotated_at: string | null
+          secret_reference: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ciphertext: string
+          created_at?: string
+          created_by?: string | null
+          field_key: string
+          id?: string
+          key_version?: number
+          masked_hint: string
+          revoked_at?: string | null
+          rotated_at?: string | null
+          secret_reference: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ciphertext?: string
+          created_at?: string
+          created_by?: string | null
+          field_key?: string
+          id?: string
+          key_version?: number
+          masked_hint?: string
+          revoked_at?: string | null
+          rotated_at?: string | null
+          secret_reference?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
@@ -1868,6 +2038,122 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      platform_integrations: {
+        Row: {
+          auth_type: string
+          base_url: string
+          configuration_json: Json
+          consecutive_failures: number
+          created_at: string
+          created_by: string | null
+          definition_id: string
+          display_name: string
+          environment: string
+          health_check_json: Json
+          id: string
+          internal_name: string
+          is_active: boolean
+          is_enabled: boolean
+          last_checked_at: string | null
+          last_error_code: string | null
+          last_error_detail: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          last_trace_id: string | null
+          latency_ms: number | null
+          logo_path: string | null
+          logo_source: string
+          mapping_json: Json
+          max_retries: number
+          monitor_interval_minutes: number
+          provider_key: string
+          secret_reference: string
+          status: string
+          timeout_ms: number
+          updated_at: string
+          verified_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          auth_type: string
+          base_url: string
+          configuration_json?: Json
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          definition_id: string
+          display_name: string
+          environment?: string
+          health_check_json?: Json
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          last_error_detail?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_trace_id?: string | null
+          latency_ms?: number | null
+          logo_path?: string | null
+          logo_source?: string
+          mapping_json?: Json
+          max_retries?: number
+          monitor_interval_minutes?: number
+          provider_key: string
+          secret_reference: string
+          status?: string
+          timeout_ms?: number
+          updated_at?: string
+          verified_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          auth_type?: string
+          base_url?: string
+          configuration_json?: Json
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          definition_id?: string
+          display_name?: string
+          environment?: string
+          health_check_json?: Json
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          last_error_detail?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_trace_id?: string | null
+          latency_ms?: number | null
+          logo_path?: string | null
+          logo_source?: string
+          mapping_json?: Json
+          max_retries?: number
+          monitor_interval_minutes?: number
+          provider_key?: string
+          secret_reference?: string
+          status?: string
+          timeout_ms?: number
+          updated_at?: string
+          verified_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_integrations_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "integration_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_plans: {
         Row: {
