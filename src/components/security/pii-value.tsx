@@ -139,7 +139,7 @@ export function PiiReveal({
         onClose={() => setAskOpen(false)}
         title={`كشف ${PII_FIELD_LABEL[field]}`}
         description="عملية حساسة: تتطلب تحققاً بخطوتين وسبباً يُسجَّل باسمك في سجل التدقيق."
-        size="sm"
+        size="md"
       >
         <div className="grid gap-3">
           <label className="grid gap-1.5 text-sm font-medium">
