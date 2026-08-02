@@ -13,6 +13,9 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Download, Trash2, Upload, Lock, ScanText } from "lucide-react";
+import { ExportStampedButton } from "@/components/print/print-controls";
+import { usePrintEngine } from "@/lib/print/print-engine";
+import { isStampableForExport } from "@/lib/print/print.shared";
 import { describeMutationError } from "@/lib/subscription.shared";
 import {
   ExtractedTextDialog, ProcessingBadge, RetryButton, useDocumentIndexing, useProcessingJobs,
@@ -29,6 +32,7 @@ const MAX_SIZE = MAX_UPLOAD_SIZE;
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
+  const { can: canPrint } = usePrintEngine();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -145,6 +149,12 @@ function Page() {
                             </>
                           )}
                           <IconBtn aria-label="تحميل" title="تحميل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
+                          {isStampableForExport(d.file_name, d.file_type) ? (
+                            <ExportStampedButton
+                              file={d}
+                              documentType={d.case_id ? "case_file" : "document"}
+                            />
+                          ) : null}
                           {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
