@@ -186,19 +186,11 @@ export function documentRefFor(target: PrintTarget): string {
   return `DOC-${String(hash).padStart(6, "0")}`;
 }
 
-/** ملفات PDF والصور فقط يمكن ختمها وتصديرها كـ PDF مختوم. */
+/** ملفات PDF وصور PNG/JPEG فقط يمكن ختمها وتصديرها كـ PDF مختوم. */
 export function isStampableForExport(fileName: string, fileType: string | null | undefined): boolean {
   const type = (fileType ?? "").toLowerCase();
-  if (type.includes("pdf") || type.startsWith("image/")) return true;
-  return /\.(pdf|png|jpe?g|webp)$/i.test(fileName);
-}
-
-function legacyDocumentRef(target: PrintTarget): string {
-  if (target.documentRef) return target.documentRef;
-  const seed = (target.documentId ?? target.title).replace(/[^a-zA-Z0-9]/g, "");
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) % 1_000_000;
-  return `DOC-${String(hash).padStart(6, "0")}`;
+  if (type.includes("pdf") || type === "image/png" || type === "image/jpeg" || type === "image/jpg") return true;
+  return /\.(pdf|png|jpe?g)$/i.test(fileName);
 }
 
 /** كل ما يُطبع على الورق: هوية المنفّذ + بصمة الجهاز + هوية المستند. */
