@@ -23,10 +23,12 @@ import {
   MFA_OPTIONAL_INVITE,
   MFA_OPTIONAL_NOTE,
 } from "@/lib/security/security-policy";
+import { PhoneVerificationCard } from "./phone-card";
 
 export function SecurityTab({ orgId, isOrgAdmin }: { orgId: string | null; isOrgAdmin: boolean }) {
   return (
     <div className="max-w-3xl space-y-6">
+      <PhoneVerificationCard />
       <MfaCard />
       <EncryptionCard />
       {isOrgAdmin && orgId && <PiiAccessLogCard orgId={orgId} />}
