@@ -167,7 +167,7 @@ function SecurityCenterPage() {
               label="تغطية التحقق بخطوتين (اختياري — فريق المنصة)"
               value={`${overview.mfa.coverage}%`}
               hint={`${overview.mfa.enrolled} من ${overview.mfa.total} عضواً`}
-              tone={overview.mfa.coverage === 100 ? "success" : "warn"}
+              tone={overview.mfa.coverage === 100 ? "success" : "default"}
             />
             <Metric
               label="محاولات كشف مرفوضة (٧ أيام)"
