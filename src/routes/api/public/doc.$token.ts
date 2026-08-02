@@ -13,10 +13,28 @@ const NO_STORE = {
   "x-content-type-options": "nosniff",
 };
 
-function failure(message: string, status = 403) {
-  return new Response(message, {
+/**
+ * لا يُعاد للمستخدم إلا نص عام + معرّف تعرّف آمن؛ التفاصيل التقنية تُحفظ في
+ * سجل الأعطال الداخلي القابل للبحث.
+ */
+async function failure(
+  publicMessage: string,
+  status: number,
+  detail: { action: string; error: unknown; documentId?: string | null; organizationId?: string | null; path: string },
+) {
+  const { logFailure } = await import("@/lib/observability/failure-log.server");
+  const ref = await logFailure({
+    surface: "secure_view",
+    action: detail.action,
+    error: detail.error,
+    httpStatus: status,
+    documentId: detail.documentId ?? null,
+    organizationId: detail.organizationId ?? null,
+    path: detail.path,
+  });
+  return new Response(`${publicMessage}\nمعرّف التعرّف: ${ref}`, {
     status,
-    headers: { ...NO_STORE, "content-type": "text/plain; charset=utf-8" },
+    headers: { ...NO_STORE, "content-type": "text/plain; charset=utf-8", "x-failure-ref": ref },
   });
 }
 
@@ -25,7 +43,9 @@ export const Route = createFileRoute("/api/public/doc/$token")({
     handlers: {
       GET: async ({ request, params }) => {
         const token = String(params.token ?? "");
-        if (token.length < 20) return failure("رابط غير صالح.", 400);
+        const path = new URL(request.url).pathname;
+        if (token.length < 20)
+          return failure("رابط غير صالح.", 400, { action: "token.malformed", error: "رمز قصير", path });
 
         const [secure, shared, stamp] = await Promise.all([
           import("@/lib/secure-view/secure-view.server"),
@@ -37,12 +57,19 @@ export const Route = createFileRoute("/api/public/doc/$token")({
         try {
           resolved = await secure.consumeAccessToken(token);
         } catch (error) {
-          return failure((error as Error).message, 403);
+          return failure("انتهت صلاحية الرابط أو لم يعد متاحاً.", 403, { action: "token.consume", error, path });
         }
 
         try {
           const doc = await secure.loadDocumentForStamp(resolved.documentId);
-          if (doc.organization_id !== resolved.organizationId) return failure("رابط غير صالح.", 403);
+          if (doc.organization_id !== resolved.organizationId)
+            return failure("رابط غير صالح.", 403, {
+              action: "token.organization_mismatch",
+              error: "عدم تطابق المكتب",
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+            });
           const original = await secure.readOriginal(doc.file_path);
 
           // تذكرة المعالجة الداخلية تُعيد البايتات الأصلية لمحرك الاستخراج فقط،
@@ -98,7 +125,13 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             },
           });
         } catch (error) {
-          return failure((error as Error).message || "تعذّر تجهيز نسخة العرض.", 500);
+          return failure("تعذّر تجهيز نسخة العرض حالياً.", 500, {
+            action: "stamp.build",
+            error,
+            documentId: resolved.documentId,
+            organizationId: resolved.organizationId,
+            path,
+          });
         }
       },
     },

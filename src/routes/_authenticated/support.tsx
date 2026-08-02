@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { failureHint, trackFailure } from "@/lib/observability/report-failure";
 import { ArrowRight, LifeBuoy, Plus, Send, Star } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -224,7 +225,17 @@ function NewTicketModal({
       onClose();
       onCreated(id);
     },
-    onError: () => toast.error("تعذّر إرسال التذكرة", { description: "تحقّق من البيانات ثم أعد المحاولة." }),
+    onError: async (error: Error) => {
+      const ref = await trackFailure({
+        surface: "support_ticket",
+        action: "ticket.create",
+        error,
+        organizationId,
+      });
+      toast.error("تعذّر إرسال التذكرة", {
+        description: failureHint(ref, "تحقّق من البيانات ثم أعد المحاولة."),
+      });
+    },
   });
 
   return (
@@ -355,7 +366,15 @@ function TicketConversation({ ticket, onRated }: { ticket: Ticket; onRated: () =
       qc.invalidateQueries({ queryKey: messagesKey });
       qc.invalidateQueries({ queryKey: ["my-tickets", user?.id] });
     },
-    onError: () => toast.error("تعذّر إرسال الرسالة", { description: "أعد المحاولة بعد لحظات." }),
+    onError: async (error: Error) => {
+      const ref = await trackFailure({
+        surface: "support_message",
+        action: "ticket.message.send",
+        error,
+        ticketId: ticket.id,
+      });
+      toast.error("تعذّر إرسال الرسالة", { description: failureHint(ref, "أعد المحاولة بعد لحظات.") });
+    },
   });
 
   return (
@@ -456,7 +475,17 @@ function RatingPanel({ ticket, onRated }: { ticket: Ticket; onRated: () => void 
       toast.success("شكراً لك", { description: "تم تسجيل تقييمك لفريق الدعم." });
       onRated();
     },
-    onError: () => toast.error("تعذّر تسجيل التقييم", { description: "يمكن التقييم مرة واحدة بعد إغلاق التذكرة." }),
+    onError: async (error: Error) => {
+      const ref = await trackFailure({
+        surface: "support_rating",
+        action: "ticket.rate",
+        error,
+        ticketId: ticket.id,
+      });
+      toast.error("تعذّر تسجيل التقييم", {
+        description: failureHint(ref, "يمكن التقييم مرة واحدة بعد إغلاق التذكرة."),
+      });
+    },
   });
 
   if (!closed) {

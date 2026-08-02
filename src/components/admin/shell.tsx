@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Gauge,
   CreditCard,
   Layers,
@@ -62,6 +63,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
       { to: "/mehla-admin/roles", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
+      { to: "/mehla-admin/failures", label: "سجل الأعطال", Icon: AlertTriangle, permission: "audit.read" },
     ],
   },
 ];
