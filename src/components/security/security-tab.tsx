@@ -116,14 +116,11 @@ function MfaCard() {
           <p className="text-sm text-text-muted">
             امسح رمز QR بتطبيق مصادقة (Google Authenticator أو Microsoft Authenticator)، ثم أدخل الرمز المكوّن من ستة أرقام.
           </p>
-          <div
-            className="w-fit rounded-[var(--radius-m)] border border-border bg-white p-3"
-            // رمز QR يأتي من خدمة المصادقة كصورة SVG ثابتة بلا نصوص من المستخدم
-            dangerouslySetInnerHTML={{ __html: enroll.qrSvg.startsWith("<svg") ? enroll.qrSvg : "" }}
+          <img
+            src={qrImageSrc(enroll.qrSvg)}
+            alt="رمز تفعيل التحقق بخطوتين"
+            className="w-44 rounded-[var(--radius-m)] border border-border bg-white p-2"
           />
-          {!enroll.qrSvg.startsWith("<svg") && (
-            <img src={enroll.qrSvg} alt="رمز تفعيل التحقق بخطوتين" className="w-40 rounded-[var(--radius-m)] border border-border bg-white p-2" />
-          )}
           <p className="text-xs text-text-muted">
             أو أدخل المفتاح يدوياً: <span className="font-mono" dir="ltr">{enroll.secret}</span>
           </p>
@@ -173,6 +170,8 @@ function MfaCard() {
 }
 
 function EncryptionCard() {
+  return null as never;
+}
   return (
     <Card title="تشفير البيانات الحساسة" icon={<ShieldCheck className="h-4 w-4 text-primary" />}>
       <ul className="space-y-2 text-sm text-text-muted">
