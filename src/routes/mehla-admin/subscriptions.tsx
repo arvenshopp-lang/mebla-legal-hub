@@ -263,6 +263,139 @@ function SubscriptionsPage() {
 }
 
 function ActivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return <ActivateDialogInner open={open} onClose={onClose} />;
+}
+
+function SuspendDialog({
+  target,
+  onClose,
+  onDone,
+}: {
+  target: { id: string; email: string } | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const suspendFn = useServerFn(suspendSubscription);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const run = useMutation({
+    mutationFn: async () => suspendFn({ data: { id: target!.id, reason: reason.trim() } }),
+    onSuccess: () => {
+      toast.success("تم إيقاف الاشتراك");
+      setReason("");
+      onDone();
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
+  return (
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title="إيقاف الاشتراك"
+      description={`سيتم تعليق صلاحيات ${target?.email ?? ""} مع الاحتفاظ ببياناته.`}
+    >
+      <div className="space-y-4">
+        <FormField label="سبب الإيقاف" required hint="يظهر للمشترك داخل صفحة الاشتراك.">
+          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
+        </FormField>
+        {error && (
+          <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2 pt-2">
+          <Btn variant="ghost" onClick={onClose}>
+            إلغاء
+          </Btn>
+          <Btn
+            onClick={() => {
+              setError(null);
+              if (reason.trim().length < 3) return setError("اذكر سبب الإيقاف.");
+              run.mutate();
+            }}
+            loading={run.isPending}
+          >
+            إيقاف الاشتراك
+          </Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function DetailDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const detailFn = useServerFn(getSubscriptionAdminDetail);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-subscription-detail", id],
+    enabled: !!id,
+    queryFn: async () => detailFn({ data: { id: id! } }),
+  });
+
+  const limits: [string, number, number | null][] = data
+    ? [
+        ["المستخدمون", data.usage.users, data.plan?.max_users ?? null],
+        ["القضايا", data.usage.cases, data.plan?.max_cases ?? null],
+        ["العملاء", data.usage.clients, data.plan?.max_clients ?? null],
+        ["المستندات", data.usage.documents, data.plan?.max_documents ?? null],
+      ]
+    : [];
+
+  return (
+    <Modal open={!!id} onClose={onClose} title="تفاصيل الاشتراك" description="بيانات تشغيلية فقط دون أي محتوى قانوني.">
+      {isLoading || !data ? (
+        <LoadingBlock rows={4} cols={2} />
+      ) : (
+        <div className="space-y-5 text-[13px]">
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <Row label="المشترك">{data.subscription.email}</Row>
+            <Row label="المكتب">{data.organizationName ?? "—"}</Row>
+            <Row label="الباقة">{data.plan?.name_ar ?? data.subscription.plan_label}</Row>
+            <Row label="طريقة التفعيل">{data.subscription.activation_method}</Row>
+            <Row label="البداية">{fmtDate(data.subscription.starts_at)}</Row>
+            <Row label="الانتهاء">{fmtDate(data.subscription.ends_at)}</Row>
+            <Row label="التجديد التلقائي">{data.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}</Row>
+            <Row label="مساحة التخزين">{fmtSize(data.usage.storage_bytes)}</Row>
+            {data.subscription.suspended_at && (
+              <Row label="موقوف بتاريخ">{fmtDateTime(data.subscription.suspended_at)}</Row>
+            )}
+            {data.subscription.suspension_reason && (
+              <Row label="سبب الإيقاف">{data.subscription.suspension_reason}</Row>
+            )}
+            <Row label="آخر تعديل">
+              {data.subscription.last_modified_at ? fmtDateTime(data.subscription.last_modified_at) : "—"}
+              {data.lastModifiedByName ? ` · ${data.lastModifiedByName}` : ""}
+            </Row>
+          </dl>
+
+          <div className="space-y-2">
+            <p className="text-[12px] font-semibold text-muted-foreground">الاستخدام مقابل حدود الباقة</p>
+            {limits.map(([label, used, max]) => (
+              <div key={label} className="flex items-center justify-between rounded-[var(--radius-m)] bg-surface-muted px-3 py-2">
+                <span>{label}</span>
+                <span className="tabular-nums">
+                  {used} / {max === null ? "غير محدود" : max}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-[12px] text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const activateFn = useServerFn(activateSubscription);
   const [email, setEmail] = useState("");
