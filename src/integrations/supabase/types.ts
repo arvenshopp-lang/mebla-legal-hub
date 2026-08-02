@@ -586,6 +586,254 @@ export type Database = {
           },
         ]
       }
+      design_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          after_summary: Json | null
+          before_summary: Json | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          page_key: string | null
+          trace_id: string | null
+          user_agent: string | null
+          version_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          after_summary?: Json | null
+          before_summary?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page_key?: string | null
+          trace_id?: string | null
+          user_agent?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          after_summary?: Json | null
+          before_summary?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page_key?: string | null
+          trace_id?: string | null
+          user_agent?: string | null
+          version_id?: string | null
+        }
+        Relationships: []
+      }
+      design_drafts: {
+        Row: {
+          custom_css: string
+          design_tokens_json: Json
+          id: string
+          page_key: string
+          revision_number: number
+          theme_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          custom_css?: string
+          design_tokens_json?: Json
+          id?: string
+          page_key?: string
+          revision_number?: number
+          theme_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          custom_css?: string
+          design_tokens_json?: Json
+          id?: string
+          page_key?: string
+          revision_number?: number
+          theme_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_drafts_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "design_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_publish_state: {
+        Row: {
+          active_version_id: string | null
+          cache_version: number
+          id: string
+          last_published_at: string | null
+          last_published_by: string | null
+          previous_version_id: string | null
+          rollback_available: boolean
+          rollback_used_at: string | null
+          rollback_used_by: string | null
+          singleton: boolean
+          theme_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_version_id?: string | null
+          cache_version?: number
+          id?: string
+          last_published_at?: string | null
+          last_published_by?: string | null
+          previous_version_id?: string | null
+          rollback_available?: boolean
+          rollback_used_at?: string | null
+          rollback_used_by?: string | null
+          singleton?: boolean
+          theme_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_version_id?: string | null
+          cache_version?: number
+          id?: string
+          last_published_at?: string | null
+          last_published_by?: string | null
+          previous_version_id?: string | null
+          rollback_available?: boolean
+          rollback_used_at?: string | null
+          rollback_used_by?: string | null
+          singleton?: boolean
+          theme_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_publish_state_active_version_id_fkey"
+            columns: ["active_version_id"]
+            isOneToOne: false
+            referencedRelation: "design_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_publish_state_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "design_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_publish_state_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "design_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_themes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      design_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string
+          created_by: string | null
+          custom_css: string
+          design_tokens_json: Json
+          id: string
+          page_css_json: Json
+          page_key: string
+          page_tokens_json: Json
+          published_at: string | null
+          published_by: string | null
+          sanitized_css: string
+          scope: string
+          status: string
+          theme_id: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_css?: string
+          design_tokens_json?: Json
+          id?: string
+          page_css_json?: Json
+          page_key?: string
+          page_tokens_json?: Json
+          published_at?: string | null
+          published_by?: string | null
+          sanitized_css?: string
+          scope?: string
+          status?: string
+          theme_id: string
+          version_number: number
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_css?: string
+          design_tokens_json?: Json
+          id?: string
+          page_css_json?: Json
+          page_key?: string
+          page_tokens_json?: Json
+          published_at?: string | null
+          published_by?: string | null
+          sanitized_css?: string
+          scope?: string
+          status?: string
+          theme_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_versions_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "design_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_access_logs: {
         Row: {
           action_type: string
