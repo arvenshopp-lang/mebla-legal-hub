@@ -184,7 +184,13 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
     await recordLookupAttempt(ipHash, data.code, !!row);
     if (!row) return { state: "not_found" as const };
 
-    const [{ data: updates }, { data: hearings }, { data: deadlines }, { data: docs }] = await Promise.all([
+    const [{ data: org }, { data: updates }, { data: hearings }, { data: deadlines }, { data: docs }, { data: requests }] =
+      await Promise.all([
+      supabaseAdmin
+        .from("organizations")
+        .select("name, phone, email, city, is_active")
+        .eq("id", row.organization_id)
+        .maybeSingle(),
       supabaseAdmin
         .from("case_updates")
         .select("title, description, event_date, update_type")
@@ -214,7 +220,20 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
         .eq("case_id", row.id)
         .order("created_at", { ascending: false })
         .limit(1),
+      // الطلبات المفتوحة الموجّهة للعميل فقط: عنوان الطلب والعناصر المطلوبة وتاريخ الانتهاء.
+      supabaseAdmin
+        .from("document_requests")
+        .select("title, requested_items, expires_at")
+        .eq("case_id", row.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(3),
     ]);
+
+    // رمز غير متاح: مكتب موقوف أو ملف مؤرشف — لا نكشف السبب للعميل.
+    if (org?.is_active === false || row.status === "archived") {
+      return { state: "unavailable" as const };
+    }
 
     return {
       state: "found" as const,
@@ -225,6 +244,17 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
       nextHearingAt: (hearings?.[0]?.hearing_date ?? null) as string | null,
       nextActionAt: (deadlines?.[0]?.due_date ?? row.next_action_date ?? null) as string | null,
       lastDocumentAt: (docs?.[0]?.created_at ?? null) as string | null,
+      office: {
+        name: (org?.name ?? "") as string,
+        phone: (org?.phone ?? null) as string | null,
+        email: (org?.email ?? null) as string | null,
+        city: (org?.city ?? null) as string | null,
+      },
+      pendingRequests: (requests ?? []).map((r) => ({
+        title: r.title as string,
+        items: ((r.requested_items ?? []) as string[]).slice(0, 8),
+        expiresAt: (r.expires_at ?? null) as string | null,
+      })),
       updates: (updates ?? []).map((u) => ({
         title: u.title as string,
         description: (u.description ?? null) as string | null,
