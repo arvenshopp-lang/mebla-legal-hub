@@ -1607,6 +1607,69 @@ export type Database = {
           },
         ]
       }
+      otp_verifications: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          delivery_status: string
+          device: string | null
+          email: string | null
+          expires_at: string
+          id: string
+          ip: string | null
+          max_attempts: number
+          phone_e164: string
+          provider: string | null
+          provider_reference: string | null
+          purpose: string
+          trace_ref: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          delivery_status?: string
+          device?: string | null
+          email?: string | null
+          expires_at: string
+          id?: string
+          ip?: string | null
+          max_attempts?: number
+          phone_e164: string
+          provider?: string | null
+          provider_reference?: string | null
+          purpose: string
+          trace_ref?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          delivery_status?: string
+          device?: string | null
+          email?: string | null
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          max_attempts?: number
+          phone_e164?: string
+          provider?: string | null
+          provider_reference?: string | null
+          purpose?: string
+          trace_ref?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       pii_access_logs: {
         Row: {
           aal: string | null
@@ -2159,7 +2222,10 @@ export type Database = {
           id: string
           is_active: boolean
           job_title: string | null
+          mfa_status: string
           phone: string | null
+          phone_verification_status: string
+          phone_verified_at: string | null
           updated_at: string
         }
         Insert: {
@@ -2170,7 +2236,10 @@ export type Database = {
           id: string
           is_active?: boolean
           job_title?: string | null
+          mfa_status?: string
           phone?: string | null
+          phone_verification_status?: string
+          phone_verified_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -2181,8 +2250,182 @@ export type Database = {
           id?: string
           is_active?: boolean
           job_title?: string | null
+          mfa_status?: string
           phone?: string | null
+          phone_verification_status?: string
+          phone_verified_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sms_delivery_logs: {
+        Row: {
+          action: string
+          created_at: string
+          device: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          ip: string | null
+          latency_ms: number | null
+          outcome: string
+          phone_masked: string
+          provider: string
+          purpose: string
+          reference_id: string | null
+          trace_ref: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          device?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ip?: string | null
+          latency_ms?: number | null
+          outcome: string
+          phone_masked: string
+          provider: string
+          purpose: string
+          reference_id?: string | null
+          trace_ref?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          device?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ip?: string | null
+          latency_ms?: number | null
+          outcome?: string
+          phone_masked?: string
+          provider?: string
+          purpose?: string
+          reference_id?: string | null
+          trace_ref?: string | null
+        }
+        Relationships: []
+      }
+      sms_settings: {
+        Row: {
+          active_provider: string
+          alert_admin_on_failure: boolean
+          allow_signup_during_outage: boolean
+          api_key_hint: string | null
+          api_secret_hint: string | null
+          application_id: string | null
+          base_url: string | null
+          code_length: number
+          code_ttl_minutes: number
+          created_at: string
+          default_country: string
+          default_dial_code: string
+          emergency_email_only: boolean
+          enabled: boolean
+          health_status: string
+          hide_phone_when_disabled: boolean
+          id: boolean
+          last_error_reason: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          last_trace_ref: string | null
+          max_verify_attempts: number
+          message_language: string
+          message_template: string
+          provider_label: string | null
+          rate_limit_per_hour: number
+          require_phone: boolean
+          resend_wait_seconds: number
+          sender_id: string | null
+          sender_name: string | null
+          service_sid: string | null
+          show_outage_notice: boolean
+          show_phone_field: boolean
+          signup_mode: string
+          test_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active_provider?: string
+          alert_admin_on_failure?: boolean
+          allow_signup_during_outage?: boolean
+          api_key_hint?: string | null
+          api_secret_hint?: string | null
+          application_id?: string | null
+          base_url?: string | null
+          code_length?: number
+          code_ttl_minutes?: number
+          created_at?: string
+          default_country?: string
+          default_dial_code?: string
+          emergency_email_only?: boolean
+          enabled?: boolean
+          health_status?: string
+          hide_phone_when_disabled?: boolean
+          id?: boolean
+          last_error_reason?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_trace_ref?: string | null
+          max_verify_attempts?: number
+          message_language?: string
+          message_template?: string
+          provider_label?: string | null
+          rate_limit_per_hour?: number
+          require_phone?: boolean
+          resend_wait_seconds?: number
+          sender_id?: string | null
+          sender_name?: string | null
+          service_sid?: string | null
+          show_outage_notice?: boolean
+          show_phone_field?: boolean
+          signup_mode?: string
+          test_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active_provider?: string
+          alert_admin_on_failure?: boolean
+          allow_signup_during_outage?: boolean
+          api_key_hint?: string | null
+          api_secret_hint?: string | null
+          application_id?: string | null
+          base_url?: string | null
+          code_length?: number
+          code_ttl_minutes?: number
+          created_at?: string
+          default_country?: string
+          default_dial_code?: string
+          emergency_email_only?: boolean
+          enabled?: boolean
+          health_status?: string
+          hide_phone_when_disabled?: boolean
+          id?: boolean
+          last_error_reason?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          last_trace_ref?: string | null
+          max_verify_attempts?: number
+          message_language?: string
+          message_template?: string
+          provider_label?: string | null
+          rate_limit_per_hour?: number
+          require_phone?: boolean
+          resend_wait_seconds?: number
+          sender_id?: string | null
+          sender_name?: string | null
+          service_sid?: string | null
+          show_outage_notice?: boolean
+          show_phone_field?: boolean
+          signup_mode?: string
+          test_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
