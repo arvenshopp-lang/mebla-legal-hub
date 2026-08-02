@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canManage } from "@/hooks/use-auth";
 import { FormField, inputCls, Btn, LoadingBlock } from "@/lib/list-utils";
+import { SecurityTab } from "@/components/security/security-tab";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: Page,
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
-  const [tab, setTab] = useState<"profile" | "organization" | "notifications">("profile");
+  const [tab, setTab] = useState<"profile" | "organization" | "notifications" | "security">("profile");
 
   return (
     <DashboardShell title="الإعدادات">
@@ -22,6 +23,7 @@ function Page() {
           { k: "profile", l: "حسابي" },
           { k: "organization", l: "المكتب" },
           { k: "notifications", l: "التنبيهات" },
+          { k: "security", l: "الأمان" },
         ].map((t) => (
           <button key={t.k} onClick={() => setTab(t.k as any)}
             className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}>
@@ -32,6 +34,7 @@ function Page() {
       {tab === "profile" && <ProfileTab userId={user?.id} />}
       {tab === "organization" && <OrgTab orgId={activeOrgId} canManage={canManage(activeRole)} />}
       {tab === "notifications" && <NotifTab orgId={activeOrgId} userId={user?.id} />}
+      {tab === "security" && <SecurityTab orgId={activeOrgId} isOrgAdmin={canManage(activeRole)} />}
     </DashboardShell>
   );
 }
