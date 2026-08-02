@@ -40,7 +40,7 @@ export type SubscriptionPlan = {
   client_upload_enabled: boolean;
   support_level: string;
   sla_hours: number;
-  features: unknown;
+  features: string[];
 };
 
 export type SubscriptionRecord = {
