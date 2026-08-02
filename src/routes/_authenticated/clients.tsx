@@ -13,6 +13,10 @@ import {
 } from "@/lib/list-utils";
 import { Pencil, Trash2 } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
+import { useServerFn } from "@tanstack/react-start";
+import { saveClientSecure, searchClientsByPii } from "@/lib/pii.functions";
+import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
+import { normalizePiiValue } from "@/lib/crypto/pii.shared";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -24,8 +28,6 @@ const clientSchema = z.object({
   full_name: z.string().trim().min(2, "الاسم مطلوب").max(150),
   client_type: z.enum(["individual", "company", "government"]),
   company_name: z.string().max(150).optional().nullable(),
-  national_id: z.string().max(30).optional().nullable(),
-  commercial_registration: z.string().max(30).optional().nullable(),
   email: z.string().email("بريد غير صالح").max(150).optional().or(z.literal("")),
   phone: z.string().max(30).optional().nullable(),
   city: z.string().max(60).optional().nullable(),
@@ -50,16 +52,28 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const q = useDebounced(search);
+  const piiSearch = useServerFn(searchClientsByPii);
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
     queryKey: ["clients", activeOrgId, q, type, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
+      // بحث بالرقم الحساس: يمر عبر البصمة الحتمية على الخادم، فلا يُخزَّن الرقم صريحاً.
+      const digits = normalizePiiValue(q);
+      let piiIds: string[] | null = null;
+      if (digits.length >= 5 && /^\d+$/.test(digits)) {
+        const res = await piiSearch({ data: { organizationId: activeOrgId!, value: digits } });
+        piiIds = res.ids;
+      }
       let query = supabase.from("clients").select("*", { count: "exact" })
         .eq("organization_id", activeOrgId!).order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-      if (q) query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,national_id.ilike.%${q}%,company_name.ilike.%${q}%`);
+      if (piiIds?.length) {
+        query = query.in("id", piiIds);
+      } else if (q) {
+        query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,company_name.ilike.%${q}%`);
+      }
       if (type !== "all") query = query.eq("client_type", type as any);
       const { data, error, count } = await query;
       if (error) throw error;
