@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import {
-  Badge, Btn, DataCard, EmptyState, ErrorBlock, FormField, LoadingBlock, Pagination,
+  Badge, Btn, EmptyState, ErrorBlock, FormField, LoadingBlock, Pagination,
   inputCls, useDebounced,
 } from "@/lib/list-utils";
 import { ExtractedTextDialog, type DocumentRow } from "@/components/documents/text-intel";
@@ -107,12 +107,12 @@ function SearchPanel() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("search_document_pages", {
         _query: q.trim(),
-        _case_id: caseId || null,
-        _client_id: clientId || null,
-        _file_type: fileType || null,
+        _case_id: caseId || undefined,
+        _client_id: clientId || undefined,
+        _file_type: fileType || undefined,
         _ocr_only: ocrOnly,
-        _from: from || null,
-        _to: to || null,
+        _from: from || undefined,
+        _to: to || undefined,
         _limit: PAGE_SIZE,
         _offset: (page - 1) * PAGE_SIZE,
       });
@@ -129,7 +129,7 @@ function SearchPanel() {
 
   return (
     <div className="space-y-5">
-      <DataCard className="p-4 sm:p-5">
+      <div className="surface-card p-4 sm:p-5">
         <label className="relative block">
           <span className="sr-only">كلمة البحث داخل المستندات</span>
           <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -180,7 +180,7 @@ function SearchPanel() {
             </label>
           </FormField>
         </div>
-      </DataCard>
+      </div>
 
       {q.trim().length < 2 ? (
         <EmptyState
@@ -201,7 +201,7 @@ function SearchPanel() {
           <ul className="space-y-3">
             {data.rows.map((hit) => (
               <li key={hit.page_id}>
-                <DataCard className="p-4">
+                <div className="surface-card p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="flex items-center gap-2 text-[14.5px] font-semibold">
@@ -239,7 +239,7 @@ function SearchPanel() {
                   <div className="mt-3 border-t border-border pt-3">
                     <Snippet html={hit.snippet} />
                   </div>
-                </DataCard>
+                </div>
               </li>
             ))}
           </ul>
