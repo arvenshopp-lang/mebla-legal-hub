@@ -529,11 +529,35 @@ export async function deactivateCategory(): Promise<void> {
 export async function deleteIntegration(id: string): Promise<void> {
   const client = await db();
   const row = await loadRow(id);
+  if (row["is_active"]) {
+    const { data: settings } = await client
+      .from("sms_settings")
+      .select("enabled, signup_mode")
+      .eq("id", true)
+      .maybeSingle();
+    const enforced =
+      Boolean(settings?.enabled) && String(settings?.signup_mode ?? "") === "required_verified";
+    if (enforced) {
+      throw new Error(
+        "هذا المزوّد معتمد وتوثيق الجوال إلزامي حالياً. اعتمد مزوّداً بديلاً أو ألغِ الإلزام قبل الحذف.",
+      );
+    }
+  }
   const reference = String(row["secret_reference"]);
   await IntegrationSecretVault.revokeSecret(reference);
   await IntegrationSecretVault.deleteSecret(reference);
   const { error } = await client.from("platform_integrations").delete().eq("id", id);
   if (error) throw new Error("تعذّر حذف التكامل.");
+}
+
+/** عدد تكاملات خدمة الرموز المهيأة — يحدد ما إن كان المسار القديم مسموحاً كرجوع انتقالي. */
+export async function countOtpIntegrations(): Promise<number> {
+  const client = await db();
+  const { count } = await client
+    .from("platform_integrations")
+    .select("id", { count: "exact", head: true })
+    .eq("configuration_json->>category", "otp");
+  return Number(count ?? 0);
 }
 
 /** فحص دوري لكل تكامل مُشغّل تجاوز فترة المراقبة الخاصة به. */
