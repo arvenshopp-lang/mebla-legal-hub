@@ -1661,6 +1661,108 @@ export type Database = {
         }
         Relationships: []
       }
+      print_audit_logs: {
+        Row: {
+          action: string
+          browser: string | null
+          classification: string
+          copy_number: number
+          country: string | null
+          created_at: string
+          device: string | null
+          document_id: string | null
+          document_ref: string | null
+          document_title: string | null
+          document_type: string
+          document_version: string
+          id: string
+          ip: string | null
+          metadata: Json
+          organization_id: string
+          os: string | null
+          pages_count: number
+          print_ref: string
+          session_id: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          user_role: string | null
+          watermark_override: boolean
+        }
+        Insert: {
+          action: string
+          browser?: string | null
+          classification?: string
+          copy_number?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          document_ref?: string | null
+          document_title?: string | null
+          document_type: string
+          document_version?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          organization_id: string
+          os?: string | null
+          pages_count?: number
+          print_ref: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: string | null
+          watermark_override?: boolean
+        }
+        Update: {
+          action?: string
+          browser?: string | null
+          classification?: string
+          copy_number?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          document_ref?: string | null
+          document_title?: string | null
+          document_type?: string
+          document_version?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          organization_id?: string
+          os?: string | null
+          pages_count?: number
+          print_ref?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: string | null
+          watermark_override?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2238,6 +2340,14 @@ export type Database = {
         Returns: Json
       }
       normalize_ar: { Args: { _input: string }; Returns: string }
+      print_copy_number: {
+        Args: {
+          _document_id: string
+          _document_ref: string
+          _organization_id: string
+        }
+        Returns: number
+      }
       record_metered_usage: {
         Args: { _amount: number; _metric: string; _organization_id: string }
         Returns: number
