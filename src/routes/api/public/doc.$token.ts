@@ -91,6 +91,8 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             headers: {
               ...NO_STORE,
               "content-type": "application/pdf",
+              "content-length": String(pdf.byteLength),
+              "accept-ranges": "none",
               "content-disposition": `${download ? "attachment" : "inline"}; filename="${encodeURIComponent(fileName)}"`,
             },
           });

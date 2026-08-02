@@ -52,11 +52,13 @@ export const TOKEN_TTL_SECONDS: Record<SecureTokenKind, number> = {
 };
 
 export const TOKEN_MAX_USES: Record<SecureTokenKind, number> = {
-  view: 3,
-  preview: 3,
-  print: 3,
-  download: 2,
-  export: 2,
+  // المتصفحات قد تُعيد الطلب (Range / إعادة محاولة) لذلك نمنح هامشاً محدوداً
+  // داخل نافذة الصلاحية القصيرة نفسها بدل إفشال العرض من أول إعادة طلب.
+  view: 8,
+  preview: 8,
+  print: 8,
+  download: 4,
+  export: 4,
   process: 1,
   share: 50,
 };

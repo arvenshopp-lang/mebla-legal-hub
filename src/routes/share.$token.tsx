@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 /**
  * Public share surface. The recipient only ever sees the watermarked copy that
@@ -30,7 +31,34 @@ export const Route = createFileRoute("/share/$token")({
 
 function SharePage() {
   const { token } = Route.useParams();
-  const source = `/api/public/doc/${token}`;
+  const [source, setSource] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/public/doc/${token}`, { cache: "no-store" });
+        if (!response.ok) {
+          const message = (await response.text().catch(() => "")).trim();
+          throw new Error(message || "تعذّر فتح النسخة المائية لهذا الرابط.");
+        }
+        const blob = await response.blob();
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(
+          blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" }),
+        );
+        setSource(objectUrl);
+      } catch (cause) {
+        if (!cancelled) setError((cause as Error).message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [token]);
 
   return (
     <main className="min-h-screen bg-background px-4 py-8" dir="rtl">
@@ -41,11 +69,24 @@ function SharePage() {
             نسخة عرض مؤقتة بعلامة مائية. الرابط محدود المدة وقابل للإلغاء في أي وقت.
           </p>
         </header>
-        <iframe
-          title="المستند المشترك"
-          src={source}
-          className="h-[78vh] w-full rounded-xl border border-border bg-surface shadow-sm"
-        />
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive"
+          >
+            {error}
+          </div>
+        ) : !source ? (
+          <div className="flex h-[78vh] w-full items-center justify-center rounded-xl border border-border bg-surface-muted/50 text-sm text-muted-foreground">
+            جاري تجهيز النسخة المائية…
+          </div>
+        ) : (
+          <iframe
+            title="المستند المشترك"
+            src={source}
+            className="h-[78vh] w-full rounded-xl border border-border bg-surface shadow-sm"
+          />
+        )}
         <p className="text-center text-xs text-muted-foreground">
           يُسجَّل كل فتح لهذا الرابط داخل سجل التدقيق الخاص بالمكتب.
         </p>
