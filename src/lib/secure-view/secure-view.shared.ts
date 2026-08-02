@@ -58,7 +58,7 @@ export const TOKEN_MAX_USES: Record<SecureTokenKind, number> = {
   print: 8,
   download: 4,
   export: 4,
-  process: 1,
+  process: 2,
   share: 50,
 };
 

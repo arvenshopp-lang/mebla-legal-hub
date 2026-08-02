@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Copy, Download, Eye, Printer, Share2, Trash2 } from "lucide-react";
+import { Copy, Download, ExternalLink, Eye, Printer, Share2, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canDo, permissionDeniedMessage, type DocumentPermission } from "@/lib/doc-permissions";
 import { Badge, Btn, FormField, IconBtn, Modal, inputCls } from "@/lib/list-utils";
@@ -54,6 +54,11 @@ export function useSecureDocument() {
   const trackUrl = useCallback((url: string) => {
     objectUrls.current.push(url);
     return url;
+  }, []);
+
+  const releaseUrl = useCallback((url: string) => {
+    URL.revokeObjectURL(url);
+    objectUrls.current = objectUrls.current.filter((item) => item !== url);
   }, []);
 
   useEffect(
@@ -145,9 +150,14 @@ export function useSecureDocument() {
       download: (doc: SecureDoc) => void run(doc, "download"),
       print: (doc: SecureDoc) => void run(doc, "print"),
       viewing,
-      closeViewer: () => setViewing(null),
+      closeViewer: () => {
+        setViewing((current) => {
+          if (current) releaseUrl(current.url);
+          return null;
+        });
+      },
     }),
-    [can, isBusy, run, viewing],
+    [can, isBusy, releaseUrl, run, viewing],
   );
 }
 
@@ -169,11 +179,19 @@ export function SecureDocumentViewer({
           {doc.is_confidential && <Badge tone="red">سرّي</Badge>}
           <span>تُنتهي صلاحية هذه النسخة تلقائياً، ولا تحتوي رابط الملف الأصلي.</span>
         </div>
-        <iframe
-          title={`عرض ${doc.file_name}`}
-          src={url}
+        <object
+          aria-label={`عرض ${doc.file_name}`}
+          data={url}
+          type="application/pdf"
           className="h-[70vh] w-full rounded-lg border border-border bg-surface-muted"
-        />
+        >
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-sm text-muted-foreground">لا يدعم عارض جهازك العرض المضمّن لهذا المستند.</p>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline">
+              <ExternalLink className="h-4 w-4" /> فتح النسخة المائية في عارض الجهاز
+            </a>
+          </div>
+        </object>
       </div>
     </Modal>
   );

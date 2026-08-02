@@ -419,20 +419,33 @@ export async function reprocessDocument(args: {
       cache: "no-store",
       headers: { Accept: "application/octet-stream, application/pdf, image/*, application/json" },
     });
-    if (!response.ok) throw new Error("download");
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: unknown; message?: unknown } | null;
+      const code = response.status === 403
+        ? "ACCESS_LINK_EXPIRED"
+        : response.status === 404
+          ? "FILE_MISSING"
+          : "DOWNLOAD_FAILED";
+      throw new ProcessingError(
+        code,
+        typeof payload?.message === "string" ? payload.message : undefined,
+      );
+    }
     const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
     if (contentType.includes("text/html") || contentType.includes("application/json")) {
-      throw new Error("invalid-content-type");
+      throw new ProcessingError("INVALID_DOWNLOAD");
     }
     blob = await response.blob();
-    if (!blob.size) throw new Error("empty-file");
-  } catch {
+    if (!blob.size) throw new ProcessingError("INVALID_DOWNLOAD");
+  } catch (error) {
+    const code = error instanceof ProcessingError ? error.code : "DOWNLOAD_FAILED";
     await updateJob(args.documentId, {
       status: "failed",
-      error_code: "DOWNLOAD_FAILED",
-      error_message: null,
+      error_code: code,
+      error_message: error instanceof Error ? error.message.slice(0, 400) : null,
       completed_at: new Date().toISOString(),
     });
+    if (error instanceof ProcessingError) throw error;
     throw new ProcessingError("DOWNLOAD_FAILED");
   }
   return processDocument({
