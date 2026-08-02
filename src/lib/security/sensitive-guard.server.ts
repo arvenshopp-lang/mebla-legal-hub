@@ -12,7 +12,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { canDo, permissionDeniedMessage, type DocumentPermission } from "@/lib/doc-permissions";
 import type { AppRole } from "@/hooks/use-auth";
-import { mfaRequiredMessage, type SensitiveOperation } from "./security-policy";
+import type { SensitiveOperation } from "./security-policy";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
@@ -97,11 +97,6 @@ export function hasAal2(claims: Claims): boolean {
   return assuranceLevel(claims) === "aal2";
 }
 
-/** يرمي خطأً عربياً موحّداً إذا لم تكن الجلسة AAL2. */
-export function assertAal2(claims: Claims, operation: SensitiveOperation): void {
-  if (!hasAal2(claims)) throw new Error(mfaRequiredMessage(operation));
-}
-
 /** مستوى التحقق مأخوذاً من رمز الطلب مباشرة (يُستخدم عند غياب claims في السياق). */
 export function assuranceLevelFromRequest(): "aal1" | "aal2" | "unknown" {
   try {
@@ -138,8 +133,6 @@ export async function requireSensitiveAccess(
     permission?: DocumentPermission;
     /** أدوار مسموح لها صراحةً حين لا تُستخدم مصفوفة صلاحيات المستندات. */
     allowRoles?: AppRole[];
-    /** يُعطَّل فقط للعمليات غير الحساسة التي تشترك في نفس الحارس. */
-    requireAal2?: boolean;
   },
 ): Promise<SensitiveAccess> {
   const { data, error } = await supabase
@@ -159,10 +152,7 @@ export async function requireSensitiveAccess(
     throw new Error("دورك في المكتب لا يسمح بتنفيذ هذه العملية.");
   }
 
+  // التحقق بخطوتين اختياري: يُسجَّل مستوى الجلسة في سجل التدقيق فقط ولا يمنع العملية.
   const aal = assuranceLevel(input.claims);
-  if (input.requireAal2 !== false && aal !== "aal2") {
-    throw new Error(mfaRequiredMessage(input.operation));
-  }
-
   return { role, traceRef: newTraceRef(), meta: requestSecurityMeta(), aal };
 }
