@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { PrintButton } from "@/components/print/print-controls";
+import { buildCaseSheetHtml } from "@/lib/print/case-sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import {
