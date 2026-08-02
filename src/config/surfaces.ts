@@ -98,7 +98,7 @@ export const SURFACES: SurfaceDef[] = [
     description: "الصفحة الرئيسية والمميزات والأسعار وتسجيل الدخول وإنشاء الحساب.",
     entry: "/",
     // تسجيل الدخول يتم على نطاق واحد فقط (app) لضمان جلسة موحدة وآمنة.
-    allow: ["/"],
+    allow: ["/", "/privacy", "/terms"],
     requiresLawyerAuth: false,
   },
   // ————— نطاقات محجوزة للتوسع المستقبلي (تُفعّل بإزالة planned) —————

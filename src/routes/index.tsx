@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useState } from "react";
-import { Menu, X, ArrowLeft } from "lucide-react";
+import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
@@ -77,7 +77,9 @@ const NAV = [
   { href: "#security", label: "الأمان" },
 ];
 
-function Header({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+type SurfaceLinks = { loginHref: string; registerHref: string; trackHref: string };
+
+function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   const scrolled = useScrolled();
   const [open, setOpen] = useState(false);
   return (
@@ -101,6 +103,13 @@ function Header({ loginHref, registerHref }: { loginHref: string; registerHref: 
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <a
+            href={trackHref}
+            className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-m)] border border-border px-4 text-[13.5px] font-medium text-foreground transition hover:border-border-strong hover:bg-surface-muted"
+          >
+            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+            متابعة القضية
+          </a>
           <a
             href={loginHref}
             className="inline-flex h-10 items-center rounded-[var(--radius-m)] px-4 text-[13.5px] font-medium text-foreground transition hover:bg-surface-muted"
@@ -139,6 +148,13 @@ function Header({ loginHref, registerHref }: { loginHref: string; registerHref: 
               </a>
             ))}
             <div className="mt-3 grid gap-2">
+              <a
+                href={trackHref}
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong text-[14px] font-semibold"
+              >
+                <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+                متابعة القضية
+              </a>
               <a
                 href={loginHref}
                 className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] border border-border text-[14px] font-medium"
@@ -231,7 +247,7 @@ function AppPreview() {
   );
 }
 
-function Hero({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-60" aria-hidden />
@@ -257,12 +273,22 @@ function Hero({ loginHref, registerHref }: { loginHref: string; registerHref: st
               ابدأ الاستخدام <ArrowLeft className="h-4 w-4" aria-hidden />
             </a>
             <a
+              href={trackHref}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted"
+            >
+              <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+              متابعة القضية
+            </a>
+            <a
               href={loginHref}
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium transition hover:border-border-strong"
             >
               لدي حساب بالفعل
             </a>
           </div>
+          <p className="mt-4 text-[13px] text-muted-foreground">
+            عميل لدى أحد المكاتب؟ تابع قضيتك برمز مكوّن من 10 أرقام دون إنشاء حساب.
+          </p>
         </div>
 
         <div className="reveal mt-12 md:mt-16">
@@ -649,48 +675,71 @@ function CTA({ registerHref }: { registerHref: string }) {
   );
 }
 
-function Footer({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+const FOOTER_LINKS: Array<{ href: string; label: string }> = [
+  { href: "#product", label: "المنتج" },
+  { href: "#capabilities", label: "المزايا" },
+  { href: "#security", label: "الأمان" },
+  { href: "/docs", label: "مركز المساعدة" },
+  { href: "/privacy", label: "سياسة الخصوصية" },
+  { href: "/terms", label: "الشروط والأحكام" },
+  { href: "mailto:support@mehlalex.com", label: "تواصل معنا" },
+];
+
+function Footer({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   return (
     <footer className="border-t border-border bg-surface">
-      <div className="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-[16px] font-bold">
+      <div className="container-page flex flex-col items-center gap-7 py-12 text-center">
+        <div className="max-w-xl">
+          <p className="text-[17px] font-bold">
             مِهلة <span className="text-text-muted">·</span> MEHLA
           </p>
-          <p className="measure mt-3 text-body-sm text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-lg text-body-sm text-muted-foreground">
             منصة سعودية لإدارة الممارسة القانونية: القضايا، الجلسات، المهل، المستندات، ومتابعة العملاء.
           </p>
         </div>
-        <nav aria-label="روابط المنصة">
-          <p className="text-label mb-3">المنصة</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href="#product">المنتج</a></li>
-            <li><a className="transition hover:text-foreground" href="#capabilities">المزايا</a></li>
-            <li><a className="transition hover:text-foreground" href="#how">كيف تعمل</a></li>
-            <li><a className="transition hover:text-foreground" href="#workflow">سير العمل</a></li>
-            <li><a className="transition hover:text-foreground" href="#security">الأمان</a></li>
-          </ul>
-        </nav>
-        <nav aria-label="روابط الخدمات">
-          <p className="text-label mb-3">الخدمات</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href="/track">متابعة قضية</a></li>
-            <li><a className="transition hover:text-foreground" href="/upload">رفع مستندات</a></li>
-            <li><a className="transition hover:text-foreground" href="/docs">مركز المساعدة</a></li>
-          </ul>
-        </nav>
-        <nav aria-label="روابط الحساب">
-          <p className="text-label mb-3">الحساب</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href={loginHref}>تسجيل الدخول</a></li>
-            <li><a className="transition hover:text-foreground" href={registerHref}>إنشاء حساب</a></li>
+
+        <div className="flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row">
+          <a
+            href={trackHref}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted sm:w-auto"
+          >
+            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+            متابعة القضية
+          </a>
+          <a
+            href={registerHref}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition hover:bg-primary-hover sm:w-auto"
+          >
+            إنشاء حساب المكتب
+          </a>
+          <a
+            href={loginHref}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] px-5 text-[14px] font-medium text-muted-foreground transition hover:text-foreground sm:w-auto"
+          >
+            تسجيل الدخول
+          </a>
+        </div>
+
+        <nav aria-label="روابط الفوتر" className="w-full">
+          <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-body-sm text-muted-foreground">
+            {FOOTER_LINKS.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  className="inline-flex min-h-11 items-center transition hover:text-foreground"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
+
       <div className="border-t border-border">
-        <div className="container-page flex flex-col gap-2 py-5 text-[12.5px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} مِهلة — جميع الحقوق محفوظة.</p>
-          <p>mehlalex.com</p>
+        <div className="container-page flex flex-col items-center gap-1 py-5 text-center text-[12.5px] text-muted-foreground">
+          <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
+          <p dir="ltr">mehlalex.com</p>
         </div>
       </div>
     </footer>
@@ -703,19 +752,21 @@ function MehlaLanding() {
   useReveal();
   const loginHref = useSurfaceHref("/login");
   const registerHref = useSurfaceHref("/register");
+  const trackHref = useSurfaceHref("/track");
+  const links = { loginHref, registerHref, trackHref };
 
   return (
     <div dir="rtl" className="min-h-dvh bg-background text-foreground">
-      <Header loginHref={loginHref} registerHref={registerHref} />
+      <Header {...links} />
       <main id="product">
-        <Hero loginHref={loginHref} registerHref={registerHref} />
+        <Hero {...links} />
         <Capabilities />
         <HowItWorks />
         <Workflow />
         <Security />
         <CTA registerHref={registerHref} />
       </main>
-      <Footer loginHref={loginHref} registerHref={registerHref} />
+      <Footer {...links} />
     </div>
   );
 }
