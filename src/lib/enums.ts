@@ -38,14 +38,17 @@ export const INVITATION_STATUS: Record<string, string> = {
 export const asOptions = (r: Record<string, string>) =>
   Object.entries(r).map(([value, label]) => ({ value, label }));
 
+// التقويم الميلادي (Gregorian) بأرقام لاتينية موحّدة في كل المنصة
+const DATE_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
+
 export function fmtDate(v?: string | null) {
   if (!v) return "—";
-  try { return new Date(v).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" }); }
+  try { return new Date(v).toLocaleDateString(DATE_LOCALE, { year: "numeric", month: "short", day: "numeric" }); }
   catch { return "—"; }
 }
 export function fmtDateTime(v?: string | null) {
   if (!v) return "—";
-  try { return new Date(v).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" }); }
+  try { return new Date(v).toLocaleString(DATE_LOCALE, { dateStyle: "medium", timeStyle: "short" }); }
   catch { return "—"; }
 }
 export function daysUntil(v?: string | null): number | null {
