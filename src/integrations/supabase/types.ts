@@ -556,6 +556,154 @@ export type Database = {
           },
         ]
       }
+      document_pages: {
+        Row: {
+          created_at: string
+          document_id: string
+          edited_at: string | null
+          edited_by: string | null
+          extracted_text: string
+          id: string
+          is_blank: boolean
+          language: string | null
+          ocr_confidence: number | null
+          ocr_used: boolean
+          organization_id: string
+          original_text: string | null
+          page_number: number
+          search_vector: unknown
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          edited_at?: string | null
+          edited_by?: string | null
+          extracted_text?: string
+          id?: string
+          is_blank?: boolean
+          language?: string | null
+          ocr_confidence?: number | null
+          ocr_used?: boolean
+          organization_id: string
+          original_text?: string | null
+          page_number: number
+          search_vector?: unknown
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          edited_at?: string | null
+          edited_by?: string | null
+          extracted_text?: string
+          id?: string
+          is_blank?: boolean
+          language?: string | null
+          ocr_confidence?: number | null
+          ocr_used?: boolean
+          organization_id?: string
+          original_text?: string | null
+          page_number?: number
+          search_vector?: unknown
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_pages_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_pages_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_pages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_processing_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          document_id: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          ocr_pages: number
+          organization_id: string
+          pages_done: number
+          pages_total: number | null
+          processing_type: string
+          progress: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["document_job_status"]
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          document_id: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ocr_pages?: number
+          organization_id: string
+          pages_done?: number
+          pages_total?: number | null
+          processing_type?: string
+          progress?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["document_job_status"]
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          document_id?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ocr_pages?: number
+          organization_id?: string
+          pages_done?: number
+          pages_total?: number | null
+          processing_type?: string
+          progress?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["document_job_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_processing_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_request_events: {
         Row: {
           actor_id: string | null
@@ -2034,6 +2182,7 @@ export type Database = {
         }[]
       }
       admin_revenue_summary: { Args: never; Returns: Json }
+      admin_service_usage_summary: { Args: never; Returns: Json }
       admin_user_directory: {
         Args: {
           _limit?: number
@@ -2060,6 +2209,14 @@ export type Database = {
           total_count: number
         }[]
       }
+      consume_ocr_pages: {
+        Args: { _organization_id: string; _pages: number }
+        Returns: {
+          allowed: boolean
+          monthly_limit: number
+          used: number
+        }[]
+      }
       create_organization_with_owner: {
         Args: {
           _address?: string
@@ -2080,9 +2237,39 @@ export type Database = {
         Args: { _organization_id: string }
         Returns: Json
       }
+      normalize_ar: { Args: { _input: string }; Returns: string }
       record_metered_usage: {
         Args: { _amount: number; _metric: string; _organization_id: string }
         Returns: number
+      }
+      search_document_pages: {
+        Args: {
+          _case_id?: string
+          _client_id?: string
+          _file_type?: string
+          _from?: string
+          _limit?: number
+          _ocr_only?: boolean
+          _offset?: number
+          _query: string
+          _to?: string
+        }
+        Returns: {
+          case_id: string
+          case_title: string
+          client_id: string
+          client_name: string
+          document_created_at: string
+          document_id: string
+          file_name: string
+          file_type: string
+          ocr_used: boolean
+          page_id: string
+          page_number: number
+          rank: number
+          snippet: string
+          total_count: number
+        }[]
       }
     }
     Enums: {
@@ -2116,6 +2303,13 @@ export type Database = {
         | "expert_report"
         | "document_request"
         | "custom"
+      document_job_status:
+        | "queued"
+        | "extracting"
+        | "ocr_processing"
+        | "indexing"
+        | "completed"
+        | "failed"
       hearing_status:
         | "scheduled"
         | "completed"
@@ -2308,6 +2502,14 @@ export const Constants = {
         "expert_report",
         "document_request",
         "custom",
+      ],
+      document_job_status: [
+        "queued",
+        "extracting",
+        "ocr_processing",
+        "indexing",
+        "completed",
+        "failed",
       ],
       hearing_status: [
         "scheduled",
