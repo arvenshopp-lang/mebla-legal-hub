@@ -63,7 +63,9 @@ export function ExportStampedButton({
   if (!can("print.export_pdf")) return null;
 
   const run = async () => {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.file_path, 60);
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(file.file_path, 60);
     if (error || !data) {
       toast.error("تعذّر الوصول للملف", { description: error?.message });
       return;
@@ -92,7 +94,12 @@ export function ExportStampedButton({
     );
   }
   return (
-    <IconBtn aria-label={label} title={label} loading={busy === "export_pdf"} onClick={() => void run()}>
+    <IconBtn
+      aria-label={label}
+      title={label}
+      loading={busy === "export_pdf"}
+      onClick={() => void run()}
+    >
       <FileDown className="h-4 w-4" />
     </IconBtn>
   );

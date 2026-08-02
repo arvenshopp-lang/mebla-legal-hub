@@ -1,4 +1,12 @@
-import { CASE_PRIORITY, CASE_STATUS, CLIENT_ROLE, DEADLINE_STATUS, HEARING_STATUS, fmtDate, fmtDateTime } from "@/lib/enums";
+import {
+  CASE_PRIORITY,
+  CASE_STATUS,
+  CLIENT_ROLE,
+  DEADLINE_STATUS,
+  HEARING_STATUS,
+  fmtDate,
+  fmtDateTime,
+} from "@/lib/enums";
 
 /**
  * Builds the printable case sheet. Internal notes are deliberately excluded:
@@ -16,7 +24,10 @@ function escapeHtml(value: unknown): string {
 
 function definitionTable(pairs: [string, unknown][]): string {
   return `<table><tbody>${pairs
-    .map(([label, value]) => `<tr><th style="width:28%">${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`)
+    .map(
+      ([label, value]) =>
+        `<tr><th style="width:28%">${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
+    )
     .join("")}</tbody></table>`;
 }
 
@@ -91,7 +102,11 @@ export function buildCaseSheetHtml(input: {
   ${listTable(
     "المهام",
     ["المهمة", "الاستحقاق", "الحالة"],
-    input.tasks.map((t) => [String(t.title ?? ""), fmtDate(t.due_date as string | null), String(t.status ?? "")]),
+    input.tasks.map((t) => [
+      String(t.title ?? ""),
+      fmtDate(t.due_date as string | null),
+      String(t.status ?? ""),
+    ]),
   )}
   ${listTable(
     "سجل التحديثات",

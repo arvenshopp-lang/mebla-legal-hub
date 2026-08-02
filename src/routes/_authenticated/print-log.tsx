@@ -5,16 +5,34 @@ import { useServerFn } from "@tanstack/react-start";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDateTime } from "@/lib/enums";
-import { Badge, DataCard, EmptyState, ErrorBlock, LoadingBlock, Pagination, SectionCard, Td, Th } from "@/lib/list-utils";
+import {
+  Badge,
+  DataCard,
+  EmptyState,
+  ErrorBlock,
+  LoadingBlock,
+  Pagination,
+  SectionCard,
+  Td,
+  Th,
+} from "@/lib/list-utils";
 import { listPrintAudit } from "@/lib/print/print-audit.functions";
-import { CLASSIFICATION_LABELS, PRINT_ACTION_LABELS, type Classification, type PrintAction } from "@/lib/print/print.shared";
+import {
+  CLASSIFICATION_LABELS,
+  PRINT_ACTION_LABELS,
+  type Classification,
+  type PrintAction,
+} from "@/lib/print/print.shared";
 
 export const Route = createFileRoute("/_authenticated/print-log")({
   component: Page,
   head: () => ({
     meta: [
       { title: "سجل الطباعة والتصدير | مِهلة" },
-      { name: "description", content: "سجل غير قابل للتعديل لكل عملية طباعة أو تصدير أو تنزيل داخل مكتبك." },
+      {
+        name: "description",
+        content: "سجل غير قابل للتعديل لكل عملية طباعة أو تصدير أو تنزيل داخل مكتبك.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -48,7 +66,10 @@ function Page() {
         ) : error ? (
           <ErrorBlock message={(error as Error).message} />
         ) : !data?.rows.length ? (
-          <EmptyState title="لا توجد عمليات طباعة" hint="ستظهر هنا أول عملية طباعة أو تصدير داخل المكتب." />
+          <EmptyState
+            title="لا توجد عمليات طباعة"
+            hint="ستظهر هنا أول عملية طباعة أو تصدير داخل المكتب."
+          />
         ) : (
           <>
             <DataCard>
@@ -83,7 +104,8 @@ function Page() {
                       </Td>
                       <Td>
                         <Badge tone={row.classification === "internal" ? "muted" : "warn"}>
-                          {CLASSIFICATION_LABELS[row.classification as Classification] ?? row.classification}
+                          {CLASSIFICATION_LABELS[row.classification as Classification] ??
+                            row.classification}
                         </Badge>
                       </Td>
                       <Td>

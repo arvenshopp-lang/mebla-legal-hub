@@ -254,7 +254,8 @@ export function usePrintEngine() {
       target: PrintTarget & { source: ArrayBuffer; mimeType: string },
       action: Extract<PrintAction, "export_pdf" | "download"> = "export_pdf",
     ) => {
-      const permission: DocumentPermission = action === "download" ? "print.download" : "print.export_pdf";
+      const permission: DocumentPermission =
+        action === "download" ? "print.download" : "print.export_pdf";
       if (!guard(permission, target.classification ?? "internal")) return;
       setBusy(action);
       try {
@@ -271,7 +272,9 @@ export function usePrintEngine() {
           ? await stampPdfBytes(target.source, stamp)
           : await stampImageAsPdf(target.source, target.mimeType, stamp);
         downloadBlob(blob, safeFileName(target, stamp));
-        toast.success("تم التصدير مع العلامة المائية", { description: `Print ID: ${stamp.printRef}` });
+        toast.success("تم التصدير مع العلامة المائية", {
+          description: `Print ID: ${stamp.printRef}`,
+        });
       } catch (error) {
         toast.error("تعذّر التصدير", { description: (error as Error).message });
       } finally {

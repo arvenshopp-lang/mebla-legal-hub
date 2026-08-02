@@ -30,7 +30,12 @@ export function PrintGuard() {
     const allowed = canDo(activeRole, "print.print");
     const env = detectEnvironment();
 
-    const buildStamp = (printRef: string, copyNumber: number, ip: string, serverTime: string): PrintStamp => {
+    const buildStamp = (
+      printRef: string,
+      copyNumber: number,
+      ip: string,
+      serverTime: string,
+    ): PrintStamp => {
       const { date, time } = formatStampDate(new Date(serverTime), env.timeZone);
       return {
         printRef,
@@ -40,7 +45,12 @@ export function PrintGuard() {
         userRoleLabel: ROLE_PRINT_LABELS[activeRole ?? ""] ?? "مستخدم",
         userId: user?.id ?? "",
         officeName: "",
-        documentRef: `SCR-${window.location.pathname.replace(/[^a-zA-Z]/g, "").slice(0, 12).toUpperCase() || "HOME"}`,
+        documentRef: `SCR-${
+          window.location.pathname
+            .replace(/[^a-zA-Z]/g, "")
+            .slice(0, 12)
+            .toUpperCase() || "HOME"
+        }`,
         documentId: null,
         documentTitle: document.title,
         documentTypeLabel: "شاشة",
@@ -89,11 +99,18 @@ export function PrintGuard() {
     let printing = false;
 
     const onKeyDown = async (event: KeyboardEvent) => {
-      if (!(event.key === "p" || event.key === "P") || !(event.ctrlKey || event.metaKey) || event.shiftKey) return;
+      if (
+        !(event.key === "p" || event.key === "P") ||
+        !(event.ctrlKey || event.metaKey) ||
+        event.shiftKey
+      )
+        return;
       event.preventDefault();
       if (printing) return;
       if (!allowed) {
-        toast.error("الطباعة غير مسموحة", { description: "لا تملك صلاحية طباعة المستندات في هذا المكتب." });
+        toast.error("الطباعة غير مسموحة", {
+          description: "لا تملك صلاحية طباعة المستندات في هذا المكتب.",
+        });
         return;
       }
       printing = true;
@@ -136,7 +153,15 @@ export function PrintGuard() {
       window.removeEventListener("afterprint", onAfterPrint);
       onAfterPrint();
     };
-  }, [activeOrgId, activeRole, openEvent, profile?.email, profile?.full_name, user?.email, user?.id]);
+  }, [
+    activeOrgId,
+    activeRole,
+    openEvent,
+    profile?.email,
+    profile?.full_name,
+    user?.email,
+    user?.id,
+  ]);
 
   return null;
 }

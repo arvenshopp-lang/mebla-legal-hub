@@ -16,26 +16,35 @@ const openSchema = z.object({
   documentRef: z.string().trim().max(80).nullable().optional(),
   documentTitle: z.string().trim().max(300),
   documentVersion: z.string().trim().max(20).default("v1"),
-  classification: z.enum(["internal", "confidential", "secret", "highly_confidential"]).default("internal"),
+  classification: z
+    .enum(["internal", "confidential", "secret", "highly_confidential"])
+    .default("internal"),
   pagesCount: z.number().int().min(1).max(5000).default(1),
   browser: z.string().trim().max(40),
   os: z.string().trim().max(40),
   device: z.string().trim().max(40),
   sessionId: z.string().trim().max(80),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
+  metadata: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .default({}),
 });
 
 export const openPrintEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => openSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [{ requireDocumentPermission }, { resolveRequestOrigin, buildPrintRef }] = await Promise.all([
-      import("@/lib/document-ai.server"),
-      import("@/lib/print/print-audit.server"),
-    ]);
+    const [{ requireDocumentPermission }, { resolveRequestOrigin, buildPrintRef }] =
+      await Promise.all([
+        import("@/lib/document-ai.server"),
+        import("@/lib/print/print-audit.server"),
+      ]);
 
     const permission =
-      data.action === "print" ? "print.print" : data.action === "export_pdf" ? "print.export_pdf" : "print.download";
+      data.action === "print"
+        ? "print.print"
+        : data.action === "export_pdf"
+          ? "print.export_pdf"
+          : "print.download";
     const role = await requireDocumentPermission(
       context.supabase,
       context.userId,
@@ -43,14 +52,27 @@ export const openPrintEvent = createServerFn({ method: "POST" })
       permission,
     );
     if (data.classification !== "internal") {
-      await requireDocumentPermission(context.supabase, context.userId, data.organizationId, "print.confidential");
+      await requireDocumentPermission(
+        context.supabase,
+        context.userId,
+        data.organizationId,
+        "print.confidential",
+      );
     }
 
     const { ip, country, userAgent } = resolveRequestOrigin();
 
     const [{ data: profile }, { data: org }, { data: copyNumber }] = await Promise.all([
-      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
-      context.supabase.from("organizations").select("name").eq("id", data.organizationId).maybeSingle(),
+      context.supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", data.organizationId)
+        .maybeSingle(),
       // الوسيطان اختياريان في قاعدة البيانات (nullable)، والأنواع المولّدة لا تعبّر عن ذلك.
       context.supabase.rpc("print_copy_number", {
         _organization_id: data.organizationId,

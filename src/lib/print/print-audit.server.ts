@@ -8,7 +8,8 @@ export function resolveRequestOrigin(): { ip: string; country: string | null; us
     getRequestHeader("cf-connecting-ip") ||
     getRequestHeader("x-real-ip") ||
     "";
-  const country = getRequestHeader("cf-ipcountry") ?? getRequestHeader("x-vercel-ip-country") ?? null;
+  const country =
+    getRequestHeader("cf-ipcountry") ?? getRequestHeader("x-vercel-ip-country") ?? null;
   return {
     ip: ip.slice(0, 60),
     country: country ? country.slice(0, 8) : null,

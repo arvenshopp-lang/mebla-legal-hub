@@ -14,7 +14,10 @@ function sizeKey(width: number, height: number) {
   return `${Math.round(width)}x${Math.round(height)}`;
 }
 
-export async function stampPdfBytes(source: ArrayBuffer | Uint8Array, stamp: PrintStamp): Promise<Blob> {
+export async function stampPdfBytes(
+  source: ArrayBuffer | Uint8Array,
+  stamp: PrintStamp,
+): Promise<Blob> {
   const pdf = await PDFDocument.load(source, { ignoreEncryption: true });
   const pages = pdf.getPages();
   const overlayCache = new Map<string, Awaited<ReturnType<typeof pdf.embedPng>>>();
@@ -33,7 +36,14 @@ export async function stampPdfBytes(source: ArrayBuffer | Uint8Array, stamp: Pri
       overlay = await pdf.embedPng(await renderPageOverlay(stamp, visibleWidth, visibleHeight));
       overlayCache.set(key, overlay);
     }
-    page.drawImage(overlay, { x: 0, y: 0, width, height, opacity: 0.11, rotate: degrees(-rotation) });
+    page.drawImage(overlay, {
+      x: 0,
+      y: 0,
+      width,
+      height,
+      opacity: 0.11,
+      rotate: degrees(-rotation),
+    });
 
     const footer = await renderFooterStrip(stamp, visibleWidth, index + 1, pages.length);
     const footerImage = await pdf.embedPng(footer.bytes);
@@ -65,7 +75,10 @@ export async function stampImageAsPdf(
   const image = /png/i.test(mimeType) ? await pdf.embedPng(source) : await pdf.embedJpg(source);
   const page = pdf.addPage([A4.width, A4.height]);
   const margin = 36;
-  const scale = Math.min((A4.width - margin * 2) / image.width, (A4.height - margin * 2 - 40) / image.height);
+  const scale = Math.min(
+    (A4.width - margin * 2) / image.width,
+    (A4.height - margin * 2 - 40) / image.height,
+  );
   page.drawImage(image, {
     x: (A4.width - image.width * scale) / 2,
     y: (A4.height - image.height * scale) / 2 + 12,

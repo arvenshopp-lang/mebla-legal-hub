@@ -136,7 +136,11 @@ export function detectEnvironment(): ClientEnvironment {
           : /Linux/.test(ua)
             ? "Linux"
             : "غير معروف";
-  const device = /iPad|Tablet/.test(ua) ? "تابلت" : /Mobile|iPhone|Android/.test(ua) ? "جوال" : "حاسب";
+  const device = /iPad|Tablet/.test(ua)
+    ? "تابلت"
+    : /Mobile|iPhone|Android/.test(ua)
+      ? "جوال"
+      : "حاسب";
 
   let sessionId = "";
   try {
@@ -160,7 +164,10 @@ export function detectEnvironment(): ClientEnvironment {
 }
 
 /** التاريخ والوقت بالتقويم الميلادي وبأرقام لاتينية لتتبّع موحّد. */
-export function formatStampDate(date: Date, timeZone = "Asia/Riyadh"): { date: string; time: string } {
+export function formatStampDate(
+  date: Date,
+  timeZone = "Asia/Riyadh",
+): { date: string; time: string } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -187,9 +194,13 @@ export function documentRefFor(target: PrintTarget): string {
 }
 
 /** ملفات PDF وصور PNG/JPEG فقط يمكن ختمها وتصديرها كـ PDF مختوم. */
-export function isStampableForExport(fileName: string, fileType: string | null | undefined): boolean {
+export function isStampableForExport(
+  fileName: string,
+  fileType: string | null | undefined,
+): boolean {
   const type = (fileType ?? "").toLowerCase();
-  if (type.includes("pdf") || type === "image/png" || type === "image/jpeg" || type === "image/jpg") return true;
+  if (type.includes("pdf") || type === "image/png" || type === "image/jpeg" || type === "image/jpg")
+    return true;
   return /\.(pdf|png|jpe?g)$/i.test(fileName);
 }
 

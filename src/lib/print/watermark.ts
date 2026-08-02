@@ -1,4 +1,10 @@
-import { footerLine, isRestricted, watermarkLines, CLASSIFICATION_STAMPS, type PrintStamp } from "./print.shared";
+import {
+  footerLine,
+  isRestricted,
+  watermarkLines,
+  CLASSIFICATION_STAMPS,
+  type PrintStamp,
+} from "./print.shared";
 
 /**
  * Watermark rendering. Two outputs share one source of truth (`watermarkLines`):
@@ -56,7 +62,10 @@ async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> 
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-function createCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+function createCanvas(
+  width: number,
+  height: number,
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(width));
   canvas.height = Math.max(1, Math.round(height));
