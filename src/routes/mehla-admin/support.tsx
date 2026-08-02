@@ -262,6 +262,22 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
         <LoadingBlock rows={3} cols={1} />
       ) : (
         <div className="space-y-5">
+          {data.ticket.rated_at && (
+            <div className="rounded-[var(--radius-m)] border border-warning/30 bg-warning-soft/50 px-3.5 py-3">
+              <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+                <span className="font-semibold">تقييم المشترك</span>
+                <Stars value={Number(data.ticket.rating ?? 0)} />
+                <span className="text-muted-foreground">
+                  {data.ticket.rated_staff_name ? `· الموظف: ${data.ticket.rated_staff_name}` : ""} ·{" "}
+                  {fmtDateTime(data.ticket.rated_at)}
+                </span>
+              </div>
+              {data.ticket.rating_comment && (
+                <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-6">{data.ticket.rating_comment}</p>
+              )}
+            </div>
+          )}
+
           <div className="max-h-[320px] space-y-3 overflow-y-auto pl-1">
             <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted px-3.5 py-3 text-[13px] leading-6">
               <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
