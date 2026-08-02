@@ -247,7 +247,7 @@ function AppPreview() {
   );
 }
 
-function Hero({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-60" aria-hidden />
@@ -273,12 +273,22 @@ function Hero({ loginHref, registerHref }: { loginHref: string; registerHref: st
               ابدأ الاستخدام <ArrowLeft className="h-4 w-4" aria-hidden />
             </a>
             <a
+              href={trackHref}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted"
+            >
+              <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+              متابعة القضية
+            </a>
+            <a
               href={loginHref}
               className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium transition hover:border-border-strong"
             >
               لدي حساب بالفعل
             </a>
           </div>
+          <p className="mt-4 text-[13px] text-muted-foreground">
+            عميل لدى أحد المكاتب؟ تابع قضيتك برمز مكوّن من 10 أرقام دون إنشاء حساب.
+          </p>
         </div>
 
         <div className="reveal mt-12 md:mt-16">
