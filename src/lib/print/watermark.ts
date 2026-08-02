@@ -15,6 +15,11 @@ function escapeXml(value: string): string {
   );
 }
 
+/** يشمل الفاصلة العليا لأن encodeURIComponent لا يشفّرها، فتكسر url('…') في CSS. */
+function toDataUrl(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg).replace(/'/g, "%27")}`;
+}
+
 /** بلاطة SVG قطرية مكررة تُستخدم كخلفية للطباعة من المتصفح. */
 export function watermarkTileDataUrl(stamp: PrintStamp, opacity = 0.1): string {
   const lines = watermarkLines(stamp);
@@ -29,7 +34,7 @@ export function watermarkTileDataUrl(stamp: PrintStamp, opacity = 0.1): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" viewBox="0 0 ${TILE} ${TILE}">
   <g opacity="${opacity}" transform="translate(${TILE / 2} ${TILE / 2}) rotate(${ANGLE_DEG})">${text}</g>
 </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return toDataUrl(svg);
 }
 
 /** ختم التصنيف (سرّي / سرّي للغاية) في منتصف الصفحة. */
@@ -42,7 +47,7 @@ export function classificationStampDataUrl(stamp: PrintStamp, opacity = 0.14): s
     <text x="0" y="18" font-family="'IBM Plex Sans Arabic',Arial,sans-serif" font-size="68" font-weight="700" fill="#8A1F1F" letter-spacing="6" text-anchor="middle">${escapeXml(label)}</text>
   </g>
 </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return toDataUrl(svg);
 }
 
 async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
