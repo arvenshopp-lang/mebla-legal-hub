@@ -12,8 +12,13 @@ import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
-import { Download, Trash2, Upload, Lock } from "lucide-react";
+import { Download, Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
+import {
+  ExtractedTextDialog, ProcessingBadge, RetryButton, useDocumentIndexing, useProcessingJobs,
+  type DocumentRow,
+} from "@/components/documents/text-intel";
+import { extractableKind } from "@/lib/document-ai.shared";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
@@ -30,6 +35,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<any | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewingText, setViewingText] = useState<DocumentRow | null>(null);
   const q = useDebounced(search);
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -47,6 +53,9 @@ function Page() {
       return { rows: data ?? [], count: count ?? 0 };
     },
   });
+
+  const jobs = useProcessingJobs((data?.rows ?? []).map((d: any) => d.id));
+  const jobFor = (id: string) => (jobs.data ?? []).find((j) => j.document_id === id);
 
   const download = async (d: any) => {
     setDownloadingId(d.id);
@@ -101,7 +110,7 @@ function Page() {
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
-                  <tr><Th>الملف</Th><Th>القضية</Th><Th>العميل</Th><Th>التصنيف</Th><Th>الحجم</Th><Th>التاريخ</Th><Th>الرافع</Th><Th>{" "}</Th></tr>
+                  <tr><Th>الملف</Th><Th>القضية</Th><Th>العميل</Th><Th>التصنيف</Th><Th>المعالجة</Th><Th>الحجم</Th><Th>التاريخ</Th><Th>الرافع</Th><Th>{" "}</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.rows.map((d: any) => (
@@ -116,11 +125,25 @@ function Page() {
                       <Td>{d.case?.case_title ?? "—"}</Td>
                       <Td>{d.client?.full_name ?? "—"}</Td>
                       <Td>{d.document_category ? <Badge tone="muted">{d.document_category}</Badge> : "—"}</Td>
+                      <Td><ProcessingBadge job={jobFor(d.id)} fileName={d.file_name} fileType={d.file_type} /></Td>
                       <Td>{fmtSize(d.file_size)}</Td>
                       <Td>{fmtDate(d.created_at)}</Td>
                       <Td>{d.uploader?.full_name ?? "—"}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
+                          {extractableKind(d.file_name, d.file_type) && (
+                            <>
+                              <IconBtn
+                                aria-label="النص المستخرج"
+                                title="عرض النص المستخرج"
+                                disabled={jobFor(d.id)?.status !== "completed"}
+                                onClick={() => setViewingText(d as DocumentRow)}
+                              >
+                                <ScanText className="h-4 w-4" />
+                              </IconBtn>
+                              <RetryButton doc={d as DocumentRow} />
+                            </>
+                          )}
                           <IconBtn aria-label="تحميل" title="تحميل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
                           {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
@@ -135,6 +158,7 @@ function Page() {
           </>
         )}
       <UploadDialog open={open} onClose={() => setOpen(false)} orgId={activeOrgId!} userId={user?.id} />
+      <ExtractedTextDialog doc={viewingText} onClose={() => setViewingText(null)} />
       <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} onConfirm={() => deleting && del.mutate(deleting)} loading={del.isPending} title="حذف المستند" message={`سيتم حذف "${deleting?.file_name}" نهائياً.`} />
     </DashboardShell>
   );
