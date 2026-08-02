@@ -2253,6 +2253,83 @@ export type Database = {
           },
         ]
       }
+      system_failures: {
+        Row: {
+          action: string
+          browser: string | null
+          created_at: string
+          device: string | null
+          document_id: string | null
+          error_code: string | null
+          error_message: string
+          http_status: number | null
+          id: string
+          ip: string | null
+          metadata: Json
+          organization_id: string | null
+          os: string | null
+          path: string | null
+          ref: string
+          search_vector: unknown
+          surface: string
+          ticket_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          error_code?: string | null
+          error_message: string
+          http_status?: number | null
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          os?: string | null
+          path?: string | null
+          ref: string
+          search_vector?: unknown
+          surface: string
+          ticket_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          error_code?: string | null
+          error_message?: string
+          http_status?: number | null
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          os?: string | null
+          path?: string | null
+          ref?: string
+          search_vector?: unknown
+          surface?: string
+          ticket_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_failures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
