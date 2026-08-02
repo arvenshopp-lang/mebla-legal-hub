@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { LimitBar, FeatureLine, NoticeBanner, StateBadge } from "@/components/subscription/subscription-ui";
 import { useSubscription } from "@/hooks/use-subscription";
-import { supabase } from "@/integrations/supabase/client";
+import { signInvoiceUrl } from "@/lib/subscription.functions";
 import { Badge, Btn, DataCard, EmptyState, ErrorBlock, SectionCard, SectionLoader, Td, Th } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
