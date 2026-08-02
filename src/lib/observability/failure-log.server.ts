@@ -93,7 +93,7 @@ export async function logFailure(input: FailureInput): Promise<string> {
       os: env.os,
       device: env.device,
       user_agent: env.userAgent || null,
-      metadata: input.metadata ?? {},
+      metadata: (input.metadata ?? {}) as never,
     });
   } catch (error) {
     console.error("[failure-log] تعذّر حفظ سجل العطل", ref, error);
