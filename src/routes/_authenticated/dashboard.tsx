@@ -4,15 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
+import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardHome,
 });
 
-const dateTime = (v: string) =>
-  new Date(v).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" });
-const dateOnly = (v: string) => new Date(v).toLocaleDateString("ar-SA", { dateStyle: "medium" });
+const dateTime = (v: string) => fmtDateTime(v);
+const dateOnly = (v: string) => fmtDate(v);
 
 function DashboardHome() {
   const { activeOrgId } = useAuth();
