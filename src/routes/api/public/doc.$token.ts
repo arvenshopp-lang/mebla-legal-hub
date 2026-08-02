@@ -74,7 +74,9 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             });
           let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
           try {
-            storageRead = await secure.readOriginal(doc.file_path);
+            storageRead = await secure.readOriginal(doc.file_path, {
+              allowProcessingFormat: resolved.kind === "process",
+            });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
             console.error("[secure-document-storage]", {

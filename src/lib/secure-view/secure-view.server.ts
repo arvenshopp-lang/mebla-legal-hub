@@ -252,7 +252,10 @@ function matchesStoredFile(bytes: Uint8Array, contentType: string): boolean {
  * ينشئ رابطاً موقّعاً جديداً داخل الخادم لكل فتح، ثم يجلب الملف ويتحقق من
  * الاستجابة والبايتات. لا يُعاد الرابط الموقّع أو مسار التخزين إلى المتصفح.
  */
-export async function readOriginal(filePath: string): Promise<{ bytes: Uint8Array; trace: StorageReadTrace }> {
+export async function readOriginal(
+  filePath: string,
+  options: { allowProcessingFormat?: boolean } = {},
+): Promise<{ bytes: Uint8Array; trace: StorageReadTrace }> {
   const db = await admin();
   const trace: StorageReadTrace = {
     bucket: "documents",
@@ -302,16 +305,15 @@ export async function readOriginal(filePath: string): Promise<{ bytes: Uint8Arra
     trace.errorCode = `HTTP_${response.status}`;
     throw new StorageReadError("الملف غير متاح في المخزن.", trace);
   }
-  if (
-    trace.contentType.includes("text/html") ||
-    !/^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(trace.contentType)
-  ) {
+  const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(trace.contentType);
+  if (trace.contentType.includes("text/html") || (!supportedViewerType && !options.allowProcessingFormat)) {
     trace.errorCode = "UNSUPPORTED_CONTENT_TYPE";
     throw new StorageReadError("نوع الملف المسترجع غير صالح للعرض.", trace);
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (!bytes.length || beginsWithHtml(bytes) || !matchesStoredFile(bytes, trace.contentType)) {
+  const validSignature = options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
+  if (!bytes.length || beginsWithHtml(bytes) || !validSignature) {
     trace.errorCode = beginsWithHtml(bytes) ? "HTML_BODY_REJECTED" : "FILE_SIGNATURE_MISMATCH";
     throw new StorageReadError("محتوى الملف المسترجع غير صالح للعرض.", trace);
   }
