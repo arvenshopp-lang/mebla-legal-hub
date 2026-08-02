@@ -3,6 +3,7 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 import { renderErrorPage } from "./lib/error-page";
 import { surfaceGuard } from "./lib/surface-guard.server";
 import { applySecurityHeaders } from "./lib/security-headers.server";
+import { getRequest } from "@tanstack/react-start/server";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
@@ -13,6 +14,20 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
+    let isApi = false;
+    try {
+      isApi = new URL(getRequest().url).pathname.startsWith("/api/");
+    } catch {
+      isApi = false;
+    }
+    if (isApi) {
+      return applySecurityHeaders(
+        Response.json(
+          { error: "internal_error", message: "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح." },
+          { status: 500, headers: { "cache-control": "no-store" } },
+        ),
+      );
+    }
     return applySecurityHeaders(
       new Response(renderErrorPage(), {
         status: 500,

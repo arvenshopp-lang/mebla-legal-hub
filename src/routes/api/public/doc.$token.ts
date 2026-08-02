@@ -13,6 +13,8 @@ const NO_STORE = {
   "x-content-type-options": "nosniff",
 };
 
+const PUBLIC_LOAD_ERROR = "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح.";
+
 /**
  * لا يُعاد للمستخدم إلا نص عام + معرّف تعرّف آمن؛ التفاصيل التقنية تُحفظ في
  * سجل الأعطال الداخلي القابل للبحث.
@@ -32,9 +34,9 @@ async function failure(
     organizationId: detail.organizationId ?? null,
     path: detail.path,
   });
-  return new Response(`${publicMessage}\nمعرّف التعرّف: ${ref}`, {
+  return Response.json({ error: "document_unavailable", message: publicMessage, ref }, {
     status,
-    headers: { ...NO_STORE, "content-type": "text/plain; charset=utf-8", "x-failure-ref": ref },
+    headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "x-failure-ref": ref },
   });
 }
 
@@ -45,7 +47,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
         const token = String(params.token ?? "");
         const path = new URL(request.url).pathname;
         if (token.length < 20)
-          return failure("رابط غير صالح.", 400, { action: "token.malformed", error: "رمز قصير", path });
+          return failure(PUBLIC_LOAD_ERROR, 400, { action: "token.malformed", error: "رمز قصير", path });
 
         const [secure, shared, stamp] = await Promise.all([
           import("@/lib/secure-view/secure-view.server"),
@@ -57,7 +59,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
         try {
           resolved = await secure.consumeAccessToken(token);
         } catch (error) {
-          return failure("انتهت صلاحية الرابط أو لم يعد متاحاً.", 403, { action: "token.consume", error, path });
+          return failure(PUBLIC_LOAD_ERROR, 403, { action: "token.consume", error, path });
         }
 
         try {
@@ -70,7 +72,48 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               organizationId: resolved.organizationId,
               path,
             });
-          const original = await secure.readOriginal(doc.file_path);
+          let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
+          try {
+            storageRead = await secure.readOriginal(doc.file_path);
+          } catch (error) {
+            const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
+            console.error("[secure-document-storage]", {
+              document_id: resolved.documentId,
+              temporary_link_id: resolved.id,
+              bucket: trace?.bucket ?? "documents",
+              storage_path: trace?.storagePath ?? doc.file_path,
+              signed_url_host: trace?.signedUrlHost ?? null,
+              response_status: trace?.status ?? null,
+              content_type: trace?.contentType ?? null,
+              final_response_host: trace?.finalUrl ?? null,
+              error_code: trace?.errorCode ?? "STORAGE_READ_FAILED",
+            });
+            const { logFailure } = await import("@/lib/observability/failure-log.server");
+            const ref = await logFailure({
+              surface: "secure_view",
+              action: "storage.read",
+              error,
+              errorCode: trace?.errorCode ?? "STORAGE_READ_FAILED",
+              httpStatus: trace?.status ?? 502,
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+              metadata: {
+                temporary_link_id: resolved.id,
+                bucket: trace?.bucket ?? "documents",
+                storage_path: trace?.storagePath ?? doc.file_path,
+                signed_url_host: trace?.signedUrlHost ?? null,
+                response_status: trace?.status ?? null,
+                content_type: trace?.contentType ?? null,
+                final_response_host: trace?.finalUrl ?? null,
+              },
+            });
+            return Response.json({ error: "document_unavailable", message: PUBLIC_LOAD_ERROR, ref }, {
+              status: 502,
+              headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "x-failure-ref": ref },
+            });
+          }
+          const original = storageRead.bytes;
 
           // تذكرة المعالجة الداخلية تُعيد البايتات الأصلية لمحرك الاستخراج فقط،
           // ولا تُصدر إلا بعد التحقق من الصلاحية، وتُستهلك مرة واحدة.
@@ -125,7 +168,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             },
           });
         } catch (error) {
-          return failure("تعذّر تجهيز نسخة العرض حالياً.", 500, {
+          return failure(PUBLIC_LOAD_ERROR, 500, {
             action: "stamp.build",
             error,
             documentId: resolved.documentId,

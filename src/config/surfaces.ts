@@ -115,7 +115,7 @@ export const SURFACES: SurfaceDef[] = [
 export const AUTH_SURFACE: SurfaceId = "app";
 
 /** مسارات تعمل على كل النطاقات (أصول، صحة، مصادقة خلفية). */
-const UNIVERSAL_PREFIXES = ["/api", "/_serverFn", "/_build", "/assets", "/favicon", "/robots.txt", "/sitemap.xml"];
+const UNIVERSAL_PREFIXES = ["/api", "/share", "/_serverFn", "/_build", "/assets", "/favicon", "/robots.txt", "/sitemap.xml"];
 
 export function getSurface(id: SurfaceId): SurfaceDef {
   const s = SURFACES.find((x) => x.id === id);

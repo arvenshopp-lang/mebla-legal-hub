@@ -14,6 +14,7 @@ import {
   revokeDocumentShareLink,
 } from "@/lib/secure-view/secure-view.functions";
 import { detectEnvironment } from "@/lib/print/print.shared";
+import { fetchWatermarkedPdf } from "@/lib/secure-view/fetch-watermarked";
 
 /**
  * Every document interaction in the app goes through this module: view,
@@ -42,17 +43,6 @@ const PERMISSION: Record<AccessKind, DocumentPermission> = {
  * المتصفح المتكررة على تذكرة العرض المؤقتة (وهي محدودة الاستخدام)، ويُظهر رسالة
  * الخادم الحقيقية بدلاً من رسالة "تعذّر تحميل المستند" العامة من عارض PDF.
  */
-async function fetchWatermarked(url: string): Promise<string> {
-  const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
-  if (!response.ok) {
-    const message = (await response.text().catch(() => "")).trim();
-    throw new Error(message || "تعذّر تجهيز النسخة المائية، حاول مرة أخرى.");
-  }
-  const blob = await response.blob();
-  if (!blob.size) throw new Error("النسخة المائية وصلت فارغة، حاول مرة أخرى.");
-  return URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: "application/pdf" }));
-}
-
 export function useSecureDocument() {
   const { activeOrgId, activeRole } = useAuth();
   const request = useServerFn(requestDocumentAccess);
@@ -105,7 +95,7 @@ export function useSecureDocument() {
       setBusy({ id: doc.id, kind });
       try {
         const result = await ticket(doc, kind);
-        const blobUrl = trackUrl(await fetchWatermarked(result.url));
+        const blobUrl = trackUrl(await fetchWatermarkedPdf(result.url));
         if (kind === "view") {
           setViewing({ doc, url: blobUrl });
           return;
