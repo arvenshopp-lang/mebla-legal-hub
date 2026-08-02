@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { Download, Star } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { replyToTicket } from "@/lib/admin.functions";
@@ -35,6 +36,33 @@ export const Route = createFileRoute("/mehla-admin/support")({
 const statusTone = (s: string): "muted" | "info" | "gold" | "warn" =>
   s === "closed" ? "muted" : s === "new" ? "info" : s === "in_progress" ? "gold" : "warn";
 
+function Stars({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`التقييم ${value} من 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`h-3.5 w-3.5 ${n <= value ? "fill-warning text-warning" : "text-border-strong"}`}
+          aria-hidden
+        />
+      ))}
+    </span>
+  );
+}
+
+function downloadCsv(rows: Record<string, string | number>[], filename: string) {
+  const headers = Object.keys(rows[0] ?? {});
+  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [headers.map(escape).join(","), ...rows.map((r) => headers.map((h) => escape(r[h] ?? "")).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function SupportPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
@@ -46,6 +74,7 @@ function SupportPage() {
     queryFn: async () => {
       let q = supabase.from("support_tickets").select("*").order("last_reply_at", { ascending: false }).limit(200);
       if (statusFilter === "open") q = q.neq("status", "closed");
+      else if (statusFilter === "rated") q = q.not("rated_at", "is", null);
       else if (statusFilter !== "all") q = q.eq("status", statusFilter as never);
       const term = debounced.trim().replace(/[,()]/g, "");
       if (term) q = q.or(`subject.ilike.%${term}%,reference.ilike.%${term}%`);
@@ -66,6 +95,11 @@ function SupportPage() {
     },
   });
 
+  const rated = useMemo(() => (tickets ?? []).filter((t) => t.rated_at), [tickets]);
+  const avgRating = rated.length
+    ? (rated.reduce((s, t) => s + Number(t.rating ?? 0), 0) / rated.length).toFixed(1)
+    : null;
+
   return (
     <AdminShell title="مركز الدعم" description="تذاكر الدعم الواردة من مكاتب المحاماة المشتركة.">
       <PageToolbar
@@ -74,6 +108,7 @@ function SupportPage() {
         placeholder="بحث بالعنوان أو الرقم المرجعي…"
         searching={isFetching && !isLoading}
         filters={
+          <>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -82,14 +117,45 @@ function SupportPage() {
           >
             <option value="open">التذاكر المفتوحة</option>
             <option value="all">كل التذاكر</option>
+            <option value="rated">التذاكر المُقيَّمة</option>
             {Object.entries(TICKET_STATUS_LABELS).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
           </select>
+          <Btn
+            variant="ghost"
+            disabled={rated.length === 0}
+            onClick={() =>
+              downloadCsv(
+                rated.map((t) => ({
+                  المرجع: t.reference,
+                  الموضوع: t.subject,
+                  "بريد المشترك": requesters?.[t.user_id]?.email ?? "",
+                  التقييم: t.rating ?? "",
+                  الملاحظة: t.rating_comment ?? "",
+                  الموظف: t.rated_staff_name ?? "",
+                  "تاريخ التقييم": fmtDateTime(t.rated_at),
+                })),
+                `mehla-support-ratings-${new Date().toISOString().slice(0, 10)}.csv`,
+              )
+            }
+          >
+            <Download className="h-4 w-4" aria-hidden /> تصدير التقييمات
+          </Btn>
+          </>
         }
       />
+
+      {avgRating && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[var(--radius-m)] border border-border bg-surface px-4 py-3">
+          <span className="text-[13px] font-semibold">متوسط تقييم الخدمة</span>
+          <span className="text-[18px] font-bold tabular-nums">{avgRating}</span>
+          <Stars value={Math.round(Number(avgRating))} />
+          <span className="text-caption">({rated.length} تقييماً)</span>
+        </div>
+      )}
 
       {isLoading ? (
         <LoadingBlock rows={6} cols={5} />
@@ -106,6 +172,7 @@ function SupportPage() {
                 <Th>التصنيف</Th>
                 <Th>الأولوية</Th>
                 <Th>الحالة</Th>
+                <Th>التقييم</Th>
                 <Th>آخر نشاط</Th>
               </tr>
             </thead>
@@ -128,6 +195,7 @@ function SupportPage() {
                   <Td>
                     <Badge tone={statusTone(t.status)}>{TICKET_STATUS_LABELS[t.status] ?? t.status}</Badge>
                   </Td>
+                  <Td>{t.rated_at ? <Stars value={Number(t.rating ?? 0)} /> : <span className="text-muted-foreground">—</span>}</Td>
                   <Td className="text-[12px] text-muted-foreground">{fmtDateTime(t.last_reply_at)}</Td>
                 </tr>
               ))}
