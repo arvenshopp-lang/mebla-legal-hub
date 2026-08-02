@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useState } from "react";
-import { Menu, X, ArrowLeft } from "lucide-react";
+import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
@@ -77,7 +77,9 @@ const NAV = [
   { href: "#security", label: "الأمان" },
 ];
 
-function Header({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+type SurfaceLinks = { loginHref: string; registerHref: string; trackHref: string };
+
+function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   const scrolled = useScrolled();
   const [open, setOpen] = useState(false);
   return (
@@ -101,6 +103,13 @@ function Header({ loginHref, registerHref }: { loginHref: string; registerHref: 
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <a
+            href={trackHref}
+            className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-m)] border border-border px-4 text-[13.5px] font-medium text-foreground transition hover:border-border-strong hover:bg-surface-muted"
+          >
+            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+            متابعة القضية
+          </a>
           <a
             href={loginHref}
             className="inline-flex h-10 items-center rounded-[var(--radius-m)] px-4 text-[13.5px] font-medium text-foreground transition hover:bg-surface-muted"
@@ -139,6 +148,13 @@ function Header({ loginHref, registerHref }: { loginHref: string; registerHref: 
               </a>
             ))}
             <div className="mt-3 grid gap-2">
+              <a
+                href={trackHref}
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong text-[14px] font-semibold"
+              >
+                <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+                متابعة القضية
+              </a>
               <a
                 href={loginHref}
                 className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] border border-border text-[14px] font-medium"
