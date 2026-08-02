@@ -855,6 +855,75 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          issued_at: string
+          notes: string | null
+          number: string
+          organization_id: string | null
+          paid_at: string | null
+          payment_method: string | null
+          pdf_path: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          issued_at?: string
+          notes?: string | null
+          number: string
+          organization_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pdf_path?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          issued_at?: string
+          notes?: string | null
+          number?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pdf_path?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1205,75 +1274,102 @@ export type Database = {
       platform_plans: {
         Row: {
           ai_enabled: boolean
+          api_enabled: boolean
+          client_upload_enabled: boolean
           code: string
           color: string
           created_at: string
           currency: string
           description: string | null
           duration_months: number
+          esignature_enabled: boolean
           features: Json
           id: string
           is_active: boolean
           is_public: boolean
           max_branches: number | null
           max_cases: number | null
+          max_clients: number | null
           max_documents: number | null
           max_users: number | null
           name_ar: string
           name_en: string | null
+          ocr_pages_monthly: number | null
+          pdf_search_enabled: boolean
           price_monthly: number
           price_yearly: number
+          sla_hours: number
           sort_order: number
           storage_gb: number | null
+          support_level: string
           updated_at: string
+          voice_enabled: boolean
         }
         Insert: {
           ai_enabled?: boolean
+          api_enabled?: boolean
+          client_upload_enabled?: boolean
           code: string
           color?: string
           created_at?: string
           currency?: string
           description?: string | null
           duration_months?: number
+          esignature_enabled?: boolean
           features?: Json
           id?: string
           is_active?: boolean
           is_public?: boolean
           max_branches?: number | null
           max_cases?: number | null
+          max_clients?: number | null
           max_documents?: number | null
           max_users?: number | null
           name_ar: string
           name_en?: string | null
+          ocr_pages_monthly?: number | null
+          pdf_search_enabled?: boolean
           price_monthly?: number
           price_yearly?: number
+          sla_hours?: number
           sort_order?: number
           storage_gb?: number | null
+          support_level?: string
           updated_at?: string
+          voice_enabled?: boolean
         }
         Update: {
           ai_enabled?: boolean
+          api_enabled?: boolean
+          client_upload_enabled?: boolean
           code?: string
           color?: string
           created_at?: string
           currency?: string
           description?: string | null
           duration_months?: number
+          esignature_enabled?: boolean
           features?: Json
           id?: string
           is_active?: boolean
           is_public?: boolean
           max_branches?: number | null
           max_cases?: number | null
+          max_clients?: number | null
           max_documents?: number | null
           max_users?: number | null
           name_ar?: string
           name_en?: string | null
+          ocr_pages_monthly?: number | null
+          pdf_search_enabled?: boolean
           price_monthly?: number
           price_yearly?: number
+          sla_hours?: number
           sort_order?: number
           storage_gb?: number | null
+          support_level?: string
           updated_at?: string
+          voice_enabled?: boolean
         }
         Relationships: []
       }
@@ -1457,6 +1553,7 @@ export type Database = {
         Row: {
           activation_method: string
           amount: number
+          auto_renew: boolean
           billing_note: string | null
           cancelled_at: string | null
           created_at: string
@@ -1481,6 +1578,7 @@ export type Database = {
         Insert: {
           activation_method?: string
           amount?: number
+          auto_renew?: boolean
           billing_note?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -1505,6 +1603,7 @@ export type Database = {
         Update: {
           activation_method?: string
           amount?: number
+          auto_renew?: boolean
           billing_note?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -1782,6 +1881,44 @@ export type Database = {
           },
         ]
       }
+      usage_counters: {
+        Row: {
+          created_at: string
+          id: string
+          metric: string
+          organization_id: string
+          period_start: string
+          updated_at: string
+          used: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric: string
+          organization_id: string
+          period_start: string
+          updated_at?: string
+          used?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric?: string
+          organization_id?: string
+          period_start?: string
+          updated_at?: string
+          used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notification_preferences: {
         Row: {
           created_at: string
@@ -1938,6 +2075,14 @@ export type Database = {
           already_exists: boolean
           organization_id: string
         }[]
+      }
+      my_subscription_overview: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      record_metered_usage: {
+        Args: { _amount: number; _metric: string; _organization_id: string }
+        Returns: number
       }
     }
     Enums: {
