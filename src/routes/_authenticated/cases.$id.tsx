@@ -339,10 +339,15 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
   const [saving, setSaving] = useState(false);
   const savePartySecure = useServerFn(saveCasePartySecure);
   const { data: mask } = useMaskedPii(orgId, "case_party", editing?.id);
-  const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
+  type PartyPiiField = "national_id" | "commercial_registration";
+  const [piiEdits, setPiiEdits] = useState<Partial<Record<PartyPiiField, string>>>({});
+  const setPiiValue = (field: PartyPiiField, value: string) =>
+    setPiiEdits((prev) => ({ ...prev, [field]: value }));
+  const cancelPii = (field: PartyPiiField) =>
+    setPiiEdits(({ [field]: _omit, ...rest }) => rest);
   const key = editing?.id ?? "new";
   const [k, setK] = useState(key);
-  if (open && k !== key) { setK(key); setErrors({}); setPiiEdit(null); setForm(editing ? { ...editing } : {}); }
+  if (open && k !== key) { setK(key); setErrors({}); setPiiEdits({}); setForm(editing ? { ...editing } : {}); }
 
   const save = async () => {
     const res = partySchema.safeParse(form);
@@ -361,7 +366,13 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
           caseId,
           ...(editing ? { id: editing.id as string } : {}),
           values: res.data as never,
-          ...(piiEdit ? { pii: { [piiEdit.field]: piiEdit.value.trim() || null } } : {}),
+          ...(Object.keys(piiEdits).length
+            ? {
+                pii: Object.fromEntries(
+                  Object.entries(piiEdits).map(([field, value]) => [field, value.trim() || null]),
+                ),
+              }
+            : {}),
         },
       });
       toast.success(editing ? "تم التحديث" : "تمت الإضافة");
@@ -387,20 +398,20 @@ function PartyDialog({ open, onClose, editing, caseId, orgId }: { open: boolean;
         <PiiSecureInput
           label="رقم الهوية"
           mask={(mask?.national_id ?? "—") as string}
-          value={piiEdit?.field === "national_id" ? piiEdit.value : ""}
-          editing={piiEdit?.field === "national_id" || (!editing && !piiEdit)}
-          onChange={(next) => setPiiEdit({ field: "national_id", value: next })}
-          onStartEdit={() => setPiiEdit({ field: "national_id", value: "" })}
-          onCancelEdit={() => setPiiEdit(null)}
+          value={piiEdits.national_id ?? ""}
+          editing={piiEdits.national_id !== undefined || !editing}
+          onChange={(next) => setPiiValue("national_id", next)}
+          onStartEdit={() => setPiiValue("national_id", "")}
+          onCancelEdit={() => cancelPii("national_id")}
         />
         <PiiSecureInput
           label="السجل التجاري"
           mask={(mask?.commercial_registration ?? "—") as string}
-          value={piiEdit?.field === "commercial_registration" ? piiEdit.value : ""}
-          editing={piiEdit?.field === "commercial_registration"}
-          onChange={(next) => setPiiEdit({ field: "commercial_registration", value: next })}
-          onStartEdit={() => setPiiEdit({ field: "commercial_registration", value: "" })}
-          onCancelEdit={() => setPiiEdit(null)}
+          value={piiEdits.commercial_registration ?? ""}
+          editing={piiEdits.commercial_registration !== undefined || !editing}
+          onChange={(next) => setPiiValue("commercial_registration", next)}
+          onStartEdit={() => setPiiValue("commercial_registration", "")}
+          onCancelEdit={() => cancelPii("commercial_registration")}
         />
         <FormField label="الجوال"><input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></FormField>
         <FormField label="البريد"><input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />{errors.email && <span className="text-xs text-danger">{errors.email}</span>}</FormField>
