@@ -213,6 +213,11 @@ export async function getCapabilities(id: string): Promise<Capabilities> {
   return getConnector(context.adapterType).getCapabilities(context);
 }
 
+/** سياق تشغيل تكامل محدد — للاختبار اليدوي من لوحة الإدارة فقط. */
+export async function buildContextForIntegration(id: string): Promise<ConnectorContext> {
+  return buildContext(await loadRow(id));
+}
+
 export async function listHealthLogs(integrationId: string | null, limit = 50): Promise<HealthLogView[]> {
   const client = await db();
   let query = client
