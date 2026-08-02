@@ -456,7 +456,9 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
   const settings = await loadSmsSettings();
   const { data } = await supabaseAdmin
     .from("otp_verifications")
-    .select("id, code_hash, attempts, max_attempts, expires_at, consumed_at, trace_ref, user_id")
+    .select(
+      "id, code_hash, attempts, max_attempts, expires_at, consumed_at, trace_ref, user_id, provider, integration_id, provider_reference, remote_verification",
+    )
     .eq("phone_e164", input.phone)
     .eq("purpose", input.purpose)
     .is("consumed_at", null)
@@ -473,17 +475,22 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
         expires_at: string;
         trace_ref: string | null;
         user_id: string | null;
+        provider: string | null;
+        integration_id: string | null;
+        provider_reference: string | null;
+        remote_verification: boolean | null;
       }
     | null;
 
   const traceRef = row?.trace_ref ?? newSmsTraceRef();
+  const providerName = row?.provider ?? settings.active_provider;
   const fail = async (
     outcome: "invalid_code" | "expired",
     code: string,
     message: string,
   ): Promise<never> => {
     await logSms({
-      provider: settings.active_provider,
+      provider: providerName,
       purpose: input.purpose,
       action: "verify",
       phone: input.phone,
@@ -513,7 +520,40 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
   }
 
   const submitted = await hmacHex(hashInput(input.purpose, input.phone, input.code.replace(/\D/g, "")));
-  if (!timingSafeEqual(submitted, row!.code_hash)) {
+  // التحقق يجري عند المزوّد نفسه الذي أرسل الرمز عند دعمه ذلك، وإلا محلياً.
+  let verified: boolean;
+  if (row!.remote_verification && row!.integration_id) {
+    const dispatch = await import("@/lib/integrations/otp-dispatch.server");
+    try {
+      const remote = await dispatch.dispatchOtpVerify({
+        integrationId: row!.integration_id,
+        phone: input.phone,
+        code: input.code.replace(/\D/g, ""),
+        referenceId: row!.provider_reference,
+        traceRef,
+      });
+      verified = remote ?? timingSafeEqual(submitted, row!.code_hash);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذّر التحقق من الرمز.";
+      await logSms({
+        provider: providerName,
+        purpose: input.purpose,
+        action: "verify",
+        phone: input.phone,
+        outcome: "failure",
+        errorCode: "VERIFY_FAILED",
+        errorMessage: message,
+        traceRef,
+        ip: input.ip ?? null,
+        device: input.device ?? null,
+      });
+      throw new SmsFlowError("VERIFY_FAILED", message, traceRef);
+    }
+  } else {
+    verified = timingSafeEqual(submitted, row!.code_hash);
+  }
+
+  if (!verified) {
     await supabaseAdmin
       .from("otp_verifications")
       .update({ attempts: row!.attempts + 1 } as never)
@@ -527,7 +567,7 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
     .eq("id", row!.id);
 
   await logSms({
-    provider: settings.active_provider,
+    provider: providerName,
     purpose: input.purpose,
     action: "verify",
     phone: input.phone,
