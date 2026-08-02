@@ -254,9 +254,17 @@ function matchesStoredFile(bytes: Uint8Array, contentType: string): boolean {
  */
 export async function readOriginal(
   filePath: string,
-  options: { allowProcessingFormat?: boolean } = {},
+  options: { allowProcessingFormat?: boolean; documentId?: string } = {},
 ): Promise<{ bytes: Uint8Array; trace: StorageReadTrace }> {
   const db = await admin();
+  const verifiedAt = new Date().toISOString();
+  const updateFileStatus = async (fileStatus: "AVAILABLE" | "FILE_MISSING" | "INVALID_FILE") => {
+    if (!options.documentId) return;
+    await db
+      .from("documents")
+      .update({ file_status: fileStatus, storage_verified_at: verifiedAt })
+      .eq("id", options.documentId);
+  };
   const trace: StorageReadTrace = {
     bucket: "documents",
     storagePath: filePath,
@@ -271,6 +279,9 @@ export async function readOriginal(
   });
   if (error || !data?.signedUrl) {
     trace.errorCode = error?.name ?? "SIGNED_URL_MISSING";
+    if (/not.?found|object/i.test(`${error?.name ?? ""} ${error?.message ?? ""}`)) {
+      await updateFileStatus("FILE_MISSING");
+    }
     throw new StorageReadError("تعذّر إنشاء رابط التخزين المؤقت.", trace);
   }
 
@@ -303,11 +314,13 @@ export async function readOriginal(
   }
   if (!response.ok) {
     trace.errorCode = `HTTP_${response.status}`;
+    if (response.status === 404) await updateFileStatus("FILE_MISSING");
     throw new StorageReadError("الملف غير متاح في المخزن.", trace);
   }
   const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(trace.contentType);
   if (trace.contentType.includes("text/html") || (!supportedViewerType && !options.allowProcessingFormat)) {
     trace.errorCode = "UNSUPPORTED_CONTENT_TYPE";
+    await updateFileStatus("INVALID_FILE");
     throw new StorageReadError("نوع الملف المسترجع غير صالح للعرض.", trace);
   }
 
@@ -315,8 +328,11 @@ export async function readOriginal(
   const validSignature = options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
   if (!bytes.length || beginsWithHtml(bytes) || !validSignature) {
     trace.errorCode = beginsWithHtml(bytes) ? "HTML_BODY_REJECTED" : "FILE_SIGNATURE_MISMATCH";
+    await updateFileStatus("INVALID_FILE");
     throw new StorageReadError("محتوى الملف المسترجع غير صالح للعرض.", trace);
   }
+
+  await updateFileStatus("AVAILABLE");
 
   console.info("[secure-document-storage]", {
     bucket: trace.bucket,
@@ -335,7 +351,7 @@ export async function loadDocumentForStamp(documentId: string) {
   const db = await admin();
   const { data, error } = await db
     .from("documents")
-    .select("id, organization_id, file_name, file_path, file_type, is_confidential, document_category")
+    .select("id, organization_id, file_name, file_path, file_type, file_status, is_confidential, document_category")
     .eq("id", documentId)
     .maybeSingle();
   if (error || !data) throw new Error("المستند غير موجود.");

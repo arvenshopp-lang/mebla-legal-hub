@@ -111,6 +111,8 @@ function Page() {
                           <span>{d.file_name}</span>
                         </div>
                         {d.description && <div className="text-xs text-muted-foreground">{d.description}</div>}
+                        {d.file_status === "FILE_MISSING" && <Badge tone="red">الملف مفقود — يلزم إعادة الرفع</Badge>}
+                        {d.file_status === "INVALID_FILE" && <Badge tone="red">ملف غير صالح</Badge>}
                       </Td>
                       <Td>{d.case?.case_title ?? "—"}</Td>
                       <Td>{d.client?.full_name ?? "—"}</Td>
@@ -134,11 +136,13 @@ function Page() {
                               <RetryButton doc={d as DocumentRow} />
                             </>
                           )}
-                          <SecureDocActions
-                            doc={d as SecureDoc}
-                            engine={secure}
-                            onShare={(target) => setSharing(target)}
-                          />
+                          {d.file_status !== "FILE_MISSING" && d.file_status !== "INVALID_FILE" && (
+                            <SecureDocActions
+                              doc={d as SecureDoc}
+                              engine={secure}
+                              onShare={(target) => setSharing(target)}
+                            />
+                          )}
                           {canManage(activeRole) && <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === d.id} onClick={() => setDeleting(d)}><Trash2 className="h-4 w-4" /></IconBtn>}
                         </div>
                       </Td>
@@ -214,6 +218,8 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       file_path: path,
       file_type: file.type || null,
       file_size: file.size,
+      file_status: "AVAILABLE",
+      storage_verified_at: new Date().toISOString(),
       document_category: category || null,
       description: description || null,
       is_confidential: confidential,

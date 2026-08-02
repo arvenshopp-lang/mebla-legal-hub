@@ -413,9 +413,19 @@ export async function reprocessDocument(args: {
 }) {
   let blob: Blob;
   try {
-    const response = await fetch(args.signedUrl);
+    const endpoint = new URL(args.signedUrl, window.location.origin);
+    const response = await fetch(endpoint, {
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { Accept: "application/octet-stream, application/pdf, image/*, application/json" },
+    });
     if (!response.ok) throw new Error("download");
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    if (contentType.includes("text/html") || contentType.includes("application/json")) {
+      throw new Error("invalid-content-type");
+    }
     blob = await response.blob();
+    if (!blob.size) throw new Error("empty-file");
   } catch {
     await updateJob(args.documentId, {
       status: "failed",

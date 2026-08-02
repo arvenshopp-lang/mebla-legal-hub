@@ -73,7 +73,7 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle(),
+      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")
@@ -85,6 +85,11 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
       org?.name ?? "",
       profile?.full_name ?? "",
       data.kind === "process" ? "view" : data.kind,
+      {
+        email: profile?.email ?? "",
+        sessionId: data.sessionId ?? "",
+        openedAt: new Date(),
+      },
     );
 
     const ticket = await secure.issueAccessToken({
@@ -165,7 +170,7 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle(),
+      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")
@@ -173,7 +178,10 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
 
-    const lines = shared.watermarkLinesFor(org?.name ?? "", profile?.full_name ?? "", "share");
+    const lines = shared.watermarkLinesFor(org?.name ?? "", profile?.full_name ?? "", "share", {
+      email: profile?.email ?? "",
+      openedAt: new Date(),
+    });
     const ticket = await secure.issueAccessToken({
       organizationId: data.organizationId,
       documentId: doc.id,
