@@ -82,7 +82,7 @@ function Page() {
                         </div>
                       </Td>
                       <Td>
-                        <Badge tone={row.classification === "internal" ? "muted" : "warning"}>
+                        <Badge tone={row.classification === "internal" ? "muted" : "warn"}>
                           {CLASSIFICATION_LABELS[row.classification as Classification] ?? row.classification}
                         </Badge>
                       </Td>
