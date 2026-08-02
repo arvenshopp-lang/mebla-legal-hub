@@ -2,9 +2,16 @@
  * منطق قراءة/كتابة الحقول الحساسة — خادم فقط.
  * كل دالة هنا تعمل بهوية المستخدم الموقّع (RLS مطبّق)، ولا تُستدعى من المتصفح.
  */
-import { getRequest } from "@tanstack/react-start/server";
 import { buildPiiColumns, decryptPii } from "./crypto/pii.server";
 import { maskPiiValue, type PiiField } from "./crypto/pii.shared";
+import { PII_REVEAL_LIMITS } from "./security/security-policy";
+import {
+  assuranceLevel,
+  newTraceRef,
+  requestSecurityMeta,
+  requireSensitiveAccess,
+} from "./security/sensitive-guard.server";
+import { mfaRequiredMessage } from "./security/security-policy";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
@@ -22,7 +29,7 @@ const ENTITY_LABEL: Record<PiiEntity, string> = {
 };
 
 /** الأدوار المسموح لها بكشف القيمة الصريحة. المشاهد لا يرى إلا القناع. */
-const REVEAL_ROLES = new Set(["owner", "admin", "lawyer", "legal_assistant"]);
+const REVEAL_ROLES = ["owner", "admin", "lawyer", "legal_assistant"] as const;
 
 export async function requireMemberRole(
   supabase: Client,
@@ -76,7 +83,74 @@ export async function maskedPiiFor(
   return out;
 }
 
-/** كشف القيمة الصريحة: تحقق دور + سجل تدقيق غير قابل للتعديل قبل الإرجاع. */
+type RevealOutcome = "success" | "denied" | "rate_limited" | "mfa_required";
+
+/** كتابة سجل الكشف — يشمل المحاولات المرفوضة كي لا تمر محاولة بلا أثر. */
+async function logReveal(
+  supabase: Client,
+  input: {
+    organizationId: string;
+    entity: PiiEntity;
+    entityId: string;
+    field: PiiField;
+    reason: string | null;
+    keyVersion: number | null;
+    outcome: RevealOutcome;
+    traceRef: string;
+    aal: string;
+  },
+) {
+  const meta = requestSecurityMeta();
+  await supabase.from("pii_access_logs").insert({
+    organization_id: input.organizationId,
+    entity_type: ENTITY_LABEL[input.entity],
+    entity_id: input.entityId,
+    field: input.field,
+    reason: input.reason?.slice(0, 300) ?? null,
+    key_version: input.keyVersion,
+    outcome: input.outcome,
+    trace_ref: input.traceRef,
+    aal: input.aal,
+    ip: meta.ip,
+    user_agent: meta.userAgent,
+  });
+}
+
+/** حد معدّل الكشف لكل مستخدم — يمنع الكشف الجماعي أو المتكرر. */
+async function assertRevealRate(userId: string): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const now = Date.now();
+  const windows: { since: string; max: number; label: string }[] = [
+    {
+      since: new Date(now - 10 * 60 * 1000).toISOString(),
+      max: PII_REVEAL_LIMITS.perTenMinutes,
+      label: "خلال عشر دقائق",
+    },
+    {
+      since: new Date(now - 60 * 60 * 1000).toISOString(),
+      max: PII_REVEAL_LIMITS.perHour,
+      label: "خلال ساعة",
+    },
+  ];
+  for (const window of windows) {
+    const { count } = await supabaseAdmin
+      .from("pii_access_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("outcome", "success")
+      .gte("created_at", window.since);
+    if ((count ?? 0) >= window.max) {
+      throw new Error(
+        `تجاوزت الحد المسموح لكشف البيانات الحساسة (${window.max} عملية ${window.label}). حاول بعد قليل.`,
+      );
+    }
+  }
+}
+
+/**
+ * كشف القيمة الصريحة. لا تُرسَل القيمة للمتصفح إلا بعد: عضوية المكتب + دور مخوّل +
+ * جلسة AAL2 + سبب إلزامي + عدم تجاوز حد المعدّل. وكل محاولة — ناجحة أو مرفوضة — تُسجَّل.
+ */
 export async function revealPiiValue(
   supabase: Client,
   userId: string,
@@ -86,11 +160,50 @@ export async function revealPiiValue(
     entityId: string;
     field: PiiField;
     reason?: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    claims?: Record<string, any> | null;
   },
 ): Promise<string> {
+  const traceRef = newTraceRef("MR");
+  const aal = assuranceLevel(input.claims ?? null);
+  const reason = (input.reason ?? "").trim();
+
+  const deny = async (outcome: RevealOutcome, message: string): Promise<never> => {
+    try {
+      await logReveal(supabase, {
+        organizationId: input.organizationId,
+        entity: input.entity,
+        entityId: input.entityId,
+        field: input.field,
+        reason: reason || null,
+        keyVersion: null,
+        outcome,
+        traceRef,
+        aal,
+      });
+    } catch {
+      /* لا نُفشِل رسالة الرفض إذا تعذّر التسجيل */
+    }
+    throw new Error(`${message} (مرجع: ${traceRef})`);
+  };
+
   const role = await requireMemberRole(supabase, input.organizationId, userId);
-  if (!REVEAL_ROLES.has(role)) {
-    throw new Error("دورك في المكتب لا يسمح بكشف البيانات الحساسة.");
+  if (!REVEAL_ROLES.includes(role as (typeof REVEAL_ROLES)[number])) {
+    return deny("denied", "دورك في المكتب لا يسمح بكشف البيانات الحساسة.");
+  }
+  if (aal !== "aal2") {
+    return deny("mfa_required", mfaRequiredMessage("pii.reveal"));
+  }
+  if (reason.length < PII_REVEAL_LIMITS.minReasonLength) {
+    return deny(
+      "denied",
+      `سبب الكشف إلزامي (${PII_REVEAL_LIMITS.minReasonLength} أحرف على الأقل) ويُسجَّل في سجل التدقيق.`,
+    );
+  }
+  try {
+    await assertRevealRate(userId);
+  } catch (error) {
+    return deny("rate_limited", error instanceof Error ? error.message : "تجاوزت الحد المسموح.");
   }
 
   const { data, error } = await supabase
@@ -99,37 +212,29 @@ export async function revealPiiValue(
     .eq("organization_id", input.organizationId)
     .eq("id", input.entityId)
     .maybeSingle();
-  if (error || !data) throw new Error("السجل غير موجود.");
+  if (error || !data) return deny("denied", "السجل غير موجود داخل هذا المكتب.");
 
   const value = await decryptPii(
     data[`${input.field}_enc`] as string | null,
     input.organizationId,
     input.field,
   );
-  if (!value) throw new Error("لا توجد قيمة محفوظة لهذا الحقل.");
+  if (!value) return deny("denied", "لا توجد قيمة محفوظة لهذا الحقل.");
 
-  const request = (() => {
-    try {
-      return getRequest();
-    } catch {
-      return null;
-    }
-  })();
-  const headers = request?.headers;
-
-  await supabase.from("pii_access_logs").insert({
-    organization_id: input.organizationId,
-    entity_type: ENTITY_LABEL[input.entity],
-    entity_id: input.entityId,
+  await logReveal(supabase, {
+    organizationId: input.organizationId,
+    entity: input.entity,
+    entityId: input.entityId,
     field: input.field,
-    reason: input.reason?.slice(0, 300) ?? null,
-    key_version: (data.pii_key_version as number | null) ?? null,
-    ip:
-      headers?.get("cf-connecting-ip") ??
-      headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null,
-    user_agent: headers?.get("user-agent") ?? null,
+    reason,
+    keyVersion: (data.pii_key_version as number | null) ?? null,
+    outcome: "success",
+    traceRef,
+    aal,
   });
 
   return value;
 }
+
+/** حارس مُعاد تصديره لاستخدامه من دوال الخادم الحساسة الأخرى. */
+export { requireSensitiveAccess };

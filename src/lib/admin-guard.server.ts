@@ -5,7 +5,9 @@
  */
 import { getRequest } from "@tanstack/react-start/server";
 import type { AdminPermission } from "@/lib/admin-permissions";
-import { expandPermissions } from "@/lib/admin-permissions";
+import { expandPermissions, permissionRequiresAal2 } from "@/lib/admin-permissions";
+import { assuranceLevelFromRequest } from "@/lib/security/sensitive-guard.server";
+import { MFA_REQUIRED_CODE } from "@/lib/security/security-policy";
 
 export type StaffRow = {
   id: string;
@@ -36,6 +38,11 @@ export async function requireStaff(
   if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
   const staff = data as StaffRow | null;
   if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
+  if (permissionRequiresAal2(permission) && assuranceLevelFromRequest() !== "aal2") {
+    throw new Error(
+      `${MFA_REQUIRED_CODE}: هذه عملية حساسة داخل لوحة الإدارة وتتطلب تحققاً بخطوتين مؤكَّداً في هذه الجلسة. فعّله من إعدادات حسابك ← الأمان.`,
+    );
+  }
   if (staff.role === "super_admin") return staff;
   const all = expandPermissions([...(staff.permissions ?? []), ...(staff.platform_roles?.permissions ?? [])]);
   if (!all.includes(permission)) throw new Error("لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.");

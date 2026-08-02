@@ -146,7 +146,7 @@ export const getMaskedPii = createServerFn({ method: "POST" })
     return maskedPiiFor(context.supabase, data.organizationId, data.entity, data.ids);
   });
 
-/** كشف القيمة الصريحة مع تسجيل تدقيق إلزامي. */
+/** كشف القيمة الصريحة: يتطلب AAL2 وسبباً إلزامياً، ويُسجَّل في سجل التدقيق. */
 export const revealPii = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -156,7 +156,7 @@ export const revealPii = createServerFn({ method: "POST" })
         entity,
         entityId: z.string().uuid(),
         field: piiField,
-        reason: z.string().trim().max(300).optional(),
+        reason: z.string().trim().min(8, "سبب الكشف إلزامي").max(300),
       })
       .parse(d),
   )
@@ -167,7 +167,8 @@ export const revealPii = createServerFn({ method: "POST" })
       entity: data.entity,
       entityId: data.entityId,
       field: data.field,
-      reason: data.reason ?? null,
+      reason: data.reason,
+      claims: context.claims,
     });
     return { value };
   });
