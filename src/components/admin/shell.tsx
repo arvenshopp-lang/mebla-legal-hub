@@ -58,6 +58,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" },
       { to: "/mehla-admin/settings", label: "إعدادات المنصة", Icon: Settings, permission: "settings.manage" },
       { to: "/mehla-admin/seo", label: "إدارة SEO", Icon: Search, permission: "seo.manage" },
+      { to: "/mehla-admin/design", label: "تصميم المنصة", Icon: Palette, permission: "settings.manage" },
     ],
   },
   {
