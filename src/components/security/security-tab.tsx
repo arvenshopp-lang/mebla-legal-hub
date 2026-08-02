@@ -165,6 +165,7 @@ function MfaCard() {
         onConfirm={() => removing && remove.mutate(removing)}
         loading={remove.isPending}
         title="إلغاء التحقق بخطوتين"
+        confirmLabel="إلغاء التحقق"
         message="سيصبح حسابك محمياً بكلمة المرور فقط. هل ترغب في المتابعة؟"
       />
     </Card>
