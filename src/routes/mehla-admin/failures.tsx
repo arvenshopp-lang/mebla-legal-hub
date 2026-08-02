@@ -154,7 +154,7 @@ function FailuresPage() {
                       </button>
                     </Td>
                     <Td>
-                      <Badge tone="warning">{SURFACE_LABELS[row.surface] ?? row.surface}</Badge>
+                      <Badge tone="warn">{SURFACE_LABELS[row.surface] ?? row.surface}</Badge>
                     </Td>
                     <Td className="text-left text-[12px]">{row.action}</Td>
                     <Td className="max-w-[280px] text-[12px] text-muted-foreground">
