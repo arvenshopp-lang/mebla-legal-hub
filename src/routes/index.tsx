@@ -675,48 +675,71 @@ function CTA({ registerHref }: { registerHref: string }) {
   );
 }
 
-function Footer({ loginHref, registerHref }: { loginHref: string; registerHref: string }) {
+const FOOTER_LINKS: Array<{ href: string; label: string }> = [
+  { href: "#product", label: "المنتج" },
+  { href: "#capabilities", label: "المزايا" },
+  { href: "#security", label: "الأمان" },
+  { href: "/docs", label: "مركز المساعدة" },
+  { href: "/privacy", label: "سياسة الخصوصية" },
+  { href: "/terms", label: "الشروط والأحكام" },
+  { href: "mailto:support@mehlalex.com", label: "تواصل معنا" },
+];
+
+function Footer({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   return (
     <footer className="border-t border-border bg-surface">
-      <div className="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-[16px] font-bold">
+      <div className="container-page flex flex-col items-center gap-7 py-12 text-center">
+        <div className="max-w-xl">
+          <p className="text-[17px] font-bold">
             مِهلة <span className="text-text-muted">·</span> MEHLA
           </p>
-          <p className="measure mt-3 text-body-sm text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-lg text-body-sm text-muted-foreground">
             منصة سعودية لإدارة الممارسة القانونية: القضايا، الجلسات، المهل، المستندات، ومتابعة العملاء.
           </p>
         </div>
-        <nav aria-label="روابط المنصة">
-          <p className="text-label mb-3">المنصة</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href="#product">المنتج</a></li>
-            <li><a className="transition hover:text-foreground" href="#capabilities">المزايا</a></li>
-            <li><a className="transition hover:text-foreground" href="#how">كيف تعمل</a></li>
-            <li><a className="transition hover:text-foreground" href="#workflow">سير العمل</a></li>
-            <li><a className="transition hover:text-foreground" href="#security">الأمان</a></li>
-          </ul>
-        </nav>
-        <nav aria-label="روابط الخدمات">
-          <p className="text-label mb-3">الخدمات</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href="/track">متابعة قضية</a></li>
-            <li><a className="transition hover:text-foreground" href="/upload">رفع مستندات</a></li>
-            <li><a className="transition hover:text-foreground" href="/docs">مركز المساعدة</a></li>
-          </ul>
-        </nav>
-        <nav aria-label="روابط الحساب">
-          <p className="text-label mb-3">الحساب</p>
-          <ul className="space-y-2 text-body-sm text-muted-foreground">
-            <li><a className="transition hover:text-foreground" href={loginHref}>تسجيل الدخول</a></li>
-            <li><a className="transition hover:text-foreground" href={registerHref}>إنشاء حساب</a></li>
+
+        <div className="flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row">
+          <a
+            href={trackHref}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted sm:w-auto"
+          >
+            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+            متابعة القضية
+          </a>
+          <a
+            href={registerHref}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition hover:bg-primary-hover sm:w-auto"
+          >
+            إنشاء حساب المكتب
+          </a>
+          <a
+            href={loginHref}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] px-5 text-[14px] font-medium text-muted-foreground transition hover:text-foreground sm:w-auto"
+          >
+            تسجيل الدخول
+          </a>
+        </div>
+
+        <nav aria-label="روابط الفوتر" className="w-full">
+          <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-body-sm text-muted-foreground">
+            {FOOTER_LINKS.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  className="inline-flex min-h-11 items-center transition hover:text-foreground"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
+
       <div className="border-t border-border">
-        <div className="container-page flex flex-col gap-2 py-5 text-[12.5px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} مِهلة — جميع الحقوق محفوظة.</p>
-          <p>mehlalex.com</p>
+        <div className="container-page flex flex-col items-center gap-1 py-5 text-center text-[12.5px] text-muted-foreground">
+          <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
+          <p dir="ltr">mehlalex.com</p>
         </div>
       </div>
     </footer>
@@ -729,19 +752,21 @@ function MehlaLanding() {
   useReveal();
   const loginHref = useSurfaceHref("/login");
   const registerHref = useSurfaceHref("/register");
+  const trackHref = useSurfaceHref("/track");
+  const links = { loginHref, registerHref, trackHref };
 
   return (
     <div dir="rtl" className="min-h-dvh bg-background text-foreground">
-      <Header loginHref={loginHref} registerHref={registerHref} />
+      <Header {...links} />
       <main id="product">
-        <Hero loginHref={loginHref} registerHref={registerHref} />
+        <Hero {...links} />
         <Capabilities />
         <HowItWorks />
         <Workflow />
         <Security />
         <CTA registerHref={registerHref} />
       </main>
-      <Footer loginHref={loginHref} registerHref={registerHref} />
+      <Footer {...links} />
     </div>
   );
 }
