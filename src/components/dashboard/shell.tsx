@@ -42,6 +42,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/clients", label: "العملاء", Icon: Users },
       { to: "/documents", label: "المستندات", Icon: FileText },
+      { to: "/search", label: "البحث في المستندات", Icon: FileSearch },
     ],
   },
   {
