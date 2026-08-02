@@ -10,7 +10,7 @@ import { watermarkFontBytes } from "./watermark-font";
  */
 
 const ANGLE = -35;
-const OPACITY = 0.07;
+const OPACITY = 0.12;
 const TILE_X = 260;
 const TILE_Y = 190;
 const FONT_SIZE = 11;
