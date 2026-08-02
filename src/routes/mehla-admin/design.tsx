@@ -374,7 +374,7 @@ function DesignStudioPage() {
   });
 
   const rollbackMutation = useMutation({
-    mutationFn: async () => rollback({ data: undefined as never }),
+    mutationFn: async () => rollback({} as never),
     onSuccess: async () => {
       toast.success("تم استرجاع التصميم المنشور السابق.");
       await queryClient.invalidateQueries({ queryKey: ["design-studio"] });
