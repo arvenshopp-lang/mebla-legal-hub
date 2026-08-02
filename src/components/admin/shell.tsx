@@ -1,7 +1,7 @@
-import {
-  AlertTriangle, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Gauge,
   CreditCard,
   Layers,
