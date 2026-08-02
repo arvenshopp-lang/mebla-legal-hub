@@ -125,7 +125,7 @@ export async function sendIntegrationTest(
   // الاختبار يجري على التكامل المحدد نفسه، لا على التكامل المعتمد.
   const { getConnector } = await import("./connectors/registry.server");
   const contextSource = active && active.view.id === integrationId ? active : null;
-  const context = contextSource?.context ?? (await engine.__buildContextForTest(integrationId));
+  const context = contextSource?.context ?? (await engine.buildContextForIntegration(integrationId));
   const connector = contextSource?.connector ?? getConnector(context.adapterType);
 
   try {
