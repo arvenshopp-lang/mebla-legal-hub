@@ -167,6 +167,7 @@ function Page() {
 function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose: () => void; orgId: string; userId?: string }) {
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
+  const { indexUploaded } = useDocumentIndexing();
   const [file, setFile] = useState<File | null>(null);
   const [caseId, setCaseId] = useState("");
   const [clientId, setClientId] = useState("");
@@ -203,7 +204,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type });
     if (upErr) { setUploading(false); return toast.error("تعذّر الرفع", { description: upErr.message }); }
     setProgress(70);
-    const { error: dbErr } = await supabase.from("documents").insert({
+    const { data: inserted, error: dbErr } = await supabase.from("documents").insert({
       organization_id: orgId,
       case_id: caseId || null,
       client_id: clientId || null,
@@ -215,7 +216,7 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       description: description || null,
       is_confidential: confidential,
       uploaded_by: userId,
-    });
+    }).select("id").single();
     setUploading(false); setProgress(100);
     if (dbErr) {
       await supabase.storage.from("documents").remove([path]);
@@ -231,6 +232,10 @@ function UploadDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
     });
     qc.invalidateQueries({ queryKey: ["documents"] });
     qc.invalidateQueries({ queryKey: ["case-documents"] });
+    // الفهرسة تعمل في الخلفية بعد إغلاق النافذة حتى لا تُعطّل المستخدم.
+    if (inserted?.id) {
+      void indexUploaded({ organizationId: orgId, documentId: inserted.id, file });
+    }
     reset(); onClose();
   };
 
