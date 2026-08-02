@@ -14,8 +14,8 @@ import {
 } from "@/lib/list-utils";
 import { Download, Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { ExportStampedButton } from "@/components/print/print-controls";
-import { usePrintEngine } from "@/lib/print/print-engine";
 import { isStampableForExport } from "@/lib/print/print.shared";
+import { canDo } from "@/lib/doc-permissions";
 import { describeMutationError } from "@/lib/subscription.shared";
 import {
   ExtractedTextDialog, ProcessingBadge, RetryButton, useDocumentIndexing, useProcessingJobs,
@@ -32,7 +32,6 @@ const MAX_SIZE = MAX_UPLOAD_SIZE;
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
-  const { can: canPrint } = usePrintEngine();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -148,7 +147,9 @@ function Page() {
                               <RetryButton doc={d as DocumentRow} />
                             </>
                           )}
-                          <IconBtn aria-label="تحميل" title="تحميل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
+                          {canDo(activeRole, "print.download") && (
+                            <IconBtn aria-label="تحميل الأصل" title="تحميل الأصل" loading={downloadingId === d.id} onClick={() => download(d)}><Download className="h-4 w-4" /></IconBtn>
+                          )}
                           {isStampableForExport(d.file_name, d.file_type) ? (
                             <ExportStampedButton
                               file={d}
