@@ -109,7 +109,7 @@ export const getOcrQuota = createServerFn({ method: "POST" })
     const overview = await loadOverview(context.supabase, data.organizationId);
     return {
       limit: overview.plan.ocr_pages_monthly,
-      used: overview.usage.ocr_pages_month ?? 0,
+      used: overview.usage.ocr_pages ?? 0,
       searchEnabled: overview.plan.pdf_search_enabled,
     };
   });
