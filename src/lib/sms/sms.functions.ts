@@ -60,8 +60,20 @@ export const getSmsPublicConfig = createServerFn({ method: "GET" }).handler(
 
 /** طلب رمز تحقق لرقم جوال (تسجيل جديد أو توثيق لاحق). */
 export const requestPhoneCode = createServerFn({ method: "POST" })
-  .inputValidator((input: { phone: string; purpose: z.infer<typeof purposeSchema>; email?: string }) =>
-    z.object({ phone: phoneSchema, purpose: purposeSchema, email: z.string().trim().email().max(180).optional() }).parse(input),
+  .inputValidator((input: {
+    phone: string;
+    purpose: z.infer<typeof purposeSchema>;
+    email?: string;
+    idempotencyKey?: string;
+  }) =>
+    z
+      .object({
+        phone: phoneSchema,
+        purpose: purposeSchema,
+        email: z.string().trim().email().max(180).optional(),
+        idempotencyKey: z.string().trim().min(8).max(80).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const otp = await import("./otp.server");
@@ -74,6 +86,7 @@ export const requestPhoneCode = createServerFn({ method: "POST" })
       phone: parsed.e164,
       purpose: data.purpose,
       email: data.email ?? null,
+      idempotencyKey: data.idempotencyKey ?? null,
       ip: meta.ip,
       device: meta.device,
       userAgent: meta.userAgent,
