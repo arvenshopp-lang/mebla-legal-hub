@@ -119,15 +119,17 @@ export async function listDrafts() {
     .from("design_drafts")
     .select("page_key, design_tokens_json, custom_css, updated_at, updated_by, revision_number")
     .eq("theme_id", themeId);
-  return (data ?? []) as {
-    page_key: string;
-    design_tokens_json: Record<string, unknown>;
-    custom_css: string;
-    updated_at: string;
-    updated_by: string | null;
-    revision_number: number;
-  }[];
+  return (data ?? []) as DraftRow[];
 }
+
+export type DraftRow = {
+  page_key: string;
+  design_tokens_json: { tokens?: Record<string, string>; meta?: Partial<ThemeMeta> } | null;
+  custom_css: string;
+  updated_at: string;
+  updated_by: string | null;
+  revision_number: number;
+};
 
 export async function listVersions(limit = 30) {
   const client = await db();
