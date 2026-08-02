@@ -244,15 +244,15 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
             <input value={form.company_name ?? ""} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className={inputCls} />
           </FormField>
         )}
-        {form.client_type === "individual" ? (
-          <FormField label="رقم الهوية">
-            <input value={form.national_id ?? ""} onChange={(e) => setForm({ ...form, national_id: e.target.value })} className={inputCls} />
-          </FormField>
-        ) : (
-          <FormField label="السجل التجاري">
-            <input value={form.commercial_registration ?? ""} onChange={(e) => setForm({ ...form, commercial_registration: e.target.value })} className={inputCls} />
-          </FormField>
-        )}
+        <PiiSecureInput
+          label={piiField === "national_id" ? "رقم الهوية" : "السجل التجاري"}
+          mask={piiMask}
+          value={piiEdit?.field === piiField ? piiEdit.value : ""}
+          editing={piiEdit?.field === piiField || (piiMask === "—" && !editing)}
+          onChange={(next) => setPiiEdit({ field: piiField, value: next })}
+          onStartEdit={() => setPiiEdit({ field: piiField, value: "" })}
+          onCancelEdit={() => setPiiEdit(null)}
+        />
         <FormField label="الجوال">
           <input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
         </FormField>
