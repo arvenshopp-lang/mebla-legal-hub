@@ -12,6 +12,14 @@ export default defineConfig({
   // يسمح باختبار بنية النطاقات الفرعية محلياً (app/client/upload/status/api/docs/www)
   vite: {
     server: { allowedHosts: [`.${ROOT_DOMAIN}`] },
+    resolve: {
+      alias: [
+        // pdf-lib يعتمد على tslib بصيغة CommonJS، وحزمة عامل الحوسبة الطرفية
+        // تفشل عند تفكيك صادراته (`__extends`) ما يعطّل كل مسارات الختم والطباعة
+        // في بيئة الإنتاج. الربط بنسخة ESM يعيد الصادرات المسماة بشكل صحيح.
+        { find: /^tslib$/, replacement: "tslib/tslib.es6.js" },
+      ],
+    },
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
