@@ -3,10 +3,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Ban, Plus } from "lucide-react";
+import { Ban, Eye, PauseCircle, PlayCircle, Plus, RefreshCcw } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
-import { activateSubscription, cancelSubscription } from "@/lib/admin.functions";
+import {
+  activateSubscription,
+  cancelSubscription,
+  getSubscriptionAdminDetail,
+  resumeSubscription,
+  setSubscriptionAutoRenew,
+  suspendSubscription,
+} from "@/lib/admin.functions";
 import { SUBSCRIPTION_STATUS_LABELS } from "@/lib/admin-permissions";
 import {
   Badge,
@@ -23,7 +30,7 @@ import {
   inputCls,
   useDebounced,
 } from "@/lib/list-utils";
-import { fmtDate } from "@/lib/enums";
+import { fmtDate, fmtDateTime, fmtSize } from "@/lib/enums";
 
 export const Route = createFileRoute("/mehla-admin/subscriptions")({
   head: () => ({ meta: [{ title: "الاشتراكات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -44,8 +51,12 @@ function SubscriptionsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [cancelling, setCancelling] = useState<{ id: string; email: string } | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState<{ id: string; email: string } | null>(null);
   const debounced = useDebounced(search);
   const cancelFn = useServerFn(cancelSubscription);
+  const resumeFn = useServerFn(resumeSubscription);
+  const autoRenewFn = useServerFn(setSubscriptionAutoRenew);
 
   const { data: rows, isLoading, isFetching } = useQuery({
     queryKey: ["admin-subscriptions", debounced, statusFilter],
@@ -67,6 +78,24 @@ function SubscriptionsPage() {
       setCancelling(null);
     },
     onError: (e: Error) => toast.error("تعذّر الإلغاء", { description: e.message }),
+  });
+
+  const resume = useMutation({
+    mutationFn: async (id: string) => resumeFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("تم إعادة تفعيل الاشتراك");
+      qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+    },
+    onError: (e: Error) => toast.error("تعذّر إعادة التفعيل", { description: e.message }),
+  });
+
+  const toggleRenew = useMutation({
+    mutationFn: async (v: { id: string; autoRenew: boolean }) => autoRenewFn({ data: v }),
+    onSuccess: () => {
+      toast.success("تم تحديث التجديد التلقائي");
+      qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+    },
+    onError: (e: Error) => toast.error("تعذّر التحديث", { description: e.message }),
   });
 
   return (
@@ -116,13 +145,19 @@ function SubscriptionsPage() {
                 <Th>البداية</Th>
                 <Th>الانتهاء</Th>
                 <Th>الحالة</Th>
+                <Th>التجديد التلقائي</Th>
                 <Th className="text-left">إجراءات</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows!.map((s) => {
                 const expired = new Date(String(s.ends_at)) < new Date();
-                const status = s.status === "active" && expired ? "expired" : String(s.status);
+                const suspended = !!s.suspended_at;
+                const status = suspended
+                  ? "suspended"
+                  : s.status === "active" && expired
+                    ? "expired"
+                    : String(s.status);
                 return (
                   <tr key={String(s.id)} className="hover:bg-surface-muted/60">
                     <Td>{String(s.email)}</Td>
@@ -133,19 +168,68 @@ function SubscriptionsPage() {
                     <Td>{fmtDate(String(s.starts_at))}</Td>
                     <Td>{fmtDate(String(s.ends_at))}</Td>
                     <Td>
-                      <Badge tone={status === "active" ? "green" : status === "expired" ? "red" : "muted"}>
-                        {SUBSCRIPTION_STATUS_LABELS[status] ?? status}
+                      <Badge
+                        tone={
+                          status === "active"
+                            ? "green"
+                            : status === "expired"
+                              ? "red"
+                              : status === "suspended"
+                                ? "warn"
+                                : "muted"
+                        }
+                      >
+                        {status === "suspended" ? "موقوف" : (SUBSCRIPTION_STATUS_LABELS[status] ?? status)}
                       </Badge>
+                      {suspended && s.suspension_reason && (
+                        <span className="mt-1 block max-w-[220px] truncate text-[11px] text-muted-foreground">
+                          {String(s.suspension_reason)}
+                        </span>
+                      )}
+                    </Td>
+                    <Td>
+                      <button
+                        onClick={() => toggleRenew.mutate({ id: String(s.id), autoRenew: !s.auto_renew })}
+                        className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
+                        {s.auto_renew ? "مفعّل" : "غير مفعّل"}
+                      </button>
                     </Td>
                     <Td className="text-left">
-                      {s.status === "active" && (
+                      <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => setCancelling({ id: String(s.id), email: String(s.email) })}
-                          className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
+                          onClick={() => setDetailId(String(s.id))}
+                          className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
                         >
-                          <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
+                          <Eye className="h-3.5 w-3.5" aria-hidden /> تفاصيل
                         </button>
-                      )}
+                        {suspended ? (
+                          <button
+                            onClick={() => resume.mutate(String(s.id))}
+                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-success hover:bg-success-soft"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5" aria-hidden /> إعادة تفعيل
+                          </button>
+                        ) : (
+                          s.status === "active" && (
+                            <button
+                              onClick={() => setSuspending({ id: String(s.id), email: String(s.email) })}
+                              className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-warning hover:bg-warning-soft"
+                            >
+                              <PauseCircle className="h-3.5 w-3.5" aria-hidden /> إيقاف
+                            </button>
+                          )
+                        )}
+                        {s.status === "active" && (
+                          <button
+                            onClick={() => setCancelling({ id: String(s.id), email: String(s.email) })}
+                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
+                          >
+                            <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
+                          </button>
+                        )}
+                      </div>
                     </Td>
                   </tr>
                 );
@@ -156,6 +240,15 @@ function SubscriptionsPage() {
       )}
 
       <ActivateDialog open={open} onClose={() => setOpen(false)} />
+      <DetailDialog id={detailId} onClose={() => setDetailId(null)} />
+      <SuspendDialog
+        target={suspending}
+        onClose={() => setSuspending(null)}
+        onDone={() => {
+          setSuspending(null);
+          qc.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+        }}
+      />
       <ConfirmDialog
         open={!!cancelling}
         onClose={() => setCancelling(null)}
