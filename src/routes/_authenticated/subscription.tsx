@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { LimitBar, FeatureLine, NoticeBanner, StateBadge } from "@/components/subscription/subscription-ui";
+import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
-import { supabase } from "@/integrations/supabase/client";
+import { signInvoiceUrl } from "@/lib/subscription.functions";
 import { Badge, Btn, DataCard, EmptyState, ErrorBlock, SectionCard, SectionLoader, Td, Th } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
@@ -38,6 +41,7 @@ const HISTORY_TONE: Record<string, "green" | "red" | "muted" | "info" | "warn"> 
 };
 
 function SubscriptionPage() {
+  const { activeOrgId } = useAuth();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
 
   return (
@@ -240,7 +244,7 @@ function SubscriptionPage() {
                         </Td>
                         <Td className="text-left">
                           {inv.pdf_path ? (
-                            <InvoiceDownload path={inv.pdf_path} />
+                            <InvoiceDownload invoiceId={inv.id} organizationId={activeOrgId!} />
                           ) : (
                             <span className="text-[12px] text-text-muted">—</span>
                           )}
@@ -272,17 +276,28 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InvoiceDownload({ path }: { path: string }) {
+function InvoiceDownload({
+  invoiceId,
+  organizationId,
+}: {
+  invoiceId: string;
+  organizationId: string;
+}) {
+  const sign = useServerFn(signInvoiceUrl);
+  const [busy, setBusy] = useState(false);
   const download = async () => {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, 60);
-    if (error || !data?.signedUrl) {
+    setBusy(true);
+    try {
+      const { url } = await sign({ data: { organizationId, invoiceId } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
       toast.error("تعذّر تحميل الفاتورة", { description: "حاول مرة أخرى أو تواصل مع الدعم." });
-      return;
+    } finally {
+      setBusy(false);
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
   return (
-    <Btn variant="ghost" size="sm" onClick={download}>
+    <Btn variant="ghost" size="sm" onClick={() => void download()} loading={busy}>
       <Download className="h-3.5 w-3.5" aria-hidden /> PDF
     </Btn>
   );

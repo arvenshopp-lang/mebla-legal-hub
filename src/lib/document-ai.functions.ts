@@ -61,36 +61,49 @@ export const ocrDocumentPage = createServerFn({ method: "POST" })
     };
   });
 
-/** رابط تنزيل قصير الصلاحية لإعادة المعالجة أو فتح صفحة نتيجة البحث. */
+/** تذكرة معالجة داخلية قصيرة الصلاحية: تُستخدم لإعادة الفهرسة فقط. */
 export const signDocumentUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ organizationId: z.string().uuid(), documentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { requireDocumentPermission } = await import("@/lib/document-ai.server");
+    const [{ requireDocumentPermission }, secure] = await Promise.all([
+      import("@/lib/document-ai.server"),
+      import("@/lib/secure-view/secure-view.server"),
+    ]);
     await requireDocumentPermission(
       context.supabase,
       context.userId,
       data.organizationId,
-      "documents.view_extracted_text",
+      "documents.run_ocr",
     );
 
     const { data: doc, error } = await context.supabase
       .from("documents")
-      .select("file_path, file_name, file_type")
+      .select("file_name, file_type")
       .eq("id", data.documentId)
       .eq("organization_id", data.organizationId)
       .maybeSingle();
     if (error || !doc) throw new Error("المستند غير موجود داخل هذا المكتب.");
 
-    const { data: signed, error: signError } = await context.supabase.storage
-      .from("documents")
-      .createSignedUrl(doc.file_path, 300);
-    if (signError || !signed) throw new Error("تعذّر تجهيز رابط العرض.");
+    // تذكرة مبهمة تُستهلك مرة واحدة، ولا تكشف مسار الملف داخل المستودع.
+    const ticket = await secure.issueAccessToken({
+      organizationId: data.organizationId,
+      documentId: data.documentId,
+      kind: "process",
+      watermarkOffice: "",
+      watermarkUser: "",
+      watermarkNote: null,
+      classification: "internal",
+      createdBy: context.userId,
+    });
 
-    // لا يُسجَّل الرابط الموقّع في أي سجل تدقيق.
-    return { url: signed.signedUrl, fileName: doc.file_name, fileType: doc.file_type };
+    return {
+      url: `/api/public/doc/${ticket.token}`,
+      fileName: doc.file_name,
+      fileType: doc.file_type,
+    };
   });
 
 /** حصة القراءة الضوئية المتبقية لهذا الشهر. */

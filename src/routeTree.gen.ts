@@ -24,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
@@ -54,6 +55,7 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
+import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -127,6 +129,11 @@ const MehlaAdminIndexRoute = MehlaAdminIndexRouteImport.update({
 const UploadTokenRoute = UploadTokenRouteImport.update({
   id: '/upload/$token',
   path: '/upload/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MehlaAdminUsersRoute = MehlaAdminUsersRouteImport.update({
@@ -280,6 +287,11 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   path: '/cases/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
+  id: '/api/public/doc/$token',
+  path: '/api/public/doc/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -320,12 +332,14 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
+  '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -365,12 +379,14 @@ export interface FileRoutesByTo {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
+  '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -413,12 +429,14 @@ export interface FileRoutesById {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
+  '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -461,12 +479,14 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
     | '/cases/$id'
     | '/api/public/health'
     | '/cases/'
+    | '/api/public/doc/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -506,12 +526,14 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin'
     | '/upload'
     | '/cases/$id'
     | '/api/public/health'
     | '/cases'
+    | '/api/public/doc/$token'
   id:
     | '__root__'
     | '/'
@@ -553,12 +575,14 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
     | '/_authenticated/cases/'
+    | '/api/public/doc/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -576,9 +600,11 @@ export interface RootRouteChildren {
   TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifiedRoute: typeof AuthVerifiedRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -686,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/upload/$token'
       fullPath: '/upload/$token'
       preLoaderRoute: typeof UploadTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mehla-admin/users': {
@@ -898,6 +931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/doc/$token': {
+      id: '/api/public/doc/$token'
+      path: '/api/public/doc/$token'
+      fullPath: '/api/public/doc/$token'
+      preLoaderRoute: typeof ApiPublicDocTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -991,9 +1031,11 @@ const rootRouteChildren: RootRouteChildren = {
   TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifiedRoute: AuthVerifiedRoute,
+  ShareTokenRoute: ShareTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

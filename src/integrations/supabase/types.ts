@@ -556,6 +556,190 @@ export type Database = {
           },
         ]
       }
+      document_access_logs: {
+        Row: {
+          action_type: string
+          browser: string | null
+          created_at: string
+          device: string | null
+          document_id: string | null
+          document_name: string | null
+          id: string
+          ip: string | null
+          office_name: string | null
+          organization_id: string
+          os: string | null
+          print_id: string | null
+          session_id: string | null
+          share_token_id: string | null
+          source_page: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_type: string
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          document_name?: string | null
+          id?: string
+          ip?: string | null
+          office_name?: string | null
+          organization_id: string
+          os?: string | null
+          print_id?: string | null
+          session_id?: string | null
+          share_token_id?: string | null
+          source_page?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          document_id?: string | null
+          document_name?: string | null
+          id?: string
+          ip?: string | null
+          office_name?: string | null
+          organization_id?: string
+          os?: string | null
+          print_id?: string | null
+          session_id?: string | null
+          share_token_id?: string | null
+          source_page?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_share_token_id_fkey"
+            columns: ["share_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_access_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_access_tokens: {
+        Row: {
+          classification: string
+          created_at: string
+          created_by: string | null
+          document_id: string
+          expires_at: string
+          id: string
+          kind: string
+          last_used_at: string | null
+          max_uses: number
+          organization_id: string
+          recipient_label: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          updated_at: string
+          used_count: number
+          watermark_note: string | null
+          watermark_office: string
+          watermark_user: string
+        }
+        Insert: {
+          classification?: string
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          expires_at: string
+          id?: string
+          kind: string
+          last_used_at?: string | null
+          max_uses?: number
+          organization_id: string
+          recipient_label?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          updated_at?: string
+          used_count?: number
+          watermark_note?: string | null
+          watermark_office: string
+          watermark_user: string
+        }
+        Update: {
+          classification?: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          last_used_at?: string | null
+          max_uses?: number
+          organization_id?: string
+          recipient_label?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          updated_at?: string
+          used_count?: number
+          watermark_note?: string | null
+          watermark_office?: string
+          watermark_user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_tokens_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_tokens_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_pages: {
         Row: {
           created_at: string
