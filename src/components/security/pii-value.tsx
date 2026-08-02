@@ -10,7 +10,7 @@ import { Eye, Lock, ShieldAlert, ShieldCheck } from "lucide-react";
 import { getMaskedPii, revealPii } from "@/lib/pii.functions";
 import { PII_FIELD_LABEL, type PiiField } from "@/lib/crypto/pii.shared";
 import { inputCls, Modal } from "@/lib/list-utils";
-import { PII_REVEAL_LIMITS, isMfaRequiredError } from "@/lib/security/security-policy";
+import { PII_REVEAL_LIMITS } from "@/lib/security/security-policy";
 
 type Entity = "client" | "case_party";
 
@@ -96,15 +96,9 @@ export function PiiReveal({
       startAutoHide();
       toast.success("تم الكشف وتسجيل العملية في سجل التدقيق");
     } catch (error) {
-      if (isMfaRequiredError(error)) {
-        toast.error("مطلوب تحقق بخطوتين", {
-          description: "فعّل التحقق بخطوتين من الإعدادات ← الأمان ثم أعد المحاولة.",
-        });
-      } else {
-        toast.error("تعذّر الكشف", {
-          description: error instanceof Error ? error.message : undefined,
-        });
-      }
+      toast.error("تعذّر الكشف", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoading(false);
     }
