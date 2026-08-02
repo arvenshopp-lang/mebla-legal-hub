@@ -197,6 +197,8 @@ export type RequestOtpInput = {
   ip?: string | null;
   device?: string | null;
   userAgent?: string | null;
+  /** مفتاح منع التكرار: نفس المفتاح لا يُنتج إرسالاً ثانياً. */
+  idempotencyKey?: string | null;
 };
 
 export type RequestOtpResult = {
@@ -206,6 +208,8 @@ export type RequestOtpResult = {
   codeLength: number;
   testMode: boolean;
   delivered: boolean;
+  /** true عندما يُعاد نفس الطلب السابق بلا إرسال جديد. */
+  deduplicated?: boolean;
 };
 
 export class SmsFlowError extends Error {
@@ -224,6 +228,27 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
   const traceRef = newSmsTraceRef();
   if (!settings.enabled || settings.emergency_email_only) {
     throw new SmsFlowError("SMS_DISABLED", SMS_MESSAGES.disabled);
+  }
+
+  // منع التكرار عند الضغط المتكرر: نفس المفتاح يعيد نتيجة الطلب الأول.
+  if (input.idempotencyKey) {
+    const { data: duplicate } = await supabaseAdmin
+      .from("otp_verifications")
+      .select("trace_ref, expires_at, delivery_status")
+      .eq("idempotency_key", input.idempotencyKey)
+      .maybeSingle();
+    const existing = duplicate as { trace_ref: string | null; expires_at: string; delivery_status: string } | null;
+    if (existing) {
+      return {
+        traceRef: existing.trace_ref ?? traceRef,
+        expiresAt: existing.expires_at,
+        resendAfterSeconds: settings.resend_wait_seconds,
+        codeLength: settings.code_length,
+        testMode: settings.test_mode,
+        delivered: existing.delivery_status !== "failed",
+        deduplicated: true,
+      };
+    }
   }
 
   const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
@@ -262,17 +287,73 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
     }
   }
 
+  // اختيار المزوّد قبل توليد الرمز: المركز أولاً، والمسار القديم رجوع انتقالي فقط.
+  const dispatch = await import("@/lib/integrations/otp-dispatch.server");
+  const target = await dispatch.resolveDispatchTarget();
+  if (target.mode === "blocked") {
+    await logSms({
+      provider: "integration",
+      purpose: input.purpose,
+      action: "send",
+      phone: input.phone,
+      outcome: "failure",
+      errorCode: target.code,
+      errorMessage: target.message,
+      traceRef,
+      ip: input.ip ?? null,
+      device: input.device ?? null,
+    });
+    await recordHealth("unavailable", { reason: target.code, traceRef });
+    throw new SmsFlowError(target.code, target.message, traceRef);
+  }
+
+  const remoteVerification = target.mode === "integration" && target.remoteVerification;
+  const providerName = target.mode === "integration" ? target.providerKey : settings.active_provider;
   const code = randomCode(settings.code_length);
   const codeHash = await hmacHex(hashInput(input.purpose, input.phone, code));
   const expiresAt = new Date(Date.now() + settings.code_ttl_minutes * 60_000).toISOString();
 
-  // إبطال أي رمز نشط سابق لنفس الرقم والغرض: رمز واحد فعّال فقط.
+  // إبطال أي رمز نشط سابق لنفس الرقم والغرض: رمز واحد فعّال فقط، ومزوّد واحد فقط.
   await supabaseAdmin
     .from("otp_verifications")
     .update({ consumed_at: new Date().toISOString() } as never)
     .eq("phone_e164", input.phone)
     .eq("purpose", input.purpose)
     .is("consumed_at", null);
+
+  // حجز صف الرمز قبل الإرسال: الفهرس الفريد يمنع إرسال رمزين متزامنين لنفس الطلب.
+  const { data: reservation, error: reservationError } = await supabaseAdmin
+    .from("otp_verifications")
+    .insert({
+      purpose: input.purpose,
+      phone_e164: input.phone,
+      code_hash: codeHash,
+      user_id: input.userId ?? null,
+      email: input.email ?? null,
+      max_attempts: settings.max_verify_attempts,
+      expires_at: expiresAt,
+      provider: providerName,
+      integration_id: target.mode === "integration" ? target.integrationId : null,
+      dispatch_source: settings.test_mode ? "test_mode" : target.mode === "integration" ? "integration" : "legacy",
+      idempotency_key: input.idempotencyKey ?? null,
+      remote_verification: remoteVerification,
+      delivery_status: "queued",
+      ip: input.ip ?? null,
+      device: input.device ?? null,
+      user_agent: input.userAgent ? input.userAgent.slice(0, 300) : null,
+      trace_ref: traceRef,
+      dispatch_trace: traceRef,
+    } as never)
+    .select("id")
+    .maybeSingle();
+
+  if (reservationError || !reservation) {
+    if (String((reservationError as { code?: string } | null)?.code) === "23505") {
+      throw new SmsFlowError("SEND_IN_PROGRESS", "طلب إرسال رمز قيد التنفيذ لهذا الرقم. انتظر قليلاً.", traceRef);
+    }
+    throw new SmsFlowError("SEND_FAILED", SMS_MESSAGES.sendFailed, traceRef);
+  }
+  const reservationId = String((reservation as { id: string }).id);
 
   const text = settings.message_template
     .replace(/\{\{\s*code\s*\}\}/g, code)
@@ -282,52 +363,65 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
   let latencyMs: number | null = null;
   let delivered = false;
 
-  if (!settings.test_mode) {
+  if (settings.test_mode) {
+    await supabaseAdmin
+      .from("otp_verifications")
+      .update({ delivery_status: "test" } as never)
+      .eq("id", reservationId);
+  } else {
     try {
-      const result = await sendSms(providerConfig(settings), { to: input.phone, text });
-      reference = result.reference;
-      latencyMs = result.latencyMs;
+      if (target.mode === "integration") {
+        const outcome = await dispatch.dispatchOtpText(target, {
+          phone: input.phone,
+          text,
+          code: remoteVerification ? null : code,
+          purpose: input.purpose,
+          traceRef,
+        });
+        reference = outcome.reference;
+        latencyMs = outcome.latencyMs;
+      } else {
+        const result = await sendSms(providerConfig(settings), { to: input.phone, text });
+        reference = result.reference;
+        latencyMs = result.latencyMs;
+      }
       delivered = true;
+      await supabaseAdmin
+        .from("otp_verifications")
+        .update({ delivery_status: "sent", provider_reference: reference } as never)
+        .eq("id", reservationId);
       await recordHealth("operational", { reason: null, traceRef });
     } catch (error) {
-      const code_ = error instanceof SmsProviderError ? error.code : "SEND_FAILED";
+      const anyError = error as { code?: string; message?: string };
+      const failureCode =
+        error instanceof SmsProviderError
+          ? error.code
+          : (anyError?.code ?? "SEND_FAILED");
       const reason = error instanceof Error ? error.message.slice(0, 400) : "unknown";
+      // الطلب الفاشل لا يترك رمزاً قابلاً للاستخدام، ولا يُحوَّل صامتاً لمزوّد آخر.
+      await supabaseAdmin
+        .from("otp_verifications")
+        .update({ delivery_status: "failed", consumed_at: new Date().toISOString() } as never)
+        .eq("id", reservationId);
       await logSms({
-        provider: settings.active_provider,
+        provider: providerName,
         purpose: input.purpose,
         action: "send",
         phone: input.phone,
         outcome: "failure",
-        errorCode: code_,
+        errorCode: failureCode,
         errorMessage: reason,
         traceRef,
         ip: input.ip ?? null,
         device: input.device ?? null,
       });
       await recordHealth("unavailable", { reason, traceRef });
-      throw new SmsFlowError("SEND_FAILED", SMS_MESSAGES.sendFailed, traceRef);
+      throw new SmsFlowError(failureCode, SMS_MESSAGES.sendFailed, traceRef);
     }
   }
 
-  await supabaseAdmin.from("otp_verifications").insert({
-    purpose: input.purpose,
-    phone_e164: input.phone,
-    code_hash: codeHash,
-    user_id: input.userId ?? null,
-    email: input.email ?? null,
-    max_attempts: settings.max_verify_attempts,
-    expires_at: expiresAt,
-    provider: settings.active_provider,
-    provider_reference: reference,
-    delivery_status: settings.test_mode ? "test" : "sent",
-    ip: input.ip ?? null,
-    device: input.device ?? null,
-    user_agent: input.userAgent ? input.userAgent.slice(0, 300) : null,
-    trace_ref: traceRef,
-  } as never);
-
   await logSms({
-    provider: settings.active_provider,
+    provider: providerName,
     purpose: input.purpose,
     action: last ? "resend" : "send",
     phone: input.phone,
@@ -362,7 +456,9 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
   const settings = await loadSmsSettings();
   const { data } = await supabaseAdmin
     .from("otp_verifications")
-    .select("id, code_hash, attempts, max_attempts, expires_at, consumed_at, trace_ref, user_id")
+    .select(
+      "id, code_hash, attempts, max_attempts, expires_at, consumed_at, trace_ref, user_id, provider, integration_id, provider_reference, remote_verification",
+    )
     .eq("phone_e164", input.phone)
     .eq("purpose", input.purpose)
     .is("consumed_at", null)
@@ -379,17 +475,22 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
         expires_at: string;
         trace_ref: string | null;
         user_id: string | null;
+        provider: string | null;
+        integration_id: string | null;
+        provider_reference: string | null;
+        remote_verification: boolean | null;
       }
     | null;
 
   const traceRef = row?.trace_ref ?? newSmsTraceRef();
+  const providerName = row?.provider ?? settings.active_provider;
   const fail = async (
     outcome: "invalid_code" | "expired",
     code: string,
     message: string,
   ): Promise<never> => {
     await logSms({
-      provider: settings.active_provider,
+      provider: providerName,
       purpose: input.purpose,
       action: "verify",
       phone: input.phone,
@@ -419,7 +520,40 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
   }
 
   const submitted = await hmacHex(hashInput(input.purpose, input.phone, input.code.replace(/\D/g, "")));
-  if (!timingSafeEqual(submitted, row!.code_hash)) {
+  // التحقق يجري عند المزوّد نفسه الذي أرسل الرمز عند دعمه ذلك، وإلا محلياً.
+  let verified: boolean;
+  if (row!.remote_verification && row!.integration_id) {
+    const dispatch = await import("@/lib/integrations/otp-dispatch.server");
+    try {
+      const remote = await dispatch.dispatchOtpVerify({
+        integrationId: row!.integration_id,
+        phone: input.phone,
+        code: input.code.replace(/\D/g, ""),
+        referenceId: row!.provider_reference,
+        traceRef,
+      });
+      verified = remote ?? timingSafeEqual(submitted, row!.code_hash);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذّر التحقق من الرمز.";
+      await logSms({
+        provider: providerName,
+        purpose: input.purpose,
+        action: "verify",
+        phone: input.phone,
+        outcome: "failure",
+        errorCode: "VERIFY_FAILED",
+        errorMessage: message,
+        traceRef,
+        ip: input.ip ?? null,
+        device: input.device ?? null,
+      });
+      throw new SmsFlowError("VERIFY_FAILED", message, traceRef);
+    }
+  } else {
+    verified = timingSafeEqual(submitted, row!.code_hash);
+  }
+
+  if (!verified) {
     await supabaseAdmin
       .from("otp_verifications")
       .update({ attempts: row!.attempts + 1 } as never)
@@ -433,7 +567,7 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
     .eq("id", row!.id);
 
   await logSms({
-    provider: settings.active_provider,
+    provider: providerName,
     purpose: input.purpose,
     action: "verify",
     phone: input.phone,
@@ -450,6 +584,29 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
 export async function sendTestMessage(phone: string): Promise<{ traceRef: string; reference: string | null }> {
   const settings = await loadSmsSettings();
   const traceRef = newSmsTraceRef();
+  // الاختبار يمر بنفس مسار الإرسال الحقيقي: التكامل المعتمد أولاً.
+  const dispatch = await import("@/lib/integrations/otp-dispatch.server");
+  const target = await dispatch.resolveDispatchTarget();
+  if (target.mode === "blocked") {
+    throw new SmsFlowError(target.code, target.message, traceRef);
+  }
+  if (target.mode === "integration") {
+    const outcome = await dispatch.sendIntegrationTest(target.integrationId, phone);
+    await logSms({
+      provider: target.providerKey,
+      purpose: "phone_verification",
+      action: "test",
+      phone,
+      outcome: outcome.ok ? "success" : "failure",
+      errorCode: outcome.code,
+      errorMessage: outcome.ok ? null : outcome.message,
+      referenceId: outcome.reference,
+      traceRef: outcome.traceId,
+    });
+    if (!outcome.ok) throw new SmsFlowError(outcome.code ?? "SEND_FAILED", outcome.message, outcome.traceId);
+    await recordHealth("operational", { reason: null, traceRef: outcome.traceId });
+    return { traceRef: outcome.traceId, reference: outcome.reference };
+  }
   try {
     const result = await sendSms(providerConfig(settings), {
       to: phone,
