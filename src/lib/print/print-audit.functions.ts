@@ -51,11 +51,12 @@ export const openPrintEvent = createServerFn({ method: "POST" })
     const [{ data: profile }, { data: org }, { data: copyNumber }] = await Promise.all([
       context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
       context.supabase.from("organizations").select("name").eq("id", data.organizationId).maybeSingle(),
+      // الوسيطان اختياريان في قاعدة البيانات (nullable)، والأنواع المولّدة لا تعبّر عن ذلك.
       context.supabase.rpc("print_copy_number", {
         _organization_id: data.organizationId,
-        ...(data.documentId ? { _document_id: data.documentId } : {}),
-        ...(data.documentRef ? { _document_ref: data.documentRef } : {}),
-      }),
+        _document_id: data.documentId ?? null,
+        _document_ref: data.documentRef ?? null,
+      } as never),
     ]);
 
     const printRef = buildPrintRef();
