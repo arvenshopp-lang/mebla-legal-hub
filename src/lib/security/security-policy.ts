@@ -1,17 +1,10 @@
 /**
- * سياسة الأمان المشتركة (آمنة للمتصفح): أي دور يلزمه تحقق بخطوتين (AAL2)،
- * وأي عملية تُعدّ حساسة. الواجهة تستخدمها للإرشاد فقط — الفرض الحقيقي على الخادم.
+ * سياسة الأمان المشتركة (آمنة للمتصفح): تصنيف العمليات الحساسة لأغراض
+ * التسجيل والتدقيق فقط. التحقق بخطوتين اختياري تماماً ولا يُفرض على أي عملية —
+ * الفرض الحقيقي يعتمد على دور المستخدم وصلاحياته على الخادم.
  */
-import type { AppRole } from "@/hooks/use-auth";
 
-/** الأدوار التي يجب أن تكون جلستها AAL2 لتنفيذ العمليات الحساسة. */
-export const MFA_REQUIRED_ROLES: AppRole[] = ["owner", "admin", "lawyer", "legal_assistant"];
-
-export function roleRequiresMfa(role: AppRole | null | undefined): boolean {
-  return Boolean(role && MFA_REQUIRED_ROLES.includes(role));
-}
-
-/** العمليات الحساسة داخل مكتب المحاماة. */
+/** العمليات الحساسة داخل مكتب المحاماة (تُسجَّل في سجل التدقيق). */
 export type SensitiveOperation =
   | "pii.reveal"
   | "documents.download"
@@ -31,16 +24,11 @@ export const SENSITIVE_OPERATION_LABELS: Record<SensitiveOperation, string> = {
   "team.manage": "إدارة المستخدمين والصلاحيات",
 };
 
-export const MFA_REQUIRED_CODE = "MEHLA_MFA_REQUIRED";
-
-/** رسالة موحّدة تُعرض للمستخدم عند غياب التحقق بخطوتين. */
-export function mfaRequiredMessage(operation: SensitiveOperation): string {
-  return `${MFA_REQUIRED_CODE}: يتطلب «${SENSITIVE_OPERATION_LABELS[operation]}» تفعيل التحقق بخطوتين وتأكيده في هذه الجلسة. فعّله من الإعدادات ← الأمان.`;
-}
-
-export function isMfaRequiredError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes(MFA_REQUIRED_CODE);
-}
+/** نصوص التحقق بخطوتين — ميزة اختيارية لتعزيز الحماية عند تسجيل الدخول فقط. */
+export const MFA_OPTIONAL_HEADLINE = "التحقق بخطوتين — اختياري";
+export const MFA_OPTIONAL_INVITE = "عزز حماية حسابك بتفعيل التحقق بخطوتين";
+export const MFA_OPTIONAL_NOTE =
+  "التحقق بخطوتين يضيف طبقة حماية إضافية عند تسجيل الدخول، لكنه غير مطلوب لاستخدام المنصة.";
 
 /** حدود الكشف عن البيانات الحساسة لكل مستخدم. */
 export const PII_REVEAL_LIMITS = {

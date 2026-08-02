@@ -31,6 +31,7 @@ import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
 import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
+import { Route as MehlaAdminSmsRouteImport } from './routes/mehla-admin/sms'
 import { Route as MehlaAdminSettingsRouteImport } from './routes/mehla-admin/settings'
 import { Route as MehlaAdminSeoRouteImport } from './routes/mehla-admin/seo'
 import { Route as MehlaAdminSecurityRouteImport } from './routes/mehla-admin/security'
@@ -170,6 +171,11 @@ const MehlaAdminSubscriptionsRoute = MehlaAdminSubscriptionsRouteImport.update({
 const MehlaAdminStaffRoute = MehlaAdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSmsRoute = MehlaAdminSmsRouteImport.update({
+  id: '/sms',
+  path: '/sms',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const MehlaAdminSettingsRoute = MehlaAdminSettingsRouteImport.update({
@@ -370,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
   '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
+  '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
@@ -423,6 +430,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
   '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
+  '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
@@ -479,6 +487,7 @@ export interface FileRoutesById {
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
   '/mehla-admin/seo': typeof MehlaAdminSeoRoute
   '/mehla-admin/settings': typeof MehlaAdminSettingsRoute
+  '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRoute
@@ -535,6 +544,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/security'
     | '/mehla-admin/seo'
     | '/mehla-admin/settings'
+    | '/mehla-admin/sms'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
@@ -588,6 +598,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/security'
     | '/mehla-admin/seo'
     | '/mehla-admin/settings'
+    | '/mehla-admin/sms'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/security'
     | '/mehla-admin/seo'
     | '/mehla-admin/settings'
+    | '/mehla-admin/sms'
     | '/mehla-admin/staff'
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
@@ -837,6 +849,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/mehla-admin/staff'
       preLoaderRoute: typeof MehlaAdminStaffRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/sms': {
+      id: '/mehla-admin/sms'
+      path: '/sms'
+      fullPath: '/mehla-admin/sms'
+      preLoaderRoute: typeof MehlaAdminSmsRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/settings': {
@@ -1109,6 +1128,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminSecurityRoute: typeof MehlaAdminSecurityRoute
   MehlaAdminSeoRoute: typeof MehlaAdminSeoRoute
   MehlaAdminSettingsRoute: typeof MehlaAdminSettingsRoute
+  MehlaAdminSmsRoute: typeof MehlaAdminSmsRoute
   MehlaAdminStaffRoute: typeof MehlaAdminStaffRoute
   MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
   MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
@@ -1129,6 +1149,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminSecurityRoute: MehlaAdminSecurityRoute,
   MehlaAdminSeoRoute: MehlaAdminSeoRoute,
   MehlaAdminSettingsRoute: MehlaAdminSettingsRoute,
+  MehlaAdminSmsRoute: MehlaAdminSmsRoute,
   MehlaAdminStaffRoute: MehlaAdminStaffRoute,
   MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
   MehlaAdminSupportRoute: MehlaAdminSupportRoute,

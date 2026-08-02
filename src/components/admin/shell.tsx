@@ -21,6 +21,7 @@ import {
   Search,
   KeyRound,
   Lock,
+  MessageSquare,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/mehla-admin/email", label: "البريد والقوالب", Icon: Mail, permission: "email.manage" },
       { to: "/mehla-admin/notifications", label: "الإشعارات", Icon: BellRing, permission: "notifications.send" },
+      { to: "/mehla-admin/sms", label: "الرسائل وتوثيق الجوال", Icon: MessageSquare, permission: "settings.manage" },
     ],
   },
   {

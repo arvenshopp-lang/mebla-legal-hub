@@ -75,33 +75,6 @@ export const PERMISSION_LABELS: Record<string, string> = Object.fromEntries(
 
 export const PERMISSION_GROUPS = Array.from(new Set(ADMIN_PERMISSIONS.map((p) => p.group)));
 
-/**
- * الصلاحيات الحساسة داخل لوحة الإدارة: لا تُنفَّذ إلا بجلسة تحقق بخطوتين (AAL2).
- * القراءة تبقى متاحة كي لا يُحبس الفريق خارج اللوحة قبل تفعيل التحقق.
- */
-export const AAL2_REQUIRED_PERMISSIONS: AdminPermission[] = [
-  "users.create",
-  "users.update",
-  "users.delete",
-  "organizations.update",
-  "organizations.delete",
-  "subscriptions.manage",
-  "plans.manage",
-  "email.manage",
-  "notifications.send",
-  "settings.manage",
-  "seo.manage",
-  "backups.manage",
-  "audit.export",
-  "support_access.request",
-  "staff.manage",
-  "roles.manage",
-];
-
-export function permissionRequiresAal2(permission: AdminPermission): boolean {
-  return AAL2_REQUIRED_PERMISSIONS.includes(permission);
-}
-
 /** الصلاحيات القديمة التي كانت مستخدمة قبل نظام الأدوار — تُترجم للمفاتيح الحديثة. */
 const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "logs.view": ["audit.read"],

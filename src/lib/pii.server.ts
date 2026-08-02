@@ -11,7 +11,6 @@ import {
   requestSecurityMeta,
   requireSensitiveAccess,
 } from "./security/sensitive-guard.server";
-import { mfaRequiredMessage } from "./security/security-policy";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
@@ -83,7 +82,7 @@ export async function maskedPiiFor(
   return out;
 }
 
-type RevealOutcome = "success" | "denied" | "rate_limited" | "mfa_required";
+type RevealOutcome = "success" | "denied" | "rate_limited";
 
 /** كتابة سجل الكشف — يشمل المحاولات المرفوضة كي لا تمر محاولة بلا أثر. */
 async function logReveal(
@@ -149,7 +148,8 @@ async function assertRevealRate(userId: string): Promise<void> {
 
 /**
  * كشف القيمة الصريحة. لا تُرسَل القيمة للمتصفح إلا بعد: عضوية المكتب + دور مخوّل +
- * جلسة AAL2 + سبب إلزامي + عدم تجاوز حد المعدّل. وكل محاولة — ناجحة أو مرفوضة — تُسجَّل.
+ * سبب إلزامي + عدم تجاوز حد المعدّل. وكل محاولة — ناجحة أو مرفوضة — تُسجَّل.
+ * التحقق بخطوتين اختياري ولا يُشترط هنا؛ يُسجَّل مستوى الجلسة للتدقيق فقط.
  */
 export async function revealPiiValue(
   supabase: Client,
@@ -190,9 +190,6 @@ export async function revealPiiValue(
   const role = await requireMemberRole(supabase, input.organizationId, userId);
   if (!REVEAL_ROLES.includes(role as (typeof REVEAL_ROLES)[number])) {
     return deny("denied", "دورك في المكتب لا يسمح بكشف البيانات الحساسة.");
-  }
-  if (aal !== "aal2") {
-    return deny("mfa_required", mfaRequiredMessage("pii.reveal"));
   }
   if (reason.length < PII_REVEAL_LIMITS.minReasonLength) {
     return deny(
