@@ -16,6 +16,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   CreditCard,
+  FileSearch,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
@@ -42,6 +43,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/clients", label: "العملاء", Icon: Users },
       { to: "/documents", label: "المستندات", Icon: FileText },
+      { to: "/search", label: "البحث في المستندات", Icon: FileSearch },
     ],
   },
   {
