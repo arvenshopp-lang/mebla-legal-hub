@@ -16,6 +16,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   CreditCard,
+  FileSearch,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
