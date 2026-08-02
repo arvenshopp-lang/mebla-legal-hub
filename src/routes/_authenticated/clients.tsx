@@ -12,6 +12,7 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2 } from "lucide-react";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -195,7 +196,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
       result = { data, error };
     }
     setSaving(false);
-    if (result.error) return toast.error("تعذّر الحفظ", { description: result.error.message });
+    if (result.error) return toast.error("تعذّر الحفظ", { description: describeMutationError(result.error.message) });
     toast.success(editing ? "تم التحديث" : "تم إنشاء العميل");
     qc.invalidateQueries({ queryKey: ["clients"] });
     onCreated?.(result.data);
