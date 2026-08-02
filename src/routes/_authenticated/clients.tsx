@@ -172,11 +172,14 @@ function Page() {
 }
 
 export function ClientDialog({ open, onClose, editing, onCreated }: { open: boolean; onClose: () => void; editing: ClientRow | null; onCreated?: (c: any) => void }) {
-  const { activeOrgId, user } = useAuth();
+  const { activeOrgId } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState<Partial<ClientForm>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const saveSecure = useServerFn(saveClientSecure);
+  const { data: mask } = useMaskedPii(activeOrgId, "client", editing?.id);
+  const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
 
   // reset form when opening
   const key = editing?.id ?? "new";
@@ -184,6 +187,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
   if (open && formKey !== key) {
     setFormKey(key);
     setErrors({});
+    setPiiEdit(null);
     setForm(editing ? { ...(editing as any) } : { client_type: "individual" });
   }
 
@@ -197,25 +201,31 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
       return;
     }
     setSaving(true);
-    const payload: any = { ...res.data };
-    Object.keys(payload).forEach((k) => { if (payload[k] === "") payload[k] = null; });
-    let result: any;
-    if (editing) {
-      const { data, error } = await supabase.from("clients").update(payload).eq("id", editing.id).select().single();
-      result = { data, error };
-    } else {
-      const { data, error } = await supabase.from("clients")
-        .insert({ ...payload, organization_id: activeOrgId, created_by: user?.id })
-        .select().single();
-      result = { data, error };
+    try {
+      const row = await saveSecure({
+        data: {
+          organizationId: activeOrgId!,
+          ...(editing ? { id: editing.id } : {}),
+          values: res.data as never,
+          ...(piiEdit ? { pii: { [piiEdit.field]: piiEdit.value.trim() || null } } : {}),
+        },
+      });
+      toast.success(editing ? "تم التحديث" : "تم إنشاء العميل");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["pii-mask"] });
+      onCreated?.(row);
+      onClose();
+    } catch (error) {
+      toast.error("تعذّر الحفظ", {
+        description: describeMutationError(error instanceof Error ? error.message : ""),
+      });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    if (result.error) return toast.error("تعذّر الحفظ", { description: describeMutationError(result.error.message) });
-    toast.success(editing ? "تم التحديث" : "تم إنشاء العميل");
-    qc.invalidateQueries({ queryKey: ["clients"] });
-    onCreated?.(result.data);
-    onClose();
   };
+
+  const piiField = form.client_type === "individual" || !form.client_type ? "national_id" : "commercial_registration";
+  const piiMask = (mask?.[piiField] ?? "—") as string;
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل عميل" : "عميل جديد"} size="lg">
