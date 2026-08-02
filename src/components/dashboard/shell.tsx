@@ -17,6 +17,7 @@ import {
   PanelRightOpen,
   CreditCard,
   FileSearch,
+  Printer,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
@@ -24,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
+import { PrintGuard } from "@/components/print/print-guard";
 
 type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard };
 
@@ -50,6 +52,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "المكتب",
     items: [
       { to: "/team", label: "الفريق", Icon: UsersRound },
+      { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
       { to: "/settings", label: "الإعدادات", Icon: Settings },
     ],
@@ -212,6 +215,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-dvh bg-background text-foreground" dir="rtl">
+      <PrintGuard />
       <aside
         className={cn(
           "fixed inset-y-0 right-0 z-[var(--z-sidebar)] hidden flex-col border-l border-border bg-surface transition-[width] duration-[var(--duration-base)] lg:flex",
