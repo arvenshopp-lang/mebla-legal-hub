@@ -591,6 +591,7 @@ export type Database = {
           action_type: string
           browser: string | null
           created_at: string
+          denial_reason: string | null
           device: string | null
           document_id: string | null
           document_name: string | null
@@ -599,10 +600,12 @@ export type Database = {
           office_name: string | null
           organization_id: string
           os: string | null
+          outcome: string
           print_id: string | null
           session_id: string | null
           share_token_id: string | null
           source_page: string | null
+          trace_ref: string | null
           user_id: string | null
           user_name: string | null
         }
@@ -610,6 +613,7 @@ export type Database = {
           action_type: string
           browser?: string | null
           created_at?: string
+          denial_reason?: string | null
           device?: string | null
           document_id?: string | null
           document_name?: string | null
@@ -618,10 +622,12 @@ export type Database = {
           office_name?: string | null
           organization_id: string
           os?: string | null
+          outcome?: string
           print_id?: string | null
           session_id?: string | null
           share_token_id?: string | null
           source_page?: string | null
+          trace_ref?: string | null
           user_id?: string | null
           user_name?: string | null
         }
@@ -629,6 +635,7 @@ export type Database = {
           action_type?: string
           browser?: string | null
           created_at?: string
+          denial_reason?: string | null
           device?: string | null
           document_id?: string | null
           document_name?: string | null
@@ -637,10 +644,12 @@ export type Database = {
           office_name?: string | null
           organization_id?: string
           os?: string | null
+          outcome?: string
           print_id?: string | null
           session_id?: string | null
           share_token_id?: string | null
           source_page?: string | null
+          trace_ref?: string | null
           user_id?: string | null
           user_name?: string | null
         }
@@ -1600,7 +1609,10 @@ export type Database = {
       }
       pii_access_logs: {
         Row: {
+          aal: string | null
+          browser: string | null
           created_at: string
+          device: string | null
           entity_id: string | null
           entity_type: string
           field: string
@@ -1608,12 +1620,17 @@ export type Database = {
           ip: string | null
           key_version: number | null
           organization_id: string
+          outcome: string
           reason: string | null
+          trace_ref: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          aal?: string | null
+          browser?: string | null
           created_at?: string
+          device?: string | null
           entity_id?: string | null
           entity_type: string
           field: string
@@ -1621,12 +1638,17 @@ export type Database = {
           ip?: string | null
           key_version?: number | null
           organization_id: string
+          outcome?: string
           reason?: string | null
+          trace_ref?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          aal?: string | null
+          browser?: string | null
           created_at?: string
+          device?: string | null
           entity_id?: string | null
           entity_type?: string
           field?: string
@@ -1634,7 +1656,9 @@ export type Database = {
           ip?: string | null
           key_version?: number | null
           organization_id?: string
+          outcome?: string
           reason?: string | null
+          trace_ref?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
@@ -1647,6 +1671,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pii_reencryption_jobs: {
+        Row: {
+          created_at: string
+          cursor_id: string | null
+          entity: string
+          failed: number
+          from_version: number
+          id: string
+          last_error: string | null
+          processed: number
+          started_by: string | null
+          status: string
+          to_version: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cursor_id?: string | null
+          entity: string
+          failed?: number
+          from_version: number
+          id?: string
+          last_error?: string | null
+          processed?: number
+          started_by?: string | null
+          status?: string
+          to_version: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cursor_id?: string | null
+          entity?: string
+          failed?: number
+          from_version?: number
+          id?: string
+          last_error?: string | null
+          processed?: number
+          started_by?: string | null
+          status?: string
+          to_version?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       platform_broadcasts: {
         Row: {

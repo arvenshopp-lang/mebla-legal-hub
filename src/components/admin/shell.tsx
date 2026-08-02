@@ -20,6 +20,7 @@ import {
   Settings,
   Search,
   KeyRound,
+  Lock,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: "الأمان والفريق",
     items: [
       { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
+      { to: "/mehla-admin/security", label: "مركز الأمان", Icon: Lock },
       { to: "/mehla-admin/roles", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
       { to: "/mehla-admin/failures", label: "سجل الأعطال", Icon: AlertTriangle, permission: "audit.read" },

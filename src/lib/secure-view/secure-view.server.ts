@@ -206,6 +206,9 @@ export type AccessLogInput = {
   sessionId?: string | null;
   sourcePage?: string | null;
   environment?: RequestEnvironment;
+  outcome?: "success" | "denied";
+  denialReason?: string | null;
+  traceRef?: string | null;
 };
 
 /** سجل غير قابل للتعديل: يُكتب بصلاحية الخادم فقط ولا يُحدَّث ولا يُحذف. */
@@ -228,6 +231,9 @@ export async function logDocumentAccess(input: AccessLogInput): Promise<void> {
     device: env.device,
     session_id: input.sessionId ?? null,
     source_page: input.sourcePage ?? null,
+    outcome: input.outcome ?? "success",
+    denial_reason: input.denialReason ? input.denialReason.slice(0, 300) : null,
+    trace_ref: input.traceRef ?? null,
   });
   if (error) throw new Error("تعذّر تسجيل عملية الوصول، ولم تُنفَّذ العملية.");
 }

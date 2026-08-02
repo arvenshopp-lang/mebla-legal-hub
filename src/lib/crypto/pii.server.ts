@@ -54,6 +54,26 @@ function blindIndexSecretName(version: number): string {
 
 const keyCache = new Map<string, CryptoKey>();
 
+/**
+ * الإصدار النشط للكتابة. يُحدَّد من بيئة الخادم (MEHLA_ACTIVE_PII_KEY_VERSION)
+ * حتى يمكن تدوير المفاتيح دون نشر كود، ويُرفض أي إصدار لا تتوفر مادته السرّية
+ * فيُستخدم أعلى إصدار متاح فعلياً — فلا تُكتب بيانات بمفتاح غير موجود.
+ */
+export function activePiiKeyVersion(): number {
+  const requested = Number(process.env["MEHLA_ACTIVE_PII_KEY_VERSION"] ?? ACTIVE_PII_KEY_VERSION);
+  const target = Number.isInteger(requested) && requested >= 1 ? requested : ACTIVE_PII_KEY_VERSION;
+  for (let version = target; version >= 1; version -= 1) {
+    if (hasKeyMaterial(version)) return version;
+  }
+  return ACTIVE_PII_KEY_VERSION;
+}
+
+export function hasKeyMaterial(version: number): boolean {
+  const master = process.env[masterSecretName(version)];
+  const bidx = process.env[blindIndexSecretName(version)];
+  return Boolean(master && master.length >= 16 && bidx && bidx.length >= 16);
+}
+
 async function hkdf(
   secret: string,
   info: string,
@@ -102,7 +122,7 @@ export async function encryptPii(
   plaintext: string | null | undefined,
   organizationId: string,
   field: PiiField,
-  version: number = ACTIVE_PII_KEY_VERSION,
+  version: number = activePiiKeyVersion(),
 ): Promise<string | null> {
   const value = (plaintext ?? "").trim();
   if (!value) return null;
@@ -148,7 +168,7 @@ export async function blindIndex(
   plaintext: string | null | undefined,
   organizationId: string,
   field: PiiField,
-  version: number = ACTIVE_PII_KEY_VERSION,
+  version: number = activePiiKeyVersion(),
 ): Promise<string | null> {
   const normalized = normalizePiiValue(plaintext ?? "");
   if (!normalized) return null;
@@ -165,18 +185,36 @@ export async function blindIndex(
 export async function buildPiiColumns(
   organizationId: string,
   values: Partial<Record<PiiField, string | null | undefined>>,
+  version: number = activePiiKeyVersion(),
 ): Promise<Record<string, string | number | null>> {
   const out: Record<string, string | number | null> = {
     national_id: null,
     commercial_registration: null,
-    pii_key_version: ACTIVE_PII_KEY_VERSION,
+    pii_key_version: version,
   };
   for (const field of ["national_id", "commercial_registration"] as PiiField[]) {
     if (!(field in values)) continue;
-    out[`${field}_enc`] = await encryptPii(values[field], organizationId, field);
-    out[`${field}_bidx`] = await blindIndex(values[field], organizationId, field);
+    out[`${field}_enc`] = await encryptPii(values[field], organizationId, field, version);
+    out[`${field}_bidx`] = await blindIndex(values[field], organizationId, field, version);
   }
   return out;
+}
+
+/** يعيد تشفير قيمة صريحة بإصدار مفتاح محدّد (يُستخدم في تدوير المفاتيح). */
+export async function reencryptValue(
+  ciphertext: string | null,
+  organizationId: string,
+  field: PiiField,
+  toVersion: number,
+): Promise<{ enc: string | null; bidx: string | null; recovered: boolean }> {
+  if (!ciphertext) return { enc: null, bidx: null, recovered: true };
+  const plain = await decryptPii(ciphertext, organizationId, field);
+  if (!plain) return { enc: ciphertext, bidx: null, recovered: false };
+  return {
+    enc: await encryptPii(plain, organizationId, field, toVersion),
+    bidx: await blindIndex(plain, organizationId, field, toVersion),
+    recovered: true,
+  };
 }
 
 /** فحص صحة التهيئة — يُستخدم في لوحة الإدارة دون كشف أي مادة مفتاح. */
@@ -185,5 +223,6 @@ export function keyMaterialPresence(version: number) {
     key_version: version,
     master_key_present: Boolean(process.env[masterSecretName(version)]),
     blind_index_key_present: Boolean(process.env[blindIndexSecretName(version)]),
+    secret_names: [masterSecretName(version), blindIndexSecretName(version)],
   };
 }
