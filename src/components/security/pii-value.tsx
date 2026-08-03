@@ -197,15 +197,17 @@ export function PiiSecureInput({
   onStartEdit: () => void;
   onCancelEdit: () => void;
 }) {
+  const fieldId = `pii-${label.replace(/\s+/g, "-")}`;
   return (
     <div className="grid gap-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+      <label htmlFor={fieldId} className="flex w-fit items-center gap-1.5 text-sm font-medium text-foreground">
         {label}
         <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden />
       </label>
       {editing ? (
         <>
           <input
+            id={fieldId}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             inputMode="numeric"
