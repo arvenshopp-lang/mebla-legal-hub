@@ -206,8 +206,8 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   const [form, setForm] = useState<Partial<CaseForm>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const key = editing?.id ?? "new";
-  const [formKey, setFormKey] = useState(key);
+  const key = open ? (editing?.id ?? "new") : "closed";
+  const [formKey, setFormKey] = useState("closed");
 
   const { data: clients, isLoading: loadingClients } = useQuery({
     queryKey: ["clients-basic", activeOrgId],
@@ -218,7 +218,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
     },
   });
 
-  if (open && formKey !== key) {
+  if (formKey !== key) {
     setFormKey(key);
     setErrors({});
     setForm(editing ? { ...(editing as any) } : { status: "open", priority: "medium" });
