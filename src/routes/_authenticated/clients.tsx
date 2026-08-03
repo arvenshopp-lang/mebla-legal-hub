@@ -181,10 +181,10 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
   const { data: mask } = useMaskedPii(activeOrgId, "client", editing?.id);
   const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
 
-  // reset form when opening
-  const key = editing?.id ?? "new";
-  const [formKey, setFormKey] = useState(key);
-  if (open && formKey !== key) {
+  // reset form on every open (including two consecutive "new" records)
+  const key = open ? (editing?.id ?? "new") : "closed";
+  const [formKey, setFormKey] = useState("closed");
+  if (formKey !== key) {
     setFormKey(key);
     setErrors({});
     setPiiEdit(null);
