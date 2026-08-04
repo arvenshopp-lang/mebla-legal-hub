@@ -44,6 +44,10 @@ export type SupportReport = {
     escalated: number;
     reopened: number;
     unassigned: number;
+    atRisk: number;
+    backlog: number;
+    reopenRate: number;
+    fcrRate: number;
   };
   sla: {
     firstResponseMet: number;
@@ -56,10 +60,18 @@ export type SupportReport = {
     avgResolutionMinutes: number | null;
   };
   csat: { responses: number; average: number | null; distribution: Record<"1" | "2" | "3" | "4" | "5", number> };
+  csatByStaff: { key: string; name: string; responses: number; average: number }[];
+  csatByTeam: { key: string; name: string; responses: number; average: number }[];
+  csatByCategory: { key: string; responses: number; average: number }[];
   byStatus: { key: string; label: string; count: number }[];
+  byPriority: { key: string; count: number; breached: number }[];
+  byChannel: { key: string; count: number }[];
   byCategory: { key: string; count: number; breached: number }[];
   byTeam: { key: string; name: string; count: number; open: number; breached: number }[];
   byAgent: { key: string; name: string; open: number; resolved: number; breached: number; avgResolutionMinutes: number | null }[];
+  byOrganization: { key: string; name: string; plan: string | null; count: number; open: number; breached: number }[];
+  byPlan: { key: string; count: number; breached: number }[];
+  aging: { bucket: string; label: string; count: number }[];
   daily: { day: string; created: number; resolved: number }[];
   breachedTickets: {
     id: string;
