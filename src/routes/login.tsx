@@ -4,6 +4,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
+import { resendSignupConfirmation, sendMagicLink } from "@/lib/auth-actions";
 import { lookupSignInMethods } from "@/lib/auth-lookup.functions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
@@ -33,6 +34,9 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [actionBusy, setActionBusy] = useState<null | "resend" | "magic">(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const safeRedirect =
     typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
@@ -70,10 +74,13 @@ function LoginPage() {
     }
     setLoading(true);
     setFormError(null);
+    setNotice(null);
+    setNeedsConfirmation(false);
 
     const { error } = await signIn(cleanEmail, password);
     if (error) {
       let friendly = error;
+      if (error === AUTH_MESSAGES.emailNotConfirmed) setNeedsConfirmation(true);
       if (error === AUTH_MESSAGES.invalidCredentials) {
         // Distinguish "wrong password" from "this account signs in with Google".
         try {
@@ -108,6 +115,7 @@ function LoginPage() {
     if (googleLoading) return;
     setGoogleLoading(true);
     setFormError(null);
+    setNotice(null);
     sessionStorage.setItem("mehla_auth_redirect", safeRedirect);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
@@ -116,6 +124,39 @@ function LoginPage() {
       setGoogleLoading(false);
       setFormError("تعذر بدء تسجيل الدخول عبر Google. حاول مرة أخرى.");
       logAuthEvent({ route: "/login", action: "sign_in_google", sanitizedMessage: "oauth_start_failed" });
+    }
+  };
+
+  const resendConfirmation = async () => {
+    if (actionBusy) return;
+    setActionBusy("resend");
+    const result = await resendSignupConfirmation(email);
+    setActionBusy(null);
+    if (result.ok) {
+      setFormError(null);
+      setNotice(result.message);
+      toast.success(result.message);
+    } else {
+      setFormError(result.message);
+    }
+  };
+
+  const requestMagicLink = async () => {
+    if (actionBusy) return;
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setFormError("أدخل بريدك الإلكتروني أولاً لإرسال رابط الدخول");
+      return;
+    }
+    setActionBusy("magic");
+    const result = await sendMagicLink(cleanEmail);
+    setActionBusy(null);
+    if (result.ok) {
+      setFormError(null);
+      setNotice(result.message);
+      toast.success(result.message);
+    } else {
+      setFormError(result.message);
     }
   };
 
@@ -151,6 +192,21 @@ function LoginPage() {
       {formError && (
         <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-[12.5px] leading-6 text-danger">
           {formError}
+          {needsConfirmation && (
+            <button
+              type="button"
+              onClick={resendConfirmation}
+              disabled={actionBusy === "resend"}
+              className="mt-2 block font-semibold underline disabled:opacity-60"
+            >
+              {actionBusy === "resend" ? "جاري الإرسال…" : "إعادة إرسال رابط التأكيد"}
+            </button>
+          )}
+        </div>
+      )}
+      {notice && (
+        <div role="status" className="rounded-[var(--radius-m)] border border-success/25 bg-success-soft p-3 text-[12.5px] leading-6 text-success">
+          {notice}
         </div>
       )}
       <Field label="البريد الإلكتروني">
@@ -166,6 +222,14 @@ function LoginPage() {
       </div>
       <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
         {loading ? "جاري تسجيل الدخول…" : "دخول"}
+      </button>
+      <button
+        type="button"
+        onClick={requestMagicLink}
+        disabled={actionBusy === "magic"}
+        className="w-full text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
+      >
+        {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
       </button>
     </form>
     <p className="mt-6 text-center text-sm text-muted-foreground">
