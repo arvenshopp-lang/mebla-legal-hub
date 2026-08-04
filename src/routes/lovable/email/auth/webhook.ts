@@ -9,7 +9,7 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = "mebla"
+const SITE_NAME = "مِهلة | MEHLA"
 const SENDER_DOMAIN = "mail.mehlalex.com"
 const ROOT_DOMAIN = "mehlalex.com"
 const FROM_DOMAIN = "mehlalex.com"
