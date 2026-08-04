@@ -1490,6 +1490,509 @@ export type Database = {
           },
         ]
       }
+      email_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          message_id: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          message_id: string
+          mime_type: string
+          size_bytes?: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          message_id?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string
+          actor_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          ip: string | null
+          mailbox_id: string | null
+          message_id: string | null
+          metadata: Json
+          thread_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email: string
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip?: string | null
+          mailbox_id?: string | null
+          message_id?: string | null
+          metadata?: Json
+          thread_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip?: string | null
+          mailbox_id?: string | null
+          message_id?: string | null
+          metadata?: Json
+          thread_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      email_labels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_mailboxes: {
+        Row: {
+          address: string
+          created_at: string
+          department_id: string | null
+          display_name: string
+          id: string
+          inbound_enabled: boolean
+          is_active: boolean
+          is_shared: boolean
+          provider: string
+          signature_html: string | null
+          sort_order: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          department_id?: string | null
+          display_name: string
+          id?: string
+          inbound_enabled?: boolean
+          is_active?: boolean
+          is_shared?: boolean
+          provider?: string
+          signature_html?: string | null
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          department_id?: string | null
+          display_name?: string
+          id?: string
+          inbound_enabled?: boolean
+          is_active?: boolean
+          is_shared?: boolean
+          provider?: string
+          signature_html?: string | null
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_mailboxes_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "platform_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_messages: {
+        Row: {
+          assigned_to: string | null
+          bcc_addresses: string[]
+          body_text: string | null
+          cc_addresses: string[]
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          direction: string
+          failure_ref: string | null
+          from_address: string
+          from_name: string | null
+          html: string | null
+          id: string
+          in_reply_to: string | null
+          kind: string
+          mailbox_id: string
+          message_id: string
+          organization_id: string | null
+          provider: string
+          provider_ref: string | null
+          received_at: string | null
+          reference_ids: string[]
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          thread_id: string
+          ticket_id: string | null
+          to_addresses: string[]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          bcc_addresses?: string[]
+          body_text?: string | null
+          cc_addresses?: string[]
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          direction: string
+          failure_ref?: string | null
+          from_address: string
+          from_name?: string | null
+          html?: string | null
+          id?: string
+          in_reply_to?: string | null
+          kind?: string
+          mailbox_id: string
+          message_id: string
+          organization_id?: string | null
+          provider?: string
+          provider_ref?: string | null
+          received_at?: string | null
+          reference_ids?: string[]
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          thread_id: string
+          ticket_id?: string | null
+          to_addresses?: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          bcc_addresses?: string[]
+          body_text?: string | null
+          cc_addresses?: string[]
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          direction?: string
+          failure_ref?: string | null
+          from_address?: string
+          from_name?: string | null
+          html?: string | null
+          id?: string
+          in_reply_to?: string | null
+          kind?: string
+          mailbox_id?: string
+          message_id?: string
+          organization_id?: string | null
+          provider?: string
+          provider_ref?: string | null
+          received_at?: string | null
+          reference_ids?: string[]
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          thread_id?: string
+          ticket_id?: string | null
+          to_addresses?: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_notes: {
+        Row: {
+          author_email: string
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          thread_id: string
+        }
+        Insert: {
+          author_email: string
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          thread_id: string
+        }
+        Update: {
+          author_email?: string
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_notes_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          failure_ref: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          last_error_code: string | null
+          locked_at: string | null
+          max_attempts: number
+          message_id: string
+          next_attempt_at: string
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          failure_ref?: string | null
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          last_error_code?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          message_id: string
+          next_attempt_at?: string
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          failure_ref?: string | null
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          last_error_code?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          message_id?: string
+          next_attempt_at?: string
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_thread_labels: {
+        Row: {
+          created_at: string
+          label_id: string
+          thread_id: string
+        }
+        Insert: {
+          created_at?: string
+          label_id: string
+          thread_id: string
+        }
+        Update: {
+          created_at?: string
+          label_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_thread_labels_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "email_labels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_thread_labels_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_threads: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_email: string | null
+          created_at: string
+          folder: string
+          id: string
+          is_starred: boolean
+          is_unread: boolean
+          last_activity_at: string
+          mailbox_id: string
+          message_count: number
+          organization_id: string | null
+          participants: string[]
+          previous_folder: string | null
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          created_at?: string
+          folder?: string
+          id?: string
+          is_starred?: boolean
+          is_unread?: boolean
+          last_activity_at?: string
+          mailbox_id: string
+          message_count?: number
+          organization_id?: string | null
+          participants?: string[]
+          previous_folder?: string | null
+          subject?: string
+          ticket_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          created_at?: string
+          folder?: string
+          id?: string
+          is_starred?: boolean
+          is_unread?: boolean
+          last_activity_at?: string
+          mailbox_id?: string
+          message_count?: number
+          organization_id?: string | null
+          participants?: string[]
+          previous_folder?: string | null
+          subject?: string
+          ticket_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_threads_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_threads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_threads_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encryption_key_registry: {
         Row: {
           activated_at: string

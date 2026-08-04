@@ -22,6 +22,10 @@ export type AdminPermission =
   | "tickets.reply"
   | "tickets.assign"
   | "email.manage"
+  | "email.view"
+  | "email.send"
+  | "email.assign"
+  | "email.audit"
   | "notifications.send"
   | "settings.manage"
   | "seo.manage"
@@ -80,7 +84,11 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "tickets.view", label: "مشاهدة التذاكر", group: "الدعم الفني", description: "الاطلاع على تذاكر الدعم." },
   { id: "tickets.reply", label: "الرد على التذاكر", group: "الدعم الفني", description: "الرد وتغيير الحالة والإغلاق." },
   { id: "tickets.assign", label: "تحويل التذاكر", group: "الدعم الفني", description: "تحويل التذكرة لموظف آخر." },
-  { id: "email.manage", label: "إدارة البريد", group: "التشغيل", description: "بيانات المُرسل وقوالب الرسائل واختبار الإرسال." },
+  { id: "email.manage", label: "إدارة البريد", group: "التشغيل", description: "بيانات المُرسل وقوالب الرسائل وإعدادات الصناديق والتسميات." },
+  { id: "email.view", label: "مشاهدة صناديق البريد", group: "التشغيل", description: "قراءة محادثات مركز البريد وملاحظاته الداخلية." },
+  { id: "email.send", label: "إرسال البريد", group: "التشغيل", description: "إنشاء المسوّدات والرد والتحويل وإرسال الرسائل." },
+  { id: "email.assign", label: "تحويل محادثات البريد", group: "التشغيل", description: "إسناد المحادثة إلى موظف آخر." },
+  { id: "email.audit", label: "سجل تدقيق البريد", group: "التشغيل", description: "الاطلاع على سجل عمليات مركز البريد." },
   { id: "notifications.send", label: "إرسال الإشعارات", group: "التشغيل", description: "إشعارات داخلية وبريد للمستخدمين والمكاتب." },
   { id: "settings.manage", label: "إعدادات المنصة", group: "التشغيل", description: "الهوية والبيانات الرسمية والروابط النظامية." },
   { id: "seo.manage", label: "إدارة SEO", group: "التشغيل", description: "الوسوم والفهرسة وملفات robots وsitemap." },

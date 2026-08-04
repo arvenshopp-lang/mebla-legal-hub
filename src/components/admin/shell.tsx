@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Mail,
   BellRing,
+  Inbox,
   Activity,
   Settings,
   Search,
@@ -52,6 +53,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: "المراسلات",
     items: [
+      { to: "/mehla-admin/mail", label: "مركز البريد", Icon: Inbox, permission: "email.view" },
       { to: "/mehla-admin/email", label: "البريد والقوالب", Icon: Mail, permission: "email.manage" },
       { to: "/mehla-admin/notifications", label: "الإشعارات", Icon: BellRing, permission: "notifications.send" },
       { to: "/mehla-admin/sms", label: "الرسائل وتوثيق الجوال", Icon: MessageSquare, permission: "settings.manage" },
