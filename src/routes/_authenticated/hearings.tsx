@@ -17,6 +17,17 @@ import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/hearings")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "الجلسات | مِهلة" },
+      { name: "description", content: "جدول جلسات المحاكم مع المحكمة والدائرة وحالة الجلسة ونتائجها." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "الجلسات | مِهلة" },
+      { property: "og:description", content: "جدول جلسات المحاكم مع المحكمة والدائرة وحالة الجلسة ونتائجها." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;

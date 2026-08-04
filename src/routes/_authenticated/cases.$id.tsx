@@ -24,6 +24,17 @@ import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "ملف القضية | مِهلة" },
+      { name: "description", content: "ملف القضية الكامل: الأطراف والجلسات والمهل والمهام والمستندات وسجل التحديثات." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "ملف القضية | مِهلة" },
+      { property: "og:description", content: "ملف القضية الكامل: الأطراف والجلسات والمهل والمهام والمستندات وسجل التحديثات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function Page() {

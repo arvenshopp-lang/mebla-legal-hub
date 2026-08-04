@@ -17,6 +17,17 @@ import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "المهل النظامية | مِهلة" },
+      { name: "description", content: "متابعة المهل النظامية والاعتراضات ومواعيد التقديم قبل انقضائها." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "المهل النظامية | مِهلة" },
+      { property: "og:description", content: "متابعة المهل النظامية والاعتراضات ومواعيد التقديم قبل انقضائها." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;

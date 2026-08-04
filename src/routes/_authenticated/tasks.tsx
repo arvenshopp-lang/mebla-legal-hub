@@ -17,6 +17,17 @@ import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "المهام | مِهلة" },
+      { name: "description", content: "توزيع مهام الفريق ومتابعة أولوياتها وتواريخ استحقاقها داخل المكتب." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "المهام | مِهلة" },
+      { property: "og:description", content: "توزيع مهام الفريق ومتابعة أولوياتها وتواريخ استحقاقها داخل المكتب." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;
