@@ -110,6 +110,57 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
 
 /* -------------------------------- الأدوار ------------------------------- */
 
+const RBAC_AUDIT_ACTIONS = [
+  "authz.denied",
+  "authz.allowed",
+  "rbac.role_saved",
+  "rbac.role_deleted",
+  "rbac.department_saved",
+  "rbac.staff_org_updated",
+  "rbac.grant_created",
+  "rbac.grant_revoked",
+  "rbac.approval_requested",
+  "rbac.approval_decided",
+  "rbac.session_revoked",
+  "rbac.restrictions_saved",
+  "rbac.impersonation_requested",
+  "rbac.impersonation_approved",
+  "rbac.impersonation_ended",
+  "rbac.impersonation_page",
+];
+
+/** سجل تدقيق RBAC مع ترقيم صفحات خادمي وعدد إجمالي. */
+export async function rbacAuditPage(
+  supabase: AnyClient,
+  userId: string,
+  input: { search?: string; action?: string; page: number; pageSize: number },
+) {
+  await authorize(supabase, userId, "audit.read", { mutating: false });
+  const db = await adminDb();
+  const from = (input.page - 1) * input.pageSize;
+
+  let query = db
+    .from("admin_audit_logs")
+    .select(
+      "id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser",
+      { count: "exact" },
+    )
+    .in("action", input.action ? [input.action] : RBAC_AUDIT_ACTIONS);
+
+  const search = input.search?.trim();
+  if (search) {
+    const safe = search.replace(/[%,()]/g, " ");
+    query = query.or(`actor_email.ilike.%${safe}%,description.ilike.%${safe}%,entity_type.ilike.%${safe}%`);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(from, from + input.pageSize - 1);
+  if (error) throw new Error("تعذّر قراءة سجل التدقيق.");
+
+  return { rows: data ?? [], total: count ?? 0, page: input.page, pageSize: input.pageSize };
+}
+
 export async function saveRole(
   supabase: AnyClient,
   userId: string,
