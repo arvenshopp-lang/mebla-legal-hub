@@ -541,11 +541,13 @@ export const getPlatformOverview = createServerFn({ method: "GET" })
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
 
+    /* eslint-disable @typescript-eslint/no-explicit-any -- عميل الخدمة غير مُنمّط عند القراءة الديناميكية */
     const db = supabaseAdmin as unknown as { from: (t: string) => any };
     const count = async (table: string, build: (q: any) => any) => {
       const { count: c } = await build(db.from(table).select("*", { count: "exact", head: true }));
       return (c as number | null) ?? 0;
     };
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const [
       totalSubs,
