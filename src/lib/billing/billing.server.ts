@@ -9,7 +9,7 @@
  */
 import { writeAudit, type StaffRow } from "@/lib/admin-guard.server";
 import { getProvider } from "./providers.server";
-import type { BillingReports, InvoiceDetail, InvoiceRow } from "./billing.shared";
+import type { BillingRow, BillingReports, InvoiceDetail, InvoiceRow } from "./billing.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;

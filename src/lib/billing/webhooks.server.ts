@@ -12,6 +12,7 @@
  */
 import { getProvider } from "./providers.server";
 import { applyProviderPaymentState, logAttempt, newCorrelationId, type BillingCtx } from "./billing.server";
+import type { BillingRow } from "./billing.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;
