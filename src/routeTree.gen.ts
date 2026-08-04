@@ -42,6 +42,7 @@ import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
 import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
 import { Route as MehlaAdminNotificationsRouteImport } from './routes/mehla-admin/notifications'
 import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/monitoring'
+import { Route as MehlaAdminMailRouteImport } from './routes/mehla-admin/mail'
 import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
 import { Route as MehlaAdminIntegrationsRouteImport } from './routes/mehla-admin/integrations'
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
@@ -71,6 +72,8 @@ import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticate
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
+import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
+import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 
@@ -238,6 +241,11 @@ const MehlaAdminMonitoringRoute = MehlaAdminMonitoringRouteImport.update({
   path: '/monitoring',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminMailRoute = MehlaAdminMailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const MehlaAdminLogsRoute = MehlaAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -385,6 +393,18 @@ const ApiPublicPaymentsProviderRoute =
     path: '/api/public/payments/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEmailInboundRoute =
+  ApiPublicHooksEmailInboundRouteImport.update({
+    id: '/api/public/hooks/email-inbound',
+    path: '/api/public/hooks/email-inbound',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksEmailDispatchRoute =
+  ApiPublicHooksEmailDispatchRouteImport.update({
+    id: '/api/public/hooks/email-dispatch',
+    path: '/api/public/hooks/email-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCleanupSecureArtifactsRoute =
   ApiPublicHooksCleanupSecureArtifactsRouteImport.update({
     id: '/api/public/hooks/cleanup-secure-artifacts',
@@ -431,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/integrations': typeof MehlaAdminIntegrationsRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/mail': typeof MehlaAdminMailRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
@@ -458,6 +479,8 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
+  '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -495,6 +518,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/integrations': typeof MehlaAdminIntegrationsRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/mail': typeof MehlaAdminMailRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
@@ -522,6 +546,8 @@ export interface FileRoutesByTo {
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
+  '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -562,6 +588,7 @@ export interface FileRoutesById {
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
   '/mehla-admin/integrations': typeof MehlaAdminIntegrationsRoute
   '/mehla-admin/logs': typeof MehlaAdminLogsRoute
+  '/mehla-admin/mail': typeof MehlaAdminMailRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
@@ -589,6 +616,8 @@ export interface FileRoutesById {
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
+  '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -629,6 +658,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/failures'
     | '/mehla-admin/integrations'
     | '/mehla-admin/logs'
+    | '/mehla-admin/mail'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
@@ -656,6 +686,8 @@ export interface FileRouteTypes {
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/email-dispatch'
+    | '/api/public/hooks/email-inbound'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -693,6 +725,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/failures'
     | '/mehla-admin/integrations'
     | '/mehla-admin/logs'
+    | '/mehla-admin/mail'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
@@ -720,6 +753,8 @@ export interface FileRouteTypes {
     | '/mehla-admin/billing'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/email-dispatch'
+    | '/api/public/hooks/email-inbound'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -759,6 +794,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/failures'
     | '/mehla-admin/integrations'
     | '/mehla-admin/logs'
+    | '/mehla-admin/mail'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
@@ -786,6 +822,8 @@ export interface FileRouteTypes {
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/email-dispatch'
+    | '/api/public/hooks/email-inbound'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -816,6 +854,8 @@ export interface RootRouteChildren {
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
+  ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -1054,6 +1094,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminMonitoringRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/mail': {
+      id: '/mehla-admin/mail'
+      path: '/mail'
+      fullPath: '/mehla-admin/mail'
+      preLoaderRoute: typeof MehlaAdminMailRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/mehla-admin/logs': {
       id: '/mehla-admin/logs'
       path: '/logs'
@@ -1257,6 +1304,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/email-inbound': {
+      id: '/api/public/hooks/email-inbound'
+      path: '/api/public/hooks/email-inbound'
+      fullPath: '/api/public/hooks/email-inbound'
+      preLoaderRoute: typeof ApiPublicHooksEmailInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-dispatch': {
+      id: '/api/public/hooks/email-dispatch'
+      path: '/api/public/hooks/email-dispatch'
+      fullPath: '/api/public/hooks/email-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksEmailDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/cleanup-secure-artifacts': {
       id: '/api/public/hooks/cleanup-secure-artifacts'
       path: '/api/public/hooks/cleanup-secure-artifacts'
@@ -1317,6 +1378,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminFailuresRoute: typeof MehlaAdminFailuresRoute
   MehlaAdminIntegrationsRoute: typeof MehlaAdminIntegrationsRoute
   MehlaAdminLogsRoute: typeof MehlaAdminLogsRoute
+  MehlaAdminMailRoute: typeof MehlaAdminMailRoute
   MehlaAdminMonitoringRoute: typeof MehlaAdminMonitoringRoute
   MehlaAdminNotificationsRoute: typeof MehlaAdminNotificationsRoute
   MehlaAdminOrganizationsRoute: typeof MehlaAdminOrganizationsRoute
@@ -1343,6 +1405,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminFailuresRoute: MehlaAdminFailuresRoute,
   MehlaAdminIntegrationsRoute: MehlaAdminIntegrationsRoute,
   MehlaAdminLogsRoute: MehlaAdminLogsRoute,
+  MehlaAdminMailRoute: MehlaAdminMailRoute,
   MehlaAdminMonitoringRoute: MehlaAdminMonitoringRoute,
   MehlaAdminNotificationsRoute: MehlaAdminNotificationsRoute,
   MehlaAdminOrganizationsRoute: MehlaAdminOrganizationsRoute,
@@ -1393,6 +1456,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
+  ApiPublicHooksEmailDispatchRoute: ApiPublicHooksEmailDispatchRoute,
+  ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
