@@ -14,9 +14,9 @@ import {
   confirmMyPhone,
   getMyPhoneStatus,
   getSmsPublicConfig,
-  requestPhoneCode,
   setSmsMfa,
 } from "@/lib/sms/sms.functions";
+import { formatCountdown, usePhoneChallenge } from "@/lib/sms/use-phone-challenge";
 import {
   MFA_STATUS_LABELS,
   PHONE_STATUS_LABELS,
@@ -30,38 +30,44 @@ export function PhoneVerificationCard() {
   const qc = useQueryClient();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
 
   const config = useQuery({ queryKey: ["sms-public-config"], queryFn: () => getSmsPublicConfig() });
   const status = useQuery({ queryKey: ["my-phone-status"], queryFn: () => getMyPhoneStatus() });
+  const parsedPhone = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
 
-  const request = useMutation({
-    mutationFn: async () => {
-      const parsed = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
-      if (!parsed.ok) throw new Error(parsed.message);
-      return requestPhoneCode({ data: { phone: parsed.e164, purpose: "phone_verification" } });
-    },
-    onSuccess: (result) => {
-      setSent(true);
+  // خطوة التحقق محفوظة على الخادم: الرجوع من واتساب أو الملاحظات يستعيدها كما هي
+  const challenge = usePhoneChallenge({
+    phone: parsedPhone.ok ? parsedPhone.e164 : null,
+    purpose: "phone_verification",
+    resendWaitSeconds: config.data?.resendWaitSeconds ?? 60,
+  });
+
+  const sendCode = async () => {
+    if (!parsedPhone.ok) {
+      toast.error("تعذّر الإرسال", { description: parsedPhone.message });
+      return;
+    }
+    const ok = await challenge.send();
+    if (ok) {
       setCode("");
       toast.success("تم إرسال رمز التحقق", {
-        description: result.testMode
+        description: challenge.testMode
           ? "الخدمة في وضع الاختبار — تواصل مع الدعم للحصول على الرمز."
-          : `الرمز صالح حتى ${fmtDateTime(result.expiresAt)}.`,
+          : undefined,
       });
-    },
-    onError: (e: Error) => toast.error("تعذّر الإرسال", { description: e.message }),
-  });
+    } else if (challenge.error) {
+      toast.error("تعذّر الإرسال", { description: challenge.error });
+    }
+  };
 
   const confirm = useMutation({
     mutationFn: async () => {
-      const parsed = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
-      if (!parsed.ok) throw new Error(parsed.message);
-      return confirmMyPhone({ data: { phone: parsed.e164, code } });
+      if (!parsedPhone.ok) throw new Error(parsedPhone.message);
+      return confirmMyPhone({ data: { phone: parsedPhone.e164, code } });
     },
     onSuccess: () => {
       toast.success(SMS_MESSAGES.verified);
-      setSent(false);
+      challenge.reset();
       setCode("");
       qc.invalidateQueries({ queryKey: ["my-phone-status"] });
     },
