@@ -3562,6 +3562,10 @@ export type Database = {
           users_count: number
         }[]
       }
+      admin_platform_metrics: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
       admin_revenue_summary: { Args: never; Returns: Json }
       admin_service_usage_summary: { Args: never; Returns: Json }
       admin_user_directory: {
