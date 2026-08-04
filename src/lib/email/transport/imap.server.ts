@@ -123,7 +123,8 @@ export class ImapConnection {
           : redactTransportError(line, this.mailboxAddress);
         throw new ImapError("imap_protocol_error", detail);
       }
-      if (lines.length > 20_000) throw new ImapError("imap_protocol_error", "استجابة IMAP طويلة جداً.");
+      if (lines.length > 20_000)
+        throw new ImapError("imap_protocol_error", "استجابة IMAP طويلة جداً.");
     }
   }
 
@@ -167,9 +168,7 @@ export class ImapConnection {
       const uid = Number(/UID\s+(\d+)/i.exec(line)?.[1] ?? 0);
       const raw = literals.get(index);
       if (!uid || !raw) return;
-      const flags = (/FLAGS\s+\(([^)]*)\)/i.exec(line)?.[1] ?? "")
-        .split(/\s+/)
-        .filter(Boolean);
+      const flags = (/FLAGS\s+\(([^)]*)\)/i.exec(line)?.[1] ?? "").split(/\s+/).filter(Boolean);
       const internal = /INTERNALDATE\s+"([^"]+)"/i.exec(line)?.[1] ?? null;
       messages.push({ uid, flags, internalDate: internal, raw });
     });
@@ -221,7 +220,10 @@ export async function imapVerify(
         ? error
         : new ImapError(
             "imap_connect_failed",
-            redactTransportError(error instanceof Error ? error.message : String(error), mailboxAddress ?? null),
+            redactTransportError(
+              error instanceof Error ? error.message : String(error),
+              mailboxAddress ?? null,
+            ),
           );
     return {
       ok: false,

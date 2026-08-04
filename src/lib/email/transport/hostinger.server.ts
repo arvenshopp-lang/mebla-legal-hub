@@ -182,7 +182,12 @@ export async function syncMailboxFolder(
   const release = async (patch: Record<string, unknown>) => {
     await db
       .from("email_sync_state")
-      .update({ locked_at: null, lock_token: null, last_sync_at: new Date().toISOString(), ...patch })
+      .update({
+        locked_at: null,
+        lock_token: null,
+        last_sync_at: new Date().toISOString(),
+        ...patch,
+      })
       .eq("id", state.id);
   };
 
@@ -286,8 +291,7 @@ export async function syncMailboxFolder(
     });
   } catch (error) {
     const code = error instanceof ImapError ? error.code : "imap_connect_failed";
-    const message =
-      error instanceof Error ? error.message : "تعذّرت المزامنة مع خادم البريد.";
+    const message = error instanceof Error ? error.message : "تعذّرت المزامنة مع خادم البريد.";
     await release({
       status: "error",
       last_error: message.slice(0, 500),

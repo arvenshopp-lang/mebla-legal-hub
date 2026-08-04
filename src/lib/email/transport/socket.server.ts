@@ -197,7 +197,8 @@ export async function connectMailSocket(options: MailSocketOptions): Promise<Mai
         const index = buffer.indexOf(0x0a);
         if (index >= 0) {
           const raw = take(index + 1);
-          const end = raw.length >= 2 && raw[raw.length - 2] === 0x0d ? raw.length - 2 : raw.length - 1;
+          const end =
+            raw.length >= 2 && raw[raw.length - 2] === 0x0d ? raw.length - 2 : raw.length - 1;
           return decoder.decode(raw.slice(0, end));
         }
         const more = await pull();

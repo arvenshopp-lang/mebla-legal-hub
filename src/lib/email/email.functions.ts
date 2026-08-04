@@ -494,9 +494,8 @@ export const getMailIntegrationStatus = createServerFn({ method: "POST" })
     const g = await guard();
     await g.requireStaff(context.supabase, context.userId, "email.manage");
     const db = await g.admin();
-    const { integrationStatus, syncableMailboxes } = (await import(
-      "@/lib/email/transport/hostinger.server"
-    )) as Hostinger;
+    const { integrationStatus, syncableMailboxes } =
+      (await import("@/lib/email/transport/hostinger.server")) as Hostinger;
     const mailboxes = await syncableMailboxes(db);
     const { data: states } = await db
       .from("email_sync_state")
@@ -529,9 +528,7 @@ export const getMailIntegrationStatus = createServerFn({ method: "POST" })
 /** اختبار اتصال SMTP وIMAP دون إرسال رسالة أو تعديل الصندوق. */
 export const testMailConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ mailboxId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: unknown) => z.object({ mailboxId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");
@@ -579,9 +576,7 @@ export const testMailConnection = createServerFn({ method: "POST" })
 /** تشغيل مزامنة يدوية لصندوق واحد. */
 export const syncMailboxNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ mailboxId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: unknown) => z.object({ mailboxId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");

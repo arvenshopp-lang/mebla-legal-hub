@@ -27,9 +27,7 @@ function env(name: string): string {
 }
 
 function localPartKey(address: string): string {
-  return (address.split("@")[0] ?? "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "_");
+  return (address.split("@")[0] ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "_");
 }
 
 /**

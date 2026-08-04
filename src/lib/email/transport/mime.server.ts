@@ -58,7 +58,7 @@ function wrap(value: string, width = 76): string {
 /** ترميز رأس يحتمل محتوى غير ASCII (RFC 2047). */
 export function encodeHeaderValue(value: string): string {
   const clean = value.replace(/[\r\n]+/g, " ").trim();
-  // eslint-disable-next-line no-control-regex
+
   if (/^[\x20-\x7e]*$/.test(clean)) return clean;
   return `=?UTF-8?B?${base64Encode(new TextEncoder().encode(clean))}?=`;
 }
@@ -70,7 +70,10 @@ function addressHeader(address: string, name?: string | null): string {
 }
 
 function addressList(addresses: string[]): string {
-  return addresses.map((a) => a.replace(/[\r\n<>,;]/g, "").trim()).filter(Boolean).join(", ");
+  return addresses
+    .map((a) => a.replace(/[\r\n<>,;]/g, "").trim())
+    .filter(Boolean)
+    .join(", ");
 }
 
 function boundary(prefix: string): string {
@@ -193,15 +196,20 @@ function decodeQuotedPrintable(input: string): Uint8Array {
 
 /** فك ترميز RFC 2047 في الرؤوس (Subject/From). */
 export function decodeEncodedWords(value: string): string {
-  return value.replace(/=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g, (_all, charset: string, encoding: string, data: string) => {
-    try {
-      const bytes =
-        encoding.toLowerCase() === "b" ? base64Decode(data) : decodeQuotedPrintable(data.replace(/_/g, " "));
-      return decodeBytes(bytes, charset);
-    } catch {
-      return data;
-    }
-  });
+  return value.replace(
+    /=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g,
+    (_all, charset: string, encoding: string, data: string) => {
+      try {
+        const bytes =
+          encoding.toLowerCase() === "b"
+            ? base64Decode(data)
+            : decodeQuotedPrintable(data.replace(/_/g, " "));
+        return decodeBytes(bytes, charset);
+      } catch {
+        return data;
+      }
+    },
+  );
 }
 
 type HeaderMap = Map<string, string[]>;
@@ -270,7 +278,9 @@ function walk(rawSection: string, into: { parts: Part[] }, depth = 0): void {
   if (contentType.startsWith("multipart/")) {
     const marker = parameterOf(header(headers, "content-type"), "boundary");
     if (!marker) return;
-    const segments = body.split(new RegExp(`--${marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(--)?\\r?\\n?`));
+    const segments = body.split(
+      new RegExp(`--${marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(--)?\\r?\\n?`),
+    );
     for (const segment of segments.slice(1)) {
       if (!segment || segment === "--" || !segment.trim()) continue;
       walk(segment, into, depth + 1);
