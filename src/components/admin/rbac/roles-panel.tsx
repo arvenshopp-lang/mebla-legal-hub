@@ -163,7 +163,8 @@ export function RolesPanel({
                     <Td>
                       <div className="flex items-center gap-1">
                         <IconBtn
-                          label="تعديل الدور"
+                          aria-label="تعديل الدور"
+                          title="تعديل الدور"
                           onClick={() =>
                             setForm({
                               id: r.id,
@@ -179,21 +180,23 @@ export function RolesPanel({
                           <Pencil className="h-4 w-4" aria-hidden />
                         </IconBtn>
                         <IconBtn
-                          label="استنساخ الدور"
+                          aria-label="استنساخ الدور"
+                          title="استنساخ الدور"
                           onClick={() => setClone({ sourceId: r.id, code: "", name_ar: `${r.name_ar} (نسخة)` })}
                           disabled={!canManage}
                         >
                           <Copy className="h-4 w-4" aria-hidden />
                         </IconBtn>
                         <IconBtn
-                          label={r.is_active ? "تعطيل الدور" : "تفعيل الدور"}
+                          aria-label={r.is_active ? "تعطيل الدور" : "تفعيل الدور"} title={r.is_active ? "تعطيل الدور" : "تفعيل الدور"}
                           onClick={() => toggle.mutate(r)}
                           disabled={!canManage || r.is_system || toggle.isPending}
                         >
                           <Power className="h-4 w-4" aria-hidden />
                         </IconBtn>
                         <IconBtn
-                          label="حذف الدور"
+                          aria-label="حذف الدور"
+                          title="حذف الدور"
                           onClick={() => setToDelete(r)}
                           disabled={!canManage || r.is_system}
                         >
