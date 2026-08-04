@@ -24,6 +24,7 @@ import {
   matchEntrySchema,
   noteSchema,
   paginationSchema,
+  providerConfigSchema,
   providerEnabledSchema,
   providerCodeSchema,
   providerSecretsSchema,
@@ -33,9 +34,12 @@ import {
   refundCreateSchema,
   refundDecisionSchema,
   reopenRequestSchema,
+  sequencePreviewSchema,
   sequenceSchema,
   taxSettingsSchema,
   uuid,
+  webhookActionSchema,
+  webhookFiltersSchema,
 } from "./billing.schemas";
 
 /* ------------------------------------------------------------------ القراءة */
@@ -193,7 +197,7 @@ export const billingListSettings = createServerFn({ method: "POST" })
 
 export const billingListWebhooks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => webhookFiltersSchema.parse(data))
   .handler(async ({ data, context }) => {
     const [hooks, ctxMod] = await Promise.all([import("./webhooks.server"), import("./ctx.server")]);
     const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.read");
@@ -522,5 +526,120 @@ export const billingRunReminders = createServerFn({ method: "POST" })
       return await engine.runDueReminders();
     } catch (error) {
       throw new Error(ctxMod.safeMessage(error, "تعذّر إرسال تذكيرات الاستحقاق."));
+    }
+  });
+
+/* --------------------------------------- المزوّدون والترقيم والرسائل الواردة */
+
+export const billingProviderStats = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [engine, ctxMod] = await Promise.all([import("./billing.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.read");
+    try {
+      return await engine.listProviderStats(ctx);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر جلب مؤشرات مزودي الدفع."));
+    }
+  });
+
+export const billingUpdateProviderConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => providerConfigSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const [engine, ctxMod] = await Promise.all([import("./billing.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.manage_providers");
+    try {
+      await engine.updateProviderConfig(ctx, data);
+      return { ok: true };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر تحديث إعدادات المزوّد."));
+    }
+  });
+
+export const billingPreviewSequence = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => sequencePreviewSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const [engine, ctxMod] = await Promise.all([import("./billing.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.read");
+    try {
+      return await engine.previewSequence(ctx, data);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر معاينة الرقم القادم."));
+    }
+  });
+
+export const billingWebhookDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ({ id: uuid.parse((data as { id: string }).id) }))
+  .handler(async ({ data, context }) => {
+    const [hooks, ctxMod] = await Promise.all([import("./webhooks.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.read");
+    try {
+      return await hooks.getWebhookDetail(ctx, data.id);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر جلب تفاصيل الرسالة."));
+    }
+  });
+
+export const billingRetryWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ({ id: uuid.parse((data as { id: string }).id) }))
+  .handler(async ({ data, context }) => {
+    const [hooks, ctxMod] = await Promise.all([import("./webhooks.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.manage_providers");
+    try {
+      return await hooks.retryWebhookEvent(ctx, data.id);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّرت إعادة معالجة الرسالة."));
+    }
+  });
+
+export const billingDeadLetterWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => webhookActionSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const [hooks, ctxMod] = await Promise.all([import("./webhooks.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.manage_providers");
+    try {
+      await hooks.markWebhookDeadLetter(ctx, data);
+      return { ok: true };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر ترحيل الرسالة."));
+    }
+  });
+
+export const billingReopenWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => webhookActionSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const [hooks, ctxMod] = await Promise.all([import("./webhooks.server"), import("./ctx.server")]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.manage_providers");
+    try {
+      await hooks.reopenWebhookEvent(ctx, data);
+      return { ok: true };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر إعادة فتح الرسالة."));
+    }
+  });
+
+/** مخرج PDF عربي للفاتورة — يُعاد بصيغة base64 لأن حدود دوال الخادم تنقل JSON فقط. */
+export const billingInvoicePdf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ({ id: uuid.parse((data as { id: string }).id) }))
+  .handler(async ({ data, context }) => {
+    const [engine, ctxMod, pdf] = await Promise.all([
+      import("./billing.server"),
+      import("./ctx.server"),
+      import("./invoice-pdf.server"),
+    ]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");
+    try {
+      const [invoice, tax] = await Promise.all([engine.getInvoiceDetail(ctx, data.id), engine.getTaxSettings()]);
+      const bytes = await pdf.buildInvoicePdf(invoice, tax);
+      return { fileName: `${invoice.number}.pdf`, base64: pdf.toBase64(bytes) };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر توليد ملف الفاتورة."));
     }
   });

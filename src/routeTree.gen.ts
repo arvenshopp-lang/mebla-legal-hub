@@ -61,6 +61,7 @@ import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
@@ -331,6 +332,11 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const MehlaAdminBillingIndexRoute = MehlaAdminBillingIndexRouteImport.update({
+  id: '/billing/',
+  path: '/billing/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   id: '/cases/',
   path: '/cases/',
@@ -435,6 +441,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
+  '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -496,6 +503,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
+  '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
+  '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -624,6 +633,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/cases/'
+    | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/payments/$provider'
@@ -685,6 +695,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/cases'
+    | '/mehla-admin/billing'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/payments/$provider'
@@ -748,6 +759,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/_authenticated/cases/'
+    | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/payments/$provider'
@@ -1151,6 +1163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/mehla-admin/billing/': {
+      id: '/mehla-admin/billing/'
+      path: '/billing'
+      fullPath: '/mehla-admin/billing/'
+      preLoaderRoute: typeof MehlaAdminBillingIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/_authenticated/cases/': {
       id: '/_authenticated/cases/'
       path: '/cases'
@@ -1275,6 +1294,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
   MehlaAdminUsersRoute: typeof MehlaAdminUsersRoute
   MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
+  MehlaAdminBillingIndexRoute: typeof MehlaAdminBillingIndexRoute
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
@@ -1298,6 +1318,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminSupportRoute: MehlaAdminSupportRoute,
   MehlaAdminUsersRoute: MehlaAdminUsersRoute,
   MehlaAdminIndexRoute: MehlaAdminIndexRoute,
+  MehlaAdminBillingIndexRoute: MehlaAdminBillingIndexRoute,
 }
 
 const MehlaAdminRouteRouteWithChildren = MehlaAdminRouteRoute._addFileChildren(
@@ -1337,13 +1358,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

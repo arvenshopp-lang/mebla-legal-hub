@@ -1459,3 +1459,140 @@ export async function applyProviderPaymentState(input: {
 
   return { applied: true, paymentId: payment.id as string, invoiceId: payment.invoice_id as string };
 }
+/* ------------------------------------------- إعدادات المزوّد المتقدمة والإحصاءات */
+
+/** أوضاع تشغيل المزوّد المدعومة (تُحفظ داخل settings.mode). */
+export type ProviderMode = "sandbox" | "production";
+
+export async function updateProviderConfig(
+  ctx: BillingCtx,
+  input: { code: string; sortOrder?: number | null; mode?: ProviderMode | null },
+): Promise<void> {
+  const client = await db();
+  const config = await providerConfig(input.code);
+  const provider = getProvider(input.code);
+  const settings = { ...((config["settings"] ?? {}) as BillingRow) };
+
+  if (input.mode) {
+    if (!provider.requiresCredentials) throw new Error("هذا المزوّد لا يدعم أوضاع التشغيل.");
+    settings["mode"] = input.mode;
+  }
+
+  const patch: BillingRow = { settings: settings as never, updated_at: new Date().toISOString() };
+  if (typeof input.sortOrder === "number") patch["sort_order"] = Math.max(0, Math.min(input.sortOrder, 99));
+
+  const { error } = await client.from("platform_payment_provider_configs").update(patch).eq("code", input.code);
+  if (error) fail(error, "تعذّر تحديث إعدادات المزوّد.");
+
+  await writeAudit(client, ctx.staff, {
+    action: "billing.provider.update_config",
+    entity_type: "payment_provider",
+    entity_id: config["id"] as string,
+    description: `تحديث إعدادات مزوّد الدفع ${input.code}`,
+    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId },
+    before: { sort_order: config["sort_order"], mode: ((config["settings"] ?? {}) as BillingRow)["mode"] ?? null },
+    after: { sort_order: patch["sort_order"] ?? config["sort_order"], mode: settings["mode"] ?? null },
+  });
+}
+
+export type ProviderStat = {
+  code: string;
+  mode: ProviderMode | null;
+  sort_order: number;
+  supports_webhooks: boolean;
+  supports_refunds: boolean;
+  webhook_failed: number;
+  webhook_dead_letter: number;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+};
+
+/** مؤشرات تشغيلية لكل مزوّد: أعطال الرسائل الواردة وآخر نجاح/فشل فعلي. */
+export async function listProviderStats(_ctx: BillingCtx): Promise<ProviderStat[]> {
+  const client = await db();
+  const { data } = await client
+    .from("platform_payment_provider_configs")
+    .select("code, settings, sort_order, supports_webhooks, supports_refunds")
+    .order("sort_order");
+
+  const rows = (data ?? []) as BillingRow[];
+  return Promise.all(
+    rows.map(async (row) => {
+      const code = row["code"] as string;
+      const [failed, dead, success, failure] = await Promise.all([
+        client
+          .from("platform_payment_webhooks")
+          .select("id", { count: "exact", head: true })
+          .eq("provider", code)
+          .eq("status", "failed"),
+        client
+          .from("platform_payment_webhooks")
+          .select("id", { count: "exact", head: true })
+          .eq("provider", code)
+          .eq("status", "dead_letter"),
+        client
+          .from("platform_payment_attempts")
+          .select("created_at")
+          .eq("provider", code)
+          .eq("status", "success")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        client
+          .from("platform_payment_attempts")
+          .select("created_at")
+          .eq("provider", code)
+          .eq("status", "failed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const settings = (row["settings"] ?? {}) as BillingRow;
+      const mode = settings["mode"];
+      return {
+        code,
+        mode: mode === "sandbox" || mode === "production" ? mode : null,
+        sort_order: Number(row["sort_order"] ?? 0),
+        supports_webhooks: Boolean(row["supports_webhooks"]),
+        supports_refunds: Boolean(row["supports_refunds"]),
+        webhook_failed: failed.count ?? 0,
+        webhook_dead_letter: dead.count ?? 0,
+        last_success_at: (success.data?.created_at as string | null) ?? null,
+        last_failure_at: (failure.data?.created_at as string | null) ?? null,
+      };
+    }),
+  );
+}
+
+/* ------------------------------------------------------- معاينة الرقم القادم */
+
+/**
+ * معاينة الرقم النظامي القادم دون استهلاكه.
+ * الاستهلاك الفعلي يتم فقط داخل next_financial_number في قاعدة البيانات
+ * (مع قفل استشاري يمنع التكرار عند الطلبات المتزامنة).
+ */
+export async function previewSequence(
+  _ctx: BillingCtx,
+  input: { kind: string; periodKey: string },
+): Promise<{ kind: string; periodKey: string; prefix: string; padding: number; nextValue: number; preview: string }> {
+  const client = await db();
+  const { data } = await client
+    .from("platform_number_sequences")
+    .select("*")
+    .eq("kind", input.kind)
+    .eq("period_key", input.periodKey)
+    .maybeSingle();
+
+  const defaults: Record<string, string> = { invoice: "MEH-INV", quote: "MEH-QT", credit_note: "MEH-CN" };
+  const prefix = (data?.prefix as string | undefined) ?? defaults[input.kind] ?? "MEH";
+  const padding = Number(data?.padding ?? 5);
+  const nextValue = Number(data?.next_value ?? 1);
+  return {
+    kind: input.kind,
+    periodKey: input.periodKey,
+    prefix,
+    padding,
+    nextValue,
+    preview: `${prefix}-${input.periodKey}-${String(nextValue).padStart(padding, "0")}`,
+  };
+}
