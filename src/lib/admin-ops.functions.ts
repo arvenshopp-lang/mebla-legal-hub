@@ -4,6 +4,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { buildCsv } from "@/lib/csv";
 import { z } from "zod";
 
 type Guard = typeof import("@/lib/admin-guard.server");
@@ -367,22 +368,26 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
       .select("created_at, actor_email, action, entity_type, entity_id, description, ip, device, browser")
       .order("created_at", { ascending: false })
       .limit(5000);
-    const header = ["التاريخ", "المنفّذ", "العملية", "النوع", "المعرّف", "الوصف", "IP", "الجهاز", "المتصفح"];
-    const escape = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = [
-      header.join(","),
-      ...((rows ?? []) as Record<string, unknown>[]).map((r) =>
-        [r.created_at, r.actor_email, r.action, r.entity_type, r.entity_id, r.description, r.ip, r.device, r.browser]
-          .map(escape)
-          .join(","),
-      ),
-    ].join("\n");
+    const csv = buildCsv(
+      ["التاريخ", "المنفّذ", "العملية", "النوع", "المعرّف", "الوصف", "IP", "الجهاز", "المتصفح"],
+      ((rows ?? []) as Record<string, unknown>[]).map((r) => [
+        r.created_at,
+        r.actor_email,
+        r.action,
+        r.entity_type,
+        r.entity_id,
+        r.description,
+        r.ip,
+        r.device,
+        r.browser,
+      ]),
+    );
     await g.writeAudit(db, staff, {
       action: "audit.export",
       entity_type: "audit",
       description: `تصدير ${(rows ?? []).length} سجلاً من سجل التدقيق`,
     });
-    return { csv: `\uFEFF${csv}` };
+    return { csv };
   });
 
 /* ---------------------------------------------------------- الأدوار المخصصة */

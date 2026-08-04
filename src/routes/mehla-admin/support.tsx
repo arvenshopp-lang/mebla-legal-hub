@@ -27,6 +27,7 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
+import { buildCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/mehla-admin/support")({
   head: () => ({ meta: [{ title: "مركز الدعم · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -52,9 +53,11 @@ function Stars({ value }: { value: number }) {
 
 function downloadCsv(rows: Record<string, string | number>[], filename: string) {
   const headers = Object.keys(rows[0] ?? {});
-  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const csv = [headers.map(escape).join(","), ...rows.map((r) => headers.map((h) => escape(r[h] ?? "")).join(","))].join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const csv = buildCsv(
+    headers,
+    rows.map((r) => headers.map((h) => r[h] ?? "")),
+  );
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
