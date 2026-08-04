@@ -163,13 +163,15 @@ export type TicketListRow = {
   reopened_count: number;
 };
 
+export type SupportJson = string | number | boolean | null | SupportJson[] | { [key: string]: SupportJson };
+
 export type TicketTimelineEvent = {
   id: string;
   event_type: string;
   actor_name: string | null;
   actor_kind: string;
-  value_before: unknown;
-  value_after: unknown;
+  value_before: SupportJson;
+  value_after: SupportJson;
   reason: string | null;
   created_at: string;
 };

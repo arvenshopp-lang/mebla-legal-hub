@@ -641,14 +641,14 @@ function configFn<T>(
       const ctx = await supportCtx(context.supabase, context.userId, permission);
       const mod = await import("./config.server");
       try {
-        const result = await run(mod, ctx.db, data as T);
+        await run(mod, ctx.db, data as T);
         await auditSupport(ctx, {
           action,
           entityType: "support_config",
           description: action,
           after: data as Record<string, unknown>,
         });
-        return result;
+        return { ok: true as const };
       } catch (error) {
         throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
       }
