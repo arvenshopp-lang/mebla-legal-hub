@@ -12,6 +12,8 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2, Check } from "lucide-react";
+import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   component: Page,
@@ -159,6 +161,14 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
   const [form, setForm] = useState<Partial<Form>>({});
+  const draft = useDialogDraft<Form>({
+    name: "deadlines",
+    open,
+    isNew: !editing,
+    userKey: activeOrgId ?? "anon",
+    form,
+    setForm,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const key = editing?.id ?? "new";
@@ -202,6 +212,7 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    draft.clear();
     qc.invalidateQueries({ queryKey: ["deadlines"] });
     qc.invalidateQueries({ queryKey: ["case-deadlines"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -210,6 +221,7 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل مهلة" : "مهلة جديدة"} size="lg" busy={loadingCases || loadingMembers} busyLabel="جاري تجهيز النموذج…">
+      <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="العنوان *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
@@ -248,7 +260,8 @@ function DeadlineDialog({ open, onClose, editing, orgId, userId }: { open: boole
         </FormField>
         <div className="md:col-span-2"><FormField label="ملاحظات"><textarea rows={2} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls} /></FormField></div>
       </div>
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <div className="me-auto"><DraftStatus draft={draft as never} /></div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>

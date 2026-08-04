@@ -12,6 +12,8 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2 } from "lucide-react";
+import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/hearings")({
   component: Page,
@@ -149,6 +151,14 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
   const [form, setForm] = useState<Partial<Form>>({});
+  const draft = useDialogDraft<Form>({
+    name: "hearings",
+    open,
+    isNew: !editing,
+    userKey: activeOrgId ?? "anon",
+    form,
+    setForm,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const key = editing?.id ?? "new";
@@ -184,6 +194,7 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     toast.success(editing ? "تم التحديث" : "تم إنشاء الجلسة");
+    draft.clear();
     qc.invalidateQueries({ queryKey: ["hearings"] });
     qc.invalidateQueries({ queryKey: ["case-hearings"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -192,6 +203,7 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل جلسة" : "جلسة جديدة"} size="lg" busy={loadingCases} busyLabel="جاري تجهيز النموذج…">
+      <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="القضية *">
           <select value={form.case_id ?? ""} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className={inputCls}>
@@ -221,7 +233,8 @@ function HearingDialog({ open, onClose, editing, orgId, userId }: { open: boolea
         <div className="md:col-span-2"><FormField label="نتيجة الجلسة"><textarea rows={2} value={form.result ?? ""} onChange={(e) => setForm({ ...form, result: e.target.value })} className={inputCls} /></FormField></div>
         <div className="md:col-span-2"><FormField label="ملاحظات"><textarea rows={2} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls} /></FormField></div>
       </div>
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <div className="me-auto"><DraftStatus draft={draft as never} /></div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>

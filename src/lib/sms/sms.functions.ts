@@ -95,6 +95,29 @@ export const requestPhoneCode = createServerFn({ method: "POST" })
   });
 
 /** تحقق من رمز قبل إنشاء الحساب (لا يتطلب جلسة). */
+export const getPhoneChallenge = createServerFn({ method: "POST" })
+  .inputValidator((input: { phone: string; purpose: z.infer<typeof purposeSchema> }) =>
+    z.object({ phone: phoneSchema, purpose: purposeSchema }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const otp = await import("./otp.server");
+    const settings = await otp.loadSmsSettings();
+    const parsed = normalizePhone(data.phone, settings.default_dial_code);
+    if (!parsed.ok) {
+      return {
+        pending: false,
+        expiresAt: null,
+        resendAfterSeconds: 0,
+        attemptsLeft: settings.max_verify_attempts,
+        codeLength: settings.code_length,
+        traceRef: null,
+        testMode: settings.test_mode,
+      };
+    }
+    return otp.peekOtpChallenge(parsed.e164, data.purpose);
+  });
+
+/** تحقق من رمز قبل إنشاء الحساب (لا يتطلب جلسة). */
 export const verifyPhoneCode = createServerFn({ method: "POST" })
   .inputValidator((input: { phone: string; code: string; purpose: z.infer<typeof purposeSchema> }) =>
     z.object({ phone: phoneSchema, code: codeSchema, purpose: purposeSchema }).parse(input),

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES, logAuthEvent, translateAuthError } from "@/lib/auth-errors";
+import { clearAllDrafts } from "@/lib/drafts/draft-store";
 
 type Profile = {
   id: string;
@@ -66,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [organizationLoading, setOrganizationLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const requestId = useRef(0);
+  // بعد أول تحميل ناجح لا نُظهر شاشة التحقق مرة أخرى: أي تحديث لاحق (رجوع من
+  // تطبيق آخر على Safari، تحديث التوكن) يجري في الخلفية دون تفريغ الواجهة.
+  const bootstrapped = useRef(false);
+  const loadedUserId = useRef<string | null>(null);
 
   const setActiveOrgId = useCallback((id: string) => {
     setActiveOrgIdState(id);
@@ -99,9 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Loads profile + memberships. Never signs the user out on failure. */
   const loadUserData = useCallback(
-    async (currentUser: User, currentRequestId: number): Promise<OrgMembership[]> => {
-      setProfileLoading(true);
-      setOrganizationLoading(true);
+    async (currentUser: User, currentRequestId: number, background = false): Promise<OrgMembership[]> => {
+      if (!background) {
+        setProfileLoading(true);
+        setOrganizationLoading(true);
+      }
 
       const [profileResult, membershipResult] = await Promise.all([
         supabase
@@ -180,17 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const runLoad = useCallback(
-    async (nextSession: Session | null): Promise<LoadResult> => {
+    async (nextSession: Session | null, background = false): Promise<LoadResult> => {
       const currentRequestId = ++requestId.current;
       setSession(nextSession);
       let all: OrgMembership[] = [];
       if (nextSession?.user) {
-        all = await loadUserData(nextSession.user, currentRequestId);
+        all = await loadUserData(nextSession.user, currentRequestId, background);
+        loadedUserId.current = nextSession.user.id;
       } else {
         clearUserData();
+        loadedUserId.current = null;
       }
       if (requestId.current !== currentRequestId) return EMPTY;
       setAuthLoading(false);
+      bootstrapped.current = true;
       return {
         session: nextSession,
         memberships: all.filter((m) => m.status === "active"),
@@ -212,11 +222,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // needed (which would double-load and cause the login-page flash).
     const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-      if (event === "TOKEN_REFRESHED") {
+      // تحديث التوكن لا يغيّر الهوية: لا نُعيد تحميل أي شيء.
+      if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
         setSession(nextSession);
         return;
       }
-      void runLoad(nextSession ?? null);
+      // Safari يُطلق INITIAL_SESSION/SIGNED_IN عند الرجوع من تطبيق آخر لنفس
+      // المستخدم؛ نُحدّث البيانات في الخلفية دون شاشة «جاري التحقق».
+      const sameUser =
+        bootstrapped.current &&
+        !!nextSession?.user &&
+        loadedUserId.current === nextSession.user.id;
+      if (sameUser) {
+        setSession(nextSession);
+        void runLoad(nextSession ?? null, true);
+        return;
+      }
+      void runLoad(nextSession ?? null, false);
     });
     return () => {
       mounted = false;
@@ -235,7 +257,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     requestId.current++;
+    bootstrapped.current = false;
+    loadedUserId.current = null;
     await supabase.auth.signOut();
+    clearAllDrafts();
     clearUserData();
     setSession(null);
   }, [clearUserData]);

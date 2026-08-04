@@ -13,6 +13,8 @@ import {
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
+import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/cases/")({
   component: Page,
@@ -204,6 +206,14 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   const { activeOrgId, user } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState<Partial<CaseForm>>({});
+  const draft = useDialogDraft<CaseForm>({
+    name: "cases",
+    open,
+    isNew: !editing,
+    userKey: activeOrgId ?? "anon",
+    form,
+    setForm,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const key = open ? (editing?.id ?? "new") : "closed";
@@ -255,6 +265,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
     setSaving(false);
     if (result.error) return toast.error("تعذّر الحفظ", { description: describeMutationError(result.error.message) });
     toast.success(editing ? "تم التحديث" : "تم إنشاء القضية");
+    draft.clear();
     qc.invalidateQueries({ queryKey: ["cases"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     onCreated?.(result.data);
@@ -263,6 +274,7 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل قضية" : "قضية جديدة"} size="lg" busy={loadingClients} busyLabel="جاري تجهيز النموذج…">
+      <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <FormField label="عنوان القضية *">
@@ -333,7 +345,8 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
           </FormField>
         </div>
       </div>
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <div className="me-auto"><DraftStatus draft={draft as never} /></div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>

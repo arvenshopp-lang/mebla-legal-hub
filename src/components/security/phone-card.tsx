@@ -14,9 +14,9 @@ import {
   confirmMyPhone,
   getMyPhoneStatus,
   getSmsPublicConfig,
-  requestPhoneCode,
   setSmsMfa,
 } from "@/lib/sms/sms.functions";
+import { formatCountdown, usePhoneChallenge } from "@/lib/sms/use-phone-challenge";
 import {
   MFA_STATUS_LABELS,
   PHONE_STATUS_LABELS,
@@ -30,38 +30,44 @@ export function PhoneVerificationCard() {
   const qc = useQueryClient();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
 
   const config = useQuery({ queryKey: ["sms-public-config"], queryFn: () => getSmsPublicConfig() });
   const status = useQuery({ queryKey: ["my-phone-status"], queryFn: () => getMyPhoneStatus() });
+  const parsedPhone = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
 
-  const request = useMutation({
-    mutationFn: async () => {
-      const parsed = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
-      if (!parsed.ok) throw new Error(parsed.message);
-      return requestPhoneCode({ data: { phone: parsed.e164, purpose: "phone_verification" } });
-    },
-    onSuccess: (result) => {
-      setSent(true);
+  // خطوة التحقق محفوظة على الخادم: الرجوع من واتساب أو الملاحظات يستعيدها كما هي
+  const challenge = usePhoneChallenge({
+    phone: parsedPhone.ok ? parsedPhone.e164 : null,
+    purpose: "phone_verification",
+    resendWaitSeconds: config.data?.resendWaitSeconds ?? 60,
+  });
+
+  const sendCode = async () => {
+    if (!parsedPhone.ok) {
+      toast.error("تعذّر الإرسال", { description: parsedPhone.message });
+      return;
+    }
+    const ok = await challenge.send();
+    if (ok) {
       setCode("");
       toast.success("تم إرسال رمز التحقق", {
-        description: result.testMode
+        description: challenge.testMode
           ? "الخدمة في وضع الاختبار — تواصل مع الدعم للحصول على الرمز."
-          : `الرمز صالح حتى ${fmtDateTime(result.expiresAt)}.`,
+          : undefined,
       });
-    },
-    onError: (e: Error) => toast.error("تعذّر الإرسال", { description: e.message }),
-  });
+    } else if (challenge.error) {
+      toast.error("تعذّر الإرسال", { description: challenge.error });
+    }
+  };
 
   const confirm = useMutation({
     mutationFn: async () => {
-      const parsed = normalizePhone(phone, config.data?.defaultDialCode ?? "+966");
-      if (!parsed.ok) throw new Error(parsed.message);
-      return confirmMyPhone({ data: { phone: parsed.e164, code } });
+      if (!parsedPhone.ok) throw new Error(parsedPhone.message);
+      return confirmMyPhone({ data: { phone: parsedPhone.e164, code } });
     },
     onSuccess: () => {
       toast.success(SMS_MESSAGES.verified);
-      setSent(false);
+      challenge.reset();
       setCode("");
       qc.invalidateQueries({ queryKey: ["my-phone-status"] });
     },
@@ -138,15 +144,21 @@ export function PhoneVerificationCard() {
                 </label>
                 <Btn
                   variant="outline"
-                  onClick={() => request.mutate()}
-                  loading={request.isPending}
-                  disabled={phone.trim().length < 8}
+                  onClick={() => void sendCode()}
+                  loading={challenge.busy}
+                  disabled={phone.trim().length < 8 || (challenge.active && !challenge.canResend)}
                 >
-                  {sent ? "إعادة إرسال الرمز" : "إرسال رمز التحقق"}
+                  {challenge.active
+                    ? challenge.canResend
+                      ? "إعادة إرسال الرمز"
+                      : `إعادة الإرسال بعد ${formatCountdown(challenge.resendIn)}`
+                    : challenge.expired
+                      ? "إرسال رمز جديد"
+                      : "إرسال رمز التحقق"}
                 </Btn>
               </div>
 
-              {sent && (
+              {(challenge.active || challenge.expired) && (
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="grid gap-1.5">
                     <span className="text-sm font-medium">رمز التحقق</span>
@@ -158,17 +170,30 @@ export function PhoneVerificationCard() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       dir="ltr"
+                      disabled={challenge.expired}
                       className={inputCls + " max-w-[180px] text-center font-mono tracking-[0.4em]"}
                     />
                   </label>
                   <Btn
                     onClick={() => confirm.mutate()}
                     loading={confirm.isPending}
-                    disabled={code.length < (config.data?.codeLength ?? 6)}
+                    disabled={challenge.expired || code.length < (config.data?.codeLength ?? 6)}
                   >
                     توثيق الرقم
                   </Btn>
                 </div>
+              )}
+
+              {challenge.active && (
+                <p role="status" className="text-[12px] text-text-muted">
+                  الرمز صالح لمدة {formatCountdown(challenge.secondsLeft)}
+                  {challenge.attemptsLeft !== null ? ` — محاولات متبقية: ${challenge.attemptsLeft}` : ""}
+                </p>
+              )}
+              {challenge.expired && (
+                <p role="alert" className="text-[12px] text-warning">
+                  انتهت صلاحية الرمز. اطلب رمزاً جديداً لإكمال التوثيق.
+                </p>
               )}
             </div>
           )}
