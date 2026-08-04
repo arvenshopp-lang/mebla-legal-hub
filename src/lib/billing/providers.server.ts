@@ -136,7 +136,7 @@ function mapMoyasarStatus(status: string | undefined, refunded?: number, amount?
       return "paid";
     case "authorized":
     case "initiated":
-ވ      return "processing";
+      return "processing";
     case "failed":
       return "failed";
     case "voided":
