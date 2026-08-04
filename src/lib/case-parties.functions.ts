@@ -83,6 +83,24 @@ async function requireOrgAdmin(
   return role;
 }
 
+/** تسجيل تغييرات المنح في سجل التدقيق التشغيلي (الفاعل يُثبّت بمُحفّز القاعدة). */
+async function logPermissionChange(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  organizationId: string,
+  action: string,
+  targetUserId: string,
+  metadata: Record<string, unknown>,
+) {
+  await supabase.from("activity_logs").insert({
+    organization_id: organizationId,
+    action,
+    entity_type: "case_party_permission",
+    entity_id: targetUserId,
+    metadata: metadata as never,
+  } as never);
+}
+
 export const listCasePartyGrants = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => orgInput.parse(d))
@@ -129,13 +147,10 @@ export const grantCasePartyPermission = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
 
-    const { logActivity } = await import("./audit");
-    await logActivity(context.supabase, {
-      organizationId: data.organizationId,
-      action: "case_party_permission.grant",
-      entityType: "case_party_permission",
-      entityId: data.userId,
-      metadata: { permission: data.permission, expires_at: data.expiresAt ?? null, reason: data.reason },
+    await logPermissionChange(context.supabase, data.organizationId, "case_party_permission.grant", data.userId, {
+      permission: data.permission,
+      expires_at: data.expiresAt ?? null,
+      reason: data.reason,
     });
     return { ok: true };
   });
@@ -157,13 +172,12 @@ export const revokeCasePartyPermission = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const { logActivity } = await import("./audit");
-    await logActivity(context.supabase, {
-      organizationId: data.organizationId,
-      action: "case_party_permission.revoke",
-      entityType: "case_party_permission",
-      entityId: (row as { user_id: string }).user_id,
-      metadata: { permission: (row as { permission: string }).permission },
-    });
+    await logPermissionChange(
+      context.supabase,
+      data.organizationId,
+      "case_party_permission.revoke",
+      (row as { user_id: string }).user_id,
+      { permission: (row as { permission: string }).permission },
+    );
     return { ok: true };
   });
