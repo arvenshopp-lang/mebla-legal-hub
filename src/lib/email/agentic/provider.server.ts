@@ -237,7 +237,7 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
 
 /* ------------------------------------------------- الصناديق والربط */
 
-export type ProviderMailbox = { id: string | null; address: string; displayName: string | null; unread: number | null };
+export type ProviderMailbox = { id: string; address: string; displayName: string | null; unread: number | null };
 
 /** اكتشاف صناديق Hostinger الفعلية. لا يُنشئ أي صندوق داخل مِهلة. */
 export async function discoverProviderMailboxes(correlationId: string): Promise<ProviderMailbox[]> {
