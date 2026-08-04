@@ -182,3 +182,26 @@ export const listFiltersSchema = paginationSchema.extend({
   method: optionalText(30),
   search: optionalText(120),
 });
+
+/* ----------------------------------------- مخططات المزوّدين والترقيم والرسائل */
+
+export const providerConfigSchema = providerCodeSchema.extend({
+  sortOrder: z.number().int().min(0).max(99).nullable().optional(),
+  mode: z.enum(["sandbox", "production"]).nullable().optional(),
+});
+
+export const sequencePreviewSchema = z.object({
+  kind: z.enum(["invoice", "quote", "credit_note"]),
+  periodKey: text(10).min(4),
+});
+
+export const webhookFiltersSchema = paginationSchema.extend({
+  status: optionalText(30),
+  provider: optionalText(30),
+  search: optionalText(120),
+});
+
+export const webhookActionSchema = z.object({
+  id: uuid,
+  reason: text(400).min(5, "اكتب سبباً واضحاً (5 أحرف على الأقل)."),
+});

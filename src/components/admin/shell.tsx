@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Plug,
   Palette,
+  Receipt,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { to: "/mehla-admin/subscriptions", label: "الاشتراكات", Icon: CreditCard, permission: "subscriptions.manage" },
       { to: "/mehla-admin/plans", label: "الباقات", Icon: Layers, permission: "plans.manage" },
       { to: "/mehla-admin/revenue", label: "الإيرادات والتقارير", Icon: TrendingUp, permission: "revenue.read" },
+      { to: "/mehla-admin/billing", label: "المركز المالي", Icon: Receipt, permission: "billing.read" },
       { to: "/mehla-admin/support", label: "مركز الدعم", Icon: LifeBuoy, permission: "tickets.view" },
     ],
   },

@@ -356,7 +356,7 @@ export async function processRetryQueue(limit = 20): Promise<{ retried: number; 
 
 export async function listWebhookEvents(
   _ctx: BillingCtx,
-  filters: { status?: string | null; page: number; pageSize: number },
+  filters: { status?: string | null; provider?: string | null; search?: string | null; page: number; pageSize: number },
 ): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
@@ -366,7 +366,201 @@ export async function listWebhookEvents(
       { count: "exact" },
     );
   if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+  if (filters.provider && filters.provider !== "all") query = query.eq("provider", filters.provider);
+  const search = filters.search?.trim();
+  if (search) {
+    const safe = search.replace(/[%,()]/g, " ");
+    query = query.or(`event_id.ilike.%${safe}%,event_type.ilike.%${safe}%,correlation_id.ilike.%${safe}%`);
+  }
   const from = (filters.page - 1) * filters.pageSize;
   const { data, count } = await query.order("received_at", { ascending: false }).range(from, from + filters.pageSize - 1);
   return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
+}
+
+/* ------------------------------------------------------ الإجراءات الإدارية */
+
+const WEBHOOK_DETAIL_COLUMNS =
+  "id, provider, event_id, event_type, signature_valid, replay_detected, status, attempts, last_error, next_retry_at, processed_at, received_at, payment_id, invoice_id, correlation_id, request_id, raw_headers, raw_body";
+
+/**
+ * تفاصيل رسالة واردة — الحمولة تُعاد منقّحة مرة أخرى قبل الخروج من الخادم
+ * حتى لو كانت مخزّنة منقّحة أصلاً (طبقة حماية ثانية).
+ */
+export async function getWebhookDetail(_ctx: BillingCtx, id: string): Promise<BillingRow> {
+  const client = await db();
+  const { data } = await client
+    .from("platform_payment_webhooks")
+    .select(WEBHOOK_DETAIL_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) throw new Error("الرسالة غير موجودة.");
+  const row = data as BillingRow;
+  let payload: unknown = { note: "لا توجد حمولة قابلة للعرض." };
+  try {
+    payload = maskSensitive(JSON.parse(String(row["raw_body"] ?? "{}")));
+  } catch {
+    payload = { note: "تعذّر تحليل الحمولة." };
+  }
+  return {
+    ...row,
+    raw_body: JSON.stringify(payload, null, 2).slice(0, 20_000),
+    raw_headers: maskSensitive(row["raw_headers"] ?? {}) as never,
+  };
+}
+
+async function auditWebhook(
+  ctx: BillingCtx,
+  row: BillingRow,
+  action: string,
+  description: string,
+  after: BillingRow,
+): Promise<void> {
+  const client = await db();
+  const { writeAudit } = await import("@/lib/admin-guard.server");
+  await writeAudit(client, ctx.staff, {
+    action,
+    entity_type: "payment_webhook",
+    entity_id: row["id"] as string,
+    description,
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      provider: row["provider"] as string,
+      eventId: (row["event_id"] as string | null) ?? null,
+    },
+    before: { status: row["status"], attempts: row["attempts"] },
+    after,
+  });
+}
+
+async function webhookRow(id: string): Promise<BillingRow> {
+  const client = await db();
+  const { data } = await client
+    .from("platform_payment_webhooks")
+    .select("id, provider, event_id, event_type, status, attempts, raw_body, correlation_id, request_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) throw new Error("الرسالة غير موجودة.");
+  return data as BillingRow;
+}
+
+/** إعادة معالجة رسالة واحدة يدوياً — لا يُعاد تحليل التوقيع لأن الرسالة موثّقة سابقاً. */
+export async function retryWebhookEvent(ctx: BillingCtx, id: string): Promise<{ processed: boolean; status: string }> {
+  const client = await db();
+  const row = await webhookRow(id);
+  const status = String(row["status"]);
+  if (status === "processed") throw new Error("الرسالة مُعالجة مسبقاً.");
+  if (status === "dead_letter") throw new Error("أعِد فتح الرسالة أولاً قبل إعادة المحاولة.");
+
+  const provider = getProvider(row["provider"] as string);
+  type ParsedEvent = {
+    eventId: string | null;
+    eventType: string | null;
+    providerPaymentId: string | null;
+    status: string | null;
+    amount: number | null;
+  };
+  let parsed: ParsedEvent | null = null;
+  try {
+    parsed = provider.handleWebhook(String(row["raw_body"] ?? "{}")) as ParsedEvent | null;
+  } catch {
+    parsed = null;
+  }
+
+  let processed = false;
+  let nextStatus = "ignored";
+  let lastError: string | null = "حدث غير مرتبط بدفعة";
+  let paymentId: string | null = null;
+  let invoiceId: string | null = null;
+
+  if (parsed?.providerPaymentId && parsed.status) {
+    try {
+      const applied = await applyProviderPaymentState({
+        provider: row["provider"] as string,
+        providerPaymentId: parsed.providerPaymentId,
+        status: parsed.status as never,
+        amount: parsed.amount,
+        correlationId: ctx.correlationId,
+      });
+      processed = applied.applied;
+      paymentId = applied.paymentId;
+      invoiceId = applied.invoiceId;
+      nextStatus = applied.applied ? "processed" : "ignored";
+      lastError = applied.applied ? null : "لا توجد دفعة مطابقة للمعرّف الخارجي";
+    } catch (error) {
+      nextStatus = "failed";
+      lastError = (error instanceof Error ? error.message : "خطأ غير معروف").slice(0, 300);
+    }
+  }
+
+  await client
+    .from("platform_payment_webhooks")
+    .update({
+      status: nextStatus,
+      attempts: Number(row["attempts"] ?? 0) + 1,
+      payment_id: paymentId,
+      invoice_id: invoiceId,
+      last_error: lastError,
+      processed_at: nextStatus === "processed" ? new Date().toISOString() : null,
+      next_retry_at: nextStatus === "failed" ? new Date(Date.now() + 60_000).toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  await logAttempt({
+    paymentId,
+    invoiceId,
+    provider: row["provider"] as string,
+    operation: "webhook_manual_retry",
+    status: nextStatus === "processed" ? "success" : "failed",
+    requestId: ctx.requestId,
+    correlationId: ctx.correlationId,
+    errorMessage: lastError,
+  });
+  await auditWebhook(ctx, row, "billing.webhook.retry", "إعادة معالجة رسالة مزوّد دفع يدوياً", {
+    status: nextStatus,
+    processed,
+  });
+  return { processed, status: nextStatus };
+}
+
+/** ترحيل رسالة إلى طابور الرسائل الفاشلة نهائياً بسبب مُسجّل. */
+export async function markWebhookDeadLetter(ctx: BillingCtx, input: { id: string; reason: string }): Promise<void> {
+  const client = await db();
+  const row = await webhookRow(input.id);
+  if (String(row["status"]) === "processed") throw new Error("لا يمكن ترحيل رسالة مُعالجة.");
+  await client
+    .from("platform_payment_webhooks")
+    .update({
+      status: "dead_letter",
+      next_retry_at: null,
+      last_error: input.reason.slice(0, 300),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+  await auditWebhook(ctx, row, "billing.webhook.dead_letter", "ترحيل رسالة مزوّد دفع إلى الطابور الفاشل نهائياً", {
+    status: "dead_letter",
+    reason: input.reason,
+  });
+}
+
+/** إعادة فتح رسالة فاشلة نهائياً بعد معالجة سبب الفشل. */
+export async function reopenWebhookEvent(ctx: BillingCtx, input: { id: string; reason: string }): Promise<void> {
+  const client = await db();
+  const row = await webhookRow(input.id);
+  if (String(row["status"]) !== "dead_letter") throw new Error("الرسالة ليست في الطابور الفاشل نهائياً.");
+  await client
+    .from("platform_payment_webhooks")
+    .update({
+      status: "failed",
+      attempts: 0,
+      next_retry_at: new Date().toISOString(),
+      last_error: `أُعيد فتحها: ${input.reason.slice(0, 200)}`,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+  await auditWebhook(ctx, row, "billing.webhook.reopen", "إعادة فتح رسالة من الطابور الفاشل نهائياً", {
+    status: "failed",
+    reason: input.reason,
+  });
 }
