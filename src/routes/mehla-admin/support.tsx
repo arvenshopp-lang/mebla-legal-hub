@@ -88,10 +88,12 @@ function SupportPage() {
   });
 
   const { data: requesters } = useQuery({
-    queryKey: ["admin-ticket-requesters", (tickets ?? []).map((t) => t.user_id).join(",")],
+    queryKey: ["admin-ticket-requesters", (tickets ?? []).map((t) => t.user_id ?? "").join(",")],
     enabled: (tickets ?? []).length > 0,
     queryFn: async () => {
-      const ids = Array.from(new Set((tickets ?? []).map((t) => t.user_id)));
+      const ids = Array.from(
+        new Set((tickets ?? []).map((t) => t.user_id).filter((id): id is string => !!id)),
+      );
       const { data, error } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
       if (error) throw error;
       return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
@@ -135,7 +137,7 @@ function SupportPage() {
                 rated.map((t) => ({
                   المرجع: t.reference,
                   الموضوع: t.subject,
-                  "بريد المشترك": requesters?.[t.user_id]?.email ?? "",
+                  "بريد المشترك": (t.user_id ? requesters?.[t.user_id]?.email : t.requester_email) ?? "",
                   التقييم: t.rating ?? "",
                   الملاحظة: t.rating_comment ?? "",
                   الموظف: t.rated_staff_name ?? "",
@@ -188,7 +190,9 @@ function SupportPage() {
                 >
                   <Td className="tabular-nums text-muted-foreground">{t.reference}</Td>
                   <Td className="font-medium">{t.subject}</Td>
-                  <Td className="text-left text-[12px]">{requesters?.[t.user_id]?.email ?? "—"}</Td>
+                  <Td className="text-left text-[12px]">
+                    {(t.user_id ? requesters?.[t.user_id]?.email : t.requester_email) ?? "—"}
+                  </Td>
                   <Td>{TICKET_CATEGORY_LABELS[t.category] ?? t.category}</Td>
                   <Td>
                     <Badge tone={t.priority === "urgent" || t.priority === "high" ? "red" : "muted"}>
@@ -232,11 +236,13 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
       ]);
       if (ticket.error) throw ticket.error;
       if (messages.error) throw messages.error;
-      const { data: requester } = await supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("id", ticket.data.user_id)
-        .maybeSingle();
+      const { data: requester } = ticket.data.user_id
+        ? await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", ticket.data.user_id)
+            .maybeSingle()
+        : { data: null };
       return { ticket: ticket.data, messages: messages.data ?? [], requester };
     },
   });

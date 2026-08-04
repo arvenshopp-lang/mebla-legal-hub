@@ -21,6 +21,18 @@ export type AdminPermission =
   | "tickets.view"
   | "tickets.reply"
   | "tickets.assign"
+  | "support.read"
+  | "support.create"
+  | "support.reply"
+  | "support.assign"
+  | "support.escalate"
+  | "support.close"
+  | "support.reopen"
+  | "support.merge"
+  | "support.manage_sla"
+  | "support.manage_categories"
+  | "support.view_all_offices"
+  | "support.export"
   | "email.manage"
   | "email.view"
   | "email.send"
@@ -84,6 +96,18 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "tickets.view", label: "مشاهدة التذاكر", group: "الدعم الفني", description: "الاطلاع على تذاكر الدعم." },
   { id: "tickets.reply", label: "الرد على التذاكر", group: "الدعم الفني", description: "الرد وتغيير الحالة والإغلاق." },
   { id: "tickets.assign", label: "تحويل التذاكر", group: "الدعم الفني", description: "تحويل التذكرة لموظف آخر." },
+  { id: "support.read", label: "مشاهدة مركز الدعم", group: "الدعم الفني", description: "الاطلاع على التذاكر وخطها الزمني ومهلها." },
+  { id: "support.create", label: "إنشاء تذكرة", group: "الدعم الفني", description: "فتح تذكرة داخلية نيابة عن مكتب أو مُقدّم طلب." },
+  { id: "support.reply", label: "الرد على التذاكر", group: "الدعم الفني", description: "الرد على المكتب وإضافة الملاحظات الداخلية وتغيير الحالة." },
+  { id: "support.assign", label: "إسناد التذاكر", group: "الدعم الفني", description: "إسناد التذكرة لموظف أو فريق آخر." },
+  { id: "support.escalate", label: "تصعيد التذاكر", group: "الدعم الفني", description: "رفع مستوى التذكرة إلى فريق أعلى." },
+  { id: "support.close", label: "إغلاق التذاكر", group: "الدعم الفني", description: "تسجيل الحل والإغلاق وإطلاق طلب التقييم." },
+  { id: "support.reopen", label: "إعادة فتح التذاكر", group: "الدعم الفني", description: "إعادة فتح تذكرة مغلقة بمهلة حل جديدة." },
+  { id: "support.merge", label: "الدمج والتقسيم", group: "الدعم الفني", description: "دمج التذاكر المتكررة وتقسيم الطلبات المركّبة." },
+  { id: "support.manage_sla", label: "إدارة المهل والفرق", group: "الدعم الفني", description: "سياسات المهل وتقويم العمل والعطلات وقواعد التصعيد والفرق." },
+  { id: "support.manage_categories", label: "إدارة التصنيفات والوسوم", group: "الدعم الفني", description: "تصنيفات التذاكر وأولوياتها الافتراضية والوسوم." },
+  { id: "support.view_all_offices", label: "مشاهدة تذاكر كل المكاتب", group: "الدعم الفني", description: "بدونها يرى الوكيل تذاكره وتذاكر فرقه فقط." },
+  { id: "support.export", label: "تصدير تقارير الدعم", group: "الدعم الفني", description: "تصدير التذاكر ومؤشرات المهل والتقييمات بصيغة CSV." },
   { id: "email.manage", label: "إدارة البريد", group: "التشغيل", description: "بيانات المُرسل وقوالب الرسائل وإعدادات الصناديق والتسميات." },
   { id: "email.view", label: "مشاهدة صناديق البريد", group: "التشغيل", description: "قراءة محادثات مركز البريد وملاحظاته الداخلية." },
   { id: "email.send", label: "إرسال البريد", group: "التشغيل", description: "إنشاء المسوّدات والرد والتحويل وإرسال الرسائل." },
@@ -138,6 +162,10 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "logs.view": ["audit.read"],
   "analytics.view": ["revenue.read"],
   "content.manage": ["settings.manage"],
+  // مركز الدعم: الصلاحيات القديمة تبقى مقبولة وتُخطَّط إلى الصلاحيات الحديثة.
+  "tickets.view": ["support.read"],
+  "tickets.reply": ["support.reply", "support.close", "support.reopen"],
+  "tickets.assign": ["support.assign", "support.escalate"],
 };
 
 export function expandPermissions(permissions: string[] | null | undefined): string[] {
@@ -179,6 +207,9 @@ export const TICKET_STATUS_LABELS: Record<string, string> = {
   awaiting_reply: "بانتظار الرد",
   in_progress: "قيد المعالجة",
   closed: "مغلقة",
+  pending_internal: "بانتظار جهة داخلية",
+  escalated: "مُصعَّدة",
+  resolved: "تم الحل",
 };
 
 export const TICKET_PRIORITY_LABELS: Record<string, string> = {
