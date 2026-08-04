@@ -288,6 +288,49 @@ export async function buildSupportReport(
     breached: bucket.filter((r) => r.sla_state === "breached").length,
   })).sort((a, b) => b.count - a.count);
 
+  const byPriority = group(rows, (r) => r.priority, (key, bucket) => ({
+    key,
+    count: bucket.length,
+    breached: bucket.filter((r) => r.sla_state === "breached").length,
+  })).sort((a, b) => b.count - a.count);
+
+  const byChannel = group(rows, (r) => r.channel, (key, bucket) => ({ key, count: bucket.length })).sort(
+    (a, b) => b.count - a.count,
+  );
+
+  const byOrganization = group(rows, (r) => r.organization_id, (key, bucket) => ({
+    key,
+    name: orgName.get(key) ?? "مكتب غير مرتبط",
+    plan: orgPlan.get(key) ?? null,
+    count: bucket.length,
+    open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
+    breached: bucket.filter((r) => r.sla_state === "breached").length,
+  })).sort((a, b) => b.count - a.count);
+
+  const byPlan = group(
+    rows,
+    (r) => (r.organization_id ? (orgPlan.get(r.organization_id) ?? "بدون باقة") : "بدون مكتب"),
+    (key, bucket) => ({
+      key,
+      count: bucket.length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
+
+  /* أعمار التذاكر المفتوحة — مقياس تراكم العمل. */
+  const openRows = rows.filter((r) => !TERMINAL_STATUSES.includes(r.status as never));
+  const ageHours = (iso: string) => (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  const aging = [
+    { bucket: "lt24", label: "أقل من 24 ساعة", test: (h: number) => h < 24 },
+    { bucket: "d1_3", label: "من يوم إلى 3 أيام", test: (h: number) => h >= 24 && h < 72 },
+    { bucket: "d3_7", label: "من 3 إلى 7 أيام", test: (h: number) => h >= 72 && h < 168 },
+    { bucket: "gt7", label: "أكثر من 7 أيام", test: (h: number) => h >= 168 },
+  ].map(({ bucket, label, test }) => ({
+    bucket,
+    label,
+    count: openRows.filter((r) => test(ageHours(r.created_at))).length,
+  }));
+
   const byTeam = group(rows, (r) => r.team_id, (key, bucket) => ({
     key,
     name: teamName.get(key) ?? "غير محدد",
@@ -353,10 +396,22 @@ export async function buildSupportReport(
       avgResolutionMinutes: average(resolutionTimes),
     },
     csat: { responses: ratings.length, average: ratings.length ? Number((ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(2)) : null, distribution },
+    csatByStaff: csatGroup((e) => e.staff_id, (key) => staffName.get(key) ?? "غير محدد"),
+    csatByTeam: csatGroup((e) => e.team_id, (key) => teamName.get(key) ?? "غير محدد"),
+    csatByCategory: csatGroup((e) => e.category, (key) => key).map(({ key, responses, average }) => ({
+      key,
+      responses,
+      average,
+    })),
     byStatus,
+    byPriority,
+    byChannel,
     byCategory,
     byTeam,
     byAgent,
+    byOrganization,
+    byPlan,
+    aging,
     daily,
     breachedTickets,
   };
