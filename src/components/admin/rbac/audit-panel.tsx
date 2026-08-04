@@ -113,7 +113,7 @@ export function AuditPanel() {
                     <Th>العملية</Th>
                     <Th>المورد</Th>
                     <Th>الوصف</Th>
-                    <Th className="w-24" />
+                    <Th className="w-24"><span className="sr-only">تفاصيل</span></Th>
                   </tr>
                 </thead>
                 <tbody>
