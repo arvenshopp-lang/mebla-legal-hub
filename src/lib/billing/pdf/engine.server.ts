@@ -5,12 +5,15 @@
  * ويرسمه بهوية مِهلة البصرية. الفاتورة وعرض السعر والإيصال وكشف الحساب
  * تُبنى كنماذج في models.server.ts، فتبقى المخرجات متطابقة الشكل والجودة.
  *
- * ملاحظة تقنية: pdf-lib لا يدعم التشكيل السياقي العربي ولا ترتيب RTL،
- * لذلك يمر كل نص عبر shapeArabic قبل الرسم.
+ * ملاحظة تقنية: خط المستند يُدمج عبر fontkit، وهو يتولى التشكيل السياقي العربي
+ * وقلب مقاطع العربية داخلياً. لذلك يُرسم كل نص على هيئة «مقاطع اتجاهية»:
+ * نقسّم السطر إلى مقاطع عربية ومقاطع لاتينية (أرقام، تواريخ، مبالغ، عملات،
+ * بريد، جوال، مراجع مستندات)، ثم نوزّعها من اليمين إلى اليسار ونرسم كل مقطع
+ * بنصه المنطقي في موضعه المحسوب. هذا يمنع انقلاب التواريخ والأرقام ويحفظ
+ * التصاق رمز العملة بالمبلغ.
  */
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
-import { shapeArabic } from "@/lib/secure-view/arabic-shaper";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 
 /* ------------------------------------------------------------- نموذج المستند */
@@ -81,7 +84,61 @@ const FOOTER_RESERVE = 96;
 
 type Ctx = { doc: PDFDocument; page: PDFPage; font: PDFFont; y: number };
 
-const ar = (value: string): string => shapeArabic(value);
+/* -------------------------------------------- تقسيم السطر إلى مقاطع اتجاهية */
+
+type Run = { text: string; rtl: boolean };
+
+const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const LTR_CHAR = /[A-Za-z0-9\u00C0-\u024F]/;
+/** رموز تسبق مقطعاً لاتينياً وتُعد جزءاً منه (مثل + في أرقام الجوال الدولية). */
+const LTR_PREFIX = /[+#]/;
+
+/**
+ * يقسّم النص إلى مقاطع: العربية (rtl) واللاتينية/الرقمية (ltr).
+ * المحايدات (مسافات، نقطتان، شرطة، أقواس…) تلتحق بالمقطع المجاور لها من
+ * الجهتين إن اتفقا، وإلا فتُعدّ عربية لأن اتجاه المستند الأساسي RTL.
+ * بذلك يبقى «2026-08-04» و«SAR 4,600.00» و«MEH-INV-2026-000001» مقطعاً واحداً.
+ */
+export function splitDirectionalRuns(input: string): Run[] {
+  const chars = Array.from(input);
+  if (chars.length === 0) return [];
+
+  const classes: Array<"R" | "L" | "N"> = chars.map((char) =>
+    RTL_CHAR.test(char) ? "R" : LTR_CHAR.test(char) ? "L" : "N",
+  );
+
+  const resolved: Array<"R" | "L"> = classes.map((cls, index) => {
+    if (cls !== "N") return cls;
+    let before: "R" | "L" | undefined;
+    for (let i = index - 1; i >= 0; i -= 1) {
+      if (classes[i] !== "N") {
+        before = classes[i] as "R" | "L";
+        break;
+      }
+    }
+    let after: "R" | "L" | undefined;
+    for (let i = index + 1; i < classes.length; i += 1) {
+      if (classes[i] !== "N") {
+        after = classes[i] as "R" | "L";
+        break;
+      }
+    }
+    // محايد محاط بلاتيني من الجهتين يبقى داخل المقطع اللاتيني (تاريخ/مبلغ/بريد).
+    if (before === "L" && after === "L") return "L";
+    // بادئة لاتينية مثل «+» قبل رقم جوال دولي تلتحق بالرقم لا بالنص العربي.
+    if (after === "L" && LTR_PREFIX.test(chars[index] as string)) return "L";
+    return "R";
+  });
+
+  const runs: Run[] = [];
+  chars.forEach((char, index) => {
+    const rtl = resolved[index] === "R";
+    const last = runs[runs.length - 1];
+    if (last && last.rtl === rtl) last.text += char;
+    else runs.push({ text: char, rtl });
+  });
+  return runs;
+}
 
 /* -------------------------------------------------------- تنسيق أرقام وتواريخ */
 
@@ -127,22 +184,45 @@ export function formatPdfDateTime(value: string | null | undefined): string {
 /* ------------------------------------------------------------ أدوات الرسم */
 
 function widthOf(ctx: Ctx, text: string, size: number): number {
-  return ctx.font.widthOfTextAtSize(ar(text), size);
+  return splitDirectionalRuns(text).reduce(
+    (total, run) => total + ctx.font.widthOfTextAtSize(run.text, size),
+    0,
+  );
 }
 
-function rightText(ctx: Ctx, text: string, x: number, y: number, size: number, color: RGB = INK): void {
-  const shaped = ar(text);
-  ctx.page.drawText(shaped, {
-    x: x - ctx.font.widthOfTextAtSize(shaped, size),
-    y,
-    size,
-    font: ctx.font,
-    color,
+/**
+ * يرسم سطراً مختلطاً: المقاطع تُوزّع من اليمين إلى اليسار حسب ترتيبها المنطقي،
+ * ويُرسم كل مقطع بنصه الأصلي حتى يتولى fontkit التشكيل والقلب الصحيح للعربية
+ * بينما تبقى الأرقام والتواريخ والمبالغ بترتيبها الطبيعي.
+ */
+function drawLine(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  leftX: number,
+  y: number,
+  size: number,
+  color: RGB,
+): void {
+  let cursor = leftX;
+  const runs = splitDirectionalRuns(text);
+  const widths = runs.map((run) => font.widthOfTextAtSize(run.text, size));
+  const total = widths.reduce((sum, width) => sum + width, 0);
+  cursor = leftX + total;
+  runs.forEach((run, index) => {
+    cursor -= widths[index] ?? 0;
+    if (run.text.trim().length > 0) {
+      page.drawText(run.text, { x: cursor, y, size, font, color });
+    }
   });
 }
 
+function rightText(ctx: Ctx, text: string, x: number, y: number, size: number, color: RGB = INK): void {
+  drawLine(ctx.page, ctx.font, text, x - widthOf(ctx, text, size), y, size, color);
+}
+
 function leftText(ctx: Ctx, text: string, x: number, y: number, size: number, color: RGB = INK): void {
-  ctx.page.drawText(ar(text), { x, y, size, font: ctx.font, color });
+  drawLine(ctx.page, ctx.font, text, x, y, size, color);
 }
 
 function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): string {
@@ -336,28 +416,23 @@ function textBlocks(ctx: Ctx, blocks: PdfTextBlock[]): void {
 function footer(ctx: Ctx): void {
   const note = "مستند صادر إلكترونياً من منصة مِهلة";
   ctx.doc.getPages().forEach((page, index, pages) => {
-    const label = ar(`صفحة ${index + 1} / ${pages.length}`);
+    const label = `صفحة ${index + 1} / ${pages.length}`;
+    const labelWidth = splitDirectionalRuns(label).reduce(
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+      0,
+    );
+    const noteWidth = splitDirectionalRuns(note).reduce(
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+      0,
+    );
     page.drawLine({
       start: { x: MARGIN, y: MARGIN + 22 },
       end: { x: A4.width - MARGIN, y: MARGIN + 22 },
       thickness: 0.5,
       color: LINE,
     });
-    page.drawText(label, {
-      x: (A4.width - ctx.font.widthOfTextAtSize(label, 8)) / 2,
-      y: MARGIN + 8,
-      size: 8,
-      font: ctx.font,
-      color: MUTED,
-    });
-    const shapedNote = ar(note);
-    page.drawText(shapedNote, {
-      x: A4.width - MARGIN - ctx.font.widthOfTextAtSize(shapedNote, 8),
-      y: MARGIN + 8,
-      size: 8,
-      font: ctx.font,
-      color: MUTED,
-    });
+    drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
+    drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
   });
 }
 
