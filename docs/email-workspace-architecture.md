@@ -1,0 +1,114 @@
+# مركز البريد (Email Workspace) — وثيقة معمارية
+
+الحالة: **تحليل ومعمارية معتمدة قبل التنفيذ.** لا واجهات ولا جداول قبل اعتماد هذه الوثيقة.
+
+## 1. البنية القائمة اليوم (تحليل فعلي)
+
+| المكوّن | الملف/الجدول | ما يفعله فعلياً | الفجوة |
+| --- | --- | --- | --- |
+| إرسال رسائل المصادقة | `src/routes/lovable/email/auth/webhook.ts` | يستقبل حدث المصادقة من طبقة الحساب ويُرسل عبر خدمة البريد المُدارة، 6 أنواع (تأكيد، دعوة، رابط دخول، استرجاع، تغيير بريد، تحقق). | لا يخزّن الرسالة المُرسلة في قاعدة البيانات. |
+| إرسال رسائل المنصة | `src/lib/email/app-email.server.ts` | `sendAppEmail` متزامن مع `idempotency_key` إلزامي، ويسجّل الفشل في `system_failures` بمرجع MF. | لا سجل نجاح، ولا Thread، ولا صندوق. |
+| القوالب | `src/lib/email-templates/*.tsx` + `platform_email_templates` | قوالب React Email بالعربية RTL، وقوالب HTML قابلة للتحرير من `/mehla-admin/email`. | القوالب غير مرتبطة بصناديق ولا بتوقيعات. |
+| المُرسل | `mail.mehlalex.com`، `MEHLA <noreply@mehlalex.com>` | نطاق مُرسل واحد موثّق. | لا صناديق متعددة، ولا بريد وارد. |
+| سجل التسليم | خدمة البريد المُدارة (سجلات الأحداث) | إرسال، رفض، ارتداد، شكوى، إلغاء اشتراك، تعليق، تجاوز الحد. | لا يوجد جدول محلي لبناء واجهة عليه. |
+| التكاملات | `src/lib/integrations/*` | طبقة موصلات مجرّدة + أسرار مشفّرة AES + حماية SSRF + Circuit Breaker + Idempotency (تُستخدم اليوم للرسائل النصية). | تحتاج موصلات بريد فقط، لا إعادة بناء. |
+
+**الخلاصة الحاسمة:** المزوّد الحالي **صادر فقط**. لا يوجد بريد وارد. لذلك:
+
+- Inbox / Spam / Shared Mailboxes **لا تُبنى كواجهات وهمية**.
+- تُبنى الطبقة والجداول، ويظهر في الواجهة صندوق وارد **فارغ بحالة «يحتاج ربط مزوّد وارد»**
+  مع بيان صريح للمزوّدات التي تُفعّله (IMAP / Gmail Workspace / Microsoft 365 / Webhook مزوّد).
+
+## 2. مبدأ المعمارية: Provider-Agnostic
+
+```text
+واجهة الإدارة (/mehla-admin/email)
+        │  serverFn + RBAC
+        ▼
+core/email          ← منطق الصناديق والمحادثات والمسوّدات والجدولة (لا يعرف المزوّد)
+        ▼
+EmailProvider (عقد مجرّد)
+  ├── managed   (الحالي) → صادر فقط
+  ├── smtp / resend      → صادر
+  ├── gmail / m365       → صادر + وارد (OAuth، مستقبلاً)
+  └── imap               → وارد (مستقبلاً)
+        ▼
+مسار الوارد: /api/public/hooks/email/inbound  ← Webhook موقّع، يمرّ على طبقة الاستيعاب
+```
+
+عقد المزوّد:
+
+```ts
+interface EmailProvider {
+  id: string
+  capabilities: { outbound: boolean; inbound: boolean; threading: boolean; attachments: boolean }
+  send(message: OutboundMessage): Promise<{ providerRef: string }>
+  // الوارد اختياري: يُنفَّذ فقط للمزوّدات التي تدعمه
+  parseInbound?(payload: unknown): Promise<InboundMessage>
+}
+```
+
+قدرات المزوّد تُقرأ من القاعدة، والواجهة تُخفي/تُعطّل ما لا يدعمه المزوّد المُفعّل.
+يُعاد استخدام `integration_secrets` (تشفير AES) و`integrations/http.server.ts` (SSRF + Breaker) كما هي.
+
+## 3. نموذج البيانات المقترح
+
+| الجدول | الغرض | ملاحظات أمنية |
+| --- | --- | --- |
+| `email_mailboxes` | الصناديق: العنوان، النوع (`human` / `system`)، المزوّد، الحالة، صندوق مشترك أو شخصي. | جدول منصة: `service_role` + قراءة عبر RPC/serverFn للموظفين المصرّح لهم. |
+| `email_threads` | المحادثة: الصندوق، الموضوع، آخر نشاط، غير مقروء، مُسنَد إلى، تذكرة مرتبطة، مميّز بنجمة. | فهرس على (`mailbox_id`, `last_activity_at`). |
+| `email_messages` | الرسالة: `message_id`, `thread_id`, `mailbox_id`, `from`, `to[]`, `cc[]`, `bcc[]`, `subject`, `html`, `text`, `direction`, `status`, `provider`, `provider_ref`, `received_at`, `sent_at`, `scheduled_at`, `assigned_to`, `organization_id`, `user_id`, `ticket_id`. | `bcc` لا يُعاد للواجهة إلا لصاحب الإرسال. |
+| `email_attachments` | المرفقات: الاسم، النوع، الحجم، مسار التخزين، فحص الامتداد والبايتات. | تخزين خاص + روابط موقّعة قصيرة الأجل فقط. |
+| `email_labels` / `email_thread_labels` | التسميات. | — |
+| `email_signatures` | التوقيعات لكل صندوق/موظف. | — |
+| `email_notes` | ملاحظات داخلية على المحادثة (لا تُرسل أبداً). | تُستثنى من أي مسار إرسال بشكل صريح. |
+| `email_outbox` | قائمة الإرسال والجدولة: المحاولة، آخر خطأ، `next_attempt_at`, `idempotency_key`. | Backoff تصاعدي، وربط الفشل بـ `system_failures` (مرجع MF). |
+| `email_audit_logs` | سجل تدقيق غير قابل للتعديل: من فعل ماذا على أي رسالة/محادثة. | Trigger يمنع `UPDATE`/`DELETE` كما في سجلات الطباعة. |
+
+الحالات: `draft → scheduled → queued → sending → sent → delivered? | failed | bounced`،
+والاتجاه: `inbound | outbound`، والنوع: `human | system`.
+
+## 4. الصناديق وفصل رسائل النظام
+
+| الصندوق | النوع | إرسال | استقبال | ردود |
+| --- | --- | --- | --- | --- |
+| `support@` | بشري | نعم | يحتاج مزوّد وارد | نعم — يغذّي مركز الدعم |
+| `sales@` / `billing@` / `legal@` / `info@` | بشري | نعم | يحتاج مزوّد وارد | نعم |
+| `noreply@` | نظام | نعم | **لا** | **ممنوع** |
+
+قاعدة مفروضة على الخادم لا في الواجهة:
+
+- `mailbox.type = 'system'` ⇒ يُرفض `reply` و`reply_all` و`forward` و`assign` بخطأ `SYSTEM_MAILBOX_READONLY`.
+- رسائل التحقق وإعادة التعيين والدعوات والفواتير والتنبيهات تُسجّل بـ `direction='outbound'`
+  و`mailbox=noreply` و`kind='system'`، وتظهر في **سجل الإرسال** فقط لا في صندوق الدعم.
+- `Reply-To` لرسائل النظام يُوجّه إلى `support@` عند الحاجة، دون أن يصبح `noreply` صندوق محادثات.
+
+## 5. الصلاحيات (تُفرض خادمياً عبر RBAC القائم)
+
+`email.read` · `email.send` · `email.reply` · `email.forward` · `email.assign` ·
+`email.manage_mailboxes` · `email.manage_templates` · `email.view_logs` · `email.delete` · `email.restore`
+
+- تُضاف إلى `AdminPermission` في `src/lib/admin-permissions.ts` وتُفحص بـ
+  `private.has_platform_permission` قبل أي عملية، لا في المكوّنات.
+- `email.delete` = نقل إلى المهملات (حذف ناعم). الحذف النهائي غير متاح للواجهة.
+- `email.restore` = استرجاع من المهملات/الأرشيف.
+- الصناديق المشتركة تُقيَّد بعضوية القسم (`platform_departments`) إضافةً للصلاحية.
+- الوصف الصريح: **صلاحيات البريد لا تمنح أي وصول لبيانات المكاتب** (قضايا/مستندات/عملاء).
+
+## 6. ما يعمل فعلياً بعد التنفيذ مقابل ما يحتاج مزوّداً
+
+| يعمل فعلياً الآن | يحتاج ربط مزوّد لاحقاً |
+| --- | --- |
+| إنشاء وإرسال رسالة، مسوّدات، جدولة، مرفقات، توقيعات، قوالب | Inbox حقيقي، Spam، مزامنة IMAP/Gmail/M365 |
+| Threading للرسائل الصادرة عبر `In-Reply-To`/`References` | Threading للردود الواردة من العميل |
+| Reply/Reply All/Forward على محادثة صادرة أو مُستوعبة بالمحاكاة | استقبال ردّ العميل تلقائياً |
+| Outbox، إعادة المحاولة، سجل التسليم والتدقيق، التعيين، الملاحظات الداخلية | تتبّع «فُتحت/سُلّمت» (غير متاح في المزوّد الحالي) |
+| استيعاب بريد وارد عبر نقطة Webhook موقّعة (تُختبر بالمحاكاة) | مفتاح/توقيع مزوّد الوارد الحقيقي |
+
+## 7. قيود معمارية مُعلنة
+
+1. لا Inbox وهمي: الصندوق الوارد يظهر بحالة فارغة موضّحة حتى ربط مزوّد وارد.
+2. لا يوجد تتبّع فتح/تسليم في المزوّد الحالي؛ الحالات المتاحة: إرسال، رفض، ارتداد، شكوى، إلغاء اشتراك.
+3. تعليق المستلمين (Suppression) يُدار عند المزوّد؛ لا يُبنى جدول تعليق محلي.
+4. الجدولة تعتمد فحص `email_outbox` عبر نقطة `/api/public/hooks/*` مجدولة، لا مؤقّتات في الذاكرة.
+5. `noreply` ليس صندوق محادثات ولن يصبح كذلك.
