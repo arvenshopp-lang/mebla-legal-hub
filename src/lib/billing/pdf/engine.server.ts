@@ -141,7 +141,18 @@ export function splitDirectionalRuns(input: string): Run[] {
     if (last && last.rtl === rtl) last.text += char;
     else runs.push({ text: char, rtl });
   });
-  return runs;
+
+  // المسافات الطرفية تُفصل إلى مقاطع مستقلة: تحفظ الفراغ بموضعه الصحيح ولا
+  // تنقلب مع المقطع العربي، فتبقى المسافة بين العربية والأرقام متساوية.
+  const normalized: Run[] = [];
+  runs.forEach((run) => {
+    const match = /^(\s*)([\s\S]*?)(\s*)$/.exec(run.text);
+    const [, lead = "", core = "", trail = ""] = match ?? [];
+    if (lead) normalized.push({ text: lead, rtl: run.rtl });
+    if (core) normalized.push({ text: core, rtl: run.rtl });
+    if (trail) normalized.push({ text: trail, rtl: run.rtl });
+  });
+  return normalized;
 }
 
 /* -------------------------------------------------------- تنسيق أرقام وتواريخ */
