@@ -230,7 +230,7 @@ export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
     return (
       <EmptyState
         title="لا تملك صلاحية إدارة مزوّدي البريد"
-        description="تواصل مع مسؤول المنصة لمنحك صلاحية إدارة مزوّدي البريد."
+        hint="تواصل مع مسؤول المنصة لمنحك صلاحية إدارة مزوّدي البريد."
       />
     );
   }
@@ -242,7 +242,7 @@ export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
     return (
       <EmptyState
         title="تعذّر جلب حالة التكامل"
-        description="أعد المحاولة، وإن تكرر الأمر راجع سجل تشغيل البريد."
+        hint="أعد المحاولة، وإن تكرر الأمر راجع سجل تشغيل البريد."
       />
     );
   }
@@ -282,7 +282,7 @@ export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
               <Badge tone={state.secretPresent ? "green" : "red"}>
                 {state.secretPresent ? "المفتاح مُعرّف" : "المفتاح غير مُعرّف"}
               </Badge>
-              {!sendSupported && <Badge tone="amber">الإرسال عبر SMTP</Badge>}
+              {!sendSupported && <Badge tone="warn">الإرسال عبر SMTP</Badge>}
             </div>
             <p className="mt-1 text-body-sm text-muted-foreground">
               ربط صناديق البريد عبر بروتوكول MCP لاستيراد الرسائل تزايدياً وربطها بمركز الدعم. لا
@@ -492,7 +492,7 @@ export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
         {logs.isLoading ? (
           <LoadingBlock rows={4} cols={3} />
         ) : (logs.data?.runs.length ?? 0) === 0 ? (
-          <EmptyState title="لا دورات مسجّلة" description="ستظهر هنا كل دورة مزامنة يدوية أو مجدولة." />
+          <EmptyState title="لا دورات مسجّلة" hint="ستظهر هنا كل دورة مزامنة يدوية أو مجدولة." />
         ) : (
           <ul className="space-y-3">
             {logs.data?.runs.map((run) => (
