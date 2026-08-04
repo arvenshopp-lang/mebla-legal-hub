@@ -20,6 +20,7 @@ import {
   normalizePhone,
   phoneFieldVisible,
 } from "@/lib/sms/sms.shared";
+import { isValidInviteToken } from "@/lib/invitations.shared";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
