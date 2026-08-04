@@ -169,24 +169,22 @@ function AccountPasswordCard() {
             {codeSent ? "إعادة إرسال الرمز" : "إرسال الرمز"}
           </Btn>
         </div>
-        <label className="grid gap-1.5">
-          <span className="text-sm font-medium">كلمة المرور الجديدة</span>
-          <PasswordInput
-            value={password}
-            onChange={(value) => setPassword(value)}
-            onBlur={() => setTouched(true)}
-            autoComplete="new-password"
-          />
-        </label>
-        {(touched || password.length > 0) && <PasswordChecklist strength={strength} />}
-        <label className="grid gap-1.5">
-          <span className="text-sm font-medium">تأكيد كلمة المرور</span>
-          <PasswordInput
-            value={confirm}
-            onChange={(value) => setConfirm(value)}
-            autoComplete="new-password"
-          />
-        </label>
+        <PasswordInput
+          label="كلمة المرور الجديدة"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => setTouched(true)}
+          autoComplete="new-password"
+        />
+        {(touched || password.length > 0) && (
+          <PasswordChecklist password={password} state={strength} />
+        )}
+        <PasswordInput
+          label="تأكيد كلمة المرور"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
+        />
         <div className="flex justify-end">
           <Btn onClick={submit} loading={saving} disabled={code.length < 6 || !password || !confirm}>
             تحديث كلمة المرور
