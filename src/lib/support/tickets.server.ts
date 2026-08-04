@@ -71,6 +71,51 @@ function applyScope(query: Db, actor: SupportActor): Db {
 
 /* ------------------------------------------------------------ القراءة */
 
+/** أعداد قوائم العمل (Queues) — تُحسب خادمياً ضمن نطاق رؤية الموظف نفسه. */
+export type SupportQueueKey =
+  | "all"
+  | "mine"
+  | "unassigned"
+  | "new"
+  | "open"
+  | "awaiting_reply"
+  | "pending_internal"
+  | "escalated"
+  | "at_risk"
+  | "breached"
+  | "resolved"
+  | "closed"
+  | "needs_review";
+
+export async function queueCounts(db: Db, actor: SupportActor): Promise<Record<SupportQueueKey, number>> {
+  const base = () =>
+    applyScope(db.from("support_tickets").select("id", { count: "exact", head: true }).is("merged_into_id", null), actor);
+
+  const queries: Record<SupportQueueKey, () => Db> = {
+    all: () => base(),
+    mine: () => base().eq("assigned_to", actor.userId).not("status", "in", "(closed,resolved)"),
+    unassigned: () => base().is("assigned_to", null).not("status", "in", "(closed,resolved)"),
+    new: () => base().eq("status", "new"),
+    open: () => base().not("status", "in", "(closed,resolved)"),
+    awaiting_reply: () => base().eq("status", "awaiting_reply"),
+    pending_internal: () => base().eq("status", "pending_internal"),
+    escalated: () => base().eq("status", "escalated"),
+    at_risk: () => base().in("sla_state", ["warning", "critical"]).not("status", "in", "(closed,resolved)"),
+    breached: () => base().eq("sla_state", "breached"),
+    resolved: () => base().eq("status", "resolved"),
+    closed: () => base().eq("status", "closed"),
+    needs_review: () => base().eq("needs_identity_review", true),
+  };
+
+  const keys = Object.keys(queries) as SupportQueueKey[];
+  const results = await Promise.all(keys.map((key) => queries[key]!()));
+  const out = {} as Record<SupportQueueKey, number>;
+  keys.forEach((key, index) => {
+    out[key] = ((results[index] as { count: number | null }).count ?? 0) as number;
+  });
+  return out;
+}
+
 export type TicketFilters = {
   search?: string;
   status?: string;
