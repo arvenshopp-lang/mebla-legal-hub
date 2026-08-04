@@ -5296,6 +5296,654 @@ export type Database = {
           },
         ]
       }
+      support_business_calendars: {
+        Row: {
+          code: string
+          created_at: string
+          end_minute: number
+          id: string
+          is_active: boolean
+          name_ar: string
+          start_minute: number
+          timezone: string
+          updated_at: string
+          work_days: number[]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          end_minute?: number
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          start_minute?: number
+          timezone?: string
+          updated_at?: string
+          work_days?: number[]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          end_minute?: number
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          start_minute?: number
+          timezone?: string
+          updated_at?: string
+          work_days?: number[]
+        }
+        Relationships: []
+      }
+      support_categories: {
+        Row: {
+          code: string
+          created_at: string
+          default_priority: Database["public"]["Enums"]["ticket_priority"]
+          default_team_id: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name_ar: string
+          sla_policy_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          default_priority?: Database["public"]["Enums"]["ticket_priority"]
+          default_team_id?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          sla_policy_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          default_priority?: Database["public"]["Enums"]["ticket_priority"]
+          default_team_id?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          sla_policy_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_categories_default_team_id_fkey"
+            columns: ["default_team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_categories_sla_policy_id_fkey"
+            columns: ["sla_policy_id"]
+            isOneToOne: false
+            referencedRelation: "support_sla_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_csat_invitations: {
+        Row: {
+          category: string | null
+          comment: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          rating: number | null
+          recipient_email: string
+          staff_id: string | null
+          team_id: string | null
+          ticket_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          comment?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          rating?: number | null
+          recipient_email: string
+          staff_id?: string | null
+          team_id?: string | null
+          ticket_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          comment?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          rating?: number | null
+          recipient_email?: string
+          staff_id?: string | null
+          team_id?: string | null
+          ticket_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_csat_invitations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_csat_invitations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_escalation_rules: {
+        Row: {
+          category: string | null
+          channel: string | null
+          created_at: string
+          from_level: number
+          id: string
+          is_active: boolean
+          name_ar: string
+          notify_manager: boolean
+          priority: Database["public"]["Enums"]["ticket_priority"] | null
+          sort_order: number
+          target_team_id: string | null
+          target_user_id: string | null
+          to_level: number
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          channel?: string | null
+          created_at?: string
+          from_level?: number
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          notify_manager?: boolean
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          sort_order?: number
+          target_team_id?: string | null
+          target_user_id?: string | null
+          to_level?: number
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          channel?: string | null
+          created_at?: string
+          from_level?: number
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          notify_manager?: boolean
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          sort_order?: number
+          target_team_id?: string | null
+          target_user_id?: string | null
+          to_level?: number
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_escalation_rules_target_team_id_fkey"
+            columns: ["target_team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_holidays: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          holiday_date: string
+          id: string
+          name_ar: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          holiday_date: string
+          id?: string
+          name_ar: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          name_ar?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_holidays_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "support_business_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_internal_notes: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          mentions: string[]
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          mentions?: string[]
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          mentions?: string[]
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_internal_notes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_sla_events: {
+        Row: {
+          created_at: string
+          due_at: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          metric: string
+          occurred_at: string
+          paused_seconds: number | null
+          policy_id: string | null
+          reason: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          metric?: string
+          occurred_at?: string
+          paused_seconds?: number | null
+          policy_id?: string | null
+          reason?: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          due_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          metric?: string
+          occurred_at?: string
+          paused_seconds?: number | null
+          policy_id?: string | null
+          reason?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_sla_events_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "support_sla_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_sla_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_sla_policies: {
+        Row: {
+          calendar_id: string
+          category: string | null
+          channel: string | null
+          code: string
+          created_at: string
+          critical_percent: number
+          first_response_minutes: number
+          id: string
+          is_active: boolean
+          name_ar: string
+          pause_on_customer_wait: boolean
+          plan_code: string | null
+          priority: Database["public"]["Enums"]["ticket_priority"] | null
+          resolution_minutes: number
+          specificity: number
+          updated_at: string
+          warning_percent: number
+        }
+        Insert: {
+          calendar_id: string
+          category?: string | null
+          channel?: string | null
+          code: string
+          created_at?: string
+          critical_percent?: number
+          first_response_minutes?: number
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          pause_on_customer_wait?: boolean
+          plan_code?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          resolution_minutes?: number
+          specificity?: number
+          updated_at?: string
+          warning_percent?: number
+        }
+        Update: {
+          calendar_id?: string
+          category?: string | null
+          channel?: string | null
+          code?: string
+          created_at?: string
+          critical_percent?: number
+          first_response_minutes?: number
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          pause_on_customer_wait?: boolean
+          plan_code?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          resolution_minutes?: number
+          specificity?: number
+          updated_at?: string
+          warning_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_sla_policies_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "support_business_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name_ar: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name_ar: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name_ar?: string
+        }
+        Relationships: []
+      }
+      support_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_lead: boolean
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_teams: {
+        Row: {
+          code: string
+          created_at: string
+          department_id: string | null
+          description: string | null
+          escalation_team_id: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          mailbox_id: string | null
+          manager_user_id: string | null
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          escalation_team_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          mailbox_id?: string | null
+          manager_user_id?: string | null
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          escalation_team_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          mailbox_id?: string | null
+          manager_user_id?: string | null
+          name_ar?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_teams_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "platform_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_teams_escalation_team_id_fkey"
+            columns: ["escalation_team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_teams_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          actor_name: string | null
+          created_at: string
+          email_message_id: string | null
+          event_type: string
+          id: string
+          internal_note_id: string | null
+          metadata: Json
+          reason: string | null
+          ticket_id: string
+          value_after: Json | null
+          value_before: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind?: string
+          actor_name?: string | null
+          created_at?: string
+          email_message_id?: string | null
+          event_type: string
+          id?: string
+          internal_note_id?: string | null
+          metadata?: Json
+          reason?: string | null
+          ticket_id: string
+          value_after?: Json | null
+          value_before?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          actor_name?: string | null
+          created_at?: string
+          email_message_id?: string | null
+          event_type?: string
+          id?: string
+          internal_note_id?: string | null
+          metadata?: Json
+          reason?: string | null
+          ticket_id?: string
+          value_after?: Json | null
+          value_before?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_events_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_ingest: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          email_message_id: string | null
+          id: string
+          outcome: string
+          thread_id: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          email_message_id?: string | null
+          id?: string
+          outcome: string
+          thread_id?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          email_message_id?: string | null
+          id?: string
+          outcome?: string
+          thread_id?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_ingest_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_ingest_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_ingest_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_ticket_messages: {
         Row: {
           attachments: Json
@@ -5337,16 +5985,67 @@ export type Database = {
           },
         ]
       }
+      support_ticket_tags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          tag_id: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          tag_id: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          tag_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "support_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_tags_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
           category: string
+          channel: string
           closed_at: string | null
           created_at: string
+          csat_requested_at: string | null
           description: string
+          due_first_response_at: string | null
+          due_resolution_at: string | null
+          escalated_at: string | null
+          escalation_level: number
+          first_response_at: string | null
           id: string
+          identity_source: string | null
+          kb_article_ids: string[]
+          last_customer_reply_at: string | null
           last_reply_at: string
+          last_staff_reply_at: string | null
+          merged_into_id: string | null
+          needs_identity_review: boolean
           organization_id: string | null
+          paused_at: string | null
+          paused_total_seconds: number
           priority: Database["public"]["Enums"]["ticket_priority"]
           rated_at: string | null
           rated_staff_id: string | null
@@ -5354,20 +6053,46 @@ export type Database = {
           rating: number | null
           rating_comment: string | null
           reference: string
+          reopened_count: number
+          requester_email: string | null
+          requester_name: string | null
+          resolved_at: string | null
+          sla_policy_id: string | null
+          sla_state: string
+          source_email_thread_id: string | null
+          split_from_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id: string | null
+          team_id: string | null
+          ticket_number: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           assigned_to?: string | null
           category?: string
+          channel?: string
           closed_at?: string | null
           created_at?: string
+          csat_requested_at?: string | null
           description: string
+          due_first_response_at?: string | null
+          due_resolution_at?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          first_response_at?: string | null
           id?: string
+          identity_source?: string | null
+          kb_article_ids?: string[]
+          last_customer_reply_at?: string | null
           last_reply_at?: string
+          last_staff_reply_at?: string | null
+          merged_into_id?: string | null
+          needs_identity_review?: boolean
           organization_id?: string | null
+          paused_at?: string | null
+          paused_total_seconds?: number
           priority?: Database["public"]["Enums"]["ticket_priority"]
           rated_at?: string | null
           rated_staff_id?: string | null
@@ -5375,20 +6100,46 @@ export type Database = {
           rating?: number | null
           rating_comment?: string | null
           reference?: string
+          reopened_count?: number
+          requester_email?: string | null
+          requester_name?: string | null
+          resolved_at?: string | null
+          sla_policy_id?: string | null
+          sla_state?: string
+          source_email_thread_id?: string | null
+          split_from_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id?: string | null
+          team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           assigned_to?: string | null
           category?: string
+          channel?: string
           closed_at?: string | null
           created_at?: string
+          csat_requested_at?: string | null
           description?: string
+          due_first_response_at?: string | null
+          due_resolution_at?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          first_response_at?: string | null
           id?: string
+          identity_source?: string | null
+          kb_article_ids?: string[]
+          last_customer_reply_at?: string | null
           last_reply_at?: string
+          last_staff_reply_at?: string | null
+          merged_into_id?: string | null
+          needs_identity_review?: boolean
           organization_id?: string | null
+          paused_at?: string | null
+          paused_total_seconds?: number
           priority?: Database["public"]["Enums"]["ticket_priority"]
           rated_at?: string | null
           rated_staff_id?: string | null
@@ -5396,17 +6147,70 @@ export type Database = {
           rating?: number | null
           rating_comment?: string | null
           reference?: string
+          reopened_count?: number
+          requester_email?: string | null
+          requester_name?: string | null
+          resolved_at?: string | null
+          sla_policy_id?: string | null
+          sla_state?: string
+          source_email_thread_id?: string | null
+          split_from_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
+          subscription_id?: string | null
+          team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "support_tickets_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_tickets_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_sla_policy_id_fkey"
+            columns: ["sla_policy_id"]
+            isOneToOne: false
+            referencedRelation: "support_sla_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_source_email_thread_id_fkey"
+            columns: ["source_email_thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_split_from_id_fkey"
+            columns: ["split_from_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -5895,7 +6699,14 @@ export type Database = {
         | "cancelled"
         | "overdue"
       ticket_priority: "low" | "medium" | "high" | "urgent"
-      ticket_status: "new" | "awaiting_reply" | "in_progress" | "closed"
+      ticket_status:
+        | "new"
+        | "awaiting_reply"
+        | "in_progress"
+        | "closed"
+        | "pending_internal"
+        | "escalated"
+        | "resolved"
       update_type:
         | "case_created"
         | "hearing"
@@ -6098,7 +6909,15 @@ export const Constants = {
         "overdue",
       ],
       ticket_priority: ["low", "medium", "high", "urgent"],
-      ticket_status: ["new", "awaiting_reply", "in_progress", "closed"],
+      ticket_status: [
+        "new",
+        "awaiting_reply",
+        "in_progress",
+        "closed",
+        "pending_internal",
+        "escalated",
+        "resolved",
+      ],
       update_type: [
         "case_created",
         "hearing",
