@@ -40,6 +40,8 @@ function LoginPage() {
       : "/dashboard";
 
   const destinationFor = (active: number, all: number) => {
+    // دعوة فريق: الرابط هو المقصد الصحيح حتى قبل وجود أي عضوية فعّالة
+    if (safeRedirect.startsWith("/invite/")) return safeRedirect;
     if (active > 0) return safeRedirect;
     return all > 0 ? "/pending-access" : "/onboarding";
   };
