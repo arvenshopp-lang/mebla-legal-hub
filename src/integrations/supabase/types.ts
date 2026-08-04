@@ -242,6 +242,95 @@ export type Database = {
           },
         ]
       }
+      case_party_audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_values: Json | null
+          before_values: Json | null
+          case_id: string | null
+          changed_fields: string[] | null
+          created_at: string
+          id: string
+          organization_id: string
+          party_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_values?: Json | null
+          before_values?: Json | null
+          case_id?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          party_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_values?: Json | null
+          before_values?: Json | null
+          case_id?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          party_id?: string
+        }
+        Relationships: []
+      }
+      case_party_permissions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          organization_id: string
+          permission: string
+          reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id: string
+          permission: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id?: string
+          permission?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_party_permissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_updates: {
         Row: {
           case_id: string
@@ -5081,6 +5170,13 @@ export type Database = {
         Returns: {
           already_exists: boolean
           organization_id: string
+        }[]
+      }
+      my_case_party_permissions: {
+        Args: { _organization_id: string }
+        Returns: {
+          allowed: boolean
+          permission: string
         }[]
       }
       my_subscription_overview: {

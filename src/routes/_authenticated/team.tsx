@@ -15,6 +15,7 @@ import { Trash2, Copy, Mail } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
 import { describeInviteError } from "@/lib/invitations.shared";
 import { inviteTeamMember } from "@/lib/invitations.functions";
+import { CasePartyPermissionsPanel } from "@/components/team/case-party-permissions";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -237,6 +238,9 @@ function Page() {
       )}
 
       <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} orgId={activeOrgId!} userId={user?.id} />
+      {admin && activeOrgId && (
+        <CasePartyPermissionsPanel orgId={activeOrgId} members={(members ?? []) as never} />
+      )}
       <ConfirmDialog open={!!removing} onClose={() => setRemoving(null)} onConfirm={() => removing && remove.mutate(removing.id)} loading={remove.isPending} title="إزالة عضو" message={`سيتم إزالة "${removing?.profile?.full_name}" من الفريق.`} />
       <ConfirmDialog open={!!revoking} onClose={() => setRevoking(null)} onConfirm={() => revoking && revoke.mutate(revoking.id)} loading={revoke.isPending} title="إلغاء الدعوة" message={`سيتم إلغاء دعوة "${revoking?.email}".`} confirmLabel="تأكيد الإلغاء" />
     </DashboardShell>

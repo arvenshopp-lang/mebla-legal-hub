@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION private.has_case_party_permission(uuid, uuid, text) TO sandbox_exec;

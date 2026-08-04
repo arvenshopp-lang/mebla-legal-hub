@@ -100,6 +100,12 @@ export const saveCasePartySecure = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { requireMemberRole, encryptedColumnsFor } = await import("./pii.server");
     await requireMemberRole(context.supabase, data.organizationId, context.userId);
+    const { requireCasePartyPermission } = await import("./case-parties.server");
+    await requireCasePartyPermission(
+      context.supabase,
+      data.organizationId,
+      data.id ? "case_parties.update" : "case_parties.create",
+    );
 
     const base = blankToNull(data.values);
     const secure = await encryptedColumnsFor(data.organizationId, data.pii ?? {});
