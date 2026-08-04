@@ -32,7 +32,21 @@ export type AdminPermission =
   | "support_access.request"
   | "staff.view"
   | "staff.manage"
-  | "roles.manage";
+  | "roles.manage"
+  | "billing.read"
+  | "billing.create"
+  | "billing.update"
+  | "billing.issue"
+  | "billing.cancel"
+  | "billing.record_payment"
+  | "billing.approve_payment"
+  | "billing.refund"
+  | "billing.export"
+  | "billing.manage_providers"
+  | "billing.reconcile"
+  | "billing.close_period"
+  | "billing.reopen_period"
+  | "billing.view_reports";
 
 export interface PermissionDef {
   id: AdminPermission;
@@ -67,6 +81,20 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "staff.view", label: "مشاهدة الفريق", group: "الفريق", description: "عرض فريق إدارة المنصة وصلاحياتهم." },
   { id: "staff.manage", label: "إدارة الفريق", group: "الفريق", description: "إضافة موظفين وتعديل صلاحياتهم وإيقافهم." },
   { id: "roles.manage", label: "إدارة الأدوار", group: "الفريق", description: "إنشاء أدوار مخصصة وتحديد صلاحياتها." },
+  { id: "billing.read", label: "مشاهدة المركز المالي", group: "المركز المالي", description: "الاطلاع على الفواتير والمدفوعات والاستردادات." },
+  { id: "billing.create", label: "إنشاء فاتورة", group: "المركز المالي", description: "إنشاء مسودة فاتورة وبنودها." },
+  { id: "billing.update", label: "تعديل مسودة فاتورة", group: "المركز المالي", description: "تعديل بيانات وبنود الفاتورة قبل إصدارها." },
+  { id: "billing.issue", label: "إصدار الفواتير", group: "المركز المالي", description: "اعتماد المسودة وإصدارها برقم نظامي نهائي." },
+  { id: "billing.cancel", label: "إلغاء الفواتير", group: "المركز المالي", description: "إلغاء فاتورة غير مسددة بسبب مُسجّل." },
+  { id: "billing.record_payment", label: "تسجيل الدفعات", group: "المركز المالي", description: "تسجيل تحصيل يدوي أو تحويل بنكي بانتظار الاعتماد." },
+  { id: "billing.approve_payment", label: "اعتماد الدفعات", group: "المركز المالي", description: "اعتماد أو رفض إثبات التحويل والدفعات المسجّلة." },
+  { id: "billing.refund", label: "الاستردادات وإشعارات الخصم", group: "المركز المالي", description: "طلب واعتماد الاسترداد وإصدار إشعار خصم." },
+  { id: "billing.export", label: "تصدير البيانات المالية", group: "المركز المالي", description: "تصدير الفواتير والمدفوعات بصيغة CSV." },
+  { id: "billing.manage_providers", label: "إدارة مزودي الدفع", group: "المركز المالي", description: "تهيئة المزودين ومفاتيحهم واختبار الاتصال." },
+  { id: "billing.reconcile", label: "المطابقة البنكية", group: "المركز المالي", description: "إدخال حركات الحساب البنكي ومطابقتها بالدفعات." },
+  { id: "billing.close_period", label: "إقفال الفترات المالية", group: "المركز المالي", description: "إقفال فترة مالية ومنع أي تعديل داخلها." },
+  { id: "billing.reopen_period", label: "إعادة فتح الفترات", group: "المركز المالي", description: "اعتماد إعادة فتح فترة مقفلة بموافقة موظف آخر." },
+  { id: "billing.view_reports", label: "التقارير المالية التفصيلية", group: "المركز المالي", description: "تقارير التحصيل وأعمار الدين والضريبة." },
 ];
 
 export const PERMISSION_LABELS: Record<string, string> = Object.fromEntries(

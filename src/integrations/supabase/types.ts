@@ -4621,6 +4621,16 @@ export type Database = {
           total_count: number
         }[]
       }
+      billing_match_reconciliation: {
+        Args: { _entry_id: string; _payment_id: string }
+        Returns: undefined
+      }
+      billing_reopen_period: {
+        Args: { _approval_id: string }
+        Returns: undefined
+      }
+      billing_reports: { Args: { _from: string; _to: string }; Returns: Json }
+      billing_save_draft: { Args: { _payload: Json }; Returns: string }
       consume_ocr_pages: {
         Args: { _organization_id: string; _pages: number }
         Returns: {
