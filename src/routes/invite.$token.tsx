@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuthShell } from "@/routes/login";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import { supabase } from "@/integrations/supabase/client";
-import { getInvitation, joinOrganization } from "@/lib/invitations.functions";
+import { getInvitation, joinOrganization, requestInviteResendFn } from "@/lib/invitations.functions";
 import {
   describeInviteError,
   INVITE_MESSAGES,
@@ -59,6 +59,8 @@ function InvitePage() {
   });
 
   const join = useServerFn(joinOrganization);
+  const requestResend = useServerFn(requestInviteResendFn);
+  const [resendState, setResendState] = useState<"idle" | "pending" | "done">("idle");
   const accept = useMutation({
     mutationFn: () => join({ data: { token } }),
     onSuccess: async (result) => {
@@ -88,6 +90,35 @@ function InvitePage() {
     await supabase.auth.signOut();
     setSigningOut(false);
     navigate({ to: "/login", search: { redirect: `/invite/${token}` }, replace: true });
+  };
+
+  // انضمام تلقائي بعد إنشاء الحساب أو تسجيل الدخول: الرابط نفسه هو الموافقة.
+  const autoJoined = useRef(false);
+  useEffect(() => {
+    if (autoJoined.current) return;
+    if (!session || authLoading) return;
+    if (preview.data?.state !== "valid") return;
+    autoJoined.current = true;
+    accept.mutate();
+  }, [session, authLoading, preview.data?.state]);
+
+  const askResend = async () => {
+    setResendState("pending");
+    try {
+      const result = await requestResend({ data: { token } });
+      setResendState("done");
+      toast[result.notified ? "success" : "warning"](
+        result.notified ? "تم إبلاغ مسؤول المكتب بطلبك" : "تعذّر إرسال الطلب",
+        {
+          description: result.notified
+            ? "سيصلك رابط دعوة جديد على بريدك بعد إصداره."
+            : "تواصل مع مسؤول المكتب لإصدار دعوة جديدة.",
+        },
+      );
+    } catch {
+      setResendState("idle");
+      toast.error("تعذّر إرسال الطلب حالياً، حاول مرة أخرى.");
+    }
   };
 
   if (!tokenValid) {
@@ -140,10 +171,24 @@ function InvitePage() {
       <AuthShell title="الدعوة غير متاحة" subtitle={data.orgName ?? undefined}>
         <p className="text-body-sm text-foreground">{INVITE_MESSAGES[data.state]}</p>
         <div className="mt-6 flex flex-col gap-2">
+          {(data.state === "expired" || data.state === "revoked") && (
+            <button
+              type="button"
+              onClick={askResend}
+              disabled={resendState !== "idle"}
+              className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-body-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-60"
+            >
+              {resendState === "pending"
+                ? "جارٍ إرسال الطلب…"
+                : resendState === "done"
+                  ? "تم إرسال الطلب"
+                  : "طلب إعادة إرسال الدعوة"}
+            </button>
+          )}
           <Link
             to="/login"
             search={{ redirect: "/dashboard" }}
-            className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-body-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+            className="w-full rounded-[var(--radius-m)] border border-border py-3 text-center text-body-sm font-semibold text-foreground transition hover:bg-surface-muted"
           >
             تسجيل الدخول
           </Link>
