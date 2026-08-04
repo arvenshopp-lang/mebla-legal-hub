@@ -11,9 +11,10 @@ import {
   PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
   Modal, FormField, inputCls, Btn, Badge, ConfirmDialog,
 } from "@/lib/list-utils";
-import { Trash2, Copy } from "lucide-react";
+import { Trash2, Copy, Mail } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
-import { INVITE_VALID_DAYS } from "@/lib/invitations.shared";
+import { describeInviteError } from "@/lib/invitations.shared";
+import { inviteTeamMember } from "@/lib/invitations.functions";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -90,6 +91,33 @@ function Page() {
     },
     onSuccess: () => { toast.success("تم إلغاء الدعوة"); qc.invalidateQueries({ queryKey: ["team-invitations"] }); setRevoking(null); },
     onError: (e: any) => toast.error("تعذّر إلغاء الدعوة", { description: describeMutationError(e?.message ?? "") }),
+  });
+
+  const resend = useMutation({
+    mutationFn: (inv: { email: string; role: string }) =>
+      inviteTeamMember({
+        data: {
+          organizationId: activeOrgId!,
+          email: inv.email,
+          role: inv.role,
+          origin: window.location.origin,
+        },
+      }),
+    onSuccess: (result) => {
+      toast[result.emailSent ? "success" : "warning"](
+        result.emailSent ? "تم إرسال الدعوة مرة أخرى" : "أُنشئ رابط جديد للدعوة",
+        {
+          description: result.emailSent
+            ? "أُصدر رابط جديد وأُبطل الرابط السابق."
+            : "تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».",
+        },
+      );
+      qc.invalidateQueries({ queryKey: ["team-invitations"] });
+    },
+    onError: (e: unknown) =>
+      toast.error("تعذّر إعادة الإرسال", {
+        description: describeInviteError(e instanceof Error ? e.message : ""),
+      }),
   });
 
   const filtered = (members ?? []).filter((m: any) => {
@@ -171,9 +199,18 @@ function Page() {
                       <Td>{fmtDate(inv.expires_at)}</Td>
                       <Td>
                         {status === "pending" && (
-                          <button onClick={() => { navigator.clipboard.writeText(link); toast.success("تم نسخ الرابط"); }} className="inline-flex items-center gap-1 text-xs text-foreground underline">
-                            <Copy className="h-3 w-3" /> نسخ
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button onClick={() => { navigator.clipboard.writeText(link); toast.success("تم نسخ الرابط"); }} className="inline-flex items-center gap-1 text-xs text-foreground underline">
+                              <Copy className="h-3 w-3" /> نسخ
+                            </button>
+                            <button
+                              onClick={() => resend.mutate({ email: inv.email, role: inv.role })}
+                              disabled={resend.isPending}
+                              className="inline-flex items-center gap-1 text-xs text-foreground underline disabled:opacity-60"
+                            >
+                              <Mail className="h-3 w-3" /> إعادة الإرسال
+                            </button>
+                          </div>
                         )}
                       </Td>
                       <Td>
@@ -202,8 +239,9 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
+  const [emailDelivered, setEmailDelivered] = useState(false);
 
-  const reset = () => { setEmail(""); setRole("lawyer"); setErrors({}); setLink(null); };
+  const reset = () => { setEmail(""); setRole("lawyer"); setErrors({}); setLink(null); setEmailDelivered(false); };
 
   const save = async () => {
     const res = inviteSchema.safeParse({ email, role });
@@ -215,35 +253,46 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       return;
     }
     setSaving(true);
-    const inviteEmail = res.data.email.toLowerCase();
-    const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "");
-    const expires = new Date();
-    expires.setDate(expires.getDate() + INVITE_VALID_DAYS);
-
-    // إعادة الإرسال لنفس البريد تُلغي الدعوة القائمة حتى لا تبقى روابط متعددة صالحة
-    await supabase
-      .from("organization_invitations")
-      .update({ status: "revoked" })
-      .eq("organization_id", orgId)
-      .eq("email", inviteEmail)
-      .eq("status", "pending");
-
-    const { data, error } = await supabase.from("organization_invitations").insert({
-      organization_id: orgId, email: inviteEmail, role: res.data.role,
-      token, status: "pending", expires_at: expires.toISOString(), invited_by: userId,
-    }).select("token").single();
-    setSaving(false);
-    if (error) return toast.error("تعذّر الإرسال", { description: describeMutationError(error.message) });
-    setLink(inviteUrl(data.token));
-    toast.success("تم إنشاء الدعوة");
-    qc.invalidateQueries({ queryKey: ["team-invitations"] });
+    try {
+      const result = await inviteTeamMember({
+        data: {
+          organizationId: orgId,
+          email: res.data.email.toLowerCase(),
+          role: res.data.role,
+          origin: window.location.origin,
+        },
+      });
+      setLink(result.inviteUrl);
+      setEmailDelivered(result.emailSent);
+      if (result.emailSent) {
+        toast.success("تم إرسال الدعوة بالبريد الإلكتروني");
+      } else {
+        toast.warning("تم إنشاء الدعوة", {
+          description: "تعذّر إرسال البريد حالياً، شارك الرابط أدناه مع العضو.",
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["team-invitations"] });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      toast.error("تعذّر الإرسال", {
+        description: message.includes("QUOTA_EXCEEDED") || message.includes("SUBSCRIPTION")
+          ? describeMutationError(message)
+          : describeInviteError(message),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Modal open={open} onClose={() => { reset(); onClose(); }} title="دعوة عضو جديد">
       {link ? (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">شارك الرابط التالي مع العضو ليتمكن من الانضمام:</p>
+          <p className="text-sm text-muted-foreground">
+            {emailDelivered
+              ? "أرسلنا رسالة الدعوة إلى بريد العضو. يمكنك أيضاً مشاركة الرابط مباشرة:"
+              : "شارك الرابط التالي مع العضو ليتمكن من الانضمام:"}
+          </p>
           <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
             <code className="flex-1 truncate text-xs">{link}</code>
             <Btn size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success("تم النسخ"); }}>

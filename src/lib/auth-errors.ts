@@ -16,6 +16,17 @@ export const AUTH_MESSAGES = {
   signUpFailed: "تعذر إنشاء الحساب، يرجى المحاولة مرة أخرى",
   emailInvalid: "البريد الإلكتروني غير صحيح، يرجى التحقق منه",
   emailTaken: "هذا البريد مسجّل مسبقاً. سجّل الدخول بدلاً من إنشاء حساب",
+  confirmationResent: "أرسلنا رابط تأكيد جديد إلى بريدك الإلكتروني",
+  magicLinkSent: "أرسلنا رابط دخول لمرة واحدة إلى بريدك الإلكتروني",
+  linkExpired: "انتهت صلاحية الرابط أو تم استخدامه مسبقاً. اطلب رابطاً جديداً",
+  reauthCodeSent: "أرسلنا رمز تحقق إلى بريدك الإلكتروني لتأكيد هويتك",
+  reauthCodeInvalid: "رمز التحقق غير صحيح أو انتهت صلاحيته. اطلب رمزاً جديداً",
+  reauthRequired: "لتأكيد هويتك، اطلب رمز التحقق ثم أدخله قبل إتمام التغيير",
+  sameEmail: "هذا هو بريدك الحالي بالفعل، أدخل بريداً مختلفاً",
+  samePassword: "كلمة المرور الجديدة مطابقة للحالية، اختر كلمة مختلفة",
+  emailChangeSent:
+    "أرسلنا رسالة تأكيد إلى البريد الجديد. لن يتغير بريد الدخول قبل تأكيد الرابط",
+  passwordUpdated: "تم تحديث كلمة المرور بنجاح",
   generic: "حدث خطأ غير متوقع. حاول مرة أخرى",
 } as const;
 
@@ -30,6 +41,22 @@ export function translateAuthError(error: AuthErrorLike): string {
   if (code === "email_not_confirmed" || msg.includes("email not confirmed"))
     return AUTH_MESSAGES.emailNotConfirmed;
   if (code === "user_not_found" || msg.includes("user not found")) return AUTH_MESSAGES.userNotFound;
+  if (
+    code === "reauthentication_needed" ||
+    msg.includes("reauthentication needed") ||
+    msg.includes("nonce is required")
+  )
+    return AUTH_MESSAGES.reauthRequired;
+  if (
+    code === "reauthentication_not_valid" ||
+    msg.includes("nonce has expired") ||
+    msg.includes("invalid nonce")
+  )
+    return AUTH_MESSAGES.reauthCodeInvalid;
+  if (code === "same_password" || msg.includes("should be different from the old password"))
+    return AUTH_MESSAGES.samePassword;
+  if (code === "otp_expired" || msg.includes("token has expired") || msg.includes("otp_expired"))
+    return AUTH_MESSAGES.linkExpired;
   if (error.status === 429 || code.includes("over_") || msg.includes("too many"))
     return AUTH_MESSAGES.tooManyRequests;
   if (
