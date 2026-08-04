@@ -41,6 +41,7 @@ export type Mailbox = {
   is_shared: boolean;
   is_active: boolean;
   inbound_enabled: boolean;
+  sync_enabled: boolean;
   signature_html: string | null;
   sort_order: number;
   unread: number;

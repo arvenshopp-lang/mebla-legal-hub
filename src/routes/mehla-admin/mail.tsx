@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Inbox, PenSquare, Search, Star, Settings2, Tag, Trash2 } from "lucide-react";
+import { Inbox, PenSquare, PlugZap, Search, Star, Settings2, Tag, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import {
   Badge,
@@ -25,6 +25,7 @@ import {
   type ComposeSeed,
 } from "@/components/admin/mail/compose-modal";
 import { ThreadView } from "@/components/admin/mail/thread-view";
+import { MailIntegrationPanel } from "@/components/admin/mail/integration-panel";
 import { EMAIL_FOLDERS, type EmailFolder } from "@/lib/email/email.shared";
 import type { AttachmentMeta } from "@/lib/email/attachments.shared";
 import {
@@ -74,6 +75,7 @@ function MailWorkspacePage() {
   const [compose, setCompose] = useState<ComposeSeed | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [labelsOpen, setLabelsOpen] = useState(false);
+  const [integrationOpen, setIntegrationOpen] = useState(false);
 
   const mailboxes = workspace.data?.mailboxes ?? [];
   const activeMailboxId = mailboxId ?? mailboxes.find((m) => m.type === "human")?.id ?? null;
@@ -318,6 +320,9 @@ function MailWorkspacePage() {
         <div className="flex flex-wrap gap-2">
           {canManage && (
             <>
+              <Btn size="sm" variant="outline" onClick={() => setIntegrationOpen(true)}>
+                <PlugZap className="h-4 w-4" aria-hidden /> تكامل الخادم
+              </Btn>
               <Btn size="sm" variant="outline" onClick={() => setLabelsOpen(true)}>
                 <Tag className="h-4 w-4" aria-hidden /> التسميات
               </Btn>
@@ -609,6 +614,15 @@ function MailWorkspacePage() {
         />
       </Modal>
 
+      <Modal
+        open={integrationOpen}
+        onClose={() => setIntegrationOpen(false)}
+        title="تكامل بريد الخادم (SMTP / IMAP)"
+        size="lg"
+      >
+        <MailIntegrationPanel canManage={canManage} />
+      </Modal>
+
       <ConfirmDialog
         open={Boolean(toDiscard)}
         onClose={() => setToDiscard(null)}
@@ -633,6 +647,7 @@ function MailboxSettings({
     type: string;
     is_active: boolean;
     inbound_enabled: boolean;
+    sync_enabled: boolean;
     signature_html: string | null;
   };
   saving: boolean;
@@ -641,12 +656,14 @@ function MailboxSettings({
     signature_html: string | null;
     is_active: boolean;
     inbound_enabled: boolean;
+    sync_enabled: boolean;
   }) => void;
 }) {
   const [name, setName] = useState(mailbox.display_name);
   const [signature, setSignature] = useState(mailbox.signature_html ?? "");
   const [active, setActive] = useState(mailbox.is_active);
   const [inbound, setInbound] = useState(mailbox.inbound_enabled);
+  const [syncEnabled, setSyncEnabled] = useState(mailbox.sync_enabled);
   const isSystem = mailbox.type === "system";
 
   return (
@@ -659,6 +676,7 @@ function MailboxSettings({
           signature_html: signature.trim() || null,
           is_active: active,
           inbound_enabled: inbound,
+          sync_enabled: syncEnabled,
         });
       }}
     >
@@ -704,6 +722,17 @@ function MailboxSettings({
               onChange={(e) => setInbound(e.target.checked)}
             />
             تمكين استقبال الرسائل
+          </label>
+        )}
+        {!isSystem && (
+          <label className="flex items-center gap-2 text-body-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border"
+              checked={syncEnabled}
+              onChange={(e) => setSyncEnabled(e.target.checked)}
+            />
+            تمكين مزامنة IMAP
           </label>
         )}
       </div>

@@ -1709,45 +1709,57 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          credential_key: string | null
           department_id: string | null
           display_name: string
           id: string
+          imap_folders: Json
           inbound_enabled: boolean
           is_active: boolean
           is_shared: boolean
           provider: string
+          reply_to: string | null
           signature_html: string | null
           sort_order: number
+          sync_enabled: boolean
           type: string
           updated_at: string
         }
         Insert: {
           address: string
           created_at?: string
+          credential_key?: string | null
           department_id?: string | null
           display_name: string
           id?: string
+          imap_folders?: Json
           inbound_enabled?: boolean
           is_active?: boolean
           is_shared?: boolean
           provider?: string
+          reply_to?: string | null
           signature_html?: string | null
           sort_order?: number
+          sync_enabled?: boolean
           type?: string
           updated_at?: string
         }
         Update: {
           address?: string
           created_at?: string
+          credential_key?: string | null
           department_id?: string | null
           display_name?: string
           id?: string
+          imap_folders?: Json
           inbound_enabled?: boolean
           is_active?: boolean
           is_shared?: boolean
           provider?: string
+          reply_to?: string | null
           signature_html?: string | null
           sort_order?: number
+          sync_enabled?: boolean
           type?: string
           updated_at?: string
         }
@@ -1776,6 +1788,9 @@ export type Database = {
           from_name: string | null
           html: string | null
           id: string
+          imap_folder: string | null
+          imap_uid: number | null
+          imap_uidvalidity: number | null
           in_reply_to: string | null
           kind: string
           mailbox_id: string
@@ -1809,6 +1824,9 @@ export type Database = {
           from_name?: string | null
           html?: string | null
           id?: string
+          imap_folder?: string | null
+          imap_uid?: number | null
+          imap_uidvalidity?: number | null
           in_reply_to?: string | null
           kind?: string
           mailbox_id: string
@@ -1842,6 +1860,9 @@ export type Database = {
           from_name?: string | null
           html?: string | null
           id?: string
+          imap_folder?: string | null
+          imap_uid?: number | null
+          imap_uidvalidity?: number | null
           in_reply_to?: string | null
           kind?: string
           mailbox_id?: string
@@ -1982,6 +2003,145 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: true
             referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sync_runs: {
+        Row: {
+          created_at: string
+          duplicates: number
+          duration_ms: number
+          error_code: string | null
+          error_message: string | null
+          fetched: number
+          folder: string
+          id: string
+          ingested: number
+          mailbox_id: string
+          outcome: string
+          reindexed: boolean
+          rejected: number
+          tickets_created: number
+          trigger_source: string
+        }
+        Insert: {
+          created_at?: string
+          duplicates?: number
+          duration_ms?: number
+          error_code?: string | null
+          error_message?: string | null
+          fetched?: number
+          folder: string
+          id?: string
+          ingested?: number
+          mailbox_id: string
+          outcome: string
+          reindexed?: boolean
+          rejected?: number
+          tickets_created?: number
+          trigger_source?: string
+        }
+        Update: {
+          created_at?: string
+          duplicates?: number
+          duration_ms?: number
+          error_code?: string | null
+          error_message?: string | null
+          fetched?: number
+          folder?: string
+          id?: string
+          ingested?: number
+          mailbox_id?: string
+          outcome?: string
+          reindexed?: boolean
+          rejected?: number
+          tickets_created?: number
+          trigger_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_runs_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sync_state: {
+        Row: {
+          attempts: number
+          created_at: string
+          folder: string
+          id: string
+          last_error: string | null
+          last_error_at: string | null
+          last_error_code: string | null
+          last_success_at: string | null
+          last_sync_at: string | null
+          last_uid: number
+          local_folder: string
+          lock_token: string | null
+          locked_at: string | null
+          mailbox_id: string
+          messages_synced: number
+          new_messages: number
+          next_attempt_at: string | null
+          status: string
+          uidvalidity: number | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          folder: string
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_error_code?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          last_uid?: number
+          local_folder?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          mailbox_id: string
+          messages_synced?: number
+          new_messages?: number
+          next_attempt_at?: string | null
+          status?: string
+          uidvalidity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          folder?: string
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_error_code?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          last_uid?: number
+          local_folder?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          mailbox_id?: string
+          messages_synced?: number
+          new_messages?: number
+          next_attempt_at?: string | null
+          status?: string
+          uidvalidity?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_state_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
             referencedColumns: ["id"]
           },
         ]
