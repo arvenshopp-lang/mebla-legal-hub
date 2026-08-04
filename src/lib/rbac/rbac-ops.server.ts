@@ -652,12 +652,17 @@ export async function saveRestrictions(
     staffUserId: string;
     ip_enforced: boolean;
     allowed_ips: string[];
+    denied_ips: string[];
     device_enforced: boolean;
     trusted_devices: string[];
+    blocked_devices: string[];
     time_enforced: boolean;
     work_start_minute: number;
     work_end_minute: number;
     allowed_weekdays: number[];
+    reason?: string | null;
+    effective_from?: string | null;
+    effective_to?: string | null;
   },
 ) {
   const ctx = await authorize(supabase, userId, "staff.restrictions.manage", {
@@ -672,6 +677,16 @@ export async function saveRestrictions(
   if (input.device_enforced && input.trusted_devices.filter((v) => v.trim()).length === 0) {
     throw new Error("أضف جهازاً موثوقاً واحداً على الأقل قبل تفعيل قيد الأجهزة.");
   }
+  if (input.time_enforced && input.allowed_weekdays.length === 0) {
+    throw new Error("اختر يوم عمل واحداً على الأقل قبل تفعيل قيد الوقت.");
+  }
+  if (
+    input.effective_from &&
+    input.effective_to &&
+    new Date(input.effective_to).getTime() <= new Date(input.effective_from).getTime()
+  ) {
+    throw new Error("نهاية سريان القيد يجب أن تكون بعد بدايتها.");
+  }
 
   const { data: before } = await db
     .from("platform_staff_restrictions")
@@ -683,12 +698,17 @@ export async function saveRestrictions(
     user_id: input.staffUserId,
     ip_enforced: input.ip_enforced,
     allowed_ips: input.allowed_ips.map((v) => v.trim()).filter(Boolean),
+    denied_ips: input.denied_ips.map((v) => v.trim()).filter(Boolean),
     device_enforced: input.device_enforced,
     trusted_devices: input.trusted_devices.map((v) => v.trim()).filter(Boolean),
+    blocked_devices: input.blocked_devices.map((v) => v.trim()).filter(Boolean),
     time_enforced: input.time_enforced,
     work_start_minute: input.work_start_minute,
     work_end_minute: input.work_end_minute,
     allowed_weekdays: input.allowed_weekdays,
+    reason: input.reason?.trim() || null,
+    effective_from: input.effective_from || null,
+    effective_to: input.effective_to || null,
     updated_by: userId,
     updated_at: nowIso(),
   };
