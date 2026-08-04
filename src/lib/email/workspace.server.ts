@@ -5,6 +5,12 @@
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { requestMeta } from "@/lib/admin-guard.server";
 import {
+  buildAttachmentSection,
+  quarantineInboundAttachment,
+  storeAttachment,
+} from "@/lib/email/attachments.server";
+import { sanitizeInboundHtml } from "@/lib/email/sanitize.shared";
+import {
   previewOf,
   stripHtml,
   type EmailFolder,
@@ -20,16 +26,70 @@ type Db = any;
 const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";
 export const ATTACHMENT_BUCKET = "email-attachments";
+/** صلاحية روابط تنزيل المرفقات المُرسلة للمستلم الخارجي (7 أيام). */
+const OUTBOUND_ATTACHMENT_TTL = 7 * 24 * 60 * 60;
 
 /* --------------------------------------------------------------- الصناديق */
 
-export async function listMailboxes(db: Db): Promise<Mailbox[]> {
+/**
+ * الصناديق المصرّح بها لموظف: مدير المنصة أو حامل `email.manage` يرى الكل،
+ * وغيره يرى الصناديق غير المقيّدة بقسم، أو المقيّدة بقسمه فقط.
+ */
+export type MailboxScope = { isSuper: boolean; canManage: boolean; departmentId: string | null };
+
+export async function allowedMailboxIds(db: Db, scope: MailboxScope): Promise<string[] | null> {
+  if (scope.isSuper || scope.canManage) return null; // null = بلا تقييد
+  const { data } = await db.from("email_mailboxes").select("id, department_id");
+  return ((data ?? []) as { id: string; department_id: string | null }[])
+    .filter(
+      (m) =>
+        m.department_id === null ||
+        (scope.departmentId !== null && m.department_id === scope.departmentId),
+    )
+    .map((m) => m.id);
+}
+
+/** يمنع أي عملية على صندوق غير مصرّح به — يُستدعى في كل دالة خادم. */
+export async function assertMailboxAccess(
+  db: Db,
+  mailboxId: string,
+  scope: MailboxScope,
+): Promise<void> {
+  const ids = await allowedMailboxIds(db, scope);
+  if (ids === null) return;
+  if (!ids.includes(mailboxId)) throw new Error("لا تملك وصولاً إلى صندوق البريد هذا.");
+}
+
+/** يمنع أي عملية على محادثة تنتمي لصندوق غير مصرّح به. */
+export async function assertThreadAccess(
+  db: Db,
+  threadId: string,
+  scope: MailboxScope,
+): Promise<string> {
+  const { data } = await db
+    .from("email_threads")
+    .select("mailbox_id")
+    .eq("id", threadId)
+    .maybeSingle();
+  const row = data as { mailbox_id: string } | null;
+  if (!row) throw new Error("المحادثة غير موجودة.");
+  await assertMailboxAccess(db, row.mailbox_id, scope);
+  return row.mailbox_id;
+}
+
+export async function listMailboxes(db: Db, scope?: MailboxScope): Promise<Mailbox[]> {
   const { data, error } = await db
     .from("email_mailboxes")
-    .select("id, address, display_name, type, is_shared, is_active, inbound_enabled, signature_html, sort_order")
+    .select(
+      "id, address, display_name, type, is_shared, is_active, inbound_enabled, signature_html, sort_order",
+    )
     .order("sort_order", { ascending: true });
   if (error) throw new Error("تعذّر تحميل صناديق البريد.");
-  const boxes = (data ?? []) as Omit<Mailbox, "unread">[];
+  let boxes = (data ?? []) as Omit<Mailbox, "unread">[];
+  if (scope) {
+    const ids = await allowedMailboxIds(db, scope);
+    if (ids !== null) boxes = boxes.filter((b) => ids.includes(b.id));
+  }
 
   const { data: unreadRows } = await db
     .from("email_threads")
@@ -45,7 +105,13 @@ export async function listMailboxes(db: Db): Promise<Mailbox[]> {
 
 export async function updateMailbox(
   db: Db,
-  input: { id: string; display_name?: string; signature_html?: string | null; is_active?: boolean; inbound_enabled?: boolean },
+  input: {
+    id: string;
+    display_name?: string;
+    signature_html?: string | null;
+    is_active?: boolean;
+    inbound_enabled?: boolean;
+  },
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
   if (input.display_name !== undefined) patch["display_name"] = input.display_name;
@@ -63,7 +129,13 @@ async function requireMailbox(db: Db, id: string) {
     .select("id, address, display_name, type, is_active, signature_html")
     .eq("id", id)
     .maybeSingle();
-  const box = data as { id: string; address: string; display_name: string; type: string; is_active: boolean } | null;
+  const box = data as {
+    id: string;
+    address: string;
+    display_name: string;
+    type: string;
+    is_active: boolean;
+  } | null;
   if (!box) throw new Error("صندوق البريد غير موجود.");
   if (!box.is_active) throw new Error("هذا الصندوق معطّل حالياً.");
   return box;
@@ -105,7 +177,10 @@ export async function listThreads(
 
   let allowedIds: string[] | null = null;
   if (input.labelId) {
-    const { data } = await db.from("email_thread_labels").select("thread_id").eq("label_id", input.labelId);
+    const { data } = await db
+      .from("email_thread_labels")
+      .select("thread_id")
+      .eq("label_id", input.labelId);
     allowedIds = ((data ?? []) as { thread_id: string }[]).map((r) => r.thread_id);
     if (allowedIds.length === 0) return { threads: [], total: 0 };
   }
@@ -141,15 +216,25 @@ export async function listThreads(
       .select("thread_id, body_text, html, created_at")
       .in("thread_id", ids)
       .order("created_at", { ascending: false }),
-    db.from("email_thread_labels").select("thread_id, email_labels(id, name_ar, color)").in("thread_id", ids),
+    db
+      .from("email_thread_labels")
+      .select("thread_id, email_labels(id, name_ar, color)")
+      .in("thread_id", ids),
   ]);
 
   const preview = new Map<string, string>();
-  for (const m of (lastMessages ?? []) as { thread_id: string; body_text: string | null; html: string | null }[]) {
+  for (const m of (lastMessages ?? []) as {
+    thread_id: string;
+    body_text: string | null;
+    html: string | null;
+  }[]) {
     if (!preview.has(m.thread_id)) preview.set(m.thread_id, previewOf(m.body_text, m.html));
   }
   const labels = new Map<string, ThreadSummary["labels"]>();
-  for (const row of (labelRows ?? []) as { thread_id: string; email_labels: ThreadSummary["labels"][number] | null }[]) {
+  for (const row of (labelRows ?? []) as {
+    thread_id: string;
+    email_labels: ThreadSummary["labels"][number] | null;
+  }[]) {
     if (!row.email_labels) continue;
     labels.set(row.thread_id, [...(labels.get(row.thread_id) ?? []), row.email_labels]);
   }
@@ -183,8 +268,15 @@ export async function getThread(db: Db, threadId: string): Promise<ThreadDetail>
       )
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true }),
-    db.from("email_notes").select("id, author_email, body, created_at").eq("thread_id", threadId).order("created_at"),
-    db.from("email_thread_labels").select("email_labels(id, name_ar, color)").eq("thread_id", threadId),
+    db
+      .from("email_notes")
+      .select("id, author_email, body, created_at")
+      .eq("thread_id", threadId)
+      .order("created_at"),
+    db
+      .from("email_thread_labels")
+      .select("email_labels(id, name_ar, color)")
+      .eq("thread_id", threadId),
   ]);
 
   const messages = (messageRows ?? []) as Omit<EmailMessage, "attachments">[];
@@ -192,14 +284,16 @@ export async function getThread(db: Db, threadId: string): Promise<ThreadDetail>
   if (messages.length > 0) {
     const { data: attRows } = await db
       .from("email_attachments")
-      .select("id, message_id, file_name, mime_type, size_bytes")
+      .select(
+        "id, message_id, file_name, mime_type, size_bytes, direction, scan_status, is_quarantined, is_inline_safe",
+      )
       .in(
         "message_id",
         messages.map((m) => m.id),
       );
-    attachments = ((attRows ?? []) as ({ message_id: string } & EmailMessage["attachments"][number])[]).reduce<
-      Record<string, EmailMessage["attachments"]>
-    >((acc, a) => {
+    attachments = (
+      (attRows ?? []) as ({ message_id: string } & EmailMessage["attachments"][number])[]
+    ).reduce<Record<string, EmailMessage["attachments"]>>((acc, a) => {
       acc[a.message_id] = [...(acc[a.message_id] ?? []), a];
       return acc;
     }, {});
@@ -232,8 +326,15 @@ export async function setThreadFlags(
   if (error) throw new Error("تعذّر تحديث حالة المحادثة.");
 }
 
-export async function moveThread(db: Db, input: { threadId: string; folder: EmailFolder }): Promise<void> {
-  const { data } = await db.from("email_threads").select("folder").eq("id", input.threadId).maybeSingle();
+export async function moveThread(
+  db: Db,
+  input: { threadId: string; folder: EmailFolder },
+): Promise<void> {
+  const { data } = await db
+    .from("email_threads")
+    .select("folder")
+    .eq("id", input.threadId)
+    .maybeSingle();
   const current = (data as { folder: EmailFolder } | null)?.folder ?? "inbox";
   const { error } = await db
     .from("email_threads")
@@ -243,8 +344,13 @@ export async function moveThread(db: Db, input: { threadId: string; folder: Emai
 }
 
 export async function restoreThread(db: Db, threadId: string): Promise<void> {
-  const { data } = await db.from("email_threads").select("previous_folder").eq("id", threadId).maybeSingle();
-  const previous = (data as { previous_folder: EmailFolder | null } | null)?.previous_folder ?? "inbox";
+  const { data } = await db
+    .from("email_threads")
+    .select("previous_folder")
+    .eq("id", threadId)
+    .maybeSingle();
+  const previous =
+    (data as { previous_folder: EmailFolder | null } | null)?.previous_folder ?? "inbox";
   const { error } = await db
     .from("email_threads")
     .update({ folder: previous, previous_folder: null })
@@ -278,7 +384,10 @@ export async function addNote(
   if (error) throw new Error("تعذّر حفظ الملاحظة.");
 }
 
-export async function setThreadLabels(db: Db, input: { threadId: string; labelIds: string[] }): Promise<void> {
+export async function setThreadLabels(
+  db: Db,
+  input: { threadId: string; labelIds: string[] },
+): Promise<void> {
   await db.from("email_thread_labels").delete().eq("thread_id", input.threadId);
   if (input.labelIds.length === 0) return;
   const { error } = await db
@@ -379,11 +488,27 @@ export async function queueMessage(
   if (!input.subject.trim()) throw new Error("موضوع الرسالة مطلوب.");
   if (!stripHtml(input.html)) throw new Error("نص الرسالة مطلوب.");
 
+  // منع الإرسال المزدوج: مسوّدة أُرسلت أو قيد الإرسال لا تُعاد إلى القائمة أبداً.
+  if (input.draftId) {
+    const { data: guardRow } = await db
+      .from("email_messages")
+      .select("status, thread_id")
+      .eq("id", input.draftId)
+      .maybeSingle();
+    const guard = guardRow as { status: string; thread_id: string } | null;
+    if (guard && ["sent", "sending", "queued"].includes(guard.status)) {
+      throw new Error("هذه الرسالة أُرسلت أو هي في قائمة الإرسال بالفعل.");
+    }
+  }
+
   const { messageId, threadId } = await saveDraft(db, actor, input);
   const scheduled = input.scheduledAt ? new Date(input.scheduledAt) : null;
   const isFuture = scheduled ? scheduled.getTime() > Date.now() + 30_000 : false;
 
-  await db.from("email_messages").update({ status: isFuture ? "scheduled" : "queued" }).eq("id", messageId);
+  await db
+    .from("email_messages")
+    .update({ status: isFuture ? "scheduled" : "queued" })
+    .eq("id", messageId);
   await db.from("email_threads").update({ folder: "outbox" }).eq("id", threadId);
   const { error } = await db.from("email_outbox").upsert(
     {
@@ -406,7 +531,11 @@ export async function queueMessage(
 }
 
 export async function discardDraft(db: Db, messageId: string): Promise<void> {
-  const { data } = await db.from("email_messages").select("thread_id, status").eq("id", messageId).maybeSingle();
+  const { data } = await db
+    .from("email_messages")
+    .select("thread_id, status")
+    .eq("id", messageId)
+    .maybeSingle();
   const row = data as { thread_id: string; status: string } | null;
   if (!row) throw new Error("المسوّدة غير موجودة.");
   if (!["draft", "scheduled", "queued", "failed"].includes(row.status)) {
@@ -434,10 +563,18 @@ async function providerSend(input: {
   html: string;
   text: string;
   idempotencyKey: string;
-}): Promise<{ ok: true; ref: string | null } | { ok: false; code: string; message: string; status: number | null }> {
+}): Promise<
+  | { ok: true; ref: string | null }
+  | { ok: false; code: string; message: string; status: number | null }
+> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) {
-    return { ok: false, code: "email_not_configured", message: "خدمة البريد غير مهيأة على الخادم.", status: null };
+    return {
+      ok: false,
+      code: "email_not_configured",
+      message: "خدمة البريد غير مهيأة على الخادم.",
+      status: null,
+    };
   }
   try {
     const response = await sendLovableEmail(
@@ -484,7 +621,10 @@ type OutboxRow = {
 };
 
 /** إرسال رسالة واحدة من قائمة الإرسال. */
-export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: boolean; failureRef?: string }> {
+export async function dispatchOne(
+  db: Db,
+  messageId: string,
+): Promise<{ sent: boolean; failureRef?: string }> {
   const { data: outboxRow } = await db
     .from("email_outbox")
     .select("id, message_id, idempotency_key, attempts, max_attempts")
@@ -495,7 +635,9 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
 
   const { data: messageRow } = await db
     .from("email_messages")
-    .select("id, mailbox_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, html, body_text, thread_id, organization_id")
+    .select(
+      "id, mailbox_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, html, body_text, thread_id, organization_id",
+    )
     .eq("id", messageId)
     .maybeSingle();
   const message = messageRow as {
@@ -513,8 +655,20 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
   } | null;
   if (!message) return { sent: false };
 
-  await db.from("email_outbox").update({ status: "sending", locked_at: new Date().toISOString() }).eq("id", job.id);
+  // قفل ذرّي: لا تُرسل الرسالة مرتين لو تزامن استدعاء يدوي مع المسار الدوري.
+  const { data: locked } = await db
+    .from("email_outbox")
+    .update({ status: "sending", locked_at: new Date().toISOString() })
+    .eq("id", job.id)
+    .in("status", ["queued", "scheduled"])
+    .select("id");
+  if (!locked || (locked as unknown[]).length === 0) return { sent: false };
   await db.from("email_messages").update({ status: "sending" }).eq("id", messageId);
+
+  // المزوّد الحالي لا يدعم إرفاق MIME؛ تُسلَّم المرفقات كروابط موقّعة قصيرة الأجل.
+  const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
+  const baseHtml = message.html ?? "";
+  const baseText = message.body_text ?? stripHtml(baseHtml);
 
   const result = await providerSend({
     from: message.from_address,
@@ -523,8 +677,8 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
     cc: message.cc_addresses,
     bcc: message.bcc_addresses,
     subject: message.subject,
-    html: message.html ?? "",
-    text: message.body_text ?? stripHtml(message.html ?? ""),
+    html: `${baseHtml}${section.html}`,
+    text: `${baseText}${section.text}`,
     idempotencyKey: job.idempotency_key,
   });
 
@@ -534,7 +688,10 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
       .from("email_messages")
       .update({ status: "sent", sent_at: now, provider_ref: result.ref, failure_ref: null })
       .eq("id", messageId);
-    await db.from("email_outbox").update({ status: "sent", attempts: job.attempts + 1, locked_at: null }).eq("id", job.id);
+    await db
+      .from("email_outbox")
+      .update({ status: "sent", attempts: job.attempts + 1, locked_at: null })
+      .eq("id", job.id);
     await db
       .from("email_threads")
       .update({ folder: "sent", last_activity_at: now, is_unread: false })
@@ -575,7 +732,10 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
 }
 
 /** معالجة الرسائل المستحقة (يستدعيها المسار الدوري). */
-export async function dispatchDue(db: Db, limit = 20): Promise<{ processed: number; sent: number }> {
+export async function dispatchDue(
+  db: Db,
+  limit = 20,
+): Promise<{ processed: number; sent: number }> {
   const { data } = await db
     .from("email_outbox")
     .select("message_id")
@@ -605,23 +765,42 @@ export type InboundPayload = {
   inReplyTo?: string | null;
   references?: string[];
   receivedAt?: string | null;
-  attachments?: { file_name: string; mime_type: string; size_bytes: number; storage_path: string }[];
+  /** المرفق يوصل كمحتوى Base64 — لا نثق بمسار تخزين أو Content-Type من المزوّد. */
+  attachments?: { file_name: string; content_base64: string }[];
+};
+
+export type InboundResult = {
+  threadId: string;
+  messageId: string;
+  duplicate: boolean;
+  mailboxId: string;
+  attachmentsAccepted: number;
+  attachmentsRejected: number;
+  rejectedAttachments: { name: string; reason: string }[];
+  blockedImages: number;
+  hadActiveContent: boolean;
 };
 
 /** إدخال رسالة واردة: يُنشئ المحادثة أو يضيف إلى محادثة قائمة. */
-export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ threadId: string; messageId: string }> {
+export async function ingestInbound(db: Db, payload: InboundPayload): Promise<InboundResult> {
   const to = payload.to.trim().toLowerCase();
   const { data: boxRow } = await db
     .from("email_mailboxes")
     .select("id, address, inbound_enabled, is_active, type")
     .eq("address", to)
     .maybeSingle();
-  const box = boxRow as { id: string; inbound_enabled: boolean; is_active: boolean; type: string } | null;
+  const box = boxRow as {
+    id: string;
+    inbound_enabled: boolean;
+    is_active: boolean;
+    type: string;
+  } | null;
   if (!box) throw new Error("لا يوجد صندوق بريد لهذا العنوان.");
   if (box.type === "system") throw new Error("صندوق النظام لا يستقبل الرسائل.");
   if (!box.is_active || !box.inbound_enabled) throw new Error("الاستقبال معطّل لهذا الصندوق.");
 
-  const providerMessageId = payload.messageId?.trim() || `<${crypto.randomUUID()}@inbound.${ROOT_DOMAIN}>`;
+  const providerMessageId =
+    payload.messageId?.trim() || `<${crypto.randomUUID()}@inbound.${ROOT_DOMAIN}>`;
   const { data: existing } = await db
     .from("email_messages")
     .select("id, thread_id")
@@ -629,7 +808,17 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     .maybeSingle();
   if (existing) {
     const row = existing as { id: string; thread_id: string };
-    return { threadId: row.thread_id, messageId: row.id };
+    return {
+      threadId: row.thread_id,
+      messageId: row.id,
+      duplicate: true,
+      mailboxId: box.id,
+      attachmentsAccepted: 0,
+      attachmentsRejected: 0,
+      rejectedAttachments: [],
+      blockedImages: 0,
+      hadActiveContent: false,
+    };
   }
 
   const subject = (payload.subject ?? "").trim() || "(بدون موضوع)";
@@ -638,7 +827,11 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
 
   const refs = [payload.inReplyTo, ...(payload.references ?? [])].filter(Boolean) as string[];
   if (refs.length > 0) {
-    const { data } = await db.from("email_messages").select("thread_id").in("message_id", refs).limit(1);
+    const { data } = await db
+      .from("email_messages")
+      .select("thread_id")
+      .in("message_id", refs)
+      .limit(1);
     threadId = ((data ?? []) as { thread_id: string }[])[0]?.thread_id ?? null;
   }
   if (!threadId) {
@@ -671,8 +864,10 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     threadId = (data as { id: string }).id;
   }
 
-  const html = payload.html ?? null;
-  const text = payload.text ?? (html ? stripHtml(html) : "");
+  // تنقية إلزامية: لا يُخزَّن HTML خارجي كما هو إطلاقاً.
+  const sanitized = sanitizeInboundHtml(payload.html);
+  const html = sanitized.html || null;
+  const text = (payload.text ? stripHtml(payload.text) : "") || sanitized.text;
   const { data: inserted, error: insertError } = await db
     .from("email_messages")
     .insert({
@@ -696,10 +891,35 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
   if (insertError) throw new Error("تعذّر حفظ الرسالة الواردة.");
   const messageId = (inserted as { id: string }).id;
 
-  if (payload.attachments?.length) {
-    await db
-      .from("email_attachments")
-      .insert(payload.attachments.map((a) => ({ ...a, message_id: messageId })));
+  // المرفقات الواردة: تحقق فعلي من التوقيع والحجم، وحجر ما يفشل.
+  let accepted = 0;
+  const rejected: { name: string; reason: string }[] = [];
+  for (const attachment of payload.attachments ?? []) {
+    let bytes: Uint8Array;
+    try {
+      bytes = decodeBase64(attachment.content_base64);
+    } catch {
+      rejected.push({ name: attachment.file_name, reason: "محتوى Base64 غير صحيح." });
+      continue;
+    }
+    try {
+      await storeAttachment(db, {
+        messageId,
+        direction: "inbound",
+        fileName: attachment.file_name,
+        bytes,
+      });
+      accepted += 1;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "رُفض المرفق.";
+      rejected.push({ name: attachment.file_name, reason });
+      await quarantineInboundAttachment(db, {
+        messageId,
+        fileName: attachment.file_name,
+        bytes,
+        reason,
+      });
+    }
   }
 
   await db
@@ -707,13 +927,42 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     .update({ folder: "inbox", is_unread: true, last_activity_at: receivedAt })
     .eq("id", threadId);
   await touchThread(db, threadId, subject, [from]);
-  return { threadId, messageId };
+  return {
+    threadId,
+    messageId,
+    duplicate: false,
+    mailboxId: box.id,
+    attachmentsAccepted: accepted,
+    attachmentsRejected: rejected.length,
+    rejectedAttachments: rejected,
+    blockedImages: sanitized.blockedImages,
+    hadActiveContent: sanitized.hadActiveContent,
+  };
+}
+
+function decodeBase64(value: string): Uint8Array {
+  const clean = value.replace(/^data:[^;]*;base64,/, "").replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length === 0)
+    throw new Error("invalid base64");
+  const binary = atob(clean);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 /* --------------------------------------------------------------- مساعدات */
 
-async function touchThread(db: Db, threadId: string, subject: string, participants: string[]): Promise<void> {
-  const { data } = await db.from("email_threads").select("participants").eq("id", threadId).maybeSingle();
+async function touchThread(
+  db: Db,
+  threadId: string,
+  subject: string,
+  participants: string[],
+): Promise<void> {
+  const { data } = await db
+    .from("email_threads")
+    .select("participants")
+    .eq("id", threadId)
+    .maybeSingle();
   const current = ((data as { participants: string[] } | null)?.participants ?? []) as string[];
   const { count } = await db
     .from("email_messages")
@@ -764,7 +1013,15 @@ export async function writeEmailAudit(
 export async function listEmailAudit(
   db: Db,
   input: { threadId?: string | null; limit?: number },
-): Promise<{ logs: { id: string; actor_email: string; action: string; description: string | null; created_at: string }[] }> {
+): Promise<{
+  logs: {
+    id: string;
+    actor_email: string;
+    action: string;
+    description: string | null;
+    created_at: string;
+  }[];
+}> {
   let query = db
     .from("email_audit_logs")
     .select("id, actor_email, action, description, created_at")
@@ -780,7 +1037,10 @@ export async function listLabels(db: Db) {
   return (data ?? []) as { id: string; name_ar: string; color: string }[];
 }
 
-export async function upsertLabel(db: Db, input: { id?: string; name_ar: string; color: string }): Promise<void> {
+export async function upsertLabel(
+  db: Db,
+  input: { id?: string; name_ar: string; color: string },
+): Promise<void> {
   const name = input.name_ar.trim();
   if (!name) throw new Error("اسم التسمية مطلوب.");
   const { error } = input.id
