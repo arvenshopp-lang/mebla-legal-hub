@@ -20,6 +20,7 @@ import { DocumentRequestsSection } from "@/components/dashboard/document-request
 import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { saveCasePartySecure } from "@/lib/pii.functions";
+import { deleteCaseParty, getMyCasePartyPermissions } from "@/lib/case-parties.functions";
 import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
@@ -78,6 +79,18 @@ function Page() {
     },
   });
 
+  // الصلاحيات تُحسب على الخادم؛ الواجهة تعرضها فقط ولا تمنح شيئاً.
+  const partyPermsFn = useServerFn(getMyCasePartyPermissions);
+  const { data: partyPerms } = useQuery({
+    queryKey: ["case-party-perms", activeOrgId],
+    enabled: !!activeOrgId,
+    staleTime: 60_000,
+    queryFn: async () => partyPermsFn({ data: { organizationId: activeOrgId! } }),
+  });
+  const canCreateParty = partyPerms?.["case_parties.create"] === true;
+  const canUpdateParty = partyPerms?.["case_parties.update"] === true;
+  const canDeleteParty = partyPerms?.["case_parties.delete"] === true;
+
   const { data: hearings, isLoading: loadingHearings } = useQuery({
     queryKey: ["case-hearings", id],
     queryFn: async () => (await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false })).data ?? [],
@@ -99,10 +112,10 @@ function Page() {
     queryFn: async () => (await supabase.from("case_updates").select("*").eq("case_id", id).order("event_date", { ascending: false })).data ?? [],
   });
 
+  const deletePartyFn = useServerFn(deleteCaseParty);
   const delParty = useMutation({
     mutationFn: async (pid: string) => {
-      const { error } = await supabase.from("case_parties").delete().eq("id", pid);
-      if (error) throw error;
+      await deletePartyFn({ data: { organizationId: activeOrgId!, id: pid } });
     },
     onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["case-parties", id] }); setDeletingParty(null); },
     onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
@@ -186,7 +199,7 @@ function Page() {
         <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
-            {canEdit(activeRole) && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Plus className="h-4 w-4" /></button>}
+            {canCreateParty && <button onClick={() => { setEditingParty(null); setPartyOpen(true); }} aria-label="إضافة طرف" title="إضافة طرف" className="rounded-lg p-1.5 hover:bg-surface-muted"><Plus className="h-4 w-4" /></button>}
           </div>
           {loadingParties ? (
             <SectionLoader rows={2} />
@@ -202,10 +215,10 @@ function Page() {
                       <div className="text-xs text-muted-foreground">{[p.party_type, p.legal_role].filter(Boolean).join(" · ") || "—"}</div>
                       {p.phone && <div className="text-xs mt-1">{p.phone}</div>}
                     </div>
-                    {canEdit(activeRole) && (
+                    {(canUpdateParty || canDeleteParty) && (
                       <div className="flex gap-1">
-                        <button onClick={() => { setEditingParty(p); setPartyOpen(true); }} className="rounded p-1 hover:bg-surface"><Pencil className="h-3.5 w-3.5" /></button>
-                        <IconBtn tone="danger" aria-label="حذف الطرف" title="حذف" loading={delParty.isPending && deletingParty?.id === p.id} onClick={() => setDeletingParty(p)}><Trash2 className="h-3.5 w-3.5" /></IconBtn>
+                        {canUpdateParty && <button onClick={() => { setEditingParty(p); setPartyOpen(true); }} aria-label="تعديل الطرف" title="تعديل" className="rounded p-1 hover:bg-surface"><Pencil className="h-3.5 w-3.5" /></button>}
+                        {canDeleteParty && <IconBtn tone="danger" aria-label="حذف الطرف" title="حذف" loading={delParty.isPending && deletingParty?.id === p.id} onClick={() => setDeletingParty(p)}><Trash2 className="h-3.5 w-3.5" /></IconBtn>}
                       </div>
                     )}
                   </div>
