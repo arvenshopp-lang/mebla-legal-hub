@@ -240,19 +240,38 @@ function leftText(ctx: Ctx, text: string, x: number, y: number, size: number, co
   drawLine(ctx.page, ctx.font, text, x, y, size, color);
 }
 
+/** رمز عملة ثلاثي (SAR) يبقى ملتصقاً بمبلغه عند التقسيم أو القصّ. */
+const CURRENCY_TOKEN = /^[A-Z]{3}$/;
+
+/**
+ * تقسيم النص إلى وحدات غير قابلة للكسر: «1,150.00 SAR» تُعالج ككلمة واحدة
+ * فلا ينتقل رمز العملة إلى سطر آخر ولا يُقتطع بمعزل عن الرقم.
+ */
+function tokenize(text: string): string[] {
+  const words = text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  const tokens: string[] = [];
+  words.forEach((word) => {
+    const previous = tokens[tokens.length - 1];
+    if (previous && CURRENCY_TOKEN.test(word) && /\d/.test(previous)) {
+      tokens[tokens.length - 1] = `${previous} ${word}`;
+      return;
+    }
+    tokens.push(word);
+  });
+  return tokens;
+}
+
 /**
  * قصّ على حدود الكلمات فقط، فلا يُقطع مبلغ عن عملته ولا تاريخ ولا مرجع مستند
  * في منتصفه. عند تعذّر ذلك (كلمة واحدة أطول من العرض) نقصّ الحروف كحل أخير.
  */
 function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): string {
-  const value = text.replace(/[^\S\u00A0]+/g, " ").trim();
+  const value = text.replace(/\s+/g, " ").trim();
   if (widthOf(ctx, value, size) <= maxWidth) return value;
 
-  const words = value.split(" ");
+  const words = tokenize(value);
   while (words.length > 1) {
     words.pop();
-    // لا نترك رمز عملة معلّقاً بعد حذف مبلغه (مثل بقاء SAR بلا رقم).
-    while (words.length > 1 && /^[A-Z]{3}$/.test(words[words.length - 1] ?? "")) words.pop();
     const candidate = `${words.join(" ")}…`;
     if (widthOf(ctx, candidate, size) <= maxWidth) return candidate;
   }
@@ -264,7 +283,7 @@ function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): strin
 
 /** تقسيم نص طويل إلى أسطر تناسب العرض المتاح. */
 function wrap(ctx: Ctx, text: string, maxWidth: number, size: number, maxLines = 6): string[] {
-  const words = text.replace(/[^\S\u00A0]+/g, " ").trim().split(" ");
+  const words = tokenize(text);
   const lines: string[] = [];
   let current = "";
   for (const word of words) {
