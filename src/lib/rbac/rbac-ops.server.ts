@@ -611,6 +611,40 @@ export async function revokeStaffSession(supabase: AnyClient, userId: string, in
   return { ok: true };
 }
 
+/** إبطال كل جلسات موظف — يخرجه من جميع أجهزته فوراً. */
+export async function revokeAllStaffSessions(
+  supabase: AnyClient,
+  userId: string,
+  input: { staffUserId: string; reason: string },
+) {
+  const ctx = await authorize(supabase, userId, "staff.sessions.revoke", {
+    entityType: "platform_staff_session",
+    entityId: input.staffUserId,
+  });
+  const db = await adminDb();
+  const { data: rows } = await db
+    .from("platform_staff_sessions")
+    .select("id")
+    .eq("user_id", input.staffUserId)
+    .is("revoked_at", null);
+  const ids = ((rows ?? []) as { id: string }[]).map((r) => r.id);
+  if (ids.length === 0) return { revoked: 0 };
+  const { error } = await db
+    .from("platform_staff_sessions")
+    .update({ revoked_at: nowIso(), revoked_by: userId, revoke_reason: input.reason.trim() || null })
+    .in("id", ids);
+  if (error) throw new Error("تعذّر إبطال الجلسات.");
+  await auditRbac(supabase, {
+    actorEmail: ctx.staff.email,
+    action: "rbac.session_revoked",
+    entityType: "platform_staff_session",
+    entityId: input.staffUserId,
+    description: `إبطال جميع جلسات الموظف (${ids.length} جلسة)`,
+    metadata: { trace_ref: ctx.traceRef, count: ids.length, session_ids: ids },
+  });
+  return { revoked: ids.length };
+}
+
 export async function saveRestrictions(
   supabase: AnyClient,
   userId: string,
