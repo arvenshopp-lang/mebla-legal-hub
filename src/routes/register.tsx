@@ -23,6 +23,12 @@ import {
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    invite:
+      typeof search.invite === "string" && isValidInviteToken(search.invite)
+        ? search.invite
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "إنشاء حساب | مِهلة" },
@@ -36,6 +42,8 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
   const { session, authLoading, organizationLoading, memberships, refresh } = useAuth();
   const navigate = useNavigate();
+  const { invite } = Route.useSearch();
+  const postAuthTarget = invite ? (`/invite/${invite}` as const) : null;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -113,8 +121,11 @@ function RegisterPage() {
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
-    navigate({ to: memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
-  }, [authLoading, organizationLoading, session, memberships.length, navigate]);
+    navigate({
+      to: postAuthTarget ?? (memberships.length > 0 ? "/dashboard" : "/onboarding"),
+      replace: true,
+    });
+  }, [authLoading, organizationLoading, session, memberships.length, navigate, postAuthTarget]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
