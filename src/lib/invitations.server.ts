@@ -201,6 +201,40 @@ export async function previewInvitation(token: string): Promise<InvitePreview> {
   };
 }
 
+/**
+ * طلب المدعو إعادة إرسال دعوة منتهية: يُشعر مسؤولي المكتب فقط، ولا يكشف أي
+ * بيانات للزائر ولا يُصدر رابطاً جديداً بنفسه.
+ */
+export async function requestInviteResend(token: string): Promise<{ notified: boolean }> {
+  const found = await loadInvitation(token);
+  if (!found) return { notified: false };
+  const { row } = found;
+  if (found.state !== "expired" && found.state !== "revoked") return { notified: false };
+
+  const { data: admins } = await supabaseAdmin
+    .from("organization_members")
+    .select("user_id, role")
+    .eq("organization_id", row.organization_id)
+    .eq("status", "active")
+    .in("role", ["owner", "admin"]);
+
+  const targets = (admins ?? []).map((m) => m.user_id);
+  if (row.invited_by && !targets.includes(row.invited_by)) targets.push(row.invited_by);
+  if (!targets.length) return { notified: false };
+
+  await supabaseAdmin.from("notifications").insert(
+    targets.map((userId) => ({
+      organization_id: row.organization_id,
+      user_id: userId,
+      type: "team_invite_resend_requested",
+      title: "طلب إعادة إرسال دعوة",
+      message: `طلب صاحب البريد ${maskEmail(row.email)} إعادة إرسال دعوة الانضمام بعد انتهاء صلاحيتها.`,
+    })),
+  );
+
+  return { notified: true };
+}
+
 export async function acceptInvitation(
   token: string,
   userId: string,

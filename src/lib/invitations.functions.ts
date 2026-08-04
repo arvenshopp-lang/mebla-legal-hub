@@ -27,6 +27,13 @@ export const getInvitation = createServerFn({ method: "POST" })
   });
 
 /** قبول الدعوة: الهوية تُشتق من التوكن الموثّق وليس من بيانات الطلب. */
+export const requestInviteResendFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => tokenSchema.parse(d))
+  .handler(async ({ data }) => {
+    const { requestInviteResend } = await import("./invitations.server");
+    return requestInviteResend(data.token);
+  });
+
 export const joinOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => tokenSchema.parse(d))
