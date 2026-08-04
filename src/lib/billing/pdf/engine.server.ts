@@ -157,17 +157,14 @@ export function splitDirectionalRuns(input: string): Run[] {
 
 /* -------------------------------------------------------- تنسيق أرقام وتواريخ */
 
-/**
- * مبالغ بصيغة لاتينية ثابتة، والمسافة بين الرقم والعملة غير قابلة للكسر
- * (U+00A0) حتى لا يفصل التقسيم أو القصّ رمز العملة عن مبلغه أبداً.
- */
+/** مبالغ بصيغة لاتينية ثابتة لتفادي أي التباس في الترتيب البصري. */
 export function formatPdfMoney(amount: number | string | null | undefined, currency = "SAR"): string {
   const value = Number(amount ?? 0);
   const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number.isFinite(value) ? value : 0);
-  return `${formatted}\u00A0${currency}`;
+  return `${formatted} ${currency}`;
 }
 
 /** تاريخ ميلادي بصيغة YYYY-MM-DD — مقطع لاتيني واحد لا يتأثر بالاتجاه. */
