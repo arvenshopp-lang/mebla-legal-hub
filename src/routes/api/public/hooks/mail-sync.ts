@@ -1,8 +1,9 @@
 /**
- * مسار دوري لمزامنة صناديق Hostinger عبر IMAP.
+ * مسار دوري لمزامنة صناديق Hostinger: عبر Agentic Mail عند تفعيله، وعبر IMAP دائماً.
  *
  * المسار عام بحكم البادئة، لذا الحماية تُفرض هنا: مفتاح المشروع العام في ترويسة
  * `apikey` بمقارنة ثابتة الزمن، ولا تُعاد أي بيانات رسائل أو أسرار — عدّادات فقط.
+ * مسار Agentic مجدول بذاته (منع تداخل، تراجع أُسّي، قاطع دائرة) فلا يُستدعى مباشرة.
  */
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -34,14 +35,26 @@ export const Route = createFileRoute("/api/public/hooks/mail-sync")({
           return json({ error: "unauthorized" }, 401);
         }
 
-        const { transportConfigured } = await import("@/lib/email/transport/config.server");
-        if (!transportConfigured(null)) {
-          return json({ ok: false, reason: "transport_not_configured", synced: 0 }, 200);
-        }
-
         try {
           const { admin } = await import("@/lib/admin-guard.server");
           const db = await admin();
+
+          const { runScheduledAgenticSync } = await import(
+            "@/lib/email/agentic/scheduler.server"
+          );
+          const agentic = await runScheduledAgenticSync(db);
+
+          const { transportConfigured } = await import("@/lib/email/transport/config.server");
+          if (!transportConfigured(null)) {
+            return json({
+              ok: true,
+              imap: { skipped: "transport_not_configured" },
+              agentic: agentic.ran
+                ? { ran: true, ...agentic.outcome }
+                : { ran: false, reason: agentic.reason },
+            });
+          }
+
           const { syncAllMailboxes } = await import("@/lib/email/transport/hostinger.server");
           const outcomes = await syncAllMailboxes(db, "cron");
           return json({
@@ -51,6 +64,9 @@ export const Route = createFileRoute("/api/public/hooks/mail-sync")({
             duplicates: outcomes.reduce((sum, o) => sum + o.duplicates, 0),
             tickets: outcomes.reduce((sum, o) => sum + o.ticketsCreated, 0),
             failed: outcomes.filter((o) => o.error).length,
+            agentic: agentic.ran
+              ? { ran: true, ...agentic.outcome }
+              : { ran: false, reason: agentic.reason },
           });
         } catch (error) {
           console.error(
