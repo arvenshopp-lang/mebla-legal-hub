@@ -24,12 +24,10 @@ import { isValidInviteToken } from "@/lib/invitations.shared";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    invite:
-      typeof search.invite === "string" && isValidInviteToken(search.invite)
-        ? search.invite
-        : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { invite?: string } =>
+    typeof search.invite === "string" && isValidInviteToken(search.invite)
+      ? { invite: search.invite }
+      : {},
   head: () => ({
     meta: [
       { title: "إنشاء حساب | مِهلة" },
@@ -125,7 +123,7 @@ function RegisterPage() {
     navigate({
       to: postAuthTarget ?? (memberships.length > 0 ? "/dashboard" : "/onboarding"),
       replace: true,
-    });
+    } as never);
   }, [authLoading, organizationLoading, session, memberships.length, navigate, postAuthTarget]);
 
   const submit = async (e: React.FormEvent) => {
