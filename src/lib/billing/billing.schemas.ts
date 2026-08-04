@@ -205,3 +205,10 @@ export const webhookActionSchema = z.object({
   id: uuid,
   reason: text(400).min(5, "اكتب سبباً واضحاً (5 أحرف على الأقل)."),
 });
+
+/** كشف حساب مكتب خلال فترة (يستخدم لمخرج PDF). */
+export const statementSchema = z.object({
+  organizationId: uuid,
+  from: isoDateTime,
+  to: isoDateTime,
+});

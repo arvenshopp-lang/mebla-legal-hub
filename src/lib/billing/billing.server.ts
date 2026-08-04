@@ -1596,3 +1596,142 @@ export async function previewSequence(
     preview: `${prefix}-${input.periodKey}-${String(nextValue).padStart(padding, "0")}`,
   };
 }
+
+/* -------------------------------------------------- مصادر مستندات PDF الموحدة */
+
+/** بيانات إيصال السداد: الدفعة + الفاتورة المرتبطة + استرداداتها. */
+export async function getPaymentReceipt(
+  _ctx: BillingCtx,
+  paymentId: string,
+): Promise<import("./pdf/models.server").ReceiptSource> {
+  const client = await db();
+  const { data: payment, error } = await client
+    .from("platform_payments")
+    .select("*")
+    .eq("id", paymentId)
+    .maybeSingle();
+  if (error) fail(error, "تعذّر جلب الدفعة.");
+  if (!payment) throw new Error("الدفعة غير موجودة.");
+  if (payment.status === "pending" || payment.status === "failed")
+    throw new Error("لا يمكن إصدار إيصال لدفعة غير معتمدة.");
+
+  const [invoiceRes, refundsRes] = await Promise.all([
+    client
+      .from("platform_invoices")
+      .select(
+        "number, currency, customer_name, customer_legal_name, customer_email, tax_number, total, paid_total, remaining, organizations(name)",
+      )
+      .eq("id", payment.invoice_id)
+      .maybeSingle(),
+    client.from("platform_refunds").select("*").eq("payment_id", paymentId).order("created_at"),
+  ]);
+  if (!invoiceRes.data) throw new Error("الفاتورة المرتبطة بالدفعة غير موجودة.");
+
+  const invoiceRow = invoiceRes.data as BillingRow & { organizations?: { name?: string } };
+  return {
+    payment: payment as never,
+    refunds: (refundsRes.data ?? []) as never,
+    invoice: {
+      number: invoiceRow["number"] as string,
+      currency: invoiceRow["currency"] as string,
+      customer_name: invoiceRow["customer_name"] as string,
+      customer_legal_name: (invoiceRow["customer_legal_name"] as string | null) ?? null,
+      customer_email: (invoiceRow["customer_email"] as string | null) ?? null,
+      tax_number: (invoiceRow["tax_number"] as string | null) ?? null,
+      organization_name: invoiceRow.organizations?.name ?? null,
+      total: Number(invoiceRow["total"]),
+      paid_total: Number(invoiceRow["paid_total"]),
+      remaining: Number(invoiceRow["remaining"]),
+    },
+  };
+}
+
+/** كشف حساب مكتب خلال فترة: الفواتير الصادرة + الدفعات + الرصيد المستحق. */
+export async function getAccountStatement(
+  _ctx: BillingCtx,
+  input: { organizationId: string; from: string; to: string },
+): Promise<import("./pdf/models.server").StatementSource> {
+  const client = await db();
+  const { data: org } = await client
+    .from("organizations")
+    .select("name, email, tax_number, commercial_registration")
+    .eq("id", input.organizationId)
+    .maybeSingle();
+  if (!org) throw new Error("المكتب غير موجود.");
+
+  const { data: orgInvoiceIds } = await client
+    .from("platform_invoices")
+    .select("id")
+    .eq("organization_id", input.organizationId);
+  const invoiceIds = (orgInvoiceIds ?? []).map((row: BillingRow) => row["id"] as string);
+
+  const [invoicesRes, openingRes, paymentsRes, refundsRes] = await Promise.all([
+    client
+      .from("platform_invoices")
+      .select("id, number, currency, issued_at, due_at, status, total, paid_total, remaining")
+      .eq("organization_id", input.organizationId)
+      .neq("status", "draft")
+      .gte("issued_at", input.from)
+      .lte("issued_at", input.to)
+      .order("issued_at"),
+    client
+      .from("platform_invoices")
+      .select("remaining")
+      .eq("organization_id", input.organizationId)
+      .neq("status", "draft")
+      .lt("issued_at", input.from),
+    client
+      .from("platform_payments")
+      .select("amount, method, status, paid_at, received_at, created_at, platform_invoices(number)")
+      .eq("organization_id", input.organizationId)
+      .in("status", ["paid", "refunded", "partially_refunded"])
+      .gte("created_at", input.from)
+      .lte("created_at", input.to)
+      .order("created_at"),
+    client
+      .from("platform_refunds")
+      .select("amount")
+      .eq("status", "completed")
+      .in("invoice_id", invoiceIds.length > 0 ? invoiceIds : ["00000000-0000-0000-0000-000000000000"])
+      .gte("created_at", input.from)
+      .lte("created_at", input.to),
+  ]);
+
+  const invoices = (invoicesRes.data ?? []) as BillingRow[];
+  const payments = (paymentsRes.data ?? []) as Array<BillingRow & { platform_invoices?: { number?: string } }>;
+
+  const sum = (rows: BillingRow[], key: string) => round2(rows.reduce((total, row) => total + Number(row[key] ?? 0), 0));
+
+  return {
+    accountName: org.name as string,
+    email: (org.email as string | null) ?? null,
+    taxNumber: (org.tax_number as string | null) ?? null,
+    commercialRegistration: (org.commercial_registration as string | null) ?? null,
+    currency: (invoices[0]?.["currency"] as string | undefined) ?? "SAR",
+    from: input.from,
+    to: input.to,
+    openingOutstanding: sum((openingRes.data ?? []) as BillingRow[], "remaining"),
+    invoices: invoices.map((invoice) => ({
+      number: invoice["number"] as string,
+      issued_at: (invoice["issued_at"] as string | null) ?? null,
+      due_at: (invoice["due_at"] as string | null) ?? null,
+      status: invoice["status"] as string,
+      total: Number(invoice["total"]),
+      paid_total: Number(invoice["paid_total"]),
+      remaining: Number(invoice["remaining"]),
+    })),
+    payments: payments.map((payment) => ({
+      date: (payment["paid_at"] ?? payment["received_at"] ?? payment["created_at"]) as string,
+      invoice_number: payment.platform_invoices?.number ?? "—",
+      method: payment["method"] as string,
+      status: payment["status"] as string,
+      amount: Number(payment["amount"]),
+    })),
+    totals: {
+      invoiced: sum(invoices, "total"),
+      collected: sum(payments as BillingRow[], "amount"),
+      refunded: sum((refundsRes.data ?? []) as BillingRow[], "amount"),
+      outstanding: sum(invoices, "remaining"),
+    },
+  };
+}
