@@ -15,6 +15,7 @@ export type FailureSurface =
   | "support_message"
   | "support_rating"
   | "print"
+  | "email"
   | "other";
 
 export type FailureInput = {

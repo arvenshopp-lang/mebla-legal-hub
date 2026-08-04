@@ -120,7 +120,7 @@ function Page() {
         {
           description: result.emailSent
             ? "أُصدر رابط جديد وأُبطل الرابط السابق."
-            : "تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».",
+            : `تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
         },
       );
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
@@ -279,7 +279,7 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
         toast.success("تم إرسال الدعوة بالبريد الإلكتروني");
       } else {
         toast.warning("تم إنشاء الدعوة", {
-          description: "تعذّر إرسال البريد حالياً، شارك الرابط أدناه مع العضو.",
+          description: `تعذّر إرسال البريد حالياً، شارك الرابط أدناه مع العضو.${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
         });
       }
       qc.invalidateQueries({ queryKey: ["team-invitations"] });

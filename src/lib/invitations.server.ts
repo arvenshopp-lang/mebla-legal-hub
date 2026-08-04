@@ -60,7 +60,13 @@ export async function createTeamInvitation(input: {
   email: string;
   role: InviteRole;
   origin: string;
-}): Promise<{ token: string; inviteUrl: string; emailSent: boolean; emailReason?: string }> {
+}): Promise<{
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailReason?: string;
+  emailRef?: string;
+}> {
   const email = normalizeEmail(input.email);
 
   const { data: membership, error: membershipError } = await input.supabase
@@ -107,18 +113,27 @@ export async function createTeamInvitation(input: {
     .eq("id", input.organizationId)
     .maybeSingle();
 
+  const { data: inviter } = await input.supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", input.userId)
+    .maybeSingle();
+
   const inviteUrl = `${safeOrigin(input.origin)}/invite/${created.token}`;
   const result = await sendAppEmail({
     to: email,
     subject: `دعوة للانضمام إلى ${org?.name ?? "مكتب المحاماة"} — مِهلة`,
     label: "team-invite",
     idempotencyKey: `team-invite-${created.id}`,
+    organizationId: input.organizationId,
+    userId: input.userId,
     element: React.createElement(InviteEmail, {
       siteName: SITE_NAME,
       siteUrl: SITE_URL,
       confirmationUrl: inviteUrl,
       orgName: org?.name ?? undefined,
       roleLabel: ROLE_LABEL[input.role],
+      inviterName: inviter?.full_name ?? undefined,
     }),
   });
 
@@ -127,6 +142,7 @@ export async function createTeamInvitation(input: {
     inviteUrl,
     emailSent: result.sent,
     ...(result.reason ? { emailReason: result.reason } : {}),
+    ...(result.ref ? { emailRef: result.ref } : {}),
   };
 }
 
@@ -185,6 +201,40 @@ export async function previewInvitation(token: string): Promise<InvitePreview> {
   };
 }
 
+/**
+ * طلب المدعو إعادة إرسال دعوة منتهية: يُشعر مسؤولي المكتب فقط، ولا يكشف أي
+ * بيانات للزائر ولا يُصدر رابطاً جديداً بنفسه.
+ */
+export async function requestInviteResend(token: string): Promise<{ notified: boolean }> {
+  const found = await loadInvitation(token);
+  if (!found) return { notified: false };
+  const { row } = found;
+  if (found.state !== "expired" && found.state !== "revoked") return { notified: false };
+
+  const { data: admins } = await supabaseAdmin
+    .from("organization_members")
+    .select("user_id, role")
+    .eq("organization_id", row.organization_id)
+    .eq("status", "active")
+    .in("role", ["owner", "admin"]);
+
+  const targets = (admins ?? []).map((m) => m.user_id);
+  if (row.invited_by && !targets.includes(row.invited_by)) targets.push(row.invited_by);
+  if (!targets.length) return { notified: false };
+
+  await supabaseAdmin.from("notifications").insert(
+    targets.map((userId) => ({
+      organization_id: row.organization_id,
+      user_id: userId,
+      type: "team_invite_resend_requested",
+      title: "طلب إعادة إرسال دعوة",
+      message: `طلب صاحب البريد ${maskEmail(row.email)} إعادة إرسال دعوة الانضمام بعد انتهاء صلاحيتها.`,
+    })),
+  );
+
+  return { notified: true };
+}
+
 export async function acceptInvitation(
   token: string,
   userId: string,
@@ -231,6 +281,21 @@ export async function acceptInvitation(
     .update({ status: "accepted" })
     .eq("id", row.id)
     .eq("status", "pending");
+
+  // سجل تدقيق غير قابل للتعديل: قبول الدعوة وإبطال الرابط نهائياً.
+  await supabaseAdmin.from("activity_logs").insert({
+    organization_id: row.organization_id,
+    user_id: userId,
+    action: "member.invite_accepted",
+    entity_type: "organization_invitation",
+    entity_id: row.id,
+    description: `قبول دعوة الانضمام بصفة ${ROLE_LABEL[row.role]}`,
+    metadata: {
+      role: row.role,
+      invited_email: maskEmail(row.email),
+      already_member: !!existing && existing.status === "active",
+    } as never,
+  });
 
   if (row.invited_by) {
     const { data: profile } = await supabaseAdmin

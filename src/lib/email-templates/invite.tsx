@@ -23,6 +23,8 @@ interface InviteEmailProps {
   orgName?: string
   /** صفة العضو المدعو بالعربية */
   roleLabel?: string
+  /** اسم الشخص الذي أرسل الدعوة */
+  inviterName?: string
 }
 
 export const InviteEmail = ({
@@ -31,6 +33,7 @@ export const InviteEmail = ({
   confirmationUrl,
   orgName,
   roleLabel,
+  inviterName,
 }: InviteEmailProps) => (
   <Html lang="ar" dir="rtl">
     <Head />
@@ -41,6 +44,14 @@ export const InviteEmail = ({
         <Hr style={styles.rule} />
         <Heading style={styles.h1}>لديك دعوة للانضمام</Heading>
         <Text style={styles.text}>
+          {inviterName ? <b>{inviterName}</b> : 'أحد مسؤولي المكتب'} دعاك للانضمام إلى فريق العمل على
+          منصة{' '}
+          <Link href={siteUrl} style={styles.link}>
+            {siteName}
+          </Link>
+          {' '}لإدارة القضايا والجلسات والمهل النظامية بمكان واحد.
+        </Text>
+        <Text style={styles.text}>
           تمت دعوتك للانضمام إلى{' '}
           {orgName ? (
             <b>{orgName}</b>
@@ -50,15 +61,19 @@ export const InviteEmail = ({
             </Link>
           )}
           {roleLabel ? ` بصفة ${roleLabel}` : ''}
-          {' '}على منصة{' '}
-          <Link href={siteUrl} style={styles.link}>
-            {siteName}
-          </Link>
           . اضغط الزر التالي لقبول الدعوة والانضمام إلى فريق العمل.
         </Text>
         <Button style={styles.button} href={confirmationUrl}>
-          قبول الدعوة
+          انضم إلى المكتب
         </Button>
+        <Text style={styles.footer}>
+          إذا لم يعمل الزر، انسخ الرابط التالي والصقه في المتصفح:
+        </Text>
+        <Text style={{ ...styles.footer, direction: 'ltr', textAlign: 'left', wordBreak: 'break-all' }}>
+          <Link href={confirmationUrl} style={styles.link}>
+            {confirmationUrl}
+          </Link>
+        </Text>
         <Text style={styles.footer}>
           إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة بأمان.
         </Text>
