@@ -251,10 +251,11 @@ function RegisterPage() {
   };
 
   if (emailSent) {
+    const waitLeft = resendAt ? Math.ceil((60_000 - (Date.now() - resendAt)) / 1000) : 0;
     const resendConfirmation = async () => {
       if (resendBusy) return;
-      if (resendAt && Date.now() - resendAt < 60_000) {
-        toast.info("يمكنك إعادة الإرسال بعد دقيقة واحدة من آخر محاولة");
+      if (waitLeft > 0) {
+        toast.info(`لحماية الحساب، يمكن إعادة الإرسال بعد ${waitLeft} ثانية`);
         return;
       }
       setResendBusy(true);
@@ -264,6 +265,7 @@ function RegisterPage() {
         setResendAt(Date.now());
         toast.success(result.message);
       } else {
+        if (result.message.includes("كثرت المحاولات")) setResendAt(Date.now());
         toast.error(result.message);
       }
     };
