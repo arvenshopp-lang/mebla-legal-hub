@@ -67,6 +67,7 @@ import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 
@@ -360,6 +361,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsProviderRoute =
+  ApiPublicPaymentsProviderRouteImport.update({
+    id: '/api/public/payments/$provider',
+    path: '/api/public/payments/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCleanupSecureArtifactsRoute =
   ApiPublicHooksCleanupSecureArtifactsRouteImport.update({
     id: '/api/public/hooks/cleanup-secure-artifacts',
@@ -430,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -490,6 +498,7 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -553,6 +562,7 @@ export interface FileRoutesById {
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -616,6 +626,7 @@ export interface FileRouteTypes {
     | '/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -676,6 +687,7 @@ export interface FileRouteTypes {
     | '/cases'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   id:
@@ -738,6 +750,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesById: FileRoutesById
@@ -767,6 +780,7 @@ export interface RootRouteChildren {
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
@@ -1179,6 +1193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/$provider': {
+      id: '/api/public/payments/$provider'
+      path: '/api/public/payments/$provider'
+      fullPath: '/api/public/payments/$provider'
+      preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/cleanup-secure-artifacts': {
       id: '/api/public/hooks/cleanup-secure-artifacts'
       path: '/api/public/hooks/cleanup-secure-artifacts'
@@ -1309,6 +1330,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
+  ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
