@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xklzpjocsiadnoglwryw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "mehla-legal-practice-platform",
+      "version": "1.0.0",
+      "title": "Mehla | Legal Practice Platform"
+    },
+    "tools": [
+      {
+        "name": "list_cases",
+        "title": "قائمة القضايا",
+        "description": "يعرض قضايا مكتب المستخدم مع رقم القضية والمحكمة والحالة والإجراء القادم. يدعم البحث بالنص والتصفية بالحالة.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "بحث في عنوان القضية أو رقمها أو اسم المحكمة."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "open",
+                "in_progress",
+                "waiting",
+                "judgment_issued",
+                "execution",
+                "closed",
+                "archived"
+              ],
+              "description": "تصفية بحالة القضية."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "عدد النتائج (1 إلى 50، الافتراضي 20)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_case",
+        "title": "تفاصيل قضية",
+        "description": "يعرض ملف قضية واحدة (بالمعرّف أو رقم القضية أو الرمز العام) مع أقرب الجلسات والمهل والمهام المرتبطة بها.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "reference": {
+              "type": "string",
+              "description": "معرّف القضية أو رقمها أو رمزها العام المكوّن من عشرة أرقام."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "required": [
+            "reference"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upcoming_hearings",
+        "title": "الجلسات القادمة",
+        "description": "يعرض الجلسات المجدولة القادمة لمكتب المستخدم خلال عدد محدد من الأيام بتوقيت الرياض.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "description": "عدد الأيام القادمة (1 إلى 120، الافتراضي 14)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "عدد النتائج (1 إلى 50، الافتراضي 20)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upcoming_deadlines",
+        "title": "المهل القادمة",
+        "description": "يعرض المهل النظامية القادمة والمتأخرة لمكتب المستخدم خلال عدد محدد من الأيام، مرتبةً بتاريخ الاستحقاق.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "description": "عدد الأيام القادمة (1 إلى 120، الافتراضي 14)."
+            },
+            "include_overdue": {
+              "type": "boolean",
+              "description": "تضمين المهل المتأخرة (الافتراضي: نعم)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "عدد النتائج (1 إلى 50، الافتراضي 20)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tasks",
+        "title": "قائمة المهام",
+        "description": "يعرض مهام مكتب المستخدم، مع إمكانية قصر النتائج على المهام المسندة إليه أو على حالة محددة.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in_progress",
+                "completed",
+                "cancelled",
+                "overdue"
+              ],
+              "description": "تصفية بحالة المهمة."
+            },
+            "mine_only": {
+              "type": "boolean",
+              "description": "قصر النتائج على المهام المسندة للمستخدم الحالي."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "عدد النتائج (1 إلى 50، الافتراضي 20)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_task",
+        "title": "إنشاء مهمة",
+        "description": "ينشئ مهمة جديدة في مكتب المستخدم، مع إمكانية ربطها بقضية قائمة وتحديد تاريخ الاستحقاق والأولوية.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "عنوان المهمة."
+            },
+            "description": {
+              "type": "string",
+              "description": "تفاصيل المهمة."
+            },
+            "case_reference": {
+              "type": "string",
+              "description": "معرّف القضية أو رقمها لربط المهمة بها."
+            },
+            "due_date": {
+              "type": "string",
+              "description": "تاريخ الاستحقاق بصيغة YYYY-MM-DD أو ISO."
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ],
+              "description": "أولوية المهمة (الافتراضي: medium)."
+            },
+            "assign_to_me": {
+              "type": "boolean",
+              "description": "إسناد المهمة للمستخدم الحالي (الافتراضي: نعم)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_clients",
+        "title": "بحث العملاء",
+        "description": "يبحث في عملاء المكتب بالاسم أو اسم المنشأة ويعيد بيانات التعريف الأساسية فقط دون أي بيانات هوية أو اتصال حساسة.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "اسم العميل أو المنشأة."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "عدد النتائج (1 إلى 50، الافتراضي 20)."
+            },
+            "organization_id": {
+              "type": "string",
+              "description": "معرّف المكتب عند العضوية في أكثر من مكتب."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
