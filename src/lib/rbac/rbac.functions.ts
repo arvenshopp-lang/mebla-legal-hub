@@ -31,6 +31,7 @@ export const saveRbacRole = createServerFn({ method: "POST" })
         name_ar: z.string().trim().min(2).max(80),
         description: z.string().trim().max(300).nullish(),
         permissions: z.array(permission).max(200),
+        is_active: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -42,7 +43,27 @@ export const saveRbacRole = createServerFn({ method: "POST" })
       name_ar: data.name_ar,
       description: data.description ?? null,
       permissions: data.permissions,
+      ...(data.is_active === undefined ? {} : { is_active: data.is_active }),
     });
+  });
+
+export const cloneRbacRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sourceId: uuid,
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+        name_ar: z.string().trim().min(2).max(80),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.cloneRole(context.supabase, context.userId, data);
   });
 
 export const deleteRbacRole = createServerFn({ method: "POST" })
