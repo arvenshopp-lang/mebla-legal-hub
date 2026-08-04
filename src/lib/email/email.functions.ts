@@ -21,7 +21,10 @@ const addressList = z.array(z.string().email()).max(50);
 
 /** نطاق صناديق الموظف — يُشتق خادمياً فقط من صفّه في القاعدة. */
 function scopeOf(staff: import("@/lib/admin-guard.server").StaffRow) {
-  const permissions = new Set([...(staff.permissions ?? []), ...(staff.platform_roles?.permissions ?? [])]);
+  const permissions = new Set([
+    ...(staff.permissions ?? []),
+    ...(staff.platform_roles?.permissions ?? []),
+  ]);
   return {
     isSuper: staff.role === "super_admin",
     canManage: permissions.has("email.manage"),
@@ -34,18 +37,37 @@ type Scope = ReturnType<typeof scopeOf>;
 type Db = any;
 
 /** صندوق النظام (noreply) لا يُرسل منه بشرياً، والصندوق غير المصرّح مرفوض. */
-async function assertSendableMailbox(db: Db, e: Engine, mailboxId: string, scope: Scope): Promise<void> {
+async function assertSendableMailbox(
+  db: Db,
+  e: Engine,
+  mailboxId: string,
+  scope: Scope,
+): Promise<void> {
   await e.assertMailboxAccess(db, mailboxId, scope);
-  const { data } = await db.from("email_mailboxes").select("type, is_active").eq("id", mailboxId).maybeSingle();
+  const { data } = await db
+    .from("email_mailboxes")
+    .select("type, is_active")
+    .eq("id", mailboxId)
+    .maybeSingle();
   const box = data as { type: string; is_active: boolean } | null;
   if (!box) throw new Error("صندوق البريد غير موجود.");
-  if (box.type === "system") throw new Error("صندوق النظام مخصص لرسائل المنصة الآلية ولا يُراسل منه.");
+  if (box.type === "system")
+    throw new Error("صندوق النظام مخصص لرسائل المنصة الآلية ولا يُراسل منه.");
   if (!box.is_active) throw new Error("صندوق البريد معطّل.");
 }
 
 /** يتحقق من صلاحية الموظف على الرسالة عبر صندوقها. */
-async function assertMessageAccess(db: Db, e: Engine, messageId: string, scope: Scope): Promise<void> {
-  const { data } = await db.from("email_messages").select("mailbox_id").eq("id", messageId).maybeSingle();
+async function assertMessageAccess(
+  db: Db,
+  e: Engine,
+  messageId: string,
+  scope: Scope,
+): Promise<void> {
+  const { data } = await db
+    .from("email_messages")
+    .select("mailbox_id")
+    .eq("id", messageId)
+    .maybeSingle();
   const row = data as { mailbox_id: string } | null;
   if (!row) throw new Error("الرسالة غير موجودة.");
   await e.assertMailboxAccess(db, row.mailbox_id, scope);
@@ -55,26 +77,43 @@ async function assertMessageAccess(db: Db, e: Engine, messageId: string, scope: 
 
 export const getMailWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ mailboxes: Mailbox[]; labels: { id: string; name_ar: string; color: string }[]; staff: { user_id: string; email: string; full_name: string }[]; canSend: boolean; canManage: boolean }> => {
-    const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "email.view");
-    const e = await engine();
-    const db = await g.admin();
-    const [mailboxes, labels, { data: staffRows }] = await Promise.all([
-      e.listMailboxes(db, scopeOf(staff)),
-      e.listLabels(db),
-      db.from("platform_staff").select("user_id, email, full_name").eq("status", "active").order("full_name"),
-    ]);
-    const permissions = new Set([...(staff.permissions ?? []), ...(staff.platform_roles?.permissions ?? [])]);
-    const isSuper = staff.role === "super_admin";
-    return {
-      mailboxes,
-      labels,
-      staff: (staffRows ?? []) as { user_id: string; email: string; full_name: string }[],
-      canSend: isSuper || permissions.has("email.send"),
-      canManage: isSuper || permissions.has("email.manage"),
-    };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      mailboxes: Mailbox[];
+      labels: { id: string; name_ar: string; color: string }[];
+      staff: { user_id: string; email: string; full_name: string }[];
+      canSend: boolean;
+      canManage: boolean;
+    }> => {
+      const g = await guard();
+      const staff = await g.requireStaff(context.supabase, context.userId, "email.view");
+      const e = await engine();
+      const db = await g.admin();
+      const [mailboxes, labels, { data: staffRows }] = await Promise.all([
+        e.listMailboxes(db, scopeOf(staff)),
+        e.listLabels(db),
+        db
+          .from("platform_staff")
+          .select("user_id, email, full_name")
+          .eq("status", "active")
+          .order("full_name"),
+      ]);
+      const permissions = new Set([
+        ...(staff.permissions ?? []),
+        ...(staff.platform_roles?.permissions ?? []),
+      ]);
+      const isSuper = staff.role === "super_admin";
+      return {
+        mailboxes,
+        labels,
+        staff: (staffRows ?? []) as { user_id: string; email: string; full_name: string }[],
+        canSend: isSuper || permissions.has("email.send"),
+        canManage: isSuper || permissions.has("email.manage"),
+      };
+    },
+  );
 
 const listSchema = z.object({
   mailboxId: z.string().uuid(),
@@ -100,27 +139,36 @@ export const listMailThreads = createServerFn({ method: "POST" })
 
 export const getMailThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ threadId: z.string().uuid(), markRead: z.boolean().optional() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ threadId: z.string().uuid(), markRead: z.boolean().optional() }).parse(input),
+  )
   .handler(async ({ data, context }): Promise<ThreadDetail> => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "email.view");
     const e = await engine();
     const db = await g.admin();
     await e.assertThreadAccess(db, data.threadId, scopeOf(staff));
-    if (data.markRead !== false) await e.setThreadFlags(db, { threadId: data.threadId, is_unread: false });
+    if (data.markRead !== false)
+      await e.setThreadFlags(db, { threadId: data.threadId, is_unread: false });
     const detail = await e.getThread(db, data.threadId);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.thread.open",
-      threadId: data.threadId,
-      mailboxId: detail.thread.mailbox_id,
-      description: `فتح محادثة: ${detail.thread.subject}`,
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.thread.open",
+        threadId: data.threadId,
+        mailboxId: detail.thread.mailbox_id,
+        description: `فتح محادثة: ${detail.thread.subject}`,
+      },
+    );
     return detail;
   });
 
 export const listMailAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ threadId: z.string().uuid().nullable().optional() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ threadId: z.string().uuid().nullable().optional() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await guard();
     await g.requireStaff(context.supabase, context.userId, "email.audit");
@@ -153,13 +201,17 @@ export const saveMailDraft = createServerFn({ method: "POST" })
     const db = await g.admin();
     await assertSendableMailbox(db, e, data.mailboxId, scopeOf(staff));
     const result = await e.saveDraft(db, { userId: staff.user_id, email: staff.email }, data);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.draft.save",
-      threadId: result.threadId,
-      messageId: result.messageId,
-      mailboxId: data.mailboxId,
-      description: `حفظ مسوّدة: ${data.subject}`,
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.draft.save",
+        threadId: result.threadId,
+        messageId: result.messageId,
+        mailboxId: data.mailboxId,
+        description: `حفظ مسوّدة: ${data.subject}`,
+      },
+    );
     return result;
   });
 
@@ -173,14 +225,18 @@ export const sendMailMessage = createServerFn({ method: "POST" })
     const db = await g.admin();
     await assertSendableMailbox(db, e, data.mailboxId, scopeOf(staff));
     const result = await e.queueMessage(db, { userId: staff.user_id, email: staff.email }, data);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: result.sent ? "email.message.sent" : "email.message.queued",
-      threadId: result.threadId,
-      messageId: result.messageId,
-      mailboxId: data.mailboxId,
-      description: `${result.sent ? "إرسال" : "جدولة"} رسالة: ${data.subject}`,
-      metadata: { recipients: data.to.length, failure_ref: result.failureRef ?? null },
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: result.sent ? "email.message.sent" : "email.message.queued",
+        threadId: result.threadId,
+        messageId: result.messageId,
+        mailboxId: data.mailboxId,
+        description: `${result.sent ? "إرسال" : "جدولة"} رسالة: ${data.subject}`,
+        metadata: { recipients: data.to.length, failure_ref: result.failureRef ?? null },
+      },
+    );
     return result;
   });
 
@@ -193,14 +249,21 @@ export const retryMailMessage = createServerFn({ method: "POST" })
     const e = await engine();
     const db = await g.admin();
     await assertMessageAccess(db, e, data.messageId, scopeOf(staff));
-    await db.from("email_outbox").update({ status: "queued", next_attempt_at: new Date().toISOString() }).eq("message_id", data.messageId);
+    await db
+      .from("email_outbox")
+      .update({ status: "queued", next_attempt_at: new Date().toISOString() })
+      .eq("message_id", data.messageId);
     const result = await e.dispatchOne(db, data.messageId);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.message.retry",
-      messageId: data.messageId,
-      description: result.sent ? "نجحت إعادة المحاولة" : "فشلت إعادة المحاولة",
-      metadata: { failure_ref: result.failureRef ?? null },
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.message.retry",
+        messageId: data.messageId,
+        description: result.sent ? "نجحت إعادة المحاولة" : "فشلت إعادة المحاولة",
+        metadata: { failure_ref: result.failureRef ?? null },
+      },
+    );
     return result;
   });
 
@@ -214,11 +277,15 @@ export const discardMailDraft = createServerFn({ method: "POST" })
     const db = await g.admin();
     await assertMessageAccess(db, e, data.messageId, scopeOf(staff));
     await e.discardDraft(db, data.messageId);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.draft.discard",
-      messageId: data.messageId,
-      description: "حذف مسوّدة",
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.draft.discard",
+        messageId: data.messageId,
+        description: "حذف مسوّدة",
+      },
+    );
     return { ok: true };
   });
 
@@ -254,49 +321,74 @@ export const updateMailThread = createServerFn({ method: "POST" })
       });
     }
     if (data.restore) await e.restoreThread(db, data.threadId);
-    else if (data.folder) await e.moveThread(db, { threadId: data.threadId, folder: data.folder as EmailFolder });
-    if (data.labelIds) await e.setThreadLabels(db, { threadId: data.threadId, labelIds: data.labelIds });
+    else if (data.folder)
+      await e.moveThread(db, { threadId: data.threadId, folder: data.folder as EmailFolder });
+    if (data.labelIds)
+      await e.setThreadLabels(db, { threadId: data.threadId, labelIds: data.labelIds });
     if (data.assignTo !== undefined) {
       await g.requireStaff(context.supabase, context.userId, "email.assign");
       let email: string | null = null;
       if (data.assignTo) {
-        const { data: row } = await db.from("platform_staff").select("email").eq("user_id", data.assignTo).maybeSingle();
+        const { data: row } = await db
+          .from("platform_staff")
+          .select("email")
+          .eq("user_id", data.assignTo)
+          .maybeSingle();
         email = (row as { email: string } | null)?.email ?? null;
       }
-      await e.assignThread(db, { threadId: data.threadId, staffUserId: data.assignTo, staffEmail: email });
+      await e.assignThread(db, {
+        threadId: data.threadId,
+        staffUserId: data.assignTo,
+        staffEmail: email,
+      });
     }
 
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.thread.update",
-      threadId: data.threadId,
-      description: "تحديث محادثة",
-      metadata: {
-        folder: data.folder ?? null,
-        restored: Boolean(data.restore),
-        assigned: data.assignTo ?? null,
-        starred: data.is_starred ?? null,
-        unread: data.is_unread ?? null,
-        labels: data.labelIds?.length ?? null,
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.thread.update",
+        threadId: data.threadId,
+        description: "تحديث محادثة",
+        metadata: {
+          folder: data.folder ?? null,
+          restored: Boolean(data.restore),
+          assigned: data.assignTo ?? null,
+          starred: data.is_starred ?? null,
+          unread: data.is_unread ?? null,
+          labels: data.labelIds?.length ?? null,
+        },
       },
-    });
+    );
     return { ok: true };
   });
 
 export const addMailNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ threadId: z.string().uuid(), body: z.string().min(1).max(4000) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ threadId: z.string().uuid(), body: z.string().min(1).max(4000) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "email.view");
     const e = await engine();
     const db = await g.admin();
     await e.assertThreadAccess(db, data.threadId, scopeOf(staff));
-    await e.addNote(db, { threadId: data.threadId, authorId: staff.user_id, authorEmail: staff.email, body: data.body });
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.note.add",
+    await e.addNote(db, {
       threadId: data.threadId,
-      description: "ملاحظة داخلية (لا تُرسل للمستلم)",
+      authorId: staff.user_id,
+      authorEmail: staff.email,
+      body: data.body,
     });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.note.add",
+        threadId: data.threadId,
+        description: "ملاحظة داخلية (لا تُرسل للمستلم)",
+      },
+    );
     return { ok: true };
   });
 
@@ -321,11 +413,15 @@ export const updateMailbox = createServerFn({ method: "POST" })
     const e = await engine();
     const db = await g.admin();
     await e.updateMailbox(db, data);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.mailbox.update",
-      mailboxId: data.id,
-      description: "تحديث إعدادات صندوق بريد",
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.mailbox.update",
+        mailboxId: data.id,
+        description: "تحديث إعدادات صندوق بريد",
+      },
+    );
     return { ok: true };
   });
 
@@ -333,7 +429,11 @@ export const saveMailLabel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
-      .object({ id: z.string().uuid().optional(), name_ar: z.string().min(1).max(40), color: z.string().max(20) })
+      .object({
+        id: z.string().uuid().optional(),
+        name_ar: z.string().min(1).max(40),
+        color: z.string().max(20),
+      })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -342,10 +442,14 @@ export const saveMailLabel = createServerFn({ method: "POST" })
     const e = await engine();
     const db = await g.admin();
     await e.upsertLabel(db, data);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.label.save",
-      description: `حفظ تسمية: ${data.name_ar}`,
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.label.save",
+        description: `حفظ تسمية: ${data.name_ar}`,
+      },
+    );
     return { ok: true };
   });
 
@@ -358,10 +462,14 @@ export const deleteMailLabel = createServerFn({ method: "POST" })
     const e = await engine();
     const db = await g.admin();
     await e.deleteLabel(db, data.id);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.label.delete",
-      description: "حذف تسمية",
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.label.delete",
+        description: "حذف تسمية",
+      },
+    );
     return { ok: true };
   });
 /* ------------------------------------------------------------- المرفقات */
@@ -370,12 +478,16 @@ const uploadSchema = z.object({
   messageId: z.string().uuid(),
   fileName: z.string().min(1).max(260),
   /** المحتوى Base64 — الحد الأعلى يقارب 10 م.بايت بعد الترميز. */
-  contentBase64: z.string().min(4).max(15 * 1024 * 1024),
+  contentBase64: z
+    .string()
+    .min(4)
+    .max(15 * 1024 * 1024),
 });
 
 function decodeBase64(value: string): Uint8Array {
   const clean = value.replace(/^data:[^;]*;base64,/, "").replace(/\s+/g, "");
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length === 0) throw new Error("محتوى الملف غير صالح.");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length === 0)
+    throw new Error("محتوى الملف غير صالح.");
   const binary = atob(clean);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
@@ -393,18 +505,24 @@ export const uploadMailAttachment = createServerFn({ method: "POST" })
     const db = await g.admin();
     await assertMessageAccess(db, e, data.messageId, scopeOf(staff));
 
-    const { data: msg } = await db.from("email_messages").select("status").eq("id", data.messageId).maybeSingle();
+    const { data: msg } = await db
+      .from("email_messages")
+      .select("status")
+      .eq("id", data.messageId)
+      .maybeSingle();
     const status = (msg as { status: string } | null)?.status ?? "draft";
     if (!["draft", "scheduled", "failed"].includes(status)) {
       throw new Error("لا يمكن تعديل مرفقات رسالة أُرسلت أو في قائمة الإرسال.");
     }
 
     const bytes = decodeBase64(data.contentBase64);
-    if (bytes.byteLength > ATTACHMENT_MAX_FILE_BYTES) throw new Error("حجم الملف يتجاوز الحد المسموح.");
+    if (bytes.byteLength > ATTACHMENT_MAX_FILE_BYTES)
+      throw new Error("حجم الملف يتجاوز الحد المسموح.");
 
     const a = await import("@/lib/email/attachments.server");
     const existing = await a.listAttachments(db, data.messageId);
-    if (existing.length >= ATTACHMENT_MAX_COUNT) throw new Error("تجاوزت الحد الأقصى لعدد المرفقات.");
+    if (existing.length >= ATTACHMENT_MAX_COUNT)
+      throw new Error("تجاوزت الحد الأقصى لعدد المرفقات.");
 
     const stored = await a.storeAttachment(db, {
       messageId: data.messageId,
@@ -415,12 +533,20 @@ export const uploadMailAttachment = createServerFn({ method: "POST" })
       uploadedByEmail: staff.email,
     });
 
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.attachment.upload",
-      messageId: data.messageId,
-      description: `رفع مرفق: ${stored.file_name}`,
-      metadata: { sha256: stored.sha256, size_bytes: stored.size_bytes, mime_type: stored.mime_type },
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.attachment.upload",
+        messageId: data.messageId,
+        description: `رفع مرفق: ${stored.file_name}`,
+        metadata: {
+          sha256: stored.sha256,
+          size_bytes: stored.size_bytes,
+          mime_type: stored.mime_type,
+        },
+      },
+    );
 
     return {
       attachment: {
@@ -454,11 +580,15 @@ export const deleteMailAttachment = createServerFn({ method: "POST" })
     await assertMessageAccess(db, e, meta.message_id, scopeOf(staff));
 
     await a.deleteAttachment(db, data.attachmentId);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.attachment.delete",
-      messageId: meta.message_id,
-      description: `حذف مرفق: ${meta.file_name}`,
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.attachment.delete",
+        messageId: meta.message_id,
+        description: `حذف مرفق: ${meta.file_name}`,
+      },
+    );
     return { ok: true };
   });
 
@@ -484,10 +614,14 @@ export const getMailAttachmentUrl = createServerFn({ method: "POST" })
 
     const signed = await a.signedAttachmentUrl(db, data.attachmentId);
     await a.bumpDownloadCount(db, data.attachmentId);
-    await e.writeEmailAudit(db, { userId: staff.user_id, email: staff.email }, {
-      action: "email.attachment.download",
-      messageId: meta.message_id,
-      description: `تنزيل مرفق: ${signed.fileName}`,
-    });
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.attachment.download",
+        messageId: meta.message_id,
+        description: `تنزيل مرفق: ${signed.fileName}`,
+      },
+    );
     return { url: signed.url, fileName: signed.fileName };
   });

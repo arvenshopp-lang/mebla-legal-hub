@@ -112,7 +112,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@,]+\.[^\s@,]{2,}$/;
 export function parseAddressList(raw: string, fieldLabel: string): string[] {
   const parts = raw
     .split(/[,;\n]/)
-    .map((p) => p.trim().replace(/^.*<([^>]+)>$/, "$1").toLowerCase())
+    .map((p) =>
+      p
+        .trim()
+        .replace(/^.*<([^>]+)>$/, "$1")
+        .toLowerCase(),
+    )
     .filter(Boolean);
   const out: string[] = [];
   for (const p of parts) {

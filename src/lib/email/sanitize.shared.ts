@@ -7,15 +7,68 @@
  */
 
 const ALLOWED_TAGS = new Set([
-  "p", "br", "div", "span", "strong", "b", "em", "i", "u", "s", "sub", "sup",
-  "ul", "ol", "li", "blockquote", "pre", "code", "hr",
-  "h1", "h2", "h3", "h4", "h5", "h6",
-  "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption",
-  "a", "img",
+  "p",
+  "br",
+  "div",
+  "span",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "u",
+  "s",
+  "sub",
+  "sup",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "pre",
+  "code",
+  "hr",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "td",
+  "th",
+  "caption",
+  "a",
+  "img",
 ]);
 
 /** وسوم تُحذف مع محتواها بالكامل. */
-const DROP_WITH_CONTENT = ["script", "style", "iframe", "object", "embed", "form", "template", "noscript", "svg", "math", "frameset", "frame", "applet", "audio", "video", "canvas", "map", "meta", "link", "base", "title", "head"];
+const DROP_WITH_CONTENT = [
+  "script",
+  "style",
+  "iframe",
+  "object",
+  "embed",
+  "form",
+  "template",
+  "noscript",
+  "svg",
+  "math",
+  "frameset",
+  "frame",
+  "applet",
+  "audio",
+  "video",
+  "canvas",
+  "map",
+  "meta",
+  "link",
+  "base",
+  "title",
+  "head",
+];
 
 const ALLOWED_ATTRS: Record<string, Set<string>> = {
   a: new Set(["href", "title"]),
@@ -48,7 +101,11 @@ function decodeEntitiesForText(value: string): string {
 }
 
 function escapeAttr(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /** تنقية HTML وارد وإرجاع نسخة آمنة + نسخة نصية. */
@@ -67,7 +124,13 @@ export function sanitizeInboundHtml(input: string | null | undefined): SanitizeR
   for (const tag of DROP_WITH_CONTENT) {
     const paired = new RegExp(`<${tag}\\b[\\s\\S]*?<\\/${tag}\\s*>`, "gi");
     if (paired.test(source)) {
-      if (tag === "script" || tag === "iframe" || tag === "object" || tag === "embed" || tag === "svg") {
+      if (
+        tag === "script" ||
+        tag === "iframe" ||
+        tag === "object" ||
+        tag === "embed" ||
+        tag === "svg"
+      ) {
         hadActiveContent = true;
       }
       source = source.replace(paired, " ");
@@ -79,54 +142,66 @@ export function sanitizeInboundHtml(input: string | null | undefined): SanitizeR
     }
   }
 
-  const out = source.replace(/<\/?([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g, (_match, rawName: string, rawAttrs: string) => {
-    const name = rawName.toLowerCase();
-    const closing = _match.startsWith("</");
-    if (!ALLOWED_TAGS.has(name)) return " ";
-    if (closing) return name === "img" || name === "br" || name === "hr" ? "" : `</${name}>`;
+  const out = source.replace(
+    /<\/?([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g,
+    (_match, rawName: string, rawAttrs: string) => {
+      const name = rawName.toLowerCase();
+      const closing = _match.startsWith("</");
+      if (!ALLOWED_TAGS.has(name)) return " ";
+      if (closing) return name === "img" || name === "br" || name === "hr" ? "" : `</${name}>`;
 
-    if (/\son[a-z]+\s*=/i.test(rawAttrs)) hadActiveContent = true;
+      if (/\son[a-z]+\s*=/i.test(rawAttrs)) hadActiveContent = true;
 
-    const allowed = ALLOWED_ATTRS[name];
-    const kept: string[] = [];
-    if (allowed) {
-      const attrRe = /([a-zA-Z_:][a-zA-Z0-9_.:-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
-      let m: RegExpExecArray | null;
-      while ((m = attrRe.exec(rawAttrs))) {
-        const attr = (m[1] ?? "").toLowerCase();
-        const value = (m[3] ?? m[4] ?? m[5] ?? "").trim();
-        if (attr.startsWith("on") || attr === "style" || attr === "srcset" || attr === "formaction") {
-          hadActiveContent = hadActiveContent || attr.startsWith("on");
-          continue;
-        }
-        if (name === "img" && attr === "src") {
-          blockedImages += 1;
-          continue; // الصور الخارجية محجوبة افتراضياً
-        }
-        if (!allowed.has(attr)) continue;
-        if (attr === "href") {
-          if (!SAFE_HREF.test(value)) {
-            hadActiveContent = hadActiveContent || /^\s*(javascript|vbscript|data)\s*:/i.test(value);
+      const allowed = ALLOWED_ATTRS[name];
+      const kept: string[] = [];
+      if (allowed) {
+        const attrRe = /([a-zA-Z_:][a-zA-Z0-9_.:-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
+        let m: RegExpExecArray | null;
+        while ((m = attrRe.exec(rawAttrs))) {
+          const attr = (m[1] ?? "").toLowerCase();
+          const value = (m[3] ?? m[4] ?? m[5] ?? "").trim();
+          if (
+            attr.startsWith("on") ||
+            attr === "style" ||
+            attr === "srcset" ||
+            attr === "formaction"
+          ) {
+            hadActiveContent = hadActiveContent || attr.startsWith("on");
             continue;
           }
+          if (name === "img" && attr === "src") {
+            blockedImages += 1;
+            continue; // الصور الخارجية محجوبة افتراضياً
+          }
+          if (!allowed.has(attr)) continue;
+          if (attr === "href") {
+            if (!SAFE_HREF.test(value)) {
+              hadActiveContent =
+                hadActiveContent || /^\s*(javascript|vbscript|data)\s*:/i.test(value);
+              continue;
+            }
+          }
+          if (
+            (attr === "width" || attr === "height" || attr === "colspan" || attr === "rowspan") &&
+            !/^\d{1,4}$/.test(value)
+          ) {
+            continue;
+          }
+          kept.push(`${attr}="${escapeAttr(value)}"`);
         }
-        if ((attr === "width" || attr === "height" || attr === "colspan" || attr === "rowspan") && !/^\d{1,4}$/.test(value)) {
-          continue;
-        }
-        kept.push(`${attr}="${escapeAttr(value)}"`);
       }
-    }
 
-    if (name === "a") kept.push('rel="noopener noreferrer nofollow"', 'target="_blank"');
-    if (name === "img") {
-      // صورة محجوبة: تُستبدل بعنصر نصي بديل، فلا يُحمَّل أي مورد خارجي
-      const altMatch = /alt\s*=\s*("([^"]*)"|'([^']*)')/i.exec(rawAttrs);
-      const alt = escapeAttr(decodeEntitiesForText(altMatch?.[2] ?? altMatch?.[3] ?? "صورة"));
-      return `<span data-blocked-image="true">[صورة محجوبة: ${alt}]</span>`;
-    }
-    if (name === "br" || name === "hr") return `<${name} />`;
-    return kept.length > 0 ? `<${name} ${kept.join(" ")}>` : `<${name}>`;
-  });
+      if (name === "a") kept.push('rel="noopener noreferrer nofollow"', 'target="_blank"');
+      if (name === "img") {
+        // صورة محجوبة: تُستبدل بعنصر نصي بديل، فلا يُحمَّل أي مورد خارجي
+        const altMatch = /alt\s*=\s*("([^"]*)"|'([^']*)')/i.exec(rawAttrs);
+        const alt = escapeAttr(decodeEntitiesForText(altMatch?.[2] ?? altMatch?.[3] ?? "صورة"));
+        return `<span data-blocked-image="true">[صورة محجوبة: ${alt}]</span>`;
+      }
+      if (name === "br" || name === "hr") return `<${name} />`;
+      return kept.length > 0 ? `<${name} ${kept.join(" ")}>` : `<${name}>`;
+    },
+  );
 
   const html = out.replace(/[ \t]{2,}/g, " ").trim();
   const text = decodeEntitiesForText(

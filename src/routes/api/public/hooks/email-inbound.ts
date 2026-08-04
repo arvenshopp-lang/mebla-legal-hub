@@ -36,7 +36,10 @@ const payloadSchema = z.object({
     .array(
       z.object({
         file_name: z.string().min(1).max(260),
-        content_base64: z.string().min(4).max(14 * 1024 * 1024),
+        content_base64: z
+          .string()
+          .min(4)
+          .max(14 * 1024 * 1024),
       }),
     )
     .max(10)
@@ -59,9 +62,13 @@ function safeEqual(a: string, b: string): boolean {
 
 async function hmacHex(key: string, message: string): Promise<string> {
   const enc = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey("raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, [
-    "sign",
-  ]);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
   const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -146,33 +153,65 @@ async function handle(request: Request) {
     .select("id", { count: "exact", head: true })
     .gte("created_at", windowStart);
   if ((recent ?? 0) >= RATE_LIMIT_PER_MINUTE) {
-    await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "rate_limited", rejectReason: "تجاوز حد الاستدعاءات" });
+    await logEvent(db, {
+      payloadHash,
+      signatureMode: mode,
+      requestIp: ip,
+      outcome: "rate_limited",
+      rejectReason: "تجاوز حد الاستدعاءات",
+    });
     return json({ error: "rate_limited" }, 429);
   }
 
   /* 2) التحقق من المُستدعي */
   const timestampHeader = request.headers.get("x-mehla-timestamp") ?? "";
   if (signingKey) {
-    const signature = (request.headers.get("x-mehla-signature") ?? "").replace(/^sha256=/i, "").toLowerCase();
+    const signature = (request.headers.get("x-mehla-signature") ?? "")
+      .replace(/^sha256=/i, "")
+      .toLowerCase();
     const ts = Number(timestampHeader);
     if (!signature || !Number.isFinite(ts)) {
-      await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "unauthorized", rejectReason: "توقيع أو طابع زمني مفقود" });
+      await logEvent(db, {
+        payloadHash,
+        signatureMode: mode,
+        requestIp: ip,
+        outcome: "unauthorized",
+        rejectReason: "توقيع أو طابع زمني مفقود",
+      });
       return json({ error: "unauthorized" }, 401);
     }
     /* 3) Replay Protection */
     if (Math.abs(Date.now() / 1000 - ts) > REPLAY_WINDOW_SECONDS) {
-      await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "replayed", rejectReason: "طابع زمني خارج النافذة" });
+      await logEvent(db, {
+        payloadHash,
+        signatureMode: mode,
+        requestIp: ip,
+        outcome: "replayed",
+        rejectReason: "طابع زمني خارج النافذة",
+      });
       return json({ error: "stale_timestamp" }, 401);
     }
     const expected = await hmacHex(signingKey, `${timestampHeader}.${raw}`);
     if (!safeEqual(signature, expected)) {
-      await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "unauthorized", rejectReason: "توقيع غير مطابق" });
+      await logEvent(db, {
+        payloadHash,
+        signatureMode: mode,
+        requestIp: ip,
+        outcome: "unauthorized",
+        rejectReason: "توقيع غير مطابق",
+      });
       return json({ error: "unauthorized" }, 401);
     }
   } else {
     const provided = request.headers.get("x-mehla-inbound-secret") ?? "";
     if (!sharedSecret || !provided || !safeEqual(provided, sharedSecret)) {
-      await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "unauthorized", rejectReason: "سر مشترك غير مطابق" });
+      await logEvent(db, {
+        payloadHash,
+        signatureMode: mode,
+        requestIp: ip,
+        outcome: "unauthorized",
+        rejectReason: "سر مشترك غير مطابق",
+      });
       return json({ error: "unauthorized" }, 401);
     }
   }
@@ -186,7 +225,13 @@ async function handle(request: Request) {
     .gte("created_at", new Date(Date.now() - REPLAY_WINDOW_SECONDS * 1000).toISOString())
     .limit(1);
   if (((replayRows ?? []) as unknown[]).length > 0) {
-    await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "duplicate", rejectReason: "حمولة مكررة داخل نافذة الحماية" });
+    await logEvent(db, {
+      payloadHash,
+      signatureMode: mode,
+      requestIp: ip,
+      outcome: "duplicate",
+      rejectReason: "حمولة مكررة داخل نافذة الحماية",
+    });
     return json({ success: true, duplicate: true });
   }
 
@@ -194,7 +239,13 @@ async function handle(request: Request) {
   try {
     parsed = payloadSchema.parse(JSON.parse(raw));
   } catch {
-    await logEvent(db, { payloadHash, signatureMode: mode, requestIp: ip, outcome: "rejected", rejectReason: "حمولة غير صحيحة" });
+    await logEvent(db, {
+      payloadHash,
+      signatureMode: mode,
+      requestIp: ip,
+      outcome: "rejected",
+      rejectReason: "حمولة غير صحيحة",
+    });
     return json({ error: "invalid_payload" }, 400);
   }
 
@@ -252,7 +303,9 @@ async function handle(request: Request) {
       requestIp: ip,
       outcome: "rejected",
       rejectReason: reason,
-      metadata: { payload: redactPayload({ subject: parsed.subject, references: parsed.references }) },
+      metadata: {
+        payload: redactPayload({ subject: parsed.subject, references: parsed.references }),
+      },
     });
     console.error("[email-inbound]", reason);
     return json({ success: false, error: "ingest_failed", reason }, 422);

@@ -1,5 +1,18 @@
 import { useState } from "react";
-import { CornerUpLeft, CornerUpRight, Download, Forward, Lock, Paperclip, RefreshCw, Star, Trash2, Undo2, Archive, ShieldAlert } from "lucide-react";
+import {
+  CornerUpLeft,
+  CornerUpRight,
+  Download,
+  Forward,
+  Lock,
+  Paperclip,
+  RefreshCw,
+  Star,
+  Trash2,
+  Undo2,
+  Archive,
+  ShieldAlert,
+} from "lucide-react";
 import { Badge, Btn, IconBtn, inputCls } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import {
@@ -58,7 +71,8 @@ export function ThreadView({
 
   function replySeed(all: boolean): ComposeSeed {
     const target = [...messages].reverse().find((m) => m.direction === "inbound") ?? last;
-    const to = target?.direction === "inbound" ? target.from_address : (target?.to_addresses[0] ?? "");
+    const to =
+      target?.direction === "inbound" ? target.from_address : (target?.to_addresses[0] ?? "");
     const cc = all ? (target?.cc_addresses ?? []).join(", ") : "";
     return {
       mailboxId: thread.mailbox_id,
@@ -88,9 +102,14 @@ export function ThreadView({
               aria-pressed={thread.is_starred}
               onClick={() => onUpdate({ is_starred: !thread.is_starred })}
             >
-              <Star className={thread.is_starred ? "h-4 w-4 fill-gold text-gold" : "h-4 w-4"} aria-hidden />
+              <Star
+                className={thread.is_starred ? "h-4 w-4 fill-gold text-gold" : "h-4 w-4"}
+                aria-hidden
+              />
             </IconBtn>
-            {thread.folder === "trash" || thread.folder === "spam" || thread.folder === "archive" ? (
+            {thread.folder === "trash" ||
+            thread.folder === "spam" ||
+            thread.folder === "archive" ? (
               <IconBtn aria-label="استرجاع إلى الوارد" onClick={() => onUpdate({ restore: true })}>
                 <Undo2 className="h-4 w-4" aria-hidden />
               </IconBtn>
@@ -102,7 +121,11 @@ export function ThreadView({
                 <IconBtn aria-label="تصنيف كمزعج" onClick={() => onUpdate({ folder: "spam" })}>
                   <ShieldAlert className="h-4 w-4" aria-hidden />
                 </IconBtn>
-                <IconBtn aria-label="نقل إلى المهملات" tone="danger" onClick={() => onUpdate({ folder: "trash" })}>
+                <IconBtn
+                  aria-label="نقل إلى المهملات"
+                  tone="danger"
+                  onClick={() => onUpdate({ folder: "trash" })}
+                >
                   <Trash2 className="h-4 w-4 text-danger" aria-hidden />
                 </IconBtn>
               </>
@@ -138,11 +161,15 @@ export function ThreadView({
                   aria-pressed={active}
                   onClick={() =>
                     onUpdate({
-                      labelIds: active ? activeLabelIds.filter((id) => id !== l.id) : [...activeLabelIds, l.id],
+                      labelIds: active
+                        ? activeLabelIds.filter((id) => id !== l.id)
+                        : [...activeLabelIds, l.id],
                     })
                   }
                   className={`rounded-full border px-2.5 py-1 text-[12px] transition-colors ${
-                    active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-surface-muted"
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-surface-muted"
                   }`}
                 >
                   {l.name_ar}
@@ -181,7 +208,10 @@ export function ThreadView({
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <ul className="space-y-4">
           {messages.map((m) => (
-            <li key={m.id} className="rounded-[var(--radius-m)] border border-border bg-surface p-4">
+            <li
+              key={m.id}
+              className="rounded-[var(--radius-m)] border border-border bg-surface p-4"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate font-semibold" dir="ltr">
@@ -194,8 +224,12 @@ export function ThreadView({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge tone={statusTone(m.status)}>{MESSAGE_STATUS_LABELS[m.status] ?? m.status}</Badge>
-                  <span className="text-caption">{fmtDateTime(m.sent_at ?? m.received_at ?? m.created_at)}</span>
+                  <Badge tone={statusTone(m.status)}>
+                    {MESSAGE_STATUS_LABELS[m.status] ?? m.status}
+                  </Badge>
+                  <span className="text-caption">
+                    {fmtDateTime(m.sent_at ?? m.received_at ?? m.created_at)}
+                  </span>
                 </div>
               </div>
 
@@ -218,7 +252,9 @@ export function ThreadView({
                             type="button"
                             disabled={blocked || downloadingAttachmentId === a.id}
                             onClick={() => onDownloadAttachment(a.id)}
-                            aria-label={blocked ? `مرفق محجور: ${a.file_name}` : `تنزيل المرفق ${a.file_name}`}
+                            aria-label={
+                              blocked ? `مرفق محجور: ${a.file_name}` : `تنزيل المرفق ${a.file_name}`
+                            }
                             title={blocked ? "المرفق محجور لعدم اجتيازه التحقق الأمني." : undefined}
                             className={`flex max-w-full items-center gap-2 rounded-[var(--radius-s)] border px-2.5 py-1.5 text-[12px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                               blocked
@@ -232,7 +268,9 @@ export function ThreadView({
                               <Download className="h-3.5 w-3.5 shrink-0" aria-hidden />
                             )}
                             <span className="truncate">{a.file_name}</span>
-                            <span className="shrink-0 text-muted-foreground">{formatBytes(a.size_bytes)}</span>
+                            <span className="shrink-0 text-muted-foreground">
+                              {formatBytes(a.size_bytes)}
+                            </span>
                           </button>
                         </li>
                       );
@@ -247,7 +285,12 @@ export function ThreadView({
                     تعذّر إرسال هذه الرسالة{m.failure_ref ? ` — مرجع العطل ${m.failure_ref}` : ""}.
                   </p>
                   {canSend && (
-                    <Btn size="sm" variant="outline" loading={retrying} onClick={() => onRetry(m.id)}>
+                    <Btn
+                      size="sm"
+                      variant="outline"
+                      loading={retrying}
+                      onClick={() => onRetry(m.id)}
+                    >
                       <RefreshCw className="h-4 w-4" aria-hidden /> إعادة المحاولة
                     </Btn>
                   )}
@@ -263,7 +306,10 @@ export function ThreadView({
           {notes.length > 0 && (
             <ul className="mt-3 space-y-2">
               {notes.map((n) => (
-                <li key={n.id} className="rounded-[var(--radius-s)] border border-border bg-surface p-3">
+                <li
+                  key={n.id}
+                  className="rounded-[var(--radius-s)] border border-border bg-surface p-3"
+                >
                   <p className="text-body-sm whitespace-pre-wrap">{n.body}</p>
                   <p className="text-caption mt-1">
                     {n.author_email} · {fmtDateTime(n.created_at)}

@@ -37,7 +37,10 @@ function starts(bytes: Uint8Array, hex: number[], offset = 0): boolean {
 
 const SIGNATURES: Signature[] = [
   { ext: ["pdf"], test: (b) => starts(b, [0x25, 0x50, 0x44, 0x46]) }, // %PDF
-  { ext: ["docx", "xlsx", "pptx"], test: (b) => starts(b, [0x50, 0x4b, 0x03, 0x04]) || starts(b, [0x50, 0x4b, 0x05, 0x06]) },
+  {
+    ext: ["docx", "xlsx", "pptx"],
+    test: (b) => starts(b, [0x50, 0x4b, 0x03, 0x04]) || starts(b, [0x50, 0x4b, 0x05, 0x06]),
+  },
   { ext: ["doc", "xls"], test: (b) => starts(b, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]) },
   { ext: ["jpg"], test: (b) => starts(b, [0xff, 0xd8, 0xff]) },
   { ext: ["png"], test: (b) => starts(b, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) },
@@ -49,7 +52,8 @@ const SIGNATURES: Signature[] = [
 ];
 
 const TEXT_EXTS = new Set(["txt", "csv"]);
-const ACTIVE_CONTENT = /<\s*(script|iframe|object|embed|meta|link|svg)\b|javascript:|vbscript:|data:text\/html|<\?php|<%|on(?:load|error|click)\s*=/i;
+const ACTIVE_CONTENT =
+  /<\s*(script|iframe|object|embed|meta|link|svg)\b|javascript:|vbscript:|data:text\/html|<\?php|<%|on(?:load|error|click)\s*=/i;
 
 export type ValidationOutcome =
   | { ok: true; ext: string; mime: string; inlineSafe: boolean; sha256: string; safeName: string }
@@ -63,7 +67,10 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 }
 
 /** التحقق الكامل من ملف واحد. لا يثق باسم الملف ولا بنوع المحتوى المُعلن. */
-export async function validateAttachmentBytes(fileName: string, bytes: Uint8Array): Promise<ValidationOutcome> {
+export async function validateAttachmentBytes(
+  fileName: string,
+  bytes: Uint8Array,
+): Promise<ValidationOutcome> {
   const safeName = safeFileName(fileName);
   const policy = checkAttachmentPolicy(safeName, bytes.byteLength);
   if (!policy.ok) return { ok: false, reason: policy.reason };
@@ -76,7 +83,8 @@ export async function validateAttachmentBytes(fileName: string, bytes: Uint8Arra
     } catch {
       return { ok: false, reason: "الملف النصي غير مقروء بترميز UTF-8." };
     }
-    if (decoded.includes("\u0000")) return { ok: false, reason: "الملف النصي يحتوي بايتات ثنائية." };
+    if (decoded.includes("\u0000"))
+      return { ok: false, reason: "الملف النصي يحتوي بايتات ثنائية." };
     if (ACTIVE_CONTENT.test(decoded)) {
       return { ok: false, reason: "الملف النصي يحتوي محتوى نشطاً (HTML أو سكربت) وهو غير مسموح." };
     }
@@ -108,8 +116,15 @@ export async function validateAttachmentBytes(fileName: string, bytes: Uint8Arra
 
 /* ------------------------------------------------------- الحدود الإجمالية */
 
-export async function assertMessageAttachmentBudget(db: Db, messageId: string, incomingBytes: number): Promise<void> {
-  const { data } = await db.from("email_attachments").select("size_bytes").eq("message_id", messageId);
+export async function assertMessageAttachmentBudget(
+  db: Db,
+  messageId: string,
+  incomingBytes: number,
+): Promise<void> {
+  const { data } = await db
+    .from("email_attachments")
+    .select("size_bytes")
+    .eq("message_id", messageId);
   const rows = (data ?? []) as { size_bytes: number }[];
   if (rows.length >= ATTACHMENT_MAX_COUNT) {
     throw new Error(`لا يمكن إضافة أكثر من ${ATTACHMENT_MAX_COUNT} مرفقات للرسالة.`);
@@ -123,8 +138,14 @@ export async function assertMessageAttachmentBudget(db: Db, messageId: string, i
 
 /* ------------------------------------------------------- التخزين */
 
-function storagePath(direction: "inbound" | "outbound", messageId: string, ext: string, quarantined: boolean): string {
-  const folder = direction === "inbound" ? (quarantined ? "inbound/quarantine" : "inbound") : "outbound";
+function storagePath(
+  direction: "inbound" | "outbound",
+  messageId: string,
+  ext: string,
+  quarantined: boolean,
+): string {
+  const folder =
+    direction === "inbound" ? (quarantined ? "inbound/quarantine" : "inbound") : "outbound";
   return `${folder}/${messageId}/${crypto.randomUUID()}.${ext}`;
 }
 
@@ -251,9 +272,13 @@ export async function signedAttachmentUrl(
     .select("id, message_id, file_name, storage_path, is_quarantined")
     .eq("id", attachmentId)
     .maybeSingle();
-  const row = data as
-    | { id: string; message_id: string | null; file_name: string; storage_path: string; is_quarantined: boolean }
-    | null;
+  const row = data as {
+    id: string;
+    message_id: string | null;
+    file_name: string;
+    storage_path: string;
+    is_quarantined: boolean;
+  } | null;
   if (!row) throw new Error("المرفق غير موجود.");
   if (row.is_quarantined) throw new Error("هذا المرفق محجور ولا يمكن تنزيله.");
 
@@ -273,7 +298,11 @@ export async function signedAttachmentUrl(
 }
 
 export async function bumpDownloadCount(db: Db, attachmentId: string): Promise<void> {
-  const { data } = await db.from("email_attachments").select("download_count").eq("id", attachmentId).maybeSingle();
+  const { data } = await db
+    .from("email_attachments")
+    .select("download_count")
+    .eq("id", attachmentId)
+    .maybeSingle();
   const current = Number((data as { download_count: number } | null)?.download_count ?? 0);
   await db
     .from("email_attachments")
@@ -282,7 +311,10 @@ export async function bumpDownloadCount(db: Db, attachmentId: string): Promise<v
 }
 
 /** حذف مرفق مسوّدة (قبل الإرسال فقط). */
-export async function deleteAttachment(db: Db, attachmentId: string): Promise<{ messageId: string | null }> {
+export async function deleteAttachment(
+  db: Db,
+  attachmentId: string,
+): Promise<{ messageId: string | null }> {
   const { data } = await db
     .from("email_attachments")
     .select("id, message_id, storage_path, direction")
@@ -292,7 +324,11 @@ export async function deleteAttachment(db: Db, attachmentId: string): Promise<{ 
   if (!row) throw new Error("المرفق غير موجود.");
   if (row.direction !== "outbound") throw new Error("لا يمكن حذف مرفق وارد.");
   if (row.message_id) {
-    const { data: msg } = await db.from("email_messages").select("status").eq("id", row.message_id).maybeSingle();
+    const { data: msg } = await db
+      .from("email_messages")
+      .select("status")
+      .eq("id", row.message_id)
+      .maybeSingle();
     const status = (msg as { status: string } | null)?.status ?? "draft";
     if (!["draft", "scheduled", "failed"].includes(status)) {
       throw new Error("لا يمكن حذف مرفق رسالة أُرسلت أو في قائمة الإرسال.");
@@ -342,7 +378,11 @@ export async function buildAttachmentSection(
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 export const ATTACHMENT_LINK_TTL = ATTACHMENT_LINK_TTL_SECONDS;

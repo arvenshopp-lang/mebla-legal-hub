@@ -19,7 +19,11 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
-import { ComposeModal, type ComposePayload, type ComposeSeed } from "@/components/admin/mail/compose-modal";
+import {
+  ComposeModal,
+  type ComposePayload,
+  type ComposeSeed,
+} from "@/components/admin/mail/compose-modal";
 import { ThreadView } from "@/components/admin/mail/thread-view";
 import { EMAIL_FOLDERS, type EmailFolder } from "@/lib/email/email.shared";
 import type { AttachmentMeta } from "@/lib/email/attachments.shared";
@@ -43,7 +47,10 @@ import {
 
 export const Route = createFileRoute("/mehla-admin/mail")({
   head: () => ({
-    meta: [{ title: "مركز البريد · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "مركز البريد · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: MailWorkspacePage,
 });
@@ -53,7 +60,10 @@ function MailWorkspacePage() {
   const { can } = usePlatformAdmin();
 
   const workspaceFn = useServerFn(getMailWorkspace);
-  const workspace = useQuery({ queryKey: ["mail-workspace"], queryFn: () => workspaceFn({ data: undefined }) });
+  const workspace = useQuery({
+    queryKey: ["mail-workspace"],
+    queryFn: () => workspaceFn({ data: undefined }),
+  });
 
   const [mailboxId, setMailboxId] = useState<string | null>(null);
   const [folder, setFolder] = useState<EmailFolder>("inbox");
@@ -150,7 +160,9 @@ function MailWorkspacePage() {
       }
       for (const file of files) {
         const contentBase64 = await readBase64(file);
-        const result = await uploadFn({ data: { messageId: draftId, fileName: file.name, contentBase64 } });
+        const result = await uploadFn({
+          data: { messageId: draftId, fileName: file.name, contentBase64 },
+        });
         setComposeAttachments((prev) => [...prev, result.attachment]);
       }
       toast.success("تم إرفاق الملفات بعد التحقق الأمني.");
@@ -187,7 +199,8 @@ function MailWorkspacePage() {
     mutationFn: (payload: ComposePayload) => sendFn({ data: withDraft(payload) }),
     onSuccess: (result) => {
       if (result.sent) toast.success("تم إرسال الرسالة.");
-      else if (result.failureRef) toast.error(`تعذّر الإرسال الآن — سنعيد المحاولة تلقائياً. المرجع ${result.failureRef}`);
+      else if (result.failureRef)
+        toast.error(`تعذّر الإرسال الآن — سنعيد المحاولة تلقائياً. المرجع ${result.failureRef}`);
       else toast.success("تمت جدولة الرسالة في قائمة الإرسال.");
       closeCompose();
       setThreadId(result.threadId);
@@ -208,8 +221,9 @@ function MailWorkspacePage() {
 
   const updateFn = useServerFn(updateMailThread);
   const update = useMutation({
-    mutationFn: (input: Parameters<typeof updateMailThread>[0] extends never ? never : Record<string, unknown>) =>
-      updateFn({ data: { threadId: threadId!, ...input } as never }),
+    mutationFn: (
+      input: Parameters<typeof updateMailThread>[0] extends never ? never : Record<string, unknown>,
+    ) => updateFn({ data: { threadId: threadId!, ...input } as never }),
     onSuccess: refreshLists,
     onError: (e: Error) => toast.error(e.message),
   });
@@ -258,8 +272,13 @@ function MailWorkspacePage() {
 
   const mailboxFn = useServerFn(updateMailbox);
   const saveMailbox = useMutation({
-    mutationFn: (input: { id: string; display_name?: string; signature_html?: string | null; inbound_enabled?: boolean; is_active?: boolean }) =>
-      mailboxFn({ data: input }),
+    mutationFn: (input: {
+      id: string;
+      display_name?: string;
+      signature_html?: string | null;
+      inbound_enabled?: boolean;
+      is_active?: boolean;
+    }) => mailboxFn({ data: input }),
     onSuccess: () => {
       toast.success("تم حفظ إعدادات الصندوق.");
       qc.invalidateQueries({ queryKey: ["mail-workspace"] });
@@ -269,7 +288,8 @@ function MailWorkspacePage() {
 
   const labelSaveFn = useServerFn(saveMailLabel);
   const labelSave = useMutation({
-    mutationFn: (input: { id?: string; name_ar: string; color: string }) => labelSaveFn({ data: input }),
+    mutationFn: (input: { id?: string; name_ar: string; color: string }) =>
+      labelSaveFn({ data: input }),
     onSuccess: () => {
       toast.success("تم حفظ التسمية.");
       qc.invalidateQueries({ queryKey: ["mail-workspace"] });
@@ -337,7 +357,9 @@ function MailWorkspacePage() {
                     }}
                     aria-current={m.id === activeMailboxId}
                     className={`flex w-full items-center justify-between gap-2 rounded-[var(--radius-s)] px-2.5 py-2 text-right text-body-sm transition-colors ${
-                      m.id === activeMailboxId ? "bg-primary/10 text-primary" : "hover:bg-surface-muted"
+                      m.id === activeMailboxId
+                        ? "bg-primary/10 text-primary"
+                        : "hover:bg-surface-muted"
                     }`}
                   >
                     <span className="min-w-0">
@@ -384,7 +406,10 @@ function MailWorkspacePage() {
             <div className="space-y-2 border-b border-border p-3">
               <label className="relative block">
                 <span className="sr-only">بحث في المواضيع</span>
-                <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <Search
+                  className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
                 <input
                   className={`${inputCls} pe-9`}
                   value={search}
@@ -398,7 +423,9 @@ function MailWorkspacePage() {
                   aria-pressed={starredOnly}
                   onClick={() => setStarredOnly((v) => !v)}
                   className={`rounded-full border px-2.5 py-1 text-[12px] ${
-                    starredOnly ? "border-gold bg-gold/10 text-gold-strong" : "border-border text-muted-foreground"
+                    starredOnly
+                      ? "border-gold bg-gold/10 text-gold-strong"
+                      : "border-border text-muted-foreground"
                   }`}
                 >
                   المميّزة بنجمة
@@ -410,7 +437,9 @@ function MailWorkspacePage() {
                     aria-pressed={labelId === l.id}
                     onClick={() => setLabelId(labelId === l.id ? null : l.id)}
                     className={`rounded-full border px-2.5 py-1 text-[12px] ${
-                      labelId === l.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                      labelId === l.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground"
                     }`}
                   >
                     {l.name_ar}
@@ -438,7 +467,10 @@ function MailWorkspacePage() {
                           aria-label={t.is_starred ? "إزالة النجمة" : "إضافة نجمة"}
                           onClick={() => toggleStar.mutate({ id: t.id, starred: !t.is_starred })}
                         >
-                          <Star className={t.is_starred ? "h-4 w-4 fill-gold text-gold" : "h-4 w-4"} aria-hidden />
+                          <Star
+                            className={t.is_starred ? "h-4 w-4 fill-gold text-gold" : "h-4 w-4"}
+                            aria-hidden
+                          />
                         </IconBtn>
                         <button
                           type="button"
@@ -447,15 +479,21 @@ function MailWorkspacePage() {
                           aria-current={threadId === t.id}
                         >
                           <span className="flex items-center justify-between gap-2">
-                            <span className={`truncate ${t.is_unread ? "font-bold" : "font-medium"}`}>
+                            <span
+                              className={`truncate ${t.is_unread ? "font-bold" : "font-medium"}`}
+                            >
                               {t.subject || "(بدون موضوع)"}
                             </span>
-                            <span className="text-caption shrink-0">{fmtDateTime(t.last_activity_at)}</span>
+                            <span className="text-caption shrink-0">
+                              {fmtDateTime(t.last_activity_at)}
+                            </span>
                           </span>
                           <span className="text-caption mt-0.5 block truncate" dir="ltr">
                             {t.participants.join(" ، ")}
                           </span>
-                          <span className="mt-1 block truncate text-body-sm text-muted-foreground">{t.preview}</span>
+                          <span className="mt-1 block truncate text-body-sm text-muted-foreground">
+                            {t.preview}
+                          </span>
                           {(t.labels.length > 0 || t.assigned_to_email) && (
                             <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                               {t.labels.map((l) => (
@@ -463,7 +501,9 @@ function MailWorkspacePage() {
                                   {l.name_ar}
                                 </Badge>
                               ))}
-                              {t.assigned_to_email && <Badge tone="info">{t.assigned_to_email}</Badge>}
+                              {t.assigned_to_email && (
+                                <Badge tone="info">{t.assigned_to_email}</Badge>
+                              )}
                             </span>
                           )}
                         </button>
@@ -476,9 +516,15 @@ function MailWorkspacePage() {
           </section>
 
           {/* المحادثة */}
-          <section aria-label="تفاصيل المحادثة" className="surface-card flex min-h-[520px] flex-col">
+          <section
+            aria-label="تفاصيل المحادثة"
+            className="surface-card flex min-h-[520px] flex-col"
+          >
             {!threadId ? (
-              <EmptyState title="اختر محادثة" hint="اختر رسالة من القائمة لعرض تفاصيلها والرد عليها." />
+              <EmptyState
+                title="اختر محادثة"
+                hint="اختر رسالة من القائمة لعرض تفاصيلها والرد عليها."
+              />
             ) : thread.isLoading || !thread.data ? (
               <div className="p-4">
                 <LoadingBlock rows={4} cols={2} />
@@ -534,7 +580,12 @@ function MailWorkspacePage() {
         savingDraft={saveDraft.isPending}
       />
 
-      <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="إعدادات صناديق البريد" size="lg">
+      <Modal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title="إعدادات صناديق البريد"
+        size="lg"
+      >
         <ul className="space-y-4">
           {mailboxes.map((m) => (
             <li key={m.id} className="rounded-[var(--radius-m)] border border-border p-4">
@@ -575,9 +626,22 @@ function MailboxSettings({
   saving,
   onSave,
 }: {
-  mailbox: { id: string; address: string; display_name: string; type: string; is_active: boolean; inbound_enabled: boolean; signature_html: string | null };
+  mailbox: {
+    id: string;
+    address: string;
+    display_name: string;
+    type: string;
+    is_active: boolean;
+    inbound_enabled: boolean;
+    signature_html: string | null;
+  };
   saving: boolean;
-  onSave: (input: { display_name: string; signature_html: string | null; is_active: boolean; inbound_enabled: boolean }) => void;
+  onSave: (input: {
+    display_name: string;
+    signature_html: string | null;
+    is_active: boolean;
+    inbound_enabled: boolean;
+  }) => void;
 }) {
   const [name, setName] = useState(mailbox.display_name);
   const [signature, setSignature] = useState(mailbox.signature_html ?? "");
@@ -590,7 +654,12 @@ function MailboxSettings({
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        onSave({ display_name: name, signature_html: signature.trim() || null, is_active: active, inbound_enabled: inbound });
+        onSave({
+          display_name: name,
+          signature_html: signature.trim() || null,
+          is_active: active,
+          inbound_enabled: inbound,
+        });
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -600,16 +669,30 @@ function MailboxSettings({
         {isSystem && <Badge tone="muted">صندوق نظام — لا يستقبل ولا يُرسل يدوياً</Badge>}
       </div>
       <FormField label="الاسم الظاهر">
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+        <input
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+        />
       </FormField>
       {!isSystem && (
         <FormField label="التوقيع" hint="نص يُضاف يدوياً أسفل الرسائل عند الحاجة.">
-          <textarea className={`${inputCls} min-h-24`} value={signature} onChange={(e) => setSignature(e.target.value)} />
+          <textarea
+            className={`${inputCls} min-h-24`}
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+          />
         </FormField>
       )}
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 text-body-sm">
-          <input type="checkbox" className="h-4 w-4 rounded border-border" checked={active} onChange={(e) => setActive(e.target.checked)} />
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-border"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+          />
           الصندوق مُفعّل
         </label>
         {!isSystem && (
@@ -657,7 +740,14 @@ function LabelsManager({
           setName("");
         }}
       >
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم التسمية" maxLength={40} aria-label="اسم التسمية" />
+        <input
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="اسم التسمية"
+          maxLength={40}
+          aria-label="اسم التسمية"
+        />
         <Btn type="submit" loading={saving} disabled={!name.trim()}>
           إضافة
         </Btn>
@@ -667,9 +757,17 @@ function LabelsManager({
       ) : (
         <ul className="space-y-2">
           {labels.map((l) => (
-            <li key={l.id} className="flex items-center justify-between rounded-[var(--radius-s)] border border-border px-3 py-2">
+            <li
+              key={l.id}
+              className="flex items-center justify-between rounded-[var(--radius-s)] border border-border px-3 py-2"
+            >
               <span className="text-body-sm">{l.name_ar}</span>
-              <IconBtn aria-label={`حذف ${l.name_ar}`} tone="danger" loading={deleting} onClick={() => onDelete(l.id)}>
+              <IconBtn
+                aria-label={`حذف ${l.name_ar}`}
+                tone="danger"
+                loading={deleting}
+                onClick={() => onDelete(l.id)}
+              >
                 <Trash2 className="h-4 w-4 text-danger" aria-hidden />
               </IconBtn>
             </li>
