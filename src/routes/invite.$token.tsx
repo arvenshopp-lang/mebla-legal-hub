@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AuthShell } from "@/routes/login";
 import { useAuth } from "@/hooks/use-auth";
+import { fmtDate } from "@/lib/enums";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvitation, joinOrganization } from "@/lib/invitations.functions";
 import {
@@ -164,11 +165,7 @@ function InvitePage() {
         <Row label="البريد المدعو" value={<span dir="ltr">{data.maskedEmail}</span>} />
         <Row
           label="صلاحية الرابط"
-          value={
-            data.expiresAt
-              ? new Date(data.expiresAt).toLocaleDateString("ar-SA", { dateStyle: "medium" })
-              : "—"
-          }
+          value={data.expiresAt ? fmtDate(data.expiresAt) : "—"}
         />
       </div>
       <p className="mt-4 text-[12.5px] leading-relaxed text-muted-foreground">{ROLE_HINT[role]}</p>
