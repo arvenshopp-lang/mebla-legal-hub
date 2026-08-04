@@ -19,16 +19,22 @@ interface InviteEmailProps {
   siteName: string
   siteUrl: string
   confirmationUrl: string
+  /** اسم المكتب الداعي (رسائل دعوات الفريق داخل المنصة) */
+  orgName?: string
+  /** صفة العضو المدعو بالعربية */
+  roleLabel?: string
 }
 
 export const InviteEmail = ({
   siteName,
   siteUrl,
   confirmationUrl,
+  orgName,
+  roleLabel,
 }: InviteEmailProps) => (
   <Html lang="ar" dir="rtl">
     <Head />
-    <Preview>دعوة للانضمام إلى {siteName}</Preview>
+    <Preview>{orgName ? `دعوة للانضمام إلى ${orgName}` : `دعوة للانضمام إلى ${siteName}`}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
         <Text style={styles.brand}>{siteName}</Text>
@@ -36,10 +42,19 @@ export const InviteEmail = ({
         <Heading style={styles.h1}>لديك دعوة للانضمام</Heading>
         <Text style={styles.text}>
           تمت دعوتك للانضمام إلى{' '}
+          {orgName ? (
+            <b>{orgName}</b>
+          ) : (
+            <Link href={siteUrl} style={styles.link}>
+              {siteName}
+            </Link>
+          )}
+          {roleLabel ? ` بصفة ${roleLabel}` : ''}
+          {' '}على منصة{' '}
           <Link href={siteUrl} style={styles.link}>
             {siteName}
           </Link>
-          . اضغط الزر التالي لقبول الدعوة وإنشاء حسابك.
+          . اضغط الزر التالي لقبول الدعوة والانضمام إلى فريق العمل.
         </Text>
         <Button style={styles.button} href={confirmationUrl}>
           قبول الدعوة

@@ -163,6 +163,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile((created ?? null) as Profile | null);
       } else {
         setProfile(profileResult.data as Profile);
+        // مزامنة بريد الملف الشخصي بعد تأكيد تغيير البريد من رسالة التأكيد
+        const authEmail = currentUser.email ?? null;
+        const profileEmail = (profileResult.data as Profile).email ?? null;
+        if (authEmail && authEmail.toLowerCase() !== (profileEmail ?? "").toLowerCase()) {
+          const { data: synced } = await supabase
+            .from("profiles")
+            .update({ email: authEmail })
+            .eq("id", currentUser.id)
+            .select("id, full_name, email, phone, avatar_url, job_title")
+            .maybeSingle();
+          if (requestId.current === currentRequestId && synced) setProfile(synced as Profile);
+        }
       }
 
       if (membershipResult.error) {

@@ -71,6 +71,15 @@ export const INVITE_MESSAGES: Record<Exclude<InvitePreviewState, "valid">, strin
 
 /** يحوّل أخطاء قاعدة البيانات إلى رسالة عربية مفهومة عند قبول الدعوة. */
 export function describeInviteError(message: string): string {
+  if (message.includes("FORBIDDEN")) {
+    return "دعوة الأعضاء متاحة لمالك المكتب ومديريه فقط.";
+  }
+  if (message.includes("ALREADY_MEMBER")) {
+    return "هذا البريد مسجّل بالفعل كعضو فعّال في المكتب.";
+  }
+  if (message.includes("INVITE_CREATE_FAILED") || message.includes("INVITE_LOOKUP_FAILED")) {
+    return "تعذّر إنشاء الدعوة. حاول مرة أخرى بعد قليل.";
+  }
   if (message.includes("QUOTA_EXCEEDED:users")) {
     return "بلغ المكتب الحد الأقصى لعدد الأعضاء في باقته الحالية. يلزم ترقية الباقة قبل إضافة عضو جديد.";
   }

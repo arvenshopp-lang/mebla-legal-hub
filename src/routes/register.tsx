@@ -12,6 +12,7 @@ import { usePasswordStrength } from "@/hooks/use-password-strength";
 import { validatePasswordPolicy } from "@/lib/password-policy.functions";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
+import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { useQuery } from "@tanstack/react-query";
 import { getSmsPublicConfig, verifyPhoneCode } from "@/lib/sms/sms.functions";
 import { formatCountdown, usePhoneChallenge } from "@/lib/sms/use-phone-challenge";
@@ -59,6 +60,8 @@ function RegisterPage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendAt, setResendAt] = useState<number | null>(null);
 
   const { data: smsConfig } = useQuery({
     queryKey: ["sms-public-config"],
@@ -243,11 +246,30 @@ function RegisterPage() {
     } else {
       draft.clear();
       setEmailSent(email.trim().toLowerCase());
+      setResendAt(Date.now());
       toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
     }
   };
 
   if (emailSent) {
+    const waitLeft = resendAt ? Math.ceil((60_000 - (Date.now() - resendAt)) / 1000) : 0;
+    const resendConfirmation = async () => {
+      if (resendBusy) return;
+      if (waitLeft > 0) {
+        toast.info(`لحماية الحساب، يمكن إعادة الإرسال بعد ${waitLeft} ثانية`);
+        return;
+      }
+      setResendBusy(true);
+      const result = await resendSignupConfirmation(emailSent);
+      setResendBusy(false);
+      if (result.ok) {
+        setResendAt(Date.now());
+        toast.success(result.message);
+      } else {
+        if (result.message.includes("كثرت المحاولات")) setResendAt(Date.now());
+        toast.error(result.message);
+      }
+    };
     return (
       <AuthShell title="تحقق من بريدك" subtitle="أرسلنا رابط تفعيل الحساب">
         <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
@@ -257,6 +279,14 @@ function RegisterPage() {
           <Link to="/login" search={{ redirect: postAuthTarget ?? "/dashboard" }} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition">
             الذهاب لتسجيل الدخول
           </Link>
+          <button
+            type="button"
+            onClick={resendConfirmation}
+            disabled={resendBusy}
+            className="w-full rounded-[var(--radius-m)] border border-border py-3 text-center text-sm font-semibold text-foreground transition hover:bg-surface-muted disabled:opacity-60"
+          >
+            {resendBusy ? "جاري الإرسال…" : "لم تصل الرسالة؟ إعادة الإرسال"}
+          </button>
           <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-muted-foreground hover:text-foreground">
             استخدام بريد آخر
           </button>
