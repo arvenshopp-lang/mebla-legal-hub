@@ -91,7 +91,7 @@ export function QueuesPanel({
   const [channel, setChannel] = useState("all");
   const [teamId, setTeamId] = useState("all");
   const [assignedTo, setAssignedTo] = useState("all");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const debounced = useDebounced(search);
 
@@ -110,7 +110,7 @@ export function QueuesPanel({
       ...(teamId !== "all" ? { teamId } : {}),
       ...(assignedTo !== "all" ? { assignedTo } : {}),
       limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
     }),
     [queueFilters, debounced, priority, category, channel, teamId, assignedTo, page],
   );
@@ -189,7 +189,7 @@ export function QueuesPanel({
                   type="button"
                   onClick={() => {
                     onQueueChange(q.key);
-                    setPage(0);
+                    setPage(1);
                   }}
                   aria-current={active ? "true" : undefined}
                   className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
@@ -224,7 +224,7 @@ export function QueuesPanel({
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           placeholder="بحث بالموضوع أو الرقم أو بريد المُرسل…"
           className={`${inputCls} w-full sm:w-[280px]`}
@@ -233,7 +233,7 @@ export function QueuesPanel({
           value={priority}
           onChange={(e) => {
             setPriority(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           aria-label="الأولوية"
           className={`${inputCls} w-auto`}
@@ -249,7 +249,7 @@ export function QueuesPanel({
           value={category}
           onChange={(e) => {
             setCategory(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           aria-label="التصنيف"
           className={`${inputCls} w-auto`}
@@ -265,7 +265,7 @@ export function QueuesPanel({
           value={channel}
           onChange={(e) => {
             setChannel(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           aria-label="القناة"
           className={`${inputCls} w-auto`}
@@ -281,7 +281,7 @@ export function QueuesPanel({
           value={teamId}
           onChange={(e) => {
             setTeamId(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           aria-label="الفريق"
           className={`${inputCls} w-auto`}
@@ -297,7 +297,7 @@ export function QueuesPanel({
           value={assignedTo}
           onChange={(e) => {
             setAssignedTo(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           aria-label="الموظف المسؤول"
           className={`${inputCls} w-auto`}
@@ -380,9 +380,9 @@ export function QueuesPanel({
                     <Td>
                       <StatusBadge status={t.status} />
                       {t.escalation_level > 0 && (
-                        <Badge tone="red" className="ms-1">
-                          تصعيد {t.escalation_level}
-                        </Badge>
+                        <span className="ms-1 inline-block">
+                          <Badge tone="red">تصعيد {t.escalation_level}</Badge>
+                        </span>
                       )}
                     </Td>
                     <Td>
@@ -404,12 +404,7 @@ export function QueuesPanel({
               </tbody>
             </table>
           </DataCard>
-          <Pagination
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={total}
-            onPage={setPage}
-          />
+          <Pagination page={page} setPage={setPage} total={total} pageSize={PAGE_SIZE} />
         </>
       )}
 
