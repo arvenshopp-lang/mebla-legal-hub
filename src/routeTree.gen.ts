@@ -37,6 +37,7 @@ import { Route as MehlaAdminSeoRouteImport } from './routes/mehla-admin/seo'
 import { Route as MehlaAdminSecurityRouteImport } from './routes/mehla-admin/security'
 import { Route as MehlaAdminRolesRouteImport } from './routes/mehla-admin/roles'
 import { Route as MehlaAdminRevenueRouteImport } from './routes/mehla-admin/revenue'
+import { Route as MehlaAdminRbacRouteImport } from './routes/mehla-admin/rbac'
 import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
 import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
 import { Route as MehlaAdminNotificationsRouteImport } from './routes/mehla-admin/notifications'
@@ -210,6 +211,11 @@ const MehlaAdminRolesRoute = MehlaAdminRolesRouteImport.update({
 const MehlaAdminRevenueRoute = MehlaAdminRevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminRbacRoute = MehlaAdminRbacRouteImport.update({
+  id: '/rbac',
+  path: '/rbac',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/rbac': typeof MehlaAdminRbacRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
   '/mehla-admin/roles': typeof MehlaAdminRolesRoute
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
@@ -492,6 +499,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/rbac': typeof MehlaAdminRbacRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
   '/mehla-admin/roles': typeof MehlaAdminRolesRoute
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
@@ -558,6 +566,7 @@ export interface FileRoutesById {
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
+  '/mehla-admin/rbac': typeof MehlaAdminRbacRoute
   '/mehla-admin/revenue': typeof MehlaAdminRevenueRoute
   '/mehla-admin/roles': typeof MehlaAdminRolesRoute
   '/mehla-admin/security': typeof MehlaAdminSecurityRoute
@@ -624,6 +633,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
+    | '/mehla-admin/rbac'
     | '/mehla-admin/revenue'
     | '/mehla-admin/roles'
     | '/mehla-admin/security'
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
+    | '/mehla-admin/rbac'
     | '/mehla-admin/revenue'
     | '/mehla-admin/roles'
     | '/mehla-admin/security'
@@ -752,6 +763,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/notifications'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
+    | '/mehla-admin/rbac'
     | '/mehla-admin/revenue'
     | '/mehla-admin/roles'
     | '/mehla-admin/security'
@@ -1005,6 +1017,13 @@ declare module '@tanstack/react-router' {
       path: '/revenue'
       fullPath: '/mehla-admin/revenue'
       preLoaderRoute: typeof MehlaAdminRevenueRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/rbac': {
+      id: '/mehla-admin/rbac'
+      path: '/rbac'
+      fullPath: '/mehla-admin/rbac'
+      preLoaderRoute: typeof MehlaAdminRbacRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/plans': {
@@ -1302,6 +1321,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminNotificationsRoute: typeof MehlaAdminNotificationsRoute
   MehlaAdminOrganizationsRoute: typeof MehlaAdminOrganizationsRoute
   MehlaAdminPlansRoute: typeof MehlaAdminPlansRoute
+  MehlaAdminRbacRoute: typeof MehlaAdminRbacRoute
   MehlaAdminRevenueRoute: typeof MehlaAdminRevenueRoute
   MehlaAdminRolesRoute: typeof MehlaAdminRolesRoute
   MehlaAdminSecurityRoute: typeof MehlaAdminSecurityRoute
@@ -1327,6 +1347,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminNotificationsRoute: MehlaAdminNotificationsRoute,
   MehlaAdminOrganizationsRoute: MehlaAdminOrganizationsRoute,
   MehlaAdminPlansRoute: MehlaAdminPlansRoute,
+  MehlaAdminRbacRoute: MehlaAdminRbacRoute,
   MehlaAdminRevenueRoute: MehlaAdminRevenueRoute,
   MehlaAdminRolesRoute: MehlaAdminRolesRoute,
   MehlaAdminSecurityRoute: MehlaAdminSecurityRoute,
