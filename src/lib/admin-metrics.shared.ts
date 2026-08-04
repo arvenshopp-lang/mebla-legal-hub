@@ -45,28 +45,54 @@ export interface PlatformMetrics {
   range: { from: string; to: string };
   generated_at: string;
   organizations: {
-    total: number; active: number; suspended: number; trial: number;
-    no_subscription: number; new_in_range: number;
+    total: number;
+    active: number;
+    suspended: number;
+    trial: number;
+    no_subscription: number;
+    new_in_range: number;
   };
   users: {
-    total: number; active: number; suspended: number; new_in_range: number;
-    phone_verified: number; mfa_enabled: number; without_org: number;
+    total: number;
+    active: number;
+    suspended: number;
+    new_in_range: number;
+    phone_verified: number;
+    mfa_enabled: number;
+    without_org: number;
   };
   subscriptions: {
-    total: number; active: number; trial: number; expiring_14d: number; expired: number;
-    cancelled: number; suspended: number; auto_renew: number; new_in_range: number;
+    total: number;
+    active: number;
+    trial: number;
+    expiring_14d: number;
+    expired: number;
+    cancelled: number;
+    suspended: number;
+    auto_renew: number;
+    new_in_range: number;
   };
   usage: {
-    cases: number; cases_in_range: number; clients: number; documents: number;
-    documents_in_range: number; storage_bytes: number; ocr_pages_in_range: number;
+    cases: number;
+    cases_in_range: number;
+    clients: number;
+    documents: number;
+    documents_in_range: number;
+    storage_bytes: number;
+    ocr_pages_in_range: number;
     hearings_in_range: number;
   };
   messaging: {
-    sms_sent_in_range: number; sms_failed_in_range: number;
-    notifications_in_range: number; broadcasts_in_range: number;
+    sms_sent_in_range: number;
+    sms_failed_in_range: number;
+    notifications_in_range: number;
+    broadcasts_in_range: number;
   };
   support: {
-    open: number; closed: number; new_in_range: number; unassigned: number;
+    open: number;
+    closed: number;
+    new_in_range: number;
+    unassigned: number;
     avg_first_reply_hours: number;
   };
   reliability: {
@@ -77,13 +103,27 @@ export interface PlatformMetrics {
   };
   /** فارغ لمن لا يملك صلاحية التقارير المالية. */
   revenue: null | {
-    in_range: number; today: number; month: number; year: number; total: number;
-    mrr: number; arr: number; arpu: number; paying_organizations: number;
-    churn_rate: number; churned_in_range: number;
-    trials_in_range: number; trial_conversion_rate: number;
+    in_range: number;
+    today: number;
+    month: number;
+    year: number;
+    total: number;
+    mrr: number;
+    arr: number;
+    arpu: number;
+    paying_organizations: number;
+    churn_rate: number;
+    churned_in_range: number;
+    trials_in_range: number;
+    trial_conversion_rate: number;
     invoices: {
-      total: number; in_range: number; paid: number; pending: number; overdue: number;
-      paid_amount: number; outstanding_amount: number;
+      total: number;
+      in_range: number;
+      paid: number;
+      pending: number;
+      overdue: number;
+      paid_amount: number;
+      outstanding_amount: number;
     };
     by_plan: { label: string; count: number; amount: number }[];
     by_month: { month: string; amount: number; count: number }[];
