@@ -1,11 +1,26 @@
 /** الانتحال: طلب، اعتماد/رفض، إنهاء، وسجل الصفحات المزارة — قراءة فقط دائماً. */
-import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Eye } from "lucide-react";
-import { Badge, Btn, DataCard, EmptyState, Modal, SectionCard, inputCls } from "@/lib/list-utils";
-import { decideRbacImpersonation, endRbacImpersonation, requestRbacImpersonation } from "@/lib/rbac/rbac.functions";
+import {
+  Badge,
+  Btn,
+  DataCard,
+  EmptyState,
+  ErrorBlock,
+  Modal,
+  SectionCard,
+  SectionLoader,
+  inputCls,
+} from "@/lib/list-utils";
+import {
+  decideRbacImpersonation,
+  endRbacImpersonation,
+  getRbacImpersonationEvents,
+  requestRbacImpersonation,
+} from "@/lib/rbac/rbac.functions";
 import {
   Field,
   KeyValue,
@@ -79,12 +94,12 @@ export function ImpersonationPanel({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const visitedPages = useMemo(() => {
-    if (!pages) return [];
-    return data.audit.filter(
-      (a) => a.action === "rbac.impersonation_page" && (a.metadata?.["session_id"] as string | undefined) === pages.id,
-    );
-  }, [data.audit, pages]);
+  const eventsFn = useServerFn(getRbacImpersonationEvents);
+  const events = useQuery({
+    queryKey: ["rbac-impersonation-events", pages?.id],
+    queryFn: () => eventsFn({ data: { sessionId: pages!.id } }),
+    enabled: !!pages,
+  });
 
   return (
     <div className="space-y-5">
@@ -297,14 +312,18 @@ export function ImpersonationPanel({
       </Modal>
 
       <Modal open={!!pages} onClose={() => setPages(null)} title="الصفحات التي زارها المنتحِل" size="lg">
-        {visitedPages.length === 0 ? (
+        {events.isPending ? (
+          <SectionLoader label="جاري تحميل سجل الصفحات…" rows={4} />
+        ) : events.isError ? (
+          <ErrorBlock message="تعذّر تحميل سجل الصفحات لهذه الجلسة." />
+        ) : (events.data ?? []).length === 0 ? (
           <p className="text-caption">لا توجد صفحات مسجَّلة لهذه الجلسة.</p>
         ) : (
           <ul className="max-h-[50vh] space-y-1.5 overflow-y-auto text-[12px]">
-            {visitedPages.map((p) => (
+            {(events.data ?? []).map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 border-b border-border pb-1.5">
                 <span dir="ltr" className="font-mono">
-                  {(p.metadata?.["path"] as string | undefined) ?? p.description}
+                  {p.path}
                 </span>
                 <span className="shrink-0 text-text-muted">{formatRiyadh(p.created_at)}</span>
               </li>

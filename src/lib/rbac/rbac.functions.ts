@@ -318,3 +318,11 @@ export const logRbacImpersonationPage = createServerFn({ method: "POST" })
     const ops = await import("./rbac-ops.server");
     return ops.logImpersonationPage(context.supabase, context.userId, data.path);
   });
+
+export const getRbacImpersonationEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ sessionId: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.impersonationEvents(context.supabase, context.userId, data.sessionId);
+  });

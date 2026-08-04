@@ -966,7 +966,7 @@ export async function currentImpersonation(userId: string) {
 
 /** أحداث جلسة انتحال (الصفحات المزارة) لعرضها في واجهة المراجعة. */
 export async function impersonationEvents(supabase: AnyClient, userId: string, sessionId: string) {
-  await authorize(supabase, userId, "impersonation.audit", { mutating: false });
+  await authorize(supabase, userId, "impersonation.approve", { mutating: false });
   const db = await adminDb();
   const { data, error } = await db
     .from("platform_impersonation_events")
