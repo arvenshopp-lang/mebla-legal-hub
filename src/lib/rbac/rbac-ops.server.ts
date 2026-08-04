@@ -964,6 +964,20 @@ export async function currentImpersonation(userId: string) {
   return ctx.impersonation;
 }
 
+/** أحداث جلسة انتحال (الصفحات المزارة) لعرضها في واجهة المراجعة. */
+export async function impersonationEvents(supabase: AnyClient, userId: string, sessionId: string) {
+  await authorize(supabase, userId, "impersonation.audit", { mutating: false });
+  const db = await adminDb();
+  const { data, error } = await db
+    .from("platform_impersonation_events")
+    .select("id, event, path, ip, user_agent, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw new Error("تعذّر قراءة سجل صفحات الجلسة.");
+  return data ?? [];
+}
+
 /* ------------------------------ مساعدات ------------------------------- */
 
 const DB_MESSAGES: Record<string, string> = {
