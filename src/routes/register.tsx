@@ -12,6 +12,7 @@ import { usePasswordStrength } from "@/hooks/use-password-strength";
 import { validatePasswordPolicy } from "@/lib/password-policy.functions";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
+import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { useQuery } from "@tanstack/react-query";
 import { getSmsPublicConfig, verifyPhoneCode } from "@/lib/sms/sms.functions";
 import { formatCountdown, usePhoneChallenge } from "@/lib/sms/use-phone-challenge";
@@ -59,6 +60,8 @@ function RegisterPage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendAt, setResendAt] = useState<number | null>(null);
 
   const { data: smsConfig } = useQuery({
     queryKey: ["sms-public-config"],
@@ -248,6 +251,22 @@ function RegisterPage() {
   };
 
   if (emailSent) {
+    const resendConfirmation = async () => {
+      if (resendBusy) return;
+      if (resendAt && Date.now() - resendAt < 60_000) {
+        toast.info("يمكنك إعادة الإرسال بعد دقيقة واحدة من آخر محاولة");
+        return;
+      }
+      setResendBusy(true);
+      const result = await resendSignupConfirmation(emailSent);
+      setResendBusy(false);
+      if (result.ok) {
+        setResendAt(Date.now());
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    };
     return (
       <AuthShell title="تحقق من بريدك" subtitle="أرسلنا رابط تفعيل الحساب">
         <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
@@ -257,6 +276,14 @@ function RegisterPage() {
           <Link to="/login" search={{ redirect: postAuthTarget ?? "/dashboard" }} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition">
             الذهاب لتسجيل الدخول
           </Link>
+          <button
+            type="button"
+            onClick={resendConfirmation}
+            disabled={resendBusy}
+            className="w-full rounded-[var(--radius-m)] border border-border py-3 text-center text-sm font-semibold text-foreground transition hover:bg-surface-muted disabled:opacity-60"
+          >
+            {resendBusy ? "جاري الإرسال…" : "لم تصل الرسالة؟ إعادة الإرسال"}
+          </button>
           <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-muted-foreground hover:text-foreground">
             استخدام بريد آخر
           </button>
