@@ -630,3 +630,21 @@ export const getRevenueSummary = createServerFn({ method: "POST" })
       by_organization: { label: string; amount: number; count: number }[];
     };
   });
+
+/* --------------------------------------------- مؤشرات المنصة (نطاق زمني حقيقي) */
+
+export const getPlatformMetrics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ from: z.string().datetime(), to: z.string().datetime() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    await g.requireActiveStaff(context.supabase, context.userId);
+    const { data: metrics, error } = await context.supabase.rpc("admin_platform_metrics", {
+      _from: data.from,
+      _to: data.to,
+    });
+    if (error) throw new Error("تعذّر حساب مؤشرات المنصة.");
+    return metrics as unknown as import("@/lib/admin-metrics.shared").PlatformMetrics;
+  });
