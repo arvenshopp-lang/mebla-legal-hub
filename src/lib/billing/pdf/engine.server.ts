@@ -92,6 +92,8 @@ const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\u
 const LTR_CHAR = /[A-Za-z0-9\u00C0-\u024F]/;
 /** رموز تسبق مقطعاً لاتينياً وتُعد جزءاً منه (مثل + في أرقام الجوال الدولية). */
 const LTR_PREFIX = /[+#]/;
+/** رموز تلحق مقطعاً لاتينياً وتُعد جزءاً منه (مثل % في نسبة الضريبة). */
+const LTR_SUFFIX = /[%‰°]/;
 
 /**
  * يقسّم النص إلى مقاطع: العربية (rtl) واللاتينية/الرقمية (ltr).
@@ -127,6 +129,8 @@ export function splitDirectionalRuns(input: string): Run[] {
     if (before === "L" && after === "L") return "L";
     // بادئة لاتينية مثل «+» قبل رقم جوال دولي تلتحق بالرقم لا بالنص العربي.
     if (after === "L" && LTR_PREFIX.test(chars[index] as string)) return "L";
+    // لاحقة لاتينية مثل «%» بعد رقم تلتحق بالرقم.
+    if (before === "L" && LTR_SUFFIX.test(chars[index] as string)) return "L";
     return "R";
   });
 
