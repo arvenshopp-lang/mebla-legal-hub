@@ -225,11 +225,24 @@ function leftText(ctx: Ctx, text: string, x: number, y: number, size: number, co
   drawLine(ctx.page, ctx.font, text, x, y, size, color);
 }
 
+/**
+ * قصّ على حدود الكلمات فقط، فلا يُقطع مبلغ عن عملته ولا تاريخ ولا مرجع مستند
+ * في منتصفه. عند تعذّر ذلك (كلمة واحدة أطول من العرض) نقصّ الحروف كحل أخير.
+ */
 function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): string {
-  let value = text.replace(/\s+/g, " ").trim();
+  const value = text.replace(/\s+/g, " ").trim();
   if (widthOf(ctx, value, size) <= maxWidth) return value;
-  while (value.length > 4 && widthOf(ctx, `${value}…`, size) > maxWidth) value = value.slice(0, -2);
-  return `${value}…`;
+
+  const words = value.split(" ");
+  while (words.length > 1) {
+    words.pop();
+    const candidate = `${words.join(" ")}…`;
+    if (widthOf(ctx, candidate, size) <= maxWidth) return candidate;
+  }
+
+  let single = words[0] ?? "";
+  while (single.length > 2 && widthOf(ctx, `${single}…`, size) > maxWidth) single = single.slice(0, -1);
+  return `${single}…`;
 }
 
 /** تقسيم نص طويل إلى أسطر تناسب العرض المتاح. */
@@ -264,16 +277,28 @@ function ensureSpace(ctx: Ctx, needed: number): void {
 
 function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   const right = A4.width - MARGIN;
+  const titleWidth = 196;
+  const brandWidth = USABLE - titleWidth - 16;
   ctx.page.drawRectangle({ x: 0, y: A4.height - 96, width: A4.width, height: 96, color: SURFACE });
   ctx.page.drawRectangle({ x: 0, y: A4.height - 99, width: A4.width, height: 3, color: GOLD });
 
-  rightText(ctx, brand.sellerName || "مِهلة | MEHLA", right, A4.height - 46, 18);
-  if (brand.sellerAddress) rightText(ctx, brand.sellerAddress, right, A4.height - 64, 8.5, MUTED);
-  if (brand.taxNumber) rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
+  // اسم البائع قد يكون طويلاً: نصغّر الحجم ثم نقصّ على حدود الكلمات حتى لا
+  // يتجاوز المنطقة المخصصة له ولا يتراكب مع عنوان المستند على اليسار.
+  const sellerName = brand.sellerName || "مِهلة | MEHLA";
+  const sellerSize = widthOf(ctx, sellerName, 18) <= brandWidth ? 18 : widthOf(ctx, sellerName, 14) <= brandWidth ? 14 : 11;
+  rightText(ctx, truncate(ctx, sellerName, brandWidth, sellerSize), right, A4.height - 46, sellerSize);
+  if (brand.sellerAddress) {
+    rightText(ctx, truncate(ctx, brand.sellerAddress, brandWidth, 8.5), right, A4.height - 64, 8.5, MUTED);
+  }
+  if (brand.taxNumber) {
+    rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
+  }
 
-  leftText(ctx, model.title, MARGIN, A4.height - 46, 14);
-  leftText(ctx, model.reference, MARGIN, A4.height - 64, 11, MUTED);
-  if (model.statusLine) leftText(ctx, model.statusLine, MARGIN, A4.height - 78, 8.5, MUTED);
+  leftText(ctx, truncate(ctx, model.title, titleWidth, 14), MARGIN, A4.height - 46, 14);
+  leftText(ctx, truncate(ctx, model.reference, titleWidth, 11), MARGIN, A4.height - 64, 11, MUTED);
+  if (model.statusLine) {
+    leftText(ctx, truncate(ctx, model.statusLine, titleWidth, 8.5), MARGIN, A4.height - 78, 8.5, MUTED);
+  }
 
   ctx.y = A4.height - 122;
 
