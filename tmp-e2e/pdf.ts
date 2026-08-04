@@ -1,0 +1,10 @@
+const { getInvoiceDetail, getTaxSettings } = await import("@/lib/billing/billing.server");
+const { buildInvoicePdf } = await import("@/lib/billing/invoice-pdf.server");
+const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+const { data } = await supabaseAdmin.from("platform_invoices").select("id").eq("number", "MEH-INV-2026-000001").maybeSingle();
+const ctx = { staff: { user_id: "00000000-0000-0000-0000-000000000000", email: "e2e@test", role: "super_admin", permissions: ["billing.read"] }, correlationId: "e2e", requestId: "e2e" } as never;
+const detail = await getInvoiceDetail(ctx, data!.id);
+const tax = await getTaxSettings();
+const bytes = await buildInvoicePdf(detail, tax);
+await Bun.write("/tmp/e2e/invoice.pdf", bytes);
+console.log("pdf bytes:", bytes.length, "items:", detail.items?.length, "payments:", detail.payments?.length);

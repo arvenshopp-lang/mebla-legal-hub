@@ -87,12 +87,86 @@ function connectsBackward(code: number): boolean {
   return !!forms && forms.length >= 2;
 }
 
+/** محرف لاتيني قوي الاتجاه (أرقام وحروف لاتينية). */
 function isLtr(code: number): boolean {
   return (
     (code >= 0x0030 && code <= 0x0039) ||
     (code >= 0x0041 && code <= 0x005a) ||
     (code >= 0x0061 && code <= 0x007a)
   );
+}
+
+/** محرف عربي قوي الاتجاه (النطاق العربي + أشكال العرض). */
+function isRtlChar(code: number): boolean {
+  return (code >= 0x0590 && code <= 0x08ff) || (code >= 0xfb50 && code <= 0xfeff);
+}
+
+/**
+ * علامات محايدة تُلحق بمقطع لاتيني إذا كانت محصورة بين محرفين لاتينيين،
+ * مثل فواصل الأرقام وشرطات المعرّفات وفواصل التواريخ.
+ */
+const NEUTRAL_JOINERS = new Set<number>(
+  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "="].map((ch) => ch.codePointAt(0)!),
+);
+
+const MIRRORED: Record<number, number> = {
+  0x0028: 0x0029, // ( )
+  0x0029: 0x0028,
+  0x005b: 0x005d, // [ ]
+  0x005d: 0x005b,
+  0x007b: 0x007d, // { }
+  0x007d: 0x007b,
+  0x003c: 0x003e, // < >
+  0x003e: 0x003c,
+};
+
+type Dir = "rtl" | "ltr";
+
+/**
+ * ترتيب بصري مبسّط باتجاه أساسي RTL:
+ *  1) تُصنَّف المحارف إلى مقاطع لاتينية ومقاطع عربية، والمحايدات تُلحق بالمقطع
+ *     اللاتيني فقط إذا كانت محصورة بين محرفين لاتينيين (أرقام، تواريخ، معرّفات).
+ *  2) تُرتَّب المقاطع من آخر المقطع منطقياً إلى أوّله (لأن الاتجاه الأساسي RTL).
+ *  3) المقاطع العربية تُعكس داخلياً وتُقلَب أقواسها، واللاتينية تبقى كما هي.
+ */
+function toVisualOrder(shaped: number[]): number[] {
+  const dirs: Dir[] = shaped.map((code) => (isLtr(code) ? "ltr" : "rtl"));
+
+  for (let i = 0; i < shaped.length; i += 1) {
+    if (dirs[i] === "ltr") continue;
+    const code = shaped[i]!;
+    if (isRtlChar(code) || !NEUTRAL_JOINERS.has(code)) continue;
+    // محايد قابل للإلحاق: نبحث عن محرف لاتيني قوي على الجانبين مع تجاوز المحايدات.
+    let before = i - 1;
+    while (before >= 0 && !isLtr(shaped[before]!) && NEUTRAL_JOINERS.has(shaped[before]!)) before -= 1;
+    let after = i + 1;
+    while (after < shaped.length && !isLtr(shaped[after]!) && NEUTRAL_JOINERS.has(shaped[after]!)) after += 1;
+    if (before >= 0 && after < shaped.length && isLtr(shaped[before]!) && isLtr(shaped[after]!)) {
+      for (let k = before + 1; k < after; k += 1) dirs[k] = "ltr";
+    }
+  }
+
+  const runs: Array<{ dir: Dir; codes: number[] }> = [];
+  for (let i = 0; i < shaped.length; i += 1) {
+    const dir = dirs[i]!;
+    const last = runs[runs.length - 1];
+    if (last && last.dir === dir) last.codes.push(shaped[i]!);
+    else runs.push({ dir, codes: [shaped[i]!] });
+  }
+
+  const visual: number[] = [];
+  for (let i = runs.length - 1; i >= 0; i -= 1) {
+    const run = runs[i]!;
+    if (run.dir === "ltr") {
+      visual.push(...run.codes);
+      continue;
+    }
+    for (let k = run.codes.length - 1; k >= 0; k -= 1) {
+      const code = run.codes[k]!;
+      visual.push(MIRRORED[code] ?? code);
+    }
+  }
+  return visual;
 }
 
 /**
@@ -143,21 +217,7 @@ export function shapeArabic(input: string): string {
     shaped.push(form);
   }
 
-  // ترتيب بصري: نعكس السلسلة ثم نعيد مقاطع اللاتينية/الأرقام إلى اتجاهها.
-  const visual = shaped.slice().reverse();
-  for (let i = 0; i < visual.length; ) {
-    if (!isLtr(visual[i]!)) {
-      i += 1;
-      continue;
-    }
-    let end = i;
-    while (end + 1 < visual.length && (isLtr(visual[end + 1]!) || visual[end + 1] === 0x002e)) {
-      end += 1;
-    }
-    const run = visual.slice(i, end + 1).reverse();
-    visual.splice(i, run.length, ...run);
-    i = end + 1;
-  }
-
-  return visual.map((code) => String.fromCodePoint(code)).join("");
+  return toVisualOrder(shaped)
+    .map((code) => String.fromCodePoint(code))
+    .join("");
 }
