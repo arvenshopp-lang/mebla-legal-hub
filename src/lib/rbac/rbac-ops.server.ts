@@ -187,6 +187,29 @@ export async function saveRole(
   return { id };
 }
 
+/** استنساخ دور قائم بصلاحياته كاملة — يمرّ بنفس حراسة عدم التصعيد. */
+export async function cloneRole(
+  supabase: AnyClient,
+  userId: string,
+  input: { sourceId: string; code: string; name_ar: string },
+) {
+  const db = await adminDb();
+  const { data: source } = await db
+    .from("platform_roles")
+    .select("permissions, description")
+    .eq("id", input.sourceId)
+    .maybeSingle();
+  if (!source) throw new Error("الدور المصدر غير موجود.");
+  const row = source as { permissions: string[] | null; description: string | null };
+  return saveRole(supabase, userId, {
+    code: input.code,
+    name_ar: input.name_ar,
+    description: row.description,
+    permissions: row.permissions ?? [],
+    is_active: true,
+  });
+}
+
 export async function deleteRole(supabase: AnyClient, userId: string, id: string) {
   const ctx = await authorize(supabase, userId, "roles.manage", { entityType: "platform_role", entityId: id });
   const db = await adminDb();
