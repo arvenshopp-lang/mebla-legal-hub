@@ -33,6 +33,26 @@ function nowIso() {
 
 /* ------------------------------- القراءة ------------------------------- */
 
+const RBAC_AUDIT_ACTIONS = [
+  "authz.denied",
+  "authz.allowed",
+  "rbac.role_saved",
+  "rbac.role_deleted",
+  "rbac.department_saved",
+  "rbac.staff_org_updated",
+  "rbac.grant_created",
+  "rbac.grant_revoked",
+  "rbac.approval_requested",
+  "rbac.approval_decided",
+  "rbac.session_revoked",
+  "rbac.restrictions_saved",
+  "rbac.impersonation_requested",
+  "rbac.impersonation_approved",
+  "rbac.impersonation_ended",
+  "rbac.impersonation_page",
+];
+
+
 export async function rbacOverview(supabase: AnyClient, userId: string) {
   const ctx = await authorize(supabase, userId, "staff.view", { mutating: false });
   const db = await adminDb();
@@ -62,24 +82,7 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
       db
         .from("admin_audit_logs")
         .select("id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser")
-        .in("action", [
-          "authz.denied",
-          "authz.allowed",
-          "rbac.role_saved",
-          "rbac.role_deleted",
-          "rbac.department_saved",
-          "rbac.staff_org_updated",
-          "rbac.grant_created",
-          "rbac.grant_revoked",
-          "rbac.approval_requested",
-          "rbac.approval_decided",
-          "rbac.session_revoked",
-          "rbac.restrictions_saved",
-          "rbac.impersonation_requested",
-          "rbac.impersonation_approved",
-          "rbac.impersonation_ended",
-          "rbac.impersonation_page",
-        ])
+        .in("action", RBAC_AUDIT_ACTIONS)
         .order("created_at", { ascending: false })
         .limit(150),
     ]);
@@ -110,24 +113,6 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
 
 /* -------------------------------- الأدوار ------------------------------- */
 
-const RBAC_AUDIT_ACTIONS = [
-  "authz.denied",
-  "authz.allowed",
-  "rbac.role_saved",
-  "rbac.role_deleted",
-  "rbac.department_saved",
-  "rbac.staff_org_updated",
-  "rbac.grant_created",
-  "rbac.grant_revoked",
-  "rbac.approval_requested",
-  "rbac.approval_decided",
-  "rbac.session_revoked",
-  "rbac.restrictions_saved",
-  "rbac.impersonation_requested",
-  "rbac.impersonation_approved",
-  "rbac.impersonation_ended",
-  "rbac.impersonation_page",
-];
 
 /** سجل تدقيق RBAC مع ترقيم صفحات خادمي وعدد إجمالي. */
 export async function rbacAuditPage(
