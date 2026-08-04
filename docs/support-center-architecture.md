@@ -30,6 +30,59 @@
 | `support_business_calendars` / `support_holidays` | ساعات وأيام العمل والعطلات بتوقيت الرياض. |
 | `support_escalation_rules` | شروط التصعيد وأثره. |
 
+### 2.1 العلاقات
+
+```text
+organizations ─┬─< support_tickets >─┬─ profiles (requester: user_id)
+               │                     ├─ platform_staff (assigned_to)
+               │                     ├─ subscriptions (subscription_id)
+               │                     ├─ support_teams (team_id)
+               │                     ├─ support_categories (category)
+               │                     ├─ support_sla_policies (sla_policy_id)
+               │                     └─ email_threads (source_email_thread_id)
+               └─< support_access_grants (المسار الوحيد لبيانات المكتب)
+
+support_tickets ─┬─< support_ticket_messages (مرئية للمكتب)
+                 ├─< support_internal_notes (فريق المنصة فقط)
+                 ├─< support_ticket_events (خط زمني غير قابل للتعديل)
+                 ├─< support_ticket_tags >─ support_tags
+                 ├─< support_sla_events
+                 └─ support_tickets (merged_into_id: دمج ذاتي المرجع)
+```
+
+قواعد ثابتة: `ON DELETE` ممنوع للتذاكر والأحداث (أرشفة لا حذف)، وكل الطوابع `timestamptz`،
+وكل جداول الدعم بـ RLS مُفعّل بلا وصول مباشر من الواجهة — القراءة والكتابة عبر Server Functions فقط.
+
+### 2.2 دورة حياة التذكرة
+
+```text
+ [إنشاء: بريد وارد | نموذج المكتب | إنشاء يدوي]
+          │
+          ▼
+        new ──(تعيين/أول رد)──> in_progress ──(رد وينتظر المكتب)──> awaiting_reply
+          │                        │  ▲                                 │
+          │                        │  └──────(رد المكتب يستأنف SLA)─────┘
+          │                        ▼
+          │                     closed ──(إعادة فتح خلال المهلة)──> in_progress
+          └──(دمج)──> merged_into_id (نهائي، لا رد بعدها)
+```
+
+- عند الإنشاء: ترقيم مقروء، تعرّف على المستخدم/المكتب/الاشتراك، اختيار سياسة SLA، توجيه لفريق.
+- `awaiting_reply` **يوقف** عدّاد SLA؛ أي رد من المكتب يُعيد الحالة إلى `in_progress` ويستأنف العدّاد.
+- الإغلاق يسجّل `resolved_at` ويفتح نافذة التقييم (CSAT) للمكتب.
+- إعادة الفتح تزيد `reopened_count` وتُنشئ مهلة حل جديدة بلا مهلة أول رد.
+- الدمج نهائي: التذكرة الأصل تصبح للقراءة فقط ويُنقل نشاطها إلى الهدف مع الإبقاء على المرجع.
+
+كل انتقال حالة يمرّ خادمياً بدالة واحدة تتحقق من الصلاحية، تُحدّث SLA، وتكتب حدثاً في
+`support_ticket_events`. لا تغيّر الواجهة الحالة مباشرة.
+
+### 2.3 المكتب والمستخدم والاشتراك
+
+- `user_id` = مُقدّم الطلب، و`organization_id` = مكتبه عند لحظة الإنشاء (لا يتغير بتغيّر عضويته).
+- `subscription_id` يُلتقط عند الإنشاء لتحديد سياسة SLA حسب الباقة ولتفسير التذكرة تاريخياً.
+- المكتب يرى تذاكره فقط عبر `/support`؛ الفلترة بـ `organization_id` في الاستعلام الخادمي.
+- الاشتراك المنتهي لا يمنع فتح تذكرة (مسارات الفوترة والوصول يجب أن تبقى مفتوحة).
+
 ## 3. استيعاب البريد الوارد ⇒ تذكرة
 
 عند وصول رسالة إلى `support@mehlalex.com` (عبر نقطة Webhook موقّعة، وتُختبر بالمحاكاة الآن):
