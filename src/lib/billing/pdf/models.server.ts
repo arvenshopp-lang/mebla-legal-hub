@@ -40,7 +40,7 @@ function invoiceMeta(invoice: InvoiceDetail): PdfMetaRow[] {
     {
       label: "فترة الخدمة",
       value: invoice.service_period_start
-        ? `${formatPdfDate(invoice.service_period_start)} ← ${formatPdfDate(invoice.service_period_end)}`
+        ? `من ${formatPdfDate(invoice.service_period_start)} إلى ${formatPdfDate(invoice.service_period_end)}`
         : dash,
     },
   ];
