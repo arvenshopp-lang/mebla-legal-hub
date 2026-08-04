@@ -44,7 +44,7 @@ const payment = (index: number, status: PaymentRow["status"] = "paid"): PaymentR
     created_at: `2026-08-0${(index % 8) + 1}T15:30:00Z`,
     approved_at: `2026-08-0${(index % 8) + 1}T18:30:00Z`,
     approved_by_email: "finance.manager@mehlalex.com",
-    notes: "سُدد المبلغ بحوالة بنكية من حساب العميل رقم SA0380000000608010167519 بتاريخ 2026-08-04 18:30 بمبلغ SAR 1,150.00",
+    notes: "سُدد المبلغ بحوالة بنكية من حساب العميل رقم SA0380000000608010167519 بتاريخ 2026-08-04 18:30 بمبلغ 1,150.00\u00A0SAR",
   }) as unknown as PaymentRow;
 
 const refund: RefundRow = {
