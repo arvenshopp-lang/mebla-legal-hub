@@ -2221,6 +2221,117 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_bank_reconciliations: {
+        Row: {
+          amount: number
+          bank_name: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          invoice_id: string | null
+          matched_amount: number
+          matched_at: string | null
+          matched_by: string | null
+          matched_by_email: string | null
+          notes: string | null
+          payer_name: string | null
+          payment_id: string | null
+          statement_ref: string
+          status: string
+          updated_at: string
+          value_date: string
+        }
+        Insert: {
+          amount: number
+          bank_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          matched_amount?: number
+          matched_at?: string | null
+          matched_by?: string | null
+          matched_by_email?: string | null
+          notes?: string | null
+          payer_name?: string | null
+          payment_id?: string | null
+          statement_ref: string
+          status?: string
+          updated_at?: string
+          value_date: string
+        }
+        Update: {
+          amount?: number
+          bank_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          matched_amount?: number
+          matched_at?: string | null
+          matched_by?: string | null
+          matched_by_email?: string | null
+          notes?: string | null
+          payer_name?: string | null
+          payment_id?: string | null
+          statement_ref?: string
+          status?: string
+          updated_at?: string
+          value_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_bank_reconciliations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_bank_reconciliations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_billing_notes: {
+        Row: {
+          author_email: string | null
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          author_email?: string | null
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          author_email?: string | null
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
       platform_broadcasts: {
         Row: {
           audience: string
@@ -2274,6 +2385,178 @@ export type Database = {
           },
         ]
       }
+      platform_coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          discount_amount: number
+          id: string
+          invoice_id: string
+          organization_id: string | null
+          redeemed_at: string
+          redeemed_by: string | null
+        }
+        Insert: {
+          coupon_id: string
+          discount_amount: number
+          id?: string
+          invoice_id: string
+          organization_id?: string | null
+          redeemed_at?: string
+          redeemed_by?: string | null
+        }
+        Update: {
+          coupon_id?: string
+          discount_amount?: number
+          id?: string
+          invoice_id?: string
+          organization_id?: string | null
+          redeemed_at?: string
+          redeemed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "platform_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_coupon_redemptions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_coupon_redemptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          max_redemptions: number | null
+          redeemed_count: number
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          redeemed_count?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          redeemed_count?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_credit_notes: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          currency: string
+          id: string
+          invoice_id: string
+          issued_at: string
+          number: string
+          organization_id: string | null
+          pdf_path: string | null
+          reason: string
+          status: string
+          tax_amount: number
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          currency?: string
+          id?: string
+          invoice_id: string
+          issued_at?: string
+          number: string
+          organization_id?: string | null
+          pdf_path?: string | null
+          reason: string
+          status?: string
+          tax_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          currency?: string
+          id?: string
+          invoice_id?: string
+          issued_at?: string
+          number?: string
+          organization_id?: string | null
+          pdf_path?: string | null
+          reason?: string
+          status?: string
+          tax_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_credit_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_credit_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_email_templates: {
         Row: {
           body_html: string
@@ -2307,6 +2590,54 @@ export type Database = {
           subject?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      platform_financial_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closed_by_email: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closed_by_email?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closed_by_email?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2426,6 +2757,621 @@ export type Database = {
           },
         ]
       }
+      platform_invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount_amount: number
+          id: string
+          invoice_id: string
+          line_subtotal: number
+          line_tax: number
+          line_total: number
+          quantity: number
+          sort_order: number
+          tax_rate: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount_amount?: number
+          id?: string
+          invoice_id: string
+          line_subtotal?: number
+          line_tax?: number
+          line_total?: number
+          quantity?: number
+          sort_order?: number
+          tax_rate?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount_amount?: number
+          id?: string
+          invoice_id?: string
+          line_subtotal?: number
+          line_tax?: number
+          line_total?: number
+          quantity?: number
+          sort_order?: number
+          tax_rate?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_invoices: {
+        Row: {
+          billing_address: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          commercial_registration: string | null
+          coupon_code: string | null
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          currency: string
+          customer_email: string | null
+          customer_legal_name: string | null
+          customer_name: string
+          customer_phone: string | null
+          discount_total: number
+          due_at: string | null
+          id: string
+          internal_notes: string | null
+          issued_at: string | null
+          notes: string | null
+          number: string
+          organization_id: string | null
+          paid_at: string | null
+          paid_total: number
+          payment_method: string | null
+          payment_reference: string | null
+          pdf_path: string | null
+          plan_code: string | null
+          plan_label: string | null
+          refunded_total: number
+          remaining: number
+          service_period_end: string | null
+          service_period_start: string | null
+          status: string
+          subscription_id: string | null
+          subtotal: number
+          tax_exempt: boolean
+          tax_exemption_reason: string | null
+          tax_number: string | null
+          tax_rate: number
+          tax_total: number
+          total: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          billing_address?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          commercial_registration?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_legal_name?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          discount_total?: number
+          due_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          issued_at?: string | null
+          notes?: string | null
+          number: string
+          organization_id?: string | null
+          paid_at?: string | null
+          paid_total?: number
+          payment_method?: string | null
+          payment_reference?: string | null
+          pdf_path?: string | null
+          plan_code?: string | null
+          plan_label?: string | null
+          refunded_total?: number
+          remaining?: number
+          service_period_end?: string | null
+          service_period_start?: string | null
+          status?: string
+          subscription_id?: string | null
+          subtotal?: number
+          tax_exempt?: boolean
+          tax_exemption_reason?: string | null
+          tax_number?: string | null
+          tax_rate?: number
+          tax_total?: number
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          billing_address?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          commercial_registration?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_legal_name?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          discount_total?: number
+          due_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          issued_at?: string | null
+          notes?: string | null
+          number?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          paid_total?: number
+          payment_method?: string | null
+          payment_reference?: string | null
+          pdf_path?: string | null
+          plan_code?: string | null
+          plan_label?: string | null
+          refunded_total?: number
+          remaining?: number
+          service_period_end?: string | null
+          service_period_start?: string | null
+          status?: string
+          subscription_id?: string | null
+          subtotal?: number
+          tax_exempt?: boolean
+          tax_exemption_reason?: string | null
+          tax_number?: string | null
+          tax_rate?: number
+          tax_total?: number
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_number_sequences: {
+        Row: {
+          created_at: string
+          kind: string
+          next_value: number
+          padding: number
+          period_key: string
+          prefix: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          next_value?: number
+          padding?: number
+          period_key: string
+          prefix: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          next_value?: number
+          padding?: number
+          period_key?: string
+          prefix?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_payment_attempts: {
+        Row: {
+          correlation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          http_status: number | null
+          id: string
+          invoice_id: string | null
+          operation: string
+          payment_id: string | null
+          provider: string
+          provider_status: string | null
+          request_id: string | null
+          request_payload: Json
+          response_payload: Json
+          status: string
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          invoice_id?: string | null
+          operation: string
+          payment_id?: string | null
+          provider: string
+          provider_status?: string | null
+          request_id?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          status: string
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          invoice_id?: string | null
+          operation?: string
+          payment_id?: string | null
+          provider?: string
+          provider_status?: string | null
+          request_id?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payment_attempts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_payment_attempts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_payment_provider_configs: {
+        Row: {
+          code: string
+          connection_status: string
+          created_at: string
+          description: string | null
+          id: string
+          integration_id: string | null
+          is_enabled: boolean
+          last_test_error: string | null
+          last_tested_at: string | null
+          name_ar: string
+          settings: Json
+          sort_order: number
+          supports_refunds: boolean
+          supports_webhooks: boolean
+          updated_at: string
+          webhook_path: string | null
+        }
+        Insert: {
+          code: string
+          connection_status?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          integration_id?: string | null
+          is_enabled?: boolean
+          last_test_error?: string | null
+          last_tested_at?: string | null
+          name_ar: string
+          settings?: Json
+          sort_order?: number
+          supports_refunds?: boolean
+          supports_webhooks?: boolean
+          updated_at?: string
+          webhook_path?: string | null
+        }
+        Update: {
+          code?: string
+          connection_status?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          integration_id?: string | null
+          is_enabled?: boolean
+          last_test_error?: string | null
+          last_tested_at?: string | null
+          name_ar?: string
+          settings?: Json
+          sort_order?: number
+          supports_refunds?: boolean
+          supports_webhooks?: boolean
+          updated_at?: string
+          webhook_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payment_provider_configs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_payment_webhooks: {
+        Row: {
+          attempts: number
+          correlation_id: string | null
+          event_id: string | null
+          event_type: string | null
+          id: string
+          invoice_id: string | null
+          last_error: string | null
+          next_retry_at: string | null
+          payment_id: string | null
+          processed_at: string | null
+          provider: string
+          raw_body: string
+          raw_headers: Json
+          received_at: string
+          replay_detected: boolean
+          request_id: string | null
+          signature_valid: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          correlation_id?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
+          payment_id?: string | null
+          processed_at?: string | null
+          provider: string
+          raw_body?: string
+          raw_headers?: Json
+          received_at?: string
+          replay_detected?: boolean
+          request_id?: string | null
+          signature_valid?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          correlation_id?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
+          payment_id?: string | null
+          processed_at?: string | null
+          provider?: string
+          raw_body?: string
+          raw_headers?: Json
+          received_at?: string
+          replay_detected?: boolean
+          request_id?: string | null
+          signature_valid?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payment_webhooks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_payment_webhooks_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_payments: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          bank_reference: string | null
+          correlation_id: string | null
+          created_at: string
+          currency: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          invoice_id: string
+          metadata: Json
+          method: string
+          notes: string | null
+          organization_id: string | null
+          paid_at: string | null
+          proof_path: string | null
+          provider: string
+          provider_payment_id: string | null
+          provider_reference: string | null
+          received_at: string | null
+          refunded_amount: number
+          rejection_reason: string | null
+          status: string
+          submitted_by: string | null
+          submitted_by_email: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          bank_reference?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          invoice_id: string
+          metadata?: Json
+          method?: string
+          notes?: string | null
+          organization_id?: string | null
+          paid_at?: string | null
+          proof_path?: string | null
+          provider?: string
+          provider_payment_id?: string | null
+          provider_reference?: string | null
+          received_at?: string | null
+          refunded_amount?: number
+          rejection_reason?: string | null
+          status?: string
+          submitted_by?: string | null
+          submitted_by_email?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          bank_reference?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          invoice_id?: string
+          metadata?: Json
+          method?: string
+          notes?: string | null
+          organization_id?: string | null
+          paid_at?: string | null
+          proof_path?: string | null
+          provider?: string
+          provider_payment_id?: string | null
+          provider_reference?: string | null
+          received_at?: string | null
+          refunded_amount?: number
+          rejection_reason?: string | null
+          status?: string
+          submitted_by?: string | null
+          submitted_by_email?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_period_reopen_approvals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          created_at: string
+          id: string
+          period_id: string
+          reason: string
+          requested_by: string
+          requested_by_email: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          id?: string
+          period_id: string
+          reason: string
+          requested_by: string
+          requested_by_email: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          id?: string
+          period_id?: string
+          reason?: string
+          requested_by?: string
+          requested_by_email?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_period_reopen_approvals_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "platform_financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_plans: {
         Row: {
           ai_enabled: boolean
@@ -2527,6 +3473,87 @@ export type Database = {
           voice_enabled?: boolean
         }
         Relationships: []
+      }
+      platform_refunds: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          correlation_id: string | null
+          created_at: string
+          currency: string
+          failure_message: string | null
+          id: string
+          invoice_id: string
+          payment_id: string
+          processed_at: string | null
+          provider: string
+          provider_refund_id: string | null
+          reason: string
+          requested_by: string | null
+          requested_by_email: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_message?: string | null
+          id?: string
+          invoice_id: string
+          payment_id: string
+          processed_at?: string | null
+          provider?: string
+          provider_refund_id?: string | null
+          reason: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_message?: string | null
+          id?: string
+          invoice_id?: string
+          payment_id?: string
+          processed_at?: string | null
+          provider?: string
+          provider_refund_id?: string | null
+          reason?: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_refunds_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_refunds_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_roles: {
         Row: {
@@ -3622,6 +4649,7 @@ export type Database = {
         Args: { _organization_id: string }
         Returns: Json
       }
+      next_financial_number: { Args: { _kind: string }; Returns: string }
       normalize_ar: { Args: { _input: string }; Returns: string }
       print_copy_number: {
         Args: {
