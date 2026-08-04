@@ -16,6 +16,7 @@ export type StaffRow = {
   status: "active" | "suspended";
   permissions: string[] | null;
   role_id: string | null;
+  department_id: string | null;
   platform_roles: { permissions: string[] | null } | null;
 };
 
@@ -30,7 +31,7 @@ export async function requireStaff(
   const db = supabase as AnyClient;
   const { data, error } = await db
     .from("platform_staff")
-    .select("id, user_id, full_name, email, role, status, permissions, role_id, platform_roles(permissions)")
+    .select("id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
@@ -46,7 +47,7 @@ export async function requireStaff(
 export async function requireActiveStaff(supabase: AnyClient, userId: string): Promise<StaffRow> {
   const { data } = await supabase
     .from("platform_staff")
-    .select("id, user_id, full_name, email, role, status, permissions, role_id, platform_roles(permissions)")
+    .select("id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)")
     .eq("user_id", userId)
     .maybeSingle();
   const staff = data as StaffRow | null;

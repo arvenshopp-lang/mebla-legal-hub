@@ -1493,30 +1493,66 @@ export type Database = {
       email_attachments: {
         Row: {
           created_at: string
+          direction: string
+          download_count: number
+          extension: string | null
           file_name: string
           id: string
-          message_id: string
+          is_inline_safe: boolean
+          is_quarantined: boolean
+          last_downloaded_at: string | null
+          message_id: string | null
           mime_type: string
+          original_name: string | null
+          scan_detail: string | null
+          scan_status: string
+          sha256: string | null
           size_bytes: number
           storage_path: string
+          uploaded_by: string | null
+          uploaded_by_email: string | null
         }
         Insert: {
           created_at?: string
+          direction?: string
+          download_count?: number
+          extension?: string | null
           file_name: string
           id?: string
-          message_id: string
+          is_inline_safe?: boolean
+          is_quarantined?: boolean
+          last_downloaded_at?: string | null
+          message_id?: string | null
           mime_type: string
+          original_name?: string | null
+          scan_detail?: string | null
+          scan_status?: string
+          sha256?: string | null
           size_bytes?: number
           storage_path: string
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
         }
         Update: {
           created_at?: string
+          direction?: string
+          download_count?: number
+          extension?: string | null
           file_name?: string
           id?: string
-          message_id?: string
+          is_inline_safe?: boolean
+          is_quarantined?: boolean
+          last_downloaded_at?: string | null
+          message_id?: string | null
           mime_type?: string
+          original_name?: string | null
+          scan_detail?: string | null
+          scan_status?: string
+          sha256?: string | null
           size_bytes?: number
           storage_path?: string
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
         }
         Relationships: [
           {
@@ -1572,6 +1608,78 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
+      }
+      email_inbound_events: {
+        Row: {
+          attachments_accepted: number
+          attachments_rejected: number
+          created_at: string
+          id: string
+          message_row_id: string | null
+          metadata: Json
+          outcome: string
+          payload_hash: string
+          provider: string
+          provider_message_id: string | null
+          recipient: string | null
+          reject_reason: string | null
+          request_ip: string | null
+          sender_hint: string | null
+          signature_mode: string
+          thread_id: string | null
+        }
+        Insert: {
+          attachments_accepted?: number
+          attachments_rejected?: number
+          created_at?: string
+          id?: string
+          message_row_id?: string | null
+          metadata?: Json
+          outcome: string
+          payload_hash: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          reject_reason?: string | null
+          request_ip?: string | null
+          sender_hint?: string | null
+          signature_mode?: string
+          thread_id?: string | null
+        }
+        Update: {
+          attachments_accepted?: number
+          attachments_rejected?: number
+          created_at?: string
+          id?: string
+          message_row_id?: string | null
+          metadata?: Json
+          outcome?: string
+          payload_hash?: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          reject_reason?: string | null
+          request_ip?: string | null
+          sender_hint?: string | null
+          signature_mode?: string
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_inbound_events_message_row_id_fkey"
+            columns: ["message_row_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_inbound_events_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "email_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_labels: {
         Row: {

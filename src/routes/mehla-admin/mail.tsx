@@ -22,10 +22,13 @@ import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { ComposeModal, type ComposePayload, type ComposeSeed } from "@/components/admin/mail/compose-modal";
 import { ThreadView } from "@/components/admin/mail/thread-view";
 import { EMAIL_FOLDERS, type EmailFolder } from "@/lib/email/email.shared";
+import type { AttachmentMeta } from "@/lib/email/attachments.shared";
 import {
   addMailNote,
+  deleteMailAttachment,
   deleteMailLabel,
   discardMailDraft,
+  getMailAttachmentUrl,
   getMailThread,
   getMailWorkspace,
   listMailThreads,
@@ -35,6 +38,7 @@ import {
   sendMailMessage,
   updateMailThread,
   updateMailbox,
+  uploadMailAttachment,
 } from "@/lib/email/email.functions";
 
 export const Route = createFileRoute("/mehla-admin/mail")({
@@ -98,25 +102,105 @@ function MailWorkspacePage() {
   }
 
   const sendFn = useServerFn(sendMailMessage);
+  const draftFn = useServerFn(saveMailDraft);
+  const uploadFn = useServerFn(uploadMailAttachment);
+  const removeAttachmentFn = useServerFn(deleteMailAttachment);
+  const attachmentUrlFn = useServerFn(getMailAttachmentUrl);
+
+  /* حالة مرفقات نافذة الإنشاء: تُربط دائماً بمسوّدة محفوظة قبل الرفع. */
+  const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
+  const [composeAttachments, setComposeAttachments] = useState<AttachmentMeta[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
+
+  function openCompose(seed: ComposeSeed | null) {
+    setComposeDraftId(seed?.draftId ?? null);
+    setComposeAttachments([]);
+    setCompose(seed);
+  }
+
+  function closeCompose() {
+    setCompose(null);
+    setComposeDraftId(null);
+    setComposeAttachments([]);
+  }
+
+  function withDraft(payload: ComposePayload): ComposePayload {
+    return { ...payload, draftId: composeDraftId ?? payload.draftId };
+  }
+
+  /** يقرأ الملف كـ Base64 دون تحميل المتصفح لسلاسل ضخمة في الذاكرة مرتين. */
+  function readBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("تعذّر قراءة الملف."));
+      reader.onload = () => resolve(String(reader.result ?? "").split(",")[1] ?? "");
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function attachFiles(files: File[], payload: ComposePayload) {
+    setUploading(true);
+    try {
+      let draftId = composeDraftId;
+      if (!draftId) {
+        const saved = await draftFn({ data: withDraft(payload) });
+        draftId = saved.messageId;
+        setComposeDraftId(draftId);
+      }
+      for (const file of files) {
+        const contentBase64 = await readBase64(file);
+        const result = await uploadFn({ data: { messageId: draftId, fileName: file.name, contentBase64 } });
+        setComposeAttachments((prev) => [...prev, result.attachment]);
+      }
+      toast.success("تم إرفاق الملفات بعد التحقق الأمني.");
+      refreshLists();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر إرفاق الملف.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeAttachment(attachmentId: string) {
+    try {
+      await removeAttachmentFn({ data: { attachmentId } });
+      setComposeAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر إزالة المرفق.");
+    }
+  }
+
+  async function downloadAttachment(attachmentId: string) {
+    setDownloadingAttachmentId(attachmentId);
+    try {
+      const { url } = await attachmentUrlFn({ data: { attachmentId } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر تنزيل المرفق.");
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  }
+
   const send = useMutation({
-    mutationFn: (payload: ComposePayload) => sendFn({ data: payload }),
+    mutationFn: (payload: ComposePayload) => sendFn({ data: withDraft(payload) }),
     onSuccess: (result) => {
       if (result.sent) toast.success("تم إرسال الرسالة.");
       else if (result.failureRef) toast.error(`تعذّر الإرسال الآن — سنعيد المحاولة تلقائياً. المرجع ${result.failureRef}`);
       else toast.success("تمت جدولة الرسالة في قائمة الإرسال.");
-      setCompose(null);
+      closeCompose();
       setThreadId(result.threadId);
       refreshLists();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const draftFn = useServerFn(saveMailDraft);
   const saveDraft = useMutation({
-    mutationFn: (payload: ComposePayload) => draftFn({ data: payload }),
+    mutationFn: (payload: ComposePayload) => draftFn({ data: withDraft(payload) }),
     onSuccess: () => {
       toast.success("تم حفظ المسوّدة.");
-      setCompose(null);
+      closeCompose();
       refreshLists();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -225,7 +309,7 @@ function MailWorkspacePage() {
           {canSend && activeMailbox && (
             <Btn
               size="sm"
-              onClick={() => setCompose({ mailboxId: activeMailbox.id, title: "رسالة جديدة" })}
+              onClick={() => openCompose({ mailboxId: activeMailbox.id, title: "رسالة جديدة" })}
             >
               <PenSquare className="h-4 w-4" aria-hidden /> رسالة جديدة
             </Btn>
@@ -407,12 +491,14 @@ function MailWorkspacePage() {
                   labels={workspace.data?.labels ?? []}
                   canSend={canSend}
                   canAssign={canAssign}
-                  onCompose={setCompose}
+                  onCompose={openCompose}
                   onUpdate={(patch) => update.mutate(patch as Record<string, unknown>)}
                   onAddNote={(body) => addNote.mutate(body)}
                   onRetry={(messageId) => retry.mutate(messageId)}
+                  onDownloadAttachment={(id) => void downloadAttachment(id)}
                   savingNote={addNote.isPending}
                   retrying={retry.isPending}
+                  downloadingAttachmentId={downloadingAttachmentId}
                 />
                 {folder === "drafts" && canSend && (
                   <div className="border-t border-border p-3">
@@ -437,9 +523,13 @@ function MailWorkspacePage() {
       <ComposeModal
         seed={compose}
         mailboxes={mailboxes}
-        onClose={() => setCompose(null)}
+        onClose={closeCompose}
         onSend={(payload) => send.mutate(payload)}
         onSaveDraft={(payload) => saveDraft.mutate(payload)}
+        attachments={composeAttachments}
+        onAttachFiles={(files, payload) => void attachFiles(files, payload)}
+        onRemoveAttachment={(id) => void removeAttachment(id)}
+        uploading={uploading}
         sending={send.isPending}
         savingDraft={saveDraft.isPending}
       />

@@ -4,6 +4,8 @@
  */
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { requestMeta } from "@/lib/admin-guard.server";
+import { buildAttachmentSection, quarantineInboundAttachment, storeAttachment } from "@/lib/email/attachments.server";
+import { sanitizeInboundHtml } from "@/lib/email/sanitize.shared";
 import {
   previewOf,
   stripHtml,
@@ -20,16 +22,52 @@ type Db = any;
 const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";
 export const ATTACHMENT_BUCKET = "email-attachments";
+/** صلاحية روابط تنزيل المرفقات المُرسلة للمستلم الخارجي (7 أيام). */
+const OUTBOUND_ATTACHMENT_TTL = 7 * 24 * 60 * 60;
 
 /* --------------------------------------------------------------- الصناديق */
 
-export async function listMailboxes(db: Db): Promise<Mailbox[]> {
+/**
+ * الصناديق المصرّح بها لموظف: مدير المنصة أو حامل `email.manage` يرى الكل،
+ * وغيره يرى الصناديق غير المقيّدة بقسم، أو المقيّدة بقسمه فقط.
+ */
+export type MailboxScope = { isSuper: boolean; canManage: boolean; departmentId: string | null };
+
+export async function allowedMailboxIds(db: Db, scope: MailboxScope): Promise<string[] | null> {
+  if (scope.isSuper || scope.canManage) return null; // null = بلا تقييد
+  const { data } = await db.from("email_mailboxes").select("id, department_id");
+  return ((data ?? []) as { id: string; department_id: string | null }[])
+    .filter((m) => m.department_id === null || (scope.departmentId !== null && m.department_id === scope.departmentId))
+    .map((m) => m.id);
+}
+
+/** يمنع أي عملية على صندوق غير مصرّح به — يُستدعى في كل دالة خادم. */
+export async function assertMailboxAccess(db: Db, mailboxId: string, scope: MailboxScope): Promise<void> {
+  const ids = await allowedMailboxIds(db, scope);
+  if (ids === null) return;
+  if (!ids.includes(mailboxId)) throw new Error("لا تملك وصولاً إلى صندوق البريد هذا.");
+}
+
+/** يمنع أي عملية على محادثة تنتمي لصندوق غير مصرّح به. */
+export async function assertThreadAccess(db: Db, threadId: string, scope: MailboxScope): Promise<string> {
+  const { data } = await db.from("email_threads").select("mailbox_id").eq("id", threadId).maybeSingle();
+  const row = data as { mailbox_id: string } | null;
+  if (!row) throw new Error("المحادثة غير موجودة.");
+  await assertMailboxAccess(db, row.mailbox_id, scope);
+  return row.mailbox_id;
+}
+
+export async function listMailboxes(db: Db, scope?: MailboxScope): Promise<Mailbox[]> {
   const { data, error } = await db
     .from("email_mailboxes")
     .select("id, address, display_name, type, is_shared, is_active, inbound_enabled, signature_html, sort_order")
     .order("sort_order", { ascending: true });
   if (error) throw new Error("تعذّر تحميل صناديق البريد.");
-  const boxes = (data ?? []) as Omit<Mailbox, "unread">[];
+  let boxes = (data ?? []) as Omit<Mailbox, "unread">[];
+  if (scope) {
+    const ids = await allowedMailboxIds(db, scope);
+    if (ids !== null) boxes = boxes.filter((b) => ids.includes(b.id));
+  }
 
   const { data: unreadRows } = await db
     .from("email_threads")
@@ -192,7 +230,7 @@ export async function getThread(db: Db, threadId: string): Promise<ThreadDetail>
   if (messages.length > 0) {
     const { data: attRows } = await db
       .from("email_attachments")
-      .select("id, message_id, file_name, mime_type, size_bytes")
+      .select("id, message_id, file_name, mime_type, size_bytes, direction, scan_status, is_quarantined, is_inline_safe")
       .in(
         "message_id",
         messages.map((m) => m.id),
@@ -379,6 +417,19 @@ export async function queueMessage(
   if (!input.subject.trim()) throw new Error("موضوع الرسالة مطلوب.");
   if (!stripHtml(input.html)) throw new Error("نص الرسالة مطلوب.");
 
+  // منع الإرسال المزدوج: مسوّدة أُرسلت أو قيد الإرسال لا تُعاد إلى القائمة أبداً.
+  if (input.draftId) {
+    const { data: guardRow } = await db
+      .from("email_messages")
+      .select("status, thread_id")
+      .eq("id", input.draftId)
+      .maybeSingle();
+    const guard = guardRow as { status: string; thread_id: string } | null;
+    if (guard && ["sent", "sending", "queued"].includes(guard.status)) {
+      throw new Error("هذه الرسالة أُرسلت أو هي في قائمة الإرسال بالفعل.");
+    }
+  }
+
   const { messageId, threadId } = await saveDraft(db, actor, input);
   const scheduled = input.scheduledAt ? new Date(input.scheduledAt) : null;
   const isFuture = scheduled ? scheduled.getTime() > Date.now() + 30_000 : false;
@@ -513,8 +564,20 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
   } | null;
   if (!message) return { sent: false };
 
-  await db.from("email_outbox").update({ status: "sending", locked_at: new Date().toISOString() }).eq("id", job.id);
+  // قفل ذرّي: لا تُرسل الرسالة مرتين لو تزامن استدعاء يدوي مع المسار الدوري.
+  const { data: locked } = await db
+    .from("email_outbox")
+    .update({ status: "sending", locked_at: new Date().toISOString() })
+    .eq("id", job.id)
+    .in("status", ["queued", "scheduled"])
+    .select("id");
+  if (!locked || (locked as unknown[]).length === 0) return { sent: false };
   await db.from("email_messages").update({ status: "sending" }).eq("id", messageId);
+
+  // المزوّد الحالي لا يدعم إرفاق MIME؛ تُسلَّم المرفقات كروابط موقّعة قصيرة الأجل.
+  const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
+  const baseHtml = message.html ?? "";
+  const baseText = message.body_text ?? stripHtml(baseHtml);
 
   const result = await providerSend({
     from: message.from_address,
@@ -523,8 +586,8 @@ export async function dispatchOne(db: Db, messageId: string): Promise<{ sent: bo
     cc: message.cc_addresses,
     bcc: message.bcc_addresses,
     subject: message.subject,
-    html: message.html ?? "",
-    text: message.body_text ?? stripHtml(message.html ?? ""),
+    html: `${baseHtml}${section.html}`,
+    text: `${baseText}${section.text}`,
     idempotencyKey: job.idempotency_key,
   });
 
@@ -605,11 +668,24 @@ export type InboundPayload = {
   inReplyTo?: string | null;
   references?: string[];
   receivedAt?: string | null;
-  attachments?: { file_name: string; mime_type: string; size_bytes: number; storage_path: string }[];
+  /** المرفق يوصل كمحتوى Base64 — لا نثق بمسار تخزين أو Content-Type من المزوّد. */
+  attachments?: { file_name: string; content_base64: string }[];
+};
+
+export type InboundResult = {
+  threadId: string;
+  messageId: string;
+  duplicate: boolean;
+  mailboxId: string;
+  attachmentsAccepted: number;
+  attachmentsRejected: number;
+  rejectedAttachments: { name: string; reason: string }[];
+  blockedImages: number;
+  hadActiveContent: boolean;
 };
 
 /** إدخال رسالة واردة: يُنشئ المحادثة أو يضيف إلى محادثة قائمة. */
-export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ threadId: string; messageId: string }> {
+export async function ingestInbound(db: Db, payload: InboundPayload): Promise<InboundResult> {
   const to = payload.to.trim().toLowerCase();
   const { data: boxRow } = await db
     .from("email_mailboxes")
@@ -629,7 +705,17 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     .maybeSingle();
   if (existing) {
     const row = existing as { id: string; thread_id: string };
-    return { threadId: row.thread_id, messageId: row.id };
+    return {
+      threadId: row.thread_id,
+      messageId: row.id,
+      duplicate: true,
+      mailboxId: box.id,
+      attachmentsAccepted: 0,
+      attachmentsRejected: 0,
+      rejectedAttachments: [],
+      blockedImages: 0,
+      hadActiveContent: false,
+    };
   }
 
   const subject = (payload.subject ?? "").trim() || "(بدون موضوع)";
@@ -671,8 +757,10 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     threadId = (data as { id: string }).id;
   }
 
-  const html = payload.html ?? null;
-  const text = payload.text ?? (html ? stripHtml(html) : "");
+  // تنقية إلزامية: لا يُخزَّن HTML خارجي كما هو إطلاقاً.
+  const sanitized = sanitizeInboundHtml(payload.html);
+  const html = sanitized.html || null;
+  const text = (payload.text ? stripHtml(payload.text) : "") || sanitized.text;
   const { data: inserted, error: insertError } = await db
     .from("email_messages")
     .insert({
@@ -696,10 +784,35 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
   if (insertError) throw new Error("تعذّر حفظ الرسالة الواردة.");
   const messageId = (inserted as { id: string }).id;
 
-  if (payload.attachments?.length) {
-    await db
-      .from("email_attachments")
-      .insert(payload.attachments.map((a) => ({ ...a, message_id: messageId })));
+  // المرفقات الواردة: تحقق فعلي من التوقيع والحجم، وحجر ما يفشل.
+  let accepted = 0;
+  const rejected: { name: string; reason: string }[] = [];
+  for (const attachment of payload.attachments ?? []) {
+    let bytes: Uint8Array;
+    try {
+      bytes = decodeBase64(attachment.content_base64);
+    } catch {
+      rejected.push({ name: attachment.file_name, reason: "محتوى Base64 غير صحيح." });
+      continue;
+    }
+    try {
+      await storeAttachment(db, {
+        messageId,
+        direction: "inbound",
+        fileName: attachment.file_name,
+        bytes,
+      });
+      accepted += 1;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "رُفض المرفق.";
+      rejected.push({ name: attachment.file_name, reason });
+      await quarantineInboundAttachment(db, {
+        messageId,
+        fileName: attachment.file_name,
+        bytes,
+        reason,
+      });
+    }
   }
 
   await db
@@ -707,7 +820,26 @@ export async function ingestInbound(db: Db, payload: InboundPayload): Promise<{ 
     .update({ folder: "inbox", is_unread: true, last_activity_at: receivedAt })
     .eq("id", threadId);
   await touchThread(db, threadId, subject, [from]);
-  return { threadId, messageId };
+  return {
+    threadId,
+    messageId,
+    duplicate: false,
+    mailboxId: box.id,
+    attachmentsAccepted: accepted,
+    attachmentsRejected: rejected.length,
+    rejectedAttachments: rejected,
+    blockedImages: sanitized.blockedImages,
+    hadActiveContent: sanitized.hadActiveContent,
+  };
+}
+
+function decodeBase64(value: string): Uint8Array {
+  const clean = value.replace(/^data:[^;]*;base64,/, "").replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length === 0) throw new Error("invalid base64");
+  const binary = atob(clean);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 /* --------------------------------------------------------------- مساعدات */

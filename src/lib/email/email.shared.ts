@@ -83,7 +83,16 @@ export type EmailMessage = {
   failure_ref: string | null;
   created_by_email: string | null;
   created_at: string;
-  attachments: { id: string; file_name: string; mime_type: string; size_bytes: number }[];
+  attachments: {
+    id: string;
+    file_name: string;
+    mime_type: string;
+    size_bytes: number;
+    direction?: "inbound" | "outbound";
+    scan_status?: string;
+    is_quarantined?: boolean;
+    is_inline_safe?: boolean;
+  }[];
 };
 
 export type ThreadDetail = {

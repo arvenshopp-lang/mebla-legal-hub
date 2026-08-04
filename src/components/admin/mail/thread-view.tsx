@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CornerUpLeft, CornerUpRight, Forward, RefreshCw, Star, Trash2, Undo2, Archive, ShieldAlert } from "lucide-react";
+import { CornerUpLeft, CornerUpRight, Download, Forward, Lock, Paperclip, RefreshCw, Star, Trash2, Undo2, Archive, ShieldAlert } from "lucide-react";
 import { Badge, Btn, IconBtn, inputCls } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import {
@@ -25,8 +25,10 @@ export function ThreadView({
   onUpdate,
   onAddNote,
   onRetry,
+  onDownloadAttachment,
   savingNote,
   retrying,
+  downloadingAttachmentId,
 }: {
   detail: ThreadDetail;
   staff: StaffOption[];
@@ -44,8 +46,10 @@ export function ThreadView({
   }) => void;
   onAddNote: (body: string) => void;
   onRetry: (messageId: string) => void;
+  onDownloadAttachment: (attachmentId: string) => void;
   savingNote: boolean;
   retrying: boolean;
+  downloadingAttachmentId: string | null;
 }) {
   const { thread, messages, notes } = detail;
   const [note, setNote] = useState("");
@@ -200,13 +204,41 @@ export function ThreadView({
               </div>
 
               {m.attachments.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-2">
-                  {m.attachments.map((a) => (
-                    <li key={a.id} className="rounded-[var(--radius-s)] border border-border px-2.5 py-1 text-[12px]">
-                      {a.file_name} · {formatBytes(a.size_bytes)}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-3">
+                  <p className="text-caption flex items-center gap-1.5">
+                    <Paperclip className="h-3.5 w-3.5" aria-hidden />
+                    {m.attachments.length} مرفق
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {m.attachments.map((a) => {
+                      const blocked = a.is_quarantined === true;
+                      return (
+                        <li key={a.id}>
+                          <button
+                            type="button"
+                            disabled={blocked || downloadingAttachmentId === a.id}
+                            onClick={() => onDownloadAttachment(a.id)}
+                            aria-label={blocked ? `مرفق محجور: ${a.file_name}` : `تنزيل المرفق ${a.file_name}`}
+                            title={blocked ? "المرفق محجور لعدم اجتيازه التحقق الأمني." : undefined}
+                            className={`flex max-w-full items-center gap-2 rounded-[var(--radius-s)] border px-2.5 py-1.5 text-[12px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                              blocked
+                                ? "cursor-not-allowed border-danger/40 bg-danger/5 text-danger"
+                                : "border-border hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60"
+                            }`}
+                          >
+                            {blocked ? (
+                              <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            ) : (
+                              <Download className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            )}
+                            <span className="truncate">{a.file_name}</span>
+                            <span className="shrink-0 text-muted-foreground">{formatBytes(a.size_bytes)}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
 
               {(m.status === "failed" || m.status === "bounced") && (
