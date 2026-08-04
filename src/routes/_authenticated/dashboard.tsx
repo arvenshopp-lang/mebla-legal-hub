@@ -52,7 +52,7 @@ function DashboardHome() {
   });
 
   return (
-    <DashboardShell title="نظرة عامة" description="أولويات اليوم في مكتبك">
+    <DashboardShell title="لوحة متابعة القضايا والجلسات" description="أولويات اليوم في مكتبك">
       {error ? (
         <ErrorBlock message="حاول تحديث الصفحة." />
       ) : (
