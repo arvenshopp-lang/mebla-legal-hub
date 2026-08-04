@@ -1708,6 +1708,11 @@ export type Database = {
       email_mailboxes: {
         Row: {
           address: string
+          agentic_last_error: string | null
+          agentic_last_sync_at: string | null
+          agentic_link_status: string
+          agentic_mailbox_id: string | null
+          agentic_unread_count: number
           created_at: string
           credential_key: string | null
           department_id: string | null
@@ -1727,6 +1732,11 @@ export type Database = {
         }
         Insert: {
           address: string
+          agentic_last_error?: string | null
+          agentic_last_sync_at?: string | null
+          agentic_link_status?: string
+          agentic_mailbox_id?: string | null
+          agentic_unread_count?: number
           created_at?: string
           credential_key?: string | null
           department_id?: string | null
@@ -1746,6 +1756,11 @@ export type Database = {
         }
         Update: {
           address?: string
+          agentic_last_error?: string | null
+          agentic_last_sync_at?: string | null
+          agentic_link_status?: string
+          agentic_mailbox_id?: string | null
+          agentic_unread_count?: number
           created_at?: string
           credential_key?: string | null
           department_id?: string | null
@@ -2020,6 +2035,7 @@ export type Database = {
           ingested: number
           mailbox_id: string
           outcome: string
+          provider: string
           reindexed: boolean
           rejected: number
           tickets_created: number
@@ -2037,6 +2053,7 @@ export type Database = {
           ingested?: number
           mailbox_id: string
           outcome: string
+          provider?: string
           reindexed?: boolean
           rejected?: number
           tickets_created?: number
@@ -2054,6 +2071,7 @@ export type Database = {
           ingested?: number
           mailbox_id?: string
           outcome?: string
+          provider?: string
           reindexed?: boolean
           rejected?: number
           tickets_created?: number
@@ -2088,6 +2106,9 @@ export type Database = {
           messages_synced: number
           new_messages: number
           next_attempt_at: string | null
+          provider: string
+          provider_cursor: string | null
+          provider_folder_id: string | null
           status: string
           uidvalidity: number | null
           updated_at: string
@@ -2110,6 +2131,9 @@ export type Database = {
           messages_synced?: number
           new_messages?: number
           next_attempt_at?: string | null
+          provider?: string
+          provider_cursor?: string | null
+          provider_folder_id?: string | null
           status?: string
           uidvalidity?: number | null
           updated_at?: string
@@ -2132,6 +2156,9 @@ export type Database = {
           messages_synced?: number
           new_messages?: number
           next_attempt_at?: string | null
+          provider?: string
+          provider_cursor?: string | null
+          provider_folder_id?: string | null
           status?: string
           uidvalidity?: number | null
           updated_at?: string
