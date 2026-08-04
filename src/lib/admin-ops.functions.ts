@@ -4,6 +4,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { buildCsv } from "@/lib/csv";
 import { z } from "zod";
 
 type Guard = typeof import("@/lib/admin-guard.server");
