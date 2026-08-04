@@ -17,6 +17,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { saveClientSecure, searchClientsByPii } from "@/lib/pii.functions";
 import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 import { normalizePiiValue } from "@/lib/crypto/pii.shared";
+import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -180,6 +182,14 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
   const saveSecure = useServerFn(saveClientSecure);
   const { data: mask } = useMaskedPii(activeOrgId, "client", editing?.id);
   const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
+  const draft = useDialogDraft<ClientForm>({
+    name: "clients",
+    open,
+    isNew: !editing,
+    userKey: activeOrgId ?? "anon",
+    form,
+    setForm,
+  });
 
   // reset form on every open (including two consecutive "new" records)
   const key = open ? (editing?.id ?? "new") : "closed";
@@ -211,6 +221,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
         },
       });
       toast.success(editing ? "تم التحديث" : "تم إنشاء العميل");
+      draft.clear();
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["pii-mask"] });
       onCreated?.(row);
@@ -229,6 +240,7 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل عميل" : "عميل جديد"} size="lg">
+      <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="الاسم الكامل *">
           <input value={form.full_name ?? ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} />
@@ -287,7 +299,10 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
           </FormField>
         </div>
       </div>
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <div className="me-auto">
+          <DraftStatus draft={draft as never} />
+        </div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>

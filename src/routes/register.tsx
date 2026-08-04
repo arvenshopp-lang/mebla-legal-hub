@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,7 +13,10 @@ import { validatePasswordPolicy } from "@/lib/password-policy.functions";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { translateAuthError, logAuthEvent } from "@/lib/auth-errors";
 import { useQuery } from "@tanstack/react-query";
-import { getSmsPublicConfig, requestPhoneCode, verifyPhoneCode } from "@/lib/sms/sms.functions";
+import { getSmsPublicConfig, verifyPhoneCode } from "@/lib/sms/sms.functions";
+import { formatCountdown, usePhoneChallenge } from "@/lib/sms/use-phone-challenge";
+import { useAutoSaveDraft } from "@/lib/drafts/use-autosave-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import {
   SMS_DISABLED_CONFIG,
   SMS_MESSAGES,
@@ -54,9 +57,8 @@ function RegisterPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [phoneCode, setPhoneCode] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   const { data: smsConfig } = useQuery({
     queryKey: ["sms-public-config"],
@@ -69,6 +71,32 @@ function RegisterPage() {
   const verificationRequired = showPhone && sms.requireVerification && !sms.outage;
   const phoneParsed = normalizePhone(phone, sms.defaultDialCode);
 
+  // خطوة التحقق محفوظة على الخادم: الرجوع من واتساب لا يُعيدها من الصفر
+  const challenge = usePhoneChallenge({
+    phone: phoneParsed.ok ? phoneParsed.e164 : null,
+    purpose: "signup",
+    resendWaitSeconds: sms.resendWaitSeconds,
+    enabled: showPhone && sms.requireVerification && !phoneVerified,
+  });
+
+  // الحفظ التلقائي: لا تُحفظ كلمة المرور ولا رمز التحقق إطلاقاً
+  const draftValue = useMemo(
+    () => ({ fullName, email, phone }),
+    [fullName, email, phone],
+  );
+  const restoreDraft = useCallback((value: Partial<{ fullName: string; email: string; phone: string }>) => {
+    if (typeof value.fullName === "string") setFullName(value.fullName);
+    if (typeof value.email === "string") setEmail(value.email);
+    if (typeof value.phone === "string") setPhone(value.phone);
+  }, []);
+  const draft = useAutoSaveDraft({
+    scope: "register",
+    userKey: "anon",
+    value: draftValue,
+    omit: ["password", "confirmPassword", "phoneCode"],
+    onRestore: restoreDraft,
+  });
+
   const strength = usePasswordStrength(password, { name: fullName, email });
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const passwordsMatch = password.length > 0 && password === confirmPassword;
@@ -80,41 +108,33 @@ function RegisterPage() {
   const canSubmit = formIsValid && strength.acceptable && !loading;
 
   const sendPhoneCode = async () => {
-    if (phoneBusy) return;
     if (!phoneParsed.ok) {
       setFormError(phoneParsed.message);
       return;
     }
-    setPhoneBusy(true);
     setFormError(null);
-    try {
-      const result = await requestPhoneCode({
-        data: { phone: phoneParsed.e164, purpose: "signup", email: emailValid ? email.trim().toLowerCase() : undefined },
-      });
-      setCodeSent(true);
+    const ok = await challenge.send();
+    if (ok) {
       setPhoneCode("");
       toast.success("تم إرسال رمز التحقق إلى جوالك", {
-        description: result.testMode ? "الخدمة في وضع الاختبار حالياً." : undefined,
+        description: challenge.testMode ? "الخدمة في وضع الاختبار حالياً." : undefined,
       });
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : SMS_MESSAGES.sendFailed);
-    } finally {
-      setPhoneBusy(false);
     }
   };
 
   const confirmPhoneCode = async () => {
-    if (phoneBusy || !phoneParsed.ok) return;
-    setPhoneBusy(true);
+    if (verifyBusy || !phoneParsed.ok) return;
+    setVerifyBusy(true);
     setFormError(null);
     try {
       await verifyPhoneCode({ data: { phone: phoneParsed.e164, code: phoneCode, purpose: "signup" } });
       setPhoneVerified(true);
+      challenge.reset();
       toast.success(SMS_MESSAGES.verified);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : SMS_MESSAGES.invalidCode);
     } finally {
-      setPhoneBusy(false);
+      setVerifyBusy(false);
     }
   };
 
@@ -213,6 +233,7 @@ function RegisterPage() {
       return;
     }
     if (data.session) {
+      draft.clear();
       const refreshed = await refresh();
       toast.success("تم إنشاء حسابك بنجاح");
       navigate({
@@ -220,6 +241,7 @@ function RegisterPage() {
         replace: true,
       } as never);
     } else {
+      draft.clear();
       setEmailSent(email.trim().toLowerCase());
       toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
     }
@@ -285,6 +307,7 @@ function RegisterPage() {
         <div className="h-px flex-1 bg-surface-muted" /> أو <div className="h-px flex-1 bg-surface-muted" />
       </div>
       <form onSubmit={submit} className="space-y-4">
+        <DraftPrompt draft={draft as never} />
         {formError && (
           <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-xs leading-6 text-danger">
             {formError}
@@ -317,7 +340,6 @@ function RegisterPage() {
                 onChange={(e) => {
                   setPhone(e.target.value);
                   setPhoneVerified(false);
-                  setCodeSent(false);
                 }}
                 className={inputCls + " text-center tracking-[0.12em]"}
               />
@@ -330,17 +352,25 @@ function RegisterPage() {
             )}
 
             {verificationRequired && !phoneVerified && (
-              <div className="flex flex-wrap items-end gap-2">
-                <button
-                  type="button"
-                  onClick={sendPhoneCode}
-                  disabled={phoneBusy || !phoneParsed.ok}
-                  className="min-h-[42px] rounded-[var(--radius-m)] border border-border bg-surface px-4 text-[13px] font-medium text-foreground transition hover:bg-surface-muted disabled:opacity-60"
-                >
-                  {codeSent ? "إعادة إرسال الرمز" : "إرسال رمز التحقق"}
-                </button>
-                {codeSent && (
-                  <>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={sendPhoneCode}
+                    disabled={challenge.busy || !phoneParsed.ok || (challenge.active && !challenge.canResend)}
+                    className="min-h-[42px] rounded-[var(--radius-m)] border border-border bg-surface px-4 text-[13px] font-medium text-foreground transition hover:bg-surface-muted disabled:opacity-60"
+                  >
+                    {challenge.busy
+                      ? "جاري الإرسال…"
+                      : challenge.active
+                        ? challenge.canResend
+                          ? "إعادة إرسال الرمز"
+                          : `إعادة الإرسال بعد ${formatCountdown(challenge.resendIn)}`
+                        : challenge.expired
+                          ? "إرسال رمز جديد"
+                          : "إرسال رمز التحقق"}
+                  </button>
+                  {(challenge.active || challenge.expired) && (
                     <input
                       value={phoneCode}
                       onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, "").slice(0, sms.codeLength))}
@@ -348,17 +378,36 @@ function RegisterPage() {
                       autoComplete="one-time-code"
                       dir="ltr"
                       aria-label="رمز التحقق"
+                      disabled={challenge.expired}
                       className={inputCls + " max-w-[150px] text-center font-mono tracking-[0.4em]"}
                     />
+                  )}
+                  {(challenge.active || challenge.expired) && (
                     <button
                       type="button"
                       onClick={confirmPhoneCode}
-                      disabled={phoneBusy || phoneCode.length < sms.codeLength}
+                      disabled={verifyBusy || challenge.expired || phoneCode.length < sms.codeLength}
                       className="min-h-[42px] rounded-[var(--radius-m)] bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-60"
                     >
-                      تأكيد الرمز
+                      {verifyBusy ? "جاري التحقق…" : "تأكيد الرمز"}
                     </button>
-                  </>
+                  )}
+                </div>
+                {challenge.active && (
+                  <p role="status" className="text-[12px] text-text-muted">
+                    الرمز صالح لمدة {formatCountdown(challenge.secondsLeft)}
+                    {challenge.attemptsLeft !== null ? ` — محاولات متبقية: ${challenge.attemptsLeft}` : ""}
+                  </p>
+                )}
+                {challenge.expired && (
+                  <p role="alert" className="text-[12px] text-warning">
+                    انتهت صلاحية الرمز. اطلب رمزاً جديداً لإكمال التوثيق.
+                  </p>
+                )}
+                {challenge.error && (
+                  <p role="alert" className="text-[12px] text-danger">
+                    {challenge.error}
+                  </p>
                 )}
               </div>
             )}
@@ -407,6 +456,7 @@ function RegisterPage() {
         >
           {loading ? "جاري الإنشاء…" : "إنشاء الحساب"}
         </button>
+        <DraftStatus draft={draft as never} />
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         لديك حساب بالفعل؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold text-foreground underline">تسجيل الدخول</Link>

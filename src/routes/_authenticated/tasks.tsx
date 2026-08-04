@@ -12,6 +12,8 @@ import {
   Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2, Check } from "lucide-react";
+import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   component: Page,
@@ -143,6 +145,14 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
   const [form, setForm] = useState<Partial<Form>>({});
+  const draft = useDialogDraft<Form>({
+    name: "tasks",
+    open,
+    isNew: !editing,
+    userKey: activeOrgId ?? "anon",
+    form,
+    setForm,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const key = editing?.id ?? "new";
@@ -184,6 +194,7 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    draft.clear();
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["case-tasks"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -192,6 +203,7 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل مهمة" : "مهمة جديدة"} size="lg" busy={loadingCases || loadingMembers} busyLabel="جاري تجهيز النموذج…">
+      <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2"><FormField label="العنوان *">
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
@@ -222,7 +234,8 @@ function TaskDialog({ open, onClose, editing, orgId, userId }: { open: boolean; 
         </FormField>
         <div className="md:col-span-2"><FormField label="الوصف"><textarea rows={3} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} /></FormField></div>
       </div>
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <div className="me-auto"><DraftStatus draft={draft as never} /></div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
         <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
       </div>

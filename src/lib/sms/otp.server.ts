@@ -641,3 +641,72 @@ export async function sendTestMessage(phone: string): Promise<{ traceRef: string
     throw new SmsFlowError(code, `تعذّر إرسال رسالة الاختبار: ${reason}`, traceRef);
   }
 }
+export type OtpChallengeState = {
+  /** هل يوجد رمز نشط لم يُستهلك ولم تنتهِ مدته؟ */
+  pending: boolean;
+  expiresAt: string | null;
+  /** ثوانٍ متبقية قبل السماح بإعادة الإرسال (0 = مسموح الآن). */
+  resendAfterSeconds: number;
+  attemptsLeft: number;
+  codeLength: number;
+  traceRef: string | null;
+  testMode: boolean;
+};
+
+/**
+ * حالة التحقق المحفوظة على الخادم — تُستخدم لإكمال نفس الخطوة عند رجوع المستخدم
+ * من تطبيق آخر. لا تكشف الرمز ولا بصمته، فقط المؤقت والمحاولات المتبقية.
+ */
+export async function peekOtpChallenge(phone: string, purpose: OtpPurpose): Promise<OtpChallengeState> {
+  const settings = await loadSmsSettings();
+  const { data } = await supabaseAdmin
+    .from("otp_verifications")
+    .select("expires_at, attempts, max_attempts, created_at, trace_ref, consumed_at, delivery_status")
+    .eq("phone_e164", phone)
+    .eq("purpose", purpose)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const row = data as
+    | {
+        expires_at: string;
+        attempts: number;
+        max_attempts: number;
+        created_at: string;
+        trace_ref: string | null;
+        consumed_at: string | null;
+        delivery_status: string;
+      }
+    | null;
+
+  if (!row) {
+    return {
+      pending: false,
+      expiresAt: null,
+      resendAfterSeconds: 0,
+      attemptsLeft: settings.max_verify_attempts,
+      codeLength: settings.code_length,
+      traceRef: null,
+      testMode: settings.test_mode,
+    };
+  }
+
+  const waited = (Date.now() - new Date(row.created_at).getTime()) / 1000;
+  const resendAfterSeconds = Math.max(0, Math.ceil(settings.resend_wait_seconds - waited));
+  const usable =
+    !row.consumed_at &&
+    row.delivery_status !== "failed" &&
+    new Date(row.expires_at).getTime() > Date.now() &&
+    row.attempts < row.max_attempts;
+
+  return {
+    pending: usable,
+    expiresAt: usable ? row.expires_at : null,
+    resendAfterSeconds: usable ? resendAfterSeconds : 0,
+    attemptsLeft: Math.max(0, row.max_attempts - row.attempts),
+    codeLength: settings.code_length,
+    traceRef: usable ? row.trace_ref : null,
+    testMode: settings.test_mode,
+  };
+}
