@@ -246,6 +246,7 @@ function RegisterPage() {
     } else {
       draft.clear();
       setEmailSent(email.trim().toLowerCase());
+      setResendAt(Date.now());
       toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
     }
   };
