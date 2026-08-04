@@ -59,7 +59,7 @@ function Row({ label, value }: { label: string; value: string }) {
  * كل حالة معروضة تأتي من الخادم: لا «متصل» بلا فحص فعلي، ولا تفعيل قبل استيفاء
  * الشروط، ولا عملية غير مدعومة تُعرض قابلة للنقر. لا تُعرض أي قيمة سر.
  */
-export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
+export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) {
   const qc = useQueryClient();
   const statusFn = useServerFn(getAgenticMailStatus);
   const logsFn = useServerFn(getAgenticMailLogs);
@@ -236,6 +236,19 @@ export function AgenticMailPanel({ canManage }: { canManage: boolean }) {
   }
 
   if (status.isLoading) return <LoadingBlock rows={4} cols={3} />;
+
+  if (status.isError) {
+    return (
+      <EmptyState
+        title="تعذّر عرض تكامل البريد الذكي"
+        hint={
+          status.error instanceof Error
+            ? status.error.message
+            : "تحقّق من صلاحياتك ثم أعد المحاولة."
+        }
+      />
+    );
+  }
 
   const data = status.data;
   if (!data) {
