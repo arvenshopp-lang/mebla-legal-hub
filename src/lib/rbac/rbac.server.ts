@@ -358,16 +358,27 @@ export async function authorize(
   const { data: restrictionRow } = await db
     .from("platform_staff_restrictions")
     .select(
-      "ip_enforced, allowed_ips, device_enforced, trusted_devices, time_enforced, work_start_minute, work_end_minute, allowed_weekdays",
+      "ip_enforced, allowed_ips, denied_ips, device_enforced, trusted_devices, blocked_devices, time_enforced, work_start_minute, work_end_minute, allowed_weekdays, effective_from, effective_to",
     )
     .eq("user_id", userId)
     .maybeSingle();
   const limits = restrictionRow as Restrictions | null;
 
-  if (limits?.ip_enforced && !ipAllowed(ctx.facts.ip, limits.allowed_ips ?? [])) await deny("ip_blocked");
-  if (limits?.device_enforced && !(limits.trusted_devices ?? []).includes(ctx.facts.fingerprint))
+  // القيود تسري داخل نافذة سريانها فقط (إن حُددت)
+  const nowMs = Date.now();
+  const restrictionsLive =
+    !!limits &&
+    (!limits.effective_from || new Date(limits.effective_from).getTime() <= nowMs) &&
+    (!limits.effective_to || new Date(limits.effective_to).getTime() > nowMs);
+
+  if (restrictionsLive && limits && ipAllowed(ctx.facts.ip, limits.denied_ips ?? [])) await deny("ip_blocked");
+  if (restrictionsLive && limits?.ip_enforced && !ipAllowed(ctx.facts.ip, limits.allowed_ips ?? []))
+    await deny("ip_blocked");
+  if (restrictionsLive && limits && (limits.blocked_devices ?? []).includes(ctx.facts.fingerprint))
     await deny("device_blocked");
-  if (limits?.time_enforced) {
+  if (restrictionsLive && limits?.device_enforced && !(limits.trusted_devices ?? []).includes(ctx.facts.fingerprint))
+    await deny("device_blocked");
+  if (restrictionsLive && limits?.time_enforced) {
     const { minutes, weekday } = riyadhNow();
     const inWindow = minutes >= limits.work_start_minute && minutes < limits.work_end_minute;
     const dayOk = (limits.allowed_weekdays ?? []).includes(weekday);
