@@ -230,8 +230,11 @@ function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
 function table(ctx: Ctx, spec: PdfTable): void {
   const right = A4.width - MARGIN;
 
+  // نبدأ الجدول في صفحة تتسع لعنوانه ورأسه وأول صفوفه، فلا يُفصل الرأس عن بياناته.
+  const opening = (spec.title ? 18 : 0) + 44 + Math.min(spec.rows.length || 1, 3) * 24;
+  ensureSpace(ctx, opening);
+
   if (spec.title) {
-    ensureSpace(ctx, 34);
     rightText(ctx, spec.title, right, ctx.y, 10);
     ctx.y -= 18;
   }
