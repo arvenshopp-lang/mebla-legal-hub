@@ -13,6 +13,7 @@ import {
 } from "@/lib/list-utils";
 import { Trash2, Copy } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
+import { INVITE_VALID_DAYS } from "@/lib/invitations.shared";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -22,6 +23,15 @@ const inviteSchema = z.object({
   email: z.string().trim().email("بريد غير صالح").max(255),
   role: z.enum(["admin", "lawyer", "legal_assistant", "viewer"]),
 });
+
+/** رابط الدعوة الرسمي: صفحة عامة تعالج الرمز وتُنفّذ الانضمام. */
+const inviteUrl = (token: string) => `${window.location.origin}/invite/${token}`;
+
+/** الحالة الفعلية للدعوة: "pending" منتهية الصلاحية تُعرض كمنتهية. */
+const effectiveInviteStatus = (inv: { status: string; expires_at: string | null }) =>
+  inv.status === "pending" && inv.expires_at && new Date(inv.expires_at).getTime() <= Date.now()
+    ? "expired"
+    : inv.status;
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
@@ -79,6 +89,7 @@ function Page() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success("تم إلغاء الدعوة"); qc.invalidateQueries({ queryKey: ["team-invitations"] }); setRevoking(null); },
+    onError: (e: any) => toast.error("تعذّر إلغاء الدعوة", { description: describeMutationError(e?.message ?? "") }),
   });
 
   const filtered = (members ?? []).filter((m: any) => {
@@ -150,22 +161,23 @@ function Page() {
               </thead>
               <tbody className="divide-y divide-border">
                 {invitations!.map((inv: any) => {
-                  const link = `${window.location.origin}/register?invite=${inv.token}`;
+                  const link = inviteUrl(inv.token);
+                  const status = effectiveInviteStatus(inv);
                   return (
                     <tr key={inv.id} className="hover:bg-surface-muted/40">
                       <Td>{inv.email}</Td>
                       <Td><Badge tone="muted">{ROLE_LABELS[inv.role as keyof typeof ROLE_LABELS]}</Badge></Td>
-                      <Td><Badge tone={inv.status === "pending" ? "warn" : inv.status === "accepted" ? "green" : "muted"}>{INVITATION_STATUS[inv.status]}</Badge></Td>
+                      <Td><Badge tone={status === "pending" ? "warn" : status === "accepted" ? "green" : "muted"}>{INVITATION_STATUS[status]}</Badge></Td>
                       <Td>{fmtDate(inv.expires_at)}</Td>
                       <Td>
-                        {inv.status === "pending" && (
+                        {status === "pending" && (
                           <button onClick={() => { navigator.clipboard.writeText(link); toast.success("تم نسخ الرابط"); }} className="inline-flex items-center gap-1 text-xs text-foreground underline">
                             <Copy className="h-3 w-3" /> نسخ
                           </button>
                         )}
                       </Td>
                       <Td>
-                        {inv.status === "pending" && <IconBtn tone="danger" aria-label="إلغاء الدعوة" title="إلغاء الدعوة" loading={revoke.isPending && revoking?.id === inv.id} onClick={() => setRevoking(inv)}><Trash2 className="h-4 w-4" /></IconBtn>}
+                        {status === "pending" && <IconBtn tone="danger" aria-label="إلغاء الدعوة" title="إلغاء الدعوة" loading={revoke.isPending && revoking?.id === inv.id} onClick={() => setRevoking(inv)}><Trash2 className="h-4 w-4" /></IconBtn>}
                       </Td>
                     </tr>
                   );
@@ -203,15 +215,26 @@ function InviteDialog({ open, onClose, orgId, userId }: { open: boolean; onClose
       return;
     }
     setSaving(true);
-    const token = crypto.randomUUID().replace(/-/g, "");
-    const expires = new Date(); expires.setDate(expires.getDate() + 14);
+    const inviteEmail = res.data.email.toLowerCase();
+    const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "");
+    const expires = new Date();
+    expires.setDate(expires.getDate() + INVITE_VALID_DAYS);
+
+    // إعادة الإرسال لنفس البريد تُلغي الدعوة القائمة حتى لا تبقى روابط متعددة صالحة
+    await supabase
+      .from("organization_invitations")
+      .update({ status: "revoked" })
+      .eq("organization_id", orgId)
+      .eq("email", inviteEmail)
+      .eq("status", "pending");
+
     const { data, error } = await supabase.from("organization_invitations").insert({
-      organization_id: orgId, email: res.data.email, role: res.data.role,
+      organization_id: orgId, email: inviteEmail, role: res.data.role,
       token, status: "pending", expires_at: expires.toISOString(), invited_by: userId,
-    }).select().single();
+    }).select("token").single();
     setSaving(false);
     if (error) return toast.error("تعذّر الإرسال", { description: describeMutationError(error.message) });
-    setLink(`${window.location.origin}/register?invite=${data.token}`);
+    setLink(inviteUrl(data.token));
     toast.success("تم إنشاء الدعوة");
     qc.invalidateQueries({ queryKey: ["team-invitations"] });
   };
