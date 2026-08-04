@@ -128,6 +128,7 @@ export type TicketFilters = {
   organizationId?: string;
   onlyBreached?: boolean;
   onlyUnassigned?: boolean;
+  needsReview?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -156,8 +157,10 @@ export async function listTickets(
   if (filters.assignedTo === "me") query = query.eq("assigned_to", actor.userId);
   else if (filters.assignedTo && filters.assignedTo !== "all") query = query.eq("assigned_to", filters.assignedTo);
   if (filters.onlyUnassigned) query = query.is("assigned_to", null);
-  if (filters.slaState && filters.slaState !== "all") query = query.eq("sla_state", filters.slaState);
+  if (filters.slaState === "at_risk") query = query.in("sla_state", ["warning", "critical"]);
+  else if (filters.slaState && filters.slaState !== "all") query = query.eq("sla_state", filters.slaState);
   if (filters.onlyBreached) query = query.eq("sla_state", "breached");
+  if (filters.needsReview) query = query.eq("needs_identity_review", true);
   if (filters.organizationId) query = query.eq("organization_id", filters.organizationId);
 
   const term = (filters.search ?? "").trim().replace(/[,()]/g, "");
