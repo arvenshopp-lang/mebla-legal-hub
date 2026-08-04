@@ -789,17 +789,7 @@ export const createOfficeSupportTicket = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as unknown as { from: (t: string) => never };
-
-    if (data.clientRequestId) {
-      const { claimIdempotency } = await ctxMod();
-      const { data: seen } = await (db as never as { from: (t: string) => never })
-        .from("support_ticket_ingest")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select("ticket_id") as any;
-      void seen;
-      void claimIdempotency;
-    }
+    const db = supabaseAdmin as never;
 
     const { createTicket } = await engine();
     const created = await createTicket(db as never, {
