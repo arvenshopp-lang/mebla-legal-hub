@@ -235,7 +235,22 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
           {errors.full_name && <span className="text-xs text-danger">{errors.full_name}</span>}
         </FormField>
         <FormField label="نوع العميل *">
-          <select value={form.client_type ?? "individual"} onChange={(e) => setForm({ ...form, client_type: e.target.value as any })} className={inputCls}>
+          <select
+            value={form.client_type ?? "individual"}
+            onChange={(e) => {
+              const next = e.target.value as ClientForm["client_type"];
+              // تفريغ حقول الجهة عند التحويل إلى «فرد» حتى لا تُحفظ بيانات لا تنتمي للعميل
+              setForm((prev) => (next === "individual"
+                ? { ...prev, client_type: next, company_name: null }
+                : { ...prev, client_type: next }));
+              setPiiEdit(null);
+              setErrors((prev) => {
+                const { company_name: _omit, ...rest } = prev;
+                return rest;
+              });
+            }}
+            className={inputCls}
+          >
             {asOptions(CLIENT_TYPE).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </FormField>
