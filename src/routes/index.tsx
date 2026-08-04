@@ -29,6 +29,45 @@ export const Route = createFileRoute("/")({
       { name: "twitter:image", content: "https://mehlalex.com/og-mehlalex-v2.jpg" },
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://mehlalex.com/#organization",
+              name: "مِهلة | MehlaLex",
+              alternateName: "MehlaLex",
+              url: "https://mehlalex.com/",
+              logo: "https://mehlalex.com/og-mehlalex-v2.jpg",
+              description: DESCRIPTION,
+              areaServed: { "@type": "Country", name: "السعودية" },
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://mehlalex.com/#website",
+              url: "https://mehlalex.com/",
+              name: TITLE,
+              description: DESCRIPTION,
+              inLanguage: "ar-SA",
+              publisher: { "@id": "https://mehlalex.com/#organization" },
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "مِهلة | MehlaLex",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              url: "https://mehlalex.com/",
+              inLanguage: "ar-SA",
+              description: DESCRIPTION,
+              publisher: { "@id": "https://mehlalex.com/#organization" },
+            },
+          ],
+        }),
+      },
+    ],
   }),
 });
 
