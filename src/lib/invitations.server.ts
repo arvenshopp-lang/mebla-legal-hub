@@ -60,7 +60,13 @@ export async function createTeamInvitation(input: {
   email: string;
   role: InviteRole;
   origin: string;
-}): Promise<{ token: string; inviteUrl: string; emailSent: boolean; emailReason?: string }> {
+}): Promise<{
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailReason?: string;
+  emailRef?: string;
+}> {
   const email = normalizeEmail(input.email);
 
   const { data: membership, error: membershipError } = await input.supabase
@@ -241,6 +247,21 @@ export async function acceptInvitation(
     .update({ status: "accepted" })
     .eq("id", row.id)
     .eq("status", "pending");
+
+  // سجل تدقيق غير قابل للتعديل: قبول الدعوة وإبطال الرابط نهائياً.
+  await supabaseAdmin.from("activity_logs").insert({
+    organization_id: row.organization_id,
+    user_id: userId,
+    action: "member.invite_accepted",
+    entity_type: "organization_invitation",
+    entity_id: row.id,
+    description: `قبول دعوة الانضمام بصفة ${ROLE_LABEL[row.role]}`,
+    metadata: {
+      role: row.role,
+      invited_email: maskEmail(row.email),
+      already_member: !!existing && existing.status === "active",
+    } as never,
+  });
 
   if (row.invited_by) {
     const { data: profile } = await supabaseAdmin
