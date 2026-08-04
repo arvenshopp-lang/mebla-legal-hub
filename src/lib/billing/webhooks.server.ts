@@ -1,0 +1,371 @@
+/**
+ * استقبال ومعالجة رسائل مزودي الدفع (Webhooks).
+ *
+ * الضمانات:
+ * - قائمة سماح للمزودين: لا يُقبل إلا مزوّد مُعرّف يدعم الرسائل الواردة.
+ * - تحقق توقيع إلزامي قبل أي معالجة.
+ * - منع التكرار (Idempotency) وحماية إعادة الإرسال (Replay) بمعرّف الحدث.
+ * - عدم تكرار احتساب الدفعة: التحديث يتم بالمعرّف الخارجي فقط داخل المحرك.
+ * - Payload يُحفظ بعد إخفاء الحقول الحساسة.
+ * - طابور إعادة محاولة ثم طابور رسائل فاشلة نهائياً (Dead Letter).
+ * - تحديد معدل الطلبات، وسجل نجاح/فشل، ولا تُكشف أي أسرار أو أثر تنفيذ.
+ */
+import { getProvider } from "./providers.server";
+import { applyProviderPaymentState, logAttempt, newCorrelationId, type BillingCtx } from "./billing.server";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = any;
+
+const MAX_BODY_BYTES = 64 * 1024;
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX_PER_WINDOW = 120;
+const MAX_ATTEMPTS = 5;
+const RETRY_BACKOFF_MS = [60_000, 300_000, 900_000, 3_600_000, 10_800_000];
+
+const SENSITIVE_KEY = /(secret|token|password|api[_-]?key|authorization|cvv|cvc|pan|iban|card[_-]?number|number$)/i;
+
+async function db(): Promise<AnyClient> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin as unknown as AnyClient;
+}
+
+/** إخفاء الحقول الحساسة قبل الحفظ — يُحتفظ بآخر 4 خانات فقط عند وجود قيمة. */
+export function maskSensitive(value: unknown, depth = 0): unknown {
+  if (depth > 6) return "[عميق]";
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => maskSensitive(item, depth + 1));
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+      if (SENSITIVE_KEY.test(key)) {
+        const text = typeof raw === "string" ? raw : "";
+        out[key] = text.length > 4 ? `••••${text.slice(-4)}` : "••••";
+      } else {
+        out[key] = maskSensitive(raw, depth + 1);
+      }
+    }
+    return out;
+  }
+  if (typeof value === "string") return value.length > 2000 ? `${value.slice(0, 2000)}…` : value;
+  return value;
+}
+
+const SAFE_HEADERS = [
+  "content-type",
+  "user-agent",
+  "cf-ray",
+  "x-request-id",
+  "x-moyasar-signature",
+  "x-forwarded-for",
+];
+
+function safeHeaders(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    if (!SAFE_HEADERS.includes(lower)) return;
+    out[lower] = lower.includes("signature") ? `${value.slice(0, 8)}…(${value.length})` : value.slice(0, 200);
+  });
+  return out;
+}
+
+function allHeaders(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    out[key.toLowerCase()] = value;
+  });
+  return out;
+}
+
+type Outcome = { status: number; body: Record<string, unknown> };
+
+const ok = (body: Record<string, unknown> = {}): Outcome => ({ status: 200, body: { received: true, ...body } });
+
+/** المزوّدون المسموح لهم بإرسال رسائل واردة — يجب أن يكونوا مُعرّفين في قاعدة البيانات. */
+const PROVIDER_ALLOWLIST = new Set(["moyasar"]);
+
+export async function handleProviderWebhook(providerCode: string, request: Request): Promise<Outcome> {
+  const correlationId = newCorrelationId("whk");
+  const requestId = request.headers.get("cf-ray") ?? request.headers.get("x-request-id") ?? correlationId;
+  const code = String(providerCode ?? "").toLowerCase();
+
+  if (!PROVIDER_ALLOWLIST.has(code)) return { status: 404, body: { error: "مزوّد غير معروف." } };
+
+  const client = await db();
+
+  const { data: config } = await client
+    .from("platform_payment_provider_configs")
+    .select("code, supports_webhooks, settings")
+    .eq("code", code)
+    .maybeSingle();
+  if (!config || !config.supports_webhooks) return { status: 404, body: { error: "مزوّد غير معروف." } };
+
+  // تحديد معدل الطلبات لكل مزوّد
+  const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+  const { count: recent } = await client
+    .from("platform_payment_webhooks")
+    .select("id", { count: "exact", head: true })
+    .eq("provider", code)
+    .gte("received_at", since);
+  if ((recent ?? 0) >= RATE_MAX_PER_WINDOW) {
+    return { status: 429, body: { error: "تم تجاوز الحد المسموح مؤقتاً." } };
+  }
+
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_BYTES) return { status: 413, body: { error: "حجم الرسالة كبير جداً." } };
+
+  const provider = getProvider(code);
+  const headers = allHeaders(request.headers);
+  const storedHeaders = safeHeaders(request.headers);
+
+  // تحقق التوقيع قبل أي معالجة
+  let signatureValid = false;
+  try {
+    const { IntegrationSecretVault } = await import("@/lib/integrations/vault.server");
+    const settings = (config.settings ?? {}) as Record<string, unknown>;
+    const reference =
+      typeof settings["secret_reference"] === "string" && settings["secret_reference"]
+        ? (settings["secret_reference"] as string)
+        : `payment_provider_${code}`;
+    const creds = await IntegrationSecretVault.getSecretsServerSide(reference);
+    signatureValid = provider.validateWebhookSignature({ rawBody, headers, creds });
+  } catch {
+    signatureValid = false;
+  }
+
+  let parsed: ReturnType<typeof provider.handleWebhook> | null = null;
+  try {
+    parsed = provider.handleWebhook(rawBody);
+  } catch {
+    parsed = null;
+  }
+
+  let maskedBody = "{}";
+  try {
+    maskedBody = JSON.stringify(maskSensitive(JSON.parse(rawBody))).slice(0, 20_000);
+  } catch {
+    maskedBody = JSON.stringify({ note: "تعذّر تحليل الرسالة" });
+  }
+
+  if (!signatureValid) {
+    await client.from("platform_payment_webhooks").insert({
+      provider: code,
+      event_id: parsed?.eventId ?? null,
+      event_type: parsed?.eventType ?? null,
+      signature_valid: false,
+      replay_detected: false,
+      request_id: requestId,
+      correlation_id: correlationId,
+      raw_headers: storedHeaders as never,
+      raw_body: maskedBody,
+      status: "failed",
+      last_error: "توقيع غير صالح",
+      attempts: 0,
+    });
+    await logAttempt({
+      provider: code,
+      operation: "webhook",
+      status: "failed",
+      errorCode: "INVALID_SIGNATURE",
+      errorMessage: "توقيع غير صالح",
+      requestId,
+      correlationId,
+      response: { signature_valid: false },
+    });
+    return { status: 401, body: { error: "توقيع غير صالح." } };
+  }
+
+  // منع التكرار وحماية إعادة الإرسال
+  if (parsed?.eventId) {
+    const { data: existing } = await client
+      .from("platform_payment_webhooks")
+      .select("id, status")
+      .eq("provider", code)
+      .eq("event_id", parsed.eventId)
+      .in("status", ["processed", "ignored"])
+      .maybeSingle();
+    if (existing) {
+      await client.from("platform_payment_webhooks").insert({
+        provider: code,
+        event_id: parsed.eventId,
+        event_type: parsed.eventType ?? null,
+        signature_valid: true,
+        replay_detected: true,
+        request_id: requestId,
+        correlation_id: correlationId,
+        raw_headers: storedHeaders as never,
+        raw_body: maskedBody,
+        status: "ignored",
+        last_error: "حدث مكرر — تم تجاهله دون احتساب الدفعة مرتين",
+        processed_at: new Date().toISOString(),
+        attempts: 0,
+      });
+      return ok({ duplicate: true });
+    }
+  }
+
+  const { data: inserted } = await client
+    .from("platform_payment_webhooks")
+    .insert({
+      provider: code,
+      event_id: parsed?.eventId ?? null,
+      event_type: parsed?.eventType ?? null,
+      signature_valid: true,
+      replay_detected: false,
+      request_id: requestId,
+      correlation_id: correlationId,
+      raw_headers: storedHeaders as never,
+      raw_body: maskedBody,
+      status: "received",
+      attempts: 0,
+    })
+    .select("id")
+    .maybeSingle();
+
+  const rowId = (inserted?.id as string | undefined) ?? null;
+  const result = await processEvent({
+    rowId,
+    provider: code,
+    correlationId,
+    requestId,
+    event: parsed,
+    attempts: 0,
+  });
+  return result;
+}
+
+type ProcessInput = {
+  rowId: string | null;
+  provider: string;
+  correlationId: string;
+  requestId: string;
+  event: { eventId: string | null; eventType: string | null; providerPaymentId: string | null; status: string | null; amount: number | null } | null;
+  attempts: number;
+};
+
+async function processEvent(input: ProcessInput): Promise<Outcome> {
+  const client = await db();
+  const started = Date.now();
+
+  const finish = async (patch: Record<string, unknown>) => {
+    if (input.rowId) await client.from("platform_payment_webhooks").update(patch).eq("id", input.rowId);
+  };
+
+  if (!input.event?.providerPaymentId || !input.event.status) {
+    await finish({ status: "ignored", processed_at: new Date().toISOString(), last_error: "حدث غير مرتبط بدفعة" });
+    return ok({ ignored: true });
+  }
+
+  try {
+    const applied = await applyProviderPaymentState({
+      provider: input.provider,
+      providerPaymentId: input.event.providerPaymentId,
+      status: input.event.status as never,
+      amount: input.event.amount,
+      correlationId: input.correlationId,
+    });
+    await finish({
+      status: applied.applied ? "processed" : "ignored",
+      payment_id: applied.paymentId,
+      invoice_id: applied.invoiceId,
+      processed_at: new Date().toISOString(),
+      last_error: applied.applied ? null : "لا توجد دفعة مطابقة للمعرّف الخارجي",
+      next_retry_at: null,
+    });
+    await logAttempt({
+      paymentId: applied.paymentId,
+      invoiceId: applied.invoiceId,
+      provider: input.provider,
+      operation: "webhook",
+      status: "success",
+      providerStatus: input.event.status,
+      requestId: input.requestId,
+      correlationId: input.correlationId,
+      response: { applied: applied.applied },
+      durationMs: Date.now() - started,
+    });
+    return ok({ processed: applied.applied });
+  } catch (error) {
+    const attempts = input.attempts + 1;
+    const dead = attempts >= MAX_ATTEMPTS;
+    const backoff = RETRY_BACKOFF_MS[Math.min(attempts - 1, RETRY_BACKOFF_MS.length - 1)] ?? 60_000;
+    const message = error instanceof Error ? error.message : "خطأ غير معروف";
+    await finish({
+      status: dead ? "dead_letter" : "failed",
+      attempts,
+      last_error: message.slice(0, 300),
+      next_retry_at: dead ? null : new Date(Date.now() + backoff).toISOString(),
+    });
+    await logAttempt({
+      provider: input.provider,
+      operation: "webhook",
+      status: "failed",
+      errorCode: dead ? "DEAD_LETTER" : "RETRY_SCHEDULED",
+      errorMessage: message.slice(0, 300),
+      requestId: input.requestId,
+      correlationId: input.correlationId,
+      durationMs: Date.now() - started,
+    });
+    // نُعيد 200 حتى لا يُغرق المزوّد المسار؛ إعادة المحاولة تتم من طابورنا الداخلي.
+    return ok({ queued: true });
+  }
+}
+
+/** إعادة معالجة الرسائل الفاشلة المستحقة، ثم ترحيل المستنفدة إلى طابور الرسائل الفاشلة نهائياً. */
+export async function processRetryQueue(limit = 20): Promise<{ retried: number; processed: number; deadLetter: number }> {
+  const client = await db();
+  const { data } = await client
+    .from("platform_payment_webhooks")
+    .select("id, provider, event_id, event_type, raw_body, attempts, correlation_id, request_id")
+    .eq("status", "failed")
+    .lte("next_retry_at", new Date().toISOString())
+    .order("next_retry_at")
+    .limit(Math.min(Math.max(limit, 1), 50));
+
+  const rows = (data ?? []) as Record<string, unknown>[];
+  let processed = 0;
+  let deadLetter = 0;
+
+  for (const row of rows) {
+    const provider = getProvider(row["provider"] as string);
+    let event: ProcessInput["event"] = null;
+    try {
+      event = provider.handleWebhook(String(row["raw_body"] ?? "{}")) as never;
+    } catch {
+      event = null;
+    }
+    const outcome = await processEvent({
+      rowId: row["id"] as string,
+      provider: row["provider"] as string,
+      correlationId: (row["correlation_id"] as string) ?? newCorrelationId("whk"),
+      requestId: (row["request_id"] as string) ?? "retry",
+      event,
+      attempts: Number(row["attempts"] ?? 0),
+    });
+    if (outcome.body["processed"]) processed += 1;
+    const { data: after } = await client
+      .from("platform_payment_webhooks")
+      .select("status")
+      .eq("id", row["id"])
+      .maybeSingle();
+    if (after?.status === "dead_letter") deadLetter += 1;
+  }
+
+  return { retried: rows.length, processed, deadLetter };
+}
+
+export async function listWebhookEvents(
+  _ctx: BillingCtx,
+  filters: { status?: string | null; page: number; pageSize: number },
+): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+  const client = await db();
+  let query = client
+    .from("platform_payment_webhooks")
+    .select(
+      "id, provider, event_id, event_type, signature_valid, replay_detected, status, attempts, last_error, next_retry_at, processed_at, received_at, payment_id, invoice_id, correlation_id",
+      { count: "exact" },
+    );
+  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+  const from = (filters.page - 1) * filters.pageSize;
+  const { data, count } = await query.order("received_at", { ascending: false }).range(from, from + filters.pageSize - 1);
+  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+}
