@@ -628,78 +628,114 @@ export const getSupportConfig = createServerFn({ method: "POST" })
     };
   });
 
-function configFn<T>(
-  permission: "support.manage_sla" | "support.manage_categories",
-  parse: (input: unknown) => T,
-  action: string,
-  run: (
-    mod: typeof import("./config.server"),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db: any,
-    input: T,
-  ) => Promise<unknown>,
-) {
-  return createServerFn({ method: "POST" })
-    .middleware([requireSupabaseAuth])
-    .inputValidator(parse)
-    .handler(async ({ data, context }) => {
-      const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
-      const ctx = await supportCtx(context.supabase, context.userId, permission);
-      const mod = await import("./config.server");
-      try {
-        await run(mod, ctx.db, data as T);
-        await auditSupport(ctx, {
-          action,
-          entityType: "support_config",
-          description: action,
-          after: data as Record<string, unknown>,
-        });
-        return { ok: true as const };
-      } catch (error) {
-        throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
-      }
-    });
-}
+export const saveSupportTeam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => teamSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveTeam(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.team.save",
+        entityType: "support_config",
+        description: "support.team.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportTeam = configFn(
-  "support.manage_sla",
-  (input) => teamSchema.parse(input),
-  "support.team.save",
-  (mod, db, input) => mod.saveTeam(db, input),
-);
+export const saveSupportTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => teamMemberSchema.extend({ remove: z.boolean().optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.setTeamMember(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.team.member",
+        entityType: "support_config",
+        description: "support.team.member",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportTeamMember = configFn(
-  "support.manage_sla",
-  (input) => teamMemberSchema.extend({ remove: z.boolean().optional() }).parse(input),
-  "support.team.member",
-  (mod, db, input) => mod.setTeamMember(db, input),
-);
+export const saveSupportCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => categorySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveCategory(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.category.save",
+        entityType: "support_config",
+        description: "support.category.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportCategory = configFn(
-  "support.manage_categories",
-  (input) => categorySchema.parse(input),
-  "support.category.save",
-  (mod, db, input) => mod.saveCategory(db, input),
-);
+export const saveSupportPolicy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => slaPolicySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.savePolicy(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.sla_policy.save",
+        entityType: "support_config",
+        description: "support.sla_policy.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportPolicy = configFn(
-  "support.manage_sla",
-  (input) => slaPolicySchema.parse(input),
-  "support.sla_policy.save",
-  (mod, db, input) => mod.savePolicy(db, input),
-);
+export const saveSupportRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => escalationRuleSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveRule(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.escalation_rule.save",
+        entityType: "support_config",
+        description: "support.escalation_rule.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportRule = configFn(
-  "support.manage_sla",
-  (input) => escalationRuleSchema.parse(input),
-  "support.escalation_rule.save",
-  (mod, db, input) => mod.saveRule(db, input),
-);
-
-export const saveSupportTag = configFn(
-  "support.manage_categories",
-  (input) =>
-    z
+export const saveSupportTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         id: uuid.optional(),
         nameAr: z.string().trim().min(1, "اسم الوسم مطلوب").max(60),
@@ -708,22 +744,49 @@ export const saveSupportTag = configFn(
           .trim()
           .regex(/^#[0-9a-fA-F]{6}$/, "اللون بصيغة #RRGGBB"),
       })
-      .parse(input),
-  "support.tag.save",
-  (mod, db, input) => mod.saveTag(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveTag(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.tag.save",
+        entityType: "support_config",
+        description: "support.tag.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const deleteSupportTag = configFn(
-  "support.manage_categories",
-  (input) => z.object({ id: uuid }).parse(input),
-  "support.tag.delete",
-  (mod, db, input) => mod.deleteTag(db, input.id),
-);
+export const deleteSupportTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.deleteTag(ctx.db, data.id);
+      await auditSupport(ctx, {
+        action: "support.tag.delete",
+        entityType: "support_config",
+        description: "support.tag.delete",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportCalendar = configFn(
-  "support.manage_sla",
-  (input) =>
-    z
+export const saveSupportCalendar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         id: uuid.optional(),
         code: z
@@ -737,31 +800,72 @@ export const saveSupportCalendar = configFn(
         endMinute: z.number().int().min(1).max(1440),
         isActive: z.boolean().optional(),
       })
-      .parse(input),
-  "support.calendar.save",
-  (mod, db, input) => mod.saveCalendar(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveCalendar(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.calendar.save",
+        entityType: "support_config",
+        description: "support.calendar.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportHoliday = configFn(
-  "support.manage_sla",
-  (input) =>
-    z
+export const saveSupportHoliday = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         calendarId: uuid,
         holidayDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "التاريخ بصيغة سنة-شهر-يوم"),
         nameAr: z.string().trim().min(1, "اسم العطلة مطلوب").max(120),
       })
-      .parse(input),
-  "support.holiday.save",
-  (mod, db, input) => mod.saveHoliday(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveHoliday(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.holiday.save",
+        entityType: "support_config",
+        description: "support.holiday.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const deleteSupportHoliday = configFn(
-  "support.manage_sla",
-  (input) => z.object({ id: uuid }).parse(input),
-  "support.holiday.delete",
-  (mod, db, input) => mod.deleteHoliday(db, input.id),
-);
+export const deleteSupportHoliday = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.deleteHoliday(ctx.db, data.id);
+      await auditSupport(ctx, {
+        action: "support.holiday.delete",
+        entityType: "support_config",
+        description: "support.holiday.delete",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
 /* ------------------------------------------------- تذكرة من بوابة المكتب */
 
