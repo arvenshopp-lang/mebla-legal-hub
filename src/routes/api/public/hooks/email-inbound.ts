@@ -286,12 +286,35 @@ async function handle(request: Request) {
       },
     });
 
+    // ربط مركز الدعم: صناديق الدعم تُولّد تذكرة أو تُضيف رداً إلى تذكرة قائمة.
+    // فشل الربط لا يُبطل استيعاب البريد — يُسجَّل ويُعاد للمزوّد نجاح الاستقبال.
+    let ticket: { outcome: string; ticket_number: string | null } | null = null;
+    try {
+      const { linkInboundToTicket } = await import("@/lib/support/ingest.server");
+      const linked = await linkInboundToTicket(db, {
+        mailboxId: result.mailboxId,
+        threadId: result.threadId,
+        emailMessageId: result.messageId,
+        recipient: parsed.to,
+        from: parsed.from,
+        fromName: parsed.fromName ?? null,
+        subject: parsed.subject ?? null,
+        body: (parsed.text ?? parsed.html ?? "").slice(0, 20_000),
+        providerMessageId: parsed.messageId ?? null,
+        duplicate: result.duplicate,
+      });
+      ticket = { outcome: linked.outcome, ticket_number: linked.ticketNumber };
+    } catch (error) {
+      console.error("[email-inbound] support-link", error instanceof Error ? error.message : error);
+    }
+
     return json({
       success: true,
       duplicate: result.duplicate,
       thread_id: result.threadId,
       attachments_accepted: result.attachmentsAccepted,
       attachments_rejected: result.attachmentsRejected,
+      ticket,
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "تعذّر الاستيعاب";
