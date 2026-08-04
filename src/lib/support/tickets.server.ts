@@ -810,8 +810,9 @@ export async function escalateTicket(
   await writeTicketEvent(db, {
     ticketId: input.ticketId,
     eventType: "escalated",
-    actorId: actor.userId,
+    actorId: actor.userId || null,
     actorName: actor.name,
+    actorKind: actor.userId ? "staff" : "system",
     before: { level: (ticket["escalation_level"] as number) ?? 0, team_id: ticket["team_id"] },
     after: { level, team_id: targetTeam ?? ticket["team_id"] },
     reason: input.reason,
