@@ -41,7 +41,7 @@ export function maskSensitive(value: unknown, depth = 0): unknown {
         const text = typeof raw === "string" ? raw : "";
         out[key] = text.length > 4 ? `••••${text.slice(-4)}` : "••••";
       } else {
-        out[key] = maskSensitive(raw, depth + 1);
+        out[key] = maskSensitive(raw, depth + 1) as never;
       }
     }
     return out;
