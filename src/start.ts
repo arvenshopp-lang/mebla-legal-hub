@@ -59,8 +59,11 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
+// ملاحظة: مسارات /lovable/* هي مسارات خادم (server routes) وليست server functions،
+// لذا لا تمر على حرس CSRF أصلاً. تجنّب استدعاء getRequest() داخل الـ filter لأنه
+// يُنفَّذ في حزمة المتصفح أيضاً (وهو ما يمنعه حرس الاستيراد في البناء).
 const csrfMiddleware = createCsrfMiddleware({
-  filter: (ctx) => ctx.handlerType === "serverFn" && !isLovableInternalRequest(),
+  filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
 // حارس بنية النطاقات الفرعية (app / client / upload / status / api / docs / www)
