@@ -145,7 +145,7 @@ export async function listInvoices(
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب الفواتير.");
 
-  const rows = (data ?? []).map((row: Record<string, unknown> & { organizations?: { name?: string } }) => ({
+  const rows = (data ?? []).map((row: BillingRow & { organizations?: { name?: string } }) => ({
     ...(row as unknown as InvoiceRow),
     organization_name: row.organizations?.name ?? null,
   })) as InvoiceRow[];
@@ -175,11 +175,11 @@ export async function getInvoiceDetail(_ctx: BillingCtx, id: string): Promise<In
       .order("created_at", { ascending: false }),
   ]);
 
-  const row = data as Record<string, unknown> & { organizations?: { name?: string } };
+  const row = data as BillingRow & { organizations?: { name?: string } };
   return {
     ...(row as unknown as InvoiceDetail),
     organization_name: row.organizations?.name ?? null,
-    items: (items.data ?? []).map((i: Record<string, unknown>) => ({
+    items: (items.data ?? []).map((i: BillingRow) => ({
       id: i["id"] as string,
       description: i["description"] as string,
       quantity: Number(i["quantity"]),
@@ -193,7 +193,7 @@ export async function getInvoiceDetail(_ctx: BillingCtx, id: string): Promise<In
     payments: (payments.data ?? []) as InvoiceDetail["payments"],
     refunds: (refunds.data ?? []) as InvoiceDetail["refunds"],
     credit_notes: (creditNotes.data ?? []) as InvoiceDetail["credit_notes"],
-    notes_log: (notes.data ?? []).map((n: Record<string, unknown>) => ({
+    notes_log: (notes.data ?? []).map((n: BillingRow) => ({
       id: n["id"] as string,
       body: n["body"] as string,
       author_email: (n["author_email"] as string | null) ?? null,
@@ -298,14 +298,14 @@ export async function saveDraft(ctx: BillingCtx, input: DraftInput): Promise<str
   return invoiceId;
 }
 
-async function safeInvoiceSnapshot(id: string): Promise<Record<string, unknown> | null> {
+async function safeInvoiceSnapshot(id: string): Promise<BillingRow | null> {
   const client = await db();
   const { data } = await client
     .from("platform_invoices")
     .select("number, status, subtotal, discount_total, tax_total, total, paid_total, refunded_total, remaining, due_at, issued_at")
     .eq("id", id)
     .maybeSingle();
-  return (data as Record<string, unknown> | null) ?? null;
+  return (data as BillingRow | null) ?? null;
 }
 
 export async function issueInvoice(
@@ -392,7 +392,7 @@ export async function cancelInvoice(ctx: BillingCtx, input: { id: string; reason
 export async function listPayments(
   _ctx: BillingCtx,
   filters: { search?: string | null; status?: string | null; method?: string | null; page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
     .from("platform_payments")
@@ -409,7 +409,7 @@ export async function listPayments(
     .order("created_at", { ascending: false })
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب الدفعات.");
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
 export async function recordPayment(
@@ -552,7 +552,7 @@ export async function decidePayment(
 export async function listRefunds(
   _ctx: BillingCtx,
   filters: { status?: string | null; page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
     .from("platform_refunds")
@@ -563,7 +563,7 @@ export async function listRefunds(
     .order("created_at", { ascending: false })
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب الاستردادات.");
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
 export async function createRefund(
@@ -716,7 +716,7 @@ export async function decideRefund(
 export async function listCreditNotes(
   _ctx: BillingCtx,
   filters: { page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   const start = (filters.page - 1) * filters.pageSize;
   const { data, count, error } = await client
@@ -725,7 +725,7 @@ export async function listCreditNotes(
     .order("issued_at", { ascending: false })
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب إشعارات الخصم.");
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
 export async function createCreditNote(
@@ -817,7 +817,7 @@ export async function addNote(
 export async function listReconciliations(
   _ctx: BillingCtx,
   filters: { status?: string | null; page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client.from("platform_bank_reconciliations").select("*", { count: "exact" });
   if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
@@ -826,7 +826,7 @@ export async function listReconciliations(
     .order("value_date", { ascending: false })
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب الحركات البنكية.");
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
 export async function addBankEntry(
@@ -910,8 +910,8 @@ export async function ignoreBankEntry(ctx: BillingCtx, input: { entryId: string;
 /* --------------------------------------------------------- الفترات المالية */
 
 export async function listPeriods(_ctx: BillingCtx): Promise<{
-  periods: Record<string, unknown>[];
-  requests: Record<string, unknown>[];
+  periods: BillingRow[];
+  requests: BillingRow[];
 }> {
   const client = await db();
   const [periods, requests] = await Promise.all([
@@ -923,8 +923,8 @@ export async function listPeriods(_ctx: BillingCtx): Promise<{
       .limit(30),
   ]);
   return {
-    periods: (periods.data ?? []) as Record<string, unknown>[],
-    requests: (requests.data ?? []) as Record<string, unknown>[],
+    periods: (periods.data ?? []) as BillingRow[],
+    requests: (requests.data ?? []) as BillingRow[],
   };
 }
 
@@ -1029,7 +1029,7 @@ export async function approveReopen(ctx: BillingCtx, input: { approvalId: string
 
 const PROVIDER_SECRET_PREFIX = "paysec_";
 
-async function providerConfig(code: string): Promise<Record<string, unknown>> {
+async function providerConfig(code: string): Promise<BillingRow> {
   const client = await db();
   const { data } = await client
     .from("platform_payment_provider_configs")
@@ -1037,11 +1037,11 @@ async function providerConfig(code: string): Promise<Record<string, unknown>> {
     .eq("code", code)
     .maybeSingle();
   if (!data) throw new Error("مزوّد الدفع غير معروف.");
-  return data as Record<string, unknown>;
+  return data as BillingRow;
 }
 
-function secretReferenceOf(config: Record<string, unknown>): string {
-  const settings = (config["settings"] ?? {}) as Record<string, unknown>;
+function secretReferenceOf(config: BillingRow): string {
+  const settings = (config["settings"] ?? {}) as BillingRow;
   const existing = settings["secret_reference"];
   return typeof existing === "string" && existing ? existing : `${PROVIDER_SECRET_PREFIX}${config["code"]}`;
 }
@@ -1073,7 +1073,7 @@ export async function listProviders(_ctx: BillingCtx): Promise<
     .from("platform_payment_provider_configs")
     .select("*")
     .order("sort_order");
-  const rows = (data ?? []) as Record<string, unknown>[];
+  const rows = (data ?? []) as BillingRow[];
   return Promise.all(
     rows.map(async (row) => {
       const provider = getProvider(row["code"] as string);
@@ -1111,7 +1111,7 @@ export async function saveProviderSecrets(
     await IntegrationSecretVault.updateSecret(reference, key, value.trim(), ctx.staff.user_id);
   }
 
-  const settings = { ...((config["settings"] ?? {}) as Record<string, unknown>), secret_reference: reference };
+  const settings = { ...((config["settings"] ?? {}) as BillingRow), secret_reference: reference };
   await client
     .from("platform_payment_provider_configs")
     .update({
@@ -1218,14 +1218,14 @@ export async function setProviderEnabled(
 
 /* ------------------------------------------------- الترقيم وإعدادات الضريبة */
 
-export async function listSequences(_ctx: BillingCtx): Promise<Record<string, unknown>[]> {
+export async function listSequences(_ctx: BillingCtx): Promise<BillingRow[]> {
   const client = await db();
   const { data } = await client
     .from("platform_number_sequences")
     .select("*")
     .order("kind")
     .order("period_key", { ascending: false });
-  return (data ?? []) as Record<string, unknown>[];
+  return (data ?? []) as BillingRow[];
 }
 
 export async function updateSequence(
@@ -1316,7 +1316,7 @@ export async function reports(ctx: BillingCtx, input: { from: string; to: string
 export async function listAttempts(
   _ctx: BillingCtx,
   filters: { status?: string | null; page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client.from("platform_payment_attempts").select("*", { count: "exact" });
   if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
@@ -1325,7 +1325,7 @@ export async function listAttempts(
     .order("created_at", { ascending: false })
     .range(start, start + filters.pageSize - 1);
   if (error) fail(error, "تعذّر جلب محاولات الدفع.");
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
 /* ------------------------------------------------------- إشعارات البريد المالية */

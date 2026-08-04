@@ -34,8 +34,8 @@ export function maskSensitive(value: unknown, depth = 0): unknown {
   if (depth > 6) return "[عميق]";
   if (Array.isArray(value)) return value.slice(0, 50).map((item) => maskSensitive(item, depth + 1));
   if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const out: BillingRow = {};
+    for (const [key, raw] of Object.entries(value as BillingRow)) {
       if (SENSITIVE_KEY.test(key)) {
         const text = typeof raw === "string" ? raw : "";
         out[key] = text.length > 4 ? `••••${text.slice(-4)}` : "••••";
@@ -76,9 +76,9 @@ function allHeaders(headers: Headers): Record<string, string> {
   return out;
 }
 
-type Outcome = { status: number; body: Record<string, unknown> };
+type Outcome = { status: number; body: BillingRow };
 
-const ok = (body: Record<string, unknown> = {}): Outcome => ({ status: 200, body: { received: true, ...body } });
+const ok = (body: BillingRow = {}): Outcome => ({ status: 200, body: { received: true, ...body } });
 
 /** المزوّدون المسموح لهم بإرسال رسائل واردة — يجب أن يكونوا مُعرّفين في قاعدة البيانات. */
 const PROVIDER_ALLOWLIST = new Set(["moyasar"]);
@@ -121,7 +121,7 @@ export async function handleProviderWebhook(providerCode: string, request: Reque
   let signatureValid = false;
   try {
     const { IntegrationSecretVault } = await import("@/lib/integrations/vault.server");
-    const settings = (config.settings ?? {}) as Record<string, unknown>;
+    const settings = (config.settings ?? {}) as BillingRow;
     const reference =
       typeof settings["secret_reference"] === "string" && settings["secret_reference"]
         ? (settings["secret_reference"] as string)
@@ -246,7 +246,7 @@ async function processEvent(input: ProcessInput): Promise<Outcome> {
   const client = await db();
   const started = Date.now();
 
-  const finish = async (patch: Record<string, unknown>) => {
+  const finish = async (patch: BillingRow) => {
     if (input.rowId) await client.from("platform_payment_webhooks").update(patch).eq("id", input.rowId);
   };
 
@@ -321,7 +321,7 @@ export async function processRetryQueue(limit = 20): Promise<{ retried: number; 
     .order("next_retry_at")
     .limit(Math.min(Math.max(limit, 1), 50));
 
-  const rows = (data ?? []) as Record<string, unknown>[];
+  const rows = (data ?? []) as BillingRow[];
   let processed = 0;
   let deadLetter = 0;
 
@@ -356,7 +356,7 @@ export async function processRetryQueue(limit = 20): Promise<{ retried: number; 
 export async function listWebhookEvents(
   _ctx: BillingCtx,
   filters: { status?: string | null; page: number; pageSize: number },
-): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
     .from("platform_payment_webhooks")
@@ -367,5 +367,5 @@ export async function listWebhookEvents(
   if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
   const from = (filters.page - 1) * filters.pageSize;
   const { data, count } = await query.order("received_at", { ascending: false }).range(from, from + filters.pageSize - 1);
-  return { rows: (data ?? []) as Record<string, unknown>[], total: count ?? 0 };
+  return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }

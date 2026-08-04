@@ -316,3 +316,7 @@ export type BillingReports = {
   payments_by_method: { label: string; count: number; amount: number }[];
   unmatched_payments: { id: string; number: string; amount: number; created_at: string; method: string }[];
 };
+/** قيمة قابلة للتسلسل عبر حدود الخادم (JSON فقط). */
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+/** صف بيانات مالي قابل للتسلسل — يُستخدم في مخرجات دوال الخادم. */
+export type BillingRow = { [key: string]: JsonValue };
