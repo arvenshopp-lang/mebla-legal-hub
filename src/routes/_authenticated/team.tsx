@@ -18,6 +18,17 @@ import { inviteTeamMember } from "@/lib/invitations.functions";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "الفريق | مِهلة" },
+      { name: "description", content: "إدارة أعضاء المكتب وأدوارهم ودعوات الانضمام وحالات العضوية." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "الفريق | مِهلة" },
+      { property: "og:description", content: "إدارة أعضاء المكتب وأدوارهم ودعوات الانضمام وحالات العضوية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const inviteSchema = z.object({

@@ -22,6 +22,17 @@ import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "العملاء | مِهلة" },
+      { name: "description", content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "العملاء | مِهلة" },
+      { property: "og:description", content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;

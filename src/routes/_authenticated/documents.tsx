@@ -30,6 +30,17 @@ import { DocumentRepairButton } from "@/components/documents/repair-panel";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "المستندات | مِهلة" },
+      { name: "description", content: "أرشيف مستندات القضايا مع رفع آمن ومعاينة محمية بعلامة مائية وفهرسة نصية." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "المستندات | مِهلة" },
+      { property: "og:description", content: "أرشيف مستندات القضايا مع رفع آمن ومعاينة محمية بعلامة مائية وفهرسة نصية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;

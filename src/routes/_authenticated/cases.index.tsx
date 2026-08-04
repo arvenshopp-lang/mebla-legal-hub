@@ -18,6 +18,17 @@ import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
 export const Route = createFileRoute("/_authenticated/cases/")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "القضايا | مِهلة" },
+      { name: "description", content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "القضايا | مِهلة" },
+      { property: "og:description", content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const PAGE_SIZE = 20;

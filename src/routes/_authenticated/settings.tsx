@@ -10,6 +10,17 @@ import { SecurityTab } from "@/components/security/security-tab";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: Page,
+  head: () => ({
+    meta: [
+      { title: "الإعدادات | مِهلة" },
+      { name: "description", content: "إعدادات المكتب والحساب والأمان وتوثيق الجوال وتفضيلات التنبيهات." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "الإعدادات | مِهلة" },
+      { property: "og:description", content: "إعدادات المكتب والحساب والأمان وتوثيق الجوال وتفضيلات التنبيهات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function Page() {
