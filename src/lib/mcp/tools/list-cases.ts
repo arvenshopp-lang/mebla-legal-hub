@@ -2,7 +2,16 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { dbError, requireDb, resolveOrganization, result, riyadhDate } from "../helpers";
 
-const STATUS = ["active", "pending", "suspended", "closed", "archived"] as const;
+const STATUS = [
+  "draft",
+  "open",
+  "in_progress",
+  "waiting",
+  "judgment_issued",
+  "execution",
+  "closed",
+  "archived",
+] as const;
 
 export default defineTool({
   name: "list_cases",
