@@ -768,3 +768,601 @@ export const getMailAttachmentUrl = createServerFn({ method: "POST" })
     );
     return { url: signed.url, fileName: signed.fileName };
   });
+
+/* ============================================================
+ * تكامل Hostinger Agentic Mail — دوال صريحة، لكل واحدة صلاحيتها
+ * وتحققها بـ Zod وسجل تدقيقها. لا مفتاح ولا ترويسة تفويض تعود للواجهة.
+ * ============================================================ */
+
+type Access = typeof import("@/lib/email/agentic/access.server");
+type AgenticProvider = typeof import("@/lib/email/agentic/provider.server");
+type AgenticStateMod = typeof import("@/lib/email/agentic/state.server");
+type AgenticOverviewMod = typeof import("@/lib/email/agentic/overview.server");
+type AgenticSchedulerMod = typeof import("@/lib/email/agentic/scheduler.server");
+
+const access = (): Promise<Access> => import("@/lib/email/agentic/access.server");
+const agProvider = (): Promise<AgenticProvider> => import("@/lib/email/agentic/provider.server");
+const agState = (): Promise<AgenticStateMod> => import("@/lib/email/agentic/state.server");
+const agOverview = (): Promise<AgenticOverviewMod> => import("@/lib/email/agentic/overview.server");
+const agScheduler = (): Promise<AgenticSchedulerMod> =>
+  import("@/lib/email/agentic/scheduler.server");
+
+const mailboxIdInput = z.object({ mailboxId: z.string().uuid() });
+
+export type AgenticOverviewPayload = Awaited<
+  ReturnType<AgenticOverviewMod["buildOverview"]>
+>;
+
+/** حالة التكامل الكاملة: الجاهزية، الأدوات، الصناديق، الجدولة، مسار الإرسال. */
+export const getAgenticMailStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AgenticOverviewPayload> => {
+    const a = await access();
+    const ctx = await a.authorize(context.supabase, context.userId, "email.read", "status");
+    const o = await agOverview();
+    return o.buildOverview(ctx.db, ctx.scope);
+  });
+
+/** اختبار اتصال حقيقي بخادم MCP (initialize) دون أي تعديل على البريد. */
+export const testAgenticMailConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{ ok: boolean; latencyMs: number; server: string | null; error: string | null }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_providers",
+        "conn",
+      );
+      const [mcp, s] = await Promise.all([
+        import("@/lib/email/agentic/mcp-client.server"),
+        agState(),
+      ]);
+      if (!mcp.agenticSecretPresent()) {
+        await s.markCheck(ctx.db, "connection", false, "مفتاح المزوّد غير مُعرّف في أسرار المنصة.");
+        await a.audit(ctx, {
+          action: "email.agentic.connection_test",
+          description: "فشل الاختبار: المفتاح غير مُعرّف.",
+        });
+        return {
+          ok: false,
+          latencyMs: 0,
+          server: null,
+          error: "مفتاح Hostinger غير مُعرّف في أسرار المنصة.",
+        };
+      }
+      const probe = await a.withTimeout(mcp.probeConnection(ctx.correlationId), "اختبار الاتصال");
+      await s.markCheck(
+        ctx.db,
+        "connection",
+        probe.ok,
+        probe.ok ? `${probe.serverName ?? "MCP"} — ${probe.latencyMs}ms` : probe.error?.message ?? null,
+      );
+      await s.patchAgenticState(ctx.db, (state) => ({
+        ...state,
+        latencyMs: probe.latencyMs,
+        lastTestAt: new Date().toISOString(),
+        lastError: probe.ok
+          ? state.lastError
+          : { code: probe.error?.code ?? "connection_failed", message: probe.error?.message ?? "", at: new Date().toISOString() },
+      }));
+      await a.audit(ctx, {
+        action: "email.agentic.connection_test",
+        description: probe.ok
+          ? `نجح الاتصال (${probe.latencyMs}ms)`
+          : `فشل الاتصال: ${probe.error?.message ?? "سبب غير معروف"}`,
+        metadata: { latency_ms: probe.latencyMs, provider_request_id: probe.requestId },
+      });
+      return {
+        ok: probe.ok,
+        latencyMs: probe.latencyMs,
+        server: probe.serverName,
+        error: probe.ok ? null : probe.error?.message ?? "تعذّر الاتصال بخادم المزوّد.",
+      };
+    },
+  );
+
+/** اكتشاف الأدوات الفعلية وربطها بالعمليات، مع تخزين ما اكتُشف فقط. */
+export const discoverAgenticMailTools = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{ tools: string[]; operations: Record<string, string | null> }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_providers",
+        "tools",
+      );
+      const [p, s] = await Promise.all([agProvider(), agState()]);
+      try {
+        const map = await a.withTimeout(
+          p.discoverCapabilities(ctx.correlationId, true),
+          "اكتشاف الأدوات",
+        );
+        const tools = map.tools.map((tool) => tool.name);
+        await s.patchAgenticState(ctx.db, (state) => ({
+          ...state,
+          tools,
+          operations: map.operationNames,
+        }));
+        const usable = Boolean(map.operationNames.listMessages && map.operationNames.getMessage);
+        await s.markCheck(
+          ctx.db,
+          "tools",
+          usable,
+          usable
+            ? `${tools.length} أداة مكتشفة`
+            : "أدوات المزوّد لا تغطي قراءة الرسائل المطلوبة للمزامنة.",
+        );
+        await a.audit(ctx, {
+          action: "email.agentic.discover",
+          description: `اكتشاف الأدوات: ${tools.length} أداة`,
+          metadata: { tools },
+        });
+        return { tools, operations: map.operationNames };
+      } catch (error) {
+        const failure = a.toSafeFailure(error);
+        await s.markCheck(ctx.db, "tools", false, failure.message);
+        await s.recordError(ctx.db, failure.code, failure.message);
+        await a.audit(ctx, {
+          action: "email.agentic.discover",
+          description: `فشل الاكتشاف: ${failure.message}`,
+        });
+        throw new Error(failure.message);
+      }
+    },
+  );
+
+/** مطابقة صناديق المزوّد بصناديق مِهلة بالعنوان — بلا إنشاء صناديق جديدة. */
+export const linkAgenticMailboxes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{ linked: number; missing: number; unmatched: string[] }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_mailboxes",
+        "link",
+      );
+      const [p, s] = await Promise.all([agProvider(), agState()]);
+      try {
+        const outcome = await a.withTimeout(
+          p.linkMailboxes(ctx.db, ctx.correlationId),
+          "ربط الصناديق",
+        );
+        await s.markCheck(
+          ctx.db,
+          "mailboxes",
+          outcome.linked > 0,
+          outcome.linked > 0
+            ? `${outcome.linked} صندوق مرتبط${outcome.missing ? ` — ${outcome.missing} غير موجود عند المزوّد` : ""}`
+            : "لا يوجد صندوق مطابق بين المزوّد ومِهلة.",
+        );
+        await s.bumpCounters(ctx.db, { mailboxes: outcome.linked });
+        await a.audit(ctx, {
+          action: "email.agentic.link_mailboxes",
+          description: `ربط الصناديق: ${outcome.linked} مرتبط، ${outcome.missing} غير موجود`,
+          metadata: { unmatched: outcome.unmatched },
+        });
+        return outcome;
+      } catch (error) {
+        const failure = a.toSafeFailure(error);
+        await s.markCheck(ctx.db, "mailboxes", false, failure.message);
+        await a.audit(ctx, {
+          action: "email.agentic.link_mailboxes",
+          description: `فشل الربط: ${failure.message}`,
+        });
+        throw new Error(failure.message);
+      }
+    },
+  );
+
+/** فك ارتباط صندوق واحد: يوقف مزامنته عبر المزوّد ويُبقي بياناته المحفوظة. */
+export const unlinkAgenticMailbox = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => mailboxIdInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const a = await access();
+    const ctx = await a.authorize(
+      context.supabase,
+      context.userId,
+      "email.manage_mailboxes",
+      "unlink",
+    );
+    const box = await a.assertMailbox(ctx, data.mailboxId);
+    await ctx.db
+      .from("email_mailboxes")
+      .update({ agentic_mailbox_id: null, agentic_link_status: "unlinked", agentic_unread_count: 0 })
+      .eq("id", box.id);
+    await a.audit(ctx, {
+      action: "email.agentic.unlink_mailbox",
+      mailboxId: box.id,
+      description: `فك ارتباط الصندوق ${box.address} عن المزوّد.`,
+    });
+    return { ok: true };
+  });
+
+/** تشغيل تجريبي: يقرأ من المزوّد ولا يكتب أي رسالة ولا يُنشئ تذكرة. */
+export const dryRunAgenticSync = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => mailboxIdInput.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ fetched: number; wouldIngest: number; duplicates: number; error: string | null }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_providers",
+        "dry",
+      );
+      const box = await a.assertMailbox(ctx, data.mailboxId, { humanOnly: true });
+      const [p, s] = await Promise.all([agProvider(), agState()]);
+      const [outcome] = await a.withTimeout(
+        p.syncAgenticMailbox(ctx.db, box.id, { triggerSource: "manual", dryRun: true }),
+        "التشغيل التجريبي",
+      );
+      const failure = outcome?.error?.message ?? null;
+      await s.markCheck(
+        ctx.db,
+        "dry_run",
+        !failure,
+        failure ?? `قراءة ${outcome?.fetched ?? 0} رسالة بلا أي كتابة`,
+      );
+      await a.audit(ctx, {
+        action: "email.agentic.dry_run",
+        mailboxId: box.id,
+        description: failure
+          ? `فشل التشغيل التجريبي: ${failure}`
+          : `تشغيل تجريبي: ${outcome?.fetched ?? 0} رسالة مقروءة، ${outcome?.ingested ?? 0} مؤهلة للاستيراد`,
+      });
+      return {
+        fetched: outcome?.fetched ?? 0,
+        wouldIngest: outcome?.ingested ?? 0,
+        duplicates: outcome?.duplicates ?? 0,
+        error: failure,
+      };
+    },
+  );
+
+/** رسالة اختبار حقيقية عبر أداة الإرسال المكتشفة — لا تمر بمسار SMTP. */
+export const sendAgenticTestMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ mailboxId: z.string().uuid(), to: z.string().trim().email().max(255) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: boolean; error: string | null }> => {
+    const a = await access();
+    const ctx = await a.authorize(context.supabase, context.userId, "email.send", "test");
+    const box = await a.assertMailbox(ctx, data.mailboxId, { humanOnly: true });
+    if (!box.agentic_mailbox_id) throw new Error("الصندوق غير مرتبط بصندوق عند المزوّد.");
+    const [p, s] = await Promise.all([agProvider(), agState()]);
+    const subject = "رسالة اختبار — تكامل بريد مِهلة";
+    const text = "هذه رسالة اختبار من مركز التكاملات في منصة مِهلة للتحقق من مسار الإرسال.";
+    try {
+      await a.withTimeout(
+        p.invoke(
+          "sendMessage",
+          {
+            mailbox: box.agentic_mailbox_id,
+            to: [data.to],
+            subject,
+            text,
+            html: `<div dir="rtl" style="font-family:system-ui">${text}</div>`,
+          },
+          ctx.correlationId,
+        ),
+        "إرسال رسالة الاختبار",
+      );
+      await s.markCheck(ctx.db, "test_send", true, "نجح إرسال رسالة اختبار عبر المزوّد.");
+      await s.patchAgenticState(ctx.db, (state) => ({
+        ...state,
+        lastSendAt: new Date().toISOString(),
+      }));
+      await a.audit(ctx, {
+        action: "email.agentic.test_send",
+        mailboxId: box.id,
+        description: "إرسال رسالة اختبار عبر المزوّد.",
+      });
+      return { ok: true, error: null };
+    } catch (error) {
+      const failure = a.toSafeFailure(error);
+      await s.markCheck(ctx.db, "test_send", false, failure.message);
+      await a.audit(ctx, {
+        action: "email.agentic.test_send",
+        mailboxId: box.id,
+        description: `فشل إرسال رسالة الاختبار: ${failure.message}`,
+      });
+      return { ok: false, error: failure.message };
+    }
+  });
+
+/** التفعيل: لا يمر إلا باستيفاء كل الشروط فعلياً، وإلا يُعاد سبب المنع. */
+export const activateAgenticMail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ ok: boolean; blockers: string[] }> => {
+    const a = await access();
+    const ctx = await a.authorize(
+      context.supabase,
+      context.userId,
+      "email.manage_providers",
+      "enable",
+    );
+    const [s, sched, shared] = await Promise.all([
+      agState(),
+      agScheduler(),
+      import("@/lib/email/agentic/agentic.shared"),
+    ]);
+    const state = await s.readAgenticState(ctx.db);
+    const blockers: string[] = [];
+    if (!state.secretPresent) blockers.push("مفتاح Hostinger غير مُعرّف في أسرار المنصة.");
+    if (!state.checks.connection.ok) blockers.push("اختبار الاتصال لم ينجح بعد.");
+    if (!state.checks.tools.ok) blockers.push("لم تُكتشف أدوات المزوّد المطلوبة.");
+    if (!state.checks.mailboxes.ok) blockers.push("لا يوجد صندوق مرتبط بالمزوّد.");
+    if (!state.checks.dry_run.ok) blockers.push("التشغيل التجريبي لم ينجح بعد.");
+    if (state.operations.sendMessage && !state.checks.test_send.ok)
+      blockers.push("رسالة الاختبار لم تُرسل بنجاح.");
+    if (blockers.length > 0 || !shared.readinessSatisfied(state)) {
+      await a.audit(ctx, {
+        action: "email.agentic.activate_blocked",
+        description: `منع التفعيل: ${blockers.join(" | ") || "شروط الجاهزية غير مستوفاة."}`,
+      });
+      return { ok: false, blockers: blockers.length > 0 ? blockers : ["شروط الجاهزية غير مستوفاة."] };
+    }
+    await s.patchAgenticState(ctx.db, (current) => ({ ...current, enabled: true, lastError: null }));
+    await sched.armScheduler(ctx.db);
+    await a.audit(ctx, {
+      action: "email.agentic.activate",
+      description: "تفعيل تكامل Hostinger Agentic Mail بعد استيفاء كل شروط الجاهزية.",
+    });
+    return { ok: true, blockers: [] };
+  });
+
+/** التعطيل: يوقف الجدولة فوراً ويُبقي البيانات المستوردة كما هي. */
+export const deactivateAgenticMail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ reason: z.string().trim().min(3).max(200) }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const a = await access();
+    const ctx = await a.authorize(
+      context.supabase,
+      context.userId,
+      "email.manage_providers",
+      "disable",
+    );
+    const [s, sched] = await Promise.all([agState(), agScheduler()]);
+    await s.patchAgenticState(ctx.db, (current) => ({ ...current, enabled: false }));
+    await sched.disarmScheduler(ctx.db, data.reason);
+    await a.audit(ctx, {
+      action: "email.agentic.deactivate",
+      description: `تعطيل التكامل: ${data.reason}`,
+    });
+    return { ok: true };
+  });
+
+/** مزامنة تزايدية فورية لصندوق واحد — تكمل من المؤشر المحفوظ. */
+export const syncAgenticMailboxNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => mailboxIdInput.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ fetched: number; ingested: number; duplicates: number; error: string | null }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_providers",
+        "sync1",
+      );
+      const box = await a.assertMailbox(ctx, data.mailboxId, { humanOnly: true });
+      const p = await agProvider();
+      const [outcome] = await a.withTimeout(
+        p.syncAgenticMailbox(ctx.db, box.id, { triggerSource: "manual" }),
+        "المزامنة",
+      );
+      await a.audit(ctx, {
+        action: "email.agentic.sync_mailbox",
+        mailboxId: box.id,
+        description: outcome?.error
+          ? `فشل المزامنة: ${outcome.error.message}`
+          : `مزامنة ${box.address}: ${outcome?.ingested ?? 0} رسالة جديدة، ${outcome?.duplicates ?? 0} مكرّرة`,
+      });
+      return {
+        fetched: outcome?.fetched ?? 0,
+        ingested: outcome?.ingested ?? 0,
+        duplicates: outcome?.duplicates ?? 0,
+        error: outcome?.error?.message ?? null,
+      };
+    },
+  );
+
+/** مزامنة فورية لكل الصناديق المرتبطة والمُفعّلة. */
+export const syncAllAgenticMailboxesNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{ mailboxes: number; ingested: number; duplicates: number; failed: number }> => {
+      const a = await access();
+      const ctx = await a.authorize(
+        context.supabase,
+        context.userId,
+        "email.manage_providers",
+        "syncall",
+      );
+      const p = await agProvider();
+      const outcomes = await a.withTimeout(
+        p.syncAllAgenticMailboxes(ctx.db, "manual"),
+        "مزامنة كل الصناديق",
+      );
+      const summary = {
+        mailboxes: outcomes.length,
+        ingested: outcomes.reduce((sum, o) => sum + o.ingested, 0),
+        duplicates: outcomes.reduce((sum, o) => sum + o.duplicates, 0),
+        failed: outcomes.filter((o) => o.error).length,
+      };
+      await a.audit(ctx, {
+        action: "email.agentic.sync_all",
+        description: `مزامنة يدوية شاملة: ${summary.ingested} رسالة جديدة من ${summary.mailboxes} صندوق، ${summary.failed} فشل`,
+      });
+      return summary;
+    },
+  );
+
+/** إعادة المحاولة: تُصفّر قاطع الدائرة وتعيد تشغيل الصناديق المتعطّلة فقط. */
+export const retryAgenticMailFailures = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ retried: number; recovered: number }> => {
+    const a = await access();
+    const ctx = await a.authorize(context.supabase, context.userId, "email.retry", "retry");
+    const [p, sched] = await Promise.all([agProvider(), agScheduler()]);
+    await sched.resetBreaker(ctx.db);
+    const { data: rows } = await ctx.db
+      .from("email_sync_state")
+      .select("mailbox_id")
+      .eq("provider", "agentic_mail")
+      .not("last_error", "is", null);
+    const ids = ((rows ?? []) as { mailbox_id: string }[]).map((row) => row.mailbox_id);
+    let recovered = 0;
+    for (const id of ids) {
+      try {
+        await a.assertMailbox(ctx, id, { humanOnly: true });
+      } catch {
+        continue;
+      }
+      const [outcome] = await p.syncAgenticMailbox(ctx.db, id, { triggerSource: "manual" });
+      if (outcome && !outcome.error) recovered += 1;
+    }
+    await a.audit(ctx, {
+      action: "email.agentic.retry",
+      description: `إعادة محاولة ${ids.length} صندوق متعطّل، نجح ${recovered}`,
+    });
+    return { retried: ids.length, recovered };
+  });
+
+/** إعادة تعيين المؤشر: إجراء تصحيحي صريح يُعيد قراءة الصندوق من البداية. */
+export const resetAgenticMailboxCursor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => mailboxIdInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const a = await access();
+    const ctx = await a.authorize(
+      context.supabase,
+      context.userId,
+      "email.manage_providers",
+      "cursor",
+    );
+    const box = await a.assertMailbox(ctx, data.mailboxId);
+    await ctx.db
+      .from("email_sync_state")
+      .update({
+        provider_cursor: null,
+        last_error: null,
+        last_error_code: null,
+        attempts: 0,
+        next_attempt_at: null,
+        status: "idle",
+      })
+      .eq("mailbox_id", box.id)
+      .eq("provider", "agentic_mail");
+    await a.audit(ctx, {
+      action: "email.agentic.reset_cursor",
+      mailboxId: box.id,
+      description: `إعادة تعيين مؤشر المزامنة لصندوق ${box.address} — منع التكرار يعتمد على معرّف الرسالة.`,
+    });
+    return { ok: true };
+  });
+
+export type AgenticRunLog = {
+  id: string;
+  mailboxId: string;
+  folder: string;
+  outcome: string;
+  fetched: number;
+  ingested: number;
+  duplicates: number;
+  ticketsCreated: number;
+  durationMs: number;
+  triggerSource: string;
+  errorMessage: string | null;
+  createdAt: string;
+};
+
+/** سجل دورات المزامنة الأخيرة — مقيّد بنطاق صناديق الموظف. */
+export const getAgenticMailLogs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ limit: z.number().int().min(1).max(100).default(25) }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<{ runs: AgenticRunLog[] }> => {
+    const a = await access();
+    const ctx = await a.authorize(context.supabase, context.userId, "email.view_logs", "logs");
+    const o = await agOverview();
+    const allowed = (await o.mailboxLinks(ctx.db, ctx.scope)).map((box) => box.id);
+    if (allowed.length === 0) return { runs: [] };
+    const { data: rows } = await ctx.db
+      .from("email_sync_runs")
+      .select(
+        "id, mailbox_id, folder, outcome, fetched, ingested, duplicates, tickets_created, duration_ms, trigger_source, error_message, created_at",
+      )
+      .eq("provider", "agentic_mail")
+      .in("mailbox_id", allowed)
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
+    const runs = ((rows ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      mailboxId: String(row.mailbox_id),
+      folder: String(row.folder),
+      outcome: String(row.outcome),
+      fetched: Number(row.fetched ?? 0),
+      ingested: Number(row.ingested ?? 0),
+      duplicates: Number(row.duplicates ?? 0),
+      ticketsCreated: Number(row.tickets_created ?? 0),
+      durationMs: Number(row.duration_ms ?? 0),
+      triggerSource: String(row.trigger_source ?? "cron"),
+      errorMessage: row.error_message ? String(row.error_message) : null,
+      createdAt: String(row.created_at),
+    }));
+    return { runs };
+  });
+
+/** تفعيل أو تعطيل مزامنة صندوق محدد دون المساس ببقية الصناديق. */
+export const setAgenticMailboxSync = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ mailboxId: z.string().uuid(), enabled: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const a = await access();
+    const ctx = await a.authorize(
+      context.supabase,
+      context.userId,
+      "email.manage_mailboxes",
+      "toggle",
+    );
+    const box = await a.assertMailbox(ctx, data.mailboxId, { humanOnly: true });
+    await ctx.db.from("email_mailboxes").update({ sync_enabled: data.enabled }).eq("id", box.id);
+    await a.audit(ctx, {
+      action: "email.agentic.toggle_sync",
+      mailboxId: box.id,
+      description: `${data.enabled ? "تفعيل" : "تعطيل"} مزامنة صندوق ${box.address}.`,
+    });
+    return { ok: true };
+  });

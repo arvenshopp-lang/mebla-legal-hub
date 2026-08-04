@@ -6,6 +6,7 @@
  *  1. وجود سرّ/مفتاح حقيقي مكتوب داخل الكود.
  *  2. تسجيل أسرار في السجلات (console.* لمتغيّرات بيئة حسّاسة).
  *  3. تعريض سرّ للمتصفح عبر متغيّر VITE_*.
+ *  3.ب قراءة سرّ مزوّد خارجي خارج ملفات الخادم (*.server.ts).
  *  4. نقص توثيق أي دالة من دوال authenticated المسموح بها في docs/security-guardrails.md.
  *
  * فحوص قاعدة البيانات (SECURITY DEFINER / RLS / RPC) في scripts/security-guardrails.sql
@@ -47,9 +48,17 @@ const SECRET_PATTERNS: { id: string; label: string; re: RegExp }[] = [
   { id: "sendgrid_key", label: "مفتاح SendGrid", re: /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/ },
   { id: "resend_key", label: "مفتاح Resend", re: /\bre_[A-Za-z0-9]{24,}\b/ },
   { id: "twilio_secret", label: "مفتاح Twilio السرّي", re: /\bSK[0-9a-fA-F]{32}\b/ },
+  {
+    id: "hostinger_mail_token",
+    label: "رمز Hostinger Mail",
+    re: /HOSTINGER_MAIL_API_TOKEN\s*[:=]\s*['"][^'"]{8,}['"]/,
+  },
 ];
 
 const SENSITIVE_ENV = /SECRET|PASSWORD|SERVICE_ROLE|PRIVATE_KEY|API_KEY|TOKEN/i;
+
+/** أسرار المزوّدين الخارجيين: تُقرأ في ملفات الخادم فقط. */
+const SERVER_ONLY_SECRETS = ["HOSTINGER_MAIL_API_TOKEN", "HOSTINGER_SMTP_PASSWORD"];
 
 type Violation = { check: string; file: string; line: number; detail: string };
 const violations: Violation[] = [];
@@ -115,6 +124,26 @@ function scanFile(file: string): void {
           line: lineNo,
           detail: `متغيّر VITE_ يحمل سرّاً ويُحزَم في حِزمة المتصفح (${ref})`,
         });
+      }
+    }
+
+    if (!isGuardrailFile) {
+      const path = rel.replace(/\\/g, "/");
+      const serverSide =
+        path.endsWith(".server.ts") ||
+        path.startsWith("supabase/") ||
+        path.startsWith("scripts/") ||
+        path.startsWith("src/routes/api/");
+      for (const secret of SERVER_ONLY_SECRETS) {
+        if (!raw.includes(secret)) continue;
+        if (!serverSide) {
+          violations.push({
+            check: "provider_secret_outside_server",
+            file: rel,
+            line: lineNo,
+            detail: `سرّ المزوّد ${secret} يُقرأ خارج ملفات الخادم (*.server.ts)`,
+          });
+        }
       }
     }
   });

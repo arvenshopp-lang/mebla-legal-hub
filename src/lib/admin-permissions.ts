@@ -38,6 +38,11 @@ export type AdminPermission =
   | "email.send"
   | "email.assign"
   | "email.audit"
+  | "email.read"
+  | "email.retry"
+  | "email.view_logs"
+  | "email.manage_providers"
+  | "email.manage_mailboxes"
   | "notifications.send"
   | "settings.manage"
   | "seo.manage"
@@ -113,6 +118,11 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "email.send", label: "إرسال البريد", group: "التشغيل", description: "إنشاء المسوّدات والرد والتحويل وإرسال الرسائل." },
   { id: "email.assign", label: "تحويل محادثات البريد", group: "التشغيل", description: "إسناد المحادثة إلى موظف آخر." },
   { id: "email.audit", label: "سجل تدقيق البريد", group: "التشغيل", description: "الاطلاع على سجل عمليات مركز البريد." },
+  { id: "email.read", label: "قراءة البريد الوارد", group: "التشغيل", description: "قراءة حالة الصناديق والرسائل المستوردة دون تعديل." },
+  { id: "email.retry", label: "إعادة محاولة البريد", group: "التشغيل", description: "إعادة محاولة الرسائل والمزامنات الفاشلة." },
+  { id: "email.view_logs", label: "سجلات تشغيل البريد", group: "التشغيل", description: "الاطلاع على سجل دورات المزامنة وأخطائها المنقّحة." },
+  { id: "email.manage_providers", label: "إدارة مزوّدي البريد", group: "التشغيل", description: "تفعيل وتعطيل مزوّد البريد واختبار اتصاله وإعادة تعيين مؤشر المزامنة." },
+  { id: "email.manage_mailboxes", label: "إدارة صناديق البريد", group: "التشغيل", description: "ربط صناديق المزوّد بصناديق مِهلة وفك ارتباطها." },
   { id: "notifications.send", label: "إرسال الإشعارات", group: "التشغيل", description: "إشعارات داخلية وبريد للمستخدمين والمكاتب." },
   { id: "settings.manage", label: "إعدادات المنصة", group: "التشغيل", description: "الهوية والبيانات الرسمية والروابط النظامية." },
   { id: "seo.manage", label: "إدارة SEO", group: "التشغيل", description: "الوسوم والفهرسة وملفات robots وsitemap." },
@@ -166,6 +176,16 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "tickets.view": ["support.read"],
   "tickets.reply": ["support.reply", "support.close", "support.reopen"],
   "tickets.assign": ["support.assign", "support.escalate"],
+  // مركز البريد: صلاحية الإدارة الشاملة السابقة تغطي الصلاحيات الدقيقة الحديثة.
+  "email.manage": [
+    "email.manage_providers",
+    "email.manage_mailboxes",
+    "email.retry",
+    "email.view_logs",
+    "email.read",
+  ],
+  "email.view": ["email.read", "email.view_logs"],
+  "email.audit": ["email.view_logs"],
 };
 
 export function expandPermissions(permissions: string[] | null | undefined): string[] {

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plug, Activity, Trash2, Pencil, Send, Power, CheckCircle2, ScrollText } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { AgenticMailPanel } from "@/components/admin/mail/agentic-panel";
 import { Badge, Btn, LoadingBlock, Modal, inputCls } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import {
@@ -268,6 +269,8 @@ function IntegrationsHubPage() {
             </p>
           )}
         </header>
+
+        <AgenticMailPanel />
 
         {hub.isLoading ? (
           <LoadingBlock rows={4} cols={3} />
