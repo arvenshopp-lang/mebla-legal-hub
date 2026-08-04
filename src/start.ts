@@ -37,6 +37,16 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+// مسارات /lovable/* (ويبهوك البريد والمعاينة) تُوثّق نفسها بمفتاح/توقيع،
+// ويجب ألا تمر على حارس النطاقات أو CSRF أو أي تحويل.
+const isLovableInternalRequest = () => {
+  try {
+    return new URL(getRequest().url).pathname.startsWith("/lovable/");
+  } catch {
+    return false;
+  }
+};
+
 // رؤوس الحماية (CSP / HSTS / anti-sniffing / anti-clickjacking) على كل استجابة
 const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
   const result = await next();
@@ -50,11 +60,12 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
 const csrfMiddleware = createCsrfMiddleware({
-  filter: (ctx) => ctx.handlerType === "serverFn",
+  filter: (ctx) => ctx.handlerType === "serverFn" && !isLovableInternalRequest(),
 });
 
 // حارس بنية النطاقات الفرعية (app / client / upload / status / api / docs / www)
 const surfaceMiddleware = createMiddleware().server(async ({ next }) => {
+  if (isLovableInternalRequest()) return next();
   const blocked = surfaceGuard();
   if (blocked) return blocked as any;
   return next();
