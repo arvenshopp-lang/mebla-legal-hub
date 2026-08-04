@@ -62,6 +62,15 @@ export const getSupportTicket = createServerFn({ method: "POST" })
   });
 
 /** بيانات التشغيل: الفرق والتصنيفات والوسوم والموظفون + صلاحيات المستخدم الحالي. */
+export const getSupportQueueCounts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supportCtx } = await ctxMod();
+    const ctx = await supportCtx(context.supabase, context.userId, "support.read");
+    const { queueCounts } = await engine();
+    return queueCounts(ctx.db, ctx.actor);
+  });
+
 export const getSupportWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
