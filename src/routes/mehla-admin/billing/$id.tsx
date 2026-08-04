@@ -2,15 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowRight, Download, Mail } from "lucide-react";
+import { ArrowRight, Download, FileText, Mail, Receipt } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { Btn, ErrorBlock, FormField, SectionCard, SectionLoader, Td, Th, inputCls } from "@/lib/list-utils";
 import {
   billingAddNote,
   billingInvoiceDetail,
   billingInvoicePdf,
+  billingQuotePdf,
+  billingReceiptPdf,
   billingSendInvoiceEmail,
+  billingStatementPdf,
 } from "@/lib/billing/billing.functions";
+import { downloadPdfPayload, type PdfPayload } from "@/lib/billing/download-pdf";
 import { PAYMENT_METHOD_LABELS, formatDate, formatDateTime, type InvoiceDetail } from "@/lib/billing/billing.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { InvoiceStatusBadge, Money, PaymentStatusBadge, RefundStatusBadge } from "@/components/admin/billing/shared";
@@ -29,6 +33,9 @@ function InvoiceDetailPage() {
 
   const detailFn = useServerFn(billingInvoiceDetail);
   const pdfFn = useServerFn(billingInvoicePdf);
+  const quoteFn = useServerFn(billingQuotePdf);
+  const receiptFn = useServerFn(billingReceiptPdf);
+  const statementFn = useServerFn(billingStatementPdf);
   const emailFn = useServerFn(billingSendInvoiceEmail);
   const noteFn = useServerFn(billingAddNote);
 
@@ -37,16 +44,35 @@ function InvoiceDetailPage() {
 
   const pdf = useMutation({
     mutationFn: () => pdfFn({ data: { id } }),
-    onSuccess: (result) => {
-      const file = result as { fileName: string; base64: string };
-      const bytes = Uint8Array.from(atob(file.base64), (char) => char.charCodeAt(0));
-      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = file.fileName;
-      anchor.click();
-      URL.revokeObjectURL(url);
+    onSuccess: (result) => downloadPdfPayload(result as PdfPayload),
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const quote = useMutation({
+    mutationFn: () => quoteFn({ data: { id } }),
+    onSuccess: (result) => downloadPdfPayload(result as PdfPayload),
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const receipt = useMutation({
+    mutationFn: (paymentId: string) => receiptFn({ data: { paymentId } }),
+    onSuccess: (result) => downloadPdfPayload(result as PdfPayload),
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const statement = useMutation({
+    mutationFn: () => {
+      const to = new Date();
+      const from = new Date(to.getFullYear(), to.getMonth() - 11, 1);
+      return statementFn({
+        data: {
+          organizationId: invoice?.organization_id ?? "",
+          from: from.toISOString(),
+          to: to.toISOString(),
+        } as never,
+      });
     },
+    onSuccess: (result) => downloadPdfPayload(result as PdfPayload),
     onError: (error: Error) => toast.error(error.message),
   });
 
@@ -80,6 +106,16 @@ function InvoiceDetailPage() {
           {can("billing.export") && (
             <Btn variant="outline" size="sm" loading={pdf.isPending} onClick={() => pdf.mutate()}>
               <Download className="h-4 w-4" aria-hidden /> تنزيل PDF
+            </Btn>
+          )}
+          {can("billing.export") && invoice?.status === "draft" && (
+            <Btn variant="outline" size="sm" loading={quote.isPending} onClick={() => quote.mutate()}>
+              <FileText className="h-4 w-4" aria-hidden /> عرض سعر PDF
+            </Btn>
+          )}
+          {can("billing.export") && invoice?.organization_id && (
+            <Btn variant="outline" size="sm" loading={statement.isPending} onClick={() => statement.mutate()}>
+              <FileText className="h-4 w-4" aria-hidden /> كشف حساب المكتب
             </Btn>
           )}
           {can("billing.issue") && invoice?.customer_email && invoice.status !== "draft" && (
@@ -172,7 +208,20 @@ function InvoiceDetailPage() {
                         </p>
                         <p className="text-caption">{formatDateTime(payment.paid_at ?? payment.created_at)}</p>
                       </div>
-                      <PaymentStatusBadge status={payment.status} />
+                      <div className="flex items-center gap-2">
+                        {can("billing.export") && payment.status !== "pending" && payment.status !== "failed" && (
+                          <Btn
+                            variant="ghost"
+                            size="sm"
+                            loading={receipt.isPending && receipt.variables === payment.id}
+                            onClick={() => receipt.mutate(payment.id)}
+                            aria-label={`تنزيل إيصال السداد بمبلغ ${payment.amount}`}
+                          >
+                            <Receipt className="h-4 w-4" aria-hidden /> إيصال
+                          </Btn>
+                        )}
+                        <PaymentStatusBadge status={payment.status} />
+                      </div>
                     </li>
                   ))}
                 </ul>

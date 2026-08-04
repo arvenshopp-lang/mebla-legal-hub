@@ -36,6 +36,7 @@ import {
   reopenRequestSchema,
   sequencePreviewSchema,
   sequenceSchema,
+  statementSchema,
   taxSettingsSchema,
   uuid,
   webhookActionSchema,
@@ -624,22 +625,88 @@ export const billingReopenWebhook = createServerFn({ method: "POST" })
     }
   });
 
-/** مخرج PDF عربي للفاتورة — يُعاد بصيغة base64 لأن حدود دوال الخادم تنقل JSON فقط. */
+/* ------------------------------------------------------- مستندات PDF الموحدة */
+
+/**
+ * جميع مخرجات PDF تمر من محرك واحد (pdf/engine.server) بنماذج موحّدة،
+ * وتُعاد بصيغة base64 لأن حدود دوال الخادم تنقل JSON فقط.
+ */
+async function pdfDeps() {
+  const [engine, ctxMod, pdfEngine, models] = await Promise.all([
+    import("./billing.server"),
+    import("./ctx.server"),
+    import("./pdf/engine.server"),
+    import("./pdf/models.server"),
+  ]);
+  return { engine, ctxMod, pdfEngine, models };
+}
+
 export const billingInvoicePdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ({ id: uuid.parse((data as { id: string }).id) }))
   .handler(async ({ data, context }) => {
-    const [engine, ctxMod, pdf] = await Promise.all([
-      import("./billing.server"),
-      import("./ctx.server"),
-      import("./invoice-pdf.server"),
-    ]);
+    const { engine, ctxMod, pdfEngine, models } = await pdfDeps();
     const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");
     try {
       const [invoice, tax] = await Promise.all([engine.getInvoiceDetail(ctx, data.id), engine.getTaxSettings()]);
-      const bytes = await pdf.buildInvoicePdf(invoice, tax);
-      return { fileName: `${invoice.number}.pdf`, base64: pdf.toBase64(bytes) };
+      const model = invoice.status === "draft" ? models.quoteModel(invoice) : models.invoiceModel(invoice);
+      const bytes = await pdfEngine.renderBillingPdf(model, tax);
+      return { fileName: model.fileName, base64: pdfEngine.toBase64(bytes) };
     } catch (error) {
       throw new Error(ctxMod.safeMessage(error, "تعذّر توليد ملف الفاتورة."));
+    }
+  });
+
+/** عرض سعر من مسودة الفاتورة — بلا مطالبة سداد ولا أثر ضريبي. */
+export const billingQuotePdf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ({ id: uuid.parse((data as { id: string }).id) }))
+  .handler(async ({ data, context }) => {
+    const { engine, ctxMod, pdfEngine, models } = await pdfDeps();
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");
+    try {
+      const [invoice, tax] = await Promise.all([engine.getInvoiceDetail(ctx, data.id), engine.getTaxSettings()]);
+      const model = models.quoteModel(invoice);
+      const bytes = await pdfEngine.renderBillingPdf(model, tax);
+      return { fileName: model.fileName, base64: pdfEngine.toBase64(bytes) };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر توليد عرض السعر."));
+    }
+  });
+
+/** إيصال سداد لدفعة معتمدة. */
+export const billingReceiptPdf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ({ paymentId: uuid.parse((data as { paymentId: string }).paymentId) }))
+  .handler(async ({ data, context }) => {
+    const { engine, ctxMod, pdfEngine, models } = await pdfDeps();
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");
+    try {
+      const [source, tax] = await Promise.all([
+        engine.getPaymentReceipt(ctx, data.paymentId),
+        engine.getTaxSettings(),
+      ]);
+      const model = models.receiptModel(source);
+      const bytes = await pdfEngine.renderBillingPdf(model, tax);
+      return { fileName: model.fileName, base64: pdfEngine.toBase64(bytes) };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر توليد الإيصال."));
+    }
+  });
+
+/** كشف حساب مكتب خلال فترة. */
+export const billingStatementPdf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => statementSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { engine, ctxMod, pdfEngine, models } = await pdfDeps();
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");
+    try {
+      const [source, tax] = await Promise.all([engine.getAccountStatement(ctx, data), engine.getTaxSettings()]);
+      const model = models.statementModel(source);
+      const bytes = await pdfEngine.renderBillingPdf(model, tax);
+      return { fileName: model.fileName, base64: pdfEngine.toBase64(bytes) };
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر توليد كشف الحساب."));
     }
   });
