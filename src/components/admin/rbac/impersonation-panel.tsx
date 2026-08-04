@@ -39,6 +39,8 @@ const STATUS: Record<RbacImpersonation["status"], { label: string; tone: "gold" 
   expired: { label: "انتهت المدة", tone: "muted" },
 };
 
+type ImpEvent = { id: string; event: string; path: string | null; created_at: string };
+
 export function ImpersonationPanel({
   data,
   canRequest,
@@ -95,9 +97,9 @@ export function ImpersonationPanel({
   });
 
   const eventsFn = useServerFn(getRbacImpersonationEvents);
-  const events = useQuery({
+  const events = useQuery<ImpEvent[]>({
     queryKey: ["rbac-impersonation-events", pages?.id],
-    queryFn: () => eventsFn({ data: { sessionId: pages!.id } }),
+    queryFn: async () => (await eventsFn({ data: { sessionId: pages!.id } })) as ImpEvent[],
     enabled: !!pages,
   });
 
@@ -323,7 +325,7 @@ export function ImpersonationPanel({
             {(events.data ?? []).map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 border-b border-border pb-1.5">
                 <span dir="ltr" className="font-mono">
-                  {p.path}
+                  {p.path ?? "—"}
                 </span>
                 <span className="shrink-0 text-text-muted">{formatRiyadh(p.created_at)}</span>
               </li>
