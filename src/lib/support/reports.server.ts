@@ -44,6 +44,10 @@ export type SupportReport = {
     escalated: number;
     reopened: number;
     unassigned: number;
+    atRisk: number;
+    backlog: number;
+    reopenRate: number;
+    fcrRate: number;
   };
   sla: {
     firstResponseMet: number;
@@ -56,10 +60,18 @@ export type SupportReport = {
     avgResolutionMinutes: number | null;
   };
   csat: { responses: number; average: number | null; distribution: Record<"1" | "2" | "3" | "4" | "5", number> };
+  csatByStaff: { key: string; name: string; responses: number; average: number }[];
+  csatByTeam: { key: string; name: string; responses: number; average: number }[];
+  csatByCategory: { key: string; responses: number; average: number }[];
   byStatus: { key: string; label: string; count: number }[];
+  byPriority: { key: string; count: number; breached: number }[];
+  byChannel: { key: string; count: number }[];
   byCategory: { key: string; count: number; breached: number }[];
   byTeam: { key: string; name: string; count: number; open: number; breached: number }[];
   byAgent: { key: string; name: string; open: number; resolved: number; breached: number; avgResolutionMinutes: number | null }[];
+  byOrganization: { key: string; name: string; plan: string | null; count: number; open: number; breached: number }[];
+  byPlan: { key: string; count: number; breached: number }[];
+  aging: { bucket: string; label: string; count: number }[];
   daily: { day: string; created: number; resolved: number }[];
   breachedTickets: {
     id: string;
@@ -122,6 +134,86 @@ export async function buildSupportReport(
   const teamName = new Map<string, string>(teamRows.map((t) => [t.id, t.name_ar]));
   const staffName = new Map<string, string>(staffRows.map((s) => [s.user_id, s.full_name]));
 
+  /* المكاتب والباقات: أسماء المكاتب وربطها بباقة الاشتراك النشط. */
+  const orgIds = Array.from(new Set(rows.map((r) => r.organization_id).filter((v): v is string => !!v)));
+  const orgName = new Map<string, string>();
+  const orgPlan = new Map<string, string>();
+  if (orgIds.length > 0) {
+    const [orgs, subs] = await Promise.all([
+      db.from("organizations").select("id, name").in("id", orgIds),
+      db.from("subscriptions").select("organization_id, plan_code, status").in("organization_id", orgIds),
+    ]);
+    for (const org of ((orgs as { data: unknown }).data ?? []) as { id: string; name: string }[]) {
+      orgName.set(org.id, org.name);
+    }
+    for (const sub of ((subs as { data: unknown }).data ?? []) as {
+      organization_id: string;
+      plan_code: string | null;
+      status: string;
+    }[]) {
+      if (!sub.plan_code) continue;
+      if (sub.status === "active" || sub.status === "trial" || !orgPlan.has(sub.organization_id)) {
+        orgPlan.set(sub.organization_id, sub.plan_code);
+      }
+    }
+  }
+
+  /* الحل من أول تواصل: تذكرة حُلّت بردّ واحد من الفريق ولم تُعَد فتحها. */
+  const resolvedIds = rows.filter((r) => r.resolved_at && (r.reopened_count ?? 0) === 0).map((r) => r.id);
+  let fcrCount = 0;
+  if (resolvedIds.length > 0) {
+    const staffReplies = new Map<string, number>();
+    for (let i = 0; i < resolvedIds.length; i += 200) {
+      const slice = resolvedIds.slice(i, i + 200);
+      const { data: msgs } = await db
+        .from("support_ticket_messages")
+        .select("ticket_id, is_staff")
+        .in("ticket_id", slice)
+        .eq("is_staff", true);
+      for (const msg of ((msgs ?? []) as { ticket_id: string }[])) {
+        staffReplies.set(msg.ticket_id, (staffReplies.get(msg.ticket_id) ?? 0) + 1);
+      }
+    }
+    fcrCount = resolvedIds.filter((id) => (staffReplies.get(id) ?? 0) <= 1).length;
+  }
+
+  /* تقييمات الرضا داخل المدى — مصدرها دعوات التقييم المُستخدمة. */
+  const { data: csatRows } = await db
+    .from("support_csat_invitations")
+    .select("rating, staff_id, team_id, category, used_at")
+    .not("used_at", "is", null)
+    .gte("used_at", from)
+    .lte("used_at", to)
+    .limit(5000);
+  const csatEntries = ((csatRows ?? []) as {
+    rating: number | null;
+    staff_id: string | null;
+    team_id: string | null;
+    category: string | null;
+  }[]).filter((c) => typeof c.rating === "number" && c.rating > 0);
+
+  const csatGroup = (
+    keyOf: (entry: (typeof csatEntries)[number]) => string | null,
+    nameOf: (key: string) => string,
+  ) => {
+    const buckets = new Map<string, number[]>();
+    for (const entry of csatEntries) {
+      const key = keyOf(entry);
+      if (!key) continue;
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(entry.rating as number);
+      else buckets.set(key, [entry.rating as number]);
+    }
+    return Array.from(buckets.entries())
+      .map(([key, values]) => ({
+        key,
+        name: nameOf(key),
+        responses: values.length,
+        average: Number((values.reduce((s, v) => s + v, 0) / values.length).toFixed(2)),
+      }))
+      .sort((a, b) => b.responses - a.responses);
+  };
+
   const totals = {
     created: rows.length,
     open: rows.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
@@ -130,6 +222,14 @@ export async function buildSupportReport(
     escalated: rows.filter((r) => (r.escalation_level ?? 0) > 0).length,
     reopened: rows.filter((r) => (r.reopened_count ?? 0) > 0).length,
     unassigned: rows.filter((r) => !r.assigned_to && !TERMINAL_STATUSES.includes(r.status as never)).length,
+    atRisk: rows.filter((r) => r.sla_state === "warning" || r.sla_state === "critical").length,
+    backlog: rows.filter(
+      (r) => !TERMINAL_STATUSES.includes(r.status as never) && Date.now() - new Date(r.created_at).getTime() > 86_400_000,
+    ).length,
+    reopenRate: rows.length
+      ? Math.round((rows.filter((r) => (r.reopened_count ?? 0) > 0).length / rows.length) * 100)
+      : 0,
+    fcrRate: resolvedIds.length ? Math.round((fcrCount / resolvedIds.length) * 100) : 0,
   };
 
   const firstResponseTimes: number[] = [];
@@ -187,6 +287,49 @@ export async function buildSupportReport(
     count: bucket.length,
     breached: bucket.filter((r) => r.sla_state === "breached").length,
   })).sort((a, b) => b.count - a.count);
+
+  const byPriority = group(rows, (r) => r.priority, (key, bucket) => ({
+    key,
+    count: bucket.length,
+    breached: bucket.filter((r) => r.sla_state === "breached").length,
+  })).sort((a, b) => b.count - a.count);
+
+  const byChannel = group(rows, (r) => r.channel, (key, bucket) => ({ key, count: bucket.length })).sort(
+    (a, b) => b.count - a.count,
+  );
+
+  const byOrganization = group(rows, (r) => r.organization_id, (key, bucket) => ({
+    key,
+    name: orgName.get(key) ?? "مكتب غير مرتبط",
+    plan: orgPlan.get(key) ?? null,
+    count: bucket.length,
+    open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
+    breached: bucket.filter((r) => r.sla_state === "breached").length,
+  })).sort((a, b) => b.count - a.count);
+
+  const byPlan = group(
+    rows,
+    (r) => (r.organization_id ? (orgPlan.get(r.organization_id) ?? "بدون باقة") : "بدون مكتب"),
+    (key, bucket) => ({
+      key,
+      count: bucket.length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
+
+  /* أعمار التذاكر المفتوحة — مقياس تراكم العمل. */
+  const openRows = rows.filter((r) => !TERMINAL_STATUSES.includes(r.status as never));
+  const ageHours = (iso: string) => (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  const aging = [
+    { bucket: "lt24", label: "أقل من 24 ساعة", test: (h: number) => h < 24 },
+    { bucket: "d1_3", label: "من يوم إلى 3 أيام", test: (h: number) => h >= 24 && h < 72 },
+    { bucket: "d3_7", label: "من 3 إلى 7 أيام", test: (h: number) => h >= 72 && h < 168 },
+    { bucket: "gt7", label: "أكثر من 7 أيام", test: (h: number) => h >= 168 },
+  ].map(({ bucket, label, test }) => ({
+    bucket,
+    label,
+    count: openRows.filter((r) => test(ageHours(r.created_at))).length,
+  }));
 
   const byTeam = group(rows, (r) => r.team_id, (key, bucket) => ({
     key,
@@ -253,10 +396,22 @@ export async function buildSupportReport(
       avgResolutionMinutes: average(resolutionTimes),
     },
     csat: { responses: ratings.length, average: ratings.length ? Number((ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(2)) : null, distribution },
+    csatByStaff: csatGroup((e) => e.staff_id, (key) => staffName.get(key) ?? "غير محدد"),
+    csatByTeam: csatGroup((e) => e.team_id, (key) => teamName.get(key) ?? "غير محدد"),
+    csatByCategory: csatGroup((e) => e.category, (key) => key).map(({ key, responses, average }) => ({
+      key,
+      responses,
+      average,
+    })),
     byStatus,
+    byPriority,
+    byChannel,
     byCategory,
     byTeam,
     byAgent,
+    byOrganization,
+    byPlan,
+    aging,
     daily,
     breachedTickets,
   };

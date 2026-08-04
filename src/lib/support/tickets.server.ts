@@ -71,6 +71,51 @@ function applyScope(query: Db, actor: SupportActor): Db {
 
 /* ------------------------------------------------------------ القراءة */
 
+/** أعداد قوائم العمل (Queues) — تُحسب خادمياً ضمن نطاق رؤية الموظف نفسه. */
+export type SupportQueueKey =
+  | "all"
+  | "mine"
+  | "unassigned"
+  | "new"
+  | "open"
+  | "awaiting_reply"
+  | "pending_internal"
+  | "escalated"
+  | "at_risk"
+  | "breached"
+  | "resolved"
+  | "closed"
+  | "needs_review";
+
+export async function queueCounts(db: Db, actor: SupportActor): Promise<Record<SupportQueueKey, number>> {
+  const base = () =>
+    applyScope(db.from("support_tickets").select("id", { count: "exact", head: true }).is("merged_into_id", null), actor);
+
+  const queries: Record<SupportQueueKey, () => Db> = {
+    all: () => base(),
+    mine: () => base().eq("assigned_to", actor.userId).not("status", "in", "(closed,resolved)"),
+    unassigned: () => base().is("assigned_to", null).not("status", "in", "(closed,resolved)"),
+    new: () => base().eq("status", "new"),
+    open: () => base().not("status", "in", "(closed,resolved)"),
+    awaiting_reply: () => base().eq("status", "awaiting_reply"),
+    pending_internal: () => base().eq("status", "pending_internal"),
+    escalated: () => base().eq("status", "escalated"),
+    at_risk: () => base().in("sla_state", ["warning", "critical"]).not("status", "in", "(closed,resolved)"),
+    breached: () => base().eq("sla_state", "breached"),
+    resolved: () => base().eq("status", "resolved"),
+    closed: () => base().eq("status", "closed"),
+    needs_review: () => base().eq("needs_identity_review", true),
+  };
+
+  const keys = Object.keys(queries) as SupportQueueKey[];
+  const results = await Promise.all(keys.map((key) => queries[key]!()));
+  const out = {} as Record<SupportQueueKey, number>;
+  keys.forEach((key, index) => {
+    out[key] = ((results[index] as { count: number | null }).count ?? 0) as number;
+  });
+  return out;
+}
+
 export type TicketFilters = {
   search?: string;
   status?: string;
@@ -83,6 +128,7 @@ export type TicketFilters = {
   organizationId?: string;
   onlyBreached?: boolean;
   onlyUnassigned?: boolean;
+  needsReview?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -111,8 +157,10 @@ export async function listTickets(
   if (filters.assignedTo === "me") query = query.eq("assigned_to", actor.userId);
   else if (filters.assignedTo && filters.assignedTo !== "all") query = query.eq("assigned_to", filters.assignedTo);
   if (filters.onlyUnassigned) query = query.is("assigned_to", null);
-  if (filters.slaState && filters.slaState !== "all") query = query.eq("sla_state", filters.slaState);
+  if (filters.slaState === "at_risk") query = query.in("sla_state", ["warning", "critical"]);
+  else if (filters.slaState && filters.slaState !== "all") query = query.eq("sla_state", filters.slaState);
   if (filters.onlyBreached) query = query.eq("sla_state", "breached");
+  if (filters.needsReview) query = query.eq("needs_identity_review", true);
   if (filters.organizationId) query = query.eq("organization_id", filters.organizationId);
 
   const term = (filters.search ?? "").trim().replace(/[,()]/g, "");

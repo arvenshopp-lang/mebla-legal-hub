@@ -65,6 +65,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
@@ -357,6 +358,12 @@ const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   path: '/cases/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const MehlaAdminSupportTicketIdRoute =
+  MehlaAdminSupportTicketIdRouteImport.update({
+    id: '/$ticketId',
+    path: '/$ticketId',
+    getParentRoute: () => MehlaAdminSupportRoute,
+  } as any)
 const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
   id: '/billing/$id',
   path: '/billing/$id',
@@ -465,7 +472,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
-  '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
@@ -475,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -532,7 +540,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
-  '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
@@ -542,6 +550,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -602,7 +611,7 @@ export interface FileRoutesById {
   '/mehla-admin/sms': typeof MehlaAdminSmsRoute
   '/mehla-admin/staff': typeof MehlaAdminStaffRoute
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
-  '/mehla-admin/support': typeof MehlaAdminSupportRoute
+  '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
@@ -612,6 +621,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -682,6 +692,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/support/$ticketId'
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
@@ -749,6 +760,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/support/$ticketId'
     | '/cases'
     | '/mehla-admin/billing'
     | '/api/public/doc/$token'
@@ -818,6 +830,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/support/$ticketId'
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
@@ -1255,6 +1268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/mehla-admin/support/$ticketId': {
+      id: '/mehla-admin/support/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/mehla-admin/support/$ticketId'
+      preLoaderRoute: typeof MehlaAdminSupportTicketIdRouteImport
+      parentRoute: typeof MehlaAdminSupportRoute
+    }
     '/mehla-admin/billing/$id': {
       id: '/mehla-admin/billing/$id'
       path: '/billing/$id'
@@ -1372,6 +1392,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface MehlaAdminSupportRouteChildren {
+  MehlaAdminSupportTicketIdRoute: typeof MehlaAdminSupportTicketIdRoute
+}
+
+const MehlaAdminSupportRouteChildren: MehlaAdminSupportRouteChildren = {
+  MehlaAdminSupportTicketIdRoute: MehlaAdminSupportTicketIdRoute,
+}
+
+const MehlaAdminSupportRouteWithChildren =
+  MehlaAdminSupportRoute._addFileChildren(MehlaAdminSupportRouteChildren)
+
 interface MehlaAdminRouteRouteChildren {
   MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
   MehlaAdminEmailRoute: typeof MehlaAdminEmailRoute
@@ -1392,7 +1423,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminSmsRoute: typeof MehlaAdminSmsRoute
   MehlaAdminStaffRoute: typeof MehlaAdminStaffRoute
   MehlaAdminSubscriptionsRoute: typeof MehlaAdminSubscriptionsRoute
-  MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
+  MehlaAdminSupportRoute: typeof MehlaAdminSupportRouteWithChildren
   MehlaAdminUsersRoute: typeof MehlaAdminUsersRoute
   MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
   MehlaAdminBillingIdRoute: typeof MehlaAdminBillingIdRoute
@@ -1419,7 +1450,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminSmsRoute: MehlaAdminSmsRoute,
   MehlaAdminStaffRoute: MehlaAdminStaffRoute,
   MehlaAdminSubscriptionsRoute: MehlaAdminSubscriptionsRoute,
-  MehlaAdminSupportRoute: MehlaAdminSupportRoute,
+  MehlaAdminSupportRoute: MehlaAdminSupportRouteWithChildren,
   MehlaAdminUsersRoute: MehlaAdminUsersRoute,
   MehlaAdminIndexRoute: MehlaAdminIndexRoute,
   MehlaAdminBillingIdRoute: MehlaAdminBillingIdRoute,
