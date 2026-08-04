@@ -365,6 +365,7 @@ export async function createGrant(
     permission: string;
     source: "temporary" | "delegation";
     reason: string;
+    reference?: string | null;
     startsAt?: string | null;
     expiresAt: string;
   },
@@ -435,6 +436,7 @@ export async function createGrant(
       granted_by: userId,
       granted_by_email: ctx.staff.email,
       reason: input.reason.trim(),
+      reference: input.reference?.trim() || null,
       starts_at: starts.toISOString(),
       expires_at: expires.toISOString(),
     })
