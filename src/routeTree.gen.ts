@@ -63,6 +63,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
@@ -342,6 +343,11 @@ const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   path: '/cases/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
+  id: '/billing/$id',
+  path: '/billing/$id',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
   id: '/api/public/theme.css',
   path: '/api/public/theme.css',
@@ -440,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -502,6 +509,7 @@ export interface FileRoutesByTo {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -567,6 +575,7 @@ export interface FileRoutesById {
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
@@ -632,6 +641,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/mehla-admin/billing/$id'
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
@@ -694,6 +704,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/mehla-admin/billing/$id'
     | '/cases'
     | '/mehla-admin/billing'
     | '/api/public/doc/$token'
@@ -758,6 +769,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/mehla-admin/billing/$id'
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/api/public/doc/$token'
@@ -1177,6 +1189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/mehla-admin/billing/$id': {
+      id: '/mehla-admin/billing/$id'
+      path: '/billing/$id'
+      fullPath: '/mehla-admin/billing/$id'
+      preLoaderRoute: typeof MehlaAdminBillingIdRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/api/public/theme.css': {
       id: '/api/public/theme.css'
       path: '/api/public/theme.css'
@@ -1294,6 +1313,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminSupportRoute: typeof MehlaAdminSupportRoute
   MehlaAdminUsersRoute: typeof MehlaAdminUsersRoute
   MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
+  MehlaAdminBillingIdRoute: typeof MehlaAdminBillingIdRoute
   MehlaAdminBillingIndexRoute: typeof MehlaAdminBillingIndexRoute
 }
 
@@ -1318,6 +1338,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminSupportRoute: MehlaAdminSupportRoute,
   MehlaAdminUsersRoute: MehlaAdminUsersRoute,
   MehlaAdminIndexRoute: MehlaAdminIndexRoute,
+  MehlaAdminBillingIdRoute: MehlaAdminBillingIdRoute,
   MehlaAdminBillingIndexRoute: MehlaAdminBillingIndexRoute,
 }
 
