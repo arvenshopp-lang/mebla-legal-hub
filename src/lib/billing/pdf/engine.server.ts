@@ -157,14 +157,17 @@ export function splitDirectionalRuns(input: string): Run[] {
 
 /* -------------------------------------------------------- تنسيق أرقام وتواريخ */
 
-/** مبالغ بصيغة لاتينية ثابتة لتفادي أي التباس في الترتيب البصري. */
+/**
+ * مبالغ بصيغة لاتينية ثابتة، والمسافة بين الرقم والعملة غير قابلة للكسر
+ * (U+00A0) حتى لا يفصل التقسيم أو القصّ رمز العملة عن مبلغه أبداً.
+ */
 export function formatPdfMoney(amount: number | string | null | undefined, currency = "SAR"): string {
   const value = Number(amount ?? 0);
   const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number.isFinite(value) ? value : 0);
-  return `${formatted} ${currency}`;
+  return `${formatted}\u00A0${currency}`;
 }
 
 /** تاريخ ميلادي بصيغة YYYY-MM-DD — مقطع لاتيني واحد لا يتأثر بالاتجاه. */
@@ -245,7 +248,7 @@ function leftText(ctx: Ctx, text: string, x: number, y: number, size: number, co
  * في منتصفه. عند تعذّر ذلك (كلمة واحدة أطول من العرض) نقصّ الحروف كحل أخير.
  */
 function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): string {
-  const value = text.replace(/\s+/g, " ").trim();
+  const value = text.replace(/[^\S\u00A0]+/g, " ").trim();
   if (widthOf(ctx, value, size) <= maxWidth) return value;
 
   const words = value.split(" ");
@@ -264,7 +267,7 @@ function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): strin
 
 /** تقسيم نص طويل إلى أسطر تناسب العرض المتاح. */
 function wrap(ctx: Ctx, text: string, maxWidth: number, size: number, maxLines = 6): string[] {
-  const words = text.replace(/\s+/g, " ").trim().split(" ");
+  const words = text.replace(/[^\S\u00A0]+/g, " ").trim().split(" ");
   const lines: string[] = [];
   let current = "";
   for (const word of words) {
