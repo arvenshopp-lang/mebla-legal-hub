@@ -58,6 +58,9 @@ export const SENSITIVE_GRANT_PERMISSIONS = [
   "billing.reopen_period",
   "billing.manage_providers",
   "staff.restrictions.manage",
+  "support.merge",
+  "support.manage_sla",
+  "support.view_all_offices",
 ];
 
 export function isSensitivePermission(permission: string): boolean {
