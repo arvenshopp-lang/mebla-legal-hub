@@ -176,12 +176,16 @@ export function riyadhNow(now = new Date()): { minutes: number; weekday: number 
 type Restrictions = {
   ip_enforced: boolean;
   allowed_ips: string[];
+  denied_ips: string[];
   device_enforced: boolean;
   trusted_devices: string[];
+  blocked_devices: string[];
   time_enforced: boolean;
   work_start_minute: number;
   work_end_minute: number;
   allowed_weekdays: number[];
+  effective_from: string | null;
+  effective_to: string | null;
 };
 
 /** يسجّل الجهاز في سجل الجلسات ويعيد ما إذا كانت الجلسة مُبطلة. */
