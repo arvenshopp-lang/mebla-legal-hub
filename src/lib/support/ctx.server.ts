@@ -7,7 +7,6 @@
  *  - عميل خادمي مميّز لأن جداول الدعم مغلقة بالكامل على مستوى RLS،
  *    فنطاق الرؤية يُفرض في الاستعلام عبر `SupportActor` لا عبر السياسات.
  */
-import { getRequest } from "@tanstack/react-start/server";
 import type { AdminPermission } from "@/lib/admin-permissions";
 import { expandPermissions } from "@/lib/admin-permissions";
 import { requireStaff, writeAudit, type StaffRow } from "@/lib/admin-guard.server";
@@ -29,8 +28,9 @@ export function newCorrelationId(prefix = "sup"): string {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`;
 }
 
-export function currentRequestId(): string {
+export async function currentRequestId(): Promise<string> {
   try {
+    const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const header =
       req.headers.get("cf-ray") ?? req.headers.get("x-request-id") ?? req.headers.get("x-correlation-id");
@@ -58,7 +58,14 @@ export async function supportCtx(
     { user_id: staff.user_id, email: staff.email, full_name: staff.full_name, role: staff.role },
     permissions,
   );
-  return { db, staff, actor, permissions, requestId: currentRequestId(), correlationId: newCorrelationId() };
+  return {
+    db,
+    staff,
+    actor,
+    permissions,
+    requestId: await currentRequestId(),
+    correlationId: newCorrelationId(),
+  };
 }
 
 /** تحقق صلاحية إضافية داخل نفس العملية (مثل التصعيد بعد الرد). */

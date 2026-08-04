@@ -35,9 +35,6 @@ import {
   uuid,
 } from "./support.schemas";
 
-type Engine = typeof import("./tickets.server");
-const engine = (): Promise<Engine> => import("./tickets.server");
-const ctxMod = () => import("./ctx.server");
 
 /* ------------------------------------------------------------------ القراءة */
 
@@ -45,9 +42,9 @@ export const listSupportTickets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ticketFiltersSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
-    const { supportCtx } = await ctxMod();
+    const { supportCtx } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
-    const { listTickets } = await engine();
+    const { listTickets } = await import("./tickets.server");
     return listTickets(ctx.db, ctx.actor, data);
   });
 
@@ -55,9 +52,9 @@ export const getSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { ticketId: string }) => ticketIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx } = await ctxMod();
+    const { supportCtx } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
-    const { getTicket } = await engine();
+    const { getTicket } = await import("./tickets.server");
     return getTicket(ctx.db, ctx.actor, data.ticketId);
   });
 
@@ -65,16 +62,16 @@ export const getSupportTicket = createServerFn({ method: "POST" })
 export const getSupportQueueCounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supportCtx } = await ctxMod();
+    const { supportCtx } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
-    const { queueCounts } = await engine();
+    const { queueCounts } = await import("./tickets.server");
     return queueCounts(ctx.db, ctx.actor);
   });
 
 export const getSupportWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supportCtx, canDo } = await ctxMod();
+    const { supportCtx, canDo } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
     const { loadSupportConfig } = await import("./config.server");
     const config = await loadSupportConfig(ctx.db);
@@ -115,9 +112,9 @@ export const createSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createTicketSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.create");
-    const { createTicket } = await engine();
+    const { createTicket } = await import("./tickets.server");
     try {
       const created = await createTicket(ctx.db, {
         subject: data.subject,
@@ -131,7 +128,7 @@ export const createSupportTicket = createServerFn({ method: "POST" })
         actor: { userId: ctx.actor.userId, name: ctx.actor.name },
       });
       if (data.teamId) {
-        const { assignTicket } = await engine();
+        const { assignTicket } = await import("./tickets.server");
         await assignTicket(ctx.db, ctx.actor, { ticketId: created.id, teamId: data.teamId });
       }
       await auditSupport(ctx, {
@@ -166,18 +163,18 @@ export const replySupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => replySchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage, claimIdempotency } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage, claimIdempotency } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.reply");
     if (data.clientRequestId) {
       const claim = await claimIdempotency(ctx.db, `reply:${data.clientRequestId}`, data.ticketId);
       if (!claim.fresh) return { emailSent: false, duplicate: true as const };
     }
     if (data.nextStatus === "closed" || data.nextStatus === "resolved") {
-      const { ensurePermission } = await ctxMod();
+      const { ensurePermission } = await import("./ctx.server");
       ensurePermission(ctx, "support.close");
     }
     try {
-      const { replyToTicket } = await engine();
+      const { replyToTicket } = await import("./tickets.server");
       const result = await replyToTicket(ctx.db, ctx.actor, {
         ticketId: data.ticketId,
         body: data.body,
@@ -220,14 +217,14 @@ export const addSupportNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => noteSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage, claimIdempotency } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage, claimIdempotency } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.reply");
     if (data.clientRequestId) {
       const claim = await claimIdempotency(ctx.db, `note:${data.clientRequestId}`, data.ticketId);
       if (!claim.fresh) return { ok: true as const, duplicate: true as const };
     }
     try {
-      const { addInternalNote } = await engine();
+      const { addInternalNote } = await import("./tickets.server");
       await addInternalNote(ctx.db, ctx.actor, {
         ticketId: data.ticketId,
         body: data.body,
@@ -249,7 +246,7 @@ export const transitionSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => transitionSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage, ensurePermission } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage, ensurePermission } = await import("./ctx.server");
     const permission =
       data.to === "closed" || data.to === "resolved" ? "support.close" : "support.reply";
     const ctx = await supportCtx(context.supabase, context.userId, permission);
@@ -262,7 +259,7 @@ export const transitionSupportTicket = createServerFn({ method: "POST" })
     if (before?.["status"] === "closed" && data.to !== "closed") ensurePermission(ctx, "support.reopen");
 
     try {
-      const { transitionTicket } = await engine();
+      const { transitionTicket } = await import("./tickets.server");
       const result = await transitionTicket(ctx.db, ctx.actor, {
         ticketId: data.ticketId,
         to: data.to,
@@ -308,10 +305,10 @@ export const assignSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => assignSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.assign");
     try {
-      const { assignTicket } = await engine();
+      const { assignTicket } = await import("./tickets.server");
       const { data: before } = await ctx.db
         .from("support_tickets")
         .select("assigned_to, team_id, ticket_number, reference, subject")
@@ -355,10 +352,10 @@ export const escalateSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => escalateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.escalate");
     try {
-      const { escalateTicket } = await engine();
+      const { escalateTicket } = await import("./tickets.server");
       const result = await escalateTicket(ctx.db, ctx.actor, { ticketId: data.ticketId, reason: data.reason });
       await auditSupport(ctx, {
         action: "support.ticket.escalate",
@@ -396,10 +393,10 @@ export const mergeSupportTickets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => mergeSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.merge");
     try {
-      const { mergeTickets } = await engine();
+      const { mergeTickets } = await import("./tickets.server");
       await mergeTickets(ctx.db, ctx.actor, data);
       await auditSupport(ctx, {
         action: "support.ticket.merge",
@@ -418,10 +415,10 @@ export const splitSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => splitSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.merge");
     try {
-      const { splitTicket } = await engine();
+      const { splitTicket } = await import("./tickets.server");
       const created = await splitTicket(ctx.db, ctx.actor, {
         ticketId: data.ticketId,
         subject: data.subject,
@@ -446,10 +443,10 @@ export const setSupportTicketTags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => tagsSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.reply");
     try {
-      const { setTicketTags } = await engine();
+      const { setTicketTags } = await import("./tickets.server");
       await setTicketTags(ctx.db, ctx.actor, data);
       await auditSupport(ctx, {
         action: "support.ticket.tags",
@@ -467,10 +464,10 @@ export const updateSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateTicketSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.reply");
     try {
-      const { updateTicketFields } = await engine();
+      const { updateTicketFields } = await import("./tickets.server");
       await updateTicketFields(ctx.db, ctx.actor, {
         ticketId: data.ticketId,
         ...(data.priority ? { priority: data.priority } : {}),
@@ -501,7 +498,7 @@ export const reviewSupportIdentity = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.reply");
     try {
       const { data: before } = await ctx.db
@@ -514,7 +511,7 @@ export const reviewSupportIdentity = createServerFn({ method: "POST" })
       const { error } = await ctx.db.from("support_tickets").update(patch).eq("id", data.ticketId);
       if (error) throw new Error("تعذّر تحديث هوية مُقدّم الطلب.");
 
-      const { writeTicketEvent } = await engine();
+      const { writeTicketEvent } = await import("./tickets.server");
       await writeTicketEvent(ctx.db, {
         ticketId: data.ticketId,
         eventType: "identity_reviewed",
@@ -543,7 +540,7 @@ export const requestSupportCsat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => csatRequestSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport, safeMessage } = await ctxMod();
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.close");
     try {
       const { requestCsat } = await import("./csat.server");
@@ -589,7 +586,7 @@ export const getSupportReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => reportRangeSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
-    const { supportCtx } = await ctxMod();
+    const { supportCtx } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
     const { buildSupportReport } = await import("./reports.server");
     return buildSupportReport(ctx.db, ctx.actor, data);
@@ -600,9 +597,9 @@ export const exportSupportTickets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ticketFiltersSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
-    const { supportCtx, auditSupport } = await ctxMod();
+    const { supportCtx, auditSupport } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.export");
-    const { listTickets } = await engine();
+    const { listTickets } = await import("./tickets.server");
     const result = await listTickets(ctx.db, ctx.actor, { ...data, limit: 200, offset: 0 });
     await auditSupport(ctx, {
       action: "support.tickets.export",
@@ -618,7 +615,7 @@ export const exportSupportTickets = createServerFn({ method: "POST" })
 export const getSupportConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supportCtx, canDo } = await ctxMod();
+    const { supportCtx, canDo } = await import("./ctx.server");
     const ctx = await supportCtx(context.supabase, context.userId, "support.read");
     const { loadSupportConfig } = await import("./config.server");
     const config = await loadSupportConfig(ctx.db);
@@ -631,78 +628,114 @@ export const getSupportConfig = createServerFn({ method: "POST" })
     };
   });
 
-function configFn<T>(
-  permission: "support.manage_sla" | "support.manage_categories",
-  parse: (input: unknown) => T,
-  action: string,
-  run: (
-    mod: typeof import("./config.server"),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db: any,
-    input: T,
-  ) => Promise<unknown>,
-) {
-  return createServerFn({ method: "POST" })
-    .middleware([requireSupabaseAuth])
-    .inputValidator(parse)
-    .handler(async ({ data, context }) => {
-      const { supportCtx, auditSupport, safeMessage } = await ctxMod();
-      const ctx = await supportCtx(context.supabase, context.userId, permission);
-      const mod = await import("./config.server");
-      try {
-        await run(mod, ctx.db, data as T);
-        await auditSupport(ctx, {
-          action,
-          entityType: "support_config",
-          description: action,
-          after: data as Record<string, unknown>,
-        });
-        return { ok: true as const };
-      } catch (error) {
-        throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
-      }
-    });
-}
+export const saveSupportTeam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => teamSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveTeam(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.team.save",
+        entityType: "support_config",
+        description: "support.team.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportTeam = configFn(
-  "support.manage_sla",
-  (input) => teamSchema.parse(input),
-  "support.team.save",
-  (mod, db, input) => mod.saveTeam(db, input),
-);
+export const saveSupportTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => teamMemberSchema.extend({ remove: z.boolean().optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.setTeamMember(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.team.member",
+        entityType: "support_config",
+        description: "support.team.member",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportTeamMember = configFn(
-  "support.manage_sla",
-  (input) => teamMemberSchema.extend({ remove: z.boolean().optional() }).parse(input),
-  "support.team.member",
-  (mod, db, input) => mod.setTeamMember(db, input),
-);
+export const saveSupportCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => categorySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveCategory(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.category.save",
+        entityType: "support_config",
+        description: "support.category.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportCategory = configFn(
-  "support.manage_categories",
-  (input) => categorySchema.parse(input),
-  "support.category.save",
-  (mod, db, input) => mod.saveCategory(db, input),
-);
+export const saveSupportPolicy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => slaPolicySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.savePolicy(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.sla_policy.save",
+        entityType: "support_config",
+        description: "support.sla_policy.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportPolicy = configFn(
-  "support.manage_sla",
-  (input) => slaPolicySchema.parse(input),
-  "support.sla_policy.save",
-  (mod, db, input) => mod.savePolicy(db, input),
-);
+export const saveSupportRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => escalationRuleSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveRule(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.escalation_rule.save",
+        entityType: "support_config",
+        description: "support.escalation_rule.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportRule = configFn(
-  "support.manage_sla",
-  (input) => escalationRuleSchema.parse(input),
-  "support.escalation_rule.save",
-  (mod, db, input) => mod.saveRule(db, input),
-);
-
-export const saveSupportTag = configFn(
-  "support.manage_categories",
-  (input) =>
-    z
+export const saveSupportTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         id: uuid.optional(),
         nameAr: z.string().trim().min(1, "اسم الوسم مطلوب").max(60),
@@ -711,22 +744,49 @@ export const saveSupportTag = configFn(
           .trim()
           .regex(/^#[0-9a-fA-F]{6}$/, "اللون بصيغة #RRGGBB"),
       })
-      .parse(input),
-  "support.tag.save",
-  (mod, db, input) => mod.saveTag(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveTag(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.tag.save",
+        entityType: "support_config",
+        description: "support.tag.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const deleteSupportTag = configFn(
-  "support.manage_categories",
-  (input) => z.object({ id: uuid }).parse(input),
-  "support.tag.delete",
-  (mod, db, input) => mod.deleteTag(db, input.id),
-);
+export const deleteSupportTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_categories");
+    const mod = await import("./config.server");
+    try {
+      await mod.deleteTag(ctx.db, data.id);
+      await auditSupport(ctx, {
+        action: "support.tag.delete",
+        entityType: "support_config",
+        description: "support.tag.delete",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportCalendar = configFn(
-  "support.manage_sla",
-  (input) =>
-    z
+export const saveSupportCalendar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         id: uuid.optional(),
         code: z
@@ -740,31 +800,72 @@ export const saveSupportCalendar = configFn(
         endMinute: z.number().int().min(1).max(1440),
         isActive: z.boolean().optional(),
       })
-      .parse(input),
-  "support.calendar.save",
-  (mod, db, input) => mod.saveCalendar(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveCalendar(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.calendar.save",
+        entityType: "support_config",
+        description: "support.calendar.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const saveSupportHoliday = configFn(
-  "support.manage_sla",
-  (input) =>
-    z
+export const saveSupportHoliday = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z
       .object({
         calendarId: uuid,
         holidayDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "التاريخ بصيغة سنة-شهر-يوم"),
         nameAr: z.string().trim().min(1, "اسم العطلة مطلوب").max(120),
       })
-      .parse(input),
-  "support.holiday.save",
-  (mod, db, input) => mod.saveHoliday(db, input),
-);
+      .parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.saveHoliday(ctx.db, data);
+      await auditSupport(ctx, {
+        action: "support.holiday.save",
+        entityType: "support_config",
+        description: "support.holiday.save",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
-export const deleteSupportHoliday = configFn(
-  "support.manage_sla",
-  (input) => z.object({ id: uuid }).parse(input),
-  "support.holiday.delete",
-  (mod, db, input) => mod.deleteHoliday(db, input.id),
-);
+export const deleteSupportHoliday = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supportCtx, auditSupport, safeMessage } = await import("./ctx.server");
+    const ctx = await supportCtx(context.supabase, context.userId, "support.manage_sla");
+    const mod = await import("./config.server");
+    try {
+      await mod.deleteHoliday(ctx.db, data.id);
+      await auditSupport(ctx, {
+        action: "support.holiday.delete",
+        entityType: "support_config",
+        description: "support.holiday.delete",
+        after: data as Record<string, unknown>,
+      });
+      return { ok: true as const };
+    } catch (error) {
+      throw new Error(safeMessage(error, "تعذّر حفظ الإعداد."));
+    }
+  });
 
 /* ------------------------------------------------- تذكرة من بوابة المكتب */
 
@@ -800,7 +901,7 @@ export const createOfficeSupportTicket = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as never;
 
-    const { createTicket } = await engine();
+    const { createTicket } = await import("./tickets.server");
     const created = await createTicket(db as never, {
       subject: data.subject,
       description: data.description,
