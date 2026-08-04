@@ -2221,6 +2221,69 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_approval_requests: {
+        Row: {
+          action: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decided_by_email: string | null
+          decision_reason: string | null
+          executed_at: string | null
+          expires_at: string
+          id: string
+          payload: Json
+          reason: string
+          requested_at: string
+          requested_by: string
+          requested_by_email: string | null
+          resource_id: string | null
+          resource_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_email?: string | null
+          decision_reason?: string | null
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          reason: string
+          requested_at?: string
+          requested_by: string
+          requested_by_email?: string | null
+          resource_id?: string | null
+          resource_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_email?: string | null
+          decision_reason?: string | null
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          reason?: string
+          requested_at?: string
+          requested_by?: string
+          requested_by_email?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_bank_reconciliations: {
         Row: {
           amount: number
@@ -2557,6 +2620,60 @@ export type Database = {
           },
         ]
       }
+      platform_departments: {
+        Row: {
+          code: string
+          created_at: string
+          default_role_id: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          manager_user_id: string | null
+          name_ar: string
+          parent_department_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          default_role_id?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_user_id?: string | null
+          name_ar: string
+          parent_department_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          default_role_id?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_user_id?: string | null
+          name_ar?: string
+          parent_department_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_departments_default_role_id_fkey"
+            columns: ["default_role_id"]
+            isOneToOne: false
+            referencedRelation: "platform_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_departments_parent_department_id_fkey"
+            columns: ["parent_department_id"]
+            isOneToOne: false
+            referencedRelation: "platform_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_email_templates: {
         Row: {
           body_html: string
@@ -2640,6 +2757,130 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      platform_impersonation_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          detail: string | null
+          event: string
+          id: string
+          ip: string | null
+          path: string | null
+          session_id: string
+          target_user_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          detail?: string | null
+          event: string
+          id?: string
+          ip?: string | null
+          path?: string | null
+          session_id: string
+          target_user_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          detail?: string | null
+          event?: string
+          id?: string
+          ip?: string | null
+          path?: string | null
+          session_id?: string
+          target_user_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_impersonation_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "platform_impersonation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_impersonation_sessions: {
+        Row: {
+          actor_email: string | null
+          actor_user_id: string
+          approval_request_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          end_reason: string | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          ip: string | null
+          read_only: boolean
+          reason: string
+          started_at: string | null
+          status: string
+          target_email: string | null
+          target_user_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_user_id: string
+          approval_request_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by?: string | null
+          expires_at: string
+          id?: string
+          ip?: string | null
+          read_only?: boolean
+          reason: string
+          started_at?: string | null
+          status?: string
+          target_email?: string | null
+          target_user_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_user_id?: string
+          approval_request_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by?: string | null
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          read_only?: boolean
+          reason?: string
+          started_at?: string | null
+          status?: string
+          target_email?: string | null
+          target_user_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_impersonation_sessions_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "platform_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_integrations: {
         Row: {
@@ -3372,6 +3613,57 @@ export type Database = {
           },
         ]
       }
+      platform_permission_grants: {
+        Row: {
+          created_at: string
+          expires_at: string
+          granted_by: string
+          granted_by_email: string | null
+          grantee_user_id: string
+          id: string
+          permission: string
+          reason: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          source: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          granted_by: string
+          granted_by_email?: string | null
+          grantee_user_id: string
+          id?: string
+          permission: string
+          reason: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          source?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          granted_by?: string
+          granted_by_email?: string | null
+          grantee_user_id?: string
+          id?: string
+          permission?: string
+          reason?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          source?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_plans: {
         Row: {
           ai_enabled: boolean
@@ -3616,10 +3908,12 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          department_id: string | null
           email: string
           full_name: string
           id: string
           job_title: string | null
+          manager_user_id: string | null
           permissions: string[]
           role: Database["public"]["Enums"]["platform_role"]
           role_id: string | null
@@ -3630,10 +3924,12 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           email: string
           full_name: string
           id?: string
           job_title?: string | null
+          manager_user_id?: string | null
           permissions?: string[]
           role?: Database["public"]["Enums"]["platform_role"]
           role_id?: string | null
@@ -3644,10 +3940,12 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           email?: string
           full_name?: string
           id?: string
           job_title?: string | null
+          manager_user_id?: string | null
           permissions?: string[]
           role?: Database["public"]["Enums"]["platform_role"]
           role_id?: string | null
@@ -3657,6 +3955,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "platform_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "platform_departments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "platform_staff_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
@@ -3664,6 +3969,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_staff_restrictions: {
+        Row: {
+          allowed_ips: string[]
+          allowed_weekdays: number[]
+          created_at: string
+          device_enforced: boolean
+          ip_enforced: boolean
+          time_enforced: boolean
+          trusted_devices: string[]
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_end_minute: number
+          work_start_minute: number
+        }
+        Insert: {
+          allowed_ips?: string[]
+          allowed_weekdays?: number[]
+          created_at?: string
+          device_enforced?: boolean
+          ip_enforced?: boolean
+          time_enforced?: boolean
+          trusted_devices?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          work_end_minute?: number
+          work_start_minute?: number
+        }
+        Update: {
+          allowed_ips?: string[]
+          allowed_weekdays?: number[]
+          created_at?: string
+          device_enforced?: boolean
+          ip_enforced?: boolean
+          time_enforced?: boolean
+          trusted_devices?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          work_end_minute?: number
+          work_start_minute?: number
+        }
+        Relationships: []
+      }
+      platform_staff_sessions: {
+        Row: {
+          browser: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          device_fingerprint: string
+          first_seen_at: string
+          id: string
+          ip: string | null
+          last_seen_at: string
+          os: string | null
+          requests_count: number
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          device_fingerprint: string
+          first_seen_at?: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          os?: string | null
+          requests_count?: number
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          device_fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          os?: string | null
+          requests_count?: number
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       platform_user_notes: {
         Row: {

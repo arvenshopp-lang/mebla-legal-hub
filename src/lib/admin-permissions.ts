@@ -33,6 +33,17 @@ export type AdminPermission =
   | "staff.view"
   | "staff.manage"
   | "roles.manage"
+  | "departments.read"
+  | "departments.manage"
+  | "staff.sessions.read"
+  | "staff.sessions.revoke"
+  | "staff.restrictions.manage"
+  | "delegation.grant"
+  | "delegation.revoke"
+  | "approvals.request"
+  | "approvals.decide"
+  | "impersonation.request"
+  | "impersonation.approve"
   | "billing.read"
   | "billing.create"
   | "billing.update"
@@ -81,6 +92,17 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "staff.view", label: "مشاهدة الفريق", group: "الفريق", description: "عرض فريق إدارة المنصة وصلاحياتهم." },
   { id: "staff.manage", label: "إدارة الفريق", group: "الفريق", description: "إضافة موظفين وتعديل صلاحياتهم وإيقافهم." },
   { id: "roles.manage", label: "إدارة الأدوار", group: "الفريق", description: "إنشاء أدوار مخصصة وتحديد صلاحياتها." },
+  { id: "departments.read", label: "مشاهدة الأقسام", group: "الأقسام", description: "عرض أقسام المنصة ومدرائها." },
+  { id: "departments.manage", label: "إدارة الأقسام", group: "الأقسام", description: "إنشاء وتعديل الأقسام والمدير المباشر." },
+  { id: "staff.sessions.read", label: "مشاهدة الجلسات", group: "الأمان", description: "عرض جلسات وأجهزة موظفي المنصة." },
+  { id: "staff.sessions.revoke", label: "إبطال الجلسات", group: "الأمان", description: "إبطال جلسة جهاز لموظف فوراً." },
+  { id: "staff.restrictions.manage", label: "إدارة قيود الوصول", group: "الأمان", description: "تحديد عناوين IP والأجهزة ونافذة العمل لكل موظف." },
+  { id: "delegation.grant", label: "تفويض الصلاحيات", group: "التفويض والاعتماد", description: "تفويض صلاحية يملكها الموظف لموظف آخر بمدة محددة." },
+  { id: "delegation.revoke", label: "سحب التفويض", group: "التفويض والاعتماد", description: "سحب تفويض أو صلاحية مؤقتة قبل انتهائها." },
+  { id: "approvals.request", label: "طلب اعتماد", group: "التفويض والاعتماد", description: "إنشاء طلب اعتماد لعملية حساسة." },
+  { id: "approvals.decide", label: "اعتماد الطلبات", group: "التفويض والاعتماد", description: "اعتماد أو رفض طلبات العمليات الحساسة." },
+  { id: "impersonation.request", label: "طلب انتحال", group: "الأمان", description: "طلب جلسة انتحال قراءة فقط داخل نطاق المنصة." },
+  { id: "impersonation.approve", label: "اعتماد الانتحال", group: "الأمان", description: "اعتماد طلب جلسة انتحال لموظف آخر." },
   { id: "billing.read", label: "مشاهدة المركز المالي", group: "المركز المالي", description: "الاطلاع على الفواتير والمدفوعات والاستردادات." },
   { id: "billing.create", label: "إنشاء فاتورة", group: "المركز المالي", description: "إنشاء مسودة فاتورة وبنودها." },
   { id: "billing.update", label: "تعديل مسودة فاتورة", group: "المركز المالي", description: "تعديل بيانات وبنود الفاتورة قبل إصدارها." },
