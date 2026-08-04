@@ -9,6 +9,23 @@ import { ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardHome,
+  head: () => ({
+    meta: [
+      { title: "لوحة متابعة القضايا | مِهلة" },
+      {
+        name: "description",
+        content: "لوحة متابعة يومية لقضايا المكتب وجلسات المحاكم والمهل النظامية والمهام المتأخرة.",
+      },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "لوحة متابعة القضايا | مِهلة" },
+      {
+        property: "og:description",
+        content: "أولويات اليوم في مكتبك: الجلسات القادمة، المهل القريبة، والمهام المتأخرة.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const dateTime = (v: string) => fmtDateTime(v);
