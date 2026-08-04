@@ -284,7 +284,7 @@ export function statementModel(source: StatementSource): PdfDocumentModel {
   return {
     kind: "statement",
     title: "كشف حساب",
-    reference: `${formatPdfDate(source.from)} ← ${formatPdfDate(source.to)}`,
+    reference: `من ${formatPdfDate(source.from)} إلى ${formatPdfDate(source.to)}`,
     statusLine: `تاريخ الإصدار: ${formatPdfDate(new Date().toISOString())}`,
     subtitle: source.accountName,
     meta: [
