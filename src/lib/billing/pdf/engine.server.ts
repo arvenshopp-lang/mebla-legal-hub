@@ -236,6 +236,8 @@ function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): strin
   const words = value.split(" ");
   while (words.length > 1) {
     words.pop();
+    // لا نترك رمز عملة معلّقاً بعد حذف مبلغه (مثل بقاء SAR بلا رقم).
+    while (words.length > 1 && /^[A-Z]{3}$/.test(words[words.length - 1] ?? "")) words.pop();
     const candidate = `${words.join(" ")}…`;
     if (widthOf(ctx, candidate, size) <= maxWidth) return candidate;
   }
