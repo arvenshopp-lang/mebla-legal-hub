@@ -112,7 +112,7 @@ function RbacPage() {
             case "departments":
               return <DepartmentsPanel data={data} canManage={can("staff.manage")} refresh={refresh} />;
             case "grants":
-              return <GrantsPanel data={data} canGrant={can("permissions.grant")} refresh={refresh} />;
+              return <GrantsPanel data={data} canGrant={can("delegation.grant")} refresh={refresh} />;
             case "approvals":
               return <ApprovalsPanel data={data} canDecide={can("approvals.decide")} refresh={refresh} />;
             case "impersonation":
