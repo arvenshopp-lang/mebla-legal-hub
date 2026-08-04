@@ -5,6 +5,7 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { loadEnv } from "vite";
 import path from "node:path";
 
@@ -18,6 +19,8 @@ export default defineConfig({
   // يسمح باختبار بنية النطاقات الفرعية محلياً (app/client/upload/status/api/docs/www)
   vite: {
     server: { allowedHosts: [`.${ROOT_DOMAIN}`] },
+    // خادم MCP: يوّلد مسار /mcp ومسار بيانات OAuth من src/lib/mcp/index.ts
+    plugins: [mcpPlugin()],
     resolve: {
       alias: [
         // pdf-lib يعتمد على tslib بصيغة CommonJS، وحزمة عامل الحوسبة الطرفية

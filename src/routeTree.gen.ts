@@ -17,6 +17,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PendingAccessRouteImport } from './routes/pending-access'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -63,6 +64,8 @@ import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
@@ -70,6 +73,7 @@ import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/bi
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -118,6 +122,11 @@ const PendingAccessRoute = PendingAccessRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -350,6 +359,18 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MehlaAdminBillingIndexRoute = MehlaAdminBillingIndexRouteImport.update({
   id: '/billing/',
   path: '/billing/',
@@ -386,6 +407,12 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   path: '/cases/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -442,6 +469,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pending-access': typeof PendingAccessRoute
   '/privacy': typeof PrivacyRoute
@@ -450,6 +478,8 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -491,6 +521,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -512,6 +543,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pending-access': typeof PendingAccessRoute
   '/privacy': typeof PrivacyRoute
@@ -520,6 +552,8 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -561,6 +595,7 @@ export interface FileRoutesByTo {
   '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -585,6 +620,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pending-access': typeof PendingAccessRoute
   '/privacy': typeof PrivacyRoute
@@ -593,6 +629,8 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -634,6 +672,7 @@ export interface FileRoutesById {
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -658,6 +697,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/forgot-password'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/pending-access'
     | '/privacy'
@@ -666,6 +706,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -707,6 +749,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/'
     | '/upload/'
     | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -728,6 +771,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/forgot-password'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/pending-access'
     | '/privacy'
@@ -736,6 +780,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -777,6 +823,7 @@ export interface FileRouteTypes {
     | '/mehla-admin'
     | '/upload'
     | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -800,6 +847,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/forgot-password'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/pending-access'
     | '/privacy'
@@ -808,6 +856,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/clients'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -849,6 +899,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/'
     | '/upload/'
     | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -873,6 +924,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
   PendingAccessRoute: typeof PendingAccessRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -881,6 +933,8 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifiedRoute: typeof AuthVerifiedRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -888,6 +942,7 @@ export interface RootRouteChildren {
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
@@ -956,6 +1011,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1280,6 +1342,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mehla-admin/billing/': {
       id: '/mehla-admin/billing/'
       path: '/billing'
@@ -1328,6 +1404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cases/$id'
       preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
@@ -1508,6 +1591,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
   PendingAccessRoute: PendingAccessRoute,
   PrivacyRoute: PrivacyRoute,
@@ -1516,6 +1600,9 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifiedRoute: AuthVerifiedRoute,
   InviteTokenRoute: InviteTokenRoute,
@@ -1523,6 +1610,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
