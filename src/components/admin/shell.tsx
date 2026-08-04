@@ -30,6 +30,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import type { AdminPermission } from "@/lib/admin-permissions";
 
 type NavItem = { to: string; label: string; Icon: typeof Gauge; permission?: AdminPermission };
@@ -71,7 +72,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
       { to: "/mehla-admin/security", label: "مركز الأمان", Icon: Lock },
-      { to: "/mehla-admin/roles", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
+      { to: "/mehla-admin/rbac", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
       { to: "/mehla-admin/failures", label: "سجل الأعطال", Icon: AlertTriangle, permission: "audit.read" },
     ],
@@ -172,6 +173,7 @@ export function AdminShell({
 
   return (
     <div className="min-h-dvh bg-surface-muted" dir="rtl">
+      <ImpersonationBanner />
       <aside className="fixed inset-y-0 right-0 hidden w-64 flex-col border-l border-border bg-surface lg:flex">
         {Sidebar}
       </aside>

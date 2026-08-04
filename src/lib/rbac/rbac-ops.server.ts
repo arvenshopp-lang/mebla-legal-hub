@@ -33,6 +33,26 @@ function nowIso() {
 
 /* ------------------------------- القراءة ------------------------------- */
 
+const RBAC_AUDIT_ACTIONS = [
+  "authz.denied",
+  "authz.allowed",
+  "rbac.role_saved",
+  "rbac.role_deleted",
+  "rbac.department_saved",
+  "rbac.staff_org_updated",
+  "rbac.grant_created",
+  "rbac.grant_revoked",
+  "rbac.approval_requested",
+  "rbac.approval_decided",
+  "rbac.session_revoked",
+  "rbac.restrictions_saved",
+  "rbac.impersonation_requested",
+  "rbac.impersonation_approved",
+  "rbac.impersonation_ended",
+  "rbac.impersonation_page",
+];
+
+
 export async function rbacOverview(supabase: AnyClient, userId: string) {
   const ctx = await authorize(supabase, userId, "staff.view", { mutating: false });
   const db = await adminDb();
@@ -62,24 +82,7 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
       db
         .from("admin_audit_logs")
         .select("id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser")
-        .in("action", [
-          "authz.denied",
-          "authz.allowed",
-          "rbac.role_saved",
-          "rbac.role_deleted",
-          "rbac.department_saved",
-          "rbac.staff_org_updated",
-          "rbac.grant_created",
-          "rbac.grant_revoked",
-          "rbac.approval_requested",
-          "rbac.approval_decided",
-          "rbac.session_revoked",
-          "rbac.restrictions_saved",
-          "rbac.impersonation_requested",
-          "rbac.impersonation_approved",
-          "rbac.impersonation_ended",
-          "rbac.impersonation_page",
-        ])
+        .in("action", RBAC_AUDIT_ACTIONS)
         .order("created_at", { ascending: false })
         .limit(150),
     ]);
@@ -110,10 +113,50 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
 
 /* -------------------------------- الأدوار ------------------------------- */
 
+
+/** سجل تدقيق RBAC مع ترقيم صفحات خادمي وعدد إجمالي. */
+export async function rbacAuditPage(
+  supabase: AnyClient,
+  userId: string,
+  input: { search?: string; action?: string; page: number; pageSize: number },
+) {
+  await authorize(supabase, userId, "audit.read", { mutating: false });
+  const db = await adminDb();
+  const from = (input.page - 1) * input.pageSize;
+
+  let query = db
+    .from("admin_audit_logs")
+    .select(
+      "id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser",
+      { count: "exact" },
+    )
+    .in("action", input.action ? [input.action] : RBAC_AUDIT_ACTIONS);
+
+  const search = input.search?.trim();
+  if (search) {
+    const safe = search.replace(/[%,()]/g, " ");
+    query = query.or(`actor_email.ilike.%${safe}%,description.ilike.%${safe}%,entity_type.ilike.%${safe}%`);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(from, from + input.pageSize - 1);
+  if (error) throw new Error("تعذّر قراءة سجل التدقيق.");
+
+  return { rows: data ?? [], total: count ?? 0, page: input.page, pageSize: input.pageSize };
+}
+
 export async function saveRole(
   supabase: AnyClient,
   userId: string,
-  input: { id?: string | null; code: string; name_ar: string; description?: string | null; permissions: string[] },
+  input: {
+    id?: string | null;
+    code: string;
+    name_ar: string;
+    description?: string | null;
+    permissions: string[];
+    is_active?: boolean;
+  },
 ) {
   const ctx = await authorize(supabase, userId, "roles.manage", { entityType: "platform_role" });
   const db = await adminDb();
@@ -144,6 +187,7 @@ export async function saveRole(
         name_ar: input.name_ar.trim(),
         description: input.description?.trim() || null,
         permissions,
+        ...(input.is_active === undefined ? {} : { is_active: input.is_active }),
         updated_at: nowIso(),
       })
       .eq("id", id);
@@ -157,6 +201,7 @@ export async function saveRole(
         description: input.description?.trim() || null,
         permissions,
         is_system: false,
+        is_active: input.is_active ?? true,
       })
       .select("id")
       .maybeSingle();
@@ -176,6 +221,29 @@ export async function saveRole(
     metadata: { trace_ref: ctx.traceRef },
   });
   return { id };
+}
+
+/** استنساخ دور قائم بصلاحياته كاملة — يمرّ بنفس حراسة عدم التصعيد. */
+export async function cloneRole(
+  supabase: AnyClient,
+  userId: string,
+  input: { sourceId: string; code: string; name_ar: string },
+) {
+  const db = await adminDb();
+  const { data: source } = await db
+    .from("platform_roles")
+    .select("permissions, description")
+    .eq("id", input.sourceId)
+    .maybeSingle();
+  if (!source) throw new Error("الدور المصدر غير موجود.");
+  const row = source as { permissions: string[] | null; description: string | null };
+  return saveRole(supabase, userId, {
+    code: input.code,
+    name_ar: input.name_ar,
+    description: row.description,
+    permissions: row.permissions ?? [],
+    is_active: true,
+  });
 }
 
 export async function deleteRole(supabase: AnyClient, userId: string, id: string) {
@@ -333,6 +401,7 @@ export async function createGrant(
     permission: string;
     source: "temporary" | "delegation";
     reason: string;
+    reference?: string | null;
     startsAt?: string | null;
     expiresAt: string;
   },
@@ -403,6 +472,7 @@ export async function createGrant(
       granted_by: userId,
       granted_by_email: ctx.staff.email,
       reason: input.reason.trim(),
+      reference: input.reference?.trim() || null,
       starts_at: starts.toISOString(),
       expires_at: expires.toISOString(),
     })
@@ -577,6 +647,40 @@ export async function revokeStaffSession(supabase: AnyClient, userId: string, in
   return { ok: true };
 }
 
+/** إبطال كل جلسات موظف — يخرجه من جميع أجهزته فوراً. */
+export async function revokeAllStaffSessions(
+  supabase: AnyClient,
+  userId: string,
+  input: { staffUserId: string; reason: string },
+) {
+  const ctx = await authorize(supabase, userId, "staff.sessions.revoke", {
+    entityType: "platform_staff_session",
+    entityId: input.staffUserId,
+  });
+  const db = await adminDb();
+  const { data: rows } = await db
+    .from("platform_staff_sessions")
+    .select("id")
+    .eq("user_id", input.staffUserId)
+    .is("revoked_at", null);
+  const ids = ((rows ?? []) as { id: string }[]).map((r) => r.id);
+  if (ids.length === 0) return { revoked: 0 };
+  const { error } = await db
+    .from("platform_staff_sessions")
+    .update({ revoked_at: nowIso(), revoked_by: userId, revoke_reason: input.reason.trim() || null })
+    .in("id", ids);
+  if (error) throw new Error("تعذّر إبطال الجلسات.");
+  await auditRbac(supabase, {
+    actorEmail: ctx.staff.email,
+    action: "rbac.session_revoked",
+    entityType: "platform_staff_session",
+    entityId: input.staffUserId,
+    description: `إبطال جميع جلسات الموظف (${ids.length} جلسة)`,
+    metadata: { trace_ref: ctx.traceRef, count: ids.length, session_ids: ids },
+  });
+  return { revoked: ids.length };
+}
+
 export async function saveRestrictions(
   supabase: AnyClient,
   userId: string,
@@ -584,12 +688,17 @@ export async function saveRestrictions(
     staffUserId: string;
     ip_enforced: boolean;
     allowed_ips: string[];
+    denied_ips: string[];
     device_enforced: boolean;
     trusted_devices: string[];
+    blocked_devices: string[];
     time_enforced: boolean;
     work_start_minute: number;
     work_end_minute: number;
     allowed_weekdays: number[];
+    reason?: string | null;
+    effective_from?: string | null;
+    effective_to?: string | null;
   },
 ) {
   const ctx = await authorize(supabase, userId, "staff.restrictions.manage", {
@@ -604,6 +713,16 @@ export async function saveRestrictions(
   if (input.device_enforced && input.trusted_devices.filter((v) => v.trim()).length === 0) {
     throw new Error("أضف جهازاً موثوقاً واحداً على الأقل قبل تفعيل قيد الأجهزة.");
   }
+  if (input.time_enforced && input.allowed_weekdays.length === 0) {
+    throw new Error("اختر يوم عمل واحداً على الأقل قبل تفعيل قيد الوقت.");
+  }
+  if (
+    input.effective_from &&
+    input.effective_to &&
+    new Date(input.effective_to).getTime() <= new Date(input.effective_from).getTime()
+  ) {
+    throw new Error("نهاية سريان القيد يجب أن تكون بعد بدايتها.");
+  }
 
   const { data: before } = await db
     .from("platform_staff_restrictions")
@@ -615,12 +734,17 @@ export async function saveRestrictions(
     user_id: input.staffUserId,
     ip_enforced: input.ip_enforced,
     allowed_ips: input.allowed_ips.map((v) => v.trim()).filter(Boolean),
+    denied_ips: input.denied_ips.map((v) => v.trim()).filter(Boolean),
     device_enforced: input.device_enforced,
     trusted_devices: input.trusted_devices.map((v) => v.trim()).filter(Boolean),
+    blocked_devices: input.blocked_devices.map((v) => v.trim()).filter(Boolean),
     time_enforced: input.time_enforced,
     work_start_minute: input.work_start_minute,
     work_end_minute: input.work_end_minute,
     allowed_weekdays: input.allowed_weekdays,
+    reason: input.reason?.trim() || null,
+    effective_from: input.effective_from || null,
+    effective_to: input.effective_to || null,
     updated_by: userId,
     updated_at: nowIso(),
   };
@@ -838,6 +962,20 @@ export async function logImpersonationPage(supabase: AnyClient, userId: string, 
 export async function currentImpersonation(userId: string) {
   const ctx = await loadRbacContext(userId);
   return ctx.impersonation;
+}
+
+/** أحداث جلسة انتحال (الصفحات المزارة) لعرضها في واجهة المراجعة. */
+export async function impersonationEvents(supabase: AnyClient, userId: string, sessionId: string) {
+  await authorize(supabase, userId, "impersonation.approve", { mutating: false });
+  const db = await adminDb();
+  const { data, error } = await db
+    .from("platform_impersonation_events")
+    .select("id, event, path, ip, user_agent, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw new Error("تعذّر قراءة سجل صفحات الجلسة.");
+  return data ?? [];
 }
 
 /* ------------------------------ مساعدات ------------------------------- */

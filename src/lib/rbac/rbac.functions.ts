@@ -31,6 +31,7 @@ export const saveRbacRole = createServerFn({ method: "POST" })
         name_ar: z.string().trim().min(2).max(80),
         description: z.string().trim().max(300).nullish(),
         permissions: z.array(permission).max(200),
+        is_active: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -42,7 +43,27 @@ export const saveRbacRole = createServerFn({ method: "POST" })
       name_ar: data.name_ar,
       description: data.description ?? null,
       permissions: data.permissions,
+      ...(data.is_active === undefined ? {} : { is_active: data.is_active }),
     });
+  });
+
+export const cloneRbacRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sourceId: uuid,
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+        name_ar: z.string().trim().min(2).max(80),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.cloneRole(context.supabase, context.userId, data);
   });
 
 export const deleteRbacRole = createServerFn({ method: "POST" })
@@ -115,6 +136,7 @@ export const createRbacGrant = createServerFn({ method: "POST" })
         permission,
         source: z.enum(["temporary", "delegation"]),
         reason,
+        reference: z.string().trim().max(80).nullish(),
         startsAt: z.string().datetime().nullish(),
         expiresAt: z.string().datetime(),
       })
@@ -124,6 +146,7 @@ export const createRbacGrant = createServerFn({ method: "POST" })
     const ops = await import("./rbac-ops.server");
     return ops.createGrant(context.supabase, context.userId, {
       ...data,
+      reference: data.reference ?? null,
       startsAt: data.startsAt ?? null,
     });
   });
@@ -194,18 +217,55 @@ export const saveRbacRestrictions = createServerFn({ method: "POST" })
         staffUserId: uuid,
         ip_enforced: z.boolean(),
         allowed_ips: z.array(z.string().trim().max(64)).max(50),
+        denied_ips: z.array(z.string().trim().max(64)).max(50),
         device_enforced: z.boolean(),
         trusted_devices: z.array(z.string().trim().max(64)).max(50),
+        blocked_devices: z.array(z.string().trim().max(64)).max(50),
         time_enforced: z.boolean(),
         work_start_minute: z.number().int().min(0).max(1440),
         work_end_minute: z.number().int().min(0).max(1440),
         allowed_weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+        reason: z.string().trim().max(300).nullish(),
+        effective_from: z.string().datetime().nullish(),
+        effective_to: z.string().datetime().nullish(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const ops = await import("./rbac-ops.server");
-    return ops.saveRestrictions(context.supabase, context.userId, data);
+    return ops.saveRestrictions(context.supabase, context.userId, {
+      ...data,
+      reason: data.reason ?? null,
+      effective_from: data.effective_from ?? null,
+      effective_to: data.effective_to ?? null,
+    });
+  });
+
+export const revokeAllRbacSessions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ staffUserId: uuid, reason: z.string().trim().max(500).default("") }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.revokeAllStaffSessions(context.supabase, context.userId, data);
+  });
+
+export const getRbacAuditPage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        search: z.string().trim().max(120).optional(),
+        action: z.string().trim().max(80).optional(),
+        page: z.number().int().min(1).max(500).default(1),
+        pageSize: z.number().int().min(5).max(100).default(20),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.rbacAuditPage(context.supabase, context.userId, data);
   });
 
 export const requestRbacImpersonation = createServerFn({ method: "POST" })
@@ -257,4 +317,12 @@ export const logRbacImpersonationPage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const ops = await import("./rbac-ops.server");
     return ops.logImpersonationPage(context.supabase, context.userId, data.path);
+  });
+
+export const getRbacImpersonationEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ sessionId: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.impersonationEvents(context.supabase, context.userId, data.sessionId);
   });

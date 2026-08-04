@@ -3623,6 +3623,7 @@ export type Database = {
           id: string
           permission: string
           reason: string
+          reference: string | null
           revoke_reason: string | null
           revoked_at: string | null
           revoked_by: string | null
@@ -3639,6 +3640,7 @@ export type Database = {
           id?: string
           permission: string
           reason: string
+          reference?: string | null
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
@@ -3655,6 +3657,7 @@ export type Database = {
           id?: string
           permission?: string
           reason?: string
+          reference?: string | null
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
@@ -3853,6 +3856,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_active: boolean
           is_system: boolean
           name_ar: string
           permissions: string[]
@@ -3863,6 +3867,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean
           is_system?: boolean
           name_ar: string
           permissions?: string[]
@@ -3873,6 +3878,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean
           is_system?: boolean
           name_ar?: string
           permissions?: string[]
@@ -3974,9 +3980,14 @@ export type Database = {
         Row: {
           allowed_ips: string[]
           allowed_weekdays: number[]
+          blocked_devices: string[]
           created_at: string
+          denied_ips: string[]
           device_enforced: boolean
+          effective_from: string | null
+          effective_to: string | null
           ip_enforced: boolean
+          reason: string | null
           time_enforced: boolean
           trusted_devices: string[]
           updated_at: string
@@ -3988,9 +3999,14 @@ export type Database = {
         Insert: {
           allowed_ips?: string[]
           allowed_weekdays?: number[]
+          blocked_devices?: string[]
           created_at?: string
+          denied_ips?: string[]
           device_enforced?: boolean
+          effective_from?: string | null
+          effective_to?: string | null
           ip_enforced?: boolean
+          reason?: string | null
           time_enforced?: boolean
           trusted_devices?: string[]
           updated_at?: string
@@ -4002,9 +4018,14 @@ export type Database = {
         Update: {
           allowed_ips?: string[]
           allowed_weekdays?: number[]
+          blocked_devices?: string[]
           created_at?: string
+          denied_ips?: string[]
           device_enforced?: boolean
+          effective_from?: string | null
+          effective_to?: string | null
           ip_enforced?: boolean
+          reason?: string | null
           time_enforced?: boolean
           trusted_devices?: string[]
           updated_at?: string
