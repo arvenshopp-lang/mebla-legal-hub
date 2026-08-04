@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
 import { resendSignupConfirmation, sendMagicLink } from "@/lib/auth-actions";
-import { lookupSignInMethods } from "@/lib/auth-lookup.functions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
 
@@ -82,18 +81,10 @@ function LoginPage() {
       let friendly = error;
       if (error === AUTH_MESSAGES.emailNotConfirmed) setNeedsConfirmation(true);
       if (error === AUTH_MESSAGES.invalidCredentials) {
-        // Distinguish "wrong password" from "this account signs in with Google".
-        try {
-          const info = await lookupSignInMethods({ data: { email: cleanEmail } });
-          if (info.exists && !info.hasPassword && info.providers.length > 0) {
-            friendly =
-              "هذا الحساب مرتبط بتسجيل الدخول عبر Google. استخدم زر «المتابعة عبر Google» أعلاه، أو عيّن كلمة مرور عبر «نسيت كلمة المرور؟».";
-          } else if (!info.exists) {
-            friendly = AUTH_MESSAGES.userNotFound;
-          }
-        } catch {
-          /* keep the generic credentials message */
-        }
+        // رسالة موحّدة لا تكشف وجود الحساب ولا طريقة تسجيل دخوله (منع تعداد الحسابات)،
+        // مع إرشاد المستخدم لكل الاحتمالات دون أي استعلام عن البريد في الخادم.
+        friendly =
+          "بيانات الدخول غير صحيحة. إن كان حسابك مرتبطاً بـ Google فاستخدم زر «المتابعة عبر Google» أعلاه، أو أعد تعيين كلمة المرور عبر «نسيت كلمة المرور؟».";
       }
       logAuthEvent({ route: "/login", action: "sign_in_password", sanitizedMessage: friendly });
       setLoading(false);
