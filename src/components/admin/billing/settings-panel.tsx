@@ -223,7 +223,7 @@ export function SettingsPanel() {
                     <div>مسار الرسائل: {provider.webhook_path ?? "—"}</div>
                     <div>آخر عملية ناجحة: {formatDateTime(stat?.last_success_at ?? null)}</div>
                     <div>آخر عملية فاشلة: {formatDateTime(stat?.last_failure_at ?? null)}</div>
-                    {provider.supports_webhooks && (
+                    {stat?.supports_webhooks && (
                       <div>
                         رسائل فاشلة: {stat?.webhook_failed ?? 0} — فاشلة نهائياً: {stat?.webhook_dead_letter ?? 0}
                       </div>
