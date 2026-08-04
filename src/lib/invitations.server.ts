@@ -107,18 +107,27 @@ export async function createTeamInvitation(input: {
     .eq("id", input.organizationId)
     .maybeSingle();
 
+  const { data: inviter } = await input.supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", input.userId)
+    .maybeSingle();
+
   const inviteUrl = `${safeOrigin(input.origin)}/invite/${created.token}`;
   const result = await sendAppEmail({
     to: email,
     subject: `دعوة للانضمام إلى ${org?.name ?? "مكتب المحاماة"} — مِهلة`,
     label: "team-invite",
     idempotencyKey: `team-invite-${created.id}`,
+    organizationId: input.organizationId,
+    userId: input.userId,
     element: React.createElement(InviteEmail, {
       siteName: SITE_NAME,
       siteUrl: SITE_URL,
       confirmationUrl: inviteUrl,
       orgName: org?.name ?? undefined,
       roleLabel: ROLE_LABEL[input.role],
+      inviterName: inviter?.full_name ?? undefined,
     }),
   });
 
@@ -127,6 +136,7 @@ export async function createTeamInvitation(input: {
     inviteUrl,
     emailSent: result.sent,
     ...(result.reason ? { emailReason: result.reason } : {}),
+    ...(result.ref ? { emailRef: result.ref } : {}),
   };
 }
 
