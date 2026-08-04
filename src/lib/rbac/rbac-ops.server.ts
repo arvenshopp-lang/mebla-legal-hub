@@ -113,7 +113,14 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
 export async function saveRole(
   supabase: AnyClient,
   userId: string,
-  input: { id?: string | null; code: string; name_ar: string; description?: string | null; permissions: string[] },
+  input: {
+    id?: string | null;
+    code: string;
+    name_ar: string;
+    description?: string | null;
+    permissions: string[];
+    is_active?: boolean;
+  },
 ) {
   const ctx = await authorize(supabase, userId, "roles.manage", { entityType: "platform_role" });
   const db = await adminDb();
@@ -144,6 +151,7 @@ export async function saveRole(
         name_ar: input.name_ar.trim(),
         description: input.description?.trim() || null,
         permissions,
+        ...(input.is_active === undefined ? {} : { is_active: input.is_active }),
         updated_at: nowIso(),
       })
       .eq("id", id);
@@ -157,6 +165,7 @@ export async function saveRole(
         description: input.description?.trim() || null,
         permissions,
         is_system: false,
+        is_active: input.is_active ?? true,
       })
       .select("id")
       .maybeSingle();
