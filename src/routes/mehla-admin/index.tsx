@@ -10,7 +10,7 @@ import {
 import { AdminShell } from "@/components/admin/shell";
 import { getPlatformMetrics, getPlatformOverview } from "@/lib/admin.functions";
 import { getSystemHealth } from "@/lib/admin-ops.functions";
-import { Badge, Btn, ErrorBlock, Field, Input, SectionCard, StatsSkeleton } from "@/lib/list-utils";
+import { Badge, Btn, ErrorBlock, FormField, inputCls, SectionCard, StatsSkeleton } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { METRIC_RANGES, resolveRange, type MetricRangeId } from "@/lib/admin-metrics.shared";
 
@@ -121,12 +121,14 @@ function AdminDashboard() {
         </div>
         {range === "custom" && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:max-w-lg">
-            <Field label="من تاريخ">
-              <Input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-            </Field>
-            <Field label="إلى تاريخ">
-              <Input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
-            </Field>
+            <FormField label="من تاريخ">
+              <input type="date" className={inputCls} value={from} max={to || undefined}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFrom(e.target.value)} />
+            </FormField>
+            <FormField label="إلى تاريخ">
+              <input type="date" className={inputCls} value={to} min={from || undefined}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTo(e.target.value)} />
+            </FormField>
           </div>
         )}
         {m && (
@@ -139,7 +141,7 @@ function AdminDashboard() {
       {!ready ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">حدّد تاريخ البداية والنهاية لعرض المؤشرات.</p>
       ) : metricsQ.isError ? (
-        <ErrorBlock message={(metricsQ.error as Error).message} onRetry={() => metricsQ.refetch()} />
+        <ErrorBlock message={(metricsQ.error as Error).message} />
       ) : !m ? (
         <StatsSkeleton count={12} />
       ) : (
@@ -273,7 +275,7 @@ function AdminDashboard() {
               {healthQ.isLoading ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">جاري الفحص…</p>
               ) : healthQ.isError || !healthQ.data ? (
-                <ErrorBlock message="تعذّر فحص حالة الخدمات." onRetry={() => healthQ.refetch()} />
+                <ErrorBlock message="تعذّر فحص حالة الخدمات." />
               ) : (
                 <ul className="space-y-2">
                   {[
