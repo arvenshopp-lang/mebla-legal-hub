@@ -46,6 +46,7 @@ import { Route as MehlaAdminIntegrationsRouteImport } from './routes/mehla-admin
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
 import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
 import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
@@ -251,6 +252,11 @@ const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
   path: '/design',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
   id: '/auth/verified',
   path: '/auth/verified',
@@ -382,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -439,6 +446,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -499,6 +507,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -559,6 +568,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/invite/$token'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -616,6 +626,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/invite/$token'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -675,6 +686,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/auth/callback'
     | '/auth/verified'
+    | '/invite/$token'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -723,6 +735,7 @@ export interface RootRouteChildren {
   TrackRoute: typeof TrackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifiedRoute: typeof AuthVerifiedRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
@@ -993,6 +1006,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminDesignRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/verified': {
       id: '/auth/verified'
       path: '/auth/verified'
@@ -1240,6 +1260,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrackRoute: TrackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifiedRoute: AuthVerifiedRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,

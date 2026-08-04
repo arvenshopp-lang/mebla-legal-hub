@@ -20,9 +20,14 @@ import {
   normalizePhone,
   phoneFieldVisible,
 } from "@/lib/sms/sms.shared";
+import { isValidInviteToken } from "@/lib/invitations.shared";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
+  validateSearch: (search: Record<string, unknown>): { invite?: string } =>
+    typeof search.invite === "string" && isValidInviteToken(search.invite)
+      ? { invite: search.invite }
+      : {},
   head: () => ({
     meta: [
       { title: "إنشاء حساب | مِهلة" },
@@ -36,6 +41,8 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
   const { session, authLoading, organizationLoading, memberships, refresh } = useAuth();
   const navigate = useNavigate();
+  const { invite } = Route.useSearch();
+  const postAuthTarget = invite ? (`/invite/${invite}` as const) : null;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -113,8 +120,11 @@ function RegisterPage() {
 
   useEffect(() => {
     if (authLoading || organizationLoading || !session) return;
-    navigate({ to: memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
-  }, [authLoading, organizationLoading, session, memberships.length, navigate]);
+    navigate({
+      to: postAuthTarget ?? (memberships.length > 0 ? "/dashboard" : "/onboarding"),
+      replace: true,
+    } as never);
+  }, [authLoading, organizationLoading, session, memberships.length, navigate, postAuthTarget]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +215,10 @@ function RegisterPage() {
     if (data.session) {
       const refreshed = await refresh();
       toast.success("تم إنشاء حسابك بنجاح");
-      navigate({ to: refreshed.memberships.length > 0 ? "/dashboard" : "/onboarding", replace: true });
+      navigate({
+        to: postAuthTarget ?? (refreshed.memberships.length > 0 ? "/dashboard" : "/onboarding"),
+        replace: true,
+      } as never);
     } else {
       setEmailSent(email.trim().toLowerCase());
       toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
@@ -219,7 +232,7 @@ function RegisterPage() {
           أرسلنا رسالة تفعيل إلى <b>{emailSent}</b>. افتح الرابط داخل الرسالة لإكمال إنشاء حسابك، ثم عُد لتسجيل الدخول.
         </div>
         <div className="mt-6 flex flex-col gap-2">
-          <Link to="/login" search={{ redirect: "/dashboard" }} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition">
+          <Link to="/login" search={{ redirect: postAuthTarget ?? "/dashboard" }} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition">
             الذهاب لتسجيل الدخول
           </Link>
           <button type="button" onClick={() => setEmailSent(null)} className="text-xs text-muted-foreground hover:text-foreground">
@@ -233,7 +246,7 @@ function RegisterPage() {
   const google = async () => {
     if (googleLoading) return;
     setGoogleLoading(true);
-    sessionStorage.setItem("mehla_auth_redirect", "/onboarding");
+    sessionStorage.setItem("mehla_auth_redirect", postAuthTarget ?? "/onboarding");
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
     });

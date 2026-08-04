@@ -31,12 +31,14 @@ function AuthCallback() {
           ? storedRedirect
           : "/dashboard";
         const target =
-          flowType === "signup" || flowType === "email_change"
+          safeRedirect.startsWith("/invite/")
+            ? safeRedirect
+            : flowType === "signup" || flowType === "email_change"
             ? "/auth/verified"
             : refreshed.memberships.length > 0
               ? safeRedirect
               : "/onboarding";
-        navigate({ to: target, replace: true });
+        navigate({ to: target, replace: true } as never);
       } else {
         navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true });
       }
