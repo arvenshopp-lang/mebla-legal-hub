@@ -134,6 +134,86 @@ export async function buildSupportReport(
   const teamName = new Map<string, string>(teamRows.map((t) => [t.id, t.name_ar]));
   const staffName = new Map<string, string>(staffRows.map((s) => [s.user_id, s.full_name]));
 
+  /* المكاتب والباقات: أسماء المكاتب وربطها بباقة الاشتراك النشط. */
+  const orgIds = Array.from(new Set(rows.map((r) => r.organization_id).filter((v): v is string => !!v)));
+  const orgName = new Map<string, string>();
+  const orgPlan = new Map<string, string>();
+  if (orgIds.length > 0) {
+    const [orgs, subs] = await Promise.all([
+      db.from("organizations").select("id, name").in("id", orgIds),
+      db.from("subscriptions").select("organization_id, plan_code, status").in("organization_id", orgIds),
+    ]);
+    for (const org of ((orgs as { data: unknown }).data ?? []) as { id: string; name: string }[]) {
+      orgName.set(org.id, org.name);
+    }
+    for (const sub of ((subs as { data: unknown }).data ?? []) as {
+      organization_id: string;
+      plan_code: string | null;
+      status: string;
+    }[]) {
+      if (!sub.plan_code) continue;
+      if (sub.status === "active" || sub.status === "trial" || !orgPlan.has(sub.organization_id)) {
+        orgPlan.set(sub.organization_id, sub.plan_code);
+      }
+    }
+  }
+
+  /* الحل من أول تواصل: تذكرة حُلّت بردّ واحد من الفريق ولم تُعَد فتحها. */
+  const resolvedIds = rows.filter((r) => r.resolved_at && (r.reopened_count ?? 0) === 0).map((r) => r.id);
+  let fcrCount = 0;
+  if (resolvedIds.length > 0) {
+    const staffReplies = new Map<string, number>();
+    for (let i = 0; i < resolvedIds.length; i += 200) {
+      const slice = resolvedIds.slice(i, i + 200);
+      const { data: msgs } = await db
+        .from("support_ticket_messages")
+        .select("ticket_id, is_staff")
+        .in("ticket_id", slice)
+        .eq("is_staff", true);
+      for (const msg of ((msgs ?? []) as { ticket_id: string }[])) {
+        staffReplies.set(msg.ticket_id, (staffReplies.get(msg.ticket_id) ?? 0) + 1);
+      }
+    }
+    fcrCount = resolvedIds.filter((id) => (staffReplies.get(id) ?? 0) <= 1).length;
+  }
+
+  /* تقييمات الرضا داخل المدى — مصدرها دعوات التقييم المُستخدمة. */
+  const { data: csatRows } = await db
+    .from("support_csat_invitations")
+    .select("rating, staff_id, team_id, category, used_at")
+    .not("used_at", "is", null)
+    .gte("used_at", from)
+    .lte("used_at", to)
+    .limit(5000);
+  const csatEntries = ((csatRows ?? []) as {
+    rating: number | null;
+    staff_id: string | null;
+    team_id: string | null;
+    category: string | null;
+  }[]).filter((c) => typeof c.rating === "number" && c.rating > 0);
+
+  const csatGroup = (
+    keyOf: (entry: (typeof csatEntries)[number]) => string | null,
+    nameOf: (key: string) => string,
+  ) => {
+    const buckets = new Map<string, number[]>();
+    for (const entry of csatEntries) {
+      const key = keyOf(entry);
+      if (!key) continue;
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(entry.rating as number);
+      else buckets.set(key, [entry.rating as number]);
+    }
+    return Array.from(buckets.entries())
+      .map(([key, values]) => ({
+        key,
+        name: nameOf(key),
+        responses: values.length,
+        average: Number((values.reduce((s, v) => s + v, 0) / values.length).toFixed(2)),
+      }))
+      .sort((a, b) => b.responses - a.responses);
+  };
+
   const totals = {
     created: rows.length,
     open: rows.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
@@ -142,6 +222,14 @@ export async function buildSupportReport(
     escalated: rows.filter((r) => (r.escalation_level ?? 0) > 0).length,
     reopened: rows.filter((r) => (r.reopened_count ?? 0) > 0).length,
     unassigned: rows.filter((r) => !r.assigned_to && !TERMINAL_STATUSES.includes(r.status as never)).length,
+    atRisk: rows.filter((r) => r.sla_state === "warning" || r.sla_state === "critical").length,
+    backlog: rows.filter(
+      (r) => !TERMINAL_STATUSES.includes(r.status as never) && Date.now() - new Date(r.created_at).getTime() > 86_400_000,
+    ).length,
+    reopenRate: rows.length
+      ? Math.round((rows.filter((r) => (r.reopened_count ?? 0) > 0).length / rows.length) * 100)
+      : 0,
+    fcrRate: resolvedIds.length ? Math.round((fcrCount / resolvedIds.length) * 100) : 0,
   };
 
   const firstResponseTimes: number[] = [];
