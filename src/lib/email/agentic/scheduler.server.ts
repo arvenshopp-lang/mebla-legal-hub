@@ -229,11 +229,14 @@ export async function runScheduledAgenticSync(db: Db): Promise<ScheduledRun> {
 /** تنبيه فريق المنصة عند الإيقاف التلقائي — بلا أي قيمة سر. */
 async function notifyHalt(db: Db, reason: string): Promise<void> {
   try {
-    await db.from("system_failures").insert({
-      area: "email_agentic_mail",
-      severity: "high",
-      title: "إيقاف تلقائي لتكامل Hostinger Agentic Mail",
-      detail: reason,
+    void db;
+    const { logFailure } = await import("@/lib/observability/failure-log.server");
+    await logFailure({
+      surface: "email",
+      action: "agentic_mail_auto_halt",
+      errorCode: "auth_failures_exceeded",
+      error: reason,
+      metadata: { provider: "agentic_mail" },
     });
   } catch {
     // التنبيه لا يجوز أن يُفشل الجدولة نفسها.
