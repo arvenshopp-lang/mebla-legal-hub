@@ -718,7 +718,13 @@ export async function approveImpersonation(
     .eq("id", input.id)
     .maybeSingle();
   if (!before) throw new Error("الطلب غير موجود.");
-  const row = before as { actor_user_id: string; status: string; approval_request_id: string | null; expires_at: string };
+  const row = before as {
+    actor_user_id: string;
+    status: string;
+    approval_request_id: string | null;
+    expires_at: string;
+    created_at: string;
+  };
   if (row.actor_user_id === userId) throw new Error("لا يمكنك اعتماد طلب انتحال أنشأته بنفسك.");
   if (row.status !== "pending") throw new Error("هذا الطلب غير معلّق.");
 
@@ -730,10 +736,11 @@ export async function approveImpersonation(
     });
   }
 
-  const minutesLeft = Math.max(
-    5,
-    Math.round((new Date(row.expires_at).getTime() - new Date(before as unknown as string).getTime()) / 60000) || 30,
+  // المدة المطلوبة أصلاً = الفرق بين إنشاء الطلب وانتهائه، وتبدأ من لحظة الاعتماد.
+  const requestedMinutes = Math.round(
+    (new Date(row.expires_at).getTime() - new Date(row.created_at).getTime()) / 60_000,
   );
+  const minutesLeft = Math.min(Math.max(Number.isFinite(requestedMinutes) ? requestedMinutes : 30, 5), 120);
   const patch =
     input.decision === "approved"
       ? {
