@@ -110,7 +110,7 @@ export function DraftFormModal({
   }, [open, initial.id]);
 
   const totals = useMemo(
-    () => computeTotals(value.items, value.taxExempt ? 0 : value.taxRate),
+    () => computeTotals(value.items, value.taxRate, value.taxExempt),
     [value.items, value.taxExempt, value.taxRate],
   );
 
