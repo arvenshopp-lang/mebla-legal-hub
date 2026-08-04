@@ -73,6 +73,7 @@ import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticate
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
+import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
@@ -400,6 +401,11 @@ const ApiPublicPaymentsProviderRoute =
     path: '/api/public/payments/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMailSyncRoute = ApiPublicHooksMailSyncRouteImport.update({
+  id: '/api/public/hooks/mail-sync',
+  path: '/api/public/hooks/mail-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksEmailInboundRoute =
   ApiPublicHooksEmailInboundRouteImport.update({
     id: '/api/public/hooks/email-inbound',
@@ -489,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
+  '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -557,6 +564,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
+  '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -628,6 +636,7 @@ export interface FileRoutesById {
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
+  '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -699,6 +708,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
+    | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -767,6 +777,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
+    | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -837,6 +848,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
+    | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -869,6 +881,7 @@ export interface RootRouteChildren {
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
+  ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -1324,6 +1337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/mail-sync': {
+      id: '/api/public/hooks/mail-sync'
+      path: '/api/public/hooks/mail-sync'
+      fullPath: '/api/public/hooks/mail-sync'
+      preLoaderRoute: typeof ApiPublicHooksMailSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/email-inbound': {
       id: '/api/public/hooks/email-inbound'
       path: '/api/public/hooks/email-inbound'
@@ -1489,6 +1509,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksCleanupSecureArtifactsRoute,
   ApiPublicHooksEmailDispatchRoute: ApiPublicHooksEmailDispatchRoute,
   ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
+  ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

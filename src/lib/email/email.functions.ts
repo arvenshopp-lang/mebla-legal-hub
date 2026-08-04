@@ -404,6 +404,8 @@ export const updateMailbox = createServerFn({ method: "POST" })
         signature_html: z.string().max(20_000).nullable().optional(),
         is_active: z.boolean().optional(),
         inbound_enabled: z.boolean().optional(),
+        sync_enabled: z.boolean().optional(),
+        imap_folders: z.array(z.string().min(1).max(120)).max(5).optional(),
       })
       .parse(input),
   )
@@ -451,6 +453,152 @@ export const saveMailLabel = createServerFn({ method: "POST" })
       },
     );
     return { ok: true };
+  });
+
+/* ------------------------------------------------- تكامل بريد Hostinger */
+
+type Hostinger = typeof import("@/lib/email/transport/hostinger.server");
+
+type SyncStateRow = {
+  mailbox_id: string;
+  folder: string;
+  uidvalidity: number | null;
+  last_uid: number | null;
+  status: string;
+  last_sync_at: string | null;
+  last_success_at: string | null;
+  last_error: string | null;
+  last_error_code: string | null;
+  new_messages: number | null;
+};
+
+type SyncRunRow = {
+  mailbox_id: string;
+  folder: string;
+  trigger_source: string;
+  outcome: string;
+  fetched: number;
+  ingested: number;
+  duplicates: number;
+  rejected: number;
+  tickets_created: number;
+  error_code: string | null;
+  duration_ms: number | null;
+  created_at: string;
+};
+
+/** حالة التكامل: توفر الأسرار وحالة مزامنة كل صندوق — بلا أي قيمة سر. */
+export const getMailIntegrationStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const g = await guard();
+    await g.requireStaff(context.supabase, context.userId, "email.manage");
+    const db = await g.admin();
+    const { integrationStatus, syncableMailboxes } = (await import(
+      "@/lib/email/transport/hostinger.server"
+    )) as Hostinger;
+    const mailboxes = await syncableMailboxes(db);
+    const { data: states } = await db
+      .from("email_sync_state")
+      .select(
+        "mailbox_id, folder, uidvalidity, last_uid, status, last_sync_at, last_success_at, last_error, last_error_code, new_messages",
+      );
+    const { data: runs } = await db
+      .from("email_sync_runs")
+      .select(
+        "mailbox_id, folder, trigger_source, outcome, fetched, ingested, duplicates, rejected, tickets_created, error_code, duration_ms, created_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(25);
+    return {
+      secrets: integrationStatus(null),
+      mailboxes: mailboxes.map((m) => ({
+        id: m.id,
+        address: m.address,
+        folders: m.folders,
+        syncEnabled: m.syncEnabled,
+        inboundEnabled: m.inboundEnabled,
+        isActive: m.isActive,
+        credentials: integrationStatus(m.address),
+      })),
+      states: (states ?? []) as SyncStateRow[],
+      runs: (runs ?? []) as SyncRunRow[],
+    };
+  });
+
+/** اختبار اتصال SMTP وIMAP دون إرسال رسالة أو تعديل الصندوق. */
+export const testMailConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ mailboxId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");
+    const db = await g.admin();
+    const { data: box } = await db
+      .from("email_mailboxes")
+      .select("address")
+      .eq("id", data.mailboxId)
+      .maybeSingle();
+    const address = (box as { address: string } | null)?.address;
+    if (!address) throw new Error("صندوق البريد غير موجود.");
+
+    const { smtpVerify } = await import("@/lib/email/transport/smtp.server");
+    const { imapVerify } = await import("@/lib/email/transport/imap.server");
+    const smtp = await smtpVerify(address);
+    const imap = await imapVerify(address);
+
+    const e = await engine();
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.integration.test",
+        mailboxId: data.mailboxId,
+        description: `اختبار اتصال البريد لصندوق ${address}`,
+      },
+    );
+
+    return {
+      smtp: smtp.ok
+        ? { ok: true as const, latencyMs: smtp.latencyMs, message: smtp.response }
+        : { ok: false as const, latencyMs: smtp.latencyMs, code: smtp.code, message: smtp.message },
+      imap: imap.ok
+        ? {
+            ok: true as const,
+            latencyMs: imap.latencyMs,
+            folders: imap.folders.slice(0, 30),
+            uidValidity: imap.inbox.uidValidity,
+            exists: imap.inbox.exists,
+          }
+        : { ok: false as const, latencyMs: imap.latencyMs, code: imap.code, message: imap.message },
+    };
+  });
+
+/** تشغيل مزامنة يدوية لصندوق واحد. */
+export const syncMailboxNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ mailboxId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");
+    const db = await g.admin();
+    const { syncMailbox } = (await import("@/lib/email/transport/hostinger.server")) as Hostinger;
+    const outcomes = await syncMailbox(db, data.mailboxId, "manual");
+    const e = await engine();
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.integration.sync",
+        mailboxId: data.mailboxId,
+        description: `مزامنة يدوية: ${outcomes.reduce((sum, o) => sum + o.ingested, 0)} رسالة جديدة`,
+      },
+    );
+    return { outcomes };
   });
 
 export const deleteMailLabel = createServerFn({ method: "POST" })

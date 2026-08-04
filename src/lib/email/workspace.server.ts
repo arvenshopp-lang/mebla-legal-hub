@@ -83,7 +83,7 @@ export async function listMailboxes(db: Db, scope?: MailboxScope): Promise<Mailb
   const { data, error } = await db
     .from("email_mailboxes")
     .select(
-      "id, address, display_name, type, is_shared, is_active, inbound_enabled, signature_html, sort_order",
+      "id, address, display_name, type, is_shared, is_active, inbound_enabled, sync_enabled, signature_html, sort_order",
     )
     .order("sort_order", { ascending: true });
   if (error) throw new Error("تعذّر تحميل صناديق البريد.");
@@ -113,6 +113,8 @@ export async function updateMailbox(
     signature_html?: string | null;
     is_active?: boolean;
     inbound_enabled?: boolean;
+    sync_enabled?: boolean;
+    imap_folders?: string[];
   },
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
@@ -120,6 +122,8 @@ export async function updateMailbox(
   if (input.signature_html !== undefined) patch["signature_html"] = input.signature_html;
   if (input.is_active !== undefined) patch["is_active"] = input.is_active;
   if (input.inbound_enabled !== undefined) patch["inbound_enabled"] = input.inbound_enabled;
+  if (input.sync_enabled !== undefined) patch["sync_enabled"] = input.sync_enabled;
+  if (input.imap_folders !== undefined) patch["imap_folders"] = input.imap_folders;
   if (Object.keys(patch).length === 0) return;
   const { error } = await db.from("email_mailboxes").update(patch).eq("id", input.id);
   if (error) throw new Error("تعذّر حفظ إعدادات الصندوق.");
@@ -638,12 +642,15 @@ export async function dispatchOne(
   const { data: messageRow } = await db
     .from("email_messages")
     .select(
-      "id, mailbox_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, html, body_text, thread_id, organization_id",
+      "id, mailbox_id, message_id, in_reply_to, reference_ids, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, html, body_text, thread_id, organization_id",
     )
     .eq("id", messageId)
     .maybeSingle();
   const message = messageRow as {
     id: string;
+    message_id: string | null;
+    in_reply_to: string | null;
+    reference_ids: string[] | null;
     from_address: string;
     from_name: string | null;
     to_addresses: string[];
@@ -667,22 +674,48 @@ export async function dispatchOne(
   if (!locked || (locked as unknown[]).length === 0) return { sent: false };
   await db.from("email_messages").update({ status: "sending" }).eq("id", messageId);
 
-  // المزوّد الحالي لا يدعم إرفاق MIME؛ تُسلَّم المرفقات كروابط موقّعة قصيرة الأجل.
-  const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
   const baseHtml = message.html ?? "";
   const baseText = message.body_text ?? stripHtml(baseHtml);
 
-  const result = await providerSend({
-    from: message.from_address,
-    fromName: message.from_name ?? "MEHLA",
-    to: message.to_addresses,
-    cc: message.cc_addresses,
-    bcc: message.bcc_addresses,
-    subject: message.subject,
-    html: `${baseHtml}${section.html}`,
-    text: `${baseText}${section.text}`,
-    idempotencyKey: job.idempotency_key,
-  });
+  // مسار Hostinger (SMTP) هو الأساس عند توفر الأسرار لأنه يدعم مرفقات MIME
+  // الفعلية. عند غيابها يعود المسار إلى خدمة البريد المُدارة مع روابط موقّعة.
+  const { transportConfigured } = await import("@/lib/email/transport/config.server");
+  const useSmtp = transportConfigured(message.from_address);
+
+  let result: Awaited<ReturnType<typeof providerSend>>;
+  if (useSmtp) {
+    const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
+    const smtp = await sendViaHostinger(db, {
+      messageId,
+      mailboxAddress: message.from_address,
+      fromName: message.from_name ?? "MEHLA",
+      to: message.to_addresses,
+      cc: message.cc_addresses,
+      bcc: message.bcc_addresses,
+      subject: message.subject,
+      html: baseHtml,
+      text: baseText,
+      providerMessageId: message.message_id ?? newMessageId(),
+      inReplyTo: message.in_reply_to,
+      references: message.reference_ids ?? [],
+    });
+    result = smtp.ok
+      ? { ok: true, ref: smtp.ref }
+      : { ok: false, code: smtp.code, message: smtp.message, status: null };
+  } else {
+    const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
+    result = await providerSend({
+      from: message.from_address,
+      fromName: message.from_name ?? "MEHLA",
+      to: message.to_addresses,
+      cc: message.cc_addresses,
+      bcc: message.bcc_addresses,
+      subject: message.subject,
+      html: `${baseHtml}${section.html}`,
+      text: `${baseText}${section.text}`,
+      idempotencyKey: job.idempotency_key,
+    });
+  }
 
   if (result.ok) {
     const now = new Date().toISOString();
