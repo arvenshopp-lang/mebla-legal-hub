@@ -70,6 +70,7 @@ import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/bi
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
@@ -385,6 +386,11 @@ const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   path: '/cases/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   id: '/lovable/email/auth/webhook',
   path: '/lovable/email/auth/webhook',
@@ -484,6 +490,7 @@ export interface FileRoutesByFullPath {
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -625,6 +633,7 @@ export interface FileRoutesById {
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
+    | '/.lovable/oauth/consent'
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -766,6 +776,7 @@ export interface FileRouteTypes {
     | '/upload/$token'
     | '/mehla-admin'
     | '/upload'
+    | '/.lovable/oauth/consent'
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -837,6 +848,7 @@ export interface FileRouteTypes {
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
@@ -875,6 +887,7 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
@@ -1316,6 +1329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/auth/webhook': {
       id: '/lovable/email/auth/webhook'
       path: '/lovable/email/auth/webhook'
@@ -1502,6 +1522,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
