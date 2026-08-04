@@ -144,15 +144,21 @@ export function PhoneVerificationCard() {
                 </label>
                 <Btn
                   variant="outline"
-                  onClick={() => request.mutate()}
-                  loading={request.isPending}
-                  disabled={phone.trim().length < 8}
+                  onClick={() => void sendCode()}
+                  loading={challenge.busy}
+                  disabled={phone.trim().length < 8 || (challenge.active && !challenge.canResend)}
                 >
-                  {sent ? "إعادة إرسال الرمز" : "إرسال رمز التحقق"}
+                  {challenge.active
+                    ? challenge.canResend
+                      ? "إعادة إرسال الرمز"
+                      : `إعادة الإرسال بعد ${formatCountdown(challenge.resendIn)}`
+                    : challenge.expired
+                      ? "إرسال رمز جديد"
+                      : "إرسال رمز التحقق"}
                 </Btn>
               </div>
 
-              {sent && (
+              {(challenge.active || challenge.expired) && (
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="grid gap-1.5">
                     <span className="text-sm font-medium">رمز التحقق</span>
@@ -164,17 +170,30 @@ export function PhoneVerificationCard() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       dir="ltr"
+                      disabled={challenge.expired}
                       className={inputCls + " max-w-[180px] text-center font-mono tracking-[0.4em]"}
                     />
                   </label>
                   <Btn
                     onClick={() => confirm.mutate()}
                     loading={confirm.isPending}
-                    disabled={code.length < (config.data?.codeLength ?? 6)}
+                    disabled={challenge.expired || code.length < (config.data?.codeLength ?? 6)}
                   >
                     توثيق الرقم
                   </Btn>
                 </div>
+              )}
+
+              {challenge.active && (
+                <p role="status" className="text-[12px] text-text-muted">
+                  الرمز صالح لمدة {formatCountdown(challenge.secondsLeft)}
+                  {challenge.attemptsLeft !== null ? ` — محاولات متبقية: ${challenge.attemptsLeft}` : ""}
+                </p>
+              )}
+              {challenge.expired && (
+                <p role="alert" className="text-[12px] text-warning">
+                  انتهت صلاحية الرمز. اطلب رمزاً جديداً لإكمال التوثيق.
+                </p>
               )}
             </div>
           )}
