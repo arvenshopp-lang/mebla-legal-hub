@@ -134,7 +134,7 @@ export const getHrEmployee = createServerFn({ method: "POST" })
       }
     }
 
-    let sessions: unknown[] = [];
+    let sessions: { id: string; created_at: string | null; last_seen_at: string | null; ip_address: string | null; user_agent: string | null; revoked_at: string | null }[] = [];
     if (row.user_id) {
       const { data: sess } = await db
         .from("platform_staff_sessions")
@@ -144,7 +144,7 @@ export const getHrEmployee = createServerFn({ method: "POST" })
         .eq("user_id", row.user_id)
         .order("last_seen_at", { ascending: false })
         .limit(50);
-      sessions = sess ?? [];
+      sessions = (sess ?? []) as typeof sessions;
     }
 
     const { data: audit } = await db

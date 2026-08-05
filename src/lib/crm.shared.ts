@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 /**
  * أنواع وتسميات مشتركة لوحدة CRM (عملاء محتملون، شركات، جهات اتصال، صفقات، أنشطة).
  * تُستخدم من دوال الخادم `crm.functions.ts` ومن مكونات الواجهة في `src/routes/mehla-admin/crm*`.
@@ -61,7 +62,7 @@ export type CrmLeadRow = {
   converted_deal_id: string | null;
   last_activity_at: string | null;
   notes: string | null;
-  utm: Record<string, unknown> | null;
+  utm: Json | null;
   created_at: string;
   updated_at: string;
 };
@@ -134,7 +135,7 @@ export type CrmDealRow = {
   owner_staff_id: string | null;
   owner: StaffOption | null;
   source: string | null;
-  utm: Record<string, unknown> | null;
+  utm: Json | null;
   expected_close_date: string | null;
   closed_at: string | null;
   lost_reason: string | null;

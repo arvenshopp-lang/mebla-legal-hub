@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 /** أنواع مشتركة لوحدة التسويق — الواجهة ودوال الخادم. */
 
 export const MARKETING_CAMPAIGN_STATUS = [
@@ -55,7 +56,7 @@ export type MarketingConversionEventRow = {
   label: string | null;
   value_amount: number;
   source: string | null;
-  utm: Record<string, unknown> | null;
+  utm: Json | null;
   occurred_at: string;
   created_at: string;
 };
