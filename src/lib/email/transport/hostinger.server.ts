@@ -252,6 +252,10 @@ export async function syncMailboxFolder(
           },
           mailbox.address,
         );
+        if (mailbox.type === "system" && !routed.matched) {
+          rejected += 1;
+          continue;
+        }
         const result = await ingestInbound(db, {
           to: routed.address,
           from: parsed.fromAddress,
