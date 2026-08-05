@@ -7,6 +7,26 @@ import { AuthShell, Field, inputCls } from "./login";
 
 export const Route = createFileRoute("/onboarding")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "تهيئة مكتبك | مِهلة" },
+      {
+        name: "description",
+        content:
+          "أنشئ مكتب المحاماة الخاص بك على منصة مِهلة في خطوة واحدة: اسم المكتب ومدينته، ثم ابدأ بإضافة العملاء والقضايا والجلسات مباشرة.",
+      },
+      { property: "og:title", content: "تهيئة مكتبك | مِهلة" },
+      {
+        property: "og:description",
+        content: "أنشئ مكتب المحاماة الخاص بك على منصة مِهلة وابدأ إدارة قضاياك.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/onboarding" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/onboarding" }],
+  }),
   component: OnboardingPage,
 });
 
