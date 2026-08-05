@@ -8276,6 +8276,7 @@ export type Database = {
         }
         Returns: number
       }
+      recalc_invoice: { Args: { _invoice_id: string }; Returns: undefined }
       record_metered_usage: {
         Args: { _amount: number; _metric: string; _organization_id: string }
         Returns: number
