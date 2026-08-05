@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Activity, Database, HardDrive, Plug, ShieldCheck, Clock, Users } from "lucide-react";
+import { Database, HardDrive, Plug, ShieldCheck, Clock, Users } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { Badge, Btn, ErrorBlock, SectionCard, StatsSkeleton } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
