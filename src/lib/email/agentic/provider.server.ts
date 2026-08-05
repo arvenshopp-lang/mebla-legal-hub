@@ -613,12 +613,13 @@ export async function syncAgenticFolder(
       }
 
       try {
+        const routedAddress = routeInboundAddress(
+          aliases,
+          { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
+          target.address,
+        ).address;
         const result = await ingestInbound(db, {
-          to: routeInboundAddress(
-            aliases,
-            { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
-            target.address,
-          ).address,
+          to: routedAddress,
           from: message.fromAddress,
           fromName: message.fromName,
           subject: message.subject,
@@ -639,11 +640,7 @@ export async function syncAgenticFolder(
             mailboxId: result.mailboxId,
             threadId: result.threadId,
             emailMessageId: result.messageId,
-            recipient: routeInboundAddress(
-              aliases,
-              { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
-              target.address,
-            ).address,
+            recipient: routedAddress,
             from: message.fromAddress,
             fromName: message.fromName,
             subject: message.subject,
