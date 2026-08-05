@@ -343,8 +343,10 @@ export async function syncAllMailboxes(
   db: Db,
   triggerSource: "manual" | "cron" = "cron",
 ): Promise<SyncOutcome[]> {
+  // الحساب الحقيقي فقط يُسجَّل الدخول إليه؛ الأسماء المستعارة تُوجَّه بالترويسات.
   const mailboxes = (await syncableMailboxes(db)).filter(
-    (m) => m.syncEnabled && m.inboundEnabled && m.isActive,
+    (m) =>
+      m.syncEnabled && m.inboundEnabled && m.isActive && mailboxHasOwnCredentials(m.address),
   );
   const outcomes: SyncOutcome[] = [];
   for (const mailbox of mailboxes) {
