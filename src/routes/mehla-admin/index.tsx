@@ -251,13 +251,6 @@ function AdminDashboard() {
               Icon={UserCheck}
             />
             <Stat
-              label="تذاكر دعم مفتوحة (مكرر)"
-              value={fmtNumber(act.tickets.open)}
-              Icon={LifeBuoy}
-              tone={act.tickets.breached > 0 ? "danger" : "default"}
-              hint={`${fmtNumber(act.tickets.breached)} تجاوزت المهلة`}
-            />
-            <Stat
               label="رسائل البريد اليوم"
               value={fmtNumber(act.email.today)}
               Icon={Mail}
