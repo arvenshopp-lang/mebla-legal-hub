@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import type { Tables, Enums, TablesInsert } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -64,6 +65,15 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
+type TaskRow = Tables<"tasks"> & {
+  case?: { case_title: string } | null;
+  assignee?: { full_name: string } | null;
+};
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
@@ -71,9 +81,9 @@ function Page() {
   const [status, setStatus] = useState("all");
   const [mine, setMine] = useState(false);
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<TaskRow | null>(null);
   const [open, setOpen] = useState(false);
-  const [deleting, setDeleting] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState<TaskRow | null>(null);
   const q = useDebounced(search);
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -90,7 +100,7 @@ function Page() {
         .order("due_date", { ascending: true, nullsFirst: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q) query = query.ilike("title", `%${q}%`);
-      if (status !== "all") query = query.eq("status", status as any);
+      if (status !== "all") query = query.eq("status", status as Enums<"task_status">);
       if (mine && user?.id) query = query.eq("assigned_to", user.id);
       const { data, error, count } = await query;
       if (error) throw error;
@@ -109,7 +119,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
   const complete = useMutation({
     mutationFn: async (id: string) => {
@@ -175,7 +185,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا توجد مهام"
@@ -209,7 +219,7 @@ function Page() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data.rows.map((t: any) => {
+                  {data.rows.map((t: TaskRow) => {
                     const days = daysUntil(t.due_date);
                     const isOverdue =
                       t.status !== "completed" &&
@@ -326,7 +336,7 @@ function TaskDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  editing: any;
+  editing: TaskRow | null;
   orgId: string;
   userId?: string;
 }) {
@@ -362,7 +372,7 @@ function TaskDialog({
         .select("user_id, profile:profiles(full_name)")
         .eq("organization_id", activeOrgId!)
         .eq("status", "active");
-      return (data ?? []).map((m: any) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
+      return (data ?? []).map((m) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
     },
   });
 
@@ -392,7 +402,7 @@ function TaskDialog({
       return;
     }
     setSaving(true);
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       ...res.data,
       due_date: res.data.due_date ? new Date(res.data.due_date).toISOString() : null,
     };
@@ -400,8 +410,15 @@ function TaskDialog({
       if (payload[k] === "") payload[k] = null;
     });
     const q = editing
-      ? supabase.from("tasks").update(payload).eq("id", editing.id)
-      : supabase.from("tasks").insert({ ...payload, organization_id: orgId, created_by: userId });
+      ? supabase
+          .from("tasks")
+          .update(payload as Partial<TablesInsert<"tasks">>)
+          .eq("id", editing.id)
+      : supabase.from("tasks").insert({
+          ...(payload as Partial<TablesInsert<"tasks">>),
+          organization_id: orgId,
+          created_by: userId,
+        } as TablesInsert<"tasks">);
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
@@ -441,7 +458,7 @@ function TaskDialog({
             className={inputCls}
           >
             <option value="">— بدون —</option>
-            {(cases ?? []).map((c: any) => (
+            {(cases ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.case_title}
               </option>
@@ -473,7 +490,7 @@ function TaskDialog({
         <FormField label="الحالة *">
           <select
             value={form.status ?? "pending"}
-            onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+            onChange={(e) => setForm({ ...form, status: e.target.value as Enums<"task_status"> })}
             className={inputCls}
           >
             {asOptions(TASK_STATUS).map((o) => (
@@ -486,7 +503,9 @@ function TaskDialog({
         <FormField label="الأولوية *">
           <select
             value={form.priority ?? "medium"}
-            onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, priority: e.target.value as Enums<"task_priority"> })
+            }
             className={inputCls}
           >
             {asOptions(TASK_PRIORITY).map((o) => (

@@ -9,6 +9,8 @@ const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
 export function csvCell(value: unknown): string {
   let text = value === null || value === undefined ? "" : String(value);
   // إزالة محارف التحكّم التي تُستغل لتقسيم الخلايا أو إخفاء الحمولة.
+  // نطاق أحرف التحكم مقصود: تنقية خلايا CSV من محارف التحكم قبل التصدير.
+  // eslint-disable-next-line no-control-regex
   text = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
   if (FORMULA_TRIGGER.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;

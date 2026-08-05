@@ -339,7 +339,10 @@ export function PermissionPicker({
       (p) => p.id as string,
     );
     const next = new Set(selected);
-    for (const id of ids) checked ? next.add(id) : next.delete(id);
+    for (const id of ids) {
+      if (checked) next.add(id);
+      else next.delete(id);
+    }
     onChange(Array.from(next));
   };
 

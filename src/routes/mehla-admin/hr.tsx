@@ -114,7 +114,7 @@ function HrPage() {
     staleTime: 30_000,
   });
 
-  const rows = employeesQuery.data?.rows ?? [];
+  const rows = useMemo(() => employeesQuery.data?.rows ?? [], [employeesQuery.data]);
   const total = employeesQuery.data?.total ?? 0;
   const departments = departmentsQuery.data?.departments ?? [];
 

@@ -13,6 +13,7 @@ import type {
   JobsOverview,
   ServiceHealth,
 } from "@/lib/admin-console.shared";
+import type { Json } from "@/integrations/supabase/types";
 
 type Guard = typeof import("@/lib/admin-guard.server");
 const guard = (): Promise<Guard> => import("@/lib/admin-guard.server");
@@ -150,14 +151,14 @@ export const saveContentPage = createServerFn({ method: "POST" })
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "content.manage");
 
-    let parsed: Record<string, unknown>;
+    let parsed: { [key: string]: Json | undefined };
     try {
       const raw = data.content.trim() === "" ? "{}" : data.content;
       const value = JSON.parse(raw) as unknown;
       if (typeof value !== "object" || value === null || Array.isArray(value)) {
         throw new Error("shape");
       }
-      parsed = value as Record<string, unknown>;
+      parsed = value as { [key: string]: Json | undefined };
     } catch {
       throw new Error("صيغة المحتوى غير صحيحة — يجب أن يكون كائن JSON صالحاً.");
     }

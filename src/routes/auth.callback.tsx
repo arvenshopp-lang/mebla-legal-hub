@@ -22,7 +22,9 @@ function AuthCallback() {
       if (code) {
         try {
           await supabase.auth.exchangeCodeForSession(window.location.href);
-        } catch {}
+        } catch {
+          // الرابط قد يكون مستهلكاً مسبقاً — نكمل بقراءة الجلسة الحالية.
+        }
       }
       const refreshed = await refresh();
       const { data } = await supabase.auth.getSession();

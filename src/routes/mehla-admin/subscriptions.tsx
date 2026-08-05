@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -451,7 +451,11 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
       [],
   });
 
-  const startsAt = useMemo(() => new Date(), [open]);
+  // تاريخ بداية التفعيل يُثبَّت عند كل فتح للنافذة حتى لا يتغيّر أثناء التعبئة.
+  const [startsAt, setStartsAt] = useState(() => new Date());
+  useEffect(() => {
+    if (open) setStartsAt(new Date());
+  }, [open]);
   const endsAt = useMemo(() => {
     if (durationMode === "date") return manualEnd ? new Date(`${manualEnd}T23:59:59`) : null;
     if (durationMode === "years") return addMonths(startsAt, Math.max(1, years) * 12);

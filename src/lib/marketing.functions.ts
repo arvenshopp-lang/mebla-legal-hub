@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { MARKETING_CAMPAIGN_STATUS, type MarketingCampaignRow } from "@/lib/marketing.shared";
+import type { TablesInsert, TablesUpdate, Json } from "@/integrations/supabase/types";
 
 /* ------------------------------------------------------------------ الحملات */
 
@@ -47,7 +48,7 @@ export const listMarketingCampaigns = createServerFn({ method: "POST" })
     const { data: rows, error, count } = await q.range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الحملات.");
 
-    const list = (rows ?? []).map((r: any) => ({
+    const list = (rows ?? []).map((r) => ({
       id: r.id,
       name: r.name,
       channel: r.channel,
@@ -128,7 +129,7 @@ export const createMarketingCampaign = createServerFn({ method: "POST" })
     });
     const { data: created, error } = await db
       .from("marketing_campaigns")
-      .insert(patch)
+      .insert(patch as TablesInsert<"marketing_campaigns">)
       .select("id")
       .single();
     if (error) throw new Error("تعذّر إنشاء الحملة.");
@@ -175,7 +176,10 @@ export const updateMarketingCampaign = createServerFn({ method: "POST" })
       coupon_id: fields.couponId,
       notes: fields.notes,
     });
-    const { error } = await db.from("marketing_campaigns").update(patch).eq("id", campaignId);
+    const { error } = await db
+      .from("marketing_campaigns")
+      .update(patch as TablesUpdate<"marketing_campaigns">)
+      .eq("id", campaignId);
     if (error) throw new Error("تعذّر تحديث الحملة.");
     await g.writeAudit(db, staff, {
       action: "marketing.campaign.update",
@@ -242,7 +246,7 @@ export const listConversionEvents = createServerFn({ method: "POST" })
     const { data: rows, error, count } = await q.range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب أحداث التحويل.");
     return {
-      rows: (rows ?? []).map((r: any) => ({
+      rows: (rows ?? []).map((r) => ({
         id: r.id,
         campaign_id: r.campaign_id,
         campaign_name: r.marketing_campaigns?.name ?? null,
@@ -290,7 +294,7 @@ export const createConversionEvent = createServerFn({ method: "POST" })
     });
     const { data: created, error } = await db
       .from("marketing_conversion_events")
-      .insert(patch)
+      .insert(patch as TablesInsert<"marketing_conversion_events">)
       .select("id")
       .single();
     if (error) throw new Error("تعذّر تسجيل حدث التحويل.");
@@ -328,7 +332,7 @@ export const listMarketingReferrals = createServerFn({ method: "POST" })
     const { data: rows, error } = await q.limit(200);
     if (error) throw new Error("تعذّر جلب برامج الإحالة.");
     return {
-      rows: (rows ?? []).map((r: any) => ({
+      rows: (rows ?? []).map((r) => ({
         id: r.id,
         code: r.code,
         referrer_kind: r.referrer_kind,
@@ -386,7 +390,7 @@ export const createMarketingReferral = createServerFn({ method: "POST" })
     });
     const { data: created, error } = await db
       .from("marketing_referrals")
-      .insert(patch)
+      .insert(patch as TablesInsert<"marketing_referrals">)
       .select("id")
       .single();
     if (error) throw new Error("تعذّر إنشاء برنامج الإحالة.");
@@ -426,7 +430,10 @@ export const updateMarketingReferral = createServerFn({ method: "POST" })
       label: fields.label,
       is_active: fields.isActive,
     });
-    const { error } = await db.from("marketing_referrals").update(patch).eq("id", referralId);
+    const { error } = await db
+      .from("marketing_referrals")
+      .update(patch as TablesUpdate<"marketing_referrals">)
+      .eq("id", referralId);
     if (error) throw new Error("تعذّر تحديث برنامج الإحالة.");
     await g.writeAudit(db, staff, {
       action: "marketing.referral.update",
@@ -491,25 +498,29 @@ export const getMarketingPerformanceSummary = createServerFn({ method: "POST" })
       eventsByCampaign.set(e.campaign_id, cur);
     }
 
-    function matches(campaign: any, utm: any) {
-      if (!utm || typeof utm !== "object") return false;
+    function matches(
+      campaign: { utm_campaign: string | null; utm_source: string | null; utm_medium: string | null },
+      utm: Json | null,
+    ) {
+      if (!utm || typeof utm !== "object" || Array.isArray(utm)) return false;
+      const record = utm as Record<string, Json | undefined>;
       const c = campaign.utm_campaign,
         s = campaign.utm_source,
         m = campaign.utm_medium;
       if (!c && !s && !m) return false;
-      const uc = utm.utm_campaign ?? utm.campaign ?? null;
-      const us = utm.utm_source ?? utm.source ?? null;
-      const um = utm.utm_medium ?? utm.medium ?? null;
+      const uc = record.utm_campaign ?? record.campaign ?? null;
+      const us = record.utm_source ?? record.source ?? null;
+      const um = record.utm_medium ?? record.medium ?? null;
       if (c && uc !== c) return false;
       if (s && us !== s) return false;
       if (m && um !== m) return false;
       return true;
     }
 
-    const summary = (campaigns ?? []).map((c: any) => {
-      const leadsMatched = (leads ?? []).filter((l: any) => matches(c, l.utm));
-      const dealsMatched = (deals ?? []).filter((d: any) => matches(c, d.utm));
-      const wonDeals = dealsMatched.filter((d: any) => d.status === "won");
+    const summary = (campaigns ?? []).map((c) => {
+      const leadsMatched = (leads ?? []).filter((l) => matches(c, l.utm));
+      const dealsMatched = (deals ?? []).filter((d) => matches(c, d.utm));
+      const wonDeals = dealsMatched.filter((d) => d.status === "won");
       const ev = eventsByCampaign.get(c.id) ?? { count: 0, value: 0 };
       return {
         campaign_id: c.id,
@@ -521,7 +532,7 @@ export const getMarketingPerformanceSummary = createServerFn({ method: "POST" })
         leads_count: leadsMatched.length,
         deals_count: dealsMatched.length,
         won_deals_count: wonDeals.length,
-        won_amount: wonDeals.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0),
+        won_amount: wonDeals.reduce((s: number, d) => s + Number(d.amount ?? 0), 0),
         conversion_events_count: ev.count,
         conversion_events_value: ev.value,
       };
@@ -556,9 +567,11 @@ export const listMarketingProviders = createServerFn({ method: "POST" })
       .from("platform_integrations")
       .select("provider_key, is_enabled, status, last_checked_at, environment")
       .in("provider_key", MARKETING_PROVIDER_KEYS);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const byKey = new Map<string, any>((configured ?? []).map((c: any) => [c.provider_key, c]));
-    const providers = (defs ?? []).map((d: any) => {
+    type ConfiguredProvider = NonNullable<typeof configured>[number];
+    const byKey = new Map<string, ConfiguredProvider>(
+      (configured ?? []).map((c) => [c.provider_key, c]),
+    );
+    const providers = (defs ?? []).map((d) => {
       const cfg = byKey.get(d.provider_key);
       return {
         provider_key: d.provider_key,

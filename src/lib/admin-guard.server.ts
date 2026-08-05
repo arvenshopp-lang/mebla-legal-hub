@@ -4,8 +4,10 @@
  * يحمل البيانات قبل وبعد التعديل مع IP والجهاز والمتصفح (تُثبّتها قاعدة البيانات).
  */
 import { getRequest } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AdminPermission } from "@/lib/admin-permissions";
 import { expandPermissions } from "@/lib/admin-permissions";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 export type StaffRow = {
   id: string;
@@ -20,8 +22,7 @@ export type StaffRow = {
   platform_roles: { permissions: string[] | null } | null;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyClient = any;
+type AnyClient = SupabaseClient<Database>;
 
 export async function requireStaff(
   supabase: AnyClient,
@@ -97,9 +98,11 @@ export async function writeAudit(
     entity_type: entry.entity_type,
     entity_id: entry.entity_id ?? null,
     description: entry.description ?? null,
-    metadata: entry.metadata ?? {},
-    before_data: entry.before ?? null,
-    after_data: entry.after ?? null,
+    // بيانات التدقيق قبل/بعد وعناصر البيانات الوصفية حرة الشكل بطبيعتها (أي حقول كائن الجدول
+    // المعني)، لذا تُحوَّل صراحة إلى Json بدل تخفيف النوع إلى any.
+    metadata: (entry.metadata ?? {}) as Json,
+    before_data: (entry.before ?? null) as Json,
+    after_data: (entry.after ?? null) as Json,
     ip,
     user_agent: userAgent,
   });
@@ -107,12 +110,7 @@ export async function writeAudit(
 
 export async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as {
-    from: (t: string) => any;
-    auth: { admin: any; resetPasswordForEmail?: unknown };
-    storage: any;
-    rpc: (n: string, a?: unknown) => any;
-  };
+  return supabaseAdmin;
 }
 
 /** أصل الطلب الحقيقي لبناء روابط البريد (تفعيل / إعادة تعيين). */

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canManage } from "@/hooks/use-auth";
 import { FormField, inputCls, Btn, LoadingBlock } from "@/lib/list-utils";
 import { SecurityTab } from "@/components/security/security-tab";
+import type { TablesInsert, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: Page,
@@ -46,7 +47,7 @@ function Page() {
         ].map((t) => (
           <button
             key={t.k}
-            onClick={() => setTab(t.k as any)}
+            onClick={() => setTab(t.k as "profile" | "organization" | "notifications" | "security")}
             className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
           >
             {t.l}
@@ -69,7 +70,7 @@ function ProfileTab({ userId }: { userId?: string }) {
     queryFn: async () =>
       (await supabase.from("profiles").select("*").eq("id", userId!).maybeSingle()).data,
   });
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<Tables<"profiles">>>({});
   useEffect(() => {
     if (data) setForm(data);
   }, [data]);
@@ -137,7 +138,7 @@ function OrgTab({ orgId, canManage: canEdit }: { orgId: string | null; canManage
     queryFn: async () =>
       (await supabase.from("organizations").select("*").eq("id", orgId!).maybeSingle()).data,
   });
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<Tables<"organizations">>>({});
   useEffect(() => {
     if (data) setForm(data);
   }, [data]);
@@ -256,7 +257,7 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
           .maybeSingle()
       ).data,
   });
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<TablesInsert<"user_notification_preferences">>>({});
   useEffect(() => {
     setForm(
       data ?? {
@@ -279,7 +280,11 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
 
   const save = async () => {
     setSaving(true);
-    const payload = { ...form, organization_id: orgId, user_id: userId };
+    const payload = {
+      ...form,
+      organization_id: orgId!,
+      user_id: userId!,
+    } as TablesInsert<"user_notification_preferences">;
     const q = data
       ? supabase.from("user_notification_preferences").update(payload).eq("id", data.id)
       : supabase.from("user_notification_preferences").insert(payload);
@@ -291,7 +296,7 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
   };
 
   if (isLoading) return <LoadingBlock />;
-  const Tog = ({ k, l }: { k: string; l: string }) => (
+  const Tog = ({ k, l }: { k: keyof TablesInsert<"user_notification_preferences">; l: string }) => (
     <label className="flex items-center justify-between rounded-[var(--radius-m)] border border-border bg-surface p-3">
       <span className="text-sm">{l}</span>
       <input

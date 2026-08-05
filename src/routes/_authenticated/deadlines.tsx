@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import type { Tables, Enums, TablesInsert } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -81,6 +82,14 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
+type DeadlineRow = Tables<"deadlines"> & {
+  case?: { case_title: string; case_number: string | null } | null;
+};
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
@@ -88,9 +97,9 @@ function Page() {
   const [status, setStatus] = useState("all");
   const [type, setType] = useState("all");
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<DeadlineRow | null>(null);
   const [open, setOpen] = useState(false);
-  const [deleting, setDeleting] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState<DeadlineRow | null>(null);
   const q = useDebounced(search);
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -105,8 +114,8 @@ function Page() {
         .order("due_date", { ascending: true })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q) query = query.ilike("title", `%${q}%`);
-      if (status !== "all") query = query.eq("status", status as any);
-      if (type !== "all") query = query.eq("deadline_type", type as any);
+      if (status !== "all") query = query.eq("status", status as Enums<"deadline_status">);
+      if (type !== "all") query = query.eq("deadline_type", type as Enums<"deadline_type">);
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
@@ -124,7 +133,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
   const complete = useMutation({
@@ -195,7 +204,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا توجد مهل"
@@ -231,7 +240,7 @@ function Page() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data.rows.map((d: any) => {
+                  {data.rows.map((d: DeadlineRow) => {
                     const days = daysUntil(d.due_date);
                     const isOverdue = d.status === "active" && days !== null && days < 0;
                     const isSoon = d.status === "active" && days !== null && days >= 0 && days <= 3;
@@ -358,7 +367,7 @@ function DeadlineDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  editing: any;
+  editing: DeadlineRow | null;
   orgId: string;
   userId?: string;
 }) {
@@ -399,7 +408,7 @@ function DeadlineDialog({
         .select("user_id, profile:profiles(full_name)")
         .eq("organization_id", activeOrgId!)
         .eq("status", "active");
-      return (data ?? []).map((m: any) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
+      return (data ?? []).map((m) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
     },
   });
 
@@ -430,15 +439,23 @@ function DeadlineDialog({
       return;
     }
     setSaving(true);
-    const payload: any = { ...res.data, due_date: new Date(res.data.due_date).toISOString() };
+    const payload: Record<string, unknown> = {
+      ...res.data,
+      due_date: new Date(res.data.due_date).toISOString(),
+    };
     Object.keys(payload).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
     });
     const q = editing
-      ? supabase.from("deadlines").update(payload).eq("id", editing.id)
-      : supabase
+      ? supabase
           .from("deadlines")
-          .insert({ ...payload, organization_id: orgId, created_by: userId });
+          .update(payload as Partial<TablesInsert<"deadlines">>)
+          .eq("id", editing.id)
+      : supabase.from("deadlines").insert({
+          ...(payload as Partial<TablesInsert<"deadlines">>),
+          organization_id: orgId,
+          created_by: userId,
+        } as TablesInsert<"deadlines">);
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
@@ -474,7 +491,9 @@ function DeadlineDialog({
         <FormField label="النوع *">
           <select
             value={form.deadline_type ?? "custom"}
-            onChange={(e) => setForm({ ...form, deadline_type: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, deadline_type: e.target.value as Enums<"deadline_type"> })
+            }
             className={inputCls}
           >
             {asOptions(DEADLINE_TYPE).map((o) => (
@@ -491,7 +510,7 @@ function DeadlineDialog({
             className={inputCls}
           >
             <option value="">— بدون —</option>
-            {(cases ?? []).map((c: any) => (
+            {(cases ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.case_title}
               </option>
@@ -510,7 +529,9 @@ function DeadlineDialog({
         <FormField label="الحالة *">
           <select
             value={form.status ?? "active"}
-            onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, status: e.target.value as Enums<"deadline_status"> })
+            }
             className={inputCls}
           >
             {asOptions(DEADLINE_STATUS).map((o) => (
@@ -523,7 +544,9 @@ function DeadlineDialog({
         <FormField label="الأولوية *">
           <select
             value={form.priority ?? "medium"}
-            onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, priority: e.target.value as Enums<"case_priority"> })
+            }
             className={inputCls}
           >
             {asOptions(CASE_PRIORITY).map((o) => (

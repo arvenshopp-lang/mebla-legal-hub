@@ -34,6 +34,8 @@ import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 import { normalizePiiValue } from "@/lib/crypto/pii.shared";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import type { Enums } from "@/integrations/supabase/types";
+import { errMsg } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -117,7 +119,7 @@ function Page() {
       } else if (q) {
         query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,company_name.ilike.%${q}%`);
       }
-      if (type !== "all") query = query.eq("client_type", type as any);
+      if (type !== "all") query = query.eq("client_type", type as Enums<"client_type">);
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: (data ?? []) as ClientRow[], count: count ?? 0 };
@@ -134,7 +136,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["clients"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
   return (
@@ -173,7 +175,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا يوجد عملاء بعد"
@@ -279,7 +281,7 @@ export function ClientDialog({
   open: boolean;
   onClose: () => void;
   editing: ClientRow | null;
-  onCreated?: (c: any) => void;
+  onCreated?: (c: ClientRow) => void;
 }) {
   const { activeOrgId } = useAuth();
   const qc = useQueryClient();
@@ -308,7 +310,18 @@ export function ClientDialog({
     setFormKey(key);
     setErrors({});
     setPiiEdit(null);
-    setForm(editing ? { ...(editing as any) } : { client_type: "individual" });
+    setForm(
+      editing
+        ? {
+            full_name: editing.full_name,
+            client_type: editing.client_type as ClientForm["client_type"],
+            company_name: editing.company_name,
+            email: editing.email ?? "",
+            phone: editing.phone,
+            city: editing.city,
+          }
+        : { client_type: "individual" },
+    );
   }
 
   const save = async () => {

@@ -108,7 +108,8 @@ function InvitePage() {
     if (preview.data?.state !== "valid") return;
     autoJoined.current = true;
     accept.mutate();
-  }, [session, authLoading, preview.data?.state]);
+    // حرس autoJoined يمنع أي تكرار عند تغيّر مرجع الـ mutation.
+  }, [session, authLoading, preview.data?.state, accept]);
 
   const askResend = async () => {
     setResendState("pending");

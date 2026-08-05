@@ -1,5 +1,6 @@
 import { getRequestIP } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Tables, Json } from "@/integrations/supabase/types";
 
 /** SHA-256 hex of a string, using Web Crypto (available in the Worker runtime). */
 export async function hashText(value: string) {
@@ -17,8 +18,13 @@ export function clientIp() {
   }
 }
 
+type DocumentRequestWithRelations = Tables<"document_requests"> & {
+  case: { client_id: string } | null;
+  organization: { name: string; logo_url: string | null } | null;
+};
+
 export type LoadedRequest = {
-  request: any;
+  request: DocumentRequestWithRelations;
   org: { name: string; logo_url: string | null } | null;
   clientId: string | null;
   effectiveStatus: "active" | "completed" | "expired" | "revoked";
@@ -48,24 +54,24 @@ export async function loadRequestByToken(token: string): Promise<LoadedRequest |
   }
 
   return {
-    request,
-    org: (request as any).organization ?? null,
-    clientId: (request as any).case?.client_id ?? null,
+    request: request as DocumentRequestWithRelations,
+    org: (request as DocumentRequestWithRelations).organization ?? null,
+    clientId: (request as DocumentRequestWithRelations).case?.client_id ?? null,
     effectiveStatus,
   };
 }
 
 export async function logEvent(
-  request: any,
+  request: Pick<Tables<"document_requests">, "organization_id" | "id">,
   event: string,
-  detail: Record<string, any>,
+  detail: Record<string, Json>,
   ip: string,
 ) {
   await supabaseAdmin.from("document_request_events").insert({
     organization_id: request.organization_id,
     request_id: request.id,
     event,
-    detail: detail as any,
+    detail: detail as Json,
     ip,
   });
 }
