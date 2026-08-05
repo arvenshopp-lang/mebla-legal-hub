@@ -94,14 +94,6 @@ export const createRoleFromTemplate = createServerFn({ method: "POST" })
     return ops.createRoleFromTemplate(context.supabase, context.userId, data);
   });
 
-const _deleteRbacRoleLegacy = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
-  .handler(async ({ data, context }) => {
-    const ops = await import("./rbac-ops.server");
-    return ops.deleteRole(context.supabase, context.userId, data.id);
-  });
-
 export const saveRbacDepartment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
