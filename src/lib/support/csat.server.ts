@@ -56,7 +56,11 @@ export async function requestCsat(
 
   let recipient = (ticket["requester_email"] as string | null) ?? null;
   if (!recipient && ticket["user_id"]) {
-    const { data } = await db.from("profiles").select("email").eq("id", ticket["user_id"]).maybeSingle();
+    const { data } = await db
+      .from("profiles")
+      .select("email")
+      .eq("id", ticket["user_id"])
+      .maybeSingle();
     recipient = (data as { email: string | null } | null)?.email ?? null;
   }
   if (!recipient) return { sent: false, skipped: "no_recipient" };
@@ -100,7 +104,10 @@ export async function requestCsat(
     sent = result.sent;
   }
 
-  await db.from("support_tickets").update({ csat_requested_at: new Date().toISOString() }).eq("id", ticketId);
+  await db
+    .from("support_tickets")
+    .update({ csat_requested_at: new Date().toISOString() })
+    .eq("id", ticketId);
   await writeTicketEvent(db, {
     ticketId,
     eventType: "csat_requested",
@@ -125,16 +132,25 @@ export async function requestCsat(
 export async function loadCsatInvite(
   db: Db,
   token: string,
-): Promise<{ state: "ok" | "used" | "expired" | "invalid"; ticketRef?: string; subject?: string; rating?: number | null }> {
+): Promise<{
+  state: "ok" | "used" | "expired" | "invalid";
+  ticketRef?: string;
+  subject?: string;
+  rating?: number | null;
+}> {
   if (!/^[a-f0-9]{64}$/.test(token)) return { state: "invalid" };
   const { data } = await db
     .from("support_csat_invitations")
     .select("id, ticket_id, used_at, expires_at, rating")
     .eq("token_hash", await hashToken(token))
     .maybeSingle();
-  const invite = data as
-    | { id: string; ticket_id: string; used_at: string | null; expires_at: string; rating: number | null }
-    | null;
+  const invite = data as {
+    id: string;
+    ticket_id: string;
+    used_at: string | null;
+    expires_at: string;
+    rating: number | null;
+  } | null;
   if (!invite) return { state: "invalid" };
 
   const { data: ticketRow } = await db
@@ -142,7 +158,11 @@ export async function loadCsatInvite(
     .select("ticket_number, reference, subject")
     .eq("id", invite.ticket_id)
     .maybeSingle();
-  const ticket = ticketRow as { ticket_number: string | null; reference: string; subject: string } | null;
+  const ticket = ticketRow as {
+    ticket_number: string | null;
+    reference: string;
+    subject: string;
+  } | null;
   const shape = {
     ticketRef: ticket?.ticket_number ?? ticket?.reference ?? "—",
     subject: ticket?.subject ?? "—",
@@ -201,14 +221,26 @@ export async function submitCsat(
 
 async function supportMailboxId(db: Db, teamId: string | null): Promise<string | null> {
   if (teamId) {
-    const { data } = await db.from("support_teams").select("mailbox_id").eq("id", teamId).maybeSingle();
+    const { data } = await db
+      .from("support_teams")
+      .select("mailbox_id")
+      .eq("id", teamId)
+      .maybeSingle();
     const id = (data as { mailbox_id: string | null } | null)?.mailbox_id ?? null;
     if (id) return id;
   }
-  const { data } = await db.from("email_mailboxes").select("id").eq("address", "support@mehlalex.com").maybeSingle();
+  const { data } = await db
+    .from("email_mailboxes")
+    .select("id")
+    .eq("address", "support@mehlalex.com")
+    .maybeSingle();
   return (data as { id: string } | null)?.id ?? null;
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

@@ -16,58 +16,58 @@
 
 ## المسارات
 
-| المسار | الوصف |
-|---|---|
+| المسار                               | الوصف                                                                                                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/routes/mehla-admin/backups.tsx` | الصفحة الكاملة: جدول السجل، جدول الطلبات، والنماذج (Modals) الأربعة (تسجيل نسخة، طلب استعادة، قرار الاعتماد/الرفض، تسجيل التنفيذ). لا يوجد مجلد `src/components/admin/backups/` — كل منطق الواجهة مُدمَج داخل ملف الراوت نفسه. |
-| `src/lib/backups.functions.ts` | دوال الخادم السبع. |
-| `src/lib/backups.shared.ts` | الأنواع المشتركة، ثوابت `BACKUP_KINDS`, `BACKUP_STATUSES`, `RESTORE_STATUSES`، ودالة تنسيق الحجم `fmtBytes`. |
+| `src/lib/backups.functions.ts`       | دوال الخادم السبع.                                                                                                                                                                                                             |
+| `src/lib/backups.shared.ts`          | الأنواع المشتركة، ثوابت `BACKUP_KINDS`, `BACKUP_STATUSES`, `RESTORE_STATUSES`، ودالة تنسيق الحجم `fmtBytes`.                                                                                                                   |
 
 ## الجداول والعلاقات
 
 ### `platform_backup_snapshots`
 
-| العمود | النوع | ملاحظات |
-|---|---|---|
-| id | uuid PK | |
-| source | text | قيد CHECK: `managed_platform, manual_export, external` (على مستوى SQL)؛ لكن دالة الخادم `recordBackupSnapshot` تقبل أي نص حر (min 2 أحرف) دون تحقق من هذه القائمة في Zod — **تعارض محتمل بين تحقق التطبيق وقيد قاعدة البيانات** (انظر القيود المعروفة). |
-| external_id | text? | معرّف النسخة لدى المزوّد |
-| kind | text | قيد SQL: `daily, weekly, pre_release, manual`؛ في المخطط النوعي `BackupKind` بالتطبيق: `full, incremental, manual, export` — **تعارض تسمية بين طبقة SQL وطبقة التطبيق** (انظر القيود المعروفة) |
-| status | text | قيد SQL: `unknown, completed, failed, in_progress`؛ Zod في `recordSchema` يقبل: `recorded, verified, failed` — **تعارض تسمية آخر** |
-| started_at / finished_at | timestamptz? | |
-| size_bytes | bigint? | |
-| checksum | text? | |
-| verified_at / verified_by | timestamptz? / uuid? | تُملأ عبر `verifyBackupSnapshot` |
-| retention_until | date? | |
-| notes | text? | |
-| recorded_by | uuid? → `platform_staff.id` (منطقياً، بلا FK صريح في المخطط المفحوص) | |
-| created_at | timestamptz | |
+| العمود                    | النوع                                                                | ملاحظات                                                                                                                                                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id                        | uuid PK                                                              |                                                                                                                                                                                                                                                         |
+| source                    | text                                                                 | قيد CHECK: `managed_platform, manual_export, external` (على مستوى SQL)؛ لكن دالة الخادم `recordBackupSnapshot` تقبل أي نص حر (min 2 أحرف) دون تحقق من هذه القائمة في Zod — **تعارض محتمل بين تحقق التطبيق وقيد قاعدة البيانات** (انظر القيود المعروفة). |
+| external_id               | text?                                                                | معرّف النسخة لدى المزوّد                                                                                                                                                                                                                                |
+| kind                      | text                                                                 | قيد SQL: `daily, weekly, pre_release, manual`؛ في المخطط النوعي `BackupKind` بالتطبيق: `full, incremental, manual, export` — **تعارض تسمية بين طبقة SQL وطبقة التطبيق** (انظر القيود المعروفة)                                                          |
+| status                    | text                                                                 | قيد SQL: `unknown, completed, failed, in_progress`؛ Zod في `recordSchema` يقبل: `recorded, verified, failed` — **تعارض تسمية آخر**                                                                                                                      |
+| started_at / finished_at  | timestamptz?                                                         |                                                                                                                                                                                                                                                         |
+| size_bytes                | bigint?                                                              |                                                                                                                                                                                                                                                         |
+| checksum                  | text?                                                                |                                                                                                                                                                                                                                                         |
+| verified_at / verified_by | timestamptz? / uuid?                                                 | تُملأ عبر `verifyBackupSnapshot`                                                                                                                                                                                                                        |
+| retention_until           | date?                                                                |                                                                                                                                                                                                                                                         |
+| notes                     | text?                                                                |                                                                                                                                                                                                                                                         |
+| recorded_by               | uuid? → `platform_staff.id` (منطقياً، بلا FK صريح في المخطط المفحوص) |                                                                                                                                                                                                                                                         |
+| created_at                | timestamptz                                                          |                                                                                                                                                                                                                                                         |
 
 ### `platform_backup_restore_requests`
 
-| العمود | النوع | ملاحظات |
-|---|---|---|
-| id | uuid PK | |
-| snapshot_id | uuid? → `platform_backup_snapshots.id` | ON DELETE SET NULL |
-| reason | text | قيد طول SQL: 10–1000 حرف؛ Zod: `min(10).max(2000)` |
-| scope | text | قيد SQL: `full, table, point_in_time`؛ التطبيق يرسل نصاً حراً (`z.string().min(2).max(200)`) — **تعارض تسمية/تحقق آخر بين SQL والتطبيق** |
-| status | text | قيد SQL: `pending, approved, rejected, executed, cancelled` — يطابق `RESTORE_STATUSES` في التطبيق باستثناء عدم استخدام `cancelled` في أي دالة خادم مفحوصة |
-| requested_by / requested_by_email | uuid / text | NOT NULL |
-| approved_by / approved_by_email / approved_at | uuid?/text?/timestamptz? | |
-| decision_note | text? | |
-| executed_at | timestamptz? | |
-| created_at / updated_at | timestamptz | تريغر `set_updated_at` |
+| العمود                                        | النوع                                  | ملاحظات                                                                                                                                                   |
+| --------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id                                            | uuid PK                                |                                                                                                                                                           |
+| snapshot_id                                   | uuid? → `platform_backup_snapshots.id` | ON DELETE SET NULL                                                                                                                                        |
+| reason                                        | text                                   | قيد طول SQL: 10–1000 حرف؛ Zod: `min(10).max(2000)`                                                                                                        |
+| scope                                         | text                                   | قيد SQL: `full, table, point_in_time`؛ التطبيق يرسل نصاً حراً (`z.string().min(2).max(200)`) — **تعارض تسمية/تحقق آخر بين SQL والتطبيق**                  |
+| status                                        | text                                   | قيد SQL: `pending, approved, rejected, executed, cancelled` — يطابق `RESTORE_STATUSES` في التطبيق باستثناء عدم استخدام `cancelled` في أي دالة خادم مفحوصة |
+| requested_by / requested_by_email             | uuid / text                            | NOT NULL                                                                                                                                                  |
+| approved_by / approved_by_email / approved_at | uuid?/text?/timestamptz?               |                                                                                                                                                           |
+| decision_note                                 | text?                                  |                                                                                                                                                           |
+| executed_at                                   | timestamptz?                           |                                                                                                                                                           |
+| created_at / updated_at                       | timestamptz                            | تريغر `set_updated_at`                                                                                                                                    |
 
 ## دوال الخادم
 
-| الدالة | الصلاحية المطلوبة | Audit |
-|---|---|---|
-| `listBackupSnapshots` | `backups.manage` | لا (قراءة) |
-| `recordBackupSnapshot` | `backups.manage` | نعم — `backup_snapshot_recorded` |
-| `verifyBackupSnapshot` | `backups.manage` | نعم — `backup_snapshot_verified` |
-| `listRestoreRequests` | `backups.manage` | لا |
-| `requestBackupRestore` | `backups.manage` | نعم — `backup_restore_requested` |
-| `decideBackupRestore` | `backups.restore` | نعم — `backup_restore_approved` أو `backup_restore_rejected` |
-| `recordBackupRestoreExecution` | `backups.manage` | نعم — `backup_restore_executed` |
+| الدالة                         | الصلاحية المطلوبة | Audit                                                        |
+| ------------------------------ | ----------------- | ------------------------------------------------------------ |
+| `listBackupSnapshots`          | `backups.manage`  | لا (قراءة)                                                   |
+| `recordBackupSnapshot`         | `backups.manage`  | نعم — `backup_snapshot_recorded`                             |
+| `verifyBackupSnapshot`         | `backups.manage`  | نعم — `backup_snapshot_verified`                             |
+| `listRestoreRequests`          | `backups.manage`  | لا                                                           |
+| `requestBackupRestore`         | `backups.manage`  | نعم — `backup_restore_requested`                             |
+| `decideBackupRestore`          | `backups.restore` | نعم — `backup_restore_approved` أو `backup_restore_rejected` |
+| `recordBackupRestoreExecution` | `backups.manage`  | نعم — `backup_restore_executed`                              |
 
 جميعها تمر عبر `requireSupabaseAuth` ثم `requireStaff(context.supabase, context.userId, <permission>)`، وتستخدم `admin()` (عميل بصلاحيات إدارية) بعد اجتياز التحقق.
 
@@ -101,10 +101,12 @@ if (existing.requested_by === staff.user_id)
 **النسخة (Snapshot)**: `recorded → verified` (عبر `verifyBackupSnapshot`) أو تبقى `failed` إن سُجِّلت كذلك يدوياً. لا انتقال آلي أو مجدول؛ كل انتقال حالة نتيجة فعل بشري واعٍ من موظف.
 
 **طلب الاستعادة**:
+
 ```
 pending → approved → executed
         └→ rejected (نهائي)
 ```
+
 - الطلب يُنشأ بحالة `pending` دائماً (`requestBackupRestore`).
 - `decideBackupRestore` يتطلب أن تكون الحالة الحالية `pending` بالضبط (وإلا: "تم اتخاذ قرار بشأن هذا الطلب مسبقاً.")، ويمنع اعتماد الطالب لطلبه.
 - `recordBackupRestoreExecution` يتطلب أن تكون الحالة `approved` بالضبط (وإلا: "يجب اعتماد الطلب أولاً قبل تسجيل تنفيذه.").

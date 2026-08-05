@@ -24,7 +24,9 @@ export type SupportNotifyEvent =
   | "reopened"
   | "csat_requested";
 
-const CUSTOMER_COPY: Partial<Record<SupportNotifyEvent, { title: string; message: (ref: string) => string }>> = {
+const CUSTOMER_COPY: Partial<
+  Record<SupportNotifyEvent, { title: string; message: (ref: string) => string }>
+> = {
   ticket_created: {
     title: "استلمنا طلب الدعم",
     message: (ref) => `تم فتح التذكرة ${ref} وسيتابعها فريق الدعم.`,

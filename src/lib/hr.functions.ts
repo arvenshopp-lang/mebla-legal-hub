@@ -96,11 +96,21 @@ export const listUnlinkedPlatformStaff = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     await g.requireStaff(context.supabase, context.userId, "hr.read");
     const db = await g.admin();
-    const { data: linked } = await db.from("hr_employees").select("staff_id").not("staff_id", "is", null);
+    const { data: linked } = await db
+      .from("hr_employees")
+      .select("staff_id")
+      .not("staff_id", "is", null);
     const linkedIds = new Set((linked ?? []).map((r: any) => r.staff_id));
-    const { data: staff } = await db.from("platform_staff").select("id, full_name, email").order("full_name");
+    const { data: staff } = await db
+      .from("platform_staff")
+      .select("id, full_name, email")
+      .order("full_name");
     return {
-      staff: (staff ?? []).filter((s: any) => !linkedIds.has(s.id)) as { id: string; full_name: string; email: string }[],
+      staff: (staff ?? []).filter((s: any) => !linkedIds.has(s.id)) as {
+        id: string;
+        full_name: string;
+        email: string;
+      }[],
     };
   });
 
@@ -134,7 +144,14 @@ export const getHrEmployee = createServerFn({ method: "POST" })
       }
     }
 
-    let sessions: { id: string; created_at: string | null; last_seen_at: string | null; ip_address: string | null; user_agent: string | null; revoked_at: string | null }[] = [];
+    let sessions: {
+      id: string;
+      created_at: string | null;
+      last_seen_at: string | null;
+      ip_address: string | null;
+      user_agent: string | null;
+      revoked_at: string | null;
+    }[] = [];
     if (row.user_id) {
       const { data: sess } = await db
         .from("platform_staff_sessions")
@@ -156,7 +173,9 @@ export const getHrEmployee = createServerFn({ method: "POST" })
 
     const { data: docs } = await db
       .from("hr_documents")
-      .select("id, employee_id, kind, title, storage_path, issued_on, expires_on, notes, uploaded_by, created_at, updated_at")
+      .select(
+        "id, employee_id, kind, title, storage_path, issued_on, expires_on, notes, uploaded_by, created_at, updated_at",
+      )
       .eq("employee_id", data.employeeId)
       .order("created_at", { ascending: false });
 
@@ -207,7 +226,10 @@ const employeeInput = z.object({
 
 function normalize(fields: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(fields).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v]),
+    Object.entries(fields).map(([k, v]) => [
+      k,
+      typeof v === "string" && v.trim() === "" ? null : v,
+    ]),
   );
 }
 
@@ -219,11 +241,19 @@ export const createHrEmployee = createServerFn({ method: "POST" })
     const staff = await g.requireStaff(context.supabase, context.userId, "hr.manage");
     const db = await g.admin();
 
-    const { data: existing } = await db.from("hr_employees").select("id").eq("email", data.email).maybeSingle();
+    const { data: existing } = await db
+      .from("hr_employees")
+      .select("id")
+      .eq("email", data.email)
+      .maybeSingle();
     if (existing) throw new Error("يوجد موظف مسجّل بهذا البريد الإلكتروني مسبقاً.");
 
     const patch = normalize(data);
-    const { data: created, error } = await db.from("hr_employees").insert(patch).select("id").single();
+    const { data: created, error } = await db
+      .from("hr_employees")
+      .insert(patch)
+      .select("id")
+      .single();
     if (error) throw new Error("تعذّر إنشاء سجل الموظف.");
 
     await g.writeAudit(db, staff, {
@@ -244,21 +274,31 @@ async function assertNoManagerCycle(db: any, employeeId: string, managerId: stri
   for (let i = 0; i < 50 && current; i++) {
     if (seen.has(current)) throw new Error("هذا التعيين يُنشئ حلقة في تسلسل الإدارة.");
     seen.add(current);
-    const { data: row } = (await db.from("hr_employees").select("manager_employee_id").eq("id", current).maybeSingle()) as { data: { manager_employee_id: string | null } | null };
+    const { data: row } = (await db
+      .from("hr_employees")
+      .select("manager_employee_id")
+      .eq("id", current)
+      .maybeSingle()) as { data: { manager_employee_id: string | null } | null };
     current = row?.manager_employee_id ?? null;
   }
 }
 
 export const updateHrEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => employeeInput.extend({ employeeId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    employeeInput.extend({ employeeId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "hr.manage");
     const db = await g.admin();
     const { employeeId, ...fields } = data;
 
-    const { data: before } = await db.from("hr_employees").select("*").eq("id", employeeId).maybeSingle();
+    const { data: before } = await db
+      .from("hr_employees")
+      .select("*")
+      .eq("id", employeeId)
+      .maybeSingle();
     if (!before) throw new Error("الموظف غير موجود.");
 
     const { data: dup } = await db
@@ -280,7 +320,11 @@ export const updateHrEmployee = createServerFn({ method: "POST" })
       entity_type: "hr_employee",
       entity_id: employeeId,
       description: `تعديل بيانات الموظف ${fields.full_name}`,
-      before: { full_name: before.full_name, email: before.email, department_id: before.department_id },
+      before: {
+        full_name: before.full_name,
+        email: before.email,
+        department_id: before.department_id,
+      },
       after: patch,
     });
     return { ok: true as const };
@@ -337,7 +381,9 @@ export const listHrDocuments = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: rows } = await db
       .from("hr_documents")
-      .select("id, employee_id, kind, title, storage_path, issued_on, expires_on, notes, uploaded_by, created_at, updated_at")
+      .select(
+        "id, employee_id, kind, title, storage_path, issued_on, expires_on, notes, uploaded_by, created_at, updated_at",
+      )
       .eq("employee_id", data.employeeId)
       .order("created_at", { ascending: false });
     return { documents: rows ?? [] };
@@ -391,7 +437,11 @@ export const deleteHrDocument = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "hr.manage");
     const db = await g.admin();
-    const { data: before } = await db.from("hr_documents").select("id, title, employee_id").eq("id", data.documentId).maybeSingle();
+    const { data: before } = await db
+      .from("hr_documents")
+      .select("id, title, employee_id")
+      .eq("id", data.documentId)
+      .maybeSingle();
     if (!before) throw new Error("المستند غير موجود.");
     const { error } = await db.from("hr_documents").delete().eq("id", data.documentId);
     if (error) throw new Error("تعذّر حذف المستند.");
@@ -416,7 +466,9 @@ export const exportHrEmployees = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: rows } = await db
       .from("hr_employees")
-      .select("full_name, email, phone, job_title, employment_status, employment_type, joined_at, ended_at, platform_departments(name_ar)")
+      .select(
+        "full_name, email, phone, job_title, employment_status, employment_type, joined_at, ended_at, platform_departments(name_ar)",
+      )
       .order("full_name");
     return {
       rows: (rows ?? []).map((r: any) => ({

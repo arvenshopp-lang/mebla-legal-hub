@@ -65,7 +65,11 @@ export const QUEUES: { key: QueueKey; label: string; filters: TicketFiltersInput
   { key: "awaiting_reply", label: "بانتظار العميل", filters: { status: "awaiting_reply" } },
   { key: "pending_internal", label: "بانتظار داخلي", filters: { status: "pending_internal" } },
   { key: "escalated", label: "المصعّدة", filters: { status: "escalated" } },
-  { key: "at_risk", label: "المهدَّدة بخرق المهلة", filters: { slaState: "at_risk", status: "open" } },
+  {
+    key: "at_risk",
+    label: "المهدَّدة بخرق المهلة",
+    filters: { slaState: "at_risk", status: "open" },
+  },
   { key: "breached", label: "المتجاوزة للمهلة", filters: { onlyBreached: true } },
   { key: "resolved", label: "المحلولة", filters: { status: "resolved" } },
   { key: "closed", label: "المغلقة", filters: { status: "closed" } },
@@ -95,10 +99,7 @@ export function QueuesPanel({
   const [createOpen, setCreateOpen] = useState(false);
   const debounced = useDebounced(search);
 
-  const queueFilters = useMemo(
-    () => QUEUES.find((q) => q.key === queue)?.filters ?? {},
-    [queue],
-  );
+  const queueFilters = useMemo(() => QUEUES.find((q) => q.key === queue)?.filters ?? {}, [queue]);
 
   const filters: TicketFiltersInput = useMemo(
     () => ({
@@ -398,7 +399,9 @@ export function QueuesPanel({
                       <span className="block">{t.team_name ?? "بلا فريق"}</span>
                       <span className="text-caption">{t.assignee_name ?? "غير مسندة"}</span>
                     </Td>
-                    <Td className="text-[12px] text-muted-foreground">{fmtDateTime(t.last_activity_at)}</Td>
+                    <Td className="text-[12px] text-muted-foreground">
+                      {fmtDateTime(t.last_activity_at)}
+                    </Td>
                   </tr>
                 ))}
               </tbody>
@@ -408,7 +411,11 @@ export function QueuesPanel({
         </>
       )}
 
-      <CreateTicketModal open={createOpen} onClose={() => setCreateOpen(false)} workspace={workspace} />
+      <CreateTicketModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        workspace={workspace}
+      />
     </div>
   );
 }
@@ -463,10 +470,21 @@ function CreateTicketModal({
   const valid = subject.trim().length > 0 && description.trim().length > 0 && category.length > 0;
 
   return (
-    <Modal open={open} onClose={onClose} size="md" title="تذكرة دعم جديدة" description="تُفتح التذكرة بالمهل والفريق الافتراضي للتصنيف.">
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="md"
+      title="تذكرة دعم جديدة"
+      description="تُفتح التذكرة بالمهل والفريق الافتراضي للتصنيف."
+    >
       <div className="space-y-4">
         <FormField label="الموضوع" required>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputCls} maxLength={300} />
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className={inputCls}
+            maxLength={300}
+          />
         </FormField>
         <FormField label="الوصف" required>
           <textarea
@@ -479,7 +497,11 @@ function CreateTicketModal({
         </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="التصنيف" required>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputCls}
+            >
               {workspace.categories.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.name}
@@ -533,7 +555,11 @@ function CreateTicketModal({
             />
           </FormField>
           <FormField label="اسم مُقدّم الطلب">
-            <input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} className={inputCls} />
+            <input
+              value={requesterName}
+              onChange={(e) => setRequesterName(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
         </div>
         <div className="flex justify-end gap-2">

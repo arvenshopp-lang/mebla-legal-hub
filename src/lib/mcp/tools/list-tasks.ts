@@ -7,7 +7,8 @@ const STATUS = ["pending", "in_progress", "completed", "cancelled", "overdue"] a
 export default defineTool({
   name: "list_tasks",
   title: "قائمة المهام",
-  description: "يعرض مهام مكتب المستخدم، مع إمكانية قصر النتائج على المهام المسندة إليه أو على حالة محددة.",
+  description:
+    "يعرض مهام مكتب المستخدم، مع إمكانية قصر النتائج على المهام المسندة إليه أو على حالة محددة.",
   inputSchema: {
     status: z.enum(STATUS).optional().describe("تصفية بحالة المهمة."),
     mine_only: z.boolean().optional().describe("قصر النتائج على المهام المسندة للمستخدم الحالي."),

@@ -108,16 +108,20 @@ export function TeamsPanel({ config }: { config: Config }) {
                       </span>
                     )}
                   </Td>
-                  <Td className="text-left text-[12px] text-muted-foreground" >{team.code}</Td>
-                  <Td className="text-left text-[12px]" >{team.mailbox_address ?? "—"}</Td>
+                  <Td className="text-left text-[12px] text-muted-foreground">{team.code}</Td>
+                  <Td className="text-left text-[12px]">{team.mailbox_address ?? "—"}</Td>
                   <Td>{team.manager_name ?? "—"}</Td>
                   <Td className="text-[12.5px]">
                     {team.members.length === 0
                       ? "لا أعضاء"
-                      : team.members.map((m) => `${m.name}${m.is_lead ? " (قائد)" : ""}`).join(" · ")}
+                      : team.members
+                          .map((m) => `${m.name}${m.is_lead ? " (قائد)" : ""}`)
+                          .join(" · ")}
                   </Td>
                   <Td>
-                    <Badge tone={team.is_active ? "green" : "muted"}>{team.is_active ? "مفعّل" : "معطّل"}</Badge>
+                    <Badge tone={team.is_active ? "green" : "muted"}>
+                      {team.is_active ? "مفعّل" : "معطّل"}
+                    </Badge>
                   </Td>
                   {canManage && (
                     <Td>
@@ -187,7 +191,8 @@ function TeamModal({
   });
 
   const addMember = useMutation({
-    mutationFn: async (userId: string) => memberFn({ data: { teamId: team!.id, userId, isLead: false } }),
+    mutationFn: async (userId: string) =>
+      memberFn({ data: { teamId: team!.id, userId, isLead: false } }),
     onSuccess: () => {
       toast.success("تم تحديث أعضاء الفريق");
       setMemberId("");
@@ -197,17 +202,36 @@ function TeamModal({
   });
 
   return (
-    <Modal open={open} onClose={onClose} title={team ? `تعديل ${team.name_ar}` : "فريق دعم جديد"} size="md">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={team ? `تعديل ${team.name_ar}` : "فريق دعم جديد"}
+      size="md"
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="اسم الفريق" required>
-            <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className={inputCls} maxLength={120} />
+            <input
+              value={nameAr}
+              onChange={(e) => setNameAr(e.target.value)}
+              className={inputCls}
+              maxLength={120}
+            />
           </FormField>
           <FormField label="الرمز" required hint="حروف إنجليزية صغيرة وأرقام">
-            <input value={code} onChange={(e) => setCode(e.target.value)} className={inputCls} dir="ltr" />
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={inputCls}
+              dir="ltr"
+            />
           </FormField>
           <FormField label="صندوق البريد">
-            <select value={mailboxId} onChange={(e) => setMailboxId(e.target.value)} className={inputCls}>
+            <select
+              value={mailboxId}
+              onChange={(e) => setMailboxId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.mailboxes.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -217,7 +241,11 @@ function TeamModal({
             </select>
           </FormField>
           <FormField label="مدير الفريق">
-            <select value={managerUserId} onChange={(e) => setManagerUserId(e.target.value)} className={inputCls}>
+            <select
+              value={managerUserId}
+              onChange={(e) => setManagerUserId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.staff.map((s) => (
                 <option key={s.user_id} value={s.user_id}>
@@ -227,7 +255,11 @@ function TeamModal({
             </select>
           </FormField>
           <FormField label="فريق التصعيد">
-            <select value={escalationTeamId} onChange={(e) => setEscalationTeamId(e.target.value)} className={inputCls}>
+            <select
+              value={escalationTeamId}
+              onChange={(e) => setEscalationTeamId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.teams
                 .filter((t) => t.id !== team?.id)
@@ -240,11 +272,19 @@ function TeamModal({
           </FormField>
           <div className="flex items-end gap-4 pb-1">
             <label className="flex items-center gap-2 text-[13px]">
-              <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.target.checked)}
+              />
               الفريق الافتراضي
             </label>
             <label className="flex items-center gap-2 text-[13px]">
-              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
               مفعّل
             </label>
           </div>
@@ -254,7 +294,9 @@ function TeamModal({
           <div className="rounded-[var(--radius-m)] border border-border p-3.5">
             <p className="mb-2 text-[13px] font-semibold">أعضاء الفريق</p>
             <p className="mb-2.5 text-[12.5px] text-muted-foreground">
-              {team.members.length === 0 ? "لا أعضاء بعد." : team.members.map((m) => m.name).join(" · ")}
+              {team.members.length === 0
+                ? "لا أعضاء بعد."
+                : team.members.map((m) => m.name).join(" · ")}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <select
@@ -289,7 +331,11 @@ function TeamModal({
           <Btn variant="ghost" onClick={onClose}>
             إلغاء
           </Btn>
-          <Btn loading={save.isPending} disabled={!nameAr.trim() || !code.trim()} onClick={() => save.mutate()}>
+          <Btn
+            loading={save.isPending}
+            disabled={!nameAr.trim() || !code.trim()}
+            onClick={() => save.mutate()}
+          >
             حفظ
           </Btn>
         </div>
@@ -344,11 +390,21 @@ export function CategoriesPanel({ config }: { config: Config }) {
                 <tr key={category.id} className="hover:bg-surface-muted/60">
                   <Td className="font-medium">{category.name_ar}</Td>
                   <Td className="text-left text-[12px] text-muted-foreground">{category.code}</Td>
-                  <Td>{TICKET_PRIORITY_LABELS_AR[category.default_priority as TicketPriority] ?? category.default_priority}</Td>
-                  <Td>{config.teams.find((t) => t.id === category.default_team_id)?.name_ar ?? "—"}</Td>
-                  <Td>{config.policies.find((p) => p.id === category.sla_policy_id)?.name_ar ?? "مطابقة تلقائية"}</Td>
                   <Td>
-                    <Badge tone={category.is_active ? "green" : "muted"}>{category.is_active ? "مفعّل" : "معطّل"}</Badge>
+                    {TICKET_PRIORITY_LABELS_AR[category.default_priority as TicketPriority] ??
+                      category.default_priority}
+                  </Td>
+                  <Td>
+                    {config.teams.find((t) => t.id === category.default_team_id)?.name_ar ?? "—"}
+                  </Td>
+                  <Td>
+                    {config.policies.find((p) => p.id === category.sla_policy_id)?.name_ar ??
+                      "مطابقة تلقائية"}
+                  </Td>
+                  <Td>
+                    <Badge tone={category.is_active ? "green" : "muted"}>
+                      {category.is_active ? "مفعّل" : "معطّل"}
+                    </Badge>
                   </Td>
                   {canManage && (
                     <Td>
@@ -371,7 +427,12 @@ export function CategoriesPanel({ config }: { config: Config }) {
         </DataCard>
       )}
 
-      <CategoryModal open={open} onClose={() => setOpen(false)} config={config} category={editing} />
+      <CategoryModal
+        open={open}
+        onClose={() => setOpen(false)}
+        config={config}
+        category={editing}
+      />
     </div>
   );
 }
@@ -418,14 +479,29 @@ function CategoryModal({
   });
 
   return (
-    <Modal open={open} onClose={onClose} title={category ? `تعديل ${category.name_ar}` : "تصنيف جديد"} size="md">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={category ? `تعديل ${category.name_ar}` : "تصنيف جديد"}
+      size="md"
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="اسم التصنيف" required>
-            <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className={inputCls} maxLength={120} />
+            <input
+              value={nameAr}
+              onChange={(e) => setNameAr(e.target.value)}
+              className={inputCls}
+              maxLength={120}
+            />
           </FormField>
           <FormField label="الرمز" required hint="حروف إنجليزية صغيرة وأرقام">
-            <input value={code} onChange={(e) => setCode(e.target.value)} className={inputCls} dir="ltr" />
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={inputCls}
+              dir="ltr"
+            />
           </FormField>
           <FormField label="الأولوية الافتراضية">
             <select
@@ -441,7 +517,11 @@ function CategoryModal({
             </select>
           </FormField>
           <FormField label="الفريق الافتراضي">
-            <select value={defaultTeamId} onChange={(e) => setDefaultTeamId(e.target.value)} className={inputCls}>
+            <select
+              value={defaultTeamId}
+              onChange={(e) => setDefaultTeamId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.teams.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -451,7 +531,11 @@ function CategoryModal({
             </select>
           </FormField>
           <FormField label="سياسة المهل" hint="اتركها فارغة للمطابقة التلقائية">
-            <select value={slaPolicyId} onChange={(e) => setSlaPolicyId(e.target.value)} className={inputCls}>
+            <select
+              value={slaPolicyId}
+              onChange={(e) => setSlaPolicyId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">مطابقة تلقائية</option>
               {config.policies.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -472,14 +556,22 @@ function CategoryModal({
           </FormField>
         </div>
         <label className="flex items-center gap-2 text-[13px]">
-          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+          />
           مفعّل
         </label>
         <div className="flex justify-end gap-2">
           <Btn variant="ghost" onClick={onClose}>
             إلغاء
           </Btn>
-          <Btn loading={save.isPending} disabled={!nameAr.trim() || !code.trim()} onClick={() => save.mutate()}>
+          <Btn
+            loading={save.isPending}
+            disabled={!nameAr.trim() || !code.trim()}
+            onClick={() => save.mutate()}
+          >
             حفظ
           </Btn>
         </div>
@@ -514,7 +606,10 @@ export function PoliciesPanel({ config }: { config: Config }) {
       </div>
 
       {config.policies.length === 0 ? (
-        <EmptyState title="لا توجد سياسات" hint="أضف سياسة مهل واحدة على الأقل ليُحتسب زمن الاستجابة." />
+        <EmptyState
+          title="لا توجد سياسات"
+          hint="أضف سياسة مهل واحدة على الأقل ليُحتسب زمن الاستجابة."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[860px] text-right">
@@ -536,19 +631,28 @@ export function PoliciesPanel({ config }: { config: Config }) {
               {config.policies.map((policy) => (
                 <tr key={policy.id} className="hover:bg-surface-muted/60">
                   <Td className="font-medium">{policy.name_ar}</Td>
-                  <Td>{config.calendars.find((c) => c.id === policy.calendar_id)?.name_ar ?? "—"}</Td>
+                  <Td>
+                    {config.calendars.find((c) => c.id === policy.calendar_id)?.name_ar ?? "—"}
+                  </Td>
                   <Td>{policy.plan_code ?? "الكل"}</Td>
                   <Td>
                     {policy.priority
-                      ? (TICKET_PRIORITY_LABELS_AR[policy.priority as TicketPriority] ?? policy.priority)
+                      ? (TICKET_PRIORITY_LABELS_AR[policy.priority as TicketPriority] ??
+                        policy.priority)
                       : "الكل"}
                   </Td>
-                  <Td>{policy.channel ? (TICKET_CHANNEL_LABELS[policy.channel as TicketChannel] ?? policy.channel) : "الكل"}</Td>
+                  <Td>
+                    {policy.channel
+                      ? (TICKET_CHANNEL_LABELS[policy.channel as TicketChannel] ?? policy.channel)
+                      : "الكل"}
+                  </Td>
                   <Td className="tabular-nums">{humanMinutes(policy.first_response_minutes)}</Td>
                   <Td className="tabular-nums">{humanMinutes(policy.resolution_minutes)}</Td>
                   <Td>{policy.pause_on_customer_wait ? "نعم" : "لا"}</Td>
                   <Td>
-                    <Badge tone={policy.is_active ? "green" : "muted"}>{policy.is_active ? "مفعّلة" : "معطّلة"}</Badge>
+                    <Badge tone={policy.is_active ? "green" : "muted"}>
+                      {policy.is_active ? "مفعّلة" : "معطّلة"}
+                    </Badge>
                   </Td>
                   {canManage && (
                     <Td>
@@ -591,7 +695,9 @@ function PolicyModal({
   const done = useSaved(onClose);
   const [code, setCode] = useState(policy?.code ?? "");
   const [nameAr, setNameAr] = useState(policy?.name_ar ?? "");
-  const [calendarId, setCalendarId] = useState(policy?.calendar_id ?? config.calendars[0]?.id ?? "");
+  const [calendarId, setCalendarId] = useState(
+    policy?.calendar_id ?? config.calendars[0]?.id ?? "",
+  );
   const [planCode, setPlanCode] = useState(policy?.plan_code ?? "");
   const [priority, setPriority] = useState(policy?.priority ?? "");
   const [channel, setChannel] = useState(policy?.channel ?? "");
@@ -627,20 +733,44 @@ function PolicyModal({
     onError: (error: Error) => toast.error("تعذّر حفظ السياسة", { description: error.message }),
   });
 
-  const valid = nameAr.trim() && code.trim() && calendarId && Number(firstResponse) >= 5 && Number(resolution) >= 15;
+  const valid =
+    nameAr.trim() &&
+    code.trim() &&
+    calendarId &&
+    Number(firstResponse) >= 5 &&
+    Number(resolution) >= 15;
 
   return (
-    <Modal open={open} onClose={onClose} title={policy ? `تعديل ${policy.name_ar}` : "سياسة مهل جديدة"} size="lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={policy ? `تعديل ${policy.name_ar}` : "سياسة مهل جديدة"}
+      size="lg"
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="اسم السياسة" required>
-            <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className={inputCls} maxLength={120} />
+            <input
+              value={nameAr}
+              onChange={(e) => setNameAr(e.target.value)}
+              className={inputCls}
+              maxLength={120}
+            />
           </FormField>
           <FormField label="الرمز" required hint="حروف إنجليزية صغيرة وأرقام">
-            <input value={code} onChange={(e) => setCode(e.target.value)} className={inputCls} dir="ltr" />
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={inputCls}
+              dir="ltr"
+            />
           </FormField>
           <FormField label="تقويم العمل" required>
-            <select value={calendarId} onChange={(e) => setCalendarId(e.target.value)} className={inputCls}>
+            <select
+              value={calendarId}
+              onChange={(e) => setCalendarId(e.target.value)}
+              className={inputCls}
+            >
               {config.calendars.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name_ar} ({c.timezone})
@@ -649,10 +779,19 @@ function PolicyModal({
             </select>
           </FormField>
           <FormField label="رمز الباقة" hint="اتركه فارغاً لتطبيقها على كل الباقات">
-            <input value={planCode} onChange={(e) => setPlanCode(e.target.value)} className={inputCls} dir="ltr" />
+            <input
+              value={planCode}
+              onChange={(e) => setPlanCode(e.target.value)}
+              className={inputCls}
+              dir="ltr"
+            />
           </FormField>
           <FormField label="الأولوية">
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className={inputCls}>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل الأولويات</option>
               {TICKET_PRIORITIES.map((p) => (
                 <option key={p} value={p}>
@@ -662,7 +801,11 @@ function PolicyModal({
             </select>
           </FormField>
           <FormField label="القناة">
-            <select value={channel} onChange={(e) => setChannel(e.target.value)} className={inputCls}>
+            <select
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل القنوات</option>
               {TICKET_CHANNELS.map((c) => (
                 <option key={c} value={c}>
@@ -672,7 +815,11 @@ function PolicyModal({
             </select>
           </FormField>
           <FormField label="التصنيف">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل التصنيفات</option>
               {config.categories.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -726,7 +873,11 @@ function PolicyModal({
             إيقاف العدّاد أثناء انتظار العميل
           </label>
           <label className="flex items-center gap-2 text-[13px]">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
             مفعّلة
           </label>
         </div>
@@ -769,7 +920,10 @@ export function RulesPanel({ config }: { config: Config }) {
       </div>
 
       {config.rules.length === 0 ? (
-        <EmptyState title="لا توجد قواعد تصعيد" hint="أضف قاعدة لتصعيد التذاكر المتأخرة تلقائياً." />
+        <EmptyState
+          title="لا توجد قواعد تصعيد"
+          hint="أضف قاعدة لتصعيد التذاكر المتأخرة تلقائياً."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[820px] text-right">
@@ -792,10 +946,13 @@ export function RulesPanel({ config }: { config: Config }) {
                   <Td>{TRIGGER_LABELS[rule.trigger_type] ?? rule.trigger_type}</Td>
                   <Td className="text-[12.5px]">
                     {[
-                      rule.priority ? TICKET_PRIORITY_LABELS_AR[rule.priority as TicketPriority] : null,
+                      rule.priority
+                        ? TICKET_PRIORITY_LABELS_AR[rule.priority as TicketPriority]
+                        : null,
                       rule.channel ? TICKET_CHANNEL_LABELS[rule.channel as TicketChannel] : null,
                       rule.category
-                        ? (config.categories.find((c) => c.code === rule.category)?.name_ar ?? rule.category)
+                        ? (config.categories.find((c) => c.code === rule.category)?.name_ar ??
+                          rule.category)
                         : null,
                     ]
                       .filter(Boolean)
@@ -811,7 +968,9 @@ export function RulesPanel({ config }: { config: Config }) {
                   </Td>
                   <Td>{rule.notify_manager ? "نعم" : "لا"}</Td>
                   <Td>
-                    <Badge tone={rule.is_active ? "green" : "muted"}>{rule.is_active ? "مفعّلة" : "معطّلة"}</Badge>
+                    <Badge tone={rule.is_active ? "green" : "muted"}>
+                      {rule.is_active ? "مفعّلة" : "معطّلة"}
+                    </Badge>
                   </Td>
                   {canManage && (
                     <Td>
@@ -871,7 +1030,12 @@ function RuleModal({
         data: {
           ...(rule ? { id: rule.id } : {}),
           nameAr: nameAr.trim(),
-          triggerType: triggerType as "sla_breach" | "sla_warning" | "manual" | "no_response" | "priority",
+          triggerType: triggerType as
+            | "sla_breach"
+            | "sla_warning"
+            | "manual"
+            | "no_response"
+            | "priority",
           priority: priority ? (priority as TicketPriority) : null,
           channel: channel ? (channel as TicketChannel) : null,
           category: category ? category : null,
@@ -889,14 +1053,28 @@ function RuleModal({
   });
 
   return (
-    <Modal open={open} onClose={onClose} title={rule ? `تعديل ${rule.name_ar}` : "قاعدة تصعيد جديدة"} size="lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={rule ? `تعديل ${rule.name_ar}` : "قاعدة تصعيد جديدة"}
+      size="lg"
+    >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="اسم القاعدة" required>
-            <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className={inputCls} maxLength={120} />
+            <input
+              value={nameAr}
+              onChange={(e) => setNameAr(e.target.value)}
+              className={inputCls}
+              maxLength={120}
+            />
           </FormField>
           <FormField label="المُحفّز" required>
-            <select value={triggerType} onChange={(e) => setTriggerType(e.target.value)} className={inputCls}>
+            <select
+              value={triggerType}
+              onChange={(e) => setTriggerType(e.target.value)}
+              className={inputCls}
+            >
               {Object.entries(TRIGGER_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -905,7 +1083,11 @@ function RuleModal({
             </select>
           </FormField>
           <FormField label="الأولوية">
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className={inputCls}>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل الأولويات</option>
               {TICKET_PRIORITIES.map((p) => (
                 <option key={p} value={p}>
@@ -915,7 +1097,11 @@ function RuleModal({
             </select>
           </FormField>
           <FormField label="القناة">
-            <select value={channel} onChange={(e) => setChannel(e.target.value)} className={inputCls}>
+            <select
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل القنوات</option>
               {TICKET_CHANNELS.map((c) => (
                 <option key={c} value={c}>
@@ -925,7 +1111,11 @@ function RuleModal({
             </select>
           </FormField>
           <FormField label="التصنيف">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل التصنيفات</option>
               {config.categories.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -945,13 +1135,31 @@ function RuleModal({
             />
           </FormField>
           <FormField label="من مستوى">
-            <input type="number" min={0} max={9} value={fromLevel} onChange={(e) => setFromLevel(e.target.value)} className={inputCls} />
+            <input
+              type="number"
+              min={0}
+              max={9}
+              value={fromLevel}
+              onChange={(e) => setFromLevel(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
           <FormField label="إلى مستوى">
-            <input type="number" min={1} max={10} value={toLevel} onChange={(e) => setToLevel(e.target.value)} className={inputCls} />
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={toLevel}
+              onChange={(e) => setToLevel(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
           <FormField label="الفريق المستهدف">
-            <select value={targetTeamId} onChange={(e) => setTargetTeamId(e.target.value)} className={inputCls}>
+            <select
+              value={targetTeamId}
+              onChange={(e) => setTargetTeamId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.teams.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -961,7 +1169,11 @@ function RuleModal({
             </select>
           </FormField>
           <FormField label="الموظف المستهدف">
-            <select value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)} className={inputCls}>
+            <select
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+              className={inputCls}
+            >
               <option value="">بدون</option>
               {config.staff.map((s) => (
                 <option key={s.user_id} value={s.user_id}>
@@ -973,11 +1185,19 @@ function RuleModal({
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-[13px]">
-            <input type="checkbox" checked={notifyManager} onChange={(e) => setNotifyManager(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={notifyManager}
+              onChange={(e) => setNotifyManager(e.target.checked)}
+            />
             إخطار مدير الفريق
           </label>
           <label className="flex items-center gap-2 text-[13px]">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
             مفعّلة
           </label>
         </div>

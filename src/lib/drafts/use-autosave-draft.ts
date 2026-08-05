@@ -170,5 +170,14 @@ export function useAutoSaveDraft<T extends Record<string, unknown>>({
     void flush();
   }, [flush]);
 
-  return { status, savedAt, prompt, restore, discard, clear, retry, lastValue: pendingValue.current };
+  return {
+    status,
+    savedAt,
+    prompt,
+    restore,
+    discard,
+    clear,
+    retry,
+    lastValue: pendingValue.current,
+  };
 }

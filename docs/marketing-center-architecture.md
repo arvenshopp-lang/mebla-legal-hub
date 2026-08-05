@@ -14,70 +14,70 @@
 
 ## المسارات
 
-| المسار | الوصف |
-|---|---|
-| `src/routes/mehla-admin/marketing.tsx` | صفحة الواجهة: تبويبات (الحملات، أحداث التحويل، الإحالات، مزوّدو التسويق) + بطاقات ملخص الأداء. |
-| `src/lib/marketing.functions.ts` | دوال الخادم (Server Functions) لكل عمليات القراءة/الكتابة. |
-| `src/lib/marketing.shared.ts` | الأنواع المشتركة وقيم حالة الحملة `MARKETING_CAMPAIGN_STATUS` وتسمياتها العربية. |
-| `src/components/admin/marketing/campaigns-panel.tsx` | لوحة إدارة الحملات (قائمة، بحث، فرز، نموذج إنشاء/تعديل، حذف، تصدير). |
-| `src/components/admin/marketing/conversions-panel.tsx` | لوحة أحداث التحويل (قائمة + تسجيل حدث جديد). |
-| `src/components/admin/marketing/referrals-panel.tsx` | لوحة برامج الإحالة (قائمة، بحث، نموذج إنشاء/تعديل). |
-| `src/components/admin/marketing/providers-panel.tsx` | لوحة قراءة حالة مزوّدي القياس/الإعلانات من مركز التكاملات. |
+| المسار                                                 | الوصف                                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `src/routes/mehla-admin/marketing.tsx`                 | صفحة الواجهة: تبويبات (الحملات، أحداث التحويل، الإحالات، مزوّدو التسويق) + بطاقات ملخص الأداء. |
+| `src/lib/marketing.functions.ts`                       | دوال الخادم (Server Functions) لكل عمليات القراءة/الكتابة.                                     |
+| `src/lib/marketing.shared.ts`                          | الأنواع المشتركة وقيم حالة الحملة `MARKETING_CAMPAIGN_STATUS` وتسمياتها العربية.               |
+| `src/components/admin/marketing/campaigns-panel.tsx`   | لوحة إدارة الحملات (قائمة، بحث، فرز، نموذج إنشاء/تعديل، حذف، تصدير).                           |
+| `src/components/admin/marketing/conversions-panel.tsx` | لوحة أحداث التحويل (قائمة + تسجيل حدث جديد).                                                   |
+| `src/components/admin/marketing/referrals-panel.tsx`   | لوحة برامج الإحالة (قائمة، بحث، نموذج إنشاء/تعديل).                                            |
+| `src/components/admin/marketing/providers-panel.tsx`   | لوحة قراءة حالة مزوّدي القياس/الإعلانات من مركز التكاملات.                                     |
 
 ## الجداول والعلاقات
 
 ### `marketing_campaigns`
 
-| العمود | النوع | ملاحظات |
-|---|---|---|
-| id | uuid PK | |
-| name | text | فريد بعد التطبيع (`lower(btrim(name))`) |
-| channel | text | قيود CHECK: `email, in_app, social, search, referral, content, event, sms, other` |
-| objective | text? | |
-| status | enum `marketing_campaign_status` | `draft, scheduled, running, paused, completed, cancelled` |
-| starts_on / ends_on | date? | قيد: `ends_on >= starts_on` إن وُجدا |
-| budget_amount / spend_amount | numeric(14,2) | قيد: `>= 0` |
-| currency | text | افتراضي `SAR` |
-| utm_source / utm_medium / utm_campaign | text? | فريد جزئياً على `utm_campaign` بعد التطبيع |
-| landing_page_slug | text? | |
-| coupon_id | uuid? → `platform_coupons.id` | ON DELETE SET NULL |
-| owner_staff_id | uuid? → `platform_staff.id` | ON DELETE SET NULL |
-| notes | text? | |
-| created_by / updated_by | uuid? | |
-| created_at / updated_at | timestamptz | تريغر `set_updated_at` |
+| العمود                                 | النوع                            | ملاحظات                                                                           |
+| -------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
+| id                                     | uuid PK                          |                                                                                   |
+| name                                   | text                             | فريد بعد التطبيع (`lower(btrim(name))`)                                           |
+| channel                                | text                             | قيود CHECK: `email, in_app, social, search, referral, content, event, sms, other` |
+| objective                              | text?                            |                                                                                   |
+| status                                 | enum `marketing_campaign_status` | `draft, scheduled, running, paused, completed, cancelled`                         |
+| starts_on / ends_on                    | date?                            | قيد: `ends_on >= starts_on` إن وُجدا                                              |
+| budget_amount / spend_amount           | numeric(14,2)                    | قيد: `>= 0`                                                                       |
+| currency                               | text                             | افتراضي `SAR`                                                                     |
+| utm_source / utm_medium / utm_campaign | text?                            | فريد جزئياً على `utm_campaign` بعد التطبيع                                        |
+| landing_page_slug                      | text?                            |                                                                                   |
+| coupon_id                              | uuid? → `platform_coupons.id`    | ON DELETE SET NULL                                                                |
+| owner_staff_id                         | uuid? → `platform_staff.id`      | ON DELETE SET NULL                                                                |
+| notes                                  | text?                            |                                                                                   |
+| created_by / updated_by                | uuid?                            |                                                                                   |
+| created_at / updated_at                | timestamptz                      | تريغر `set_updated_at`                                                            |
 
 ### `marketing_conversion_events`
 
-| العمود | النوع | ملاحظات |
-|---|---|---|
-| id | uuid PK | |
-| event_key | text | قيد نمط `^[a-z0-9_.]{2,60}$` |
-| label | text? | |
-| campaign_id | uuid? → `marketing_campaigns.id` | ON DELETE SET NULL |
-| lead_id | uuid? → `crm_leads.id` | ON DELETE SET NULL |
-| organization_id | uuid? → `organizations.id` | ON DELETE SET NULL |
-| value_amount | numeric(14,2) | قيد: `>= 0` |
-| utm | jsonb | افتراضي `{}` |
-| source | text? | |
-| occurred_at | timestamptz | افتراضي `now()` |
-| created_at | timestamptz | |
+| العمود          | النوع                            | ملاحظات                      |
+| --------------- | -------------------------------- | ---------------------------- |
+| id              | uuid PK                          |                              |
+| event_key       | text                             | قيد نمط `^[a-z0-9_.]{2,60}$` |
+| label           | text?                            |                              |
+| campaign_id     | uuid? → `marketing_campaigns.id` | ON DELETE SET NULL           |
+| lead_id         | uuid? → `crm_leads.id`           | ON DELETE SET NULL           |
+| organization_id | uuid? → `organizations.id`       | ON DELETE SET NULL           |
+| value_amount    | numeric(14,2)                    | قيد: `>= 0`                  |
+| utm             | jsonb                            | افتراضي `{}`                 |
+| source          | text?                            |                              |
+| occurred_at     | timestamptz                      | افتراضي `now()`              |
+| created_at      | timestamptz                      |                              |
 
 ### `marketing_referrals`
 
-| العمود | النوع | ملاحظات |
-|---|---|---|
-| id | uuid PK | |
-| code | text | قيد نمط `^[A-Za-z0-9_-]{3,40}$`، فريد بعد التحويل لحروف كبيرة |
-| label | text? | |
-| referrer_kind | text | قيد CHECK: `partner, organization, staff, influencer` |
-| referrer_name / referrer_email | text? | |
-| coupon_id | uuid? → `platform_coupons.id` | ON DELETE SET NULL |
-| reward_note | text? | |
-| is_active | boolean | افتراضي true |
-| uses_count | integer | افتراضي 0، قيد `>= 0` |
-| max_uses | integer? | قيد: إن وُجد فيجب `> 0` |
-| created_by | uuid? | |
-| created_at / updated_at | timestamptz | تريغر `set_updated_at` |
+| العمود                         | النوع                         | ملاحظات                                                       |
+| ------------------------------ | ----------------------------- | ------------------------------------------------------------- |
+| id                             | uuid PK                       |                                                               |
+| code                           | text                          | قيد نمط `^[A-Za-z0-9_-]{3,40}$`، فريد بعد التحويل لحروف كبيرة |
+| label                          | text?                         |                                                               |
+| referrer_kind                  | text                          | قيد CHECK: `partner, organization, staff, influencer`         |
+| referrer_name / referrer_email | text?                         |                                                               |
+| coupon_id                      | uuid? → `platform_coupons.id` | ON DELETE SET NULL                                            |
+| reward_note                    | text?                         |                                                               |
+| is_active                      | boolean                       | افتراضي true                                                  |
+| uses_count                     | integer                       | افتراضي 0، قيد `>= 0`                                         |
+| max_uses                       | integer?                      | قيد: إن وُجد فيجب `> 0`                                       |
+| created_by                     | uuid?                         |                                                               |
+| created_at / updated_at        | timestamptz                   | تريغر `set_updated_at`                                        |
 
 ### علاقات القراءة الإضافية (بدون FK صريح على مستوى منطق التطبيق)
 
@@ -86,21 +86,21 @@
 
 ## دوال الخادم
 
-| الدالة | الصلاحية المطلوبة | Audit |
-|---|---|---|
-| `listMarketingCampaigns` | `marketing.read` | لا (قراءة) |
-| `createMarketingCampaign` | `marketing.manage` | نعم — `marketing.campaign.create` |
-| `updateMarketingCampaign` | `marketing.manage` | نعم — `marketing.campaign.update` (يخزّن `before`: الحالة والميزانية فقط) |
-| `deleteMarketingCampaign` | `marketing.manage` | نعم — `marketing.campaign.delete` |
-| `listConversionEvents` | `marketing.read` | لا |
-| `createConversionEvent` | `marketing.manage` | نعم — `marketing.conversion.create` |
-| `listMarketingReferrals` | `marketing.read` | لا |
-| `createMarketingReferral` | `marketing.manage` | نعم — `marketing.referral.create` |
-| `updateMarketingReferral` | `marketing.manage` | نعم — `marketing.referral.update` |
-| `listCouponsForMarketing` | `marketing.read` | لا |
-| `getMarketingPerformanceSummary` | `marketing.read` | لا |
-| `listMarketingProviders` | `marketing.read` | لا |
-| `exportMarketingCampaigns` | `marketing.export` | لا |
+| الدالة                           | الصلاحية المطلوبة  | Audit                                                                     |
+| -------------------------------- | ------------------ | ------------------------------------------------------------------------- |
+| `listMarketingCampaigns`         | `marketing.read`   | لا (قراءة)                                                                |
+| `createMarketingCampaign`        | `marketing.manage` | نعم — `marketing.campaign.create`                                         |
+| `updateMarketingCampaign`        | `marketing.manage` | نعم — `marketing.campaign.update` (يخزّن `before`: الحالة والميزانية فقط) |
+| `deleteMarketingCampaign`        | `marketing.manage` | نعم — `marketing.campaign.delete`                                         |
+| `listConversionEvents`           | `marketing.read`   | لا                                                                        |
+| `createConversionEvent`          | `marketing.manage` | نعم — `marketing.conversion.create`                                       |
+| `listMarketingReferrals`         | `marketing.read`   | لا                                                                        |
+| `createMarketingReferral`        | `marketing.manage` | نعم — `marketing.referral.create`                                         |
+| `updateMarketingReferral`        | `marketing.manage` | نعم — `marketing.referral.update`                                         |
+| `listCouponsForMarketing`        | `marketing.read`   | لا                                                                        |
+| `getMarketingPerformanceSummary` | `marketing.read`   | لا                                                                        |
+| `listMarketingProviders`         | `marketing.read`   | لا                                                                        |
+| `exportMarketingCampaigns`       | `marketing.export` | لا                                                                        |
 
 جميع الدوال تمر عبر `requireSupabaseAuth` middleware ثم `requireStaff(supabase, userId, permission)` من `admin-guard.server.ts`، وتستخدم عميل قاعدة بيانات بصلاحيات إدارية (`admin()` → `supabaseAdmin`) بعد اجتياز التحقق من الصلاحية داخل الخادم.
 
@@ -135,7 +135,7 @@
 
 ## سجل التدقيق
 
-كل عمليات الكتابة (إنشاء/تعديل/حذف حملة، إنشاء حدث تحويل، إنشاء/تعديل إحالة) تُسجَّل عبر `writeAudit` في جدول `admin_audit_logs` مع: `actor_email`, `action`, `entity_type`, `entity_id`, `description`, `before_data`, `after_data`, `ip`, `user_agent`. عمليات القراءة (list*, summary, providers) لا تُسجَّل في سجل التدقيق.
+كل عمليات الكتابة (إنشاء/تعديل/حذف حملة، إنشاء حدث تحويل، إنشاء/تعديل إحالة) تُسجَّل عبر `writeAudit` في جدول `admin_audit_logs` مع: `actor_email`, `action`, `entity_type`, `entity_id`, `description`, `before_data`, `after_data`, `ip`, `user_agent`. عمليات القراءة (list\*, summary, providers) لا تُسجَّل في سجل التدقيق.
 
 ## حالات الخطأ
 

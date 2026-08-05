@@ -4,31 +4,31 @@
 
 ## 1. البنية القائمة اليوم (تحليل فعلي)
 
-| المكوّن | الحالة الفعلية | الفجوة |
-| --- | --- | --- |
-| `support_tickets` | `reference`, `user_id`, `organization_id`, `subject`, `description`, `category`, `priority`, `status`, `assigned_to`, `last_reply_at`, `closed_at`, `rating`, `rating_comment`, `rated_at`, `rated_staff_id` | لا قناة، لا SLA، لا تصعيد، لا دمج، لا وسوم، لا فريق، لا ربط اشتراك، لا خط زمني موحّد. |
-| `support_ticket_messages` | `ticket_id`, `author_id`, `author_name`, `is_staff`, `body`, `attachments` | لا ملاحظات داخلية مفصولة، ولا ربط برسالة بريد. |
-| `support_tickets_guard` / `support_ticket_messages_guard` | Triggers تفرض ملكية الكاتب وتحدّث `last_reply_at`. | تبقى كما هي ويُبنى عليها. |
-| الصلاحيات | `tickets.view`, `tickets.reply`, `tickets.assign` | تحتاج التوسّع إلى 12 صلاحية دقيقة. |
-| الواجهات | `/mehla-admin/support` للمنصة، `/support` للمكتب | تبقى وتُوسّع، لا تُعاد من الصفر. |
-| CSAT | حقول التقييم موجودة وتُصدَّر مع تحييد صِيَغ CSV | جاهز. |
+| المكوّن                                                   | الحالة الفعلية                                                                                                                                                                                               | الفجوة                                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `support_tickets`                                         | `reference`, `user_id`, `organization_id`, `subject`, `description`, `category`, `priority`, `status`, `assigned_to`, `last_reply_at`, `closed_at`, `rating`, `rating_comment`, `rated_at`, `rated_staff_id` | لا قناة، لا SLA، لا تصعيد، لا دمج، لا وسوم، لا فريق، لا ربط اشتراك، لا خط زمني موحّد. |
+| `support_ticket_messages`                                 | `ticket_id`, `author_id`, `author_name`, `is_staff`, `body`, `attachments`                                                                                                                                   | لا ملاحظات داخلية مفصولة، ولا ربط برسالة بريد.                                        |
+| `support_tickets_guard` / `support_ticket_messages_guard` | Triggers تفرض ملكية الكاتب وتحدّث `last_reply_at`.                                                                                                                                                           | تبقى كما هي ويُبنى عليها.                                                             |
+| الصلاحيات                                                 | `tickets.view`, `tickets.reply`, `tickets.assign`                                                                                                                                                            | تحتاج التوسّع إلى 12 صلاحية دقيقة.                                                    |
+| الواجهات                                                  | `/mehla-admin/support` للمنصة، `/support` للمكتب                                                                                                                                                             | تبقى وتُوسّع، لا تُعاد من الصفر.                                                      |
+| CSAT                                                      | حقول التقييم موجودة وتُصدَّر مع تحييد صِيَغ CSV                                                                                                                                                              | جاهز.                                                                                 |
 
 **قرار:** توسيع تدريجي (`ALTER`) للجدولين القائمين + جداول مساندة جديدة. لا إعادة بناء ولا فقدان بيانات.
 
 ## 2. نموذج البيانات المقترح
 
-| الجدول | الغرض |
-| --- | --- |
-| `support_tickets` (توسيع) | `ticket_number` (تسلسل مقروء عبر `next_financial_number`-نمط)، `channel` (`email` / `web_form` / `manual` / `whatsapp` / `chat`)، `subscription_id`، `team_id`، `sla_policy_id`، `first_response_at`، `resolved_at`، `due_first_response_at`، `due_resolution_at`، `sla_state`، `paused_at`، `paused_total_seconds`، `escalation_level`، `merged_into_id`، `reopened_count`، `source_email_thread_id`، `kb_article_ids`. |
-| `support_teams` / `support_team_members` | الفرق ومسارات التوجيه. |
-| `support_categories` | التصنيفات مع الأولوية الافتراضية وسياسة SLA. |
-| `support_tags` / `support_ticket_tags` | الوسوم. |
-| `support_ticket_events` | الخط الزمني الموحّد: إنشاء، رد، ملاحظة، تعيين، تغيير حالة/أولوية، تصعيد، دمج، تقسيم، إغلاق، إعادة فتح، حدث SLA. غير قابل للتعديل. |
-| `support_internal_notes` | ملاحظات داخلية لا تُرسل ولا تظهر للمكتب أبداً. |
-| `support_sla_policies` | السياسات (انظر §4). |
-| `support_sla_events` | كل تغيير في حالة SLA مع سببه. |
-| `support_business_calendars` / `support_holidays` | ساعات وأيام العمل والعطلات بتوقيت الرياض. |
-| `support_escalation_rules` | شروط التصعيد وأثره. |
+| الجدول                                            | الغرض                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `support_tickets` (توسيع)                         | `ticket_number` (تسلسل مقروء عبر `next_financial_number`-نمط)، `channel` (`email` / `web_form` / `manual` / `whatsapp` / `chat`)، `subscription_id`، `team_id`، `sla_policy_id`، `first_response_at`، `resolved_at`، `due_first_response_at`، `due_resolution_at`، `sla_state`، `paused_at`، `paused_total_seconds`، `escalation_level`، `merged_into_id`، `reopened_count`، `source_email_thread_id`، `kb_article_ids`. |
+| `support_teams` / `support_team_members`          | الفرق ومسارات التوجيه.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `support_categories`                              | التصنيفات مع الأولوية الافتراضية وسياسة SLA.                                                                                                                                                                                                                                                                                                                                                                             |
+| `support_tags` / `support_ticket_tags`            | الوسوم.                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `support_ticket_events`                           | الخط الزمني الموحّد: إنشاء، رد، ملاحظة، تعيين، تغيير حالة/أولوية، تصعيد، دمج، تقسيم، إغلاق، إعادة فتح، حدث SLA. غير قابل للتعديل.                                                                                                                                                                                                                                                                                        |
+| `support_internal_notes`                          | ملاحظات داخلية لا تُرسل ولا تظهر للمكتب أبداً.                                                                                                                                                                                                                                                                                                                                                                           |
+| `support_sla_policies`                            | السياسات (انظر §4).                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `support_sla_events`                              | كل تغيير في حالة SLA مع سببه.                                                                                                                                                                                                                                                                                                                                                                                            |
+| `support_business_calendars` / `support_holidays` | ساعات وأيام العمل والعطلات بتوقيت الرياض.                                                                                                                                                                                                                                                                                                                                                                                |
+| `support_escalation_rules`                        | شروط التصعيد وأثره.                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ### 2.1 العلاقات
 
@@ -135,7 +135,7 @@ support_tickets ─┬─< support_ticket_messages (مرئية للمكتب)
 
 **عدم التكرار:** مركز الدعم لا يملك مزوّد إرسال ولا صندوقاً ولا محرك مرفقات ولا Webhook خاصاً.
 كل إرسال/استقبال/مرفق يمرّ عبر `src/lib/email/workspace.server.ts` و`attachments.server.ts`
-ونقطة `api/public/hooks/email-inbound.ts` القائمة. الدعم يضيف طبقة *سير عمل* فوق البريد فقط.
+ونقطة `api/public/hooks/email-inbound.ts` القائمة. الدعم يضيف طبقة _سير عمل_ فوق البريد فقط.
 
 ## 6.1 الربط مع RBAC الحالي
 
@@ -154,11 +154,11 @@ support_tickets ─┬─< support_ticket_messages (مرئية للمكتب)
 
 ثلاث طبقات متكاملة، لا واحدة بديلة عن الأخرى:
 
-| الطبقة | الجدول | المحتوى |
-| --- | --- | --- |
-| سير العمل | `support_ticket_events` | كل حدث على التذكرة: النوع، الفاعل، القيمة قبل/بعد، السبب، الطابع الزمني. |
-| الحكم الإداري | `admin_audit_logs` | كل عملية موظف منصة: الصلاحية المستخدمة، مصدر المنح، IP، User-Agent. |
-| المهل | `support_sla_events` | تعليق/استئناف/تحذير/تجاوز/تصعيد مع السبب المحسوب خادمياً. |
+| الطبقة        | الجدول                  | المحتوى                                                                  |
+| ------------- | ----------------------- | ------------------------------------------------------------------------ |
+| سير العمل     | `support_ticket_events` | كل حدث على التذكرة: النوع، الفاعل، القيمة قبل/بعد، السبب، الطابع الزمني. |
+| الحكم الإداري | `admin_audit_logs`      | كل عملية موظف منصة: الصلاحية المستخدمة، مصدر المنح، IP، User-Agent.      |
+| المهل         | `support_sla_events`    | تعليق/استئناف/تحذير/تجاوز/تصعيد مع السبب المحسوب خادمياً.                |
 
 قواعد إلزامية: الإدراج فقط (`deny_update` + `deny_hard_delete` triggers)، الفاعل يُستخرج من
 `auth.uid()` لا من الحمولة (`enforce_actor` trigger)، لا تُكتب أي PII خام في الأحداث

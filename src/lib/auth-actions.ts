@@ -51,10 +51,7 @@ export async function changeAccountEmail(newEmail: string): Promise<AuthActionRe
   if ((data.user?.email ?? "").toLowerCase() === email) {
     return { ok: false, message: AUTH_MESSAGES.sameEmail };
   }
-  const { error } = await supabase.auth.updateUser(
-    { email },
-    { emailRedirectTo: authRedirect() },
-  );
+  const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: authRedirect() });
   if (error) return fail("auth-actions", "change_email", error);
   return { ok: true, message: AUTH_MESSAGES.emailChangeSent };
 }

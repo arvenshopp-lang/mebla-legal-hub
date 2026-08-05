@@ -34,7 +34,11 @@ const dateOnly = (v: string) => fmtDate(v);
 function DashboardHome() {
   const { activeOrgId } = useAuth();
 
-  const { data: stats, isLoading, error } = useQuery({
+  const {
+    data: stats,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["dashboard-stats", activeOrgId],
     enabled: !!activeOrgId,
     queryFn: async () => {
@@ -45,16 +49,62 @@ function DashboardHome() {
       const in7 = new Date();
       in7.setDate(in7.getDate() + 7);
 
-      const [openCases, hearingsToday, deadlinesSoon, overdueTasks, upcomingHearings, activeDeadlines, pendingTasks] =
-        await Promise.all([
-          supabase.from("cases").select("id", { count: "exact", head: true }).eq("organization_id", activeOrgId!).in("status", ["open", "in_progress", "waiting"]),
-          supabase.from("hearings").select("id", { count: "exact", head: true }).eq("organization_id", activeOrgId!).eq("status", "scheduled").gte("hearing_date", todayStart.toISOString()).lte("hearing_date", todayEnd.toISOString()),
-          supabase.from("deadlines").select("id", { count: "exact", head: true }).eq("organization_id", activeOrgId!).eq("status", "active").lte("due_date", in7.toISOString()),
-          supabase.from("tasks").select("id", { count: "exact", head: true }).eq("organization_id", activeOrgId!).in("status", ["pending", "in_progress"]).lt("due_date", new Date().toISOString()),
-          supabase.from("hearings").select("id, title, hearing_date, court_name, case:cases(case_title, case_number)").eq("organization_id", activeOrgId!).eq("status", "scheduled").gte("hearing_date", new Date().toISOString()).order("hearing_date").limit(5),
-          supabase.from("deadlines").select("id, title, due_date, deadline_type, case:cases(case_title)").eq("organization_id", activeOrgId!).eq("status", "active").order("due_date").limit(5),
-          supabase.from("tasks").select("id, title, due_date, priority, status").eq("organization_id", activeOrgId!).in("status", ["pending", "in_progress"]).order("due_date", { nullsFirst: false }).limit(5),
-        ]);
+      const [
+        openCases,
+        hearingsToday,
+        deadlinesSoon,
+        overdueTasks,
+        upcomingHearings,
+        activeDeadlines,
+        pendingTasks,
+      ] = await Promise.all([
+        supabase
+          .from("cases")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", activeOrgId!)
+          .in("status", ["open", "in_progress", "waiting"]),
+        supabase
+          .from("hearings")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", activeOrgId!)
+          .eq("status", "scheduled")
+          .gte("hearing_date", todayStart.toISOString())
+          .lte("hearing_date", todayEnd.toISOString()),
+        supabase
+          .from("deadlines")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", activeOrgId!)
+          .eq("status", "active")
+          .lte("due_date", in7.toISOString()),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", activeOrgId!)
+          .in("status", ["pending", "in_progress"])
+          .lt("due_date", new Date().toISOString()),
+        supabase
+          .from("hearings")
+          .select("id, title, hearing_date, court_name, case:cases(case_title, case_number)")
+          .eq("organization_id", activeOrgId!)
+          .eq("status", "scheduled")
+          .gte("hearing_date", new Date().toISOString())
+          .order("hearing_date")
+          .limit(5),
+        supabase
+          .from("deadlines")
+          .select("id, title, due_date, deadline_type, case:cases(case_title)")
+          .eq("organization_id", activeOrgId!)
+          .eq("status", "active")
+          .order("due_date")
+          .limit(5),
+        supabase
+          .from("tasks")
+          .select("id, title, due_date, priority, status")
+          .eq("organization_id", activeOrgId!)
+          .in("status", ["pending", "in_progress"])
+          .order("due_date", { nullsFirst: false })
+          .limit(5),
+      ]);
 
       return {
         openCases: openCases.count ?? 0,
@@ -76,9 +126,24 @@ function DashboardHome() {
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="قضايا مفتوحة" loading={isLoading} value={stats?.openCases ?? 0} />
-            <StatCard label="جلسات اليوم" loading={isLoading} value={stats?.hearingsToday ?? 0} tone="gold" />
-            <StatCard label="مهل خلال 7 أيام" loading={isLoading} value={stats?.deadlinesSoon ?? 0} tone="warn" />
-            <StatCard label="مهام متأخرة" loading={isLoading} value={stats?.overdueTasks ?? 0} tone="danger" />
+            <StatCard
+              label="جلسات اليوم"
+              loading={isLoading}
+              value={stats?.hearingsToday ?? 0}
+              tone="gold"
+            />
+            <StatCard
+              label="مهل خلال 7 أيام"
+              loading={isLoading}
+              value={stats?.deadlinesSoon ?? 0}
+              tone="warn"
+            />
+            <StatCard
+              label="مهام متأخرة"
+              loading={isLoading}
+              value={stats?.overdueTasks ?? 0}
+              tone="danger"
+            />
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -95,16 +160,26 @@ function DashboardHome() {
               {isLoading ? (
                 <SectionLoader label="جاري تحميل البيانات…" />
               ) : stats!.upcomingHearings.length === 0 ? (
-                <EmptyState title="لا توجد جلسات قادمة" hint="ستظهر هنا الجلسات المجدولة تلقائياً." />
+                <EmptyState
+                  title="لا توجد جلسات قادمة"
+                  hint="ستظهر هنا الجلسات المجدولة تلقائياً."
+                />
               ) : (
                 <ul className="divide-y divide-border">
                   {stats!.upcomingHearings.map((h) => (
-                    <li key={h.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <li
+                      key={h.id}
+                      className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
                       <div className="min-w-0">
-                        <p className="truncate text-[14px] font-semibold">{h.case?.case_title ?? h.title}</p>
+                        <p className="truncate text-[14px] font-semibold">
+                          {h.case?.case_title ?? h.title}
+                        </p>
                         <p className="text-caption truncate">{h.court_name ?? "—"}</p>
                       </div>
-                      <span className="shrink-0 text-[12px] text-muted-foreground">{dateTime(h.hearing_date)}</span>
+                      <span className="shrink-0 text-[12px] text-muted-foreground">
+                        {dateTime(h.hearing_date)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -128,12 +203,17 @@ function DashboardHome() {
               ) : (
                 <ul className="divide-y divide-border">
                   {stats!.activeDeadlines.map((d) => (
-                    <li key={d.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <li
+                      key={d.id}
+                      className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-[14px] font-semibold">{d.title}</p>
                         <p className="text-caption truncate">{d.case?.case_title ?? "—"}</p>
                       </div>
-                      <span className="shrink-0 text-[12px] text-muted-foreground">{dateOnly(d.due_date)}</span>
+                      <span className="shrink-0 text-[12px] text-muted-foreground">
+                        {dateOnly(d.due_date)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -160,7 +240,10 @@ function DashboardHome() {
                   {stats!.pendingTasks.map((t) => {
                     const overdue = t.due_date && new Date(t.due_date) < new Date();
                     return (
-                      <li key={t.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                      <li
+                        key={t.id}
+                        className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      >
                         <p className="min-w-0 truncate text-[14px] font-semibold">{t.title}</p>
                         <span className="flex shrink-0 items-center gap-2">
                           {overdue && <Badge tone="red">متأخرة</Badge>}

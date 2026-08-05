@@ -31,7 +31,10 @@ export const Route = createFileRoute("/track")({
       },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "متابعة القضية — مِهلة" },
-      { property: "og:description", content: "متابعة حالة القضية عبر رمز القضية المكوّن من 10 أرقام." },
+      {
+        property: "og:description",
+        content: "متابعة حالة القضية عبر رمز القضية المكوّن من 10 أرقام.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -119,7 +122,8 @@ function TrackPage() {
         <section className="surface-card p-5 text-center shadow-xs sm:p-9">
           <h1 className="text-h2">تابع مستجدات قضيتك</h1>
           <p className="measure mx-auto mt-3 text-body-sm text-muted-foreground">
-            أدخل رمز القضية المكوّن من 10 أرقام للاطلاع على آخر تحديثات القضية والمواعيد المرتبطة بها.
+            أدخل رمز القضية المكوّن من 10 أرقام للاطلاع على آخر تحديثات القضية والمواعيد المرتبطة
+            بها.
           </p>
 
           <form onSubmit={submit} className="mx-auto mt-7 max-w-md text-right" noValidate>
@@ -167,8 +171,12 @@ function TrackPage() {
                     : "text-muted-foreground",
               ].join(" ")}
             >
-              {phase === "error" && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
-              {phase === "found" && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
+              {phase === "error" && (
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              )}
+              {phase === "found" && (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              )}
               <span>{message}</span>
             </p>
 
@@ -191,8 +199,9 @@ function TrackPage() {
                   id="case-code-help"
                   className="mx-auto mt-2 max-w-md rounded-[var(--radius-m)] bg-surface-muted p-3.5 text-right text-[13px] leading-6 text-muted-foreground"
                 >
-                  رمز القضية يصدره المكتب القانوني الذي يمثّلك، ويُرسل إليك عادةً في رسالة نصية أو بريد إلكتروني أو
-                  ضمن مستندات القضية. إن لم يتوفّر لديك الرمز، تواصل مع مكتبك لطلبه.
+                  رمز القضية يصدره المكتب القانوني الذي يمثّلك، ويُرسل إليك عادةً في رسالة نصية أو
+                  بريد إلكتروني أو ضمن مستندات القضية. إن لم يتوفّر لديك الرمز، تواصل مع مكتبك
+                  لطلبه.
                 </p>
               )}
             </div>
@@ -215,11 +224,17 @@ function TrackPage() {
               </div>
 
               <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Row icon={<FileClock className="h-4 w-4" />} label="آخر تحديث" value={fmtDateTime(result.lastActivityAt)} />
+                <Row
+                  icon={<FileClock className="h-4 w-4" />}
+                  label="آخر تحديث"
+                  value={fmtDateTime(result.lastActivityAt)}
+                />
                 <Row
                   icon={<CalendarClock className="h-4 w-4" />}
                   label="الجلسة القادمة"
-                  value={result.nextHearingAt ? fmtDateTime(result.nextHearingAt) : "لا يوجد موعد معلن"}
+                  value={
+                    result.nextHearingAt ? fmtDateTime(result.nextHearingAt) : "لا يوجد موعد معلن"
+                  }
                 />
                 <Row
                   icon={<CalendarClock className="h-4 w-4" />}
@@ -244,8 +259,14 @@ function TrackPage() {
                       {request.items.length > 0 && (
                         <ul className="mt-2 space-y-1.5">
                           {request.items.map((item) => (
-                            <li key={item} className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                              <span className="mt-2 h-1 w-3 shrink-0 rounded-full bg-border-strong" aria-hidden />
+                            <li
+                              key={item}
+                              className="flex items-start gap-2 text-[13px] text-muted-foreground"
+                            >
+                              <span
+                                className="mt-2 h-1 w-3 shrink-0 rounded-full bg-border-strong"
+                                aria-hidden
+                              />
                               {item}
                             </li>
                           ))}
@@ -268,15 +289,22 @@ function TrackPage() {
             <section className="surface-card p-5 sm:p-7">
               <h2 className="text-h4">آخر الإجراءات</h2>
               {result.updates.length === 0 ? (
-                <p className="mt-4 text-[13px] text-muted-foreground">لا توجد تحديثات معلنة حالياً.</p>
+                <p className="mt-4 text-[13px] text-muted-foreground">
+                  لا توجد تحديثات معلنة حالياً.
+                </p>
               ) : (
                 <ol className="mt-4 space-y-4 border-r border-border pr-4">
                   {result.updates.map((update, index) => (
                     <li key={index} className="relative">
-                      <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-gold" aria-hidden />
+                      <span
+                        className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-gold"
+                        aria-hidden
+                      />
                       <p className="text-[14px] font-semibold">{update.title}</p>
                       {update.description && (
-                        <p className="mt-0.5 text-[13px] leading-6 text-muted-foreground">{update.description}</p>
+                        <p className="mt-0.5 text-[13px] leading-6 text-muted-foreground">
+                          {update.description}
+                        </p>
                       )}
                       <p className="mt-0.5 text-caption">{fmtDateTime(update.date)}</p>
                     </li>
@@ -294,7 +322,11 @@ function TrackPage() {
                   value={result.office.name || "غير معلن"}
                 />
                 {result.office.city && (
-                  <Row icon={<Building2 className="h-4 w-4" />} label="المدينة" value={result.office.city} />
+                  <Row
+                    icon={<Building2 className="h-4 w-4" />}
+                    label="المدينة"
+                    value={result.office.city}
+                  />
                 )}
                 {result.office.phone && (
                   <Row
@@ -316,8 +348,8 @@ function TrackPage() {
             </section>
 
             <p className="flex items-center justify-center gap-1.5 text-center text-[12px] text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> تُعرض هنا المعلومات المصرّح بمشاركتها من
-              مكتبك فقط.
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> تُعرض هنا المعلومات
+              المصرّح بمشاركتها من مكتبك فقط.
             </p>
           </div>
         )}

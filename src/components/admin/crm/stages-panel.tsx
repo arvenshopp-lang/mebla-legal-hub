@@ -67,7 +67,10 @@ export function StagesPanel() {
       description="ترتيب المراحل واحتمالية الإغلاق المستخدمة في حساب التوقعات المرجّحة."
       actions={
         canManage ? (
-          <Btn size="sm" onClick={() => setDialog({ kind: "form", initial: emptyStageDraft(stages.length + 1) })}>
+          <Btn
+            size="sm"
+            onClick={() => setDialog({ kind: "form", initial: emptyStageDraft(stages.length + 1) })}
+          >
             <Plus className="h-4 w-4" aria-hidden /> مرحلة
           </Btn>
         ) : undefined
@@ -97,11 +100,7 @@ export function StagesPanel() {
                   <Td>{row.sort_order}</Td>
                   <Td>
                     <span className="font-semibold">{row.name}</span>
-                    {!row.is_active && (
-                      <Badge tone="muted">
-                        معطّلة
-                      </Badge>
-                    )}
+                    {!row.is_active && <Badge tone="muted">معطّلة</Badge>}
                   </Td>
                   <Td>{row.probability}%</Td>
                   <Td>
@@ -120,11 +119,22 @@ export function StagesPanel() {
                           <IconBtn
                             aria-label="تعديل"
                             title="تعديل"
-                            onClick={() => setDialog({ kind: "form", initial: stageDraftFromRow(row), editId: row.id })}
+                            onClick={() =>
+                              setDialog({
+                                kind: "form",
+                                initial: stageDraftFromRow(row),
+                                editId: row.id,
+                              })
+                            }
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         </>

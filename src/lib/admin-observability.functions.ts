@@ -29,7 +29,10 @@ export const getActivityFeed = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        sources: z.array(z.enum(["admin", "tenant", "failure"])).min(1).default(["admin", "tenant", "failure"]),
+        sources: z
+          .array(z.enum(["admin", "tenant", "failure"]))
+          .min(1)
+          .default(["admin", "tenant", "failure"]),
         search: z.string().trim().max(80).default(""),
         from: z.string().datetime().nullable().default(null),
         to: z.string().datetime().nullable().default(null),

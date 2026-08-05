@@ -31,7 +31,8 @@ function AdminGate() {
     navigate({ to: "/login", search: { redirect: "/mehla-admin" }, replace: true } as never);
   }, [sessionLoading, session, navigate]);
 
-  if (sessionLoading || (session && staffLoading)) return <Splash text="جاري التحقق من صلاحيات الإدارة…" />;
+  if (sessionLoading || (session && staffLoading))
+    return <Splash text="جاري التحقق من صلاحيات الإدارة…" />;
   if (!session) return <Splash text="جاري تحويلك لتسجيل الدخول…" />;
 
   if (isError || !staff || staff.status !== "active") {
@@ -41,7 +42,8 @@ function AdminGate() {
           <ShieldAlert className="mx-auto h-10 w-10 text-danger" aria-hidden />
           <h1 className="mt-4 text-h4">وصول غير مصرّح به</h1>
           <p className="mt-2 text-body-sm text-muted-foreground">
-            هذه اللوحة مخصصة لفريق تشغيل منصة مِهلة فقط. إن كنت تعتقد أن هذا خطأ، تواصل مع مالك المنصة.
+            هذه اللوحة مخصصة لفريق تشغيل منصة مِهلة فقط. إن كنت تعتقد أن هذا خطأ، تواصل مع مالك
+            المنصة.
           </p>
           <a
             href="/dashboard"

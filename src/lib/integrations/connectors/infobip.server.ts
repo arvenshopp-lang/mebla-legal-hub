@@ -14,7 +14,13 @@ import {
   type SendOtpResult,
   type ValidationResult,
 } from "./base.server";
-import { IntegrationHttpError, buildAuthParts, evaluateSuccess, integrationFetch, joinUrl } from "../http.server";
+import {
+  IntegrationHttpError,
+  buildAuthParts,
+  evaluateSuccess,
+  integrationFetch,
+  joinUrl,
+} from "../http.server";
 
 async function authHeaders(context: ConnectorContext): Promise<Record<string, string>> {
   const { headers } = await buildAuthParts(
@@ -77,16 +83,30 @@ export class InfobipOtpConnector extends BaseOtpConnector {
         expectJson: true,
       });
       if (!verdict.ok) {
-        return { ok: false, statusCode: response.status, latencyMs: response.latencyMs, code: verdict.code, detail: verdict.detail };
+        return {
+          ok: false,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
+          code: verdict.code,
+          detail: verdict.detail,
+        };
       }
-      return { ok: true, statusCode: response.status, latencyMs: response.latencyMs, detail: "تم التحقق من المفتاح ورصيد الحساب." };
+      return {
+        ok: true,
+        statusCode: response.status,
+        latencyMs: response.latencyMs,
+        detail: "تم التحقق من المفتاح ورصيد الحساب.",
+      };
     } catch (error) {
       return toHealthFailure(error, Date.now() - started);
     }
   }
 
   async sendOtp(context: ConnectorContext, input: SendOtpInput): Promise<SendOtpResult> {
-    const sender = context.secrets["sender_id"] ?? (context.configuration["sender_id"] as string | undefined) ?? "MEHLA";
+    const sender =
+      context.secrets["sender_id"] ??
+      (context.configuration["sender_id"] as string | undefined) ??
+      "MEHLA";
     const response = await integrationFetch({
       method: "POST",
       url: joinUrl(context.baseUrl, "/sms/2/text/advanced"),

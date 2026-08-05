@@ -28,7 +28,9 @@ function ResetPage() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
       if (code) {
-        try { await supabase.auth.exchangeCodeForSession(window.location.href); } catch {}
+        try {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+        } catch {}
       }
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
@@ -54,7 +56,11 @@ function ResetPage() {
   };
 
   if (!ready)
-    return <div className="min-h-dvh flex items-center justify-center bg-surface-muted text-foreground">جاري التحقق…</div>;
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-surface-muted text-foreground">
+        جاري التحقق…
+      </div>
+    );
 
   return (
     <AuthShell title="كلمة مرور جديدة" subtitle="أدخل كلمة مرور جديدة لحسابك">
@@ -80,7 +86,10 @@ function ResetPage() {
         {confirm.length > 0 && password !== confirm && (
           <p className="text-xs text-danger">كلمتا المرور غير متطابقتين</p>
         )}
-        <button disabled={!canSubmit} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground transition disabled:cursor-not-allowed disabled:bg-primary/35">
+        <button
+          disabled={!canSubmit}
+          className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground transition disabled:cursor-not-allowed disabled:bg-primary/35"
+        >
           {loading ? "جاري التحديث…" : "تحديث كلمة المرور"}
         </button>
       </form>

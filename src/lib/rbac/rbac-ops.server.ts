@@ -53,40 +53,60 @@ const RBAC_AUDIT_ACTIONS = [
   "rbac.impersonation_page",
 ];
 
-
 export async function rbacOverview(supabase: AnyClient, userId: string) {
   const ctx = await authorize(supabase, userId, "staff.view", { mutating: false });
   const db = await adminDb();
   const iso = nowIso();
 
-  const [roles, departments, staff, grants, approvals, sessions, restrictions, impersonations, audit] =
-    await Promise.all([
-      db.from("platform_roles").select("*").order("is_system", { ascending: false }).order("name_ar"),
-      db.from("platform_departments").select("*").order("name_ar"),
-      db
-        .from("platform_staff")
-        .select("id, user_id, full_name, email, job_title, role, status, permissions, role_id, department_id, manager_user_id")
-        .order("full_name"),
-      db
-        .from("platform_permission_grants")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200),
-      db.from("platform_approval_requests").select("*").order("requested_at", { ascending: false }).limit(120),
-      db.from("platform_staff_sessions").select("*").order("last_seen_at", { ascending: false }).limit(200),
-      db.from("platform_staff_restrictions").select("*"),
-      db
-        .from("platform_impersonation_sessions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(60),
-      db
-        .from("admin_audit_logs")
-        .select("id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser")
-        .in("action", RBAC_AUDIT_ACTIONS)
-        .order("created_at", { ascending: false })
-        .limit(150),
-    ]);
+  const [
+    roles,
+    departments,
+    staff,
+    grants,
+    approvals,
+    sessions,
+    restrictions,
+    impersonations,
+    audit,
+  ] = await Promise.all([
+    db.from("platform_roles").select("*").order("is_system", { ascending: false }).order("name_ar"),
+    db.from("platform_departments").select("*").order("name_ar"),
+    db
+      .from("platform_staff")
+      .select(
+        "id, user_id, full_name, email, job_title, role, status, permissions, role_id, department_id, manager_user_id",
+      )
+      .order("full_name"),
+    db
+      .from("platform_permission_grants")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200),
+    db
+      .from("platform_approval_requests")
+      .select("*")
+      .order("requested_at", { ascending: false })
+      .limit(120),
+    db
+      .from("platform_staff_sessions")
+      .select("*")
+      .order("last_seen_at", { ascending: false })
+      .limit(200),
+    db.from("platform_staff_restrictions").select("*"),
+    db
+      .from("platform_impersonation_sessions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(60),
+    db
+      .from("admin_audit_logs")
+      .select(
+        "id, actor_email, action, entity_type, entity_id, description, metadata, created_at, ip, device, browser",
+      )
+      .in("action", RBAC_AUDIT_ACTIONS)
+      .order("created_at", { ascending: false })
+      .limit(150),
+  ]);
 
   return {
     me: {
@@ -97,7 +117,12 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
       effectivePermissions: ctx.effectivePermissions,
       liveGrants: ctx.liveGrants,
       impersonation: ctx.impersonation,
-      facts: { ip: ctx.facts.ip, device: ctx.facts.device, browser: ctx.facts.browser, fingerprint: ctx.facts.fingerprint },
+      facts: {
+        ip: ctx.facts.ip,
+        device: ctx.facts.device,
+        browser: ctx.facts.browser,
+        fingerprint: ctx.facts.fingerprint,
+      },
     },
     now: iso,
     roles: roles.data ?? [],
@@ -113,7 +138,6 @@ export async function rbacOverview(supabase: AnyClient, userId: string) {
 }
 
 /* -------------------------------- الأدوار ------------------------------- */
-
 
 /** سجل تدقيق RBAC مع ترقيم صفحات خادمي وعدد إجمالي. */
 export async function rbacAuditPage(
@@ -136,7 +160,9 @@ export async function rbacAuditPage(
   const search = input.search?.trim();
   if (search) {
     const safe = search.replace(/[%,()]/g, " ");
-    query = query.or(`actor_email.ilike.%${safe}%,description.ilike.%${safe}%,entity_type.ilike.%${safe}%`);
+    query = query.or(
+      `actor_email.ilike.%${safe}%,description.ilike.%${safe}%,entity_type.ilike.%${safe}%`,
+    );
   }
 
   const { data, count, error } = await query
@@ -284,7 +310,10 @@ export async function cloneRole(
 }
 
 export async function deleteRole(supabase: AnyClient, userId: string, id: string) {
-  const ctx = await authorize(supabase, userId, "roles.manage", { entityType: "platform_role", entityId: id });
+  const ctx = await authorize(supabase, userId, "roles.manage", {
+    entityType: "platform_role",
+    entityId: id,
+  });
   const db = await adminDb();
   const { data: before } = await db.from("platform_roles").select("*").eq("id", id).maybeSingle();
   if (!before) throw new Error("الدور غير موجود.");
@@ -324,7 +353,9 @@ export async function saveDepartment(
     is_active?: boolean;
   },
 ) {
-  const ctx = await authorize(supabase, userId, "departments.manage", { entityType: "platform_department" });
+  const ctx = await authorize(supabase, userId, "departments.manage", {
+    entityType: "platform_department",
+  });
   const db = await adminDb();
   const payload = {
     name_ar: input.name_ar.trim(),
@@ -348,10 +379,15 @@ export async function saveDepartment(
       .insert({ code: input.code.trim(), ...payload })
       .select("id")
       .maybeSingle();
-    if (error) throw new Error(mapDbError(error.message, "تعذّر إنشاء القسم. تأكد أن الرمز غير مستخدم."));
+    if (error)
+      throw new Error(mapDbError(error.message, "تعذّر إنشاء القسم. تأكد أن الرمز غير مستخدم."));
     id = (data as { id: string }).id;
   }
-  const { data: after } = await db.from("platform_departments").select("*").eq("id", id).maybeSingle();
+  const { data: after } = await db
+    .from("platform_departments")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   await auditRbac(supabase, {
     actorEmail: ctx.staff.email,
     action: "rbac.department_saved",
@@ -368,7 +404,12 @@ export async function saveDepartment(
 export async function updateStaffOrg(
   supabase: AnyClient,
   userId: string,
-  input: { staffUserId: string; department_id?: string | null; manager_user_id?: string | null; role_id?: string | null },
+  input: {
+    staffUserId: string;
+    department_id?: string | null;
+    manager_user_id?: string | null;
+    role_id?: string | null;
+  },
 ) {
   const ctx = await authorize(supabase, userId, "staff.manage", {
     entityType: "platform_staff",
@@ -383,8 +424,13 @@ export async function updateStaffOrg(
   if (!before) throw new Error("الموظف غير موجود.");
 
   if (input.role_id) {
-    const { data: role } = await db.from("platform_roles").select("permissions").eq("id", input.role_id).maybeSingle();
-    const rolePermissions = ((role as { permissions: string[] | null } | null)?.permissions ?? []) as string[];
+    const { data: role } = await db
+      .from("platform_roles")
+      .select("permissions")
+      .eq("id", input.role_id)
+      .maybeSingle();
+    const rolePermissions = ((role as { permissions: string[] | null } | null)?.permissions ??
+      []) as string[];
     const beyond = rolePermissions.filter((p) => !holdsPermission(ctx, p));
     if (beyond.length > 0) {
       await auditRbac(supabase, {
@@ -529,21 +575,38 @@ export async function createGrant(
   return { id: (data as { id: string }).id };
 }
 
-export async function revokeGrant(supabase: AnyClient, userId: string, input: { id: string; reason: string }) {
+export async function revokeGrant(
+  supabase: AnyClient,
+  userId: string,
+  input: { id: string; reason: string },
+) {
   const ctx = await authorize(supabase, userId, "delegation.revoke", {
     entityType: "platform_permission_grant",
     entityId: input.id,
   });
   const db = await adminDb();
-  const { data: before } = await db.from("platform_permission_grants").select("*").eq("id", input.id).maybeSingle();
+  const { data: before } = await db
+    .from("platform_permission_grants")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   if (!before) throw new Error("المنح غير موجود.");
-  if ((before as { revoked_at: string | null }).revoked_at) throw new Error("هذا المنح مسحوب مسبقاً.");
+  if ((before as { revoked_at: string | null }).revoked_at)
+    throw new Error("هذا المنح مسحوب مسبقاً.");
   const { error } = await db
     .from("platform_permission_grants")
-    .update({ revoked_at: nowIso(), revoked_by: userId, revoke_reason: input.reason.trim() || null })
+    .update({
+      revoked_at: nowIso(),
+      revoked_by: userId,
+      revoke_reason: input.reason.trim() || null,
+    })
     .eq("id", input.id);
   if (error) throw new Error(mapDbError(error.message, "تعذّر سحب المنح."));
-  const { data: after } = await db.from("platform_permission_grants").select("*").eq("id", input.id).maybeSingle();
+  const { data: after } = await db
+    .from("platform_permission_grants")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   await auditRbac(supabase, {
     actorEmail: ctx.staff.email,
     action: "rbac.grant_revoked",
@@ -615,7 +678,11 @@ export async function decideApprovalRequest(
     entityId: input.id,
   });
   const db = await adminDb();
-  const { data: before } = await db.from("platform_approval_requests").select("*").eq("id", input.id).maybeSingle();
+  const { data: before } = await db
+    .from("platform_approval_requests")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   if (!before) throw new Error("الطلب غير موجود.");
   const row = before as { requested_by: string; status: string; expires_at: string };
   if (row.requested_by === userId) {
@@ -643,7 +710,11 @@ export async function decideApprovalRequest(
     .eq("id", input.id);
   if (error) throw new Error(mapDbError(error.message, "تعذّر تسجيل القرار."));
 
-  const { data: after } = await db.from("platform_approval_requests").select("*").eq("id", input.id).maybeSingle();
+  const { data: after } = await db
+    .from("platform_approval_requests")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   await auditRbac(supabase, {
     actorEmail: ctx.staff.email,
     action: "rbac.approval_decided",
@@ -659,17 +730,29 @@ export async function decideApprovalRequest(
 
 /* --------------------------- الجلسات والقيود --------------------------- */
 
-export async function revokeStaffSession(supabase: AnyClient, userId: string, input: { id: string; reason: string }) {
+export async function revokeStaffSession(
+  supabase: AnyClient,
+  userId: string,
+  input: { id: string; reason: string },
+) {
   const ctx = await authorize(supabase, userId, "staff.sessions.revoke", {
     entityType: "platform_staff_session",
     entityId: input.id,
   });
   const db = await adminDb();
-  const { data: before } = await db.from("platform_staff_sessions").select("*").eq("id", input.id).maybeSingle();
+  const { data: before } = await db
+    .from("platform_staff_sessions")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   if (!before) throw new Error("الجلسة غير موجودة.");
   const { error } = await db
     .from("platform_staff_sessions")
-    .update({ revoked_at: nowIso(), revoked_by: userId, revoke_reason: input.reason.trim() || null })
+    .update({
+      revoked_at: nowIso(),
+      revoked_by: userId,
+      revoke_reason: input.reason.trim() || null,
+    })
     .eq("id", input.id);
   if (error) throw new Error("تعذّر إبطال الجلسة.");
   await auditRbac(supabase, {
@@ -704,7 +787,11 @@ export async function revokeAllStaffSessions(
   if (ids.length === 0) return { revoked: 0 };
   const { error } = await db
     .from("platform_staff_sessions")
-    .update({ revoked_at: nowIso(), revoked_by: userId, revoke_reason: input.reason.trim() || null })
+    .update({
+      revoked_at: nowIso(),
+      revoked_by: userId,
+      revoke_reason: input.reason.trim() || null,
+    })
     .in("id", ids);
   if (error) throw new Error("تعذّر إبطال الجلسات.");
   await auditRbac(supabase, {
@@ -743,7 +830,8 @@ export async function saveRestrictions(
     entityId: input.staffUserId,
   });
   const db = await adminDb();
-  if (input.work_end_minute <= input.work_start_minute) throw new Error("نهاية نافذة العمل يجب أن تكون بعد بدايتها.");
+  if (input.work_end_minute <= input.work_start_minute)
+    throw new Error("نهاية نافذة العمل يجب أن تكون بعد بدايتها.");
   if (input.ip_enforced && input.allowed_ips.filter((v) => v.trim()).length === 0) {
     throw new Error("أضف عنواناً واحداً على الأقل قبل تفعيل قيد العناوين.");
   }
@@ -785,7 +873,9 @@ export async function saveRestrictions(
     updated_by: userId,
     updated_at: nowIso(),
   };
-  const { error } = await db.from("platform_staff_restrictions").upsert(payload, { onConflict: "user_id" });
+  const { error } = await db
+    .from("platform_staff_restrictions")
+    .upsert(payload, { onConflict: "user_id" });
   if (error) throw new Error(mapDbError(error.message, "تعذّر حفظ القيود."));
 
   await auditRbac(supabase, {
@@ -901,7 +991,10 @@ export async function approveImpersonation(
   const requestedMinutes = Math.round(
     (new Date(row.expires_at).getTime() - new Date(row.created_at).getTime()) / 60_000,
   );
-  const minutesLeft = Math.min(Math.max(Number.isFinite(requestedMinutes) ? requestedMinutes : 30, 5), 120);
+  const minutesLeft = Math.min(
+    Math.max(Number.isFinite(requestedMinutes) ? requestedMinutes : 30, 5),
+    120,
+  );
   const patch =
     input.decision === "approved"
       ? {
@@ -912,12 +1005,24 @@ export async function approveImpersonation(
           expires_at: new Date(Date.now() + minutesLeft * 60_000).toISOString(),
           updated_at: nowIso(),
         }
-      : { status: "rejected", approved_by: null, updated_at: nowIso(), end_reason: input.reason.trim() || null };
+      : {
+          status: "rejected",
+          approved_by: null,
+          updated_at: nowIso(),
+          end_reason: input.reason.trim() || null,
+        };
 
-  const { error } = await db.from("platform_impersonation_sessions").update(patch).eq("id", input.id);
+  const { error } = await db
+    .from("platform_impersonation_sessions")
+    .update(patch)
+    .eq("id", input.id);
   if (error) throw new Error(mapDbError(error.message, "تعذّر تسجيل القرار."));
 
-  const { data: after } = await db.from("platform_impersonation_sessions").select("*").eq("id", input.id).maybeSingle();
+  const { data: after } = await db
+    .from("platform_impersonation_sessions")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   if (input.decision === "approved") {
     await db.from("platform_impersonation_events").insert({
       session_id: input.id,
@@ -940,7 +1045,11 @@ export async function approveImpersonation(
   return { ok: true };
 }
 
-export async function endImpersonation(supabase: AnyClient, userId: string, input: { id: string; reason?: string }) {
+export async function endImpersonation(
+  supabase: AnyClient,
+  userId: string,
+  input: { id: string; reason?: string },
+) {
   // الإنهاء مسموح دائماً لصاحب الجلسة أو لمن يملك اعتماد الانتحال.
   const ctx = await loadRbacContext(userId);
   const db = await adminDb();
@@ -957,7 +1066,13 @@ export async function endImpersonation(supabase: AnyClient, userId: string, inpu
 
   await db
     .from("platform_impersonation_sessions")
-    .update({ status: "ended", ended_at: nowIso(), ended_by: userId, end_reason: input.reason?.trim() || null, updated_at: nowIso() })
+    .update({
+      status: "ended",
+      ended_at: nowIso(),
+      ended_by: userId,
+      end_reason: input.reason?.trim() || null,
+      updated_at: nowIso(),
+    })
     .eq("id", input.id);
   await db.from("platform_impersonation_events").insert({
     session_id: input.id,

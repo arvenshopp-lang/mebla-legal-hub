@@ -40,7 +40,10 @@ export function readSmsCredentials(): Credentials {
 
 function requireKey(creds: Credentials): string {
   if (!creds.key) {
-    throw new SmsProviderError("MISSING_CREDENTIALS", "مفتاح مزوّد الرسائل غير مُعرَّف في أسرار المنصة.");
+    throw new SmsProviderError(
+      "MISSING_CREDENTIALS",
+      "مفتاح مزوّد الرسائل غير مُعرَّف في أسرار المنصة.",
+    );
   }
   return creds.key;
 }
@@ -72,12 +75,18 @@ async function sendInfobip(
       Accept: "application/json",
     },
     body: JSON.stringify({
-      messages: [{ from: config.senderId ?? config.senderName ?? "MEHLA", destinations: [{ to }], text }],
+      messages: [
+        { from: config.senderId ?? config.senderName ?? "MEHLA", destinations: [{ to }], text },
+      ],
     }),
   });
   const body = await readBody(response);
   if (!response.ok) {
-    throw new SmsProviderError("PROVIDER_REJECTED", `Infobip [${response.status}]: ${body}`, response.status);
+    throw new SmsProviderError(
+      "PROVIDER_REJECTED",
+      `Infobip [${response.status}]: ${body}`,
+      response.status,
+    );
   }
   try {
     const parsed = JSON.parse(body) as { messages?: { messageId?: string }[] };
@@ -95,10 +104,16 @@ async function sendTwilio(
 ): Promise<string | null> {
   const accountSid = config.applicationId;
   if (!accountSid) {
-    throw new SmsProviderError("MISSING_CONFIG", "معرّف حساب Twilio (Account SID) غير مُعرَّف في الإعدادات.");
+    throw new SmsProviderError(
+      "MISSING_CONFIG",
+      "معرّف حساب Twilio (Account SID) غير مُعرَّف في الإعدادات.",
+    );
   }
   if (!creds.secret) {
-    throw new SmsProviderError("MISSING_CREDENTIALS", "سر مزوّد الرسائل غير مُعرَّف في أسرار المنصة.");
+    throw new SmsProviderError(
+      "MISSING_CREDENTIALS",
+      "سر مزوّد الرسائل غير مُعرَّف في أسرار المنصة.",
+    );
   }
   const base = trimUrl(config.baseUrl ?? "https://api.twilio.com");
   const params = new URLSearchParams({ To: to, Body: text });
@@ -114,7 +129,11 @@ async function sendTwilio(
   });
   const body = await readBody(response);
   if (!response.ok) {
-    throw new SmsProviderError("PROVIDER_REJECTED", `Twilio [${response.status}]: ${body}`, response.status);
+    throw new SmsProviderError(
+      "PROVIDER_REJECTED",
+      `Twilio [${response.status}]: ${body}`,
+      response.status,
+    );
   }
   try {
     return (JSON.parse(body) as { sid?: string }).sid ?? null;
@@ -131,7 +150,10 @@ async function sendUnifonic(
 ): Promise<string | null> {
   const appSid = config.applicationId;
   if (!appSid) {
-    throw new SmsProviderError("MISSING_CONFIG", "معرّف تطبيق Unifonic (AppSid) غير مُعرَّف في الإعدادات.");
+    throw new SmsProviderError(
+      "MISSING_CONFIG",
+      "معرّف تطبيق Unifonic (AppSid) غير مُعرَّف في الإعدادات.",
+    );
   }
   const base = trimUrl(config.baseUrl ?? "https://el.cloud.unifonic.com");
   const params = new URLSearchParams({
@@ -147,10 +169,17 @@ async function sendUnifonic(
   });
   const body = await readBody(response);
   if (!response.ok) {
-    throw new SmsProviderError("PROVIDER_REJECTED", `Unifonic [${response.status}]: ${body}`, response.status);
+    throw new SmsProviderError(
+      "PROVIDER_REJECTED",
+      `Unifonic [${response.status}]: ${body}`,
+      response.status,
+    );
   }
   try {
-    const parsed = JSON.parse(body) as { success?: boolean; data?: { MessageID?: string | number } };
+    const parsed = JSON.parse(body) as {
+      success?: boolean;
+      data?: { MessageID?: string | number };
+    };
     if (parsed.success === false) {
       throw new SmsProviderError("PROVIDER_REJECTED", `Unifonic: ${body}`, response.status);
     }
@@ -186,7 +215,11 @@ async function sendCustom(
   });
   const body = await readBody(response);
   if (!response.ok) {
-    throw new SmsProviderError("PROVIDER_REJECTED", `Custom [${response.status}]: ${body}`, response.status);
+    throw new SmsProviderError(
+      "PROVIDER_REJECTED",
+      `Custom [${response.status}]: ${body}`,
+      response.status,
+    );
   }
   try {
     const parsed = JSON.parse(body) as { id?: string; reference?: string; messageId?: string };
@@ -198,7 +231,12 @@ async function sendCustom(
 
 const SENDERS: Record<
   SmsProvider,
-  (config: SmsProviderConfig, creds: Credentials, to: string, text: string) => Promise<string | null>
+  (
+    config: SmsProviderConfig,
+    creds: Credentials,
+    to: string,
+    text: string,
+  ) => Promise<string | null>
 > = {
   infobip: sendInfobip,
   twilio: sendTwilio,

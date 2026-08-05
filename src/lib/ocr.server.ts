@@ -42,18 +42,26 @@ const PROMPT = [
 ].join("\n");
 
 /** يستخرج JSON من ردّ النموذج حتى لو أُحيط بعلامات كود. */
-function parseModelJson(raw: string): { text: string; confidence: number; language: string; blank: boolean } {
-  const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+function parseModelJson(raw: string): {
+  text: string;
+  confidence: number;
+  language: string;
+  blank: boolean;
+} {
+  const cleaned = raw
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start >= 0 && end > start) {
     try {
       const parsed = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
       return {
-        text: typeof parsed['text'] === "string" ? parsed['text'] : "",
-        confidence: typeof parsed['confidence'] === "number" ? parsed['confidence'] : 0.75,
-        language: typeof parsed['language'] === "string" ? parsed['language'] : "ar",
-        blank: parsed['blank'] === true,
+        text: typeof parsed["text"] === "string" ? parsed["text"] : "",
+        confidence: typeof parsed["confidence"] === "number" ? parsed["confidence"] : 0.75,
+        language: typeof parsed["language"] === "string" ? parsed["language"] : "ar",
+        blank: parsed["blank"] === true,
       };
     } catch {
       /* يتم اللجوء إلى النص الخام أدناه */
@@ -66,7 +74,7 @@ class LovableGatewayOcrProvider implements OcrProvider {
   readonly name = "lovable-ai/gemini-vision";
 
   async extractDocument(input: OcrInput): Promise<OcrResult> {
-    const apiKey = process.env['LOVABLE_API_KEY'];
+    const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("OCR_PROVIDER_UNAVAILABLE");
 
     const response = await fetch(GATEWAY, {

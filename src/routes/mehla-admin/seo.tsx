@@ -47,7 +47,10 @@ function SeoPage() {
   const canManage = can("seo.manage");
 
   const settingsFn = useServerFn(getPlatformSettings);
-  const settings = useQuery({ queryKey: ["admin-settings"], queryFn: () => settingsFn({ data: undefined }) });
+  const settings = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: () => settingsFn({ data: undefined }),
+  });
 
   const [form, setForm] = useState<SeoSettings>(EMPTY);
   useEffect(() => {
@@ -84,14 +87,20 @@ function SeoPage() {
 
   if (settings.isLoading) {
     return (
-      <AdminShell title="إدارة SEO" description="الوسوم الافتراضية والفهرسة وملفات robots و sitemap.">
+      <AdminShell
+        title="إدارة SEO"
+        description="الوسوم الافتراضية والفهرسة وملفات robots و sitemap."
+      >
         <LoadingBlock rows={6} cols={2} />
       </AdminShell>
     );
   }
 
   return (
-    <AdminShell title="إدارة SEO" description="الوسوم الافتراضية للموقع التسويقي وقواعد الفهرسة وملفات المحركات.">
+    <AdminShell
+      title="إدارة SEO"
+      description="الوسوم الافتراضية للموقع التسويقي وقواعد الفهرسة وملفات المحركات."
+    >
       <form
         className="space-y-6"
         onSubmit={(e) => {
@@ -99,12 +108,17 @@ function SeoPage() {
           save.mutate();
         }}
       >
-        <SectionCard title="الوسوم الافتراضية" description="تُستخدم في الصفحات التي لا تحدد وسوماً خاصة بها.">
+        <SectionCard
+          title="الوسوم الافتراضية"
+          description="تُستخدم في الصفحات التي لا تحدد وسوماً خاصة بها."
+        >
           <div className="space-y-4">
             <FormField
               label="العنوان الافتراضي"
               hint={`${titleLen} حرفاً — الأفضل أقل من ٦٠ حرفاً.`}
-              error={titleLen > 60 ? "العنوان أطول من الحد المفضل وقد يُقتطع في نتائج البحث." : undefined}
+              error={
+                titleLen > 60 ? "العنوان أطول من الحد المفضل وقد يُقتطع في نتائج البحث." : undefined
+              }
             >
               <input
                 className={inputCls}
@@ -117,7 +131,9 @@ function SeoPage() {
             <FormField
               label="الوصف الافتراضي"
               hint={`${descLen} حرفاً — الأفضل أقل من ١٦٠ حرفاً.`}
-              error={descLen > 160 ? "الوصف أطول من الحد المفضل وقد يُقتطع في نتائج البحث." : undefined}
+              error={
+                descLen > 160 ? "الوصف أطول من الحد المفضل وقد يُقتطع في نتائج البحث." : undefined
+              }
             >
               <textarea
                 className={`${inputCls} min-h-24`}
@@ -139,7 +155,10 @@ function SeoPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="المشاركة الاجتماعية" description="بطاقة المعاينة التي تظهر عند مشاركة رابط الموقع.">
+        <SectionCard
+          title="المشاركة الاجتماعية"
+          description="بطاقة المعاينة التي تظهر عند مشاركة رابط الموقع."
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="النطاق الرسمي (canonical)">
               <input
@@ -184,7 +203,10 @@ function SeoPage() {
           )}
         </SectionCard>
 
-        <SectionCard title="الفهرسة ومحركات البحث" description="تحكم في وصول عناكب البحث وملف robots.txt.">
+        <SectionCard
+          title="الفهرسة ومحركات البحث"
+          description="تحكم في وصول عناكب البحث وملف robots.txt."
+        >
           <label className="flex items-center gap-2 text-body-sm">
             <input
               type="checkbox"
@@ -194,11 +216,16 @@ function SeoPage() {
               disabled={!canManage}
             />
             السماح لمحركات البحث بفهرسة الموقع التسويقي
-            <Badge tone={form.allow_indexing ? "green" : "red"}>{form.allow_indexing ? "مفهرس" : "محجوب"}</Badge>
+            <Badge tone={form.allow_indexing ? "green" : "red"}>
+              {form.allow_indexing ? "مفهرس" : "محجوب"}
+            </Badge>
           </label>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <FormField label="توثيق Google Search Console" hint="قيمة وسم google-site-verification.">
+            <FormField
+              label="توثيق Google Search Console"
+              hint="قيمة وسم google-site-verification."
+            >
               <input
                 className={inputCls}
                 value={form.google_verification}
@@ -219,7 +246,10 @@ function SeoPage() {
           </div>
 
           <div className="mt-4">
-            <FormField label="مسارات ممنوعة من الفهرسة" hint="مسار واحد في كل سطر، مثل /mehla-admin.">
+            <FormField
+              label="مسارات ممنوعة من الفهرسة"
+              hint="مسار واحد في كل سطر، مثل /mehla-admin."
+            >
               <textarea
                 className={`${inputCls} min-h-24 font-mono text-[13px]`}
                 value={form.extra_disallow}

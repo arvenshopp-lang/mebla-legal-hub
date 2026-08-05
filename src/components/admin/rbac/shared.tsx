@@ -152,7 +152,12 @@ export type RbacOverview = {
     basePermissions: string[];
     effectivePermissions: string[];
     liveGrants: { permission: string; source: string; expires_at: string; granted_by: string }[];
-    impersonation: { id: string; target_user_id: string; target_email: string | null; expires_at: string } | null;
+    impersonation: {
+      id: string;
+      target_user_id: string;
+      target_email: string | null;
+      expires_at: string;
+    } | null;
     facts: { ip: string; device: string | null; browser: string | null; fingerprint: string };
   };
   now: string;
@@ -188,7 +193,8 @@ export function riyadhLocalToIso(value: string): string | null {
   if (!m) return null;
   const [, y, mo, d, h, mi] = m as unknown as [string, string, string, string, string, string];
   const ms =
-    Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)) - RIYADH_OFFSET_MINUTES * 60_000;
+    Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)) -
+    RIYADH_OFFSET_MINUTES * 60_000;
   return new Date(ms).toISOString();
 }
 
@@ -211,7 +217,10 @@ export function remainingLabel(iso: string, now: number = Date.now()): string {
   return `${days} يوم و${hours % 24} ساعة`;
 }
 
-export function grantState(g: RbacGrant, now = Date.now()): { label: string; tone: "green" | "red" | "muted" | "gold" } {
+export function grantState(
+  g: RbacGrant,
+  now = Date.now(),
+): { label: string; tone: "green" | "red" | "muted" | "gold" } {
   if (g.revoked_at) return { label: "مسحوب", tone: "red" };
   if (new Date(g.expires_at).getTime() <= now) return { label: "منتهي", tone: "muted" };
   if (new Date(g.starts_at).getTime() > now) return { label: "لم يبدأ بعد", tone: "gold" };
@@ -222,7 +231,15 @@ export const WEEKDAYS = WEEKDAY_LABELS;
 
 /* ------------------------------- مكونات ------------------------------- */
 
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Field({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: ReactNode;
+  hint?: string;
+}) {
   return (
     <label className="block">
       <span className="text-label mb-1.5 block text-foreground">{label}</span>
@@ -241,7 +258,15 @@ export function KeyValue({ label, children }: { label: string; children: ReactNo
   );
 }
 
-export function StatTile({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+export function StatTile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+}) {
   return (
     <div className="rounded-[var(--radius-m)] border border-border bg-surface p-4">
       <p className="text-[11px] font-semibold text-text-muted">{label}</p>
@@ -251,7 +276,13 @@ export function StatTile({ label, value, hint }: { label: string; value: ReactNo
   );
 }
 
-export function PermissionBadges({ permissions, max = 6 }: { permissions: string[]; max?: number }) {
+export function PermissionBadges({
+  permissions,
+  max = 6,
+}: {
+  permissions: string[];
+  max?: number;
+}) {
   const shown = permissions.slice(0, max);
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -293,7 +324,9 @@ export function PermissionPicker({
     return PERMISSION_GROUPS.map((group) => ({
       group,
       items: ADMIN_PERMISSIONS.filter(
-        (p) => p.group === group && (!q || p.label.includes(q) || p.id.includes(q) || p.description.includes(q)),
+        (p) =>
+          p.group === group &&
+          (!q || p.label.includes(q) || p.id.includes(q) || p.description.includes(q)),
       ),
     })).filter((g) => g.items.length > 0);
   }, [query]);
@@ -302,7 +335,9 @@ export function PermissionPicker({
     onChange(selected.includes(id) ? selected.filter((p) => p !== id) : [...selected, id]);
 
   const toggleGroup = (group: string, checked: boolean) => {
-    const ids = ADMIN_PERMISSIONS.filter((p) => p.group === group && may(p.id)).map((p) => p.id as string);
+    const ids = ADMIN_PERMISSIONS.filter((p) => p.group === group && may(p.id)).map(
+      (p) => p.id as string,
+    );
     const next = new Set(selected);
     for (const id of ids) checked ? next.add(id) : next.delete(id);
     onChange(Array.from(next));
@@ -370,8 +405,12 @@ export function PermissionPicker({
                         />
                         <span className="min-w-0">
                           <span className="block text-[13px] font-medium">{p.label}</span>
-                          <span className="block font-mono text-[11px] text-text-muted">{p.id}</span>
-                          {disabled && <span className="block text-[11px] text-danger">غير متاحة لك</span>}
+                          <span className="block font-mono text-[11px] text-text-muted">
+                            {p.id}
+                          </span>
+                          {disabled && (
+                            <span className="block text-[11px] text-danger">غير متاحة لك</span>
+                          )}
                         </span>
                       </label>
                     </li>

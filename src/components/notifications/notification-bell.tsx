@@ -91,7 +91,10 @@ export function NotificationBell() {
   const markRead = useMutation({
     mutationFn: async (ids: string[]) => {
       if (ids.length === 0) return;
-      const { error } = await supabase.from("notifications").update({ is_read: true }).in("id", ids);
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey }),
@@ -143,11 +146,16 @@ export function NotificationBell() {
             {isLoading ? (
               <div className="space-y-2 p-4" aria-busy>
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-14 animate-pulse rounded-[var(--radius-m)] bg-surface-muted" />
+                  <div
+                    key={i}
+                    className="h-14 animate-pulse rounded-[var(--radius-m)] bg-surface-muted"
+                  />
                 ))}
               </div>
             ) : items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">لا توجد تنبيهات حالياً.</p>
+              <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+                لا توجد تنبيهات حالياً.
+              </p>
             ) : (
               <ul className="divide-y divide-border">
                 {items.map((n) => {
@@ -158,20 +166,29 @@ export function NotificationBell() {
                       <span
                         className={cn(
                           "mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-s)]",
-                          n.is_read ? "bg-surface-muted text-muted-foreground" : "bg-primary-soft text-primary",
+                          n.is_read
+                            ? "bg-surface-muted text-muted-foreground"
+                            : "bg-primary-soft text-primary",
                         )}
                         aria-hidden
                       >
                         <Icon className="h-4 w-4" />
                       </span>
                       <span className="min-w-0">
-                        <span className={cn("block text-[13px]", n.is_read ? "font-medium" : "font-semibold")}>
+                        <span
+                          className={cn(
+                            "block text-[13px]",
+                            n.is_read ? "font-medium" : "font-semibold",
+                          )}
+                        >
                           {n.title}
                         </span>
                         <span className="mt-0.5 block whitespace-pre-wrap text-[12.5px] leading-5 text-muted-foreground">
                           {n.message}
                         </span>
-                        <span className="mt-1 block text-[11px] text-text-muted">{fmtDateTime(n.created_at)}</span>
+                        <span className="mt-1 block text-[11px] text-text-muted">
+                          {fmtDateTime(n.created_at)}
+                        </span>
                       </span>
                     </div>
                   );
@@ -205,7 +222,11 @@ export function NotificationBell() {
           </div>
 
           <div className="border-t border-border px-4 py-2.5">
-            <Link to="/support" className="text-[12.5px] text-primary hover:underline" onClick={() => setOpen(false)}>
+            <Link
+              to="/support"
+              className="text-[12.5px] text-primary hover:underline"
+              onClick={() => setOpen(false)}
+            >
               مركز الدعم والتذاكر
             </Link>
           </div>

@@ -26,9 +26,7 @@ export const getSubscriptionOverview = createServerFn({ method: "GET" })
 /** Server-side feature check used before any gated action or route render. */
 export const checkFeatureAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    orgSchema.extend({ feature: z.enum(FEATURE_KEYS) }).parse(d),
-  )
+  .inputValidator((d: unknown) => orgSchema.extend({ feature: z.enum(FEATURE_KEYS) }).parse(d))
   .handler(async ({ data, context }) => {
     const { loadOverview } = await import("./subscription.server");
     const { hasFeature } = await import("./subscription.shared");
@@ -43,7 +41,9 @@ export const checkFeatureAccess = createServerFn({ method: "POST" })
 /** Records metered usage (OCR pages). The database rejects over-quota calls. */
 export const recordOcrUsage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => orgSchema.extend({ pages: z.number().int().min(1).max(2000) }).parse(d))
+  .inputValidator((d: unknown) =>
+    orgSchema.extend({ pages: z.number().int().min(1).max(2000) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { assertEntitlement } = await import("./subscription.server");
     const { translateSubscriptionError } = await import("./subscription.shared");

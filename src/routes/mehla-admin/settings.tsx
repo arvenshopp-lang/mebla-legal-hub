@@ -10,7 +10,10 @@ import { getPlatformSettings, savePlatformSettings } from "@/lib/admin-ops.funct
 
 export const Route = createFileRoute("/mehla-admin/settings")({
   head: () => ({
-    meta: [{ title: "إعدادات المنصة · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "إعدادات المنصة · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: SettingsPage,
 });
@@ -53,7 +56,10 @@ function SettingsPage() {
   const canManage = can("platform_settings.manage");
 
   const settingsFn = useServerFn(getPlatformSettings);
-  const settings = useQuery({ queryKey: ["admin-settings"], queryFn: () => settingsFn({ data: undefined }) });
+  const settings = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: () => settingsFn({ data: undefined }),
+  });
 
   const [form, setForm] = useState<GeneralSettings>(EMPTY);
   useEffect(() => {
@@ -76,7 +82,10 @@ function SettingsPage() {
 
   if (settings.isLoading) {
     return (
-      <AdminShell title="إعدادات المنصة" description="الهوية الرسمية وبيانات التواصل والروابط النظامية.">
+      <AdminShell
+        title="إعدادات المنصة"
+        description="الهوية الرسمية وبيانات التواصل والروابط النظامية."
+      >
         <LoadingBlock rows={6} cols={2} />
       </AdminShell>
     );
@@ -94,7 +103,10 @@ function SettingsPage() {
           save.mutate();
         }}
       >
-        <SectionCard title="الهوية الرسمية" description="تُستخدم في الفواتير والمراسلات والصفحات النظامية.">
+        <SectionCard
+          title="الهوية الرسمية"
+          description="تُستخدم في الفواتير والمراسلات والصفحات النظامية."
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="اسم المنصة">
               <input
@@ -137,7 +149,10 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="بيانات التواصل" description="القنوات الرسمية التي يراها العملاء في صفحات الدعم.">
+        <SectionCard
+          title="بيانات التواصل"
+          description="القنوات الرسمية التي يراها العملاء في صفحات الدعم."
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="بريد الدعم">
               <input
@@ -193,7 +208,10 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="الروابط النظامية" description="روابط الشروط وسياسة الخصوصية المعروضة في الموقع.">
+        <SectionCard
+          title="الروابط النظامية"
+          description="روابط الشروط وسياسة الخصوصية المعروضة في الموقع."
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="رابط الشروط والأحكام">
               <input
@@ -218,7 +236,10 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="وضع الصيانة" description="يُستخدم أثناء التحديثات الكبرى لإبلاغ المستخدمين مسبقاً.">
+        <SectionCard
+          title="وضع الصيانة"
+          description="يُستخدم أثناء التحديثات الكبرى لإبلاغ المستخدمين مسبقاً."
+        >
           <label className="flex items-center gap-2 text-body-sm">
             <input
               type="checkbox"

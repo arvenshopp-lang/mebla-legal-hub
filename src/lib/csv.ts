@@ -16,6 +16,8 @@ export function csvCell(value: unknown): string {
 
 /** يبني ملف CSV كاملاً من رؤوس وصفوف مع علامة BOM لدعم العربية. */
 export function buildCsv(headers: string[], rows: unknown[][]): string {
-  const body = [headers.map(csvCell).join(","), ...rows.map((r) => r.map(csvCell).join(","))].join("\r\n");
+  const body = [headers.map(csvCell).join(","), ...rows.map((r) => r.map(csvCell).join(","))].join(
+    "\r\n",
+  );
   return `\uFEFF${body}`;
 }

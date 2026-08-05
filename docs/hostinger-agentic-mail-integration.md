@@ -24,39 +24,39 @@
 - الاستيعاب تحت الحساب الحقيقي ممنوع: رسالة بلا اسم مستعار مطابق تُرفض (Fail-Closed).
 - مسار IMAP يصادق فقط على العناوين التي تملك أسراراً خاصة بها.
 
-| الملف | المسؤولية |
-| --- | --- |
-| `src/lib/email/agentic/agentic.shared.ts` | أنواع مشتركة، أسماء العمليات، شروط الجاهزية (آمن للمتصفح). |
-| `src/lib/email/agentic/mcp-client.server.ts` | نقل MCP، الجلسة، إعادة المحاولة، تنقيح الأخطاء، حضور السرّ. |
-| `src/lib/email/agentic/capabilities.server.ts` | ربط الأدوات المكتشفة فعلياً بالعمليات، وربط المعاملات بمخطط الأداة. |
-| `src/lib/email/agentic/state.server.ts` | حالة التكامل في `platform_settings` (`email_agentic_mail`). |
-| `src/lib/email/agentic/provider.server.ts` | الاكتشاف، ربط الصناديق، المزامنة التزايدية، الإرسال، إجراءات الرسائل. |
-| `src/lib/email/agentic/scheduler.server.ts` | الجدولة، منع التداخل، التراجع الأُسّي، قاطع الدائرة، الإيقاف التلقائي. |
-| `src/lib/email/agentic/access.server.ts` | تصريح كل دالة، نطاق الصناديق، سجل التدقيق، المهلة، تنقيح الأخطاء. |
-| `src/lib/email/agentic/overview.server.ts` | تجميع الحالة المعروضة في مركز التكاملات. |
-| `src/lib/email/email.functions.ts` | 15 دالة خادم صريحة (غلاف رقيق فقط). |
-| `src/components/admin/mail/agentic-panel.tsx` | واجهة الإدارة داخل `/mehla-admin/integrations`. |
-| `src/routes/api/public/hooks/mail-sync.ts` | المسار الدوري: Agentic ثم IMAP. |
+| الملف                                          | المسؤولية                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/lib/email/agentic/agentic.shared.ts`      | أنواع مشتركة، أسماء العمليات، شروط الجاهزية (آمن للمتصفح).             |
+| `src/lib/email/agentic/mcp-client.server.ts`   | نقل MCP، الجلسة، إعادة المحاولة، تنقيح الأخطاء، حضور السرّ.            |
+| `src/lib/email/agentic/capabilities.server.ts` | ربط الأدوات المكتشفة فعلياً بالعمليات، وربط المعاملات بمخطط الأداة.    |
+| `src/lib/email/agentic/state.server.ts`        | حالة التكامل في `platform_settings` (`email_agentic_mail`).            |
+| `src/lib/email/agentic/provider.server.ts`     | الاكتشاف، ربط الصناديق، المزامنة التزايدية، الإرسال، إجراءات الرسائل.  |
+| `src/lib/email/agentic/scheduler.server.ts`    | الجدولة، منع التداخل، التراجع الأُسّي، قاطع الدائرة، الإيقاف التلقائي. |
+| `src/lib/email/agentic/access.server.ts`       | تصريح كل دالة، نطاق الصناديق، سجل التدقيق، المهلة، تنقيح الأخطاء.      |
+| `src/lib/email/agentic/overview.server.ts`     | تجميع الحالة المعروضة في مركز التكاملات.                               |
+| `src/lib/email/email.functions.ts`             | 15 دالة خادم صريحة (غلاف رقيق فقط).                                    |
+| `src/components/admin/mail/agentic-panel.tsx`  | واجهة الإدارة داخل `/mehla-admin/integrations`.                        |
+| `src/routes/api/public/hooks/mail-sync.ts`     | المسار الدوري: Agentic ثم IMAP.                                        |
 
 ## 3. دوال الخادم والصلاحيات
 
-| الدالة | الصلاحية | الأثر |
-| --- | --- | --- |
-| `getAgenticMailStatus` | `email.read` | قراءة الحالة والصناديق والجدولة. |
-| `testAgenticMailConnection` | `email.manage_providers` | `initialize` حقيقي، بلا تعديل بريد. |
-| `discoverAgenticMailTools` | `email.manage_providers` | اكتشاف الأدوات وتخزين المكتشف فقط. |
-| `linkAgenticMailboxes` | `email.manage_mailboxes` | مطابقة بالعنوان، بلا إنشاء صناديق. |
-| `unlinkAgenticMailbox` | `email.manage_mailboxes` | فك الارتباط مع بقاء البيانات. |
-| `setAgenticMailboxSync` | `email.manage_mailboxes` | تفعيل/إيقاف مزامنة صندوق واحد. |
-| `dryRunAgenticSync` | `email.manage_providers` | قراءة بلا كتابة وبلا إنشاء تذاكر. |
-| `sendAgenticTestMessage` | `email.send` | إرسال اختبار عبر أداة المزوّد. |
-| `activateAgenticMail` | `email.manage_providers` | تفعيل مشروط باستيفاء كل الشروط. |
-| `deactivateAgenticMail` | `email.manage_providers` | تعطيل فوري بسبب مسجَّل. |
-| `syncAgenticMailboxNow` | `email.manage_providers` | مزامنة تزايدية لصندوق. |
-| `syncAllAgenticMailboxesNow` | `email.manage_providers` | مزامنة تزايدية شاملة. |
-| `retryAgenticMailFailures` | `email.retry` | تصفير القاطع وإعادة الصناديق المتعطّلة. |
-| `resetAgenticMailboxCursor` | `email.manage_providers` | إجراء تصحيحي صريح للمؤشر. |
-| `getAgenticMailLogs` | `email.view_logs` | سجل دورات المزامنة داخل النطاق. |
+| الدالة                       | الصلاحية                 | الأثر                                   |
+| ---------------------------- | ------------------------ | --------------------------------------- |
+| `getAgenticMailStatus`       | `email.read`             | قراءة الحالة والصناديق والجدولة.        |
+| `testAgenticMailConnection`  | `email.manage_providers` | `initialize` حقيقي، بلا تعديل بريد.     |
+| `discoverAgenticMailTools`   | `email.manage_providers` | اكتشاف الأدوات وتخزين المكتشف فقط.      |
+| `linkAgenticMailboxes`       | `email.manage_mailboxes` | مطابقة بالعنوان، بلا إنشاء صناديق.      |
+| `unlinkAgenticMailbox`       | `email.manage_mailboxes` | فك الارتباط مع بقاء البيانات.           |
+| `setAgenticMailboxSync`      | `email.manage_mailboxes` | تفعيل/إيقاف مزامنة صندوق واحد.          |
+| `dryRunAgenticSync`          | `email.manage_providers` | قراءة بلا كتابة وبلا إنشاء تذاكر.       |
+| `sendAgenticTestMessage`     | `email.send`             | إرسال اختبار عبر أداة المزوّد.          |
+| `activateAgenticMail`        | `email.manage_providers` | تفعيل مشروط باستيفاء كل الشروط.         |
+| `deactivateAgenticMail`      | `email.manage_providers` | تعطيل فوري بسبب مسجَّل.                 |
+| `syncAgenticMailboxNow`      | `email.manage_providers` | مزامنة تزايدية لصندوق.                  |
+| `syncAllAgenticMailboxesNow` | `email.manage_providers` | مزامنة تزايدية شاملة.                   |
+| `retryAgenticMailFailures`   | `email.retry`            | تصفير القاطع وإعادة الصناديق المتعطّلة. |
+| `resetAgenticMailboxCursor`  | `email.manage_providers` | إجراء تصحيحي صريح للمؤشر.               |
+| `getAgenticMailLogs`         | `email.view_logs`        | سجل دورات المزامنة داخل النطاق.         |
 
 `email.manage` القديمة تُوسَّع تلقائياً إلى الصلاحيات الدقيقة (`expandPermissions`) فلا تُفقد أي صلاحية قائمة.
 
@@ -79,13 +79,13 @@
 
 ## 6. الجدولة وقاطع الدائرة
 
-| العنصر | القيمة |
-| --- | --- |
-| الفاصل الطبيعي | 5 دقائق |
-| التراجع عند الفشل | 60 ثانية × 2^(عدد الفشل) حتى 60 دقيقة |
-| فتح القاطع | 5 حالات فشل متتالية → توقّف ساعة |
-| الإيقاف التلقائي | 3 حالات فشل مصادقة → تعطيل التكامل + عطل في `system_failures` |
-| منع التداخل | قفل جدولة (10 دقائق) + قفل صندوق داخل المحرّك |
+| العنصر            | القيمة                                                        |
+| ----------------- | ------------------------------------------------------------- |
+| الفاصل الطبيعي    | 5 دقائق                                                       |
+| التراجع عند الفشل | 60 ثانية × 2^(عدد الفشل) حتى 60 دقيقة                         |
+| فتح القاطع        | 5 حالات فشل متتالية → توقّف ساعة                              |
+| الإيقاف التلقائي  | 3 حالات فشل مصادقة → تعطيل التكامل + عطل في `system_failures` |
+| منع التداخل       | قفل جدولة (10 دقائق) + قفل صندوق داخل المحرّك                 |
 
 الاستئناف بعد الإيقاف التلقائي: تدوير المفتاح ← اختبار الاتصال ← «إعادة المحاولة» ← «تفعيل».
 
@@ -105,10 +105,10 @@
 
 ## 9. الاستكشاف
 
-| العرض | السبب | الإجراء |
-| --- | --- | --- |
-| «المفتاح غير مُعرّف» | السرّ غائب | أضف `HOSTINGER_MAIL_API_TOKEN` في أسرار المنصة. |
-| فشل الاتصال | رمز مرفوض أو انقطاع | اختبار الاتصال؛ ثم تدوير المفتاح إن تكرر. |
-| «غير موجود عند المزوّد» | العنوان غير موجود لدى Hostinger | صحّح العنوان أو أنشئه ثم «ربط الصناديق». |
-| توقّف الجدولة | القاطع مفتوح أو إيقاف تلقائي | «إعادة المحاولة» بعد معالجة السبب. |
-| لا رسائل جديدة | المؤشر محدّث | طبيعي؛ التصفير عند الشك فقط. |
+| العرض                   | السبب                           | الإجراء                                         |
+| ----------------------- | ------------------------------- | ----------------------------------------------- |
+| «المفتاح غير مُعرّف»    | السرّ غائب                      | أضف `HOSTINGER_MAIL_API_TOKEN` في أسرار المنصة. |
+| فشل الاتصال             | رمز مرفوض أو انقطاع             | اختبار الاتصال؛ ثم تدوير المفتاح إن تكرر.       |
+| «غير موجود عند المزوّد» | العنوان غير موجود لدى Hostinger | صحّح العنوان أو أنشئه ثم «ربط الصناديق».        |
+| توقّف الجدولة           | القاطع مفتوح أو إيقاف تلقائي    | «إعادة المحاولة» بعد معالجة السبب.              |
+| لا رسائل جديدة          | المؤشر محدّث                    | طبيعي؛ التصفير عند الشك فقط.                    |

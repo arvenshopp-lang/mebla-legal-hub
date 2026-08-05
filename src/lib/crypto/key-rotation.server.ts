@@ -181,7 +181,11 @@ export async function reencryptBatch(input: {
 
   let existing: Record<string, unknown> | null = null;
   if (input.jobId) {
-    const { data } = await db.from("pii_reencryption_jobs").select("*").eq("id", input.jobId).maybeSingle();
+    const { data } = await db
+      .from("pii_reencryption_jobs")
+      .select("*")
+      .eq("id", input.jobId)
+      .maybeSingle();
     existing = data ?? null;
   }
   if (!existing) {
@@ -298,7 +302,9 @@ export async function recentRotationJobs(limit = 10): Promise<RotationJobRow[]> 
   const db = await admin();
   const { data } = await db
     .from("pii_reencryption_jobs")
-    .select("id, entity, from_version, to_version, status, processed, failed, last_error, created_at, updated_at")
+    .select(
+      "id, entity, from_version, to_version, status, processed, failed, last_error, created_at, updated_at",
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data ?? []) as RotationJobRow[];

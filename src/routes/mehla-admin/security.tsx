@@ -19,7 +19,10 @@ import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 
 export const Route = createFileRoute("/mehla-admin/security")({
   head: () => ({
-    meta: [{ title: "مركز الأمان · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "مركز الأمان · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: SecurityCenterPage,
 });
@@ -136,7 +139,9 @@ function SecurityCenterPage() {
       toast.success(success);
       refresh();
     } catch (error) {
-      toast.error("تعذّرت العملية", { description: error instanceof Error ? error.message : undefined });
+      toast.error("تعذّرت العملية", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setBusy(null);
     }
@@ -193,7 +198,10 @@ function SecurityCenterPage() {
             >
               <ul className="divide-y divide-border">
                 {overview.mfa.pending.map((member) => (
-                  <li key={member.email} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <li
+                    key={member.email}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{member.name}</span>
                       <span className="block truncate text-[12px] text-muted-foreground" dir="ltr">
@@ -249,7 +257,8 @@ function SecurityCenterPage() {
                     <tr key={version.key_version} className="border-t border-border">
                       <Td>
                         <span className="inline-flex items-center gap-2 font-mono" dir="ltr">
-                          <KeyRound className="h-3.5 w-3.5 text-text-muted" aria-hidden />v{version.key_version}
+                          <KeyRound className="h-3.5 w-3.5 text-text-muted" aria-hidden />v
+                          {version.key_version}
                         </span>
                       </Td>
                       <Td>
@@ -274,58 +283,65 @@ function SecurityCenterPage() {
                       </Td>
                       <Td>
                         <span dir="ltr">
-                          {version.rows.total} ({version.rows.clients} / {version.rows.case_parties})
+                          {version.rows.total} ({version.rows.clients} / {version.rows.case_parties}
+                          )
                         </span>
                       </Td>
                       <Td>{version.activated_at ? fmtDateTime(version.activated_at) : "—"}</Td>
                       <Td>
                         <div className="flex flex-wrap gap-2">
-                          {canManageKeys && !version.is_active_for_writes && version.rows.total > 0 && (
-                            <>
-                              <button
-                                type="button"
-                                disabled={busy !== null}
-                                onClick={() =>
-                                  run(
-                                    `clients-${version.key_version}`,
-                                    () =>
-                                      batchFn({
-                                        data: {
-                                          entity: "clients",
-                                          fromVersion: version.key_version,
-                                          batchSize: 100,
-                                        },
-                                      }),
-                                    "تمت دفعة إعادة تشفير العملاء",
-                                  )
-                                }
-                                className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
-                              >
-                                {busy === `clients-${version.key_version}` ? "جارٍ…" : "إعادة تشفير العملاء"}
-                              </button>
-                              <button
-                                type="button"
-                                disabled={busy !== null}
-                                onClick={() =>
-                                  run(
-                                    `parties-${version.key_version}`,
-                                    () =>
-                                      batchFn({
-                                        data: {
-                                          entity: "case_parties",
-                                          fromVersion: version.key_version,
-                                          batchSize: 100,
-                                        },
-                                      }),
-                                    "تمت دفعة إعادة تشفير أطراف القضايا",
-                                  )
-                                }
-                                className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
-                              >
-                                {busy === `parties-${version.key_version}` ? "جارٍ…" : "إعادة تشفير الأطراف"}
-                              </button>
-                            </>
-                          )}
+                          {canManageKeys &&
+                            !version.is_active_for_writes &&
+                            version.rows.total > 0 && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={busy !== null}
+                                  onClick={() =>
+                                    run(
+                                      `clients-${version.key_version}`,
+                                      () =>
+                                        batchFn({
+                                          data: {
+                                            entity: "clients",
+                                            fromVersion: version.key_version,
+                                            batchSize: 100,
+                                          },
+                                        }),
+                                      "تمت دفعة إعادة تشفير العملاء",
+                                    )
+                                  }
+                                  className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
+                                >
+                                  {busy === `clients-${version.key_version}`
+                                    ? "جارٍ…"
+                                    : "إعادة تشفير العملاء"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy !== null}
+                                  onClick={() =>
+                                    run(
+                                      `parties-${version.key_version}`,
+                                      () =>
+                                        batchFn({
+                                          data: {
+                                            entity: "case_parties",
+                                            fromVersion: version.key_version,
+                                            batchSize: 100,
+                                          },
+                                        }),
+                                      "تمت دفعة إعادة تشفير أطراف القضايا",
+                                    )
+                                  }
+                                  className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
+                                >
+                                  {busy === `parties-${version.key_version}`
+                                    ? "جارٍ…"
+                                    : "إعادة تشفير الأطراف"}
+                                </button>
+                              </>
+                            )}
                           {canManageKeys &&
                             !version.is_active_for_writes &&
                             version.rows.total === 0 &&
@@ -346,22 +362,24 @@ function SecurityCenterPage() {
                                 تقاعد الإصدار
                               </button>
                             )}
-                          {canManageKeys && version.status === "unregistered" && version.master_key_present && (
-                            <button
-                              type="button"
-                              disabled={busy !== null}
-                              onClick={() =>
-                                run(
-                                  `register-${version.key_version}`,
-                                  () => registerFn({ data: { version: version.key_version } }),
-                                  "تم تسجيل الإصدار",
-                                )
-                              }
-                              className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
-                            >
-                              تسجيل الإصدار
-                            </button>
-                          )}
+                          {canManageKeys &&
+                            version.status === "unregistered" &&
+                            version.master_key_present && (
+                              <button
+                                type="button"
+                                disabled={busy !== null}
+                                onClick={() =>
+                                  run(
+                                    `register-${version.key_version}`,
+                                    () => registerFn({ data: { version: version.key_version } }),
+                                    "تم تسجيل الإصدار",
+                                  )
+                                }
+                                className="rounded-[var(--radius-s)] border border-border px-2 py-1 text-[12px] hover:bg-surface-muted disabled:opacity-50"
+                              >
+                                تسجيل الإصدار
+                              </button>
+                            )}
                         </div>
                       </Td>
                     </tr>
@@ -477,7 +495,10 @@ function SecurityCenterPage() {
                     </thead>
                     <tbody>
                       {(reveals ?? []).map((row) => {
-                        const outcome = OUTCOME_LABEL[row.outcome] ?? { label: row.outcome, tone: "warn" as const };
+                        const outcome = OUTCOME_LABEL[row.outcome] ?? {
+                          label: row.outcome,
+                          tone: "warn" as const,
+                        };
                         return (
                           <tr key={row.id} className="border-t border-border">
                             <Td>{FIELD_LABEL[row.field] ?? row.field}</Td>
@@ -532,7 +553,9 @@ function SecurityCenterPage() {
                         <tr key={row.id} className="border-t border-border">
                           <Td>{ACTION_LABEL[row.action_type] ?? row.action_type}</Td>
                           <Td>
-                            {row.denial_reason === "MFA_REQUIRED" ? "بدون تحقق بخطوتين" : (row.denial_reason ?? "—")}
+                            {row.denial_reason === "MFA_REQUIRED"
+                              ? "بدون تحقق بخطوتين"
+                              : (row.denial_reason ?? "—")}
                           </Td>
                           <Td>
                             {row.device ?? "—"} · {row.browser ?? "—"}

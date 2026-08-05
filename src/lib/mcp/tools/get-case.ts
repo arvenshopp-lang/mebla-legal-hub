@@ -1,6 +1,13 @@
 import { defineTool, ToolError } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { dbError, requireDb, resolveOrganization, result, riyadhDate, riyadhDateTime } from "../helpers";
+import {
+  dbError,
+  requireDb,
+  resolveOrganization,
+  result,
+  riyadhDate,
+  riyadhDateTime,
+} from "../helpers";
 
 export default defineTool({
   name: "get_case",
@@ -16,7 +23,9 @@ export default defineTool({
     const db = requireDb(ctx);
     const organizationId = await resolveOrganization(db, ctx, input.organization_id);
     const reference = input.reference.trim();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      reference,
+    );
 
     let lookup = db
       .from("cases")
@@ -67,9 +76,13 @@ export default defineTool({
         (row) => `• ${row.title} — ${riyadhDateTime(row.hearing_date)} — ${row.status}`,
       ),
       `المهل (${deadlines.data?.length ?? 0}):`,
-      ...(deadlines.data ?? []).map((row) => `• ${row.title} — ${riyadhDate(row.due_date)} — ${row.status}`),
+      ...(deadlines.data ?? []).map(
+        (row) => `• ${row.title} — ${riyadhDate(row.due_date)} — ${row.status}`,
+      ),
       `المهام (${tasks.data?.length ?? 0}):`,
-      ...(tasks.data ?? []).map((row) => `• ${row.title} — ${row.status} — ${riyadhDate(row.due_date)}`),
+      ...(tasks.data ?? []).map(
+        (row) => `• ${row.title} — ${row.status} — ${riyadhDate(row.due_date)}`,
+      ),
     ];
 
     return result(lines.join("\n"), {

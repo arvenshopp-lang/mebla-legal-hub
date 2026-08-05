@@ -25,19 +25,19 @@
 
 تم تفكيكها إلى المفاتيح التالية:
 
-| المجموعة | المفاتيح | مواضع الفرض |
-|---|---|---|
-| إعدادات المنصة | `platform_settings.read`, `platform_settings.manage` | `admin-ops.functions.ts`, `routes/mehla-admin/settings.tsx` |
-| مفاتيح التشغيل | `feature_flags.read`, `feature_flags.manage` | `flags.functions.ts`, `routes/mehla-admin/flags.tsx` |
-| قواعد الإشعارات | `notification_rules.read`, `notification_rules.manage` | `flags.functions.ts` |
-| التكاملات | `integrations.read`, `integrations.manage`, `integrations.test`, `integrations.activate`, `integrations.view_logs` | `integrations/integrations.functions.ts` |
-| المحتوى | `content.read`, `content.manage`, `content.publish`, `content.rollback` | `admin-console.functions.ts`, `routes/mehla-admin/content.tsx` |
-| التصميم | `design.read`, `design.manage` | `design/theme.functions.ts` |
-| SEO | `seo.read`, `seo.manage` | `admin-ops.functions.ts`, `routes/mehla-admin/seo.tsx` |
-| الرسائل | `sms.read`, `sms.manage` | `sms/sms.functions.ts` |
-| الأمان | `security.read`, `security.manage`, `security.sessions.manage`, `security.events.export` | `admin-security.functions.ts`, `routes/mehla-admin/security.tsx` |
-| المراقبة والنسخ | `monitoring.export`, `backups.read` | `admin-observability.*`, `backups.functions.ts` |
-| الأدوار | `rbac.read` | `routes/mehla-admin/rbac.tsx` |
+| المجموعة        | المفاتيح                                                                                                           | مواضع الفرض                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| إعدادات المنصة  | `platform_settings.read`, `platform_settings.manage`                                                               | `admin-ops.functions.ts`, `routes/mehla-admin/settings.tsx`      |
+| مفاتيح التشغيل  | `feature_flags.read`, `feature_flags.manage`                                                                       | `flags.functions.ts`, `routes/mehla-admin/flags.tsx`             |
+| قواعد الإشعارات | `notification_rules.read`, `notification_rules.manage`                                                             | `flags.functions.ts`                                             |
+| التكاملات       | `integrations.read`, `integrations.manage`, `integrations.test`, `integrations.activate`, `integrations.view_logs` | `integrations/integrations.functions.ts`                         |
+| المحتوى         | `content.read`, `content.manage`, `content.publish`, `content.rollback`                                            | `admin-console.functions.ts`, `routes/mehla-admin/content.tsx`   |
+| التصميم         | `design.read`, `design.manage`                                                                                     | `design/theme.functions.ts`                                      |
+| SEO             | `seo.read`, `seo.manage`                                                                                           | `admin-ops.functions.ts`, `routes/mehla-admin/seo.tsx`           |
+| الرسائل         | `sms.read`, `sms.manage`                                                                                           | `sms/sms.functions.ts`                                           |
+| الأمان          | `security.read`, `security.manage`, `security.sessions.manage`, `security.events.export`                           | `admin-security.functions.ts`, `routes/mehla-admin/security.tsx` |
+| المراقبة والنسخ | `monitoring.export`, `backups.read`                                                                                | `admin-observability.*`, `backups.functions.ts`                  |
+| الأدوار         | `rbac.read`                                                                                                        | `routes/mehla-admin/rbac.tsx`                                    |
 
 ### التوافق الخلفي
 
@@ -65,27 +65,27 @@
 كأي دور. لا يُسند القالب لأي موظف تلقائياً، ونسخه يمر بحراسة عدم التصعيد نفسها،
 ويُسجَّل في سجل التدقيق بالفعل `rbac.role_template_applied` مع رمز القالب وصلاحياته.
 
-| # | القالب | الفئة | جوهر الوصول |
-|---|--------|-------|-------------|
-| 1 | مدير المنصة | حوكمة | تشغيل واسع + إدارة الفريق والأدوار، دون حذف نهائي ولا استرداد مالي ولا استعادة نسخ |
-| 2 | مدير العمليات | تشغيل | المراقبة، مفاتيح التشغيل، قواعد الإشعارات، سجل النسخ، إعادة محاولات البريد |
-| 3 | مدير الدعم | تشغيل | مركز الدعم كاملاً: المهل، الفرق، التصنيفات، الدمج، كل المكاتب |
-| 4 | أخصائي دعم | تشغيل | معالجة التذاكر فقط، دون مهل ولا دمج ولا اطلاع شامل |
-| 5 | المدير المالي | تجاري | المركز المالي كاملاً؛ إعادة فتح الفترات تبقى باعتماد منفصل |
-| 6 | محاسب | تجاري | إعداد وتسجيل ومطابقة وتقارير، دون إصدار/إلغاء/استرداد |
-| 7 | مدير المبيعات | تجاري | CRM كاملاً + اعتماد العروض والعقود وتحويلها لفواتير |
-| 8 | مندوب مبيعات | تجاري | متابعة وإعداد وإرسال، دون اعتماد ولا تحويل ولا حذف |
-| 9 | مدير التسويق | تجاري | الحملات والإحالات + محتوى تسويقي وSEO وإشعارات |
-| 10 | محرّر محتوى | تشغيل | تحرير المسوّدات فقط |
-| 11 | ناشر محتوى | تشغيل | النشر والتراجع والتصميم وSEO — مفصول عن التحرير |
-| 12 | مدير الموارد البشرية | حوكمة | ملفات الموظفين ومستنداتهم والأقسام |
-| 13 | المدير القانوني | حوكمة | اعتماد العقود والمقترحات وقوالبها |
-| 14 | مراجع عقود | حوكمة | مراجعة وتعديل المسوّدات فقط |
-| 15 | التشغيل التقني | تشغيل | صحة التكاملات والبريد والرسائل والمراقبة |
-| 16 | مسؤول الأمان | حوكمة | مركز الأمان والجلسات والقيود واعتماد الانتحال والتصدير |
-| 17 | مدقّق | اطلاع | اطلاع وتصدير للتدقيق، بلا أي كتابة |
-| 18 | اطلاع تنفيذي | اطلاع | مؤشرات الأعمال عبر الوحدات |
-| 19 | اطلاع فقط | اطلاع | أدنى وصول قرائي، بلا بيانات أمنية |
+| #   | القالب               | الفئة | جوهر الوصول                                                                        |
+| --- | -------------------- | ----- | ---------------------------------------------------------------------------------- |
+| 1   | مدير المنصة          | حوكمة | تشغيل واسع + إدارة الفريق والأدوار، دون حذف نهائي ولا استرداد مالي ولا استعادة نسخ |
+| 2   | مدير العمليات        | تشغيل | المراقبة، مفاتيح التشغيل، قواعد الإشعارات، سجل النسخ، إعادة محاولات البريد         |
+| 3   | مدير الدعم           | تشغيل | مركز الدعم كاملاً: المهل، الفرق، التصنيفات، الدمج، كل المكاتب                      |
+| 4   | أخصائي دعم           | تشغيل | معالجة التذاكر فقط، دون مهل ولا دمج ولا اطلاع شامل                                 |
+| 5   | المدير المالي        | تجاري | المركز المالي كاملاً؛ إعادة فتح الفترات تبقى باعتماد منفصل                         |
+| 6   | محاسب                | تجاري | إعداد وتسجيل ومطابقة وتقارير، دون إصدار/إلغاء/استرداد                              |
+| 7   | مدير المبيعات        | تجاري | CRM كاملاً + اعتماد العروض والعقود وتحويلها لفواتير                                |
+| 8   | مندوب مبيعات         | تجاري | متابعة وإعداد وإرسال، دون اعتماد ولا تحويل ولا حذف                                 |
+| 9   | مدير التسويق         | تجاري | الحملات والإحالات + محتوى تسويقي وSEO وإشعارات                                     |
+| 10  | محرّر محتوى          | تشغيل | تحرير المسوّدات فقط                                                                |
+| 11  | ناشر محتوى           | تشغيل | النشر والتراجع والتصميم وSEO — مفصول عن التحرير                                    |
+| 12  | مدير الموارد البشرية | حوكمة | ملفات الموظفين ومستنداتهم والأقسام                                                 |
+| 13  | المدير القانوني      | حوكمة | اعتماد العقود والمقترحات وقوالبها                                                  |
+| 14  | مراجع عقود           | حوكمة | مراجعة وتعديل المسوّدات فقط                                                        |
+| 15  | التشغيل التقني       | تشغيل | صحة التكاملات والبريد والرسائل والمراقبة                                           |
+| 16  | مسؤول الأمان         | حوكمة | مركز الأمان والجلسات والقيود واعتماد الانتحال والتصدير                             |
+| 17  | مدقّق                | اطلاع | اطلاع وتصدير للتدقيق، بلا أي كتابة                                                 |
+| 18  | اطلاع تنفيذي         | اطلاع | مؤشرات الأعمال عبر الوحدات                                                         |
+| 19  | اطلاع فقط            | اطلاع | أدنى وصول قرائي، بلا بيانات أمنية                                                  |
 
 ### الفصل المتعمد بين القوالب
 

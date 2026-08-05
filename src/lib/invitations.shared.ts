@@ -33,7 +33,13 @@ export type InvitePreview = {
 };
 
 export type InviteAcceptResult =
-  | { state: "joined"; organizationId: string; orgName: string; role: InviteRole; alreadyMember: boolean }
+  | {
+      state: "joined";
+      organizationId: string;
+      orgName: string;
+      role: InviteRole;
+      alreadyMember: boolean;
+    }
   | { state: "email_mismatch"; maskedEmail: string }
   | { state: Exclude<InvitePreviewState, "valid"> };
 

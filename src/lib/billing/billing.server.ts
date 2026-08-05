@@ -132,7 +132,8 @@ export async function listInvoices(
     );
   }
   if (filters.status && filters.status !== "all") {
-    if (filters.status === "unpaid") query = query.in("status", ["issued", "pending", "partially_paid", "overdue"]);
+    if (filters.status === "unpaid")
+      query = query.in("status", ["issued", "pending", "partially_paid", "overdue"]);
     else query = query.eq("status", filters.status);
   }
   if (filters.organizationId) query = query.eq("organization_id", filters.organizationId);
@@ -164,9 +165,21 @@ export async function getInvoiceDetail(_ctx: BillingCtx, id: string): Promise<In
 
   const [items, payments, refunds, creditNotes, notes] = await Promise.all([
     client.from("platform_invoice_items").select("*").eq("invoice_id", id).order("sort_order"),
-    client.from("platform_payments").select("*").eq("invoice_id", id).order("created_at", { ascending: false }),
-    client.from("platform_refunds").select("*").eq("invoice_id", id).order("created_at", { ascending: false }),
-    client.from("platform_credit_notes").select("*").eq("invoice_id", id).order("issued_at", { ascending: false }),
+    client
+      .from("platform_payments")
+      .select("*")
+      .eq("invoice_id", id)
+      .order("created_at", { ascending: false }),
+    client
+      .from("platform_refunds")
+      .select("*")
+      .eq("invoice_id", id)
+      .order("created_at", { ascending: false }),
+    client
+      .from("platform_credit_notes")
+      .select("*")
+      .eq("invoice_id", id)
+      .order("issued_at", { ascending: false }),
     client
       .from("platform_billing_notes")
       .select("*")
@@ -206,7 +219,15 @@ export async function getInvoiceDetail(_ctx: BillingCtx, id: string): Promise<In
 export async function getInvoiceAudit(
   _ctx: BillingCtx,
   id: string,
-): Promise<{ id: string; action: string; actor_email: string | null; description: string | null; created_at: string }[]> {
+): Promise<
+  {
+    id: string;
+    action: string;
+    actor_email: string | null;
+    description: string | null;
+    created_at: string;
+  }[]
+> {
   const client = await db();
   const { data } = await client
     .from("admin_audit_logs")
@@ -291,7 +312,11 @@ export async function saveDraft(ctx: BillingCtx, input: DraftInput): Promise<str
     entity_type: "invoice",
     entity_id: invoiceId,
     description: input.id ? "تعديل مسودة فاتورة" : "إنشاء مسودة فاتورة",
-    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId, items: input.items.length },
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      items: input.items.length,
+    },
     before,
     after,
   });
@@ -302,7 +327,9 @@ async function safeInvoiceSnapshot(id: string): Promise<BillingRow | null> {
   const client = await db();
   const { data } = await client
     .from("platform_invoices")
-    .select("number, status, subtotal, discount_total, tax_total, total, paid_total, refunded_total, remaining, due_at, issued_at")
+    .select(
+      "number, status, subtotal, discount_total, tax_total, total, paid_total, refunded_total, remaining, due_at, issued_at",
+    )
     .eq("id", id)
     .maybeSingle();
   return (data as BillingRow | null) ?? null;
@@ -314,7 +341,11 @@ export async function issueInvoice(
 ): Promise<{ number: string; emailed: boolean }> {
   const client = await db();
   const before = await safeInvoiceSnapshot(input.id);
-  const { data: invoice } = await client.from("platform_invoices").select("*").eq("id", input.id).maybeSingle();
+  const { data: invoice } = await client
+    .from("platform_invoices")
+    .select("*")
+    .eq("id", input.id)
+    .maybeSingle();
   if (!invoice) throw new Error("الفاتورة غير موجودة.");
   if (invoice.status !== "draft") throw new Error("الفاتورة مُصدرة مسبقاً.");
 
@@ -352,7 +383,10 @@ export async function issueInvoice(
   return { number: invoice.number as string, emailed };
 }
 
-export async function cancelInvoice(ctx: BillingCtx, input: { id: string; reason: string }): Promise<void> {
+export async function cancelInvoice(
+  ctx: BillingCtx,
+  input: { id: string; reason: string },
+): Promise<void> {
   const client = await db();
   const before = await safeInvoiceSnapshot(input.id);
   const { data: invoice } = await client
@@ -391,7 +425,13 @@ export async function cancelInvoice(ctx: BillingCtx, input: { id: string; reason
 
 export async function listPayments(
   _ctx: BillingCtx,
-  filters: { search?: string | null; status?: string | null; method?: string | null; page: number; pageSize: number },
+  filters: {
+    search?: string | null;
+    status?: string | null;
+    method?: string | null;
+    page: number;
+    pageSize: number;
+  },
 ): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
@@ -512,8 +552,22 @@ export async function decidePayment(
   const now = new Date().toISOString();
   const patch =
     input.decision === "approve"
-      ? { status: "paid", paid_at: now, approved_by: ctx.staff.user_id, approved_by_email: ctx.staff.email, approved_at: now, updated_at: now }
-      : { status: "failed", rejection_reason: input.reason ?? "لم يُقبل إثبات التحويل", approved_by: ctx.staff.user_id, approved_by_email: ctx.staff.email, approved_at: now, updated_at: now };
+      ? {
+          status: "paid",
+          paid_at: now,
+          approved_by: ctx.staff.user_id,
+          approved_by_email: ctx.staff.email,
+          approved_at: now,
+          updated_at: now,
+        }
+      : {
+          status: "failed",
+          rejection_reason: input.reason ?? "لم يُقبل إثبات التحويل",
+          approved_by: ctx.staff.user_id,
+          approved_by_email: ctx.staff.email,
+          approved_at: now,
+          updated_at: now,
+        };
 
   const { error } = await client.from("platform_payments").update(patch).eq("id", input.paymentId);
   if (error) fail(error, "تعذّر تحديث حالة الدفعة.");
@@ -541,7 +595,11 @@ export async function decidePayment(
     entity_type: "payment",
     entity_id: input.paymentId,
     description: `${input.decision === "approve" ? "اعتماد" : "رفض"} دفعة بمبلغ ${payment.amount}`,
-    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId, invoiceId: payment.invoice_id },
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      invoiceId: payment.invoice_id,
+    },
     before: { status: payment.status },
     after: patch,
   });
@@ -571,7 +629,11 @@ export async function createRefund(
   input: { paymentId: string; amount: number; reason: string },
 ): Promise<string> {
   const client = await db();
-  const { data: payment } = await client.from("platform_payments").select("*").eq("id", input.paymentId).maybeSingle();
+  const { data: payment } = await client
+    .from("platform_payments")
+    .select("*")
+    .eq("id", input.paymentId)
+    .maybeSingle();
   if (!payment) throw new Error("الدفعة غير موجودة.");
   if (!["paid", "partially_refunded"].includes(payment.status as string))
     throw new Error("لا يمكن استرداد دفعة غير معتمدة.");
@@ -579,7 +641,8 @@ export async function createRefund(
   const amount = round2(input.amount);
   const refundable = round2(Number(payment.amount) - Number(payment.refunded_amount));
   if (amount <= 0) throw new Error("المبلغ يجب أن يكون أكبر من صفر.");
-  if (amount > refundable + 0.001) throw new Error(`المبلغ يتجاوز القابل للاسترداد (${refundable}).`);
+  if (amount > refundable + 0.001)
+    throw new Error(`المبلغ يتجاوز القابل للاسترداد (${refundable}).`);
 
   const { data: created, error } = await client
     .from("platform_refunds")
@@ -616,7 +679,11 @@ export async function decideRefund(
   input: { refundId: string; decision: "approve" | "reject"; reason?: string | null },
 ): Promise<void> {
   const client = await db();
-  const { data: refund } = await client.from("platform_refunds").select("*").eq("id", input.refundId).maybeSingle();
+  const { data: refund } = await client
+    .from("platform_refunds")
+    .select("*")
+    .eq("id", input.refundId)
+    .maybeSingle();
   if (!refund) throw new Error("طلب الاسترداد غير موجود.");
   if (refund.status !== "pending") throw new Error("تم البت في هذا الطلب مسبقاً.");
   const now = new Date().toISOString();
@@ -645,7 +712,11 @@ export async function decideRefund(
     return;
   }
 
-  const { data: payment } = await client.from("platform_payments").select("*").eq("id", refund.payment_id).maybeSingle();
+  const { data: payment } = await client
+    .from("platform_payments")
+    .select("*")
+    .eq("id", refund.payment_id)
+    .maybeSingle();
   if (!payment) throw new Error("الدفعة المرتبطة غير موجودة.");
 
   // تنفيذ الاسترداد لدى المزوّد عند وجود عملية خارجية.
@@ -654,7 +725,11 @@ export async function decideRefund(
     const provider = getProvider(payment.provider as string);
     const creds = await providerCredentials(payment.provider as string);
     const started = Date.now();
-    const result = await provider.refundPayment(payment.provider_payment_id as string, Number(refund.amount), creds);
+    const result = await provider.refundPayment(
+      payment.provider_payment_id as string,
+      Number(refund.amount),
+      creds,
+    );
     providerRefundId = result.providerRefundId;
     await logAttempt({
       paymentId: payment.id as string,
@@ -670,7 +745,11 @@ export async function decideRefund(
     if (result.status === "failed") {
       await client
         .from("platform_refunds")
-        .update({ status: "failed", failure_message: "رفض المزوّد تنفيذ الاسترداد.", updated_at: now })
+        .update({
+          status: "failed",
+          failure_message: "رفض المزوّد تنفيذ الاسترداد.",
+          updated_at: now,
+        })
         .eq("id", input.refundId);
       throw new Error("رفض المزوّد تنفيذ الاسترداد.");
     }
@@ -700,14 +779,20 @@ export async function decideRefund(
     .eq("id", payment.id);
 
   await client.rpc("recalc_invoice", { _invoice_id: refund.invoice_id });
-  await notifyBillingEvent(refund.invoice_id as string, "refund_completed", { amount: Number(refund.amount) });
+  await notifyBillingEvent(refund.invoice_id as string, "refund_completed", {
+    amount: Number(refund.amount),
+  });
 
   await writeAudit(client, ctx.staff, {
     action: "billing.refund.approve",
     entity_type: "refund",
     entity_id: input.refundId,
     description: `اعتماد استرداد بمبلغ ${refund.amount}`,
-    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId, invoiceId: refund.invoice_id },
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      invoiceId: refund.invoice_id,
+    },
     before: { status: "pending" },
     after: { status: "completed", refundedTotal },
   });
@@ -747,7 +832,8 @@ export async function createCreditNote(
     .eq("invoice_id", input.invoiceId)
     .eq("status", "issued");
   const already = (existing ?? []).reduce(
-    (sum: number, row: { amount: number; tax_amount: number }) => sum + Number(row.amount) + Number(row.tax_amount),
+    (sum: number, row: { amount: number; tax_amount: number }) =>
+      sum + Number(row.amount) + Number(row.tax_amount),
     0,
   );
   const amount = round2(input.amount);
@@ -756,7 +842,9 @@ export async function createCreditNote(
   if (round2(already + amount + taxAmount) > round2(Number(invoice.total)) + 0.001)
     throw new Error("مجموع إشعارات الخصم يتجاوز قيمة الفاتورة.");
 
-  const { data: numberRow, error: numberError } = await client.rpc("next_financial_number", { _kind: "credit_note" });
+  const { data: numberRow, error: numberError } = await client.rpc("next_financial_number", {
+    _kind: "credit_note",
+  });
   if (numberError) fail(numberError, "تعذّر توليد رقم إشعار الخصم.");
 
   const { data: created, error } = await client
@@ -787,7 +875,11 @@ export async function createCreditNote(
     entity_type: "invoice",
     entity_id: invoice.id as string,
     description: `إصدار إشعار خصم ${created.number} بمبلغ ${round2(amount + taxAmount)}`,
-    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId, creditNoteId: created.id },
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      creditNoteId: created.id,
+    },
     before: null,
     after: { number: created.number, amount, taxAmount },
   });
@@ -831,7 +923,14 @@ export async function listReconciliations(
 
 export async function addBankEntry(
   ctx: BillingCtx,
-  input: { statementRef: string; bankName?: string | null; amount: number; valueDate: string; payerName?: string | null; notes?: string | null },
+  input: {
+    statementRef: string;
+    bankName?: string | null;
+    amount: number;
+    valueDate: string;
+    payerName?: string | null;
+    notes?: string | null;
+  },
 ): Promise<string> {
   const client = await db();
   const { data: duplicate } = await client
@@ -882,13 +981,20 @@ export async function matchBankEntry(
     entity_type: "bank_entry",
     entity_id: input.entryId,
     description: "مطابقة حركة بنكية بدفعة",
-    metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId, paymentId: input.paymentId },
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      paymentId: input.paymentId,
+    },
     before: { status: "unmatched" },
     after: { status: "matched" },
   });
 }
 
-export async function ignoreBankEntry(ctx: BillingCtx, input: { entryId: string; reason: string }): Promise<void> {
+export async function ignoreBankEntry(
+  ctx: BillingCtx,
+  input: { entryId: string; reason: string },
+): Promise<void> {
   const client = await db();
   const { error } = await client
     .from("platform_bank_reconciliations")
@@ -915,7 +1021,11 @@ export async function listPeriods(_ctx: BillingCtx): Promise<{
 }> {
   const client = await db();
   const [periods, requests] = await Promise.all([
-    client.from("platform_financial_periods").select("*").order("period_start", { ascending: false }).limit(60),
+    client
+      .from("platform_financial_periods")
+      .select("*")
+      .order("period_start", { ascending: false })
+      .limit(60),
     client
       .from("platform_period_reopen_approvals")
       .select("*, platform_financial_periods(period_start, period_end, status)")
@@ -1043,7 +1153,9 @@ async function providerConfig(code: string): Promise<BillingRow> {
 function secretReferenceOf(config: BillingRow): string {
   const settings = (config["settings"] ?? {}) as BillingRow;
   const existing = settings["secret_reference"];
-  return typeof existing === "string" && existing ? existing : `${PROVIDER_SECRET_PREFIX}${config["code"]}`;
+  return typeof existing === "string" && existing
+    ? existing
+    : `${PROVIDER_SECRET_PREFIX}${config["code"]}`;
 }
 
 async function providerCredentials(code: string): Promise<Record<string, string>> {
@@ -1107,7 +1219,8 @@ export async function saveProviderSecrets(
 
   for (const [key, value] of Object.entries(input.secrets)) {
     if (!value.trim()) continue;
-    if (!provider.requiredCredentialKeys.includes(key)) throw new Error("حقل مفتاح غير معروف لهذا المزوّد.");
+    if (!provider.requiredCredentialKeys.includes(key))
+      throw new Error("حقل مفتاح غير معروف لهذا المزوّد.");
     await IntegrationSecretVault.updateSecret(reference, key, value.trim(), ctx.staff.user_id);
   }
 
@@ -1152,7 +1265,11 @@ export async function testProvider(
     const message = "بعض المفاتيح المطلوبة غير محفوظة بعد.";
     await client
       .from("platform_payment_provider_configs")
-      .update({ connection_status: "failed", last_test_error: message, last_tested_at: new Date().toISOString() })
+      .update({
+        connection_status: "failed",
+        last_test_error: message,
+        last_tested_at: new Date().toISOString(),
+      })
       .eq("code", input.code);
     return { ok: false, message };
   }
@@ -1281,7 +1398,11 @@ const DEFAULT_TAX_SETTINGS: TaxSettings = {
 
 export async function getTaxSettings(): Promise<TaxSettings> {
   const client = await db();
-  const { data } = await client.from("platform_settings").select("value").eq("key", TAX_SETTINGS_KEY).maybeSingle();
+  const { data } = await client
+    .from("platform_settings")
+    .select("value")
+    .eq("key", TAX_SETTINGS_KEY)
+    .maybeSingle();
   const value = (data?.value ?? {}) as Partial<TaxSettings>;
   return { ...DEFAULT_TAX_SETTINGS, ...value };
 }
@@ -1289,10 +1410,18 @@ export async function getTaxSettings(): Promise<TaxSettings> {
 export async function saveTaxSettings(ctx: BillingCtx, input: TaxSettings): Promise<void> {
   const client = await db();
   const before = await getTaxSettings();
-  const { error } = await client.from("platform_settings").upsert(
-    { key: TAX_SETTINGS_KEY, value: input as never, is_public: false, updated_by: ctx.staff.user_id, updated_at: new Date().toISOString() },
-    { onConflict: "key" },
-  );
+  const { error } = await client
+    .from("platform_settings")
+    .upsert(
+      {
+        key: TAX_SETTINGS_KEY,
+        value: input as never,
+        is_public: false,
+        updated_by: ctx.staff.user_id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
   if (error) fail(error, "تعذّر حفظ إعدادات الضريبة.");
   await writeAudit(client, ctx.staff, {
     action: "billing.tax_settings.update",
@@ -1307,7 +1436,10 @@ export async function saveTaxSettings(ctx: BillingCtx, input: TaxSettings): Prom
 
 /* ------------------------------------------------------------------ التقارير */
 
-export async function reports(ctx: BillingCtx, input: { from: string; to: string }): Promise<BillingReports> {
+export async function reports(
+  ctx: BillingCtx,
+  input: { from: string; to: string },
+): Promise<BillingReports> {
   const { data, error } = await ctx.sb.rpc("billing_reports", { _from: input.from, _to: input.to });
   if (error) fail(error, "تعذّر توليد التقارير المالية.");
   return data as BillingReports;
@@ -1353,7 +1485,9 @@ export async function notifyBillingEvent(
     const client = await db();
     const { data: invoice } = await client
       .from("platform_invoices")
-      .select("id, number, customer_name, customer_email, total, remaining, currency, due_at, organization_id, status")
+      .select(
+        "id, number, customer_name, customer_email, total, remaining, currency, due_at, organization_id, status",
+      )
       .eq("id", invoiceId)
       .maybeSingle();
     if (!invoice?.customer_email) return false;
@@ -1421,7 +1555,14 @@ export async function runDueReminders(): Promise<{ dueSoon: number; overdue: num
 export async function applyProviderPaymentState(input: {
   provider: string;
   providerPaymentId: string;
-  status: "pending" | "processing" | "paid" | "failed" | "cancelled" | "refunded" | "partially_refunded";
+  status:
+    | "pending"
+    | "processing"
+    | "paid"
+    | "failed"
+    | "cancelled"
+    | "refunded"
+    | "partially_refunded";
   amount: number | null;
   correlationId: string;
 }): Promise<{ applied: boolean; paymentId: string | null; invoiceId: string | null }> {
@@ -1435,12 +1576,20 @@ export async function applyProviderPaymentState(input: {
   if (!payment) return { applied: false, paymentId: null, invoiceId: null };
 
   if (payment.status === input.status) {
-    return { applied: false, paymentId: payment.id as string, invoiceId: payment.invoice_id as string };
+    return {
+      applied: false,
+      paymentId: payment.id as string,
+      invoiceId: payment.invoice_id as string,
+    };
   }
   // الحالات النهائية لا تُخفَّض بحدث لاحق مكرر أو متأخر.
   const terminal = ["refunded", "partially_refunded"];
   if (terminal.includes(payment.status as string) && input.status === "paid") {
-    return { applied: false, paymentId: payment.id as string, invoiceId: payment.invoice_id as string };
+    return {
+      applied: false,
+      paymentId: payment.id as string,
+      invoiceId: payment.invoice_id as string,
+    };
   }
 
   const now = new Date().toISOString();
@@ -1454,10 +1603,20 @@ export async function applyProviderPaymentState(input: {
     .eq("id", payment.id);
   await client.rpc("recalc_invoice", { _invoice_id: payment.invoice_id });
 
-  if (input.status === "paid") await notifyBillingEvent(payment.invoice_id as string, "payment_approved", { amount: Number(payment.amount) });
-  if (input.status === "failed") await notifyBillingEvent(payment.invoice_id as string, "payment_failed", { amount: Number(payment.amount) });
+  if (input.status === "paid")
+    await notifyBillingEvent(payment.invoice_id as string, "payment_approved", {
+      amount: Number(payment.amount),
+    });
+  if (input.status === "failed")
+    await notifyBillingEvent(payment.invoice_id as string, "payment_failed", {
+      amount: Number(payment.amount),
+    });
 
-  return { applied: true, paymentId: payment.id as string, invoiceId: payment.invoice_id as string };
+  return {
+    applied: true,
+    paymentId: payment.id as string,
+    invoiceId: payment.invoice_id as string,
+  };
 }
 /* ------------------------------------------- إعدادات المزوّد المتقدمة والإحصاءات */
 
@@ -1479,9 +1638,13 @@ export async function updateProviderConfig(
   }
 
   const patch: BillingRow = { settings: settings as never, updated_at: new Date().toISOString() };
-  if (typeof input.sortOrder === "number") patch["sort_order"] = Math.max(0, Math.min(input.sortOrder, 99));
+  if (typeof input.sortOrder === "number")
+    patch["sort_order"] = Math.max(0, Math.min(input.sortOrder, 99));
 
-  const { error } = await client.from("platform_payment_provider_configs").update(patch).eq("code", input.code);
+  const { error } = await client
+    .from("platform_payment_provider_configs")
+    .update(patch)
+    .eq("code", input.code);
   if (error) fail(error, "تعذّر تحديث إعدادات المزوّد.");
 
   await writeAudit(client, ctx.staff, {
@@ -1490,8 +1653,14 @@ export async function updateProviderConfig(
     entity_id: config["id"] as string,
     description: `تحديث إعدادات مزوّد الدفع ${input.code}`,
     metadata: { correlationId: ctx.correlationId, requestId: ctx.requestId },
-    before: { sort_order: config["sort_order"], mode: ((config["settings"] ?? {}) as BillingRow)["mode"] ?? null },
-    after: { sort_order: patch["sort_order"] ?? config["sort_order"], mode: settings["mode"] ?? null },
+    before: {
+      sort_order: config["sort_order"],
+      mode: ((config["settings"] ?? {}) as BillingRow)["mode"] ?? null,
+    },
+    after: {
+      sort_order: patch["sort_order"] ?? config["sort_order"],
+      mode: settings["mode"] ?? null,
+    },
   });
 }
 
@@ -1574,7 +1743,14 @@ export async function listProviderStats(_ctx: BillingCtx): Promise<ProviderStat[
 export async function previewSequence(
   _ctx: BillingCtx,
   input: { kind: string; periodKey: string },
-): Promise<{ kind: string; periodKey: string; prefix: string; padding: number; nextValue: number; preview: string }> {
+): Promise<{
+  kind: string;
+  periodKey: string;
+  prefix: string;
+  padding: number;
+  nextValue: number;
+  preview: string;
+}> {
   const client = await db();
   const { data } = await client
     .from("platform_number_sequences")
@@ -1583,7 +1759,11 @@ export async function previewSequence(
     .eq("period_key", input.periodKey)
     .maybeSingle();
 
-  const defaults: Record<string, string> = { invoice: "MEH-INV", quote: "MEH-QT", credit_note: "MEH-CN" };
+  const defaults: Record<string, string> = {
+    invoice: "MEH-INV",
+    quote: "MEH-QT",
+    credit_note: "MEH-CN",
+  };
   const prefix = (data?.prefix as string | undefined) ?? defaults[input.kind] ?? "MEH";
   const padding = Number(data?.padding ?? 5);
   const nextValue = Number(data?.next_value ?? 1);
@@ -1692,15 +1872,21 @@ export async function getAccountStatement(
       .from("platform_refunds")
       .select("amount")
       .eq("status", "completed")
-      .in("invoice_id", invoiceIds.length > 0 ? invoiceIds : ["00000000-0000-0000-0000-000000000000"])
+      .in(
+        "invoice_id",
+        invoiceIds.length > 0 ? invoiceIds : ["00000000-0000-0000-0000-000000000000"],
+      )
       .gte("created_at", input.from)
       .lte("created_at", input.to),
   ]);
 
   const invoices = (invoicesRes.data ?? []) as BillingRow[];
-  const payments = (paymentsRes.data ?? []) as Array<BillingRow & { platform_invoices?: { number?: string } }>;
+  const payments = (paymentsRes.data ?? []) as Array<
+    BillingRow & { platform_invoices?: { number?: string } }
+  >;
 
-  const sum = (rows: BillingRow[], key: string) => round2(rows.reduce((total, row) => total + Number(row[key] ?? 0), 0));
+  const sum = (rows: BillingRow[], key: string) =>
+    round2(rows.reduce((total, row) => total + Number(row[key] ?? 0), 0));
 
   return {
     accountName: org.name as string,

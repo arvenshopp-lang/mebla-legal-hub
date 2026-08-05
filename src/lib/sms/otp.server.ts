@@ -68,7 +68,11 @@ export function newSmsTraceRef(): string {
 }
 
 export async function loadSmsSettings(): Promise<SmsSettingsRow> {
-  const { data, error } = await supabaseAdmin.from("sms_settings").select("*").eq("id", true).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from("sms_settings")
+    .select("*")
+    .eq("id", true)
+    .maybeSingle();
   if (error || !data) throw new Error("تعذّر قراءة إعدادات خدمة الرسائل.");
   return data as unknown as SmsSettingsRow;
 }
@@ -83,7 +87,10 @@ export function toPublicConfig(row: SmsSettingsRow): SmsPublicConfig {
     signupMode: mode,
     showPhoneField: mode === "disabled" ? !row.hide_phone_when_disabled : row.show_phone_field,
     requirePhone:
-      row.require_phone || mode === "required_verified" || mode === "required_unverified_allowed" || mode === "outage_bypass",
+      row.require_phone ||
+      mode === "required_verified" ||
+      mode === "required_unverified_allowed" ||
+      mode === "outage_bypass",
     requireVerification,
     allowSignupDuringOutage: row.allow_signup_during_outage,
     showOutageNotice: row.show_outage_notice && outage,
@@ -108,7 +115,8 @@ export function providerConfig(row: SmsSettingsRow): SmsProviderConfig {
 }
 
 async function hmacHex(value: string): Promise<string> {
-  const secret = process.env["MEHLA_BLIND_INDEX_KEY_V1"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
+  const secret =
+    process.env["MEHLA_BLIND_INDEX_KEY_V1"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -237,7 +245,11 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
       .select("trace_ref, expires_at, delivery_status")
       .eq("idempotency_key", input.idempotencyKey)
       .maybeSingle();
-    const existing = duplicate as { trace_ref: string | null; expires_at: string; delivery_status: string } | null;
+    const existing = duplicate as {
+      trace_ref: string | null;
+      expires_at: string;
+      delivery_status: string;
+    } | null;
     if (existing) {
       return {
         traceRef: existing.trace_ref ?? traceRef,
@@ -280,10 +292,7 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
     const waited = (Date.now() - new Date(last.created_at).getTime()) / 1000;
     if (waited < settings.resend_wait_seconds) {
       const remaining = Math.ceil(settings.resend_wait_seconds - waited);
-      throw new SmsFlowError(
-        "RESEND_TOO_SOON",
-        `يمكنك طلب رمز جديد بعد ${remaining} ثانية.`,
-      );
+      throw new SmsFlowError("RESEND_TOO_SOON", `يمكنك طلب رمز جديد بعد ${remaining} ثانية.`);
     }
   }
 
@@ -308,7 +317,8 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
   }
 
   const remoteVerification = target.mode === "integration" && target.remoteVerification;
-  const providerName = target.mode === "integration" ? target.providerKey : settings.active_provider;
+  const providerName =
+    target.mode === "integration" ? target.providerKey : settings.active_provider;
   const code = randomCode(settings.code_length);
   const codeHash = await hmacHex(hashInput(input.purpose, input.phone, code));
   const expiresAt = new Date(Date.now() + settings.code_ttl_minutes * 60_000).toISOString();
@@ -334,7 +344,11 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
       expires_at: expiresAt,
       provider: providerName,
       integration_id: target.mode === "integration" ? target.integrationId : null,
-      dispatch_source: settings.test_mode ? "test_mode" : target.mode === "integration" ? "integration" : "legacy",
+      dispatch_source: settings.test_mode
+        ? "test_mode"
+        : target.mode === "integration"
+          ? "integration"
+          : "legacy",
       idempotency_key: input.idempotencyKey ?? null,
       remote_verification: remoteVerification,
       delivery_status: "queued",
@@ -349,7 +363,11 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
 
   if (reservationError || !reservation) {
     if (String((reservationError as { code?: string } | null)?.code) === "23505") {
-      throw new SmsFlowError("SEND_IN_PROGRESS", "طلب إرسال رمز قيد التنفيذ لهذا الرقم. انتظر قليلاً.", traceRef);
+      throw new SmsFlowError(
+        "SEND_IN_PROGRESS",
+        "طلب إرسال رمز قيد التنفيذ لهذا الرقم. انتظر قليلاً.",
+        traceRef,
+      );
     }
     throw new SmsFlowError("SEND_FAILED", SMS_MESSAGES.sendFailed, traceRef);
   }
@@ -394,9 +412,7 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
     } catch (error) {
       const anyError = error as { code?: string; message?: string };
       const failureCode =
-        error instanceof SmsProviderError
-          ? error.code
-          : (anyError?.code ?? "SEND_FAILED");
+        error instanceof SmsProviderError ? error.code : (anyError?.code ?? "SEND_FAILED");
       const reason = error instanceof Error ? error.message.slice(0, 400) : "unknown";
       // الطلب الفاشل لا يترك رمزاً قابلاً للاستخدام، ولا يُحوَّل صامتاً لمزوّد آخر.
       await supabaseAdmin
@@ -452,7 +468,9 @@ export type VerifyOtpInput = {
 };
 
 /** تحقق من الرمز واستهلاكه مرة واحدة. يرمي خطأ عربياً واضحاً عند الفشل. */
-export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: string; userId: string | null }> {
+export async function verifyOtp(
+  input: VerifyOtpInput,
+): Promise<{ traceRef: string; userId: string | null }> {
   const settings = await loadSmsSettings();
   const { data } = await supabaseAdmin
     .from("otp_verifications")
@@ -466,21 +484,19 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
     .limit(1)
     .maybeSingle();
 
-  const row = data as
-    | {
-        id: string;
-        code_hash: string;
-        attempts: number;
-        max_attempts: number;
-        expires_at: string;
-        trace_ref: string | null;
-        user_id: string | null;
-        provider: string | null;
-        integration_id: string | null;
-        provider_reference: string | null;
-        remote_verification: boolean | null;
-      }
-    | null;
+  const row = data as {
+    id: string;
+    code_hash: string;
+    attempts: number;
+    max_attempts: number;
+    expires_at: string;
+    trace_ref: string | null;
+    user_id: string | null;
+    provider: string | null;
+    integration_id: string | null;
+    provider_reference: string | null;
+    remote_verification: boolean | null;
+  } | null;
 
   const traceRef = row?.trace_ref ?? newSmsTraceRef();
   const providerName = row?.provider ?? settings.active_provider;
@@ -519,7 +535,9 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
     await fail("invalid_code", "TOO_MANY_ATTEMPTS", SMS_MESSAGES.tooManyAttempts);
   }
 
-  const submitted = await hmacHex(hashInput(input.purpose, input.phone, input.code.replace(/\D/g, "")));
+  const submitted = await hmacHex(
+    hashInput(input.purpose, input.phone, input.code.replace(/\D/g, "")),
+  );
   // التحقق يجري عند المزوّد نفسه الذي أرسل الرمز عند دعمه ذلك، وإلا محلياً.
   let verified: boolean;
   if (row!.remote_verification && row!.integration_id) {
@@ -581,7 +599,9 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<{ traceRef: stri
 }
 
 /** رسالة اختبار من لوحة الإدارة — تتحقق من صحة المفاتيح والمُرسل فعلياً. */
-export async function sendTestMessage(phone: string): Promise<{ traceRef: string; reference: string | null }> {
+export async function sendTestMessage(
+  phone: string,
+): Promise<{ traceRef: string; reference: string | null }> {
   const settings = await loadSmsSettings();
   const traceRef = newSmsTraceRef();
   // الاختبار يمر بنفس مسار الإرسال الحقيقي: التكامل المعتمد أولاً.
@@ -603,7 +623,8 @@ export async function sendTestMessage(phone: string): Promise<{ traceRef: string
       referenceId: outcome.reference,
       traceRef: outcome.traceId,
     });
-    if (!outcome.ok) throw new SmsFlowError(outcome.code ?? "SEND_FAILED", outcome.message, outcome.traceId);
+    if (!outcome.ok)
+      throw new SmsFlowError(outcome.code ?? "SEND_FAILED", outcome.message, outcome.traceId);
     await recordHealth("operational", { reason: null, traceRef: outcome.traceId });
     return { traceRef: outcome.traceId, reference: outcome.reference };
   }
@@ -657,28 +678,31 @@ export type OtpChallengeState = {
  * حالة التحقق المحفوظة على الخادم — تُستخدم لإكمال نفس الخطوة عند رجوع المستخدم
  * من تطبيق آخر. لا تكشف الرمز ولا بصمته، فقط المؤقت والمحاولات المتبقية.
  */
-export async function peekOtpChallenge(phone: string, purpose: OtpPurpose): Promise<OtpChallengeState> {
+export async function peekOtpChallenge(
+  phone: string,
+  purpose: OtpPurpose,
+): Promise<OtpChallengeState> {
   const settings = await loadSmsSettings();
   const { data } = await supabaseAdmin
     .from("otp_verifications")
-    .select("expires_at, attempts, max_attempts, created_at, trace_ref, consumed_at, delivery_status")
+    .select(
+      "expires_at, attempts, max_attempts, created_at, trace_ref, consumed_at, delivery_status",
+    )
     .eq("phone_e164", phone)
     .eq("purpose", purpose)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const row = data as
-    | {
-        expires_at: string;
-        attempts: number;
-        max_attempts: number;
-        created_at: string;
-        trace_ref: string | null;
-        consumed_at: string | null;
-        delivery_status: string;
-      }
-    | null;
+  const row = data as {
+    expires_at: string;
+    attempts: number;
+    max_attempts: number;
+    created_at: string;
+    trace_ref: string | null;
+    consumed_at: string | null;
+    delivery_status: string;
+  } | null;
 
   if (!row) {
     return {

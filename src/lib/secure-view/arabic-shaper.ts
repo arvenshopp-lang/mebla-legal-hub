@@ -107,7 +107,9 @@ function isRtlChar(code: number): boolean {
  * بين المبلغ ورمز العملة أو بين التاريخ والوقت.
  */
 const NEUTRAL_JOINERS = new Set<number>(
-  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "=", " "].map((ch) => ch.codePointAt(0)!),
+  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "=", " "].map(
+    (ch) => ch.codePointAt(0)!,
+  ),
 );
 
 const MIRRORED: Record<number, number> = {
@@ -139,9 +141,11 @@ function toVisualOrder(shaped: number[]): number[] {
     if (isRtlChar(code) || !NEUTRAL_JOINERS.has(code)) continue;
     // محايد قابل للإلحاق: نبحث عن محرف لاتيني قوي على الجانبين مع تجاوز المحايدات.
     let before = i - 1;
-    while (before >= 0 && !isLtr(shaped[before]!) && NEUTRAL_JOINERS.has(shaped[before]!)) before -= 1;
+    while (before >= 0 && !isLtr(shaped[before]!) && NEUTRAL_JOINERS.has(shaped[before]!))
+      before -= 1;
     let after = i + 1;
-    while (after < shaped.length && !isLtr(shaped[after]!) && NEUTRAL_JOINERS.has(shaped[after]!)) after += 1;
+    while (after < shaped.length && !isLtr(shaped[after]!) && NEUTRAL_JOINERS.has(shaped[after]!))
+      after += 1;
     if (before >= 0 && after < shaped.length && isLtr(shaped[before]!) && isLtr(shaped[after]!)) {
       for (let k = before + 1; k < after; k += 1) dirs[k] = "ltr";
     }

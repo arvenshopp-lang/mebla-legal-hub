@@ -66,26 +66,51 @@ export function DealsPanel() {
   const debounced = useDebounced(search);
 
   const filters = useMemo(
-    () => ({ search: debounced, status, stageId, page, pageSize: PAGE_SIZE, ownerStaffId: "", companyId: "" }),
+    () => ({
+      search: debounced,
+      status,
+      stageId,
+      page,
+      pageSize: PAGE_SIZE,
+      ownerStaffId: "",
+      companyId: "",
+    }),
     [debounced, status, stageId, page],
   );
-  const query = useQuery({ queryKey: ["crm-deals", filters], queryFn: () => listFn({ data: filters }) });
-  const stagesQuery = useQuery({ queryKey: ["crm-stages"], queryFn: () => stagesFn({ data: undefined }) });
-  const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
+  const query = useQuery({
+    queryKey: ["crm-deals", filters],
+    queryFn: () => listFn({ data: filters }),
+  });
+  const stagesQuery = useQuery({
+    queryKey: ["crm-stages"],
+    queryFn: () => stagesFn({ data: undefined }),
+  });
+  const staffQuery = useQuery({
+    queryKey: ["crm-staff"],
+    queryFn: () => staffFn({ data: undefined }),
+  });
   const companiesQuery = useQuery({
     queryKey: ["crm-company-options"],
-    queryFn: () => companiesFn({ data: { search: "", page: 1, pageSize: 200, status: "", ownerStaffId: "" } }),
+    queryFn: () =>
+      companiesFn({ data: { search: "", page: 1, pageSize: 200, status: "", ownerStaffId: "" } }),
   });
   const contactsQuery = useQuery({
     queryKey: ["crm-contact-options"],
-    queryFn: () => contactsFn({ data: { search: "", page: 1, pageSize: 200, companyId: "", ownerStaffId: "" } }),
+    queryFn: () =>
+      contactsFn({ data: { search: "", page: 1, pageSize: 200, companyId: "", ownerStaffId: "" } }),
   });
 
   const stages = stagesQuery.data?.stages ?? [];
   const activeStages = stages.filter((stage) => stage.is_active);
   const staffOptions = staffQuery.data?.staff ?? [];
-  const companyOptions = (companiesQuery.data?.rows ?? []).map((row) => ({ id: row.id, name: row.name }));
-  const contactOptions = (contactsQuery.data?.rows ?? []).map((row) => ({ id: row.id, full_name: row.full_name }));
+  const companyOptions = (companiesQuery.data?.rows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+  }));
+  const contactOptions = (contactsQuery.data?.rows ?? []).map((row) => ({
+    id: row.id,
+    full_name: row.full_name,
+  }));
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["crm-deals"] });
@@ -119,7 +144,9 @@ export function DealsPanel() {
         searching={query.isFetching}
         canAdd={can("crm.create") && activeStages.length > 0}
         addLabel="صفقة"
-        onAdd={() => setDialog({ kind: "form", initial: emptyDealDraft(activeStages[0]?.id ?? "") })}
+        onAdd={() =>
+          setDialog({ kind: "form", initial: emptyDealDraft(activeStages[0]?.id ?? "") })
+        }
         filters={
           <>
             <label className="sr-only" htmlFor="crm-deal-status">
@@ -160,7 +187,11 @@ export function DealsPanel() {
               ))}
             </select>
             {can("crm.export") && (
-              <Btn variant="outline" loading={exporting === "deals"} onClick={() => void download("deals")}>
+              <Btn
+                variant="outline"
+                loading={exporting === "deals"}
+                onClick={() => void download("deals")}
+              >
                 <Download className="h-4 w-4" aria-hidden /> تصدير
               </Btn>
             )}
@@ -224,22 +255,41 @@ export function DealsPanel() {
                             <IconBtn
                               aria-label="تعديل"
                               title="تعديل"
-                              onClick={() => setDialog({ kind: "form", initial: dealDraftFromRow(row), editId: row.id })}
+                              onClick={() =>
+                                setDialog({
+                                  kind: "form",
+                                  initial: dealDraftFromRow(row),
+                                  editId: row.id,
+                                })
+                              }
                             >
                               <Pencil className="h-4 w-4" aria-hidden />
                             </IconBtn>
-                            <IconBtn aria-label="تحريك المرحلة" title="تحريك المرحلة" onClick={() => setDialog({ kind: "stage", row })}>
+                            <IconBtn
+                              aria-label="تحريك المرحلة"
+                              title="تحريك المرحلة"
+                              onClick={() => setDialog({ kind: "stage", row })}
+                            >
                               <MoveRight className="h-4 w-4" aria-hidden />
                             </IconBtn>
                           </>
                         )}
                         {can("crm.assign") && (
-                          <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
+                          <IconBtn
+                            aria-label="إسناد لموظف"
+                            title="إسناد لموظف"
+                            onClick={() => setDialog({ kind: "assign", row })}
+                          >
                             <UserCheck className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
@@ -250,7 +300,12 @@ export function DealsPanel() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 

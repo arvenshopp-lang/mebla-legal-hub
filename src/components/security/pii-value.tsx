@@ -14,7 +14,11 @@ import { PII_REVEAL_LIMITS } from "@/lib/security/security-policy";
 
 type Entity = "client" | "case_party";
 
-export function useMaskedPii(organizationId: string | null | undefined, entity: Entity, entityId?: string | null) {
+export function useMaskedPii(
+  organizationId: string | null | undefined,
+  entity: Entity,
+  entityId?: string | null,
+) {
   const fetchMasked = useServerFn(getMaskedPii);
   return useQuery({
     queryKey: ["pii-mask", entity, entityId, organizationId],
@@ -149,8 +153,8 @@ export function PiiReveal({
           </label>
           <p className="flex items-start gap-2 rounded-[var(--radius-m)] bg-surface-muted/60 p-3 text-[12px] text-muted-foreground">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-            تُخفى القيمة تلقائياً بعد {PII_REVEAL_LIMITS.autoHideSeconds} ثانية، ولا تُحفظ في المتصفح، وعدد
-            عمليات الكشف محدود لكل مستخدم.
+            تُخفى القيمة تلقائياً بعد {PII_REVEAL_LIMITS.autoHideSeconds} ثانية، ولا تُحفظ في
+            المتصفح، وعدد عمليات الكشف محدود لكل مستخدم.
           </p>
           <div className="flex justify-end gap-2">
             <button
@@ -200,7 +204,10 @@ export function PiiSecureInput({
   const fieldId = `pii-${label.replace(/\s+/g, "-")}`;
   return (
     <div className="grid gap-1.5">
-      <label htmlFor={fieldId} className="flex w-fit items-center gap-1.5 text-sm font-medium text-foreground">
+      <label
+        htmlFor={fieldId}
+        className="flex w-fit items-center gap-1.5 text-sm font-medium text-foreground"
+      >
         {label}
         <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden />
       </label>
@@ -216,7 +223,11 @@ export function PiiSecureInput({
             dir="ltr"
           />
           {mask !== "—" && (
-            <button type="button" onClick={onCancelEdit} className="w-fit text-xs text-text-muted underline">
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="w-fit text-xs text-text-muted underline"
+            >
               إلغاء التعديل والإبقاء على القيمة المحفوظة
             </button>
           )}
@@ -227,7 +238,11 @@ export function PiiSecureInput({
             <Lock className="h-3.5 w-3.5 text-text-muted" aria-hidden />
             {mask}
           </span>
-          <button type="button" onClick={onStartEdit} className="text-xs font-medium text-primary underline">
+          <button
+            type="button"
+            onClick={onStartEdit}
+            className="text-xs font-medium text-primary underline"
+          >
             {mask === "—" ? "إضافة" : "تعديل"}
           </button>
         </div>

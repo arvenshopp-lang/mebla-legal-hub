@@ -19,7 +19,8 @@ export const Route = createFileRoute("/mehla-admin/marketing")({
       { title: "مركز التسويق · إدارة مِهلة" },
       {
         name: "description",
-        content: "متابعة أداء الحملات التسويقية وأحداث التحويل وبرامج الإحالة ومزوّدي القياس في منصة مِهلة.",
+        content:
+          "متابعة أداء الحملات التسويقية وأحداث التحويل وبرامج الإحالة ومزوّدي القياس في منصة مِهلة.",
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -52,7 +53,17 @@ function MarketingPage() {
     const rows = summaryQuery.data?.summary ?? [];
     type SummaryRow = (typeof rows)[number];
     return rows.reduce(
-      (acc: { budget: number; spend: number; leads: number; deals: number; wonAmount: number; conversionEvents: number }, r: SummaryRow) => {
+      (
+        acc: {
+          budget: number;
+          spend: number;
+          leads: number;
+          deals: number;
+          wonAmount: number;
+          conversionEvents: number;
+        },
+        r: SummaryRow,
+      ) => {
         acc.budget += r.budget_amount;
         acc.spend += r.spend_amount;
         acc.leads += r.leads_count;
@@ -114,7 +125,9 @@ function MarketingPage() {
               className={cn(
                 "rounded-[var(--radius-m)] px-3.5 py-2 text-[13px] font-medium transition",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                tab === t.id ? "bg-primary text-primary-foreground" : "bg-surface text-foreground hover:bg-surface-muted",
+                tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface text-foreground hover:bg-surface-muted",
               )}
             >
               {t.label}

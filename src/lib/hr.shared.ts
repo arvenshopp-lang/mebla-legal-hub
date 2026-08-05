@@ -10,7 +10,13 @@ export const HR_EMPLOYMENT_STATUS = [
 ] as const;
 export type HrEmploymentStatus = (typeof HR_EMPLOYMENT_STATUS)[number];
 
-export const HR_EMPLOYMENT_TYPE = ["full_time", "part_time", "contract", "intern", "vendor"] as const;
+export const HR_EMPLOYMENT_TYPE = [
+  "full_time",
+  "part_time",
+  "contract",
+  "intern",
+  "vendor",
+] as const;
 export type HrEmploymentType = (typeof HR_EMPLOYMENT_TYPE)[number];
 
 export const HR_EMPLOYMENT_STATUS_LABELS: Record<HrEmploymentStatus, string> = {

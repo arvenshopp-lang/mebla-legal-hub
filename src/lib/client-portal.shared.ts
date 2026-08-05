@@ -2,8 +2,20 @@ export const MAX_UPLOAD_SIZE = 20 * 1024 * 1024; // 20MB
 export const MAX_FILES_PER_REQUEST = 15;
 
 export const ALLOWED_EXTENSIONS = [
-  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-  "jpg", "jpeg", "png", "webp", "heic", "txt", "csv",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "heic",
+  "txt",
+  "csv",
 ] as const;
 
 export const ALLOWED_MIME_PREFIXES = [

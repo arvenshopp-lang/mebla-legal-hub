@@ -2,7 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plug, Activity, Trash2, Pencil, Send, Power, CheckCircle2, ScrollText } from "lucide-react";
+import {
+  Plug,
+  Activity,
+  Trash2,
+  Pencil,
+  Send,
+  Power,
+  CheckCircle2,
+  ScrollText,
+} from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { AgenticMailPanel } from "@/components/admin/mail/agentic-panel";
 import { Badge, Btn, LoadingBlock, Modal, inputCls } from "@/lib/list-utils";
@@ -39,10 +48,14 @@ export const Route = createFileRoute("/mehla-admin/integrations")({
       { title: "مركز التكاملات | إدارة مِهلة" },
       {
         name: "description",
-        content: "ربط مزوّدي خدمة التحقق عبر الرسائل وإدارة الأسرار وفحوصات الاتصال داخل منصة مِهلة.",
+        content:
+          "ربط مزوّدي خدمة التحقق عبر الرسائل وإدارة الأسرار وفحوصات الاتصال داخل منصة مِهلة.",
       },
       { property: "og:title", content: "مركز التكاملات | إدارة مِهلة" },
-      { property: "og:description", content: "إدارة مزوّدي التحقق وفحص الاتصال الحقيقي وسجل الصحة." },
+      {
+        property: "og:description",
+        content: "إدارة مزوّدي التحقق وفحص الاتصال الحقيقي وسجل الصحة.",
+      },
     ],
   }),
 });
@@ -55,7 +68,11 @@ const BRAND_TONES: Record<string, string> = {
 };
 
 function ProviderLogo({ providerKey, name }: { providerKey: string; name: string }) {
-  const initials = name.replace(/[^A-Za-z\u0621-\u064A]/g, "").slice(0, 2).toUpperCase() || "IN";
+  const initials =
+    name
+      .replace(/[^A-Za-z\u0621-\u064A]/g, "")
+      .slice(0, 2)
+      .toUpperCase() || "IN";
   return (
     <span
       aria-hidden
@@ -198,7 +215,8 @@ function IntegrationsHubPage() {
   });
 
   const toggle = useMutation({
-    mutationFn: (input: { id: string; enabled: boolean }) => setIntegrationEnabledState({ data: input }),
+    mutationFn: (input: { id: string; enabled: boolean }) =>
+      setIntegrationEnabledState({ data: input }),
     onSuccess: () => {
       toast.success("تم تحديث حالة التشغيل.");
       invalidate();
@@ -225,7 +243,8 @@ function IntegrationsHubPage() {
   });
 
   const sendTest = useMutation({
-    mutationFn: (input: { id: string; phone: string }) => sendIntegrationTestMessage({ data: input }),
+    mutationFn: (input: { id: string; phone: string }) =>
+      sendIntegrationTestMessage({ data: input }),
     onSuccess: (result) => {
       if (result.ok) toast.success(`${result.message} — مرجع ${result.traceId}`);
       else toast.error(`${result.message} — مرجع ${result.traceId}`);
@@ -255,12 +274,15 @@ function IntegrationsHubPage() {
               <div>
                 <h2 className="text-h5">مزوّدو خدمة التحقق عبر الرسائل</h2>
                 <p className="text-body-sm text-muted-foreground">
-                  حالة «متصل» لا تُمنح إلا بعد فحص اتصال حقيقي من الخادم. الأسرار مشفّرة ولا تعود للمتصفح.
+                  حالة «متصل» لا تُمنح إلا بعد فحص اتصال حقيقي من الخادم. الأسرار مشفّرة ولا تعود
+                  للمتصفح.
                 </p>
               </div>
             </div>
             <Badge tone={activeIntegration ? "green" : "muted"}>
-              {activeIntegration ? `المزوّد الفعّال: ${activeIntegration.displayName}` : "لا يوجد مزوّد فعّال"}
+              {activeIntegration
+                ? `المزوّد الفعّال: ${activeIntegration.displayName}`
+                : "لا يوجد مزوّد فعّال"}
             </Badge>
           </div>
           {hub.data && !hub.data.vaultReady && (
@@ -278,7 +300,10 @@ function IntegrationsHubPage() {
           <>
             <section className="grid gap-4 lg:grid-cols-2">
               {integrations.map((item) => (
-                <article key={item.id} className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
+                <article
+                  key={item.id}
+                  className="rounded-[var(--radius-l)] border border-border bg-surface p-5"
+                >
                   <div className="flex items-start gap-3">
                     <ProviderLogo providerKey={item.providerKey} name={item.displayName} />
                     <div className="min-w-0 flex-1">
@@ -288,18 +313,33 @@ function IntegrationsHubPage() {
                         {item.isActive && <Badge tone="green">فعّال</Badge>}
                         <Badge tone="muted">{ENVIRONMENT_LABELS[item.environment]}</Badge>
                       </div>
-                      <p className="mt-1 truncate text-body-sm text-muted-foreground">{item.baseUrl}</p>
+                      <p className="mt-1 truncate text-body-sm text-muted-foreground">
+                        {item.baseUrl}
+                      </p>
                     </div>
                   </div>
 
                   <div className="mt-4 space-y-1.5 border-t border-border pt-4">
-                    <Row label="آخر نجاح" value={item.lastSuccessAt ? fmtDateTime(item.lastSuccessAt) : "—"} />
-                    <Row label="آخر فشل" value={item.lastFailureAt ? fmtDateTime(item.lastFailureAt) : "—"} />
-                    <Row label="زمن الاستجابة" value={item.latencyMs != null ? `${item.latencyMs} م.ث` : "—"} />
+                    <Row
+                      label="آخر نجاح"
+                      value={item.lastSuccessAt ? fmtDateTime(item.lastSuccessAt) : "—"}
+                    />
+                    <Row
+                      label="آخر فشل"
+                      value={item.lastFailureAt ? fmtDateTime(item.lastFailureAt) : "—"}
+                    />
+                    <Row
+                      label="زمن الاستجابة"
+                      value={item.latencyMs != null ? `${item.latencyMs} م.ث` : "—"}
+                    />
                     <Row label="نوع المصادقة" value={AUTH_TYPE_LABELS[item.authType]} />
                     <Row
                       label="الأسرار المخزّنة"
-                      value={item.secretHints.length ? item.secretHints.map((h) => `${h.label}: ${h.hint}`).join(" · ") : "—"}
+                      value={
+                        item.secretHints.length
+                          ? item.secretHints.map((h) => `${h.label}: ${h.hint}`).join(" · ")
+                          : "—"
+                      }
                     />
                     {item.lastErrorCode && (
                       <p className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2 text-body-sm text-danger">
@@ -310,7 +350,12 @@ function IntegrationsHubPage() {
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Btn size="sm" variant="secondary" onClick={() => test.mutate(item.id)} loading={test.isPending}>
+                    <Btn
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => test.mutate(item.id)}
+                      loading={test.isPending}
+                    >
                       <Activity className="h-4 w-4" aria-hidden /> اختبار الاتصال
                     </Btn>
                     <Btn size="sm" variant="secondary" onClick={() => setTestFor(item)}>
@@ -346,7 +391,8 @@ function IntegrationsHubPage() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        if (window.confirm(`حذف ${item.displayName} وإبطال أسراره نهائياً؟`)) remove.mutate(item.id);
+                        if (window.confirm(`حذف ${item.displayName} وإبطال أسراره نهائياً؟`))
+                          remove.mutate(item.id);
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-danger" aria-hidden /> حذف
@@ -374,7 +420,9 @@ function IntegrationsHubPage() {
                       <span className="block truncate text-body-sm font-semibold text-foreground">
                         {def.displayNameAr || def.displayName}
                       </span>
-                      <span className="block truncate text-[12px] text-muted-foreground">{def.categoryLabel}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">
+                        {def.categoryLabel}
+                      </span>
                     </span>
                   </button>
                 ))}
@@ -434,7 +482,9 @@ function IntegrationsHubPage() {
                 <select
                   className={inputCls}
                   value={draft.environment}
-                  onChange={(e) => setDraft({ ...draft, environment: e.target.value as IntegrationEnvironment })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, environment: e.target.value as IntegrationEnvironment })
+                  }
                 >
                   {Object.entries(ENVIRONMENT_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -495,7 +545,9 @@ function IntegrationsHubPage() {
                   min={5}
                   max={1440}
                   value={draft.monitorIntervalMinutes}
-                  onChange={(e) => setDraft({ ...draft, monitorIntervalMinutes: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, monitorIntervalMinutes: Number(e.target.value) })
+                  }
                 />
               </label>
               <label className="block text-body-sm">
@@ -520,13 +572,20 @@ function IntegrationsHubPage() {
                       type="password"
                       autoComplete="off"
                       value={draft.secrets[field] ?? ""}
-                      onChange={(e) => setDraft({ ...draft, secrets: { ...draft.secrets, [field]: e.target.value } })}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          secrets: { ...draft.secrets, [field]: e.target.value },
+                        })
+                      }
                       placeholder={draft.id ? "بلا تغيير" : ""}
                     />
                   </label>
                 ))}
                 {secretFields.length === 0 && (
-                  <p className="text-body-sm text-muted-foreground">لا توجد حقول سرّية لهذا المزوّد.</p>
+                  <p className="text-body-sm text-muted-foreground">
+                    لا توجد حقول سرّية لهذا المزوّد.
+                  </p>
                 )}
               </div>
             </fieldset>
@@ -593,13 +652,19 @@ function IntegrationsHubPage() {
         size="lg"
       >
         <div className="space-y-2">
-          {filteredLogs.length === 0 && <p className="text-body-sm text-muted-foreground">لا توجد سجلات بعد.</p>}
+          {filteredLogs.length === 0 && (
+            <p className="text-body-sm text-muted-foreground">لا توجد سجلات بعد.</p>
+          )}
           {filteredLogs.map((log) => (
             <div
               key={log.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-m)] border border-border px-3 py-2 text-body-sm"
             >
-              <Badge tone={log.result === "success" ? "green" : log.result === "blocked" ? "gold" : "red"}>
+              <Badge
+                tone={
+                  log.result === "success" ? "green" : log.result === "blocked" ? "gold" : "red"
+                }
+              >
                 {log.result === "success" ? "ناجح" : log.result === "blocked" ? "محظور" : "فاشل"}
               </Badge>
               <span className="text-muted-foreground">{log.checkKind}</span>

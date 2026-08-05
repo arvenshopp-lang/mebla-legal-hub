@@ -79,34 +79,60 @@ export type SupportConfig = {
 };
 
 export async function loadSupportConfig(db: Db): Promise<SupportConfig> {
-  const [teams, members, categories, policies, rules, tags, calendars, holidays, mailboxes, staff] = await Promise.all([
-    db.from("support_teams").select("*").order("name_ar"),
-    db.from("support_team_members").select("team_id, user_id, is_lead"),
-    db.from("support_categories").select("*").order("sort_order"),
-    db.from("support_sla_policies").select("*").order("specificity", { ascending: false }),
-    db.from("support_escalation_rules").select("*").order("sort_order"),
-    db.from("support_tags").select("*").order("name_ar"),
-    db.from("support_business_calendars").select("*").order("name_ar"),
-    db.from("support_holidays").select("*").order("holiday_date"),
-    db.from("email_mailboxes").select("id, address, display_name").eq("is_active", true).order("address"),
-    db.from("platform_staff").select("user_id, full_name, email, role").eq("status", "active").order("full_name"),
-  ]);
+  const [teams, members, categories, policies, rules, tags, calendars, holidays, mailboxes, staff] =
+    await Promise.all([
+      db.from("support_teams").select("*").order("name_ar"),
+      db.from("support_team_members").select("team_id, user_id, is_lead"),
+      db.from("support_categories").select("*").order("sort_order"),
+      db.from("support_sla_policies").select("*").order("specificity", { ascending: false }),
+      db.from("support_escalation_rules").select("*").order("sort_order"),
+      db.from("support_tags").select("*").order("name_ar"),
+      db.from("support_business_calendars").select("*").order("name_ar"),
+      db.from("support_holidays").select("*").order("holiday_date"),
+      db
+        .from("email_mailboxes")
+        .select("id, address, display_name")
+        .eq("is_active", true)
+        .order("address"),
+      db
+        .from("platform_staff")
+        .select("user_id, full_name, email, role")
+        .eq("status", "active")
+        .order("full_name"),
+    ]);
 
   const staffRows = (staff.data ?? []) as SupportConfig["staff"];
-  const memberRows = (members.data ?? []) as { team_id: string; user_id: string; is_lead: boolean }[];
+  const memberRows = (members.data ?? []) as {
+    team_id: string;
+    user_id: string;
+    is_lead: boolean;
+  }[];
   const mailboxRows = (mailboxes.data ?? []) as SupportConfig["mailboxes"];
-  const holidayRows = (holidays.data ?? []) as { id: string; calendar_id: string; holiday_date: string; name_ar: string }[];
+  const holidayRows = (holidays.data ?? []) as {
+    id: string;
+    calendar_id: string;
+    holiday_date: string;
+    name_ar: string;
+  }[];
   const nameOf = new Map(staffRows.map((s) => [s.user_id, s.full_name]));
 
   return {
     teams: ((teams.data ?? []) as Record<string, never>[]).map((team) => ({
       ...(team as unknown as SupportConfig["teams"][number]),
       mailbox_address:
-        mailboxRows.find((m) => m.id === (team as unknown as { mailbox_id: string | null }).mailbox_id)?.address ?? null,
-      manager_name: nameOf.get((team as unknown as { manager_user_id: string | null }).manager_user_id ?? "") ?? null,
+        mailboxRows.find(
+          (m) => m.id === (team as unknown as { mailbox_id: string | null }).mailbox_id,
+        )?.address ?? null,
+      manager_name:
+        nameOf.get((team as unknown as { manager_user_id: string | null }).manager_user_id ?? "") ??
+        null,
       members: memberRows
         .filter((m) => m.team_id === (team as unknown as { id: string }).id)
-        .map((m) => ({ user_id: m.user_id, name: nameOf.get(m.user_id) ?? "—", is_lead: m.is_lead })),
+        .map((m) => ({
+          user_id: m.user_id,
+          name: nameOf.get(m.user_id) ?? "—",
+          is_lead: m.is_lead,
+        })),
     })),
     categories: (categories.data ?? []) as SupportConfig["categories"],
     policies: (policies.data ?? []) as SupportConfig["policies"],
@@ -125,7 +151,12 @@ export async function loadSupportConfig(db: Db): Promise<SupportConfig> {
 
 /* ------------------------------------------------------------ الكتابة */
 
-async function upsert(db: Db, table: string, id: string | undefined, payload: Record<string, unknown>): Promise<string> {
+async function upsert(
+  db: Db,
+  table: string,
+  id: string | undefined,
+  payload: Record<string, unknown>,
+): Promise<string> {
   if (id) {
     const { error } = await db.from(table).update(payload).eq("id", id);
     if (error) throw new Error(friendly(error));
@@ -249,7 +280,10 @@ export async function savePolicy(
     throw new Error("مهلة الحل يجب أن تكون أطول من مهلة أول رد.");
   }
   const specificity =
-    (input.planCode ? 1 : 0) + (input.priority ? 1 : 0) + (input.channel ? 1 : 0) + (input.category ? 1 : 0);
+    (input.planCode ? 1 : 0) +
+    (input.priority ? 1 : 0) +
+    (input.channel ? 1 : 0) +
+    (input.category ? 1 : 0);
   return upsert(db, "support_sla_policies", input.id, {
     code: input.code,
     name_ar: input.nameAr,
@@ -286,7 +320,8 @@ export async function saveRule(
     sortOrder?: number;
   },
 ): Promise<string> {
-  if (input.toLevel <= input.fromLevel) throw new Error("مستوى التصعيد الهدف يجب أن يكون أعلى من المستوى الحالي.");
+  if (input.toLevel <= input.fromLevel)
+    throw new Error("مستوى التصعيد الهدف يجب أن يكون أعلى من المستوى الحالي.");
   return upsert(db, "support_escalation_rules", input.id, {
     name_ar: input.nameAr,
     trigger_type: input.triggerType,
@@ -303,7 +338,10 @@ export async function saveRule(
   });
 }
 
-export async function saveTag(db: Db, input: { id?: string; nameAr: string; color: string }): Promise<string> {
+export async function saveTag(
+  db: Db,
+  input: { id?: string; nameAr: string; color: string },
+): Promise<string> {
   return upsert(db, "support_tags", input.id, { name_ar: input.nameAr, color: input.color });
 }
 
@@ -326,7 +364,8 @@ export async function saveCalendar(
     isActive?: boolean;
   },
 ): Promise<string> {
-  if (input.endMinute <= input.startMinute) throw new Error("نهاية يوم العمل يجب أن تكون بعد بدايته.");
+  if (input.endMinute <= input.startMinute)
+    throw new Error("نهاية يوم العمل يجب أن تكون بعد بدايته.");
   return upsert(db, "support_business_calendars", input.id, {
     code: input.code,
     name_ar: input.nameAr,

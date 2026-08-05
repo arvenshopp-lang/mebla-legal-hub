@@ -15,7 +15,10 @@ import {
   type CrmLeadStatus,
 } from "@/lib/crm.shared";
 
-const LEAD_STATUS_TONE: Record<CrmLeadStatus, "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"> = {
+const LEAD_STATUS_TONE: Record<
+  CrmLeadStatus,
+  "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"
+> = {
   new: "info",
   contacted: "warn",
   qualified: "gold",
@@ -24,7 +27,10 @@ const LEAD_STATUS_TONE: Record<CrmLeadStatus, "default" | "green" | "gold" | "re
   lost: "red",
 };
 
-const DEAL_STATUS_TONE: Record<CrmDealStatus, "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"> = {
+const DEAL_STATUS_TONE: Record<
+  CrmDealStatus,
+  "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"
+> = {
   open: "info",
   won: "green",
   lost: "red",
@@ -46,7 +52,10 @@ export function ActivityKindBadge({ kind }: { kind: CrmActivityKind }) {
 export function Money({ value, currency = "SAR" }: { value: number; currency?: string | null }) {
   return (
     <span className="tabular-nums">
-      {Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+      {Number(value).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}{" "}
       {currency || "SAR"}
     </span>
   );
@@ -65,7 +74,9 @@ export function useCrmCsvExport() {
     setExporting(entity);
     try {
       const { csv, filename } = await exportFn({ data: { entity } });
-      const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+      const url = URL.createObjectURL(
+        new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+      );
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = filename;

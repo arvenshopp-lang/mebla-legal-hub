@@ -30,7 +30,11 @@ export const listBackupSnapshots = createServerFn({ method: "POST" })
     const g = await guard();
     await g.requireStaff(context.supabase, context.userId, "backups.manage");
     const db = await g.admin();
-    let q = (db as AnyClient).from("platform_backup_snapshots").select(SNAPSHOT_COLUMNS).order("created_at", { ascending: false }).limit(200);
+    let q = (db as AnyClient)
+      .from("platform_backup_snapshots")
+      .select(SNAPSHOT_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (data.status) q = q.eq("status", data.status);
     if (data.kind) q = q.eq("kind", data.kind);
     const { data: rows, error } = await q;
@@ -113,7 +117,10 @@ export const verifyBackupSnapshot = createServerFn({ method: "POST" })
       verified_by: staff.id,
       checksum: data.checksum?.trim() || existing.checksum,
     };
-    const { error } = await (db as AnyClient).from("platform_backup_snapshots").update(payload).eq("id", data.id);
+    const { error } = await (db as AnyClient)
+      .from("platform_backup_snapshots")
+      .update(payload)
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر تسجيل التحقق من سلامة النسخة.");
 
     await g.writeAudit(db, staff, {
@@ -206,7 +213,9 @@ export const decideBackupRestore = createServerFn({ method: "POST" })
     if (!existing) throw new Error("طلب الاستعادة غير موجود.");
     if (existing.status !== "pending") throw new Error("تم اتخاذ قرار بشأن هذا الطلب مسبقاً.");
     if (existing.requested_by === staff.user_id)
-      throw new Error("لا يجوز اعتماد طلب استعادة تقدّمت به بنفسك — يلزم موظف آخر (مبدأ الرقابة المزدوجة).");
+      throw new Error(
+        "لا يجوز اعتماد طلب استعادة تقدّمت به بنفسك — يلزم موظف آخر (مبدأ الرقابة المزدوجة).",
+      );
 
     const payload = {
       status: data.decision,
@@ -215,7 +224,10 @@ export const decideBackupRestore = createServerFn({ method: "POST" })
       approved_at: new Date().toISOString(),
       decision_note: data.note?.trim() || null,
     };
-    const { error } = await (db as AnyClient).from("platform_backup_restore_requests").update(payload).eq("id", data.id);
+    const { error } = await (db as AnyClient)
+      .from("platform_backup_restore_requests")
+      .update(payload)
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر تسجيل القرار.");
 
     await g.writeAudit(db, staff, {
@@ -229,7 +241,10 @@ export const decideBackupRestore = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const executeSchema = z.object({ id: z.string().uuid(), note: z.string().trim().max(2000).optional().nullable() });
+const executeSchema = z.object({
+  id: z.string().uuid(),
+  note: z.string().trim().max(2000).optional().nullable(),
+});
 
 export const recordBackupRestoreExecution = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -250,9 +265,14 @@ export const recordBackupRestoreExecution = createServerFn({ method: "POST" })
     const payload = {
       status: "executed" as const,
       executed_at: new Date().toISOString(),
-      decision_note: [existing.decision_note, data.note?.trim()].filter(Boolean).join(" | ") || existing.decision_note,
+      decision_note:
+        [existing.decision_note, data.note?.trim()].filter(Boolean).join(" | ") ||
+        existing.decision_note,
     };
-    const { error } = await (db as AnyClient).from("platform_backup_restore_requests").update(payload).eq("id", data.id);
+    const { error } = await (db as AnyClient)
+      .from("platform_backup_restore_requests")
+      .update(payload)
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر تسجيل تنفيذ الاستعادة.");
 
     await g.writeAudit(db, staff, {

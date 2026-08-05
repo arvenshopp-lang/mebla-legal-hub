@@ -84,73 +84,153 @@ export function EmployeeFormModal({
 }) {
   const [error, setError] = useState<string | null>(null);
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "تعديل بيانات موظف" : "إضافة موظف"} size="lg" busy={busy}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEdit ? "تعديل بيانات موظف" : "إضافة موظف"}
+      size="lg"
+      busy={busy}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="الاسم الكامل" required>
-          <input className={inputCls} value={value.full_name} onChange={(e) => setValue({ ...value, full_name: e.target.value })} />
+          <input
+            className={inputCls}
+            value={value.full_name}
+            onChange={(e) => setValue({ ...value, full_name: e.target.value })}
+          />
         </FormField>
         <FormField label="البريد الإلكتروني" required>
-          <input type="email" className={inputCls} value={value.email} onChange={(e) => setValue({ ...value, email: e.target.value })} />
+          <input
+            type="email"
+            className={inputCls}
+            value={value.email}
+            onChange={(e) => setValue({ ...value, email: e.target.value })}
+          />
         </FormField>
         <FormField label="الجوال">
-          <input className={inputCls} value={value.phone} onChange={(e) => setValue({ ...value, phone: e.target.value })} />
+          <input
+            className={inputCls}
+            value={value.phone}
+            onChange={(e) => setValue({ ...value, phone: e.target.value })}
+          />
         </FormField>
         <FormField label="المسمى الوظيفي">
-          <input className={inputCls} value={value.job_title} onChange={(e) => setValue({ ...value, job_title: e.target.value })} />
+          <input
+            className={inputCls}
+            value={value.job_title}
+            onChange={(e) => setValue({ ...value, job_title: e.target.value })}
+          />
         </FormField>
         <FormField label="القسم">
-          <select className={inputCls} value={value.department_id} onChange={(e) => setValue({ ...value, department_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={value.department_id}
+            onChange={(e) => setValue({ ...value, department_id: e.target.value })}
+          >
             <option value="">بلا قسم</option>
             {departments.map((d) => (
-              <option key={d.id} value={d.id}>{d.name_ar}</option>
+              <option key={d.id} value={d.id}>
+                {d.name_ar}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="المدير المباشر">
-          <select className={inputCls} value={value.manager_employee_id} onChange={(e) => setValue({ ...value, manager_employee_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={value.manager_employee_id}
+            onChange={(e) => setValue({ ...value, manager_employee_id: e.target.value })}
+          >
             <option value="">بلا مدير مباشر</option>
             {managers.map((m) => (
-              <option key={m.id} value={m.id}>{m.full_name}</option>
+              <option key={m.id} value={m.id}>
+                {m.full_name}
+              </option>
             ))}
           </select>
         </FormField>
-        <FormField label="حساب لوحة الإدارة المرتبط" hint="ربط اختياري بحساب موجود دون إنشاء دور جديد">
-          <select className={inputCls} value={value.staff_id} onChange={(e) => setValue({ ...value, staff_id: e.target.value })}>
+        <FormField
+          label="حساب لوحة الإدارة المرتبط"
+          hint="ربط اختياري بحساب موجود دون إنشاء دور جديد"
+        >
+          <select
+            className={inputCls}
+            value={value.staff_id}
+            onChange={(e) => setValue({ ...value, staff_id: e.target.value })}
+          >
             <option value="">بلا ربط</option>
             {unlinkedStaff.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name} — {s.email}</option>
+              <option key={s.id} value={s.id}>
+                {s.full_name} — {s.email}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="حالة التوظيف" required>
-          <select className={inputCls} value={value.employment_status} onChange={(e) => setValue({ ...value, employment_status: e.target.value as HrEmploymentStatus })}>
+          <select
+            className={inputCls}
+            value={value.employment_status}
+            onChange={(e) =>
+              setValue({ ...value, employment_status: e.target.value as HrEmploymentStatus })
+            }
+          >
             {HR_EMPLOYMENT_STATUS.map((s) => (
-              <option key={s} value={s}>{HR_EMPLOYMENT_STATUS_LABELS[s]}</option>
+              <option key={s} value={s}>
+                {HR_EMPLOYMENT_STATUS_LABELS[s]}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="نوع العقد" required>
-          <select className={inputCls} value={value.employment_type} onChange={(e) => setValue({ ...value, employment_type: e.target.value as HrEmploymentType })}>
+          <select
+            className={inputCls}
+            value={value.employment_type}
+            onChange={(e) =>
+              setValue({ ...value, employment_type: e.target.value as HrEmploymentType })
+            }
+          >
             {HR_EMPLOYMENT_TYPE.map((s) => (
-              <option key={s} value={s}>{HR_EMPLOYMENT_TYPE_LABELS[s]}</option>
+              <option key={s} value={s}>
+                {HR_EMPLOYMENT_TYPE_LABELS[s]}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="موقع العمل">
-          <input className={inputCls} value={value.work_location} onChange={(e) => setValue({ ...value, work_location: e.target.value })} />
+          <input
+            className={inputCls}
+            value={value.work_location}
+            onChange={(e) => setValue({ ...value, work_location: e.target.value })}
+          />
         </FormField>
         <FormField label="تاريخ الالتحاق">
-          <input type="date" className={inputCls} value={value.joined_at} onChange={(e) => setValue({ ...value, joined_at: e.target.value })} />
+          <input
+            type="date"
+            className={inputCls}
+            value={value.joined_at}
+            onChange={(e) => setValue({ ...value, joined_at: e.target.value })}
+          />
         </FormField>
       </div>
       <div className="mt-4">
         <FormField label="ملاحظات">
-          <textarea className={inputCls} rows={3} value={value.notes} onChange={(e) => setValue({ ...value, notes: e.target.value })} />
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={value.notes}
+            onChange={(e) => setValue({ ...value, notes: e.target.value })}
+          />
         </FormField>
       </div>
-      {error && <p className="mt-2 text-[12px] text-danger" role="alert">{error}</p>}
+      {error && (
+        <p className="mt-2 text-[12px] text-danger" role="alert">
+          {error}
+        </p>
+      )}
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={busy}>إلغاء</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={busy}>
+          إلغاء
+        </Btn>
         <Btn
           loading={busy}
           onClick={() => {

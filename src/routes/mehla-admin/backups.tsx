@@ -30,7 +30,13 @@ import {
   requestBackupRestore,
   verifyBackupSnapshot,
 } from "@/lib/backups.functions";
-import { BACKUP_KINDS, BACKUP_STATUSES, RESTORE_STATUSES, fmtBytes, type BackupKind } from "@/lib/backups.shared";
+import {
+  BACKUP_KINDS,
+  BACKUP_STATUSES,
+  RESTORE_STATUSES,
+  fmtBytes,
+  type BackupKind,
+} from "@/lib/backups.shared";
 
 export const Route = createFileRoute("/mehla-admin/backups")({
   head: () => ({
@@ -80,7 +86,10 @@ function BackupsPage() {
   const [requestSnapshot, setRequestSnapshot] = useState<string>("");
   const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
 
-  const [decisionTarget, setDecisionTarget] = useState<{ id: string; decision: "approved" | "rejected" } | null>(null);
+  const [decisionTarget, setDecisionTarget] = useState<{
+    id: string;
+    decision: "approved" | "rejected";
+  } | null>(null);
   const [decisionNote, setDecisionNote] = useState("");
 
   const [executeId, setExecuteId] = useState<string | null>(null);
@@ -114,7 +123,9 @@ function BackupsPage() {
           source: recordDraft.source,
           externalId: recordDraft.externalId || null,
           sizeBytes: recordDraft.sizeBytes ? Number(recordDraft.sizeBytes) : null,
-          retentionUntil: recordDraft.retentionUntil ? new Date(recordDraft.retentionUntil).toISOString() : null,
+          retentionUntil: recordDraft.retentionUntil
+            ? new Date(recordDraft.retentionUntil).toISOString()
+            : null,
           notes: recordDraft.notes || null,
           status: "recorded",
         },
@@ -141,7 +152,9 @@ function BackupsPage() {
   const requestFn = useServerFn(requestBackupRestore);
   const requestMutation = useMutation({
     mutationFn: () =>
-      requestFn({ data: { snapshotId: requestSnapshot || null, scope: requestScope, reason: requestReason } }),
+      requestFn({
+        data: { snapshotId: requestSnapshot || null, scope: requestScope, reason: requestReason },
+      }),
     onSuccess: () => {
       toast.success("تم إرسال طلب الاستعادة للاعتماد.");
       setRequestOpen(false);
@@ -156,7 +169,13 @@ function BackupsPage() {
   const decideFn = useServerFn(decideBackupRestore);
   const decideMutation = useMutation({
     mutationFn: () =>
-      decideFn({ data: { id: decisionTarget!.id, decision: decisionTarget!.decision, note: decisionNote || null } }),
+      decideFn({
+        data: {
+          id: decisionTarget!.id,
+          decision: decisionTarget!.decision,
+          note: decisionNote || null,
+        },
+      }),
     onSuccess: () => {
       toast.success(decisionTarget?.decision === "approved" ? "تم اعتماد الطلب." : "تم رفض الطلب.");
       setDecisionTarget(null);
@@ -180,7 +199,10 @@ function BackupsPage() {
 
   if (!canManage) {
     return (
-      <AdminShell title="مركز النسخ الاحتياطية" description="سجل النسخ وطلبات الاستعادة واعتماداتها.">
+      <AdminShell
+        title="مركز النسخ الاحتياطية"
+        description="سجل النسخ وطلبات الاستعادة واعتماداتها."
+      >
         <ErrorBlock message="لا تملك صلاحية «النسخ الاحتياطي» للاطلاع على هذا المركز." />
       </AdminShell>
     );
@@ -207,11 +229,15 @@ function BackupsPage() {
     >
       <div className="mb-6 rounded-[var(--radius-m)] border border-info/25 bg-info-soft px-4 py-3 text-body-sm text-info">
         <ShieldAlert className="me-1.5 inline h-4 w-4" aria-hidden />
-        هذا المركز سجل وموافقات وتدقيق فقط: لا يُنفّذ أي استعادة فعلية من الواجهة. النسخ الاحتياطي اليومي مُدار على
-        مستوى الاستضافة، وتنفيذ الاستعادة يتم يدوياً من فريق البنية التحتية ثم يُسجَّل تاريخه هنا للتوثيق.
+        هذا المركز سجل وموافقات وتدقيق فقط: لا يُنفّذ أي استعادة فعلية من الواجهة. النسخ الاحتياطي
+        اليومي مُدار على مستوى الاستضافة، وتنفيذ الاستعادة يتم يدوياً من فريق البنية التحتية ثم
+        يُسجَّل تاريخه هنا للتوثيق.
       </div>
 
-      <SectionCard title="سجل النسخ الاحتياطية" description="مرتب بالأحدث أولاً — لا نسخ وهمية، فقط ما تم تسجيله فعلياً.">
+      <SectionCard
+        title="سجل النسخ الاحتياطية"
+        description="مرتب بالأحدث أولاً — لا نسخ وهمية، فقط ما تم تسجيله فعلياً."
+      >
         {snapshotsQuery.isLoading ? (
           <LoadingBlock rows={4} cols={5} />
         ) : snapshotsQuery.isError ? (
@@ -237,18 +263,30 @@ function BackupsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {snapshots.map((s) => {
-                  const expired = s.retention_until ? new Date(s.retention_until).getTime() < now : false;
+                  const expired = s.retention_until
+                    ? new Date(s.retention_until).getTime() < now
+                    : false;
                   return (
                     <tr key={s.id}>
                       <Td>{BACKUP_KINDS[s.kind] ?? s.kind}</Td>
                       <Td className="max-w-[180px] truncate">
                         {s.source}
-                        {s.external_id && <span className="text-caption block truncate">{s.external_id}</span>}
+                        {s.external_id && (
+                          <span className="text-caption block truncate">{s.external_id}</span>
+                        )}
                       </Td>
                       <Td className="hidden sm:table-cell">{fmtBytes(s.size_bytes)}</Td>
                       <Td>
                         <div className="flex flex-col gap-1">
-                          <Badge tone={s.status === "verified" ? "green" : s.status === "failed" ? "red" : "info"}>
+                          <Badge
+                            tone={
+                              s.status === "verified"
+                                ? "green"
+                                : s.status === "failed"
+                                  ? "red"
+                                  : "info"
+                            }
+                          >
                             {BACKUP_STATUSES[s.status] ?? s.status}
                           </Badge>
                           {expired && <Badge tone="warn">منتهية الاحتفاظ</Badge>}
@@ -295,7 +333,10 @@ function BackupsPage() {
           ) : requestsQuery.isError ? (
             <ErrorBlock message="تعذّر قراءة طلبات الاستعادة." />
           ) : requests.length === 0 ? (
-            <EmptyState title="لا توجد طلبات استعادة" hint="عند الحاجة لاستعادة بيانات، أنشئ طلباً موضحاً السبب والنطاق." />
+            <EmptyState
+              title="لا توجد طلبات استعادة"
+              hint="عند الحاجة لاستعادة بيانات، أنشئ طلباً موضحاً السبب والنطاق."
+            />
           ) : (
             <DataCard>
               <table className="w-full min-w-[760px] text-right">
@@ -312,12 +353,8 @@ function BackupsPage() {
                 <tbody className="divide-y divide-border">
                   {requests.map((r) => (
                     <tr key={r.id}>
-                      <Td className="max-w-[160px] truncate">
-                        {r.scope}
-                      </Td>
-                      <Td className="hidden sm:table-cell max-w-[220px] truncate">
-                        {r.reason}
-                      </Td>
+                      <Td className="max-w-[160px] truncate">{r.scope}</Td>
+                      <Td className="hidden sm:table-cell max-w-[220px] truncate">{r.reason}</Td>
                       <Td>
                         <Badge
                           tone={
@@ -333,17 +370,29 @@ function BackupsPage() {
                           {RESTORE_STATUSES[r.status] ?? r.status}
                         </Badge>
                       </Td>
-                      <Td className="hidden md:table-cell text-[12px] text-muted-foreground">{r.requested_by_email}</Td>
+                      <Td className="hidden md:table-cell text-[12px] text-muted-foreground">
+                        {r.requested_by_email}
+                      </Td>
                       <Td className="hidden lg:table-cell text-[12px] text-muted-foreground">
-                        {r.approved_by_email ? `${r.approved_by_email} · ${fmtDateTime(r.approved_at)}` : "—"}
+                        {r.approved_by_email
+                          ? `${r.approved_by_email} · ${fmtDateTime(r.approved_at)}`
+                          : "—"}
                       </Td>
                       <Td>
                         {r.status === "pending" && canRestore ? (
                           <div className="flex gap-1.5">
-                            <Btn size="sm" variant="outline" onClick={() => setDecisionTarget({ id: r.id, decision: "approved" })}>
+                            <Btn
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDecisionTarget({ id: r.id, decision: "approved" })}
+                            >
                               اعتماد
                             </Btn>
-                            <Btn size="sm" variant="danger" onClick={() => setDecisionTarget({ id: r.id, decision: "rejected" })}>
+                            <Btn
+                              size="sm"
+                              variant="danger"
+                              onClick={() => setDecisionTarget({ id: r.id, decision: "rejected" })}
+                            >
                               رفض
                             </Btn>
                           </div>
@@ -380,7 +429,9 @@ function BackupsPage() {
               <select
                 className={inputCls}
                 value={recordDraft.kind}
-                onChange={(e) => setRecordDraft({ ...recordDraft, kind: e.target.value as BackupKind })}
+                onChange={(e) =>
+                  setRecordDraft({ ...recordDraft, kind: e.target.value as BackupKind })
+                }
               >
                 {Object.entries(BACKUP_KINDS).map(([v, l]) => (
                   <option key={v} value={v}>
@@ -399,7 +450,11 @@ function BackupsPage() {
               />
             </FormField>
           </div>
-          <FormField label="المصدر" required hint="مثال: Supabase Daily Snapshot / نسخة يدوية عبر pg_dump">
+          <FormField
+            label="المصدر"
+            required
+            hint="مثال: Supabase Daily Snapshot / نسخة يدوية عبر pg_dump"
+          >
             <input
               className={inputCls}
               value={recordDraft.source}
@@ -456,7 +511,10 @@ function BackupsPage() {
         description="يتطلب اعتماد موظف آخر يملك صلاحية «اعتماد الاستعادة» قبل أي تنفيذ."
       >
         <div className="space-y-4">
-          <FormField label="النسخة المرجوّة" hint="اختياري — اتركه فارغاً إن كانت الاستعادة جزئية بلا نسخة محددة">
+          <FormField
+            label="النسخة المرجوّة"
+            hint="اختياري — اتركه فارغاً إن كانت الاستعادة جزئية بلا نسخة محددة"
+          >
             <select
               className={inputCls}
               value={requestSnapshot}
@@ -471,7 +529,12 @@ function BackupsPage() {
             </select>
           </FormField>
           <FormField label="نطاق الاستعادة" required>
-            <input className={inputCls} value={requestScope} onChange={(e) => setRequestScope(e.target.value)} placeholder="مثال: جدول الفواتير فقط — منظمة كذا" />
+            <input
+              className={inputCls}
+              value={requestScope}
+              onChange={(e) => setRequestScope(e.target.value)}
+              placeholder="مثال: جدول الفواتير فقط — منظمة كذا"
+            />
           </FormField>
           <FormField label="السبب" required hint="لا يقل عن ١٠ أحرف">
             <textarea
@@ -503,11 +566,17 @@ function BackupsPage() {
           setDecisionTarget(null);
           setDecisionNote("");
         }}
-        title={decisionTarget?.decision === "approved" ? "اعتماد طلب الاستعادة" : "رفض طلب الاستعادة"}
+        title={
+          decisionTarget?.decision === "approved" ? "اعتماد طلب الاستعادة" : "رفض طلب الاستعادة"
+        }
       >
         <div className="space-y-4">
           <FormField label="ملاحظة القرار" hint="اختياري">
-            <textarea className={`${inputCls} min-h-20`} value={decisionNote} onChange={(e) => setDecisionNote(e.target.value)} />
+            <textarea
+              className={`${inputCls} min-h-20`}
+              value={decisionNote}
+              onChange={(e) => setDecisionNote(e.target.value)}
+            />
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <Btn variant="outline" onClick={() => setDecisionTarget(null)}>
@@ -525,13 +594,22 @@ function BackupsPage() {
       </Modal>
 
       {/* تسجيل التنفيذ */}
-      <Modal open={executeId !== null} onClose={() => setExecuteId(null)} title="تسجيل تنفيذ الاستعادة">
+      <Modal
+        open={executeId !== null}
+        onClose={() => setExecuteId(null)}
+        title="تسجيل تنفيذ الاستعادة"
+      >
         <div className="space-y-4">
           <p className="text-body-sm text-muted-foreground">
-            هذا يوثّق أن فريق البنية التحتية نفّذ الاستعادة يدوياً على مستوى الاستضافة — لا يُشغّل أي عملية فعلية.
+            هذا يوثّق أن فريق البنية التحتية نفّذ الاستعادة يدوياً على مستوى الاستضافة — لا يُشغّل
+            أي عملية فعلية.
           </p>
           <FormField label="ملاحظة التنفيذ" hint="اختياري">
-            <textarea className={`${inputCls} min-h-20`} value={executeNote} onChange={(e) => setExecuteNote(e.target.value)} />
+            <textarea
+              className={`${inputCls} min-h-20`}
+              value={executeNote}
+              onChange={(e) => setExecuteNote(e.target.value)}
+            />
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <Btn variant="outline" onClick={() => setExecuteId(null)}>

@@ -11,20 +11,62 @@ export const PASSWORD_MIN_SCORE = 3;
 
 /** كلمات مرور شائعة/مسربة يُمنع استخدامها (مطابقة غير حساسة لحالة الأحرف). */
 const COMMON_PASSWORDS = new Set([
-  "123456789", "1234567890", "123123123", "111111111", "000000000",
-  "password", "password1", "password12", "password123", "password1234",
-  "passw0rd", "p@ssw0rd", "p@ssword123", "passw0rd123",
-  "qwerty", "qwerty123", "qwerty12345", "qwertyuiop", "asdfghjkl", "zxcvbnm123",
-  "admin123456", "administrator", "welcome123", "welcome12345", "letmein123",
-  "iloveyou123", "sunshine123", "princess123", "football123", "baseball123",
-  "abcd1234567", "a1b2c3d4e5", "test12345678", "user12345678", "master123456",
-  "trustno1234", "superman123", "starwars123", "computer123", "internet123",
-  "mehla123456", "mehlalex123", "lawyer123456", "saudi1234567",
+  "123456789",
+  "1234567890",
+  "123123123",
+  "111111111",
+  "000000000",
+  "password",
+  "password1",
+  "password12",
+  "password123",
+  "password1234",
+  "passw0rd",
+  "p@ssw0rd",
+  "p@ssword123",
+  "passw0rd123",
+  "qwerty",
+  "qwerty123",
+  "qwerty12345",
+  "qwertyuiop",
+  "asdfghjkl",
+  "zxcvbnm123",
+  "admin123456",
+  "administrator",
+  "welcome123",
+  "welcome12345",
+  "letmein123",
+  "iloveyou123",
+  "sunshine123",
+  "princess123",
+  "football123",
+  "baseball123",
+  "abcd1234567",
+  "a1b2c3d4e5",
+  "test12345678",
+  "user12345678",
+  "master123456",
+  "trustno1234",
+  "superman123",
+  "starwars123",
+  "computer123",
+  "internet123",
+  "mehla123456",
+  "mehlalex123",
+  "lawyer123456",
+  "saudi1234567",
 ]);
 
 /** أنماط لوحة مفاتيح متتابعة تُعد ضعيفة عند ظهورها كجزء كبير من كلمة المرور. */
 const KEYBOARD_RUNS = [
-  "qwerty", "asdfgh", "zxcvbn", "1234567", "7654321", "abcdef", "fedcba", "qazwsx",
+  "qwerty",
+  "asdfgh",
+  "zxcvbn",
+  "1234567",
+  "7654321",
+  "abcdef",
+  "fedcba",
+  "qazwsx",
 ];
 
 const SYMBOL_PATTERN = /[^A-Za-z0-9]/;
@@ -51,7 +93,8 @@ export function isCommonPassword(raw: string): boolean {
   }
   // كلمة شائعة تشكّل معظم كلمة المرور (مثل password2024 أو qwerty!!)
   for (const common of COMMON_PASSWORDS) {
-    if (common.length >= 6 && pwd.includes(common) && common.length * 1.4 >= pwd.length) return true;
+    if (common.length >= 6 && pwd.includes(common) && common.length * 1.4 >= pwd.length)
+      return true;
   }
   return false;
 }
@@ -88,7 +131,13 @@ export function hasEdgeWhitespace(password: string): boolean {
 }
 
 export type PasswordRuleId =
-  | "length" | "upper" | "lower" | "digit" | "symbol" | "noIdentity" | "notCommon";
+  | "length"
+  | "upper"
+  | "lower"
+  | "digit"
+  | "symbol"
+  | "noIdentity"
+  | "notCommon";
 
 export type PasswordRule = {
   id: PasswordRuleId;
@@ -152,7 +201,10 @@ export type PasswordRulesEvaluation = {
   failures: string[];
 };
 
-export function evaluateRules(password: string, ctx: PasswordContext = {}): PasswordRulesEvaluation {
+export function evaluateRules(
+  password: string,
+  ctx: PasswordContext = {},
+): PasswordRulesEvaluation {
   const results = {} as RuleResults;
   const failures: string[] = [];
   for (const rule of PASSWORD_RULES) {

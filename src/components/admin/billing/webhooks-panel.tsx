@@ -74,7 +74,9 @@ export function WebhooksPanel() {
   const query = useQuery({
     queryKey: ["billing-webhooks", debounced, status, page],
     queryFn: () =>
-      listFn({ data: { search: debounced || null, status, provider: null, page, pageSize: PAGE_SIZE } }),
+      listFn({
+        data: { search: debounced || null, status, provider: null, page, pageSize: PAGE_SIZE },
+      }),
   });
 
   const detail = useQuery({
@@ -93,7 +95,10 @@ export function WebhooksPanel() {
     onSuccess: (result) => {
       const outcome = result as { processed: boolean; status: string };
       if (outcome.processed) toast.success("تمت معالجة الرسالة وتحديث الدفعة.");
-      else toast.warning(`لم تُطبَّق الرسالة — الحالة: ${WEBHOOK_STATUS_LABELS[outcome.status] ?? outcome.status}`);
+      else
+        toast.warning(
+          `لم تُطبَّق الرسالة — الحالة: ${WEBHOOK_STATUS_LABELS[outcome.status] ?? outcome.status}`,
+        );
       invalidate();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -125,7 +130,9 @@ export function WebhooksPanel() {
   });
 
   const rows = (query.data?.rows ?? []) as unknown as WebhookRow[];
-  const detailRow = detail.data as unknown as (WebhookRow & { raw_body: string; request_id: string | null }) | undefined;
+  const detailRow = detail.data as unknown as
+    | (WebhookRow & { raw_body: string; request_id: string | null })
+    | undefined;
 
   return (
     <div>
@@ -171,7 +178,10 @@ export function WebhooksPanel() {
       ) : query.isError ? (
         <ErrorBlock message={(query.error as Error).message} />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا توجد رسائل واردة" hint="ستظهر هنا كل الأحداث القادمة من مزودي الدفع مع حالة معالجتها." />
+        <EmptyState
+          title="لا توجد رسائل واردة"
+          hint="ستظهر هنا كل الأحداث القادمة من مزودي الدفع مع حالة معالجتها."
+        />
       ) : (
         <DataCard>
           <div className="overflow-x-auto">
@@ -192,7 +202,9 @@ export function WebhooksPanel() {
                   <tr key={row.id} className="border-t border-border">
                     <Td>
                       <span className="block font-medium">{row.provider}</span>
-                      <span className="text-caption block truncate tabular-nums">{row.event_id ?? "—"}</span>
+                      <span className="text-caption block truncate tabular-nums">
+                        {row.event_id ?? "—"}
+                      </span>
                     </Td>
                     <Td>
                       <span className="block truncate">{row.event_type ?? "—"}</span>
@@ -203,14 +215,21 @@ export function WebhooksPanel() {
                     </Td>
                     <Td>
                       <WebhookStatusBadge status={row.status} />
-                      {row.last_error && <span className="text-caption mt-1 block truncate">{row.last_error}</span>}
+                      {row.last_error && (
+                        <span className="text-caption mt-1 block truncate">{row.last_error}</span>
+                      )}
                     </Td>
                     <Td className="tabular-nums">{row.attempts}</Td>
                     <Td>{formatDateTime(row.received_at)}</Td>
                     <Td>{formatDateTime(row.next_retry_at)}</Td>
                     <Td className="text-left">
                       <div className="flex items-center justify-end gap-1">
-                        <Btn variant="ghost" size="icon" aria-label="عرض التفاصيل" onClick={() => setDetailId(row.id)}>
+                        <Btn
+                          variant="ghost"
+                          size="icon"
+                          aria-label="عرض التفاصيل"
+                          onClick={() => setDetailId(row.id)}
+                        >
                           <Eye className="h-4 w-4" aria-hidden />
                         </Btn>
                         {manage && row.status !== "processed" && row.status !== "dead_letter" && (
@@ -260,7 +279,12 @@ export function WebhooksPanel() {
         </DataCard>
       )}
 
-      <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+      <Pagination
+        page={page}
+        setPage={setPage}
+        total={query.data?.total ?? 0}
+        pageSize={PAGE_SIZE}
+      />
 
       <Modal
         open={Boolean(detailId)}
@@ -292,7 +316,9 @@ export function WebhooksPanel() {
               ))}
             </dl>
             {detailRow.last_error && (
-              <p className="rounded-[var(--radius-m)] bg-danger/8 p-3 text-[12px] text-danger">{detailRow.last_error}</p>
+              <p className="rounded-[var(--radius-m)] bg-danger/8 p-3 text-[12px] text-danger">
+                {detailRow.last_error}
+              </p>
             )}
             <div>
               <p className="text-label mb-1.5">الحمولة</p>
@@ -310,7 +336,9 @@ export function WebhooksPanel() {
       <Modal
         open={Boolean(action)}
         onClose={() => setAction(null)}
-        title={action?.kind === "dead_letter" ? "ترحيل إلى الرسائل الفاشلة نهائياً" : "إعادة فتح الرسالة"}
+        title={
+          action?.kind === "dead_letter" ? "ترحيل إلى الرسائل الفاشلة نهائياً" : "إعادة فتح الرسالة"
+        }
         description="السبب يُسجّل في سجل التدقيق ولا يمكن حذفه."
       >
         <form
@@ -331,7 +359,11 @@ export function WebhooksPanel() {
             <Btn variant="outline" onClick={() => setAction(null)}>
               إلغاء
             </Btn>
-            <Btn type="submit" variant={action?.kind === "dead_letter" ? "danger" : "primary"} loading={submitAction.isPending}>
+            <Btn
+              type="submit"
+              variant={action?.kind === "dead_letter" ? "danger" : "primary"}
+              loading={submitAction.isPending}
+            >
               تأكيد
             </Btn>
           </div>

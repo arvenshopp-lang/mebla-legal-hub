@@ -12,28 +12,53 @@ import {
   type PaymentStatus,
 } from "@/lib/billing/billing.shared";
 
-export function Money({ value, currency = "SAR" }: { value: number | string | null | undefined; currency?: string }) {
+export function Money({
+  value,
+  currency = "SAR",
+}: {
+  value: number | string | null | undefined;
+  currency?: string;
+}) {
   return <span className="tabular-nums">{formatMoney(value, currency)}</span>;
 }
 
 export function InvoiceStatusBadge({ status }: { status: string }) {
   const key = status as InvoiceStatus;
-  return <Badge tone={INVOICE_STATUS_TONES[key] ?? "default"}>{INVOICE_STATUS_LABELS[key] ?? status}</Badge>;
+  return (
+    <Badge tone={INVOICE_STATUS_TONES[key] ?? "default"}>
+      {INVOICE_STATUS_LABELS[key] ?? status}
+    </Badge>
+  );
 }
 
 export function PaymentStatusBadge({ status }: { status: string }) {
   const key = status as PaymentStatus;
-  return <Badge tone={PAYMENT_STATUS_TONES[key] ?? "default"}>{PAYMENT_STATUS_LABELS[key] ?? status}</Badge>;
+  return (
+    <Badge tone={PAYMENT_STATUS_TONES[key] ?? "default"}>
+      {PAYMENT_STATUS_LABELS[key] ?? status}
+    </Badge>
+  );
 }
 
 export function RefundStatusBadge({ status }: { status: string }) {
-  const tone = status === "completed" ? "green" : status === "rejected" || status === "failed" ? "red" : "warn";
+  const tone =
+    status === "completed"
+      ? "green"
+      : status === "rejected" || status === "failed"
+        ? "red"
+        : "warn";
   return <Badge tone={tone}>{REFUND_STATUS_LABELS[status] ?? status}</Badge>;
 }
 
 export function WebhookStatusBadge({ status }: { status: string }) {
   const tone =
-    status === "processed" ? "green" : status === "dead_letter" ? "red" : status === "failed" ? "warn" : "muted";
+    status === "processed"
+      ? "green"
+      : status === "dead_letter"
+        ? "red"
+        : status === "failed"
+          ? "warn"
+          : "muted";
   return <Badge tone={tone}>{WEBHOOK_STATUS_LABELS[status] ?? status}</Badge>;
 }
 

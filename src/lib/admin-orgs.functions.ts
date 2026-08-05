@@ -106,9 +106,16 @@ export const updateOrganization = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { organizationId, ...fields } = data;
     const patch = Object.fromEntries(
-      Object.entries(fields).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v]),
+      Object.entries(fields).map(([k, v]) => [
+        k,
+        typeof v === "string" && v.trim() === "" ? null : v,
+      ]),
     );
-    const { data: before } = await db.from("organizations").select("*").eq("id", organizationId).maybeSingle();
+    const { data: before } = await db
+      .from("organizations")
+      .select("*")
+      .eq("id", organizationId)
+      .maybeSingle();
     if (!before) throw new Error("المكتب غير موجود.");
     const { error } = await db.from("organizations").update(patch).eq("id", organizationId);
     if (error) throw new Error("تعذّر تحديث بيانات المكتب.");
@@ -167,7 +174,9 @@ export const setOrganizationActive = createServerFn({ method: "POST" })
 export const deleteOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ organizationId: z.string().uuid(), confirmName: z.string().trim().min(1) }).parse(input),
+    z
+      .object({ organizationId: z.string().uuid(), confirmName: z.string().trim().min(1) })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
@@ -179,7 +188,8 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       .eq("id", data.organizationId)
       .maybeSingle();
     if (!before) throw new Error("المكتب غير موجود.");
-    if (before.name.trim() !== data.confirmName.trim()) throw new Error("اسم المكتب غير مطابق. لم يتم الحذف.");
+    if (before.name.trim() !== data.confirmName.trim())
+      throw new Error("اسم المكتب غير مطابق. لم يتم الحذف.");
 
     const { error } = await db.from("organizations").delete().eq("id", data.organizationId);
     if (error) throw new Error("تعذّر حذف المكتب. تأكد من عدم وجود ارتباطات محمية.");
@@ -208,7 +218,9 @@ export const listSupportAccessGrants = createServerFn({ method: "POST" })
     const db = await g.admin();
     let q = db
       .from("support_access_grants")
-      .select("id, organization_id, staff_email, reason, scope, status, requested_at, approved_at, expires_at, revoked_at, organizations(name)")
+      .select(
+        "id, organization_id, staff_email, reason, scope, status, requested_at, approved_at, expires_at, revoked_at, organizations(name)",
+      )
       .order("requested_at", { ascending: false })
       .limit(100);
     if (data.organizationId) q = q.eq("organization_id", data.organizationId);

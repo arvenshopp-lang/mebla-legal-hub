@@ -75,14 +75,24 @@ export function ReportsPanel({ workspace }: { workspace: SupportWorkspace }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <select value={days} onChange={(e) => setDays(e.target.value)} aria-label="المدة" className={`${inputCls} w-auto`}>
+        <select
+          value={days}
+          onChange={(e) => setDays(e.target.value)}
+          aria-label="المدة"
+          className={`${inputCls} w-auto`}
+        >
           {RANGES.map((r) => (
             <option key={r.key} value={r.key}>
               {r.label}
             </option>
           ))}
         </select>
-        <select value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="الفريق" className={`${inputCls} w-auto`}>
+        <select
+          value={teamId}
+          onChange={(e) => setTeamId(e.target.value)}
+          aria-label="الفريق"
+          className={`${inputCls} w-auto`}
+        >
           <option value="all">كل الفرق</option>
           {workspace.teams.map((t) => (
             <option key={t.id} value={t.id}>
@@ -106,15 +116,27 @@ export function ReportsPanel({ workspace }: { workspace: SupportWorkspace }) {
             <Kpi label="مصعّدة" value={report.totals.escalated} tone="warning" />
             <Kpi
               label="متوسط أول رد"
-              value={report.sla.avgFirstResponseMinutes === null ? "—" : humanMinutes(report.sla.avgFirstResponseMinutes)}
+              value={
+                report.sla.avgFirstResponseMinutes === null
+                  ? "—"
+                  : humanMinutes(report.sla.avgFirstResponseMinutes)
+              }
               hint={`التزام ${report.sla.firstResponseCompliance}%`}
             />
             <Kpi
               label="متوسط الحل"
-              value={report.sla.avgResolutionMinutes === null ? "—" : humanMinutes(report.sla.avgResolutionMinutes)}
+              value={
+                report.sla.avgResolutionMinutes === null
+                  ? "—"
+                  : humanMinutes(report.sla.avgResolutionMinutes)
+              }
               hint={`التزام ${report.sla.resolutionCompliance}%`}
             />
-            <Kpi label="نسبة إعادة الفتح" value={`${report.totals.reopenRate}%`} hint={`${report.totals.reopened} تذكرة`} />
+            <Kpi
+              label="نسبة إعادة الفتح"
+              value={`${report.totals.reopenRate}%`}
+              hint={`${report.totals.reopened} تذكرة`}
+            />
             <Kpi label="الحل من أول تواصل" value={`${report.totals.fcrRate}%`} tone="success" />
           </div>
 
@@ -122,7 +144,10 @@ export function ReportsPanel({ workspace }: { workspace: SupportWorkspace }) {
             <BreakdownTable
               caption="حسب الحالة"
               head={["الحالة", "العدد"]}
-              rows={report.byStatus.map((s) => [TICKET_STATUS_LABELS_AR[s.key as TicketStatus] ?? s.label, s.count])}
+              rows={report.byStatus.map((s) => [
+                TICKET_STATUS_LABELS_AR[s.key as TicketStatus] ?? s.label,
+                s.count,
+              ])}
             />
             <BreakdownTable
               caption="حسب الأولوية"
@@ -136,7 +161,10 @@ export function ReportsPanel({ workspace }: { workspace: SupportWorkspace }) {
             <BreakdownTable
               caption="حسب القناة"
               head={["القناة", "العدد"]}
-              rows={report.byChannel.map((c) => [TICKET_CHANNEL_LABELS[c.key as TicketChannel] ?? c.key, c.count])}
+              rows={report.byChannel.map((c) => [
+                TICKET_CHANNEL_LABELS[c.key as TicketChannel] ?? c.key,
+                c.count,
+              ])}
             />
             <BreakdownTable
               caption="حسب التصنيف"
@@ -150,7 +178,13 @@ export function ReportsPanel({ workspace }: { workspace: SupportWorkspace }) {
             <BreakdownTable
               caption="حسب المكتب"
               head={["المكتب", "الباقة", "الإجمالي", "المفتوحة", "متجاوزة"]}
-              rows={report.byOrganization.map((o) => [o.name, o.plan ?? "—", o.count, o.open, o.breached])}
+              rows={report.byOrganization.map((o) => [
+                o.name,
+                o.plan ?? "—",
+                o.count,
+                o.open,
+                o.breached,
+              ])}
             />
             <BreakdownTable
               caption="حسب الباقة"

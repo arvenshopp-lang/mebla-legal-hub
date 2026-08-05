@@ -48,7 +48,7 @@ export const PROCESSING_ERRORS: Record<string, string> = {
 
 export function describeProcessingError(code?: string | null, fallback?: string | null): string {
   if (code && PROCESSING_ERRORS[code]) return PROCESSING_ERRORS[code];
-  return fallback?.trim() || PROCESSING_ERRORS['UNKNOWN']!;
+  return fallback?.trim() || PROCESSING_ERRORS["UNKNOWN"]!;
 }
 
 /** أنواع الملفات التي يمكن استخراج نصها. */

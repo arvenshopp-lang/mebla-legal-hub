@@ -29,7 +29,10 @@ export const Route = createFileRoute("/_authenticated/support")({
   head: () => ({
     meta: [
       { title: "الدعم الفني · مِهلة" },
-      { name: "description", content: "افتح تذكرة دعم لفريق مِهلة وتابع المحادثة وقيّم الخدمة بعد إغلاقها." },
+      {
+        name: "description",
+        content: "افتح تذكرة دعم لفريق مِهلة وتابع المحادثة وقيّم الخدمة بعد إغلاقها.",
+      },
       { property: "og:title", content: "الدعم الفني · مِهلة" },
       { property: "og:description", content: "تذاكر الدعم والمحادثات المباشرة مع فريق مِهلة." },
       { property: "og:type", content: "website" },
@@ -135,18 +138,19 @@ function SupportPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[14.5px] font-semibold">{t.subject}</p>
                   <div className="flex items-center gap-2">
-                    {t.rating && (
-                      <Badge tone="gold">
-                        {t.rating}/5 تقييمك
-                      </Badge>
-                    )}
-                    <Badge tone={statusTone(t.status)}>{TICKET_STATUS_LABELS[t.status] ?? t.status}</Badge>
+                    {t.rating && <Badge tone="gold">{t.rating}/5 تقييمك</Badge>}
+                    <Badge tone={statusTone(t.status)}>
+                      {TICKET_STATUS_LABELS[t.status] ?? t.status}
+                    </Badge>
                   </div>
                 </div>
-                <p className="mt-1.5 line-clamp-2 text-[13px] text-muted-foreground">{t.description}</p>
+                <p className="mt-1.5 line-clamp-2 text-[13px] text-muted-foreground">
+                  {t.description}
+                </p>
                 <p className="text-caption mt-2 tabular-nums">
                   {t.reference} · {TICKET_CATEGORY_LABELS[t.category] ?? t.category} ·{" "}
-                  {TICKET_PRIORITY_LABELS[t.priority] ?? t.priority} · آخر نشاط {fmtDateTime(t.last_reply_at)}
+                  {TICKET_PRIORITY_LABELS[t.priority] ?? t.priority} · آخر نشاط{" "}
+                  {fmtDateTime(t.last_reply_at)}
                 </p>
               </button>
             </li>
@@ -239,7 +243,13 @@ function NewTicketModal({
   });
 
   return (
-    <Modal open={open} onClose={onClose} size="lg" title="تذكرة دعم جديدة" description="سيتم إرفاق بياناتك تلقائياً مع الطلب.">
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title="تذكرة دعم جديدة"
+      description="سيتم إرفاق بياناتك تلقائياً مع الطلب."
+    >
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -248,7 +258,8 @@ function NewTicketModal({
         }}
       >
         <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted px-3.5 py-3 text-[12.5px] text-muted-foreground">
-          مُقدّم الطلب: <span className="font-semibold text-foreground">{requesterName || "—"}</span> ·{" "}
+          مُقدّم الطلب:{" "}
+          <span className="font-semibold text-foreground">{requesterName || "—"}</span> ·{" "}
           <span className="tabular-nums">{requesterEmail}</span>
         </div>
 
@@ -264,7 +275,11 @@ function NewTicketModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="التصنيف" required>
-            <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select
+              className={inputCls}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
               {Object.entries(TICKET_CATEGORY_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -273,7 +288,11 @@ function NewTicketModal({
             </select>
           </FormField>
           <FormField label="الأولوية" required>
-            <select className={inputCls} value={priority} onChange={(e) => setPriority(e.target.value)}>
+            <select
+              className={inputCls}
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+            >
               {Object.entries(TICKET_PRIORITY_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -283,7 +302,11 @@ function NewTicketModal({
           </FormField>
         </div>
 
-        <FormField label="نص التذكرة" required hint="اشرح المشكلة أو الطلب بوضوح، وأرفق أرقام المراجع إن وُجدت.">
+        <FormField
+          label="نص التذكرة"
+          required
+          hint="اشرح المشكلة أو الطلب بوضوح، وأرفق أرقام المراجع إن وُجدت."
+        >
           <textarea
             className={`${inputCls} min-h-32`}
             value={description}
@@ -297,7 +320,11 @@ function NewTicketModal({
           <Btn type="button" variant="ghost" onClick={onClose}>
             إلغاء
           </Btn>
-          <Btn type="submit" loading={create.isPending} disabled={subject.trim().length < 3 || description.trim().length < 10}>
+          <Btn
+            type="submit"
+            loading={create.isPending}
+            disabled={subject.trim().length < 3 || description.trim().length < 10}
+          >
             <Send className="h-4 w-4" aria-hidden /> إرسال التذكرة
           </Btn>
         </div>
@@ -333,7 +360,12 @@ function TicketConversation({ ticket, onRated }: { ticket: Ticket; onRated: () =
       .channel(`ticket-${ticket.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "support_ticket_messages", filter: `ticket_id=eq.${ticket.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_ticket_messages",
+          filter: `ticket_id=eq.${ticket.id}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: messagesKey });
           qc.invalidateQueries({ queryKey: ["my-tickets", user?.id] });
@@ -373,7 +405,9 @@ function TicketConversation({ ticket, onRated }: { ticket: Ticket; onRated: () =
         error,
         ticketId: ticket.id,
       });
-      toast.error("تعذّر إرسال الرسالة", { description: failureHint(ref, "أعد المحاولة بعد لحظات.") });
+      toast.error("تعذّر إرسال الرسالة", {
+        description: failureHint(ref, "أعد المحاولة بعد لحظات."),
+      });
     },
   });
 
@@ -398,7 +432,7 @@ function TicketConversation({ ticket, onRated }: { ticket: Ticket; onRated: () =
             messages.data!.map((m) => (
               <Bubble
                 key={m.id}
-                author={m.is_staff ? m.author_name || "فريق مِهلة" : profile?.full_name ?? "أنت"}
+                author={m.is_staff ? m.author_name || "فريق مِهلة" : (profile?.full_name ?? "أنت")}
                 at={m.created_at}
                 body={m.body}
                 mine={!m.is_staff}
@@ -440,7 +474,17 @@ function TicketConversation({ ticket, onRated }: { ticket: Ticket; onRated: () =
   );
 }
 
-function Bubble({ author, at, body, mine }: { author: string; at: string; body: string; mine: boolean }) {
+function Bubble({
+  author,
+  at,
+  body,
+  mine,
+}: {
+  author: string;
+  at: string;
+  body: string;
+  mine: boolean;
+}) {
   return (
     <div
       className={cn(
@@ -505,13 +549,18 @@ function RatingPanel({ ticket, onRated }: { ticket: Ticket; onRated: () => void 
           {[1, 2, 3, 4, 5].map((n) => (
             <Star
               key={n}
-              className={cn("h-5 w-5", n <= (ticket.rating ?? 0) ? "fill-primary text-primary" : "text-border-strong")}
+              className={cn(
+                "h-5 w-5",
+                n <= (ticket.rating ?? 0) ? "fill-primary text-primary" : "text-border-strong",
+              )}
               aria-hidden
             />
           ))}
         </div>
         {ticket.rating_comment && (
-          <p className="mt-3 whitespace-pre-wrap text-[13px] text-muted-foreground">{ticket.rating_comment}</p>
+          <p className="mt-3 whitespace-pre-wrap text-[13px] text-muted-foreground">
+            {ticket.rating_comment}
+          </p>
         )}
         <p className="text-caption mt-3">
           {ticket.rated_staff_name ? `الموظف: ${ticket.rated_staff_name} · ` : ""}
@@ -542,7 +591,10 @@ function RatingPanel({ ticket, onRated }: { ticket: Ticket; onRated: () => void 
               className="rounded-[var(--radius-s)] p-1 transition hover:bg-surface-muted"
             >
               <Star
-                className={cn("h-6 w-6", n <= rating ? "fill-primary text-primary" : "text-border-strong")}
+                className={cn(
+                  "h-6 w-6",
+                  n <= rating ? "fill-primary text-primary" : "text-border-strong",
+                )}
                 aria-hidden
               />
             </button>

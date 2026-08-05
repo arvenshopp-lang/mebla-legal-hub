@@ -8,7 +8,12 @@ import { TERMINAL_STATUSES } from "./support.shared";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
-export type SupportReportRange = { from?: string; to?: string; teamId?: string | null; organizationId?: string | null };
+export type SupportReportRange = {
+  from?: string;
+  to?: string;
+  teamId?: string | null;
+  organizationId?: string | null;
+};
 
 type Row = {
   id: string;
@@ -59,7 +64,11 @@ export type SupportReport = {
     avgFirstResponseMinutes: number | null;
     avgResolutionMinutes: number | null;
   };
-  csat: { responses: number; average: number | null; distribution: Record<"1" | "2" | "3" | "4" | "5", number> };
+  csat: {
+    responses: number;
+    average: number | null;
+    distribution: Record<"1" | "2" | "3" | "4" | "5", number>;
+  };
   csatByStaff: { key: string; name: string; responses: number; average: number }[];
   csatByTeam: { key: string; name: string; responses: number; average: number }[];
   csatByCategory: { key: string; responses: number; average: number }[];
@@ -68,8 +77,22 @@ export type SupportReport = {
   byChannel: { key: string; count: number }[];
   byCategory: { key: string; count: number; breached: number }[];
   byTeam: { key: string; name: string; count: number; open: number; breached: number }[];
-  byAgent: { key: string; name: string; open: number; resolved: number; breached: number; avgResolutionMinutes: number | null }[];
-  byOrganization: { key: string; name: string; plan: string | null; count: number; open: number; breached: number }[];
+  byAgent: {
+    key: string;
+    name: string;
+    open: number;
+    resolved: number;
+    breached: number;
+    avgResolutionMinutes: number | null;
+  }[];
+  byOrganization: {
+    key: string;
+    name: string;
+    plan: string | null;
+    count: number;
+    open: number;
+    breached: number;
+  }[];
   byPlan: { key: string; count: number; breached: number }[];
   aging: { bucket: string; label: string; count: number }[];
   daily: { day: string; created: number; resolved: number }[];
@@ -130,18 +153,26 @@ export async function buildSupportReport(
     db.from("platform_staff").select("user_id, full_name"),
   ]);
   const teamRows = ((teams as { data: unknown }).data ?? []) as { id: string; name_ar: string }[];
-  const staffRows = ((staff as { data: unknown }).data ?? []) as { user_id: string; full_name: string }[];
+  const staffRows = ((staff as { data: unknown }).data ?? []) as {
+    user_id: string;
+    full_name: string;
+  }[];
   const teamName = new Map<string, string>(teamRows.map((t) => [t.id, t.name_ar]));
   const staffName = new Map<string, string>(staffRows.map((s) => [s.user_id, s.full_name]));
 
   /* المكاتب والباقات: أسماء المكاتب وربطها بباقة الاشتراك النشط. */
-  const orgIds = Array.from(new Set(rows.map((r) => r.organization_id).filter((v): v is string => !!v)));
+  const orgIds = Array.from(
+    new Set(rows.map((r) => r.organization_id).filter((v): v is string => !!v)),
+  );
   const orgName = new Map<string, string>();
   const orgPlan = new Map<string, string>();
   if (orgIds.length > 0) {
     const [orgs, subs] = await Promise.all([
       db.from("organizations").select("id, name").in("id", orgIds),
-      db.from("subscriptions").select("organization_id, plan_code, status").in("organization_id", orgIds),
+      db
+        .from("subscriptions")
+        .select("organization_id, plan_code, status")
+        .in("organization_id", orgIds),
     ]);
     for (const org of ((orgs as { data: unknown }).data ?? []) as { id: string; name: string }[]) {
       orgName.set(org.id, org.name);
@@ -159,7 +190,9 @@ export async function buildSupportReport(
   }
 
   /* الحل من أول تواصل: تذكرة حُلّت بردّ واحد من الفريق ولم تُعَد فتحها. */
-  const resolvedIds = rows.filter((r) => r.resolved_at && (r.reopened_count ?? 0) === 0).map((r) => r.id);
+  const resolvedIds = rows
+    .filter((r) => r.resolved_at && (r.reopened_count ?? 0) === 0)
+    .map((r) => r.id);
   let fcrCount = 0;
   if (resolvedIds.length > 0) {
     const staffReplies = new Map<string, number>();
@@ -170,7 +203,7 @@ export async function buildSupportReport(
         .select("ticket_id, is_staff")
         .in("ticket_id", slice)
         .eq("is_staff", true);
-      for (const msg of ((msgs ?? []) as { ticket_id: string }[])) {
+      for (const msg of (msgs ?? []) as { ticket_id: string }[]) {
         staffReplies.set(msg.ticket_id, (staffReplies.get(msg.ticket_id) ?? 0) + 1);
       }
     }
@@ -185,12 +218,14 @@ export async function buildSupportReport(
     .gte("used_at", from)
     .lte("used_at", to)
     .limit(5000);
-  const csatEntries = ((csatRows ?? []) as {
-    rating: number | null;
-    staff_id: string | null;
-    team_id: string | null;
-    category: string | null;
-  }[]).filter((c) => typeof c.rating === "number" && c.rating > 0);
+  const csatEntries = (
+    (csatRows ?? []) as {
+      rating: number | null;
+      staff_id: string | null;
+      team_id: string | null;
+      category: string | null;
+    }[]
+  ).filter((c) => typeof c.rating === "number" && c.rating > 0);
 
   const csatGroup = (
     keyOf: (entry: (typeof csatEntries)[number]) => string | null,
@@ -221,10 +256,13 @@ export async function buildSupportReport(
     breached: rows.filter((r) => r.sla_state === "breached").length,
     escalated: rows.filter((r) => (r.escalation_level ?? 0) > 0).length,
     reopened: rows.filter((r) => (r.reopened_count ?? 0) > 0).length,
-    unassigned: rows.filter((r) => !r.assigned_to && !TERMINAL_STATUSES.includes(r.status as never)).length,
+    unassigned: rows.filter((r) => !r.assigned_to && !TERMINAL_STATUSES.includes(r.status as never))
+      .length,
     atRisk: rows.filter((r) => r.sla_state === "warning" || r.sla_state === "critical").length,
     backlog: rows.filter(
-      (r) => !TERMINAL_STATUSES.includes(r.status as never) && Date.now() - new Date(r.created_at).getTime() > 86_400_000,
+      (r) =>
+        !TERMINAL_STATUSES.includes(r.status as never) &&
+        Date.now() - new Date(r.created_at).getTime() > 86_400_000,
     ).length,
     reopenRate: rows.length
       ? Math.round((rows.filter((r) => (r.reopened_count ?? 0) > 0).length / rows.length) * 100)
@@ -243,7 +281,8 @@ export async function buildSupportReport(
     if (row.first_response_at) {
       firstResponseTimes.push(minutesBetween(row.created_at, row.first_response_at));
       if (row.due_first_response_at) {
-        if (new Date(row.first_response_at) <= new Date(row.due_first_response_at)) firstResponseMet += 1;
+        if (new Date(row.first_response_at) <= new Date(row.due_first_response_at))
+          firstResponseMet += 1;
         else firstResponseMissed += 1;
       }
     }
@@ -259,14 +298,23 @@ export async function buildSupportReport(
   const compliance = (met: number, missed: number) =>
     met + missed === 0 ? 100 : Math.round((met / (met + missed)) * 100);
 
-  const ratings = rows.map((r) => r.rating).filter((r): r is number => typeof r === "number" && r > 0);
-  const distribution = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 } as Record<"1" | "2" | "3" | "4" | "5", number>;
+  const ratings = rows
+    .map((r) => r.rating)
+    .filter((r): r is number => typeof r === "number" && r > 0);
+  const distribution = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 } as Record<
+    "1" | "2" | "3" | "4" | "5",
+    number
+  >;
   for (const rating of ratings) {
     const key = String(Math.min(5, Math.max(1, rating))) as keyof typeof distribution;
     distribution[key] += 1;
   }
 
-  const group = <T>(items: Row[], keyOf: (row: Row) => string | null, build: (key: string, rows: Row[]) => T): T[] => {
+  const group = <T>(
+    items: Row[],
+    keyOf: (row: Row) => string | null,
+    build: (key: string, rows: Row[]) => T,
+  ): T[] => {
     const buckets = new Map<string, Row[]>();
     for (const item of items) {
       const key = keyOf(item);
@@ -278,34 +326,50 @@ export async function buildSupportReport(
     return Array.from(buckets.entries()).map(([key, bucket]) => build(key, bucket));
   };
 
-  const byStatus = group(rows, (r) => r.status, (key, bucket) => ({ key, label: key, count: bucket.length })).sort(
-    (a, b) => b.count - a.count,
-  );
+  const byStatus = group(
+    rows,
+    (r) => r.status,
+    (key, bucket) => ({ key, label: key, count: bucket.length }),
+  ).sort((a, b) => b.count - a.count);
 
-  const byCategory = group(rows, (r) => r.category, (key, bucket) => ({
-    key,
-    count: bucket.length,
-    breached: bucket.filter((r) => r.sla_state === "breached").length,
-  })).sort((a, b) => b.count - a.count);
+  const byCategory = group(
+    rows,
+    (r) => r.category,
+    (key, bucket) => ({
+      key,
+      count: bucket.length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
 
-  const byPriority = group(rows, (r) => r.priority, (key, bucket) => ({
-    key,
-    count: bucket.length,
-    breached: bucket.filter((r) => r.sla_state === "breached").length,
-  })).sort((a, b) => b.count - a.count);
+  const byPriority = group(
+    rows,
+    (r) => r.priority,
+    (key, bucket) => ({
+      key,
+      count: bucket.length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
 
-  const byChannel = group(rows, (r) => r.channel, (key, bucket) => ({ key, count: bucket.length })).sort(
-    (a, b) => b.count - a.count,
-  );
+  const byChannel = group(
+    rows,
+    (r) => r.channel,
+    (key, bucket) => ({ key, count: bucket.length }),
+  ).sort((a, b) => b.count - a.count);
 
-  const byOrganization = group(rows, (r) => r.organization_id, (key, bucket) => ({
-    key,
-    name: orgName.get(key) ?? "مكتب غير مرتبط",
-    plan: orgPlan.get(key) ?? null,
-    count: bucket.length,
-    open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
-    breached: bucket.filter((r) => r.sla_state === "breached").length,
-  })).sort((a, b) => b.count - a.count);
+  const byOrganization = group(
+    rows,
+    (r) => r.organization_id,
+    (key, bucket) => ({
+      key,
+      name: orgName.get(key) ?? "مكتب غير مرتبط",
+      plan: orgPlan.get(key) ?? null,
+      count: bucket.length,
+      open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
 
   const byPlan = group(
     rows,
@@ -331,24 +395,34 @@ export async function buildSupportReport(
     count: openRows.filter((r) => test(ageHours(r.created_at))).length,
   }));
 
-  const byTeam = group(rows, (r) => r.team_id, (key, bucket) => ({
-    key,
-    name: teamName.get(key) ?? "غير محدد",
-    count: bucket.length,
-    open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
-    breached: bucket.filter((r) => r.sla_state === "breached").length,
-  })).sort((a, b) => b.count - a.count);
+  const byTeam = group(
+    rows,
+    (r) => r.team_id,
+    (key, bucket) => ({
+      key,
+      name: teamName.get(key) ?? "غير محدد",
+      count: bucket.length,
+      open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+    }),
+  ).sort((a, b) => b.count - a.count);
 
-  const byAgent = group(rows, (r) => r.assigned_to, (key, bucket) => ({
-    key,
-    name: staffName.get(key) ?? "غير محدد",
-    open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
-    resolved: bucket.filter((r) => r.resolved_at).length,
-    breached: bucket.filter((r) => r.sla_state === "breached").length,
-    avgResolutionMinutes: average(
-      bucket.filter((r) => r.resolved_at).map((r) => minutesBetween(r.created_at, r.resolved_at as string)),
-    ),
-  })).sort((a, b) => b.open - a.open);
+  const byAgent = group(
+    rows,
+    (r) => r.assigned_to,
+    (key, bucket) => ({
+      key,
+      name: staffName.get(key) ?? "غير محدد",
+      open: bucket.filter((r) => !TERMINAL_STATUSES.includes(r.status as never)).length,
+      resolved: bucket.filter((r) => r.resolved_at).length,
+      breached: bucket.filter((r) => r.sla_state === "breached").length,
+      avgResolutionMinutes: average(
+        bucket
+          .filter((r) => r.resolved_at)
+          .map((r) => minutesBetween(r.created_at, r.resolved_at as string)),
+      ),
+    }),
+  ).sort((a, b) => b.open - a.open);
 
   const dayBuckets = new Map<string, { created: number; resolved: number }>();
   const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
@@ -378,8 +452,8 @@ export async function buildSupportReport(
       priority: r.priority,
       status: r.status,
       dueAt: r.due_resolution_at,
-      teamName: r.team_id ? teamName.get(r.team_id) ?? null : null,
-      assigneeName: r.assigned_to ? staffName.get(r.assigned_to) ?? null : null,
+      teamName: r.team_id ? (teamName.get(r.team_id) ?? null) : null,
+      assigneeName: r.assigned_to ? (staffName.get(r.assigned_to) ?? null) : null,
     }));
 
   return {
@@ -395,10 +469,25 @@ export async function buildSupportReport(
       avgFirstResponseMinutes: average(firstResponseTimes),
       avgResolutionMinutes: average(resolutionTimes),
     },
-    csat: { responses: ratings.length, average: ratings.length ? Number((ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(2)) : null, distribution },
-    csatByStaff: csatGroup((e) => e.staff_id, (key) => staffName.get(key) ?? "غير محدد"),
-    csatByTeam: csatGroup((e) => e.team_id, (key) => teamName.get(key) ?? "غير محدد"),
-    csatByCategory: csatGroup((e) => e.category, (key) => key).map(({ key, responses, average }) => ({
+    csat: {
+      responses: ratings.length,
+      average: ratings.length
+        ? Number((ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(2))
+        : null,
+      distribution,
+    },
+    csatByStaff: csatGroup(
+      (e) => e.staff_id,
+      (key) => staffName.get(key) ?? "غير محدد",
+    ),
+    csatByTeam: csatGroup(
+      (e) => e.team_id,
+      (key) => teamName.get(key) ?? "غير محدد",
+    ),
+    csatByCategory: csatGroup(
+      (e) => e.category,
+      (key) => key,
+    ).map(({ key, responses, average }) => ({
       key,
       responses,
       average,

@@ -22,8 +22,15 @@ export type ContactDraft = {
 
 export function emptyContactDraft(): ContactDraft {
   return {
-    full_name: "", company_id: "", job_title: "", email: "", phone: "", city: "",
-    is_primary: false, notes: "", owner_staff_id: "",
+    full_name: "",
+    company_id: "",
+    job_title: "",
+    email: "",
+    phone: "",
+    city: "",
+    is_primary: false,
+    notes: "",
+    owner_staff_id: "",
   };
 }
 
@@ -89,50 +96,102 @@ export function ContactFormModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editId ? "تعديل جهة اتصال" : "جهة اتصال جديدة"} size="lg" busy={saving}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={editId ? "تعديل جهة اتصال" : "جهة اتصال جديدة"}
+      size="lg"
+      busy={saving}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="الاسم الكامل" required error={errors.full_name}>
-          <input className={inputCls} value={draft.full_name} onChange={(e) => set({ full_name: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.full_name}
+            onChange={(e) => set({ full_name: e.target.value })}
+          />
         </FormField>
         <FormField label="الشركة">
-          <select className={inputCls} value={draft.company_id} onChange={(e) => set({ company_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.company_id}
+            onChange={(e) => set({ company_id: e.target.value })}
+          >
             <option value="">بلا شركة</option>
             {companyOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="المسمى الوظيفي">
-          <input className={inputCls} value={draft.job_title} onChange={(e) => set({ job_title: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.job_title}
+            onChange={(e) => set({ job_title: e.target.value })}
+          />
         </FormField>
         <FormField label="البريد الإلكتروني">
-          <input type="email" className={inputCls} value={draft.email} onChange={(e) => set({ email: e.target.value })} />
+          <input
+            type="email"
+            className={inputCls}
+            value={draft.email}
+            onChange={(e) => set({ email: e.target.value })}
+          />
         </FormField>
         <FormField label="الجوال">
-          <input className={inputCls} value={draft.phone} onChange={(e) => set({ phone: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.phone}
+            onChange={(e) => set({ phone: e.target.value })}
+          />
         </FormField>
         <FormField label="المدينة">
-          <input className={inputCls} value={draft.city} onChange={(e) => set({ city: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.city}
+            onChange={(e) => set({ city: e.target.value })}
+          />
         </FormField>
         <FormField label="المسؤول">
-          <select className={inputCls} value={draft.owner_staff_id} onChange={(e) => set({ owner_staff_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.owner_staff_id}
+            onChange={(e) => set({ owner_staff_id: e.target.value })}
+          >
             <option value="">بلا مسؤول</option>
             {staffOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
+              <option key={s.id} value={s.id}>
+                {s.full_name}
+              </option>
             ))}
           </select>
         </FormField>
         <label className="flex items-center gap-2 text-body-sm">
-          <input type="checkbox" checked={draft.is_primary} onChange={(e) => set({ is_primary: e.target.checked })} />
+          <input
+            type="checkbox"
+            checked={draft.is_primary}
+            onChange={(e) => set({ is_primary: e.target.checked })}
+          />
           جهة الاتصال الأساسية للشركة
         </label>
         <FormField label="ملاحظات">
-          <textarea className={inputCls} rows={3} value={draft.notes} onChange={(e) => set({ notes: e.target.value })} />
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={draft.notes}
+            onChange={(e) => set({ notes: e.target.value })}
+          />
         </FormField>
       </div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>{editId ? "حفظ التعديلات" : "إنشاء جهة الاتصال"}</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          {editId ? "حفظ التعديلات" : "إنشاء جهة الاتصال"}
+        </Btn>
       </div>
     </Modal>
   );

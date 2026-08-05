@@ -4,7 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowRight, Download, FileText, Mail, Receipt } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
-import { Btn, ErrorBlock, FormField, SectionCard, SectionLoader, Td, Th, inputCls } from "@/lib/list-utils";
+import {
+  Btn,
+  ErrorBlock,
+  FormField,
+  SectionCard,
+  SectionLoader,
+  Td,
+  Th,
+  inputCls,
+} from "@/lib/list-utils";
 import {
   billingAddNote,
   billingInvoiceDetail,
@@ -15,13 +24,28 @@ import {
   billingStatementPdf,
 } from "@/lib/billing/billing.functions";
 import { downloadPdfPayload, type PdfPayload } from "@/lib/billing/download-pdf";
-import { PAYMENT_METHOD_LABELS, formatDate, formatDateTime, type InvoiceDetail } from "@/lib/billing/billing.shared";
+import {
+  PAYMENT_METHOD_LABELS,
+  formatDate,
+  formatDateTime,
+  type InvoiceDetail,
+} from "@/lib/billing/billing.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
-import { InvoiceStatusBadge, Money, PaymentStatusBadge, RefundStatusBadge } from "@/components/admin/billing/shared";
+import {
+  InvoiceStatusBadge,
+  Money,
+  PaymentStatusBadge,
+  RefundStatusBadge,
+} from "@/components/admin/billing/shared";
 import { useState } from "react";
 
 export const Route = createFileRoute("/mehla-admin/billing/$id")({
-  head: () => ({ meta: [{ title: "تفاصيل الفاتورة · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "تفاصيل الفاتورة · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: InvoiceDetailPage,
 });
 
@@ -39,7 +63,10 @@ function InvoiceDetailPage() {
   const emailFn = useServerFn(billingSendInvoiceEmail);
   const noteFn = useServerFn(billingAddNote);
 
-  const query = useQuery({ queryKey: ["billing-invoice", id], queryFn: () => detailFn({ data: { id } }) });
+  const query = useQuery({
+    queryKey: ["billing-invoice", id],
+    queryFn: () => detailFn({ data: { id } }),
+  });
   const invoice = query.data as InvoiceDetail | undefined;
 
   const pdf = useMutation({
@@ -83,7 +110,8 @@ function InvoiceDetailPage() {
   });
 
   const addNote = useMutation({
-    mutationFn: () => noteFn({ data: { resourceType: "invoice", resourceId: id, body: note } as never }),
+    mutationFn: () =>
+      noteFn({ data: { resourceType: "invoice", resourceId: id, body: note } as never }),
     onSuccess: () => {
       setNote("");
       toast.success("تمت إضافة الملاحظة.");
@@ -109,17 +137,32 @@ function InvoiceDetailPage() {
             </Btn>
           )}
           {can("billing.export") && invoice?.status === "draft" && (
-            <Btn variant="outline" size="sm" loading={quote.isPending} onClick={() => quote.mutate()}>
+            <Btn
+              variant="outline"
+              size="sm"
+              loading={quote.isPending}
+              onClick={() => quote.mutate()}
+            >
               <FileText className="h-4 w-4" aria-hidden /> عرض سعر PDF
             </Btn>
           )}
           {can("billing.export") && invoice?.organization_id && (
-            <Btn variant="outline" size="sm" loading={statement.isPending} onClick={() => statement.mutate()}>
+            <Btn
+              variant="outline"
+              size="sm"
+              loading={statement.isPending}
+              onClick={() => statement.mutate()}
+            >
               <FileText className="h-4 w-4" aria-hidden /> كشف حساب المكتب
             </Btn>
           )}
           {can("billing.issue") && invoice?.customer_email && invoice.status !== "draft" && (
-            <Btn variant="outline" size="sm" loading={email.isPending} onClick={() => email.mutate()}>
+            <Btn
+              variant="outline"
+              size="sm"
+              loading={email.isPending}
+              onClick={() => email.mutate()}
+            >
               <Mail className="h-4 w-4" aria-hidden /> إرسال بالبريد
             </Btn>
           )}
@@ -129,7 +172,9 @@ function InvoiceDetailPage() {
       {query.isPending ? (
         <SectionLoader label="جاري تحميل الفاتورة…" rows={6} />
       ) : query.isError || !invoice ? (
-        <ErrorBlock message={(query.error as Error | undefined)?.message ?? "تعذّر جلب الفاتورة."} />
+        <ErrorBlock
+          message={(query.error as Error | undefined)?.message ?? "تعذّر جلب الفاتورة."}
+        />
       ) : (
         <div className="space-y-5">
           <SectionCard title="بيانات الفاتورة">
@@ -140,9 +185,18 @@ function InvoiceDetailPage() {
               <Field label="البريد" value={invoice.customer_email ?? "—"} />
               <Field label="تاريخ الإصدار" value={formatDate(invoice.issued_at)} />
               <Field label="تاريخ الاستحقاق" value={formatDate(invoice.due_at)} />
-              <Field label="الإجمالي" value={<Money value={invoice.total} currency={invoice.currency} />} />
-              <Field label="المسدّد" value={<Money value={invoice.paid_total} currency={invoice.currency} />} />
-              <Field label="المتبقي" value={<Money value={invoice.remaining} currency={invoice.currency} />} />
+              <Field
+                label="الإجمالي"
+                value={<Money value={invoice.total} currency={invoice.currency} />}
+              />
+              <Field
+                label="المسدّد"
+                value={<Money value={invoice.paid_total} currency={invoice.currency} />}
+              />
+              <Field
+                label="المتبقي"
+                value={<Money value={invoice.remaining} currency={invoice.currency} />}
+              />
               <Field
                 label="الضريبة"
                 value={
@@ -200,26 +254,33 @@ function InvoiceDetailPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {invoice.payments.map((payment) => (
-                    <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 p-4">
+                    <li
+                      key={payment.id}
+                      className="flex flex-wrap items-center justify-between gap-2 p-4"
+                    >
                       <div className="min-w-0">
                         <p className="text-body-sm font-medium">
                           <Money value={payment.amount} currency={payment.currency} /> —{" "}
                           {PAYMENT_METHOD_LABELS[payment.method] ?? payment.method}
                         </p>
-                        <p className="text-caption">{formatDateTime(payment.paid_at ?? payment.created_at)}</p>
+                        <p className="text-caption">
+                          {formatDateTime(payment.paid_at ?? payment.created_at)}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {can("billing.export") && payment.status !== "pending" && payment.status !== "failed" && (
-                          <Btn
-                            variant="ghost"
-                            size="sm"
-                            loading={receipt.isPending && receipt.variables === payment.id}
-                            onClick={() => receipt.mutate(payment.id)}
-                            aria-label={`تنزيل إيصال السداد بمبلغ ${payment.amount}`}
-                          >
-                            <Receipt className="h-4 w-4" aria-hidden /> إيصال
-                          </Btn>
-                        )}
+                        {can("billing.export") &&
+                          payment.status !== "pending" &&
+                          payment.status !== "failed" && (
+                            <Btn
+                              variant="ghost"
+                              size="sm"
+                              loading={receipt.isPending && receipt.variables === payment.id}
+                              onClick={() => receipt.mutate(payment.id)}
+                              aria-label={`تنزيل إيصال السداد بمبلغ ${payment.amount}`}
+                            >
+                              <Receipt className="h-4 w-4" aria-hidden /> إيصال
+                            </Btn>
+                          )}
                         <PaymentStatusBadge status={payment.status} />
                       </div>
                     </li>
@@ -234,7 +295,10 @@ function InvoiceDetailPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {invoice.refunds.map((refund) => (
-                    <li key={refund.id} className="flex flex-wrap items-center justify-between gap-2 p-4">
+                    <li
+                      key={refund.id}
+                      className="flex flex-wrap items-center justify-between gap-2 p-4"
+                    >
                       <div className="min-w-0">
                         <p className="text-body-sm font-medium">
                           استرداد <Money value={refund.amount} currency={invoice.currency} />
@@ -247,7 +311,8 @@ function InvoiceDetailPage() {
                   {invoice.credit_notes.map((creditNote) => (
                     <li key={creditNote.id} className="p-4">
                       <p className="text-body-sm font-medium">
-                        إشعار خصم {creditNote.number} — <Money value={creditNote.amount} currency={invoice.currency} />
+                        إشعار خصم {creditNote.number} —{" "}
+                        <Money value={creditNote.amount} currency={invoice.currency} />
                       </p>
                       <p className="text-caption truncate">{creditNote.reason}</p>
                     </li>
@@ -257,7 +322,10 @@ function InvoiceDetailPage() {
             </SectionCard>
           </div>
 
-          <SectionCard title="الملاحظات الداخلية" description="تُحفظ في سجل الفاتورة ولا تُرسل للعميل.">
+          <SectionCard
+            title="الملاحظات الداخلية"
+            description="تُحفظ في سجل الفاتورة ولا تُرسل للعميل."
+          >
             <div className="space-y-4 p-5">
               {can("billing.update") && (
                 <form
@@ -274,7 +342,12 @@ function InvoiceDetailPage() {
                       onChange={(event) => setNote(event.target.value)}
                     />
                   </FormField>
-                  <Btn type="submit" size="sm" loading={addNote.isPending} disabled={note.trim().length < 2}>
+                  <Btn
+                    type="submit"
+                    size="sm"
+                    loading={addNote.isPending}
+                    disabled={note.trim().length < 2}
+                  >
                     حفظ الملاحظة
                   </Btn>
                 </form>

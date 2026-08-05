@@ -40,12 +40,19 @@ function SharePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const nextObjectUrl = await fetchWatermarkedPdf(`/api/public/doc/${encodeURIComponent(token)}`);
+        const nextObjectUrl = await fetchWatermarkedPdf(
+          `/api/public/doc/${encodeURIComponent(token)}`,
+        );
         if (cancelled) return;
         objectUrl = nextObjectUrl;
         setSource(objectUrl);
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح.");
+        if (!cancelled)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح.",
+          );
       }
     })();
     return () => {

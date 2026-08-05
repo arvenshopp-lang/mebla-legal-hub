@@ -87,7 +87,8 @@ function prefixSelectorList(selectorList: string, scope: string): string {
       const s = sel.trim();
       if (!s) return "";
       if (s.startsWith(scope)) return s;
-      if (/^(html|:root|body)\b/i.test(s)) return `${scope}${s.replace(/^(html|:root|body)/i, "")}`.trim() || scope;
+      if (/^(html|:root|body)\b/i.test(s))
+        return `${scope}${s.replace(/^(html|:root|body)/i, "")}`.trim() || scope;
       return `${scope} ${s}`;
     })
     .filter(Boolean)
@@ -137,7 +138,9 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
   const size = new TextEncoder().encode(raw).length;
 
   if (size > MAX_CSS_BYTES) {
-    blocked.push(`حجم CSS ${(size / 1024).toFixed(0)} كيلوبايت يتجاوز الحد المسموح (100 كيلوبايت).`);
+    blocked.push(
+      `حجم CSS ${(size / 1024).toFixed(0)} كيلوبايت يتجاوز الحد المسموح (100 كيلوبايت).`,
+    );
     return { valid: false, warnings, blocked_rules: blocked, normalized_css: "", size_bytes: size };
   }
 
@@ -146,7 +149,8 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
   // 1) أنماط خطيرة عامة
   if (/javascript\s*:/i.test(css)) blocked.push("استخدام javascript: غير مسموح.");
   if (/expression\s*\(/i.test(css)) blocked.push("استخدام expression() غير مسموح.");
-  if (/behavior\s*:|-moz-binding/i.test(css)) blocked.push("استخدام behavior/-moz-binding غير مسموح.");
+  if (/behavior\s*:|-moz-binding/i.test(css))
+    blocked.push("استخدام behavior/-moz-binding غير مسموح.");
   if (/<\s*\/?\s*(script|style|iframe)/i.test(css)) blocked.push("وسوم HTML غير مسموحة داخل CSS.");
 
   // 2) روابط data المصرح بها فقط (صور)
@@ -196,7 +200,11 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
     if (z && Number(z[1]) > 9999) {
       blocked.push(`z-index مفرط (${z[1]}) قد يغطي كامل الشاشة: ${decl}`);
     }
-    if (/position\s*:\s*fixed/i.test(body) && /(inset\s*:\s*0|(top|left|right|bottom)\s*:\s*0)/i.test(body) && /^(\*|html|body|:root)\b/i.test(sel.trim())) {
+    if (
+      /position\s*:\s*fixed/i.test(body) &&
+      /(inset\s*:\s*0|(top|left|right|bottom)\s*:\s*0)/i.test(body) &&
+      /^(\*|html|body|:root)\b/i.test(sel.trim())
+    ) {
       blocked.push(`طبقة ثابتة تغطي كامل الشاشة غير مسموحة: ${decl}`);
     }
 

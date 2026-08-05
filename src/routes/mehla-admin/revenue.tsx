@@ -2,16 +2,43 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminShell } from "@/components/admin/shell";
-import { DataCard, EmptyState, ErrorBlock, SectionCard, StatsSkeleton, Td, Th } from "@/lib/list-utils";
+import {
+  DataCard,
+  EmptyState,
+  ErrorBlock,
+  SectionCard,
+  StatsSkeleton,
+  Td,
+  Th,
+} from "@/lib/list-utils";
 import { getRevenueSummary } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/mehla-admin/revenue")({
-  head: () => ({ meta: [{ title: "الإيرادات والتقارير · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "الإيرادات والتقارير · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: RevenuePage,
 });
 
-const money = (n: number) => `${Number(n ?? 0).toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س`;
-const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const money = (n: number) =>
+  `${Number(n ?? 0).toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س`;
+const MONTHS = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
 const monthLabel = (m: string) => {
   const [y, mm] = m.split("-");
   return `${MONTHS[Number(mm) - 1] ?? mm} ${y}`;
@@ -19,9 +46,12 @@ const monthLabel = (m: string) => {
 
 function RevenuePage() {
   const fn = useServerFn(getRevenueSummary);
-  const { data, isLoading, isError } = useQuery({ queryKey: ["admin-revenue"], queryFn: () => fn({ data: undefined }) });
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["admin-revenue"],
+    queryFn: () => fn({ data: undefined }),
+  });
 
-  const peak = Math.max(1, ...((data?.by_month ?? []).map((m) => Number(m.amount))));
+  const peak = Math.max(1, ...(data?.by_month ?? []).map((m) => Number(m.amount)));
 
   return (
     <AdminShell title="الإيرادات والتقارير" description="إيرادات الاشتراكات المسجّلة على المنصة.">
@@ -36,7 +66,11 @@ function RevenuePage() {
             <Stat label="هذا الأسبوع" value={money(data.week)} />
             <Stat label="هذا الشهر" value={money(data.month)} />
             <Stat label="هذه السنة" value={money(data.year)} />
-            <Stat label="اشتراكات نشطة" value={String(data.active_count)} hint={`الإجمالي التراكمي ${money(data.total)}`} />
+            <Stat
+              label="اشتراكات نشطة"
+              value={String(data.active_count)}
+              hint={`الإجمالي التراكمي ${money(data.total)}`}
+            />
           </div>
 
           <SectionCard title="الإيراد الشهري" description="آخر ١٢ شهراً">
@@ -52,7 +86,10 @@ function RevenuePage() {
                         {money(m.amount)} · {m.count} اشتراك
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-surface-muted" role="presentation">
+                    <div
+                      className="h-2 overflow-hidden rounded-full bg-surface-muted"
+                      role="presentation"
+                    >
                       <div
                         className="h-full rounded-full bg-primary transition-[width] duration-500"
                         style={{ width: `${Math.max(2, (Number(m.amount) / peak) * 100)}%` }}

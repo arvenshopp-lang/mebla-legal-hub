@@ -130,12 +130,17 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
     >
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <a href="/" className="text-[17px] font-bold tracking-tight">
-          مِهلة <span className="text-text-muted">·</span> <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+          مِهلة <span className="text-text-muted">·</span>{" "}
+          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </a>
 
         <nav aria-label="روابط الموقع" className="hidden items-center gap-7 md:flex">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="text-[13.5px] text-muted-foreground transition hover:text-foreground">
+            <a
+              key={n.href}
+              href={n.href}
+              className="text-[13.5px] text-muted-foreground transition hover:text-foreground"
+            >
               {n.label}
             </a>
           ))}
@@ -228,18 +233,20 @@ function AppPreview() {
       </div>
       <div className="grid grid-cols-[1fr] md:grid-cols-[190px_1fr]" dir="rtl">
         <aside className="hidden border-l border-border p-3 md:block">
-          {["الرئيسية", "القضايا", "الجلسات", "المهل", "المهام", "العملاء", "المستندات"].map((l, i) => (
-            <div
-              key={l}
-              className={cn(
-                "mb-1 flex items-center gap-2 rounded-[var(--radius-s)] px-3 py-2 text-[12.5px]",
-                i === 0 ? "bg-primary-soft font-semibold text-primary" : "text-muted-foreground",
-              )}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" aria-hidden />
-              {l}
-            </div>
-          ))}
+          {["الرئيسية", "القضايا", "الجلسات", "المهل", "المهام", "العملاء", "المستندات"].map(
+            (l, i) => (
+              <div
+                key={l}
+                className={cn(
+                  "mb-1 flex items-center gap-2 rounded-[var(--radius-s)] px-3 py-2 text-[12.5px]",
+                  i === 0 ? "bg-primary-soft font-semibold text-primary" : "text-muted-foreground",
+                )}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" aria-hidden />
+                {l}
+              </div>
+            ),
+          )}
         </aside>
         <div className="p-4 sm:p-5">
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -249,7 +256,10 @@ function AppPreview() {
               ["مهل خلال 7 أيام", "6"],
               ["مهام متأخرة", "2"],
             ].map(([l, v], i) => (
-              <div key={l} className="relative overflow-hidden rounded-[var(--radius-m)] border border-border p-3">
+              <div
+                key={l}
+                className="relative overflow-hidden rounded-[var(--radius-m)] border border-border p-3"
+              >
                 <span
                   className={cn(
                     "absolute inset-y-0 right-0 w-[3px]",
@@ -263,7 +273,9 @@ function AppPreview() {
             ))}
           </div>
           <div className="mt-4 rounded-[var(--radius-m)] border border-border">
-            <div className="border-b border-border px-4 py-2.5 text-[12.5px] font-semibold">الجلسات القادمة</div>
+            <div className="border-b border-border px-4 py-2.5 text-[12.5px] font-semibold">
+              الجلسات القادمة
+            </div>
             <ul className="divide-y divide-border">
               {[
                 ["مطالبة مالية — شركة الأفق", "المحكمة التجارية بالرياض", "الأحد ٠٩:٣٠"],
@@ -301,8 +313,8 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             متابعة أدق للمهل والجلسات.
           </h1>
           <p className="mt-5 text-body-lg text-muted-foreground">
-            مِهلة تجمع القضايا والعملاء والجلسات والمستندات في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما الذي يحتاج
-            إجراءً اليوم وما الذي يقترب موعده.
+            مِهلة تجمع القضايا والعملاء والجلسات والمستندات في مساحة عمل واحدة منظمة، لتعرف في كل
+            لحظة ما الذي يحتاج إجراءً اليوم وما الذي يقترب موعده.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
@@ -342,7 +354,11 @@ const CAPABILITIES = [
   {
     title: "مساحة عمل لكل قضية",
     body: "بيانات القضية والأطراف والجلسات والمستندات والمهام وسجل النشاط في صفحة واحدة، دون تنقل بين أدوات متفرقة.",
-    points: ["تصنيف حسب النوع والحالة والمحكمة", "خط زمني للتحديثات", "ربط العميل والمستندات مباشرة"],
+    points: [
+      "تصنيف حسب النوع والحالة والمحكمة",
+      "خط زمني للتحديثات",
+      "ربط العميل والمستندات مباشرة",
+    ],
   },
   {
     title: "متابعة المهل والجلسات",
@@ -378,8 +394,14 @@ function Capabilities() {
               <p className="mt-3 text-body-sm text-muted-foreground">{c.body}</p>
               <ul className="mt-5 space-y-2">
                 {c.points.map((p) => (
-                  <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-muted-foreground">
-                    <span className="mt-2 h-1 w-4 shrink-0 rounded-full bg-border-strong" aria-hidden />
+                  <li
+                    key={p}
+                    className="flex items-start gap-2.5 text-[13.5px] text-muted-foreground"
+                  >
+                    <span
+                      className="mt-2 h-1 w-4 shrink-0 rounded-full bg-border-strong"
+                      aria-hidden
+                    />
                     {p}
                   </li>
                 ))}
@@ -515,8 +537,8 @@ function HowItWorks() {
           <p className="text-label">كيف تعمل مِهلة</p>
           <h2 className="text-h2 mt-2">من فتح القضية إلى إبلاغ العميل — بمثال حقيقي</h2>
           <p className="mt-3 text-body text-muted-foreground">
-            اختر أي خطوة لترى كيف تظهر داخل المنصة فعلياً: جلسة مجدولة، مهلة نظامية تُحسب تلقائياً، وتحديث
-            يصل للعميل بإذنك.
+            اختر أي خطوة لترى كيف تظهر داخل المنصة فعلياً: جلسة مجدولة، مهلة نظامية تُحسب تلقائياً،
+            وتحديث يصل للعميل بإذنك.
           </p>
         </div>
 
@@ -551,7 +573,9 @@ function HowItWorks() {
                   }}
                   className={cn(
                     "min-w-[190px] shrink-0 px-5 py-4 text-right transition-colors duration-[var(--duration-base)] lg:min-w-0 lg:flex-1 lg:px-6 lg:py-6",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-surface hover:bg-surface-muted",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface hover:bg-surface-muted",
                   )}
                 >
                   <span
@@ -606,10 +630,15 @@ function HowItWorks() {
                 {step.example.timeline.map((t) => (
                   <li key={t.label} className="flex items-start gap-3">
                     <span
-                      className={cn("mt-[7px] h-2 w-2 shrink-0 rounded-full", STATE_STYLE[t.state].dot)}
+                      className={cn(
+                        "mt-[7px] h-2 w-2 shrink-0 rounded-full",
+                        STATE_STYLE[t.state].dot,
+                      )}
                       aria-hidden
                     />
-                    <span className={cn("text-[13.5px]", STATE_STYLE[t.state].text)}>{t.label}</span>
+                    <span className={cn("text-[13.5px]", STATE_STYLE[t.state].text)}>
+                      {t.label}
+                    </span>
                     <span className="ms-auto text-[12.5px] text-text-muted">{t.note}</span>
                   </li>
                 ))}
@@ -664,8 +693,14 @@ function Workflow() {
 }
 
 const SECURITY = [
-  ["عزل بيانات المكاتب", "كل مكتب يرى بياناته فقط عبر سياسات أمان على مستوى الصفوف في قاعدة البيانات."],
-  ["صلاحيات حسب الدور", "مالك، مدير، محامٍ، مساعد — لكل دور صلاحيات محددة على الإنشاء والتعديل والحذف."],
+  [
+    "عزل بيانات المكاتب",
+    "كل مكتب يرى بياناته فقط عبر سياسات أمان على مستوى الصفوف في قاعدة البيانات.",
+  ],
+  [
+    "صلاحيات حسب الدور",
+    "مالك، مدير، محامٍ، مساعد — لكل دور صلاحيات محددة على الإنشاء والتعديل والحذف.",
+  ],
   ["تخزين مستندات خاص", "الملفات محفوظة في تخزين غير عام، ويُصدر رابط مؤقت عند الحاجة فقط."],
   ["بوابة عميل محدودة", "لا تُعرض للعميل أي بيانات حساسة، بل التحديثات المسموح بها فقط."],
 ];
@@ -733,7 +768,8 @@ function Footer({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             مِهلة <span className="text-text-muted">·</span> MEHLA
           </p>
           <p className="mx-auto mt-3 max-w-lg text-body-sm text-muted-foreground">
-            منصة سعودية لإدارة الممارسة القانونية: القضايا، الجلسات، المهل، المستندات، ومتابعة العملاء.
+            منصة سعودية لإدارة الممارسة القانونية: القضايا، الجلسات، المهل، المستندات، ومتابعة
+            العملاء.
           </p>
         </div>
 

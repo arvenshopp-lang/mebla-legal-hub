@@ -126,7 +126,9 @@ export const previewDesignCss = createServerFn({ method: "POST" })
 export const publishDesign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ summary: z.string().trim().max(300).optional(), draft: draftSchema.optional() }).parse(data),
+    z
+      .object({ summary: z.string().trim().max(300).optional(), draft: draftSchema.optional() })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     await requireOwner(context.supabase, context.userId);
@@ -159,7 +161,11 @@ export const resetDesignPage = createServerFn({ method: "POST" })
     await requireOwner(context.supabase, context.userId);
     const svc = await import("./theme.server");
     const result = await svc.resetPageTheme(data.pageKey, context.userId);
-    await svc.writeDesignAudit({ userId: context.userId, action: "reset_page", pageKey: data.pageKey });
+    await svc.writeDesignAudit({
+      userId: context.userId,
+      action: "reset_page",
+      pageKey: data.pageKey,
+    });
     return result;
   });
 

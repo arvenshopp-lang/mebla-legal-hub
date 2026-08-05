@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from "react";
 
 import {
   Body,
@@ -11,20 +11,20 @@ import {
   Link,
   Preview,
   Text,
-} from '@react-email/components'
+} from "@react-email/components";
 
-import { styles } from './brand'
+import { styles } from "./brand";
 
 interface InviteEmailProps {
-  siteName: string
-  siteUrl: string
-  confirmationUrl: string
+  siteName: string;
+  siteUrl: string;
+  confirmationUrl: string;
   /** اسم المكتب الداعي (رسائل دعوات الفريق داخل المنصة) */
-  orgName?: string
+  orgName?: string;
   /** صفة العضو المدعو بالعربية */
-  roleLabel?: string
+  roleLabel?: string;
   /** اسم الشخص الذي أرسل الدعوة */
-  inviterName?: string
+  inviterName?: string;
 }
 
 export const InviteEmail = ({
@@ -44,15 +44,15 @@ export const InviteEmail = ({
         <Hr style={styles.rule} />
         <Heading style={styles.h1}>لديك دعوة للانضمام</Heading>
         <Text style={styles.text}>
-          {inviterName ? <b>{inviterName}</b> : 'أحد مسؤولي المكتب'} دعاك للانضمام إلى فريق العمل على
-          منصة{' '}
+          {inviterName ? <b>{inviterName}</b> : "أحد مسؤولي المكتب"} دعاك للانضمام إلى فريق العمل
+          على منصة{" "}
           <Link href={siteUrl} style={styles.link}>
             {siteName}
-          </Link>
-          {' '}لإدارة القضايا والجلسات والمهل النظامية بمكان واحد.
+          </Link>{" "}
+          لإدارة القضايا والجلسات والمهل النظامية بمكان واحد.
         </Text>
         <Text style={styles.text}>
-          تمت دعوتك للانضمام إلى{' '}
+          تمت دعوتك للانضمام إلى{" "}
           {orgName ? (
             <b>{orgName}</b>
           ) : (
@@ -60,16 +60,16 @@ export const InviteEmail = ({
               {siteName}
             </Link>
           )}
-          {roleLabel ? ` بصفة ${roleLabel}` : ''}
-          . اضغط الزر التالي لقبول الدعوة والانضمام إلى فريق العمل.
+          {roleLabel ? ` بصفة ${roleLabel}` : ""}. اضغط الزر التالي لقبول الدعوة والانضمام إلى فريق
+          العمل.
         </Text>
         <Button style={styles.button} href={confirmationUrl}>
           انضم إلى المكتب
         </Button>
-        <Text style={styles.footer}>
-          إذا لم يعمل الزر، انسخ الرابط التالي والصقه في المتصفح:
-        </Text>
-        <Text style={{ ...styles.footer, direction: 'ltr', textAlign: 'left', wordBreak: 'break-all' }}>
+        <Text style={styles.footer}>إذا لم يعمل الزر، انسخ الرابط التالي والصقه في المتصفح:</Text>
+        <Text
+          style={{ ...styles.footer, direction: "ltr", textAlign: "left", wordBreak: "break-all" }}
+        >
           <Link href={confirmationUrl} style={styles.link}>
             {confirmationUrl}
           </Link>
@@ -80,6 +80,6 @@ export const InviteEmail = ({
       </Container>
     </Body>
   </Html>
-)
+);
 
-export default InviteEmail
+export default InviteEmail;

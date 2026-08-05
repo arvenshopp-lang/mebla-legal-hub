@@ -46,7 +46,8 @@ function looksLikeHtml(body: string, contentType: string): boolean {
 
 async function readLimited(response: Response): Promise<{ text: string; truncated: boolean }> {
   const declared = Number(response.headers.get("content-length") ?? "0");
-  if (declared > MAX_RESPONSE_BYTES) throw new IntegrationHttpError("RESPONSE_TOO_LARGE", `${declared} bytes`);
+  if (declared > MAX_RESPONSE_BYTES)
+    throw new IntegrationHttpError("RESPONSE_TOO_LARGE", `${declared} bytes`);
   const body = response.body;
   if (!body) return { text: "", truncated: false };
   const reader = body.getReader();
@@ -119,7 +120,11 @@ export async function integrationFetch(request: IntegrationRequest): Promise<Int
             );
           }
         }
-        throw new IntegrationHttpError("UNEXPECTED_REDIRECT", `status ${response.status}`, response.status);
+        throw new IntegrationHttpError(
+          "UNEXPECTED_REDIRECT",
+          `status ${response.status}`,
+          response.status,
+        );
       }
 
       const { text, truncated } = await readLimited(response);
@@ -186,7 +191,10 @@ async function clientCredentialsToken(
   const clientSecret = material.secrets["client_secret"];
   const tokenUrl = material.tokenUrl;
   if (!clientId || !clientSecret || !tokenUrl) {
-    throw new IntegrationHttpError("MISSING_CREDENTIALS", "client credentials or token url missing");
+    throw new IntegrationHttpError(
+      "MISSING_CREDENTIALS",
+      "client credentials or token url missing",
+    );
   }
   const cacheKey = `${tokenUrl}|${clientId}`;
   const cached = tokenCache.get(cacheKey);
@@ -208,7 +216,11 @@ async function clientCredentialsToken(
   });
   const payload = response.json as { access_token?: string; expires_in?: number } | null;
   if (response.status >= 400 || !payload?.access_token) {
-    throw new IntegrationHttpError("INVALID_CREDENTIALS", `token endpoint status ${response.status}`, response.status);
+    throw new IntegrationHttpError(
+      "INVALID_CREDENTIALS",
+      `token endpoint status ${response.status}`,
+      response.status,
+    );
   }
   tokenCache.set(cacheKey, {
     token: payload.access_token,
@@ -250,12 +262,14 @@ export async function buildAuthParts(
     case "basic_auth": {
       const user = secrets["username"] ?? secrets["account_sid"] ?? secrets["api_key"];
       const pass = secrets["password"] ?? secrets["api_secret"];
-      if (!user || !pass) throw new IntegrationHttpError("MISSING_CREDENTIALS", "basic auth pair missing");
+      if (!user || !pass)
+        throw new IntegrationHttpError("MISSING_CREDENTIALS", "basic auth pair missing");
       headers["Authorization"] = `Basic ${btoa(`${user}:${pass}`)}`;
       break;
     }
     case "oauth2_client_credentials": {
-      headers["Authorization"] = `Bearer ${await clientCredentialsToken(material, policy, timeoutMs)}`;
+      headers["Authorization"] =
+        `Bearer ${await clientCredentialsToken(material, policy, timeoutMs)}`;
       break;
     }
     case "query_api_key": {
@@ -329,22 +343,38 @@ export function evaluateSuccess(
             : response.status === 429
               ? "RATE_LIMITED"
               : "PROVIDER_ERROR";
-    return { ok: false, code, detail: `HTTP ${response.status} — ${response.bodyText.slice(0, 200)}` };
+    return {
+      ok: false,
+      code,
+      detail: `HTTP ${response.status} — ${response.bodyText.slice(0, 200)}`,
+    };
   }
 
   if (condition.expectJson) {
     if (looksLikeHtml(response.bodyText, response.contentType)) {
-      return { ok: false, code: "UNEXPECTED_HTML", detail: `content-type ${response.contentType || "غير محدد"}` };
+      return {
+        ok: false,
+        code: "UNEXPECTED_HTML",
+        detail: `content-type ${response.contentType || "غير محدد"}`,
+      };
     }
     if (response.json === null) {
-      return { ok: false, code: "INVALID_JSON", detail: response.bodyText.slice(0, 200) || "استجابة فارغة" };
+      return {
+        ok: false,
+        code: "INVALID_JSON",
+        detail: response.bodyText.slice(0, 200) || "استجابة فارغة",
+      };
     }
   }
 
   if (condition.successJsonPath) {
     const value = readJsonPath(response.json, condition.successJsonPath);
     if (value === undefined || value === null) {
-      return { ok: false, code: "CONDITION_NOT_MET", detail: `المسار ${condition.successJsonPath} غير موجود` };
+      return {
+        ok: false,
+        code: "CONDITION_NOT_MET",
+        detail: `المسار ${condition.successJsonPath} غير موجود`,
+      };
     }
     if (condition.expectedValue != null && condition.expectedValue !== "") {
       if (String(value).trim().toLowerCase() !== condition.expectedValue.trim().toLowerCase()) {

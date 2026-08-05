@@ -17,7 +17,11 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
-import { createConversionEvent, listConversionEvents, listMarketingCampaigns } from "@/lib/marketing.functions";
+import {
+  createConversionEvent,
+  listConversionEvents,
+  listMarketingCampaigns,
+} from "@/lib/marketing.functions";
 import type { MarketingConversionEventRow } from "@/lib/marketing.shared";
 
 export function ConversionsPanel({ canManage }: { canManage: boolean }) {
@@ -47,7 +51,10 @@ export function ConversionsPanel({ canManage }: { canManage: boolean }) {
       ) : query.isError ? (
         <ErrorBlock message="تعذّر تحميل أحداث التحويل." />
       ) : (query.data?.rows.length ?? 0) === 0 ? (
-        <EmptyState title="لا توجد أحداث تحويل" hint="سجّل أول حدث تحويل لربط الحملات بالنتائج الفعلية." />
+        <EmptyState
+          title="لا توجد أحداث تحويل"
+          hint="سجّل أول حدث تحويل لربط الحملات بالنتائج الفعلية."
+        />
       ) : (
         <>
           <DataCard>
@@ -93,7 +100,15 @@ export function ConversionsPanel({ canManage }: { canManage: boolean }) {
   );
 }
 
-function ConversionDialog({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
+function ConversionDialog({
+  open,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const createFn = useServerFn(createConversionEvent);
   const campaignsFn = useServerFn(listMarketingCampaigns);
   const { data: campaigns } = useQuery({
@@ -149,7 +164,11 @@ function ConversionDialog({ open, onClose, onSaved }: { open: boolean; onClose: 
     >
       <div className="space-y-4">
         <FormField label="الحملة">
-          <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className={inputCls}>
+          <select
+            value={campaignId}
+            onChange={(e) => setCampaignId(e.target.value)}
+            className={inputCls}
+          >
             <option value="">بدون حملة محددة</option>
             {(campaigns?.rows ?? []).map((c: { id: string; name: string }) => (
               <option key={c.id} value={c.id}>
@@ -159,19 +178,32 @@ function ConversionDialog({ open, onClose, onSaved }: { open: boolean; onClose: 
           </select>
         </FormField>
         <FormField label="نوع الحدث" required hint="مثال: lead_created، demo_booked، deal_won">
-          <input value={eventKey} onChange={(e) => setEventKey(e.target.value)} className={inputCls} />
+          <input
+            value={eventKey}
+            onChange={(e) => setEventKey(e.target.value)}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الوصف">
           <input value={label} onChange={(e) => setLabel(e.target.value)} className={inputCls} />
         </FormField>
         <FormField label="القيمة">
-          <input type="number" min={0} value={valueAmount} onChange={(e) => setValueAmount(e.target.value)} className={inputCls} />
+          <input
+            type="number"
+            min={0}
+            value={valueAmount}
+            onChange={(e) => setValueAmount(e.target.value)}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="المصدر">
           <input value={source} onChange={(e) => setSource(e.target.value)} className={inputCls} />
         </FormField>
         {error && (
-          <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+          <p
+            role="alert"
+            className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+          >
             {error}
           </p>
         )}

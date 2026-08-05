@@ -6,7 +6,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FormField, Modal, inputCls, Btn } from "@/lib/list-utils";
 import { createDeal, updateDeal } from "@/lib/crm.functions";
-import type { CrmCompanyRow, CrmContactRow, CrmDealRow, CrmPipelineStageRow, StaffOption } from "@/lib/crm.shared";
+import type {
+  CrmCompanyRow,
+  CrmContactRow,
+  CrmDealRow,
+  CrmPipelineStageRow,
+  StaffOption,
+} from "@/lib/crm.shared";
 
 export type DealDraft = {
   title: string;
@@ -23,8 +29,16 @@ export type DealDraft = {
 
 export function emptyDealDraft(defaultStageId: string): DealDraft {
   return {
-    title: "", amount: 0, currency: "SAR", stage_id: defaultStageId, company_id: "", contact_id: "",
-    expected_close_date: "", source: "", notes: "", owner_staff_id: "",
+    title: "",
+    amount: 0,
+    currency: "SAR",
+    stage_id: defaultStageId,
+    company_id: "",
+    contact_id: "",
+    expected_close_date: "",
+    source: "",
+    notes: "",
+    owner_staff_id: "",
   };
 }
 
@@ -99,16 +113,33 @@ export function DealFormModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editId ? "تعديل صفقة" : "صفقة جديدة"} size="lg" busy={saving}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={editId ? "تعديل صفقة" : "صفقة جديدة"}
+      size="lg"
+      busy={saving}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="عنوان الصفقة" required error={errors.title}>
-          <input className={inputCls} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.title}
+            onChange={(e) => set({ title: e.target.value })}
+          />
         </FormField>
         <FormField label="مرحلة خط البيع" required error={errors.stage_id}>
-          <select className={inputCls} value={draft.stage_id} onChange={(e) => set({ stage_id: e.target.value })} disabled={!!editId}>
+          <select
+            className={inputCls}
+            value={draft.stage_id}
+            onChange={(e) => set({ stage_id: e.target.value })}
+            disabled={!!editId}
+          >
             <option value="">اختر مرحلة</option>
             {stageOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </select>
         </FormField>
@@ -122,45 +153,86 @@ export function DealFormModal({
           />
         </FormField>
         <FormField label="العملة">
-          <input className={inputCls} maxLength={3} value={draft.currency} onChange={(e) => set({ currency: e.target.value.toUpperCase() })} />
+          <input
+            className={inputCls}
+            maxLength={3}
+            value={draft.currency}
+            onChange={(e) => set({ currency: e.target.value.toUpperCase() })}
+          />
         </FormField>
         <FormField label="الشركة">
-          <select className={inputCls} value={draft.company_id} onChange={(e) => set({ company_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.company_id}
+            onChange={(e) => set({ company_id: e.target.value })}
+          >
             <option value="">بلا شركة</option>
             {companyOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="جهة الاتصال">
-          <select className={inputCls} value={draft.contact_id} onChange={(e) => set({ contact_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.contact_id}
+            onChange={(e) => set({ contact_id: e.target.value })}
+          >
             <option value="">بلا جهة اتصال</option>
             {contactOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.full_name}</option>
+              <option key={c.id} value={c.id}>
+                {c.full_name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="تاريخ الإغلاق المتوقع">
-          <input type="date" className={inputCls} value={draft.expected_close_date} onChange={(e) => set({ expected_close_date: e.target.value })} />
+          <input
+            type="date"
+            className={inputCls}
+            value={draft.expected_close_date}
+            onChange={(e) => set({ expected_close_date: e.target.value })}
+          />
         </FormField>
         <FormField label="المصدر">
-          <input className={inputCls} value={draft.source} onChange={(e) => set({ source: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.source}
+            onChange={(e) => set({ source: e.target.value })}
+          />
         </FormField>
         <FormField label="المسؤول">
-          <select className={inputCls} value={draft.owner_staff_id} onChange={(e) => set({ owner_staff_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.owner_staff_id}
+            onChange={(e) => set({ owner_staff_id: e.target.value })}
+          >
             <option value="">بلا مسؤول</option>
             {staffOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
+              <option key={s.id} value={s.id}>
+                {s.full_name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="ملاحظات">
-          <textarea className={inputCls} rows={3} value={draft.notes} onChange={(e) => set({ notes: e.target.value })} />
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={draft.notes}
+            onChange={(e) => set({ notes: e.target.value })}
+          />
         </FormField>
       </div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>{editId ? "حفظ التعديلات" : "إنشاء الصفقة"}</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          {editId ? "حفظ التعديلات" : "إنشاء الصفقة"}
+        </Btn>
       </div>
     </Modal>
   );

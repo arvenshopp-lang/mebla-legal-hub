@@ -17,7 +17,8 @@ export const Route = createFileRoute("/pending-access")({
 });
 
 function PendingAccessPage() {
-  const { session, authLoading, organizationLoading, memberships, allMemberships, signOut } = useAuth();
+  const { session, authLoading, organizationLoading, memberships, allMemberships, signOut } =
+    useAuth();
   const navigate = useNavigate();
   const loading = authLoading || organizationLoading;
 
@@ -36,7 +37,9 @@ function PendingAccessPage() {
   if (loading || !session) {
     return (
       <AuthShell title="جاري التحقق">
-        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">لحظات قليلة…</div>
+        <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
+          لحظات قليلة…
+        </div>
       </AuthShell>
     );
   }
@@ -63,7 +66,11 @@ function PendingAccessPage() {
           تحديث الحالة
         </button>
         <button
-          onClick={() => void signOut().then(() => navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true }))}
+          onClick={() =>
+            void signOut().then(() =>
+              navigate({ to: "/login", search: { redirect: "/dashboard" }, replace: true }),
+            )
+          }
           className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           تسجيل الخروج

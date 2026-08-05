@@ -6,7 +6,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FormField, Modal, inputCls, Btn } from "@/lib/list-utils";
 import { createActivity } from "@/lib/crm.functions";
-import { CRM_ACTIVITY_KIND_LABEL, CRM_ENTITY_KIND_LABEL, type CrmActivityKind, type CrmEntityKind, type StaffOption } from "@/lib/crm.shared";
+import {
+  CRM_ACTIVITY_KIND_LABEL,
+  CRM_ENTITY_KIND_LABEL,
+  type CrmActivityKind,
+  type CrmEntityKind,
+  type StaffOption,
+} from "@/lib/crm.shared";
 
 export type ActivityDraft = {
   kind: CrmActivityKind;
@@ -79,9 +85,15 @@ export function ActivityFormModal({
     <Modal open={open} onClose={onClose} title="نشاط جديد" size="lg" busy={saving}>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="النوع" required>
-          <select className={inputCls} value={draft.kind} onChange={(e) => set({ kind: e.target.value as CrmActivityKind })}>
+          <select
+            className={inputCls}
+            value={draft.kind}
+            onChange={(e) => set({ kind: e.target.value as CrmActivityKind })}
+          >
             {(Object.keys(CRM_ACTIVITY_KIND_LABEL) as CrmActivityKind[]).map((k) => (
-              <option key={k} value={k}>{CRM_ACTIVITY_KIND_LABEL[k]}</option>
+              <option key={k} value={k}>
+                {CRM_ACTIVITY_KIND_LABEL[k]}
+              </option>
             ))}
           </select>
         </FormField>
@@ -93,31 +105,57 @@ export function ActivityFormModal({
             onChange={(e) => set({ entity_kind: e.target.value as CrmEntityKind })}
           >
             {(Object.keys(CRM_ENTITY_KIND_LABEL) as CrmEntityKind[]).map((k) => (
-              <option key={k} value={k}>{CRM_ENTITY_KIND_LABEL[k]}</option>
+              <option key={k} value={k}>
+                {CRM_ENTITY_KIND_LABEL[k]}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="العنوان" required error={errors.subject}>
-          <input className={inputCls} value={draft.subject} onChange={(e) => set({ subject: e.target.value })} />
+          <input
+            className={inputCls}
+            value={draft.subject}
+            onChange={(e) => set({ subject: e.target.value })}
+          />
         </FormField>
         <FormField label="الاستحقاق">
-          <input type="datetime-local" className={inputCls} value={draft.due_at} onChange={(e) => set({ due_at: e.target.value })} />
+          <input
+            type="datetime-local"
+            className={inputCls}
+            value={draft.due_at}
+            onChange={(e) => set({ due_at: e.target.value })}
+          />
         </FormField>
         <FormField label="المسؤول">
-          <select className={inputCls} value={draft.owner_staff_id} onChange={(e) => set({ owner_staff_id: e.target.value })}>
+          <select
+            className={inputCls}
+            value={draft.owner_staff_id}
+            onChange={(e) => set({ owner_staff_id: e.target.value })}
+          >
             <option value="">أنا (تلقائياً)</option>
             {staffOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
+              <option key={s.id} value={s.id}>
+                {s.full_name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="تفاصيل" hint="اختياري">
-          <textarea className={inputCls} rows={3} value={draft.body} onChange={(e) => set({ body: e.target.value })} />
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={draft.body}
+            onChange={(e) => set({ body: e.target.value })}
+          />
         </FormField>
       </div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>إنشاء النشاط</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          إنشاء النشاط
+        </Btn>
       </div>
     </Modal>
   );

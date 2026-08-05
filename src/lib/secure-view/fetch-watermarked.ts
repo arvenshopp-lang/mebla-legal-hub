@@ -21,9 +21,10 @@ export async function fetchWatermarkedPdf(endpoint: string): Promise<string> {
 
   if (!response.ok) {
     if (contentType.includes("application/json")) {
-      const payload = (await response.json().catch(() => null)) as
-        | { message?: unknown; ref?: unknown }
-        | null;
+      const payload = (await response.json().catch(() => null)) as {
+        message?: unknown;
+        ref?: unknown;
+      } | null;
       const message = typeof payload?.message === "string" ? payload.message : LOAD_ERROR;
       const ref = typeof payload?.ref === "string" ? `\nمعرّف التعرّف: ${payload.ref}` : "";
       throw new Error(`${message}${ref}`);

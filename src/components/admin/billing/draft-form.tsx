@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Btn, FormField, Modal, inputCls } from "@/lib/list-utils";
-import { computeTotals, formatMoney, type InvoiceDetail, type InvoiceItemInput } from "@/lib/billing/billing.shared";
+import {
+  computeTotals,
+  formatMoney,
+  type InvoiceDetail,
+  type InvoiceItemInput,
+} from "@/lib/billing/billing.shared";
 import { num } from "./shared";
 
 export type DraftFormValue = {
@@ -26,7 +31,12 @@ export type DraftFormValue = {
   items: InvoiceItemInput[];
 };
 
-const emptyItem: InvoiceItemInput = { description: "", quantity: 1, unitPrice: 0, discountAmount: 0 };
+const emptyItem: InvoiceItemInput = {
+  description: "",
+  quantity: 1,
+  unitPrice: 0,
+  discountAmount: 0,
+};
 
 export function emptyDraft(defaultRate: number): DraftFormValue {
   return {
@@ -129,7 +139,8 @@ export function DraftFormModal({
     if (value.taxExempt && value.taxExemptionReason.trim().length < 2)
       next["taxExemptionReason"] = "سبب الإعفاء الضريبي مطلوب.";
     value.items.forEach((item, index) => {
-      if (item.description.trim().length < 2) next[`item-${index}-description`] = "وصف البند مطلوب.";
+      if (item.description.trim().length < 2)
+        next[`item-${index}-description`] = "وصف البند مطلوب.";
       if (!(item.quantity > 0)) next[`item-${index}-quantity`] = "الكمية أكبر من صفر.";
       if (item.discountAmount > item.quantity * item.unitPrice)
         next[`item-${index}-discount`] = "الخصم يتجاوز قيمة البند.";
@@ -169,7 +180,11 @@ export function DraftFormModal({
               onChange={(e) => patch({ customerLegalName: e.target.value })}
             />
           </FormField>
-          <FormField label="البريد الإلكتروني" hint="يُستخدم لإرسال الفاتورة والتذكيرات." error={errors["customerEmail"]}>
+          <FormField
+            label="البريد الإلكتروني"
+            hint="يُستخدم لإرسال الفاتورة والتذكيرات."
+            error={errors["customerEmail"]}
+          >
             <input
               type="email"
               dir="ltr"
@@ -210,7 +225,11 @@ export function DraftFormModal({
             />
           </FormField>
           <FormField label="وصف الباقة (اختياري)">
-            <input className={inputCls} value={value.planLabel} onChange={(e) => patch({ planLabel: e.target.value })} />
+            <input
+              className={inputCls}
+              value={value.planLabel}
+              onChange={(e) => patch({ planLabel: e.target.value })}
+            />
           </FormField>
           <FormField label="بداية فترة الخدمة">
             <input
@@ -229,7 +248,12 @@ export function DraftFormModal({
             />
           </FormField>
           <FormField label="تاريخ الاستحقاق">
-            <input type="date" className={inputCls} value={value.dueAt} onChange={(e) => patch({ dueAt: e.target.value })} />
+            <input
+              type="date"
+              className={inputCls}
+              value={value.dueAt}
+              onChange={(e) => patch({ dueAt: e.target.value })}
+            />
           </FormField>
           <FormField label="نسبة الضريبة %">
             <input
@@ -271,7 +295,9 @@ export function DraftFormModal({
             <Btn
               variant="outline"
               size="sm"
-              onClick={() => setValue((prev) => ({ ...prev, items: [...prev.items, { ...emptyItem }] }))}
+              onClick={() =>
+                setValue((prev) => ({ ...prev, items: [...prev.items, { ...emptyItem }] }))
+              }
             >
               <Plus className="h-4 w-4" aria-hidden /> بند
             </Btn>
@@ -327,7 +353,10 @@ export function DraftFormModal({
                       aria-label={`حذف البند ${index + 1}`}
                       disabled={value.items.length === 1}
                       onClick={() =>
-                        setValue((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }))
+                        setValue((prev) => ({
+                          ...prev,
+                          items: prev.items.filter((_, i) => i !== index),
+                        }))
                       }
                     >
                       <Trash2 className="h-4 w-4 text-danger" aria-hidden />

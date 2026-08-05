@@ -4,8 +4,23 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { LogOut, ShieldCheck } from "lucide-react";
-import { Badge, Btn, DataCard, EmptyState, Modal, PageToolbar, SectionCard, Td, Th, inputCls } from "@/lib/list-utils";
-import { revokeAllRbacSessions, revokeRbacSession, saveRbacRestrictions } from "@/lib/rbac/rbac.functions";
+import {
+  Badge,
+  Btn,
+  DataCard,
+  EmptyState,
+  Modal,
+  PageToolbar,
+  SectionCard,
+  Td,
+  Th,
+  inputCls,
+} from "@/lib/list-utils";
+import {
+  revokeAllRbacSessions,
+  revokeRbacSession,
+  saveRbacRestrictions,
+} from "@/lib/rbac/rbac.functions";
 import {
   Field,
   KeyValue,
@@ -105,7 +120,8 @@ export function SessionsPanel({
   });
 
   const revokeAllMut = useMutation({
-    mutationFn: () => revokeAllFn({ data: { staffUserId: revokeAll!.staffUserId, reason: revokeAll!.reason } }),
+    mutationFn: () =>
+      revokeAllFn({ data: { staffUserId: revokeAll!.staffUserId, reason: revokeAll!.reason } }),
     onSuccess: () => done("تم إبطال جميع جلسات الموظف."),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -156,7 +172,10 @@ export function SessionsPanel({
 
   return (
     <div className="space-y-5">
-      <SectionCard title="جلستك الحالية" description="تُستخدم هذه البيانات في فرض قيود العنوان والجهاز.">
+      <SectionCard
+        title="جلستك الحالية"
+        description="تُستخدم هذه البيانات في فرض قيود العنوان والجهاز."
+      >
         <div className="grid gap-3 sm:grid-cols-4">
           <KeyValue label="عنوان IP">{data.me.facts.ip}</KeyValue>
           <KeyValue label="الجهاز">{data.me.facts.device ?? "—"}</KeyValue>
@@ -169,7 +188,10 @@ export function SessionsPanel({
         </div>
       </SectionCard>
 
-      <SectionCard title="قيود الموظفين" description="القيود تُفرض خادمياً على كل عملية، وتسري داخل نافذة سريانها.">
+      <SectionCard
+        title="قيود الموظفين"
+        description="القيود تُفرض خادمياً على كل عملية، وتسري داخل نافذة سريانها."
+      >
         <DataCard>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-right">
@@ -198,7 +220,9 @@ export function SessionsPanel({
                           <Badge tone="muted">غير مُفعّل</Badge>
                         )}
                         {(r?.denied_ips.length ?? 0) > 0 && (
-                          <span className="text-caption mt-0.5 block">محظورة: {r?.denied_ips.length}</span>
+                          <span className="text-caption mt-0.5 block">
+                            محظورة: {r?.denied_ips.length}
+                          </span>
                         )}
                       </Td>
                       <Td>
@@ -208,13 +232,16 @@ export function SessionsPanel({
                           <Badge tone="muted">غير مُفعّل</Badge>
                         )}
                         {(r?.blocked_devices.length ?? 0) > 0 && (
-                          <span className="text-caption mt-0.5 block">محظورة: {r?.blocked_devices.length}</span>
+                          <span className="text-caption mt-0.5 block">
+                            محظورة: {r?.blocked_devices.length}
+                          </span>
                         )}
                       </Td>
                       <Td>
                         {r?.time_enforced ? (
                           <span className="text-[12px]">
-                            {minutesToTime(r.work_start_minute)} – {minutesToTime(r.work_end_minute)} ·{" "}
+                            {minutesToTime(r.work_start_minute)} –{" "}
+                            {minutesToTime(r.work_end_minute)} ·{" "}
                             {r.allowed_weekdays.map((d) => WEEKDAYS[d]).join("، ")}
                           </span>
                         ) : (
@@ -224,7 +251,11 @@ export function SessionsPanel({
                       <Td>
                         <div className="flex flex-wrap gap-1.5">
                           {canManageRestrictions && (
-                            <Btn size="sm" variant="outline" onClick={() => setLimits(formFor(s.user_id, r))}>
+                            <Btn
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setLimits(formFor(s.user_id, r))}
+                            >
                               <ShieldCheck className="h-4 w-4" aria-hidden /> القيود
                             </Btn>
                           )}
@@ -302,7 +333,9 @@ export function SessionsPanel({
                       </Td>
                       <Td>
                         <span className="block text-[12px]">{formatRiyadh(s.last_seen_at)}</span>
-                        <span className="text-caption block">بدأت {formatRiyadh(s.first_seen_at)}</span>
+                        <span className="text-caption block">
+                          بدأت {formatRiyadh(s.first_seen_at)}
+                        </span>
                       </Td>
                       <Td>
                         <span className="tabular-nums">{s.requests_count}</span>
@@ -312,7 +345,11 @@ export function SessionsPanel({
                           <Badge tone="red">مُبطلة</Badge>
                         ) : (
                           canRevoke && (
-                            <Btn size="sm" variant="outline" onClick={() => setRevoke({ session: s, reason: "" })}>
+                            <Btn
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setRevoke({ session: s, reason: "" })}
+                            >
                               إبطال
                             </Btn>
                           )
@@ -366,7 +403,8 @@ export function SessionsPanel({
             }}
           >
             <p className="text-body-sm text-muted-foreground">
-              سيُطلب من {staffName(data.staff, revokeAll.staffUserId)} تسجيل الدخول من جديد على كل الأجهزة.
+              سيُطلب من {staffName(data.staff, revokeAll.staffUserId)} تسجيل الدخول من جديد على كل
+              الأجهزة.
             </p>
             <Field label="سبب الإبطال">
               <textarea

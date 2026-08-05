@@ -21,7 +21,14 @@ export type CreatePaymentInput = {
 
 export type ProviderPaymentState = {
   providerPaymentId: string | null;
-  status: "pending" | "processing" | "paid" | "failed" | "cancelled" | "refunded" | "partially_refunded";
+  status:
+    | "pending"
+    | "processing"
+    | "paid"
+    | "failed"
+    | "cancelled"
+    | "refunded"
+    | "partially_refunded";
   amount: number | null;
   reference: string | null;
   raw: unknown;
@@ -45,14 +52,27 @@ export interface PaymentProvider {
   /** هل يحتاج المزوّد مفاتيح حقيقية قبل التفعيل؟ */
   readonly requiresCredentials: boolean;
   readonly requiredCredentialKeys: string[];
-  createPayment(input: CreatePaymentInput, creds: ProviderCredentials): Promise<ProviderPaymentState>;
-  verifyPayment(providerPaymentId: string, creds: ProviderCredentials): Promise<ProviderPaymentState>;
-  getPaymentStatus(providerPaymentId: string, creds: ProviderCredentials): Promise<ProviderPaymentState>;
+  createPayment(
+    input: CreatePaymentInput,
+    creds: ProviderCredentials,
+  ): Promise<ProviderPaymentState>;
+  verifyPayment(
+    providerPaymentId: string,
+    creds: ProviderCredentials,
+  ): Promise<ProviderPaymentState>;
+  getPaymentStatus(
+    providerPaymentId: string,
+    creds: ProviderCredentials,
+  ): Promise<ProviderPaymentState>;
   refundPayment(
     providerPaymentId: string,
     amount: number,
     creds: ProviderCredentials,
-  ): Promise<{ providerRefundId: string | null; status: "processing" | "completed" | "failed"; raw: unknown }>;
+  ): Promise<{
+    providerRefundId: string | null;
+    status: "processing" | "completed" | "failed";
+    raw: unknown;
+  }>;
   validateWebhookSignature(input: {
     rawBody: string;
     headers: Record<string, string>;
@@ -128,7 +148,11 @@ type MoyasarPayment = {
   refunded?: number;
 };
 
-function mapMoyasarStatus(status: string | undefined, refunded?: number, amount?: number): ProviderPaymentState["status"] {
+function mapMoyasarStatus(
+  status: string | undefined,
+  refunded?: number,
+  amount?: number,
+): ProviderPaymentState["status"] {
   switch (status) {
     case "paid":
       if (refunded && amount && refunded >= amount) return "refunded";
@@ -183,7 +207,11 @@ const moyasarProvider: PaymentProvider = {
         currency: input.currency,
         description: input.description,
         callback_url: input.callbackUrl,
-        metadata: { invoice_id: input.invoiceId, invoice_number: input.invoiceNumber, correlation_id: input.correlationId },
+        metadata: {
+          invoice_id: input.invoiceId,
+          invoice_number: input.invoiceNumber,
+          correlation_id: input.correlationId,
+        },
       },
     });
     const body = json as { id?: string; status?: string; url?: string; message?: string };
@@ -211,7 +239,10 @@ const moyasarProvider: PaymentProvider = {
     return moyasarProvider.getPaymentStatus(providerPaymentId, creds);
   },
   async getPaymentStatus(providerPaymentId, creds) {
-    const { status, json } = await moyasarRequest(`/payments/${encodeURIComponent(providerPaymentId)}`, creds);
+    const { status, json } = await moyasarRequest(
+      `/payments/${encodeURIComponent(providerPaymentId)}`,
+      creds,
+    );
     const body = json as MoyasarPayment;
     if (status >= 400) {
       return {
@@ -233,10 +264,14 @@ const moyasarProvider: PaymentProvider = {
     };
   },
   async refundPayment(providerPaymentId, amount, creds) {
-    const { status, json } = await moyasarRequest(`/payments/${encodeURIComponent(providerPaymentId)}/refund`, creds, {
-      method: "POST",
-      body: { amount: Math.round(amount * 100) },
-    });
+    const { status, json } = await moyasarRequest(
+      `/payments/${encodeURIComponent(providerPaymentId)}/refund`,
+      creds,
+      {
+        method: "POST",
+        body: { amount: Math.round(amount * 100) },
+      },
+    );
     const body = json as MoyasarPayment;
     return {
       providerRefundId: body.id ?? null,
@@ -281,12 +316,16 @@ const moyasarProvider: PaymentProvider = {
   async testConnection(creds) {
     try {
       const { status, json } = await moyasarRequest("/payments?per=1", creds);
-      if (status === 401 || status === 403) return { ok: false, message: "المفاتيح مرفوضة من المزوّد." };
+      if (status === 401 || status === 403)
+        return { ok: false, message: "المفاتيح مرفوضة من المزوّد." };
       if (status >= 400) return { ok: false, message: `المزوّد أعاد الحالة ${status}.` };
       void json;
       return { ok: true, message: "تم الاتصال بالمزوّد بنجاح." };
     } catch (error) {
-      return { ok: false, message: error instanceof Error ? error.message : "تعذّر الاتصال بالمزوّد." };
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : "تعذّر الاتصال بالمزوّد.",
+      };
     }
   },
 };

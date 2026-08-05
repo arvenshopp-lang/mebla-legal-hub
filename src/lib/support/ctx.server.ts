@@ -33,7 +33,9 @@ export async function currentRequestId(): Promise<string> {
     const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const header =
-      req.headers.get("cf-ray") ?? req.headers.get("x-request-id") ?? req.headers.get("x-correlation-id");
+      req.headers.get("cf-ray") ??
+      req.headers.get("x-request-id") ??
+      req.headers.get("x-correlation-id");
     if (header) return header.slice(0, 80);
   } catch {
     /* تشغيل مجدول بلا طلب HTTP */

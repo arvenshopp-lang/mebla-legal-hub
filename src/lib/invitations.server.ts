@@ -77,7 +77,11 @@ export async function createTeamInvitation(input: {
     .maybeSingle();
 
   if (membershipError) throw new Error("INVITE_LOOKUP_FAILED");
-  if (!membership || membership.status !== "active" || !["owner", "admin"].includes(membership.role)) {
+  if (
+    !membership ||
+    membership.status !== "active" ||
+    !["owner", "admin"].includes(membership.role)
+  ) {
     throw new Error("FORBIDDEN");
   }
 
@@ -161,10 +165,14 @@ type InvitationRow = {
  * يقرأ الدعوة عبر رمزها السري بصلاحيات الخادم فقط، ويحدّث حالتها إلى
  * "expired" عند انقضاء المدة حتى لا تبقى قابلة للاستخدام.
  */
-async function loadInvitation(token: string): Promise<{ row: InvitationRow; state: InvitePreviewState } | null> {
+async function loadInvitation(
+  token: string,
+): Promise<{ row: InvitationRow; state: InvitePreviewState } | null> {
   const { data } = await supabaseAdmin
     .from("organization_invitations")
-    .select("id, organization_id, email, role, status, expires_at, invited_by, organization:organizations(id, name, is_active)")
+    .select(
+      "id, organization_id, email, role, status, expires_at, invited_by, organization:organizations(id, name, is_active)",
+    )
     .eq("token", token)
     .maybeSingle();
 
@@ -191,7 +199,8 @@ async function loadInvitation(token: string): Promise<{ row: InvitationRow; stat
 
 export async function previewInvitation(token: string): Promise<InvitePreview> {
   const found = await loadInvitation(token);
-  if (!found) return { state: "invalid", orgName: null, role: null, maskedEmail: null, expiresAt: null };
+  if (!found)
+    return { state: "invalid", orgName: null, role: null, maskedEmail: null, expiresAt: null };
   return {
     state: found.state,
     orgName: found.row.organization?.name ?? null,

@@ -53,7 +53,9 @@ export function useProcessingJobs(documentIds: string[]) {
     queryFn: async (): Promise<JobRow[]> => {
       const { data, error } = await supabase
         .from("document_processing_jobs")
-        .select("document_id, status, progress, pages_total, pages_done, ocr_pages, attempts, error_code, error_message, completed_at")
+        .select(
+          "document_id, status, progress, pages_total, pages_done, ocr_pages, attempts, error_code, error_message, completed_at",
+        )
         .in("document_id", documentIds);
       if (error) throw error;
       return (data ?? []) as JobRow[];
@@ -61,7 +63,15 @@ export function useProcessingJobs(documentIds: string[]) {
   });
 }
 
-export function ProcessingBadge({ job, fileName, fileType }: { job?: JobRow; fileName: string; fileType: string | null }) {
+export function ProcessingBadge({
+  job,
+  fileName,
+  fileType,
+}: {
+  job?: JobRow;
+  fileName: string;
+  fileType: string | null;
+}) {
   if (!extractableKind(fileName, fileType)) {
     return <span className="text-xs text-muted-foreground">غير قابل للفهرسة</span>;
   }
@@ -123,7 +133,10 @@ export function useDocumentIndexing() {
       toast.success("المستند جاهز للبحث");
     } catch (e) {
       toast.error("تعذّرت معالجة المستند", {
-        description: e instanceof Error ? describeProcessingError((e as { code?: string }).code, e.message) : undefined,
+        description:
+          e instanceof Error
+            ? describeProcessingError((e as { code?: string }).code, e.message)
+            : undefined,
       });
     } finally {
       invalidate();
@@ -132,7 +145,9 @@ export function useDocumentIndexing() {
 
   const retry = useMutation({
     mutationFn: async (doc: DocumentRow) => {
-      const signed = await sign({ data: { organizationId: doc.organization_id, documentId: doc.id } });
+      const signed = await sign({
+        data: { organizationId: doc.organization_id, documentId: doc.id },
+      });
       return reprocessDocument({
         organizationId: doc.organization_id,
         documentId: doc.id,
@@ -193,7 +208,9 @@ export function ExtractedTextDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("document_pages")
-        .select("id, page_number, extracted_text, original_text, ocr_used, ocr_confidence, language, edited_at")
+        .select(
+          "id, page_number, extracted_text, original_text, ocr_used, ocr_confidence, language, edited_at",
+        )
         .eq("document_id", doc!.id)
         .order("page_number");
       if (error) throw error;
@@ -268,8 +285,18 @@ export function ExtractedTextDialog({
             {current?.ocr_used && current.ocr_confidence != null && (
               <Badge tone="muted">الثقة {Math.round(Number(current.ocr_confidence) * 100)}%</Badge>
             )}
-            {current?.language && <Badge tone="muted">{current.language === "ar" ? "عربي" : current.language === "en" ? "إنجليزي" : "مختلط"}</Badge>}
-            {current?.edited_at && <Badge tone="muted">عُدّل يدوياً · {fmtDateTime(current.edited_at)}</Badge>}
+            {current?.language && (
+              <Badge tone="muted">
+                {current.language === "ar"
+                  ? "عربي"
+                  : current.language === "en"
+                    ? "إنجليزي"
+                    : "مختلط"}
+              </Badge>
+            )}
+            {current?.edited_at && (
+              <Badge tone="muted">عُدّل يدوياً · {fmtDateTime(current.edited_at)}</Badge>
+            )}
           </div>
 
           <textarea

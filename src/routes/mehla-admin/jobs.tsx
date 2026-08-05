@@ -46,7 +46,10 @@ function JobsPage() {
     mutationFn: (outboxId: string) => retry({ data: { outboxId } }),
     onSuccess: (result) => {
       if (result.sent) toast.success("أُعيد إرسال الرسالة بنجاح.");
-      else toast.error(`تعذّرت إعادة الإرسال${result.failureRef ? ` · مرجع العطل ${result.failureRef}` : ""}.`);
+      else
+        toast.error(
+          `تعذّرت إعادة الإرسال${result.failureRef ? ` · مرجع العطل ${result.failureRef}` : ""}.`,
+        );
       void queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
     },
     onError: (error: Error) => toast.error(error.message || "تعذّرت إعادة المحاولة."),
@@ -114,8 +117,12 @@ function JobsPage() {
                     {data.failed_jobs.map((job) => (
                       <tr key={job.id}>
                         <Td>
-                          <span className="font-semibold">{job.queue === "email_outbox" ? "بريد صادر" : job.queue}</span>
-                          {job.failure_ref && <span className="text-caption block">{job.failure_ref}</span>}
+                          <span className="font-semibold">
+                            {job.queue === "email_outbox" ? "بريد صادر" : job.queue}
+                          </span>
+                          {job.failure_ref && (
+                            <span className="text-caption block">{job.failure_ref}</span>
+                          )}
                         </Td>
                         <Td>
                           {fmtNumber(job.attempts)} / {fmtNumber(job.max_attempts)}
@@ -153,15 +160,32 @@ function JobsPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {data.sync_runs.map((run) => (
-                    <li key={run.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <li
+                      key={run.id}
+                      className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
                       <div className="min-w-0">
                         <p className="text-body-sm font-medium">{fmtDateTime(run.started_at)}</p>
                         {run.error_message && (
-                          <p className="text-caption mt-0.5 truncate text-danger">{run.error_message}</p>
+                          <p className="text-caption mt-0.5 truncate text-danger">
+                            {run.error_message}
+                          </p>
                         )}
                       </div>
-                      <Badge tone={run.status === "success" ? "green" : run.status === "failed" ? "red" : "warn"}>
-                        {run.status === "success" ? "ناجحة" : run.status === "failed" ? "فاشلة" : "قيد التنفيذ"}
+                      <Badge
+                        tone={
+                          run.status === "success"
+                            ? "green"
+                            : run.status === "failed"
+                              ? "red"
+                              : "warn"
+                        }
+                      >
+                        {run.status === "success"
+                          ? "ناجحة"
+                          : run.status === "failed"
+                            ? "فاشلة"
+                            : "قيد التنفيذ"}
                       </Badge>
                     </li>
                   ))}
@@ -189,7 +213,9 @@ function Cell({ label, value, tone }: { label: string; value: number; tone?: "da
   return (
     <div>
       <dt className="text-caption">{label}</dt>
-      <dd className={tone === "danger" ? "font-semibold text-danger" : "font-semibold"}>{fmtNumber(value)}</dd>
+      <dd className={tone === "danger" ? "font-semibold text-danger" : "font-semibold"}>
+        {fmtNumber(value)}
+      </dd>
     </div>
   );
 }
@@ -198,7 +224,9 @@ function Row({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-caption">{label}</dt>
-      <dd className="mt-0.5 text-body-sm font-medium">{value ? fmtDateTime(value) : "لم تُشغّل بعد"}</dd>
+      <dd className="mt-0.5 text-body-sm font-medium">
+        {value ? fmtDateTime(value) : "لم تُشغّل بعد"}
+      </dd>
     </div>
   );
 }

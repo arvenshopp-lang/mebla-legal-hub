@@ -74,7 +74,12 @@ export const getIntegrationsHub = createServerFn({ method: "GET" })
       engine.listIntegrations(),
       engine.listHealthLogs(null, 60),
     ]);
-    return { definitions, integrations, logs, vaultReady: (await import("./vault.server")).vaultReady() };
+    return {
+      definitions,
+      integrations,
+      logs,
+      vaultReady: (await import("./vault.server")).vaultReady(),
+    };
   });
 
 export const saveIntegrationConfig = createServerFn({ method: "POST" })
@@ -146,7 +151,11 @@ export const setIntegrationEnabledState = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
+    const staff = await guard.requireStaff(
+      context.supabase,
+      context.userId,
+      "integrations.activate",
+    );
     const engine = await import("./integrations.server");
     const view = await engine.setIntegrationEnabled(data.id, data.enabled);
     await guard.writeAudit(context.supabase, staff, {
@@ -163,7 +172,11 @@ export const activateIntegration = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
+    const staff = await guard.requireStaff(
+      context.supabase,
+      context.userId,
+      "integrations.activate",
+    );
     const engine = await import("./integrations.server");
     const view = await engine.setIntegrationActive(data.id);
     await guard.writeAudit(context.supabase, staff, {
@@ -179,7 +192,11 @@ export const deactivateOtpIntegrations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
+    const staff = await guard.requireStaff(
+      context.supabase,
+      context.userId,
+      "integrations.activate",
+    );
     const engine = await import("./integrations.server");
     await engine.deactivateCategory();
     await guard.writeAudit(context.supabase, staff, {

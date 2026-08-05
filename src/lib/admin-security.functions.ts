@@ -34,7 +34,10 @@ export const securityCenterOverview = createServerFn({ method: "GET" })
     ] = await Promise.all([
       rotation.keyVersionsStatus(),
       rotation.recentRotationJobs(8),
-      db.from("platform_staff").select("user_id, full_name, email, role, status").eq("status", "active"),
+      db
+        .from("platform_staff")
+        .select("user_id, full_name, email, role, status")
+        .eq("status", "active"),
       db
         .from("pii_access_logs")
         .select("id", { count: "exact", head: true })
@@ -59,7 +62,12 @@ export const securityCenterOverview = createServerFn({ method: "GET" })
     ]);
 
     // تغطية التحقق بخطوتين لفريق المنصة (بيانات auth تُقرأ بصلاحية الخادم فقط).
-    const staff = (staffRows.data ?? []) as { user_id: string; full_name: string; email: string; role: string }[];
+    const staff = (staffRows.data ?? []) as {
+      user_id: string;
+      full_name: string;
+      email: string;
+      role: string;
+    }[];
     const mfaStatus: { name: string; email: string; role: string; mfa: boolean }[] = [];
     for (const member of staff) {
       const { data } = await db.auth.admin.getUserById(member.user_id);
@@ -73,10 +81,12 @@ export const securityCenterOverview = createServerFn({ method: "GET" })
     }
     const enrolled = mfaStatus.filter((m) => m.mfa).length;
 
-    const buckets = ((publicBuckets.data ?? []) as { name: string; public: boolean }[]).map((b) => ({
-      name: b.name,
-      public: b.public,
-    }));
+    const buckets = ((publicBuckets.data ?? []) as { name: string; public: boolean }[]).map(
+      (b) => ({
+        name: b.name,
+        public: b.public,
+      }),
+    );
 
     return {
       mfa: {
@@ -132,7 +142,9 @@ export type DocumentDenialRow = {
 /** آخر عمليات كشف البيانات الحساسة — بدون أي قيمة، فقط أثر العملية. */
 export const securityRevealFeed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ limit: z.number().int().min(1).max(100).default(30) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ limit: z.number().int().min(1).max(100).default(30) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { requireStaff, admin } = await import("@/lib/admin-guard.server");
     await requireStaff(context.supabase, context.userId, "audit.read");
@@ -150,14 +162,18 @@ export const securityRevealFeed = createServerFn({ method: "POST" })
 /** المحاولات المرفوضة على المستندات (تنزيل/طباعة/مشاركة) خلال آخر أسبوعين. */
 export const securityDocumentDenials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ limit: z.number().int().min(1).max(100).default(30) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ limit: z.number().int().min(1).max(100).default(30) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { requireStaff, admin } = await import("@/lib/admin-guard.server");
     await requireStaff(context.supabase, context.userId, "audit.read");
     const db = await admin();
     const { data: rows } = await db
       .from("document_access_logs")
-      .select("id, organization_id, action_type, outcome, denial_reason, trace_ref, ip, browser, device, created_at")
+      .select(
+        "id, organization_id, action_type, outcome, denial_reason, trace_ref, ip, browser, device, created_at",
+      )
       .eq("outcome", "denied")
       .order("created_at", { ascending: false })
       .limit(data.limit);

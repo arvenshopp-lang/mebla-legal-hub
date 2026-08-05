@@ -11,13 +11,17 @@ import {
 type Client = SupabaseClient<Database>;
 
 /** Reads the authoritative snapshot for one office as the calling user. */
-export async function loadOverview(supabase: Client, organizationId: string): Promise<SubscriptionOverview> {
+export async function loadOverview(
+  supabase: Client,
+  organizationId: string,
+): Promise<SubscriptionOverview> {
   const { data, error } = await supabase.rpc("my_subscription_overview", {
     _organization_id: organizationId,
   });
   if (error) {
     throw new Error(
-      translateSubscriptionError(error.message) ?? "تعذّر قراءة بيانات الاشتراك أو لا تملك صلاحية الوصول.",
+      translateSubscriptionError(error.message) ??
+        "تعذّر قراءة بيانات الاشتراك أو لا تملك صلاحية الوصول.",
     );
   }
   return data as unknown as SubscriptionOverview;

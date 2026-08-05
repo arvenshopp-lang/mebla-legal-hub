@@ -50,7 +50,10 @@ export const Route = createFileRoute("/mehla-admin/hr")({
   head: () => ({
     meta: [
       { title: "مركز الموظفين · إدارة مِهلة" },
-      { name: "description", content: "سجل موظفي منصة مِهلة، أقسامهم، حالاتهم الوظيفية، ومستنداتهم." },
+      {
+        name: "description",
+        content: "سجل موظفي منصة مِهلة، أقسامهم، حالاتهم الوظيفية، ومستنداتهم.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -116,14 +119,23 @@ function HrPage() {
   const departments = departmentsQuery.data?.departments ?? [];
 
   const managers = useMemo(
-    () => rows.filter((r: HrEmployeeRow) => r.id !== editingId).map((r: HrEmployeeRow) => ({ id: r.id, full_name: r.full_name })),
+    () =>
+      rows
+        .filter((r: HrEmployeeRow) => r.id !== editingId)
+        .map((r: HrEmployeeRow) => ({ id: r.id, full_name: r.full_name })),
     [rows, editingId],
   );
 
   const summary = useMemo(() => {
     const active = rows.filter((r: HrEmployeeRow) => r.employment_status === "active").length;
-    const onNotice = rows.filter((r: HrEmployeeRow) => r.employment_status === "on_notice" || r.employment_status === "suspended").length;
-    const departed = rows.filter((r: HrEmployeeRow) => r.employment_status === "terminated" || r.employment_status === "resigned").length;
+    const onNotice = rows.filter(
+      (r: HrEmployeeRow) =>
+        r.employment_status === "on_notice" || r.employment_status === "suspended",
+    ).length;
+    const departed = rows.filter(
+      (r: HrEmployeeRow) =>
+        r.employment_status === "terminated" || r.employment_status === "resigned",
+    ).length;
     return { total, active, onNotice, departed };
   }, [rows, total]);
 
@@ -143,7 +155,9 @@ function HrPage() {
         joined_at: f.joined_at,
         notes: f.notes.trim(),
       };
-      return editingId ? updateFn({ data: { ...payload, employeeId: editingId } }) : createFn({ data: payload });
+      return editingId
+        ? updateFn({ data: { ...payload, employeeId: editingId } })
+        : createFn({ data: payload });
     },
     onSuccess: () => {
       toast.success("تم حفظ بيانات الموظف");
@@ -173,9 +187,19 @@ function HrPage() {
       }
     >
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard Icon={Users} label="إجمالي الموظفين (الصفحة الحالية)" value={total} tone="info" />
+        <SummaryCard
+          Icon={Users}
+          label="إجمالي الموظفين (الصفحة الحالية)"
+          value={total}
+          tone="info"
+        />
         <SummaryCard Icon={UserCheck} label="نشطون" value={summary.active} tone="green" />
-        <SummaryCard Icon={UserCog} label="تحت الملاحظة/موقوفون" value={summary.onNotice} tone="warn" />
+        <SummaryCard
+          Icon={UserCog}
+          label="تحت الملاحظة/موقوفون"
+          value={summary.onNotice}
+          tone="warn"
+        />
         <SummaryCard Icon={UserX} label="منتهية خدمتهم" value={summary.departed} tone="muted" />
       </div>
 
@@ -247,7 +271,10 @@ function HrPage() {
       ) : employeesQuery.isError ? (
         <ErrorBlock message="تعذّر تحميل قائمة الموظفين. تأكد من صلاحية «مشاهدة الموظفين» ثم أعد المحاولة." />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا يوجد موظفون مطابقون" hint="عدّل معايير البحث أو التصفية، أو أضف موظفاً جديداً." />
+        <EmptyState
+          title="لا يوجد موظفون مطابقون"
+          hint="عدّل معايير البحث أو التصفية، أو أضف موظفاً جديداً."
+        />
       ) : (
         <>
           <DataCard>
@@ -274,10 +301,14 @@ function HrPage() {
                     <Td>{e.job_title ?? "—"}</Td>
                     <Td>{e.department_name ?? "—"}</Td>
                     <Td>
-                      <Badge tone={statusTone(e.employment_status)}>{HR_EMPLOYMENT_STATUS_LABELS[e.employment_status]}</Badge>
+                      <Badge tone={statusTone(e.employment_status)}>
+                        {HR_EMPLOYMENT_STATUS_LABELS[e.employment_status]}
+                      </Badge>
                     </Td>
                     <Td>{HR_EMPLOYMENT_TYPE_LABELS[e.employment_type]}</Td>
-                    <Td className="text-[12px] text-muted-foreground">{e.joined_at ? fmtDate(e.joined_at) : "—"}</Td>
+                    <Td className="text-[12px] text-muted-foreground">
+                      {e.joined_at ? fmtDate(e.joined_at) : "—"}
+                    </Td>
                     <Td className="text-left">
                       <div className="flex items-center justify-end gap-1">
                         {canReadDocs && (
@@ -334,7 +365,10 @@ function HrPage() {
         />
       )}
       {error && (
-        <p role="alert" className="mt-3 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+        <p
+          role="alert"
+          className="mt-3 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+        >
           {error}
         </p>
       )}

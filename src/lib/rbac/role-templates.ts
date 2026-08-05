@@ -147,7 +147,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "أخصائي دعم",
     name_en: "Support Agent",
     tier: "operations",
-    summary: "معالجة التذاكر المسندة إليه وإلى فرقه فقط، بلا إدارة مهل ولا دمج ولا اطلاع على كل المكاتب.",
+    summary:
+      "معالجة التذاكر المسندة إليه وإلى فرقه فقط، بلا إدارة مهل ولا دمج ولا اطلاع على كل المكاتب.",
     permissions: [
       "support.read",
       "support.create",
@@ -195,7 +196,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "محاسب",
     name_en: "Accountant",
     tier: "commercial",
-    summary: "إعداد الفواتير وتسجيل الدفعات والمطابقة والتقارير، دون إصدار نهائي ولا إلغاء ولا استرداد.",
+    summary:
+      "إعداد الفواتير وتسجيل الدفعات والمطابقة والتقارير، دون إصدار نهائي ولا إلغاء ولا استرداد.",
     permissions: [
       "billing.read",
       "billing.create",
@@ -213,7 +215,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "مدير المبيعات",
     name_en: "Sales Manager",
     tier: "commercial",
-    summary: "إدارة خط البيع كاملاً: علاقات العملاء والمراحل والعروض والعقود واعتمادها وتحويلها لفواتير.",
+    summary:
+      "إدارة خط البيع كاملاً: علاقات العملاء والمراحل والعروض والعقود واعتمادها وتحويلها لفواتير.",
     permissions: [
       "crm.read",
       "crm.create",
@@ -242,7 +245,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "مندوب مبيعات",
     name_en: "Sales Representative",
     tier: "commercial",
-    summary: "متابعة العملاء المحتملين والصفقات وإعداد العروض وإرسالها، دون اعتماد ولا تحويل لفواتير ولا حذف.",
+    summary:
+      "متابعة العملاء المحتملين والصفقات وإعداد العروض وإرسالها، دون اعتماد ولا تحويل لفواتير ولا حذف.",
     permissions: [
       "crm.read",
       "crm.create",
@@ -261,7 +265,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "مدير التسويق",
     name_en: "Marketing Manager",
     tier: "commercial",
-    summary: "الحملات والإحالات وأحداث التحويل، مع تحرير محتوى تسويقي وإعدادات SEO وإرسال الإشعارات.",
+    summary:
+      "الحملات والإحالات وأحداث التحويل، مع تحرير محتوى تسويقي وإعدادات SEO وإرسال الإشعارات.",
     permissions: [
       "marketing.read",
       "marketing.manage",
@@ -307,7 +312,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_ar: "مدير الموارد البشرية",
     name_en: "HR Manager",
     tier: "governance",
-    summary: "ملفات موظفي المنصة ومستنداتهم وهيكل الأقسام، دون أي صلاحية على بيانات المكاتب أو المال.",
+    summary:
+      "ملفات موظفي المنصة ومستنداتهم وهيكل الأقسام، دون أي صلاحية على بيانات المكاتب أو المال.",
     permissions: [
       "hr.read",
       "hr.manage",
@@ -342,7 +348,12 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     name_en: "Contract Reviewer",
     tier: "governance",
     summary: "مراجعة نصوص العقود وتعديل المسوّدات فقط، بلا اعتماد ولا إرسال ولا تحويل.",
-    permissions: ["sales_docs.read", "sales_docs.update", "sales_docs.export", "organizations.read"],
+    permissions: [
+      "sales_docs.read",
+      "sales_docs.update",
+      "sales_docs.export",
+      "organizations.read",
+    ],
   },
   {
     code: "technical_operations",

@@ -18,7 +18,13 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import { cloneRbacRole, deleteRbacRole, saveRbacRole } from "@/lib/rbac/rbac.functions";
-import { Field, PermissionBadges, PermissionPicker, type RbacOverview, type RbacRole } from "./shared";
+import {
+  Field,
+  PermissionBadges,
+  PermissionPicker,
+  type RbacOverview,
+  type RbacRole,
+} from "./shared";
 
 type RoleForm = {
   id: string | null;
@@ -29,7 +35,14 @@ type RoleForm = {
   is_active: boolean;
 };
 
-const EMPTY: RoleForm = { id: null, code: "", name_ar: "", description: "", permissions: [], is_active: true };
+const EMPTY: RoleForm = {
+  id: null,
+  code: "",
+  name_ar: "",
+  description: "",
+  permissions: [],
+  is_active: true,
+};
 
 export function RolesPanel({
   data,
@@ -42,7 +55,9 @@ export function RolesPanel({
 }) {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<RoleForm | null>(null);
-  const [clone, setClone] = useState<{ sourceId: string; code: string; name_ar: string } | null>(null);
+  const [clone, setClone] = useState<{ sourceId: string; code: string; name_ar: string } | null>(
+    null,
+  );
   const [toDelete, setToDelete] = useState<RbacRole | null>(null);
 
   const isSuper = data.me.role === "super_admin";
@@ -146,7 +161,9 @@ export function RolesPanel({
                     <Td>
                       <span className="block font-semibold">{r.name_ar}</span>
                       <span className="block font-mono text-[11px] text-text-muted">{r.code}</span>
-                      {r.description && <span className="text-caption mt-0.5 block">{r.description}</span>}
+                      {r.description && (
+                        <span className="text-caption mt-0.5 block">{r.description}</span>
+                      )}
                     </Td>
                     <Td>
                       <PermissionBadges permissions={r.permissions ?? []} max={4} />
@@ -157,7 +174,11 @@ export function RolesPanel({
                     <Td>
                       <div className="flex flex-wrap gap-1.5">
                         {r.is_system && <Badge tone="info">نظامي</Badge>}
-                        {r.is_active ? <Badge tone="green">مفعّل</Badge> : <Badge tone="muted">معطّل</Badge>}
+                        {r.is_active ? (
+                          <Badge tone="green">مفعّل</Badge>
+                        ) : (
+                          <Badge tone="muted">معطّل</Badge>
+                        )}
                       </div>
                     </Td>
                     <Td>
@@ -182,13 +203,16 @@ export function RolesPanel({
                         <IconBtn
                           aria-label="استنساخ الدور"
                           title="استنساخ الدور"
-                          onClick={() => setClone({ sourceId: r.id, code: "", name_ar: `${r.name_ar} (نسخة)` })}
+                          onClick={() =>
+                            setClone({ sourceId: r.id, code: "", name_ar: `${r.name_ar} (نسخة)` })
+                          }
                           disabled={!canManage}
                         >
                           <Copy className="h-4 w-4" aria-hidden />
                         </IconBtn>
                         <IconBtn
-                          aria-label={r.is_active ? "تعطيل الدور" : "تفعيل الدور"} title={r.is_active ? "تعطيل الدور" : "تفعيل الدور"}
+                          aria-label={r.is_active ? "تعطيل الدور" : "تفعيل الدور"}
+                          title={r.is_active ? "تعطيل الدور" : "تفعيل الدور"}
                           onClick={() => toggle.mutate(r)}
                           disabled={!canManage || r.is_system || toggle.isPending}
                         >

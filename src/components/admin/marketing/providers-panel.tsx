@@ -16,7 +16,12 @@ export function ProvidersPanel() {
   if (query.isError) return <ErrorBlock message="تعذّر تحميل حالة مزوّدي التسويق." />;
   const providers = query.data?.providers ?? [];
   if (providers.length === 0)
-    return <EmptyState title="لا توجد مزوّدات مسجّلة" hint="أضف مزوّدي القياس والإعلانات من مركز التكاملات." />;
+    return (
+      <EmptyState
+        title="لا توجد مزوّدات مسجّلة"
+        hint="أضف مزوّدي القياس والإعلانات من مركز التكاملات."
+      />
+    );
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -42,7 +47,9 @@ export function ProvidersPanel() {
             </div>
             <div className="flex justify-between gap-2">
               <dt>آخر فحص</dt>
-              <dd className="font-medium text-foreground">{p.last_checked_at ? fmtDateTime(p.last_checked_at) : "لم يُفحص بعد"}</dd>
+              <dd className="font-medium text-foreground">
+                {p.last_checked_at ? fmtDateTime(p.last_checked_at) : "لم يُفحص بعد"}
+              </dd>
             </div>
           </dl>
         </div>

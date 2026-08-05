@@ -70,12 +70,19 @@ function AccountEmailCard() {
   return (
     <Card title="بريد الحساب" icon={<Mail className="h-4 w-4 text-primary" />}>
       <p className="mb-4 text-[12.5px] leading-6 text-text-muted">
-        بريدك الحالي: <span dir="ltr" className="font-medium text-foreground">{currentEmail || "—"}</span>
-        {" "}— لن يتغيّر بريد الدخول قبل فتح رابط التأكيد المُرسل إلى البريد الجديد.
+        بريدك الحالي:{" "}
+        <span dir="ltr" className="font-medium text-foreground">
+          {currentEmail || "—"}
+        </span>{" "}
+        — لن يتغيّر بريد الدخول قبل فتح رابط التأكيد المُرسل إلى البريد الجديد.
       </p>
       {sentTo && (
-        <div role="status" className="mb-4 rounded-[var(--radius-m)] border border-success/25 bg-success-soft p-3 text-[12.5px] leading-6 text-success">
-          أرسلنا رسالة تأكيد إلى <span dir="ltr">{sentTo}</span>. أكمل التأكيد من نفس المتصفح لإتمام التغيير.
+        <div
+          role="status"
+          className="mb-4 rounded-[var(--radius-m)] border border-success/25 bg-success-soft p-3 text-[12.5px] leading-6 text-success"
+        >
+          أرسلنا رسالة تأكيد إلى <span dir="ltr">{sentTo}</span>. أكمل التأكيد من نفس المتصفح لإتمام
+          التغيير.
         </div>
       )}
       <div className="flex flex-wrap items-end gap-3">
@@ -186,7 +193,11 @@ function AccountPasswordCard() {
           autoComplete="new-password"
         />
         <div className="flex justify-end">
-          <Btn onClick={submit} loading={saving} disabled={code.length < 6 || !password || !confirm}>
+          <Btn
+            onClick={submit}
+            loading={saving}
+            disabled={code.length < 6 || !password || !confirm}
+          >
             تحديث كلمة المرور
           </Btn>
         </div>
@@ -195,7 +206,15 @@ function AccountPasswordCard() {
   );
 }
 
-function Card({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Card({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-[var(--radius-l)] border border-border bg-surface p-6">
       <h3 className="mb-4 flex items-center gap-2 text-sm font-bold">
@@ -209,7 +228,9 @@ function Card({ title, icon, children }: { title: string; icon: React.ReactNode;
 
 function MfaCard() {
   const qc = useQueryClient();
-  const [enroll, setEnroll] = useState<{ factorId: string; qrSvg: string; secret: string } | null>(null);
+  const [enroll, setEnroll] = useState<{ factorId: string; qrSvg: string; secret: string } | null>(
+    null,
+  );
   const [code, setCode] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
 
@@ -220,7 +241,10 @@ function MfaCard() {
 
   const begin = useMutation({
     mutationFn: startTotpEnrollment,
-    onSuccess: (data) => { setEnroll(data); setCode(""); },
+    onSuccess: (data) => {
+      setEnroll(data);
+      setCode("");
+    },
     onError: (e: Error) => toast.error("تعذّر التفعيل", { description: e.message }),
   });
 
@@ -262,10 +286,15 @@ function MfaCard() {
             حسابك محمي بتطبيق مصادقة.
           </div>
           {verified.map((f) => (
-            <div key={f.id} className="flex items-center justify-between rounded-[var(--radius-m)] border border-border bg-surface-muted/50 px-3 py-2">
+            <div
+              key={f.id}
+              className="flex items-center justify-between rounded-[var(--radius-m)] border border-border bg-surface-muted/50 px-3 py-2"
+            >
               <span className="text-sm">
                 {f.friendly_name || "تطبيق مصادقة"}
-                <span className="ms-2 text-xs text-text-muted">مُفعَّل {fmtDateTime(f.created_at)}</span>
+                <span className="ms-2 text-xs text-text-muted">
+                  مُفعَّل {fmtDateTime(f.created_at)}
+                </span>
               </span>
               <button
                 type="button"
@@ -281,7 +310,8 @@ function MfaCard() {
       ) : enroll ? (
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
-            امسح رمز QR بتطبيق مصادقة (Google Authenticator أو Microsoft Authenticator)، ثم أدخل الرمز المكوّن من ستة أرقام.
+            امسح رمز QR بتطبيق مصادقة (Google Authenticator أو Microsoft Authenticator)، ثم أدخل
+            الرمز المكوّن من ستة أرقام.
           </p>
           <img
             src={qrImageSrc(enroll.qrSvg)}
@@ -289,7 +319,10 @@ function MfaCard() {
             className="w-44 rounded-[var(--radius-m)] border border-border bg-white p-2"
           />
           <p className="text-xs text-text-muted">
-            أو أدخل المفتاح يدوياً: <span className="font-mono" dir="ltr">{enroll.secret}</span>
+            أو أدخل المفتاح يدوياً:{" "}
+            <span className="font-mono" dir="ltr">
+              {enroll.secret}
+            </span>
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1.5">
@@ -303,7 +336,11 @@ function MfaCard() {
                 className={inputCls + " max-w-[160px] text-center font-mono tracking-[0.4em]"}
               />
             </label>
-            <Btn onClick={() => confirm.mutate()} loading={confirm.isPending} disabled={code.length !== 6}>
+            <Btn
+              onClick={() => confirm.mutate()}
+              loading={confirm.isPending}
+              disabled={code.length !== 6}
+            >
               تأكيد التفعيل
             </Btn>
             <Btn variant="outline" onClick={() => setEnroll(null)} disabled={confirm.isPending}>
@@ -316,11 +353,13 @@ function MfaCard() {
           <div className="flex items-start gap-2 text-sm text-text-muted">
             <ShieldAlert className="mt-0.5 h-4 w-4 text-primary" aria-hidden />
             <p>
-              {MFA_OPTIONAL_INVITE} — يُطلب الرمز عند تسجيل الدخول فقط، ولا يؤثر على وصولك إلى القضايا
-              أو المستندات أو أي عملية تسمح بها صلاحيات دورك.
+              {MFA_OPTIONAL_INVITE} — يُطلب الرمز عند تسجيل الدخول فقط، ولا يؤثر على وصولك إلى
+              القضايا أو المستندات أو أي عملية تسمح بها صلاحيات دورك.
             </p>
           </div>
-          <Btn onClick={() => begin.mutate()} loading={begin.isPending}>تفعيل التحقق بخطوتين</Btn>
+          <Btn onClick={() => begin.mutate()} loading={begin.isPending}>
+            تفعيل التحقق بخطوتين
+          </Btn>
         </div>
       )}
 
@@ -349,11 +388,15 @@ function EncryptionCard() {
   return (
     <Card title="تشفير البيانات الحساسة" icon={<ShieldCheck className="h-4 w-4 text-primary" />}>
       <ul className="space-y-2 text-sm text-text-muted">
-        <li>• أرقام الهوية والسجل التجاري تُشفَّر بمعيار AES-256-GCM قبل كتابتها في قاعدة البيانات.</li>
+        <li>
+          • أرقام الهوية والسجل التجاري تُشفَّر بمعيار AES-256-GCM قبل كتابتها في قاعدة البيانات.
+        </li>
         <li>• لكل مكتب مفتاح مشتق مستقل، فلا يمكن قراءة بيانات مكتب بمفتاح مكتب آخر.</li>
         <li>• البحث بالرقم يتم عبر بصمة حتمية غير قابلة للعكس، دون تخزين الرقم صريحاً.</li>
         <li>• كل عملية كشف لرقم حساس تُسجَّل باسم المستخدم والوقت في سجل غير قابل للتعديل.</li>
-        <li>• المستندات تُخزَّن في مستودع خاص ولا تُسلَّم إلا بروابط مؤقتة موقّعة مع علامة مائية.</li>
+        <li>
+          • المستندات تُخزَّن في مستودع خاص ولا تُسلَّم إلا بروابط مؤقتة موقّعة مع علامة مائية.
+        </li>
       </ul>
     </Card>
   );
@@ -399,11 +442,16 @@ function PiiAccessLogCard({ orgId }: { orgId: string }) {
       ) : (
         <div className="divide-y divide-border">
           {data.map((row) => (
-            <div key={row.id as string} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+            <div
+              key={row.id as string}
+              className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+            >
               <span className="font-medium">{names?.[row.user_id as string] ?? "مستخدم"}</span>
               <Badge>{PII_FIELD_LABEL[row.field as PiiField] ?? (row.field as string)}</Badge>
               <span className="text-xs text-text-muted">{row.entity_type as string}</span>
-              <span className="text-xs text-text-muted">{fmtDateTime(row.created_at as string)}</span>
+              <span className="text-xs text-text-muted">
+                {fmtDateTime(row.created_at as string)}
+              </span>
             </div>
           ))}
         </div>

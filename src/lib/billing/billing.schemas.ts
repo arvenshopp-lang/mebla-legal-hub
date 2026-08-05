@@ -71,7 +71,11 @@ export const draftSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.taxExempt && !value.taxExemptionReason) {
-      ctx.addIssue({ code: "custom", path: ["taxExemptionReason"], message: "سبب الإعفاء الضريبي مطلوب." });
+      ctx.addIssue({
+        code: "custom",
+        path: ["taxExemptionReason"],
+        message: "سبب الإعفاء الضريبي مطلوب.",
+      });
     }
     value.items.forEach((item, index) => {
       if (item.discountAmount > item.quantity * item.unitPrice) {
@@ -90,7 +94,10 @@ export const issueSchema = z.object({
   notify: z.boolean().default(true),
 });
 
-export const reasonSchema = z.object({ id: uuid, reason: text(400).min(5, "اكتب سبباً واضحاً (5 أحرف على الأقل).") });
+export const reasonSchema = z.object({
+  id: uuid,
+  reason: text(400).min(5, "اكتب سبباً واضحاً (5 أحرف على الأقل)."),
+});
 
 export const recordPaymentSchema = z.object({
   invoiceId: uuid,
@@ -143,13 +150,22 @@ export const bankEntrySchema = z.object({
 });
 
 export const matchEntrySchema = z.object({ entryId: uuid, paymentId: uuid });
-export const ignoreEntrySchema = z.object({ entryId: uuid, reason: text(400).min(5, "اكتب سبب التجاهل.") });
+export const ignoreEntrySchema = z.object({
+  entryId: uuid,
+  reason: text(400).min(5, "اكتب سبب التجاهل."),
+});
 
 export const closePeriodSchema = z
   .object({ periodStart: isoDate, periodEnd: isoDate, notes: optionalText(500) })
-  .refine((v) => v.periodEnd >= v.periodStart, { path: ["periodEnd"], message: "تاريخ النهاية قبل البداية." });
+  .refine((v) => v.periodEnd >= v.periodStart, {
+    path: ["periodEnd"],
+    message: "تاريخ النهاية قبل البداية.",
+  });
 
-export const reopenRequestSchema = z.object({ periodId: uuid, reason: text(400).min(10, "اكتب مبرراً تفصيلياً.") });
+export const reopenRequestSchema = z.object({
+  periodId: uuid,
+  reason: text(400).min(10, "اكتب مبرراً تفصيلياً."),
+});
 export const approveReopenSchema = z.object({ approvalId: uuid });
 
 export const providerCodeSchema = z.object({ code: z.enum(["manual", "moyasar"]) });
@@ -162,7 +178,9 @@ export const providerEnabledSchema = providerCodeSchema.extend({ enabled: z.bool
 export const sequenceSchema = z.object({
   kind: z.enum(["invoice", "quote", "credit_note"]),
   periodKey: text(10).min(4),
-  prefix: text(20).min(2).regex(/^[A-Z0-9-]+$/, "البادئة تُكتب بحروف لاتينية كبيرة وأرقام وشرطات فقط."),
+  prefix: text(20)
+    .min(2)
+    .regex(/^[A-Z0-9-]+$/, "البادئة تُكتب بحروف لاتينية كبيرة وأرقام وشرطات فقط."),
   padding: z.number().int().min(3).max(10),
 });
 

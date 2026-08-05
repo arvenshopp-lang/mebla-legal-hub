@@ -4,14 +4,14 @@
 
 ## الطبقات
 
-| الطبقة | الملف | المسؤولية |
-| --- | --- | --- |
-| مشتركة | `src/lib/sales-docs.shared.ts` | الأنواع، التسميات، `computeSalesDocTotals`، خريطة الانتقالات `STATUS_TRANSITIONS`. |
-| تحقّق | `src/lib/sales-docs.schemas.ts` | مخططات Zod لكل مدخل (لا تُقبل إجماليات من المتصفح). |
-| المحرك | `src/lib/sales-docs.server.ts` | القراءة والحفظ، الاعتماد، الإرسال، القرار، التوقيع، التحويل، القوالب، سجل الأحداث والتدقيق. |
-| PDF | `src/lib/sales-docs.pdf.server.ts` | نموذج مستند عربي RTL على محرك المركز المالي الموحّد. |
-| دوال الخادم | `src/lib/sales-docs.functions.ts` | ملف رقيق: تحقق مدخلات + `requireStaff` بصلاحية `sales_docs.*`. |
-| الواجهة | `src/routes/mehla-admin/sales/*`, `src/components/admin/sales/*` | القائمة، النموذج، القوالب، التفاصيل والإجراءات. |
+| الطبقة      | الملف                                                            | المسؤولية                                                                                   |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| مشتركة      | `src/lib/sales-docs.shared.ts`                                   | الأنواع، التسميات، `computeSalesDocTotals`، خريطة الانتقالات `STATUS_TRANSITIONS`.          |
+| تحقّق       | `src/lib/sales-docs.schemas.ts`                                  | مخططات Zod لكل مدخل (لا تُقبل إجماليات من المتصفح).                                         |
+| المحرك      | `src/lib/sales-docs.server.ts`                                   | القراءة والحفظ، الاعتماد، الإرسال، القرار، التوقيع، التحويل، القوالب، سجل الأحداث والتدقيق. |
+| PDF         | `src/lib/sales-docs.pdf.server.ts`                               | نموذج مستند عربي RTL على محرك المركز المالي الموحّد.                                        |
+| دوال الخادم | `src/lib/sales-docs.functions.ts`                                | ملف رقيق: تحقق مدخلات + `requireStaff` بصلاحية `sales_docs.*`.                              |
+| الواجهة     | `src/routes/mehla-admin/sales/*`, `src/components/admin/sales/*` | القائمة، النموذج، القوالب، التفاصيل والإجراءات.                                             |
 
 ## دورة الحياة
 

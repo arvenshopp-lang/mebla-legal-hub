@@ -8,7 +8,11 @@ import { useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { EyeOff, ShieldAlert } from "lucide-react";
-import { endRbacImpersonation, getRbacImpersonationState, logRbacImpersonationPage } from "@/lib/rbac/rbac.functions";
+import {
+  endRbacImpersonation,
+  getRbacImpersonationState,
+  logRbacImpersonationPage,
+} from "@/lib/rbac/rbac.functions";
 import { formatRiyadh, remainingLabel } from "@/components/admin/rbac/shared";
 
 export function ImpersonationBanner() {
@@ -54,8 +58,8 @@ export function ImpersonationBanner() {
         <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden />
         <strong>جلسة انتحال نشطة (قراءة فقط)</strong>
         <span className="truncate">
-          تعرض بيانات {active.target_email ?? active.target_user_id} — تنتهي {formatRiyadh(active.expires_at)} (يتبقى{" "}
-          {remainingLabel(active.expires_at)})
+          تعرض بيانات {active.target_email ?? active.target_user_id} — تنتهي{" "}
+          {formatRiyadh(active.expires_at)} (يتبقى {remainingLabel(active.expires_at)})
         </span>
       </span>
       <button

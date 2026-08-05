@@ -57,8 +57,8 @@ async function zxcvbnScore(password: string, ctx: PasswordContext): Promise<Stre
       graphs: common.adjacencyGraphs,
       translations: en.translations,
     });
-    const userInputs = [ctx.name, ctx.email, "mehla", "mehlalex"].filter(
-      (v): v is string => Boolean(v),
+    const userInputs = [ctx.name, ctx.email, "mehla", "mehlalex"].filter((v): v is string =>
+      Boolean(v),
     );
     return zxcvbn.check(password, userInputs).score as StrengthLevel;
   } catch {

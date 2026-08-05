@@ -53,52 +53,172 @@ const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/mehla-admin", label: "لوحة المؤشرات", Icon: Gauge },
       { to: "/mehla-admin/users", label: "المستخدمون", Icon: Users, permission: "users.read" },
-      { to: "/mehla-admin/organizations", label: "المكاتب", Icon: Building2, permission: "organizations.read" },
+      {
+        to: "/mehla-admin/organizations",
+        label: "المكاتب",
+        Icon: Building2,
+        permission: "organizations.read",
+      },
       { to: "/mehla-admin/crm", label: "إدارة العلاقات", Icon: Handshake, permission: "crm.read" },
-      { to: "/mehla-admin/sales", label: "العروض والعقود", Icon: FileSignature, permission: "sales_docs.read" },
-      { to: "/mehla-admin/subscriptions", label: "الاشتراكات", Icon: CreditCard, permission: "subscriptions.manage" },
+      {
+        to: "/mehla-admin/sales",
+        label: "العروض والعقود",
+        Icon: FileSignature,
+        permission: "sales_docs.read",
+      },
+      {
+        to: "/mehla-admin/subscriptions",
+        label: "الاشتراكات",
+        Icon: CreditCard,
+        permission: "subscriptions.manage",
+      },
       { to: "/mehla-admin/plans", label: "الباقات", Icon: Layers, permission: "plans.manage" },
-      { to: "/mehla-admin/revenue", label: "الإيرادات والتقارير", Icon: TrendingUp, permission: "revenue.read" },
-      { to: "/mehla-admin/billing", label: "المركز المالي", Icon: Receipt, permission: "billing.read" },
-      { to: "/mehla-admin/support", label: "مركز الدعم", Icon: LifeBuoy, permission: "tickets.view" },
+      {
+        to: "/mehla-admin/revenue",
+        label: "الإيرادات والتقارير",
+        Icon: TrendingUp,
+        permission: "revenue.read",
+      },
+      {
+        to: "/mehla-admin/billing",
+        label: "المركز المالي",
+        Icon: Receipt,
+        permission: "billing.read",
+      },
+      {
+        to: "/mehla-admin/support",
+        label: "مركز الدعم",
+        Icon: LifeBuoy,
+        permission: "tickets.view",
+      },
     ],
   },
   {
     label: "المراسلات",
     items: [
       { to: "/mehla-admin/mail", label: "مركز البريد", Icon: Inbox, permission: "email.view" },
-      { to: "/mehla-admin/email", label: "البريد والقوالب", Icon: Mail, permission: "email.manage" },
-      { to: "/mehla-admin/notifications", label: "الإشعارات", Icon: BellRing, permission: "notifications.send" },
-      { to: "/mehla-admin/marketing", label: "مركز التسويق", Icon: Megaphone, permission: "marketing.read" },
-      { to: "/mehla-admin/sms", label: "الرسائل وتوثيق الجوال", Icon: MessageSquare, permission: "sms.read" },
-      { to: "/mehla-admin/integrations", label: "مركز التكاملات", Icon: Plug, permission: "integrations.read" },
+      {
+        to: "/mehla-admin/email",
+        label: "البريد والقوالب",
+        Icon: Mail,
+        permission: "email.manage",
+      },
+      {
+        to: "/mehla-admin/notifications",
+        label: "الإشعارات",
+        Icon: BellRing,
+        permission: "notifications.send",
+      },
+      {
+        to: "/mehla-admin/marketing",
+        label: "مركز التسويق",
+        Icon: Megaphone,
+        permission: "marketing.read",
+      },
+      {
+        to: "/mehla-admin/sms",
+        label: "الرسائل وتوثيق الجوال",
+        Icon: MessageSquare,
+        permission: "sms.read",
+      },
+      {
+        to: "/mehla-admin/integrations",
+        label: "مركز التكاملات",
+        Icon: Plug,
+        permission: "integrations.read",
+      },
     ],
   },
   {
     label: "المنصة",
     items: [
-      { to: "/mehla-admin/analytics", label: "التحليلات والنمو", Icon: BarChart3, permission: "monitoring.read" },
-      { to: "/mehla-admin/services", label: "حالة الخدمات", Icon: Server, permission: "monitoring.read" },
-      { to: "/mehla-admin/jobs", label: "مهام النظام", Icon: ListChecks, permission: "monitoring.read" },
-      { to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" },
-      { to: "/mehla-admin/backups", label: "النسخ الاحتياطية", Icon: DatabaseBackup, permission: "backups.read" },
-      { to: "/mehla-admin/flags", label: "مفاتيح التشغيل", Icon: ToggleLeft, permission: "feature_flags.read" },
-      { to: "/mehla-admin/content", label: "إدارة المحتوى", Icon: FileText, permission: "content.read" },
-      { to: "/mehla-admin/settings", label: "إعدادات المنصة", Icon: Settings, permission: "platform_settings.read" },
+      {
+        to: "/mehla-admin/analytics",
+        label: "التحليلات والنمو",
+        Icon: BarChart3,
+        permission: "monitoring.read",
+      },
+      {
+        to: "/mehla-admin/services",
+        label: "حالة الخدمات",
+        Icon: Server,
+        permission: "monitoring.read",
+      },
+      {
+        to: "/mehla-admin/jobs",
+        label: "مهام النظام",
+        Icon: ListChecks,
+        permission: "monitoring.read",
+      },
+      {
+        to: "/mehla-admin/monitoring",
+        label: "مراقبة النظام",
+        Icon: Activity,
+        permission: "monitoring.read",
+      },
+      {
+        to: "/mehla-admin/backups",
+        label: "النسخ الاحتياطية",
+        Icon: DatabaseBackup,
+        permission: "backups.read",
+      },
+      {
+        to: "/mehla-admin/flags",
+        label: "مفاتيح التشغيل",
+        Icon: ToggleLeft,
+        permission: "feature_flags.read",
+      },
+      {
+        to: "/mehla-admin/content",
+        label: "إدارة المحتوى",
+        Icon: FileText,
+        permission: "content.read",
+      },
+      {
+        to: "/mehla-admin/settings",
+        label: "إعدادات المنصة",
+        Icon: Settings,
+        permission: "platform_settings.read",
+      },
       { to: "/mehla-admin/seo", label: "إدارة SEO", Icon: Search, permission: "seo.read" },
-      { to: "/mehla-admin/design", label: "تصميم المنصة", Icon: Palette, permission: "design.read" },
+      {
+        to: "/mehla-admin/design",
+        label: "تصميم المنصة",
+        Icon: Palette,
+        permission: "design.read",
+      },
     ],
   },
   {
     label: "الأمان والفريق",
     items: [
-      { to: "/mehla-admin/staff", label: "الموظفون والصلاحيات", Icon: ShieldCheck, permission: "staff.view" },
+      {
+        to: "/mehla-admin/staff",
+        label: "الموظفون والصلاحيات",
+        Icon: ShieldCheck,
+        permission: "staff.view",
+      },
       { to: "/mehla-admin/hr", label: "مركز الموظفين", Icon: UserCog, permission: "hr.read" },
       { to: "/mehla-admin/security", label: "مركز الأمان", Icon: Lock },
-      { to: "/mehla-admin/rbac", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
+      {
+        to: "/mehla-admin/rbac",
+        label: "الأدوار والصلاحيات",
+        Icon: KeyRound,
+        permission: "staff.view",
+      },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
-      { to: "/mehla-admin/activity", label: "سجل النشاط الموحّد", Icon: Activity, permission: "audit.read" },
-      { to: "/mehla-admin/failures", label: "سجل الأعطال", Icon: AlertTriangle, permission: "audit.read" },
+      {
+        to: "/mehla-admin/activity",
+        label: "سجل النشاط الموحّد",
+        Icon: Activity,
+        permission: "audit.read",
+      },
+      {
+        to: "/mehla-admin/failures",
+        label: "سجل الأعطال",
+        Icon: AlertTriangle,
+        permission: "audit.read",
+      },
     ],
   },
 ];
@@ -157,7 +277,9 @@ export function AdminShell({
           if (items.length === 0) return null;
           return (
             <div key={group.label} className="mb-5 last:mb-0">
-              <p className="px-3 pb-2 text-[11px] font-semibold tracking-wide text-text-muted">{group.label}</p>
+              <p className="px-3 pb-2 text-[11px] font-semibold tracking-wide text-text-muted">
+                {group.label}
+              </p>
               <ul className="space-y-0.5">
                 {items.map(({ to, label, Icon }) => (
                   <li key={to}>
@@ -210,7 +332,9 @@ export function AdminShell({
       {mobileOpen && (
         <div className="fixed inset-0 z-[var(--z-modal)] lg:hidden">
           <div className="absolute inset-0 bg-foreground/40" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 right-0 flex w-72 flex-col bg-surface">{Sidebar}</aside>
+          <aside className="absolute inset-y-0 right-0 flex w-72 flex-col bg-surface">
+            {Sidebar}
+          </aside>
         </div>
       )}
 
@@ -241,8 +365,14 @@ export function AdminShell({
         </header>
 
         <main className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-8">
-          <nav aria-label="مسار التنقل" className="mb-3 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <Link to="/mehla-admin" className="rounded-[var(--radius-s)] px-1 py-0.5 hover:text-foreground">
+          <nav
+            aria-label="مسار التنقل"
+            className="mb-3 flex items-center gap-1.5 text-[12px] text-muted-foreground"
+          >
+            <Link
+              to="/mehla-admin"
+              className="rounded-[var(--radius-s)] px-1 py-0.5 hover:text-foreground"
+            >
               لوحة الإدارة
             </Link>
             {crumb && (
@@ -255,7 +385,9 @@ export function AdminShell({
           <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-h3 truncate">{title}</h1>
-              {description && <p className="mt-1 text-body-sm text-muted-foreground">{description}</p>}
+              {description && (
+                <p className="mt-1 text-body-sm text-muted-foreground">{description}</p>
+              )}
             </div>
             {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
           </div>

@@ -6,15 +6,15 @@
 
 ## الخريطة
 
-| النطاق | الغرض | المسارات المخدومة | الجذر `/` يفتح |
-|---|---|---|---|
-| `www.mehlalex.com` | الموقع التسويقي | `/` فقط | الصفحة الرئيسية |
-| `app.mehlalex.com` | منصة المحامين + المصادقة | `/dashboard`, `/clients`, `/cases`, `/hearings`, `/deadlines`, `/tasks`, `/documents`, `/team`, `/settings`, `/onboarding`, `/pending-access`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/*` | `/dashboard` |
-| `client.mehlalex.com` | بوابة العميل | `/track`, `/upload/*` | `/track` |
-| `upload.mehlalex.com` | رفع المستندات فقط | `/upload/*` | صفحة "رابط خاص" |
-| `status.mehlalex.com` | التحقق من القضايا | `/track` | `/track` |
-| `api.mehlalex.com` | API فقط | `/api/*` | 404 JSON (لا HTML إطلاقاً) |
-| `docs.mehlalex.com` | مركز المساعدة | `/docs` | `/docs` |
+| النطاق                | الغرض                    | المسارات المخدومة                                                                                                                                                                                                      | الجذر `/` يفتح             |
+| --------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `www.mehlalex.com`    | الموقع التسويقي          | `/` فقط                                                                                                                                                                                                                | الصفحة الرئيسية            |
+| `app.mehlalex.com`    | منصة المحامين + المصادقة | `/dashboard`, `/clients`, `/cases`, `/hearings`, `/deadlines`, `/tasks`, `/documents`, `/team`, `/settings`, `/onboarding`, `/pending-access`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/*` | `/dashboard`               |
+| `client.mehlalex.com` | بوابة العميل             | `/track`, `/upload/*`                                                                                                                                                                                                  | `/track`                   |
+| `upload.mehlalex.com` | رفع المستندات فقط        | `/upload/*`                                                                                                                                                                                                            | صفحة "رابط خاص"            |
+| `status.mehlalex.com` | التحقق من القضايا        | `/track`                                                                                                                                                                                                               | `/track`                   |
+| `api.mehlalex.com`    | API فقط                  | `/api/*`                                                                                                                                                                                                               | 404 JSON (لا HTML إطلاقاً) |
+| `docs.mehlalex.com`   | مركز المساعدة            | `/docs`                                                                                                                                                                                                                | `/docs`                    |
 
 أي مسار يُطلب على نطاق لا يملكه → تحويل 302 إلى النطاق المالك.
 النطاقات المحجوزة (`billing`, `mail`, `calendar`, `files`, `ai`, `notifications`, `analytics`) مسجّلة مسبقاً بحالة `planned: true`.
@@ -37,7 +37,7 @@
 ### إعدادات لوحة المصادقة (تُضبط عند تفعيل الدومين)
 
 - **Site URL**: `https://app.mehlalex.com`
-- **Redirect URLs**: 
+- **Redirect URLs**:
   - `https://app.mehlalex.com/**`
   - `https://www.mehlalex.com/**`
   - `https://mehlalex.com/**`

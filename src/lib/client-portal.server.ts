@@ -34,9 +34,17 @@ export async function loadRequestByToken(token: string): Promise<LoadedRequest |
   if (!request) return null;
 
   let effectiveStatus = request.status as LoadedRequest["effectiveStatus"];
-  if (effectiveStatus === "active" && request.expires_at && new Date(request.expires_at) < new Date()) {
+  if (
+    effectiveStatus === "active" &&
+    request.expires_at &&
+    new Date(request.expires_at) < new Date()
+  ) {
     effectiveStatus = "expired";
-    await supabaseAdmin.from("document_requests").update({ status: "expired" }).eq("id", request.id).eq("status", "active");
+    await supabaseAdmin
+      .from("document_requests")
+      .update({ status: "expired" })
+      .eq("id", request.id)
+      .eq("status", "active");
   }
 
   return {
@@ -47,7 +55,12 @@ export async function loadRequestByToken(token: string): Promise<LoadedRequest |
   };
 }
 
-export async function logEvent(request: any, event: string, detail: Record<string, any>, ip: string) {
+export async function logEvent(
+  request: any,
+  event: string,
+  detail: Record<string, any>,
+  ip: string,
+) {
   await supabaseAdmin.from("document_request_events").insert({
     organization_id: request.organization_id,
     request_id: request.id,
@@ -114,5 +127,8 @@ export async function guardUploadToken(rawIp: string) {
 /** Cryptographically strong, URL-safe single-use token. */
 export function generateToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }

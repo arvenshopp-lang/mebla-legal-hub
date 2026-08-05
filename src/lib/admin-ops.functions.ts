@@ -36,19 +36,37 @@ export const savePlatformSettings = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => settingsPayload.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const permission = data.group === "seo" ? "seo.manage" : data.group === "email" ? "email.manage" : "platform_settings.manage";
+    const permission =
+      data.group === "seo"
+        ? "seo.manage"
+        : data.group === "email"
+          ? "email.manage"
+          : "platform_settings.manage";
     const staff = await g.requireStaff(context.supabase, context.userId, permission);
     const db = await g.admin();
 
     const keys = Object.keys(data.values);
-    const { data: beforeRows } = await db.from("platform_settings").select("key, value").in("key", keys);
-    const before = Object.fromEntries(((beforeRows ?? []) as { key: string; value: unknown }[]).map((r) => [r.key, r.value]));
+    const { data: beforeRows } = await db
+      .from("platform_settings")
+      .select("key, value")
+      .in("key", keys);
+    const before = Object.fromEntries(
+      ((beforeRows ?? []) as { key: string; value: unknown }[]).map((r) => [r.key, r.value]),
+    );
 
     for (const [key, value] of Object.entries(data.values)) {
-      const { error } = await db.from("platform_settings").upsert(
-        { key, value: value as never, is_public: data.group === "seo" || data.group === "general", updated_by: staff.user_id, updated_at: new Date().toISOString() },
-        { onConflict: "key" },
-      );
+      const { error } = await db
+        .from("platform_settings")
+        .upsert(
+          {
+            key,
+            value: value as never,
+            is_public: data.group === "seo" || data.group === "general",
+            updated_by: staff.user_id,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" },
+        );
       if (error) throw new Error("تعذّر حفظ الإعدادات.");
     }
 
@@ -76,8 +94,13 @@ export const listEmailTemplates = createServerFn({ method: "POST" })
       .order("name_ar");
     return {
       templates: (data ?? []) as {
-        id: string; code: string; name_ar: string; subject: string; body_html: string;
-        is_active: boolean; updated_at: string;
+        id: string;
+        code: string;
+        name_ar: string;
+        subject: string;
+        body_html: string;
+        is_active: boolean;
+        updated_at: string;
       }[],
     };
   });
@@ -88,7 +111,10 @@ export const saveEmailTemplate = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid().optional(),
-        code: z.string().trim().regex(/^[a-z0-9_.-]{2,60}$/, "رمز القالب يجب أن يكون إنجليزياً صغيراً"),
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9_.-]{2,60}$/, "رمز القالب يجب أن يكون إنجليزياً صغيراً"),
         name_ar: z.string().trim().min(2, "اسم القالب مطلوب").max(120),
         subject: z.string().trim().min(2, "عنوان الرسالة مطلوب").max(200),
         body_html: z.string().trim().min(10, "محتوى الرسالة قصير جداً").max(50_000),
@@ -135,7 +161,11 @@ export const deleteEmailTemplate = createServerFn({ method: "POST" })
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");
     const db = await g.admin();
-    const { data: before } = await db.from("platform_email_templates").select("code, name_ar").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("platform_email_templates")
+      .select("code, name_ar")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await db.from("platform_email_templates").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف القالب.");
     await g.writeAudit(db, staff, {
@@ -171,7 +201,11 @@ export const sendBroadcast = createServerFn({ method: "POST" })
     let recipients: { user_id: string; organization_id: string }[] = [];
     if (data.audience === "user") {
       if (!data.targetUserEmail) throw new Error("أدخل بريد المستخدم المستهدف.");
-      const { data: profile } = await db.from("profiles").select("id").ilike("email", data.targetUserEmail).maybeSingle();
+      const { data: profile } = await db
+        .from("profiles")
+        .select("id")
+        .ilike("email", data.targetUserEmail)
+        .maybeSingle();
       if (!profile) throw new Error("لا يوجد مستخدم بهذا البريد.");
       const { data: m } = await db
         .from("organization_members")
@@ -191,14 +225,21 @@ export const sendBroadcast = createServerFn({ method: "POST" })
         .eq("status", "active");
       recipients = (rows ?? []) as typeof recipients;
     } else {
-      const { data: rows } = await db.from("organization_members").select("user_id, organization_id").eq("status", "active");
+      const { data: rows } = await db
+        .from("organization_members")
+        .select("user_id, organization_id")
+        .eq("status", "active");
       let list = (rows ?? []) as typeof recipients;
       if (data.audience === "subscribers" || data.audience === "expired") {
         const { data: subs } = await db.from("subscriptions").select("user_id, status");
         const active = new Set(
-          ((subs ?? []) as { user_id: string; status: string }[]).filter((s) => s.status === "active").map((s) => s.user_id),
+          ((subs ?? []) as { user_id: string; status: string }[])
+            .filter((s) => s.status === "active")
+            .map((s) => s.user_id),
         );
-        list = list.filter((r) => (data.audience === "subscribers" ? active.has(r.user_id) : !active.has(r.user_id)));
+        list = list.filter((r) =>
+          data.audience === "subscribers" ? active.has(r.user_id) : !active.has(r.user_id),
+        );
       }
       recipients = list;
     }
@@ -254,8 +295,13 @@ export const listBroadcasts = createServerFn({ method: "POST" })
       .limit(50);
     return {
       broadcasts: (data ?? []) as {
-        id: string; audience: string; title: string; body: string;
-        recipients_count: number; sent_by_name: string | null; created_at: string;
+        id: string;
+        audience: string;
+        title: string;
+        body: string;
+        recipients_count: number;
+        sent_by_name: string | null;
+        created_at: string;
       }[],
     };
   });
@@ -277,12 +323,21 @@ export const getSystemHealth = createServerFn({ method: "POST" })
     const { error: storageErr } = await db.storage.from("documents").list("", { limit: 1 });
     const storageLatency = Date.now() - t1;
 
-    const { count: docCount } = await db.from("documents").select("id", { count: "exact", head: true });
+    const { count: docCount } = await db
+      .from("documents")
+      .select("id", { count: "exact", head: true });
     const { data: sizes } = await db.from("documents").select("file_size").limit(5000);
-    const storageBytes = ((sizes ?? []) as { file_size: number | null }[]).reduce((t, r) => t + Number(r.file_size ?? 0), 0);
+    const storageBytes = ((sizes ?? []) as { file_size: number | null }[]).reduce(
+      (t, r) => t + Number(r.file_size ?? 0),
+      0,
+    );
 
-    const { count: orgCount } = await db.from("organizations").select("id", { count: "exact", head: true });
-    const { count: userCount } = await db.from("profiles").select("id", { count: "exact", head: true });
+    const { count: orgCount } = await db
+      .from("organizations")
+      .select("id", { count: "exact", head: true });
+    const { count: userCount } = await db
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
     const { data: lastAudit } = await db
       .from("admin_audit_logs")
       .select("created_at")
@@ -292,7 +347,12 @@ export const getSystemHealth = createServerFn({ method: "POST" })
 
     return {
       database: { ok: !dbErr, latencyMs: dbLatency },
-      storage: { ok: !storageErr, latencyMs: storageLatency, documents: docCount ?? 0, bytes: storageBytes },
+      storage: {
+        ok: !storageErr,
+        latencyMs: storageLatency,
+        documents: docCount ?? 0,
+        bytes: storageBytes,
+      },
       platform: { organizations: orgCount ?? 0, users: userCount ?? 0 },
       lastAuditAt: lastAudit?.created_at ?? null,
       checkedAt: new Date().toISOString(),
@@ -328,7 +388,8 @@ export const listAuditLogs = createServerFn({ method: "POST" })
       )
       .order("created_at", { ascending: false })
       .range((data.page - 1) * data.pageSize, data.page * data.pageSize - 1);
-    if (data.search) q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
+    if (data.search)
+      q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
     if (data.action) q = q.eq("action", data.action);
     if (data.actor) q = q.ilike("actor_email", `%${data.actor}%`);
     if (data.from) q = q.gte("created_at", new Date(data.from).toISOString());
@@ -365,7 +426,9 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: rows } = await db
       .from("admin_audit_logs")
-      .select("created_at, actor_email, action, entity_type, entity_id, description, ip, device, browser")
+      .select(
+        "created_at, actor_email, action, entity_type, entity_id, description, ip, device, browser",
+      )
       .order("created_at", { ascending: false })
       .limit(5000);
     const csv = buildCsv(
@@ -409,10 +472,16 @@ export const listPlatformRoles = createServerFn({ method: "POST" })
       if (r.role_id) counts.set(r.role_id, (counts.get(r.role_id) ?? 0) + 1);
     }
     return {
-      roles: ((data ?? []) as {
-        id: string; code: string; name_ar: string; description: string | null;
-        permissions: string[] | null; is_system: boolean;
-      }[]).map((r) => ({ ...r, permissions: r.permissions ?? [], members: counts.get(r.id) ?? 0 })),
+      roles: (
+        (data ?? []) as {
+          id: string;
+          code: string;
+          name_ar: string;
+          description: string | null;
+          permissions: string[] | null;
+          is_system: boolean;
+        }[]
+      ).map((r) => ({ ...r, permissions: r.permissions ?? [], members: counts.get(r.id) ?? 0 })),
     };
   });
 
@@ -422,7 +491,10 @@ export const savePlatformRole = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid().optional(),
-        code: z.string().trim().regex(/^[a-z0-9_]{2,40}$/, "رمز الدور يجب أن يكون إنجليزياً صغيراً"),
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9_]{2,40}$/, "رمز الدور يجب أن يكون إنجليزياً صغيراً"),
         name_ar: z.string().trim().min(2, "اسم الدور مطلوب").max(80),
         description: z.string().trim().max(300).optional().or(z.literal("")),
         permissions: z.array(z.string()).max(60),
@@ -434,7 +506,11 @@ export const savePlatformRole = createServerFn({ method: "POST" })
     const staff = await g.requireStaff(context.supabase, context.userId, "roles.manage");
     const db = await g.admin();
     if (data.id) {
-      const { data: before } = await db.from("platform_roles").select("*").eq("id", data.id).maybeSingle();
+      const { data: before } = await db
+        .from("platform_roles")
+        .select("*")
+        .eq("id", data.id)
+        .maybeSingle();
       if (before?.is_system) throw new Error("لا يمكن تعديل دور نظامي.");
       const { error } = await db
         .from("platform_roles")
@@ -484,9 +560,16 @@ export const deletePlatformRole = createServerFn({ method: "POST" })
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "roles.manage");
     const db = await g.admin();
-    const { data: before } = await db.from("platform_roles").select("name_ar, is_system").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("platform_roles")
+      .select("name_ar, is_system")
+      .eq("id", data.id)
+      .maybeSingle();
     if (before?.is_system) throw new Error("لا يمكن حذف دور نظامي.");
-    const { count } = await db.from("platform_staff").select("id", { count: "exact", head: true }).eq("role_id", data.id);
+    const { count } = await db
+      .from("platform_staff")
+      .select("id", { count: "exact", head: true })
+      .eq("role_id", data.id);
     if ((count ?? 0) > 0) throw new Error("الدور مرتبط بموظفين. انقلهم إلى دور آخر أولاً.");
     const { error } = await db.from("platform_roles").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف الدور.");

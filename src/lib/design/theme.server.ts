@@ -74,7 +74,11 @@ export async function getPublishState(useCache = true): Promise<PublishState> {
   if (error) throw new Error("تعذّر قراءة حالة نشر التصميم.");
   let state = data as PublishState | null;
   if (!state) {
-    const { data: theme } = await client.from("design_themes").select("id").eq("is_active", true).maybeSingle();
+    const { data: theme } = await client
+      .from("design_themes")
+      .select("id")
+      .eq("is_active", true)
+      .maybeSingle();
     const { data: created } = await client
       .from("design_publish_state")
       .insert({ theme_id: theme?.id ?? null, singleton: true })
@@ -90,12 +94,18 @@ export async function getActiveTheme(): Promise<VersionSnapshot | null> {
   const state = await getPublishState();
   if (!state.active_version_id) return null;
   const client = await db();
-  const { data } = await client.from("design_versions").select("*").eq("id", state.active_version_id).maybeSingle();
+  const { data } = await client
+    .from("design_versions")
+    .select("*")
+    .eq("id", state.active_version_id)
+    .maybeSingle();
   return (data as VersionSnapshot | null) ?? null;
 }
 
 /** تصميم صفحة محددة من النسخة النشطة. */
-export async function getPageTheme(pageKey: string): Promise<{ tokens: DesignTokens; css: string }> {
+export async function getPageTheme(
+  pageKey: string,
+): Promise<{ tokens: DesignTokens; css: string }> {
   const active = await getActiveTheme();
   return {
     tokens: active?.page_tokens_json?.[pageKey] ?? {},
@@ -107,7 +117,11 @@ export async function activeThemeId(): Promise<string> {
   const state = await getPublishState();
   if (state.theme_id) return state.theme_id;
   const client = await db();
-  const { data } = await client.from("design_themes").select("id").eq("is_active", true).maybeSingle();
+  const { data } = await client
+    .from("design_themes")
+    .select("id")
+    .eq("is_active", true)
+    .maybeSingle();
   if (!data?.id) throw new Error("لا يوجد تصميم نشط في المنصة.");
   return data.id as string;
 }
@@ -136,7 +150,9 @@ export async function listVersions(limit = 30) {
   const themeId = await activeThemeId();
   const { data } = await client
     .from("design_versions")
-    .select("id, version_number, scope, page_key, status, change_summary, published_at, published_by, created_at")
+    .select(
+      "id, version_number, scope, page_key, status, change_summary, published_at, published_by, created_at",
+    )
     .eq("theme_id", themeId)
     .order("version_number", { ascending: false })
     .limit(limit);
@@ -147,7 +163,9 @@ export async function listAudit(limit = 40) {
   const client = await db();
   const { data } = await client
     .from("design_audit_logs")
-    .select("id, actor_email, action, page_key, version_id, before_summary, after_summary, trace_id, created_at")
+    .select(
+      "id, actor_email, action, page_key, version_id, before_summary, after_summary, trace_id, created_at",
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
@@ -222,7 +240,10 @@ export type PublishResult =
   | { ok: true; versionNumber: number; cacheVersion: number }
   | { ok: false; traceId: string; reason: string; blocked: { pageKey: string; rules: string[] }[] };
 
-export async function publishTheme(args: { userId: string; summary?: string }): Promise<PublishResult> {
+export async function publishTheme(args: {
+  userId: string;
+  summary?: string;
+}): Promise<PublishResult> {
   const traceId = `DS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
   const client = await db();
   const themeId = await activeThemeId();
@@ -237,7 +258,10 @@ export async function publishTheme(args: { userId: string; summary?: string }): 
   const pageCss: Record<string, string> = {};
 
   for (const draft of drafts) {
-    const payload = (draft.design_tokens_json ?? {}) as { tokens?: Record<string, unknown>; meta?: unknown };
+    const payload = (draft.design_tokens_json ?? {}) as {
+      tokens?: Record<string, unknown>;
+      meta?: unknown;
+    };
     const { tokens } = sanitizeTokens(payload.tokens ?? {});
     const validation = validateCustomCss(draft.custom_css ?? "", draft.page_key);
     if (!validation.valid) {
@@ -324,7 +348,11 @@ export async function publishTheme(args: { userId: string; summary?: string }): 
       pageKey: null,
       versionId: version.id,
       before: { active_version_id: state.active_version_id, cache_version: state.cache_version },
-      after: { version_number: version.version_number, cache_version: cacheVersion, pages: Object.keys(pageCss) },
+      after: {
+        version_number: version.version_number,
+        cache_version: cacheVersion,
+        pages: Object.keys(pageCss),
+      },
       traceId,
     });
 
@@ -427,7 +455,8 @@ export function buildPreviewBundle(args: {
   globalCss?: string;
 }): string {
   const parts: string[] = [];
-  for (const link of fontLinks({ ...(args.globalTokens ?? {}), ...args.tokens })) parts.push(`@import url("${link}");`);
+  for (const link of fontLinks({ ...(args.globalTokens ?? {}), ...args.tokens }))
+    parts.push(`@import url("${link}");`);
   if (args.globalTokens) {
     const css = tokensToCss(args.globalTokens, ":root");
     if (css) parts.push(css);
@@ -462,13 +491,20 @@ export async function writeDesignAudit(entry: {
   try {
     const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
-    ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+    ip =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "";
     userAgent = req.headers.get("user-agent") ?? "";
   } catch {
     /* لا سياق طلب */
   }
   try {
-    const { data } = await client.from("platform_staff").select("email").eq("user_id", entry.userId).maybeSingle();
+    const { data } = await client
+      .from("platform_staff")
+      .select("email")
+      .eq("user_id", entry.userId)
+      .maybeSingle();
     email = data?.email ?? null;
   } catch {
     email = null;

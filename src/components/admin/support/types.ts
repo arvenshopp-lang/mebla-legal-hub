@@ -1,5 +1,9 @@
 /** أنواع مشتقة من دوال الدعم الخادمية — مصدر واحد للحقيقة. */
-import type { getSupportConfig, getSupportReport, getSupportWorkspace } from "@/lib/support/support.functions";
+import type {
+  getSupportConfig,
+  getSupportReport,
+  getSupportWorkspace,
+} from "@/lib/support/support.functions";
 
 type Awaited2<T> = T extends Promise<infer U> ? U : T;
 

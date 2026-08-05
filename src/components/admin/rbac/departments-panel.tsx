@@ -56,9 +56,12 @@ export function DepartmentsPanel({
   refresh: () => void;
 }) {
   const [form, setForm] = useState<DeptForm | null>(null);
-  const [move, setMove] = useState<{ staffUserId: string; department_id: string; manager_user_id: string; role_id: string } | null>(
-    null,
-  );
+  const [move, setMove] = useState<{
+    staffUserId: string;
+    department_id: string;
+    manager_user_id: string;
+    role_id: string;
+  } | null>(null);
 
   const saveFn = useServerFn(saveRbacDepartment);
   const moveFn = useServerFn(updateRbacStaffOrg);
@@ -128,7 +131,9 @@ export function DepartmentsPanel({
           <span className="font-semibold">{dept.name_ar}</span>
           <span className="font-mono text-[11px] text-text-muted">{dept.code}</span>
           {!dept.is_active && <Badge tone="muted">معطّل</Badge>}
-          <span className="text-caption">المدير: {staffName(data.staff, dept.manager_user_id)}</span>
+          <span className="text-caption">
+            المدير: {staffName(data.staff, dept.manager_user_id)}
+          </span>
           <span className="text-caption inline-flex items-center gap-1">
             <Users className="h-3.5 w-3.5" aria-hidden /> {members.length}
           </span>
@@ -182,7 +187,10 @@ export function DepartmentsPanel({
         )}
       </SectionCard>
 
-      <SectionCard title="ارتباط الموظفين" description="نقل الموظف بين الأقسام وتحديد مديره المباشر ودوره.">
+      <SectionCard
+        title="ارتباط الموظفين"
+        description="نقل الموظف بين الأقسام وتحديد مديره المباشر ودوره."
+      >
         {data.staff.length === 0 ? (
           <EmptyState title="لا يوجد موظفون" />
         ) : (
@@ -209,7 +217,9 @@ export function DepartmentsPanel({
                         {data.departments.find((d) => d.id === s.department_id)?.name_ar ?? "—"}
                       </td>
                       <td className="px-4 py-3">{staffName(data.staff, s.manager_user_id)}</td>
-                      <td className="px-4 py-3">{data.roles.find((r) => r.id === s.role_id)?.name_ar ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        {data.roles.find((r) => r.id === s.role_id)?.name_ar ?? "—"}
+                      </td>
                       <td className="px-4 py-3">
                         {canManage && (
                           <Btn
@@ -237,7 +247,11 @@ export function DepartmentsPanel({
         )}
       </SectionCard>
 
-      <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? "تعديل قسم" : "قسم جديد"}>
+      <Modal
+        open={!!form}
+        onClose={() => setForm(null)}
+        title={form?.id ? "تعديل قسم" : "قسم جديد"}
+      >
         {form && (
           <form
             className="space-y-4"

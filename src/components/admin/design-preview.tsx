@@ -156,7 +156,9 @@ export function DesignPreview({
               aria-pressed={device === key}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-[var(--radius-s)] px-2.5 py-1.5 text-[12px] font-medium transition",
-                device === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-muted",
+                device === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-surface-muted",
               )}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />
@@ -184,7 +186,9 @@ export function DesignPreview({
           aria-pressed={compare}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-[var(--radius-s)] px-2.5 py-1.5 text-[12px] font-medium transition",
-            compare ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-muted",
+            compare
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-surface-muted",
           )}
         >
           <SplitSquareHorizontal className="h-3.5 w-3.5" aria-hidden />
@@ -204,20 +208,29 @@ export function DesignPreview({
         <div className={cn("flex gap-4", compare ? "flex-col xl:flex-row" : "")}>
           {compare && (
             <figure className="m-0 shrink-0">
-              <figcaption className="mb-1 text-[11px] font-semibold text-muted-foreground">قبل (التصميم الحالي)</figcaption>
+              <figcaption className="mb-1 text-[11px] font-semibold text-muted-foreground">
+                قبل (التصميم الحالي)
+              </figcaption>
               <iframe
                 key={`base-${nonce}`}
                 title="معاينة قبل التعديل"
                 sandbox="allow-same-origin"
                 srcDoc={baseDoc}
-                style={{ width, height: 620, transform: `scale(${zoom})`, transformOrigin: "top right" }}
+                style={{
+                  width,
+                  height: 620,
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "top right",
+                }}
                 className="rounded-[var(--radius-m)] border border-border bg-surface"
               />
             </figure>
           )}
           <figure className="m-0 shrink-0">
             {compare && (
-              <figcaption className="mb-1 text-[11px] font-semibold text-primary">بعد (المسودة)</figcaption>
+              <figcaption className="mb-1 text-[11px] font-semibold text-primary">
+                بعد (المسودة)
+              </figcaption>
             )}
             <iframe
               ref={frame}
@@ -225,13 +238,19 @@ export function DesignPreview({
               title="معاينة التصميم"
               sandbox="allow-same-origin"
               srcDoc={doc}
-              style={{ width, height: 620, transform: `scale(${zoom})`, transformOrigin: "top right" }}
+              style={{
+                width,
+                height: 620,
+                transform: `scale(${zoom})`,
+                transformOrigin: "top right",
+              }}
               className="rounded-[var(--radius-m)] border border-border bg-surface"
             />
           </figure>
         </div>
         <p className="mt-3 text-[11.5px] text-muted-foreground">
-          المعاينة تستخدم بيانات تجريبية فقط ولا تُنفّذ أي عملية حفظ أو حذف، ولا تؤثر على الموقع قبل النشر.
+          المعاينة تستخدم بيانات تجريبية فقط ولا تُنفّذ أي عملية حفظ أو حذف، ولا تؤثر على الموقع قبل
+          النشر.
         </p>
       </div>
     </div>

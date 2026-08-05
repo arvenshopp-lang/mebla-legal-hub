@@ -56,7 +56,14 @@ export const TICKET_PRIORITY_LABELS_AR: Record<TicketPriority, string> = {
   urgent: "عاجلة",
 };
 
-export const TICKET_CHANNELS = ["email", "portal", "phone", "internal", "whatsapp", "chat"] as const;
+export const TICKET_CHANNELS = [
+  "email",
+  "portal",
+  "phone",
+  "internal",
+  "whatsapp",
+  "chat",
+] as const;
 export type TicketChannel = (typeof TICKET_CHANNELS)[number];
 
 export const TICKET_CHANNEL_LABELS: Record<TicketChannel, string> = {
@@ -79,7 +86,10 @@ export const SLA_STATE_LABELS: Record<SlaState, string> = {
   met: "أُنجزت داخل المهلة",
 };
 
-export const SLA_STATE_TONES: Record<SlaState, "muted" | "green" | "gold" | "warn" | "red" | "info"> = {
+export const SLA_STATE_TONES: Record<
+  SlaState,
+  "muted" | "green" | "gold" | "warn" | "red" | "info"
+> = {
   ok: "green",
   warning: "gold",
   critical: "warn",
@@ -163,7 +173,13 @@ export type TicketListRow = {
   reopened_count: number;
 };
 
-export type SupportJson = string | number | boolean | null | SupportJson[] | { [key: string]: SupportJson };
+export type SupportJson =
+  | string
+  | number
+  | boolean
+  | null
+  | SupportJson[]
+  | { [key: string]: SupportJson };
 
 export type TicketTimelineEvent = {
   id: string;
@@ -216,7 +232,10 @@ export type TicketDetail = {
 /** فرق زمني مقروء بالعربية بين طابعين (للعرض فقط). */
 export function humanDuration(fromIso: string | null, toIso: string | null): string {
   if (!fromIso || !toIso) return "—";
-  const minutes = Math.max(0, Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60000));
+  const minutes = Math.max(
+    0,
+    Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60000),
+  );
   return humanMinutes(minutes);
 }
 

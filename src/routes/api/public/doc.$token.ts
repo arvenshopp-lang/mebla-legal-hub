@@ -22,7 +22,13 @@ const PUBLIC_LOAD_ERROR = "تعذر تحميل المستند. الرابط غي
 async function failure(
   publicMessage: string,
   status: number,
-  detail: { action: string; error: unknown; documentId?: string | null; organizationId?: string | null; path: string },
+  detail: {
+    action: string;
+    error: unknown;
+    documentId?: string | null;
+    organizationId?: string | null;
+    path: string;
+  },
 ) {
   const { logFailure } = await import("@/lib/observability/failure-log.server");
   const ref = await logFailure({
@@ -34,10 +40,17 @@ async function failure(
     organizationId: detail.organizationId ?? null,
     path: detail.path,
   });
-  return Response.json({ error: "document_unavailable", message: publicMessage, ref }, {
-    status,
-    headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "x-failure-ref": ref },
-  });
+  return Response.json(
+    { error: "document_unavailable", message: publicMessage, ref },
+    {
+      status,
+      headers: {
+        ...NO_STORE,
+        "content-type": "application/json; charset=utf-8",
+        "x-failure-ref": ref,
+      },
+    },
+  );
 }
 
 export const Route = createFileRoute("/api/public/doc/$token")({
@@ -47,7 +60,11 @@ export const Route = createFileRoute("/api/public/doc/$token")({
         const token = String(params.token ?? "");
         const path = new URL(request.url).pathname;
         if (token.length < 20)
-          return failure(PUBLIC_LOAD_ERROR, 400, { action: "token.malformed", error: "رمز قصير", path });
+          return failure(PUBLIC_LOAD_ERROR, 400, {
+            action: "token.malformed",
+            error: "رمز قصير",
+            path,
+          });
 
         const [secure, shared, stamp] = await Promise.all([
           import("@/lib/secure-view/secure-view.server"),
@@ -111,10 +128,17 @@ export const Route = createFileRoute("/api/public/doc/$token")({
                 final_response_host: trace?.finalUrl ?? null,
               },
             });
-            return Response.json({ error: "document_unavailable", message: PUBLIC_LOAD_ERROR, ref }, {
-              status: 502,
-              headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "x-failure-ref": ref },
-            });
+            return Response.json(
+              { error: "document_unavailable", message: PUBLIC_LOAD_ERROR, ref },
+              {
+                status: 502,
+                headers: {
+                  ...NO_STORE,
+                  "content-type": "application/json; charset=utf-8",
+                  "x-failure-ref": ref,
+                },
+              },
+            );
           }
           const original = storageRead.bytes;
 

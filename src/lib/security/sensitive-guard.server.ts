@@ -48,7 +48,13 @@ function parseUa(ua: string) {
           : /Linux/.test(ua)
             ? "Linux"
             : null;
-  const device = !ua ? null : /iPad|Tablet/.test(ua) ? "تابلت" : /Mobile|iPhone|Android/.test(ua) ? "جوال" : "حاسب";
+  const device = !ua
+    ? null
+    : /iPad|Tablet/.test(ua)
+      ? "تابلت"
+      : /Mobile|iPhone|Android/.test(ua)
+        ? "جوال"
+        : "حاسب";
   return { browser, os, device };
 }
 
@@ -87,7 +93,10 @@ export function assuranceLevel(claims: Claims): "aal1" | "aal2" | "unknown" {
   const aal = claims?.["aal"];
   if (aal === "aal2" || aal === "aal1") return aal;
   const amr = claims?.["amr"];
-  if (Array.isArray(amr) && amr.some((entry) => entry?.method === "totp" || entry?.method === "mfa/totp")) {
+  if (
+    Array.isArray(amr) &&
+    amr.some((entry) => entry?.method === "totp" || entry?.method === "mfa/totp")
+  ) {
     return "aal2";
   }
   return "unknown";

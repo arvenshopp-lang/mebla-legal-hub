@@ -158,7 +158,10 @@ export function splitDirectionalRuns(input: string): Run[] {
 /* -------------------------------------------------------- تنسيق أرقام وتواريخ */
 
 /** مبالغ بصيغة لاتينية ثابتة لتفادي أي التباس في الترتيب البصري. */
-export function formatPdfMoney(amount: number | string | null | undefined, currency = "SAR"): string {
+export function formatPdfMoney(
+  amount: number | string | null | undefined,
+  currency = "SAR",
+): string {
   const value = Number(amount ?? 0);
   const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -232,11 +235,25 @@ function drawLine(
   });
 }
 
-function rightText(ctx: Ctx, text: string, x: number, y: number, size: number, color: RGB = INK): void {
+function rightText(
+  ctx: Ctx,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  color: RGB = INK,
+): void {
   drawLine(ctx.page, ctx.font, text, x - widthOf(ctx, text, size), y, size, color);
 }
 
-function leftText(ctx: Ctx, text: string, x: number, y: number, size: number, color: RGB = INK): void {
+function leftText(
+  ctx: Ctx,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  color: RGB = INK,
+): void {
   drawLine(ctx.page, ctx.font, text, x, y, size, color);
 }
 
@@ -277,7 +294,8 @@ function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): strin
   }
 
   let single = words[0] ?? "";
-  while (single.length > 2 && widthOf(ctx, `${single}…`, size) > maxWidth) single = single.slice(0, -1);
+  while (single.length > 2 && widthOf(ctx, `${single}…`, size) > maxWidth)
+    single = single.slice(0, -1);
   return `${single}…`;
 }
 
@@ -321,10 +339,28 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   // اسم البائع قد يكون طويلاً: نصغّر الحجم ثم نقصّ على حدود الكلمات حتى لا
   // يتجاوز المنطقة المخصصة له ولا يتراكب مع عنوان المستند على اليسار.
   const sellerName = brand.sellerName || "مِهلة | MEHLA";
-  const sellerSize = widthOf(ctx, sellerName, 18) <= brandWidth ? 18 : widthOf(ctx, sellerName, 14) <= brandWidth ? 14 : 11;
-  rightText(ctx, truncate(ctx, sellerName, brandWidth, sellerSize), right, A4.height - 46, sellerSize);
+  const sellerSize =
+    widthOf(ctx, sellerName, 18) <= brandWidth
+      ? 18
+      : widthOf(ctx, sellerName, 14) <= brandWidth
+        ? 14
+        : 11;
+  rightText(
+    ctx,
+    truncate(ctx, sellerName, brandWidth, sellerSize),
+    right,
+    A4.height - 46,
+    sellerSize,
+  );
   if (brand.sellerAddress) {
-    rightText(ctx, truncate(ctx, brand.sellerAddress, brandWidth, 8.5), right, A4.height - 64, 8.5, MUTED);
+    rightText(
+      ctx,
+      truncate(ctx, brand.sellerAddress, brandWidth, 8.5),
+      right,
+      A4.height - 64,
+      8.5,
+      MUTED,
+    );
   }
   if (brand.taxNumber) {
     rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
@@ -333,7 +369,14 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   leftText(ctx, truncate(ctx, model.title, titleWidth, 14), MARGIN, A4.height - 46, 14);
   leftText(ctx, truncate(ctx, model.reference, titleWidth, 11), MARGIN, A4.height - 64, 11, MUTED);
   if (model.statusLine) {
-    leftText(ctx, truncate(ctx, model.statusLine, titleWidth, 8.5), MARGIN, A4.height - 78, 8.5, MUTED);
+    leftText(
+      ctx,
+      truncate(ctx, model.statusLine, titleWidth, 8.5),
+      MARGIN,
+      A4.height - 78,
+      8.5,
+      MUTED,
+    );
   }
 
   ctx.y = A4.height - 122;
@@ -364,7 +407,12 @@ function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
   });
 
   ctx.y -= 4;
-  ctx.page.drawLine({ start: { x: MARGIN, y: ctx.y }, end: { x: right, y: ctx.y }, thickness: 0.7, color: LINE });
+  ctx.page.drawLine({
+    start: { x: MARGIN, y: ctx.y },
+    end: { x: right, y: ctx.y },
+    thickness: 0.7,
+    color: LINE,
+  });
   ctx.y -= 22;
 }
 
@@ -415,7 +463,12 @@ function table(ctx: Ctx, spec: PdfTable): void {
       cursor -= cellWidth;
     });
     ctx.y -= 8;
-    ctx.page.drawLine({ start: { x: MARGIN, y: ctx.y }, end: { x: right, y: ctx.y }, thickness: 0.4, color: LINE });
+    ctx.page.drawLine({
+      start: { x: MARGIN, y: ctx.y },
+      end: { x: right, y: ctx.y },
+      thickness: 0.4,
+      color: LINE,
+    });
     ctx.y -= 16;
   });
 
@@ -445,7 +498,13 @@ function totalsBlock(ctx: Ctx, rows: PdfTotalRow[]): void {
   rows.forEach((row) => {
     if (ctx.y - 24 < MARGIN + FOOTER_RESERVE) newPage(ctx);
     if (row.emphasis) {
-      ctx.page.drawRectangle({ x: right - boxWidth, y: ctx.y - 5, width: boxWidth, height: 20, color: SURFACE });
+      ctx.page.drawRectangle({
+        x: right - boxWidth,
+        y: ctx.y - 5,
+        width: boxWidth,
+        height: 20,
+        color: SURFACE,
+      });
     }
     rightText(ctx, row.label, right - 8, ctx.y, row.emphasis ? 10 : 9, row.emphasis ? INK : MUTED);
     leftText(ctx, row.value, right - boxWidth + 8, ctx.y, row.emphasis ? 10 : 9);
@@ -499,7 +558,10 @@ function footer(ctx: Ctx): void {
 
 /* --------------------------------------------------------------- الواجهة */
 
-export async function renderBillingPdf(model: PdfDocumentModel, brand: PdfBrand): Promise<Uint8Array> {
+export async function renderBillingPdf(
+  model: PdfDocumentModel,
+  brand: PdfBrand,
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const font = await doc.embedFont(watermarkFontBytes(), { subset: true });
@@ -516,7 +578,10 @@ export async function renderBillingPdf(model: PdfDocumentModel, brand: PdfBrand)
 
   const blocks = [...model.blocks];
   if (model.showBankDetails && brand.bankDetails) {
-    blocks.push({ title: "بيانات التحويل البنكي", lines: brand.bankDetails.split("\n").slice(0, 6) });
+    blocks.push({
+      title: "بيانات التحويل البنكي",
+      lines: brand.bankDetails.split("\n").slice(0, 6),
+    });
   }
   textBlocks(ctx, blocks);
   footer(ctx);

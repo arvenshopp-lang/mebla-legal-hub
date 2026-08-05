@@ -3,7 +3,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, History, Loader2, RotateCcw, Save, ShieldCheck, Undo2, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  History,
+  Loader2,
+  RotateCcw,
+  Save,
+  ShieldCheck,
+  Undo2,
+  Upload,
+} from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { Badge, Btn, LoadingBlock, SectionCard, inputCls } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
@@ -31,7 +41,10 @@ import {
 
 export const Route = createFileRoute("/mehla-admin/design")({
   head: () => ({
-    meta: [{ title: "محرر تصميم المنصة · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "محرر تصميم المنصة · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: DesignStudioPage,
 });
@@ -90,7 +103,12 @@ function TokenInput({
           />
         </div>
       ) : def.type === "font" ? (
-        <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={inputCls}
+        >
           <option value="">افتراضي ({def.fallback})</option>
           {APPROVED_FONTS.map((f) => (
             <option key={f.value} value={f.value}>
@@ -99,7 +117,12 @@ function TokenInput({
           ))}
         </select>
       ) : def.type === "select" ? (
-        <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={inputCls}
+        >
           <option value="">افتراضي ({def.fallback})</option>
           {def.options?.map((o) => (
             <option key={o.value} value={o.value}>
@@ -274,7 +297,10 @@ function DesignStudioPage() {
     if (!studio.data || hydrated.current) return;
     const next: Record<string, PageState> = {};
     for (const draft of studio.data.drafts) {
-      const payload = (draft.design_tokens_json ?? {}) as { tokens?: DesignTokens; meta?: ThemeMeta };
+      const payload = (draft.design_tokens_json ?? {}) as {
+        tokens?: DesignTokens;
+        meta?: ThemeMeta;
+      };
       next[draft.page_key] = {
         tokens: payload.tokens ?? {},
         css: draft.custom_css ?? "",
@@ -390,7 +416,8 @@ function DesignStudioPage() {
       toast.success("تمت إعادة الصفحة للوضع الافتراضي.");
       await queryClient.invalidateQueries({ queryKey: ["design-studio"] });
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّرت إعادة التعيين."),
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "تعذّرت إعادة التعيين."),
   });
 
   if (!isOwner) {
@@ -419,13 +446,10 @@ function DesignStudioPage() {
       description="تخصيص التصميم العام أو صفحة محددة عبر Design Tokens و CSS مفحوص، مع معاينة آمنة ونشر فعلي."
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="text-[11.5px] text-muted-foreground"
-            role="status"
-            aria-live="polite"
-          >
+          <span className="text-[11.5px] text-muted-foreground" role="status" aria-live="polite">
             {status === "saving" && "جارٍ الحفظ…"}
-            {status === "saved" && `تم الحفظ${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString("ar-SA")}` : ""}`}
+            {status === "saved" &&
+              `تم الحفظ${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString("ar-SA")}` : ""}`}
             {status === "error" && "فشل الحفظ — أعد المحاولة"}
           </span>
           <Btn variant="secondary" size="sm" onClick={() => void doSave(false)}>
@@ -464,7 +488,12 @@ function DesignStudioPage() {
                   disabled={!state?.rollback_available || rollbackMutation.isPending}
                   loading={rollbackMutation.isPending}
                   onClick={() => {
-                    if (!window.confirm("سيتم استرجاع آخر تصميم منشور واستبدال التصميم النشط. هذا الحق متاح مرة واحدة بعد كل نشر. متابعة؟")) return;
+                    if (
+                      !window.confirm(
+                        "سيتم استرجاع آخر تصميم منشور واستبدال التصميم النشط. هذا الحق متاح مرة واحدة بعد كل نشر. متابعة؟",
+                      )
+                    )
+                      return;
                     rollbackMutation.mutate();
                   }}
                 >
@@ -475,7 +504,8 @@ function DesignStudioPage() {
                   size="sm"
                   loading={resetMutation.isPending}
                   onClick={() => {
-                    if (!window.confirm("إعادة تعيين هذه الصفحة للوضع الافتراضي وحذف مسودتها؟")) return;
+                    if (!window.confirm("إعادة تعيين هذه الصفحة للوضع الافتراضي وحذف مسودتها؟"))
+                      return;
                     resetMutation.mutate();
                   }}
                 >
@@ -488,17 +518,23 @@ function DesignStudioPage() {
               <div>
                 <dt className="text-[11.5px] text-muted-foreground">الإصدار النشط</dt>
                 <dd className="text-[15px] font-semibold tabular-nums">
-                  {studio.data?.active ? `#${studio.data.active.version_number}` : "التصميم الافتراضي"}
+                  {studio.data?.active
+                    ? `#${studio.data.active.version_number}`
+                    : "التصميم الافتراضي"}
                 </dd>
               </div>
               <div>
                 <dt className="text-[11.5px] text-muted-foreground">مفتاح Cache</dt>
-                <dd className="text-[15px] font-semibold tabular-nums">theme_version={state?.cache_version ?? 1}</dd>
+                <dd className="text-[15px] font-semibold tabular-nums">
+                  theme_version={state?.cache_version ?? 1}
+                </dd>
               </div>
               <div>
                 <dt className="text-[11.5px] text-muted-foreground">آخر نشر</dt>
                 <dd className="text-[13px]">
-                  {state?.last_published_at ? new Date(state.last_published_at).toLocaleString("ar-SA") : "لا يوجد"}
+                  {state?.last_published_at
+                    ? new Date(state.last_published_at).toLocaleString("ar-SA")
+                    : "لا يوجد"}
                 </dd>
               </div>
               <div>
@@ -517,7 +553,10 @@ function DesignStudioPage() {
           </SectionCard>
 
           {/* اختيار النطاق */}
-          <SectionCard title="نطاق التخصيص" description="التصميم العام يطبق على كل المنصة، وأي صفحة أخرى تُعزل بمعرّفها الداخلي.">
+          <SectionCard
+            title="نطاق التخصيص"
+            description="التصميم العام يطبق على كل المنصة، وأي صفحة أخرى تُعزل بمعرّفها الداخلي."
+          >
             <div className="grid gap-3 sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] sm:items-center">
               <select
                 value={pageKey}
@@ -539,7 +578,9 @@ function DesignStudioPage() {
                 المعرّف الداخلي: <code className="font-mono">{pageKey}</code>
                 {pageKey !== "global" && (
                   <>
-                    {" "}· يُحصر CSS تلقائياً داخل <code className="font-mono">[data-page=&quot;{pageKey}&quot;]</code>
+                    {" "}
+                    · يُحصر CSS تلقائياً داخل{" "}
+                    <code className="font-mono">[data-page=&quot;{pageKey}&quot;]</code>
                   </>
                 )}
               </p>
@@ -556,7 +597,9 @@ function DesignStudioPage() {
                 aria-pressed={tab === t.id}
                 className={cn(
                   "rounded-[var(--radius-s)] px-3 py-2 text-[12.5px] font-medium transition",
-                  tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-muted",
+                  tab === t.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-surface-muted",
                 )}
               >
                 {t.label}
@@ -569,11 +612,17 @@ function DesignStudioPage() {
               {activeGroup.id === "identity" && (
                 <div className="mb-5 grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <label htmlFor="dir" className="text-[12.5px] font-medium">اتجاه التصميم</label>
+                    <label htmlFor="dir" className="text-[12.5px] font-medium">
+                      اتجاه التصميم
+                    </label>
                     <select
                       id="dir"
                       value={current.meta.direction}
-                      onChange={(e) => update({ meta: { ...current.meta, direction: e.target.value as "rtl" | "ltr" } })}
+                      onChange={(e) =>
+                        update({
+                          meta: { ...current.meta, direction: e.target.value as "rtl" | "ltr" },
+                        })
+                      }
                       className={inputCls}
                     >
                       <option value="rtl">من اليمين لليسار (RTL)</option>
@@ -581,12 +630,16 @@ function DesignStudioPage() {
                     </select>
                   </div>
                   <div className="grid gap-1.5">
-                    <label htmlFor="mode" className="text-[12.5px] font-medium">الوضع</label>
+                    <label htmlFor="mode" className="text-[12.5px] font-medium">
+                      الوضع
+                    </label>
                     <select
                       id="mode"
                       value={current.meta.mode}
                       onChange={(e) =>
-                        update({ meta: { ...current.meta, mode: e.target.value as ThemeMeta["mode"] } })
+                        update({
+                          meta: { ...current.meta, mode: e.target.value as ThemeMeta["mode"] },
+                        })
                       }
                       className={inputCls}
                     >
@@ -612,7 +665,11 @@ function DesignStudioPage() {
 
           {tab === "css" && (
             <SectionCard
-              title={pageKey === "global" ? "CSS عام (كامل المنصة)" : `CSS الصفحة — ${designPage(pageKey)?.label}`}
+              title={
+                pageKey === "global"
+                  ? "CSS عام (كامل المنصة)"
+                  : `CSS الصفحة — ${designPage(pageKey)?.label}`
+              }
               description={`الحد الأقصى ${Math.round(MAX_CSS_BYTES / 1024)} كيلوبايت. لا يُنشر CSS يحتوي قواعد محظورة.`}
               actions={
                 validation.valid ? (
@@ -621,12 +678,17 @@ function DesignStudioPage() {
                   </Badge>
                 ) : (
                   <Badge tone="red">
-                    <AlertTriangle className="me-1 inline h-3.5 w-3.5" aria-hidden /> يحتوي قواعد محظورة
+                    <AlertTriangle className="me-1 inline h-3.5 w-3.5" aria-hidden /> يحتوي قواعد
+                    محظورة
                   </Badge>
                 )
               }
             >
-              <CssEditor value={current.css} onChange={(css) => update({ css })} pageKey={pageKey} />
+              <CssEditor
+                value={current.css}
+                onChange={(css) => update({ css })}
+                pageKey={pageKey}
+              />
 
               <p className="mt-3 text-[11.5px] text-muted-foreground">
                 الحجم: {(validation.size_bytes / 1024).toFixed(1)} كيلوبايت
@@ -634,10 +696,14 @@ function DesignStudioPage() {
 
               {validation.blocked_rules.length > 0 && (
                 <div className="mt-3 rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3">
-                  <p className="text-[12.5px] font-semibold text-danger">قواعد محظورة تمنع النشر:</p>
+                  <p className="text-[12.5px] font-semibold text-danger">
+                    قواعد محظورة تمنع النشر:
+                  </p>
                   <ul className="mt-1.5 list-disc space-y-1 ps-5 text-[12px] text-danger">
                     {validation.blocked_rules.map((r, i) => (
-                      <li key={i} dir="auto">{r}</li>
+                      <li key={i} dir="auto">
+                        {r}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -647,7 +713,9 @@ function DesignStudioPage() {
                   <p className="text-[12.5px] font-semibold text-warning">تحذيرات:</p>
                   <ul className="mt-1.5 list-disc space-y-1 ps-5 text-[12px] text-warning">
                     {validation.warnings.slice(0, 12).map((r, i) => (
-                      <li key={i} dir="auto">{r}</li>
+                      <li key={i} dir="auto">
+                        {r}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -655,7 +723,11 @@ function DesignStudioPage() {
 
               <div className="mt-5">
                 <p className="mb-2 text-[12.5px] font-semibold">معاينة فورية</p>
-                <DesignPreview pageKey={pageKey} themeCss={previewCss} direction={globalState.meta.direction} />
+                <DesignPreview
+                  pageKey={pageKey}
+                  themeCss={previewCss}
+                  direction={globalState.meta.direction}
+                />
               </div>
             </SectionCard>
           )}
@@ -665,7 +737,11 @@ function DesignStudioPage() {
               title="المعاينة الآمنة"
               description="إطار معزول ببيانات تجريبية — لا يؤثر على الموقع قبل النشر."
             >
-              <DesignPreview pageKey={pageKey} themeCss={previewCss} direction={globalState.meta.direction} />
+              <DesignPreview
+                pageKey={pageKey}
+                themeCss={previewCss}
+                direction={globalState.meta.direction}
+              />
             </SectionCard>
           )}
 
@@ -683,16 +759,24 @@ function DesignStudioPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(studio.data?.versions ?? []).map((v: Record<string, string | number | null>) => (
-                        <tr key={String(v.id)} className="border-t border-border">
-                          <td className="p-2.5 font-semibold tabular-nums">#{String(v.version_number)}</td>
-                          <td className="p-2.5">{String(v.scope)}</td>
-                          <td className="p-2.5">{v.change_summary ? String(v.change_summary) : "—"}</td>
-                          <td className="p-2.5">
-                            {v.published_at ? new Date(String(v.published_at)).toLocaleString("ar-SA") : "—"}
-                          </td>
-                        </tr>
-                      ))}
+                      {(studio.data?.versions ?? []).map(
+                        (v: Record<string, string | number | null>) => (
+                          <tr key={String(v.id)} className="border-t border-border">
+                            <td className="p-2.5 font-semibold tabular-nums">
+                              #{String(v.version_number)}
+                            </td>
+                            <td className="p-2.5">{String(v.scope)}</td>
+                            <td className="p-2.5">
+                              {v.change_summary ? String(v.change_summary) : "—"}
+                            </td>
+                            <td className="p-2.5">
+                              {v.published_at
+                                ? new Date(String(v.published_at)).toLocaleString("ar-SA")
+                                : "—"}
+                            </td>
+                          </tr>
+                        ),
+                      )}
                       {(studio.data?.versions ?? []).length === 0 && (
                         <tr>
                           <td colSpan={4} className="p-4 text-center text-muted-foreground">
@@ -705,21 +789,31 @@ function DesignStudioPage() {
                 </div>
               </SectionCard>
 
-              <SectionCard title="سجل التعديلات والتدقيق" description="من عدّل، ماذا نُفّذ، ومتى — بدون أي محتوى حساس.">
+              <SectionCard
+                title="سجل التعديلات والتدقيق"
+                description="من عدّل، ماذا نُفّذ، ومتى — بدون أي محتوى حساس."
+              >
                 <ul className="divide-y divide-border">
                   {(studio.data?.audit ?? []).map((a: Record<string, string | null>) => (
-                    <li key={String(a.id)} className="flex flex-wrap items-center gap-2 py-2.5 text-[12.5px]">
+                    <li
+                      key={String(a.id)}
+                      className="flex flex-wrap items-center gap-2 py-2.5 text-[12.5px]"
+                    >
                       <History className="h-3.5 w-3.5 text-text-muted" aria-hidden />
                       <span className="font-semibold">{String(a.action)}</span>
                       {a.page_key && <Badge tone="muted">{String(a.page_key)}</Badge>}
-                      <span className="text-muted-foreground">{a.actor_email ? String(a.actor_email) : "—"}</span>
+                      <span className="text-muted-foreground">
+                        {a.actor_email ? String(a.actor_email) : "—"}
+                      </span>
                       <span className="ms-auto text-text-muted">
                         {new Date(String(a.created_at)).toLocaleString("ar-SA")}
                       </span>
                     </li>
                   ))}
                   {(studio.data?.audit ?? []).length === 0 && (
-                    <li className="py-4 text-center text-muted-foreground">لا توجد عمليات مسجلة بعد.</li>
+                    <li className="py-4 text-center text-muted-foreground">
+                      لا توجد عمليات مسجلة بعد.
+                    </li>
                   )}
                 </ul>
               </SectionCard>
@@ -728,7 +822,8 @@ function DesignStudioPage() {
 
           <p className="flex items-center gap-2 text-[11.5px] text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-success" aria-hidden />
-            كل عملية حفظ أو نشر أو استرجاع تُسجَّل مع منفّذها ووقتها، ولا يُنشر CSS إلا بعد فحص أمني كامل.
+            كل عملية حفظ أو نشر أو استرجاع تُسجَّل مع منفّذها ووقتها، ولا يُنشر CSS إلا بعد فحص أمني
+            كامل.
           </p>
         </div>
       )}

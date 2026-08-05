@@ -6,12 +6,22 @@ import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge, Btn, EmptyState, FormField, LoadingBlock, SectionCard, inputCls } from "@/lib/list-utils";
+import {
+  Badge,
+  Btn,
+  EmptyState,
+  FormField,
+  LoadingBlock,
+  SectionCard,
+  inputCls,
+} from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { listBroadcasts, sendBroadcast } from "@/lib/admin-ops.functions";
 
 export const Route = createFileRoute("/mehla-admin/notifications")({
-  head: () => ({ meta: [{ title: "الإشعارات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "الإشعارات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: NotificationsPage,
 });
 
@@ -23,7 +33,9 @@ const AUDIENCES = [
   { value: "user", label: "مستخدم محدد" },
 ] as const;
 
-const AUDIENCE_LABELS: Record<string, string> = Object.fromEntries(AUDIENCES.map((a) => [a.value, a.label]));
+const AUDIENCE_LABELS: Record<string, string> = Object.fromEntries(
+  AUDIENCES.map((a) => [a.value, a.label]),
+);
 
 function NotificationsPage() {
   const qc = useQueryClient();
@@ -40,7 +52,10 @@ function NotificationsPage() {
   });
 
   const listFn = useServerFn(listBroadcasts);
-  const history = useQuery({ queryKey: ["admin-broadcasts"], queryFn: () => listFn({ data: undefined }) });
+  const history = useQuery({
+    queryKey: ["admin-broadcasts"],
+    queryFn: () => listFn({ data: undefined }),
+  });
 
   const sendFn = useServerFn(sendBroadcast);
   const send = useMutation({
@@ -91,7 +106,12 @@ function NotificationsPage() {
 
             {audience === "organization" && (
               <FormField label="المكتب" required>
-                <select className={inputCls} value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
+                <select
+                  className={inputCls}
+                  value={orgId}
+                  onChange={(e) => setOrgId(e.target.value)}
+                  required
+                >
                   <option value="">اختر المكتب…</option>
                   {(orgs ?? []).map((o: { id: string; name: string }) => (
                     <option key={o.id} value={o.id}>
@@ -124,7 +144,11 @@ function NotificationsPage() {
               />
             </FormField>
 
-            <FormField label="نص الإشعار" required hint="نص واضح ومهني، يظهر داخل مركز الإشعارات للمستخدم.">
+            <FormField
+              label="نص الإشعار"
+              required
+              hint="نص واضح ومهني، يظهر داخل مركز الإشعارات للمستخدم."
+            >
               <textarea
                 className={`${inputCls} min-h-32`}
                 value={body}
@@ -158,9 +182,12 @@ function NotificationsPage() {
                     <p className="font-semibold">{b.title}</p>
                     <Badge tone="info">{AUDIENCE_LABELS[b.audience] ?? b.audience}</Badge>
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap text-body-sm text-muted-foreground">{b.body}</p>
+                  <p className="mt-1.5 whitespace-pre-wrap text-body-sm text-muted-foreground">
+                    {b.body}
+                  </p>
                   <p className="text-caption mt-2">
-                    {b.recipients_count} مستلماً · {b.sent_by_name ?? "—"} · {fmtDateTime(b.created_at)}
+                    {b.recipients_count} مستلماً · {b.sent_by_name ?? "—"} ·{" "}
+                    {fmtDateTime(b.created_at)}
                   </p>
                 </li>
               ))}

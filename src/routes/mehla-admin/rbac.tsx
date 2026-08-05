@@ -22,7 +22,10 @@ export const Route = createFileRoute("/mehla-admin/rbac")({
   head: () => ({
     meta: [
       { title: "الأدوار والصلاحيات · إدارة مِهلة" },
-      { name: "description", content: "إدارة أدوار المنصة وصلاحياتها وأقسامها والمنح والاعتمادات والجلسات." },
+      {
+        name: "description",
+        content: "إدارة أدوار المنصة وصلاحياتها وأقسامها والمنح والاعتمادات والجلسات.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -81,7 +84,9 @@ function RbacPage() {
               className={cn(
                 "rounded-[var(--radius-m)] px-3.5 py-2 text-[13px] font-medium transition",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                tab === t.id ? "bg-primary text-primary-foreground" : "bg-surface text-foreground hover:bg-surface-muted",
+                tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface text-foreground hover:bg-surface-muted",
               )}
             >
               {t.label}
@@ -112,13 +117,21 @@ function RbacPage() {
             case "roles":
               return <RolesPanel data={data} canManage={can("roles.manage")} refresh={refresh} />;
             case "templates":
-              return <TemplatesPanel data={data} canManage={can("roles.manage")} refresh={refresh} />;
+              return (
+                <TemplatesPanel data={data} canManage={can("roles.manage")} refresh={refresh} />
+              );
             case "departments":
-              return <DepartmentsPanel data={data} canManage={can("staff.manage")} refresh={refresh} />;
+              return (
+                <DepartmentsPanel data={data} canManage={can("staff.manage")} refresh={refresh} />
+              );
             case "grants":
-              return <GrantsPanel data={data} canGrant={can("delegation.grant")} refresh={refresh} />;
+              return (
+                <GrantsPanel data={data} canGrant={can("delegation.grant")} refresh={refresh} />
+              );
             case "approvals":
-              return <ApprovalsPanel data={data} canDecide={can("approvals.decide")} refresh={refresh} />;
+              return (
+                <ApprovalsPanel data={data} canDecide={can("approvals.decide")} refresh={refresh} />
+              );
             case "impersonation":
               return (
                 <ImpersonationPanel

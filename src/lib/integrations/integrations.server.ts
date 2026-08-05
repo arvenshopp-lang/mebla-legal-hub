@@ -87,7 +87,10 @@ function allowedHostsOf(row: IntegrationRow): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
-function toView(row: IntegrationRow, hints: Awaited<ReturnType<typeof IntegrationSecretVault.listHints>>): IntegrationView {
+function toView(
+  row: IntegrationRow,
+  hints: Awaited<ReturnType<typeof IntegrationSecretVault.listHints>>,
+): IntegrationView {
   const config = configOf(row);
   return {
     id: row.id,
@@ -135,7 +138,9 @@ function toView(row: IntegrationRow, hints: Awaited<ReturnType<typeof Integratio
 
 async function buildContext(row: IntegrationRow): Promise<ConnectorContext> {
   const config = configOf(row);
-  const secrets = await IntegrationSecretVault.getSecretsServerSide(String(row["secret_reference"]));
+  const secrets = await IntegrationSecretVault.getSecretsServerSide(
+    String(row["secret_reference"]),
+  );
   return {
     integrationId: row.id,
     providerKey: row.provider_key,
@@ -191,13 +196,19 @@ export async function listIntegrations(): Promise<IntegrationView[]> {
     .order("created_at", { ascending: false });
   const rows = (data ?? []) as IntegrationRow[];
   return Promise.all(
-    rows.map(async (row) => toView(row, await IntegrationSecretVault.listHints(String(row["secret_reference"])))),
+    rows.map(async (row) =>
+      toView(row, await IntegrationSecretVault.listHints(String(row["secret_reference"]))),
+    ),
   );
 }
 
 async function loadRow(id: string): Promise<IntegrationRow> {
   const client = await db();
-  const { data } = await client.from("platform_integrations").select("*").eq("id", id).maybeSingle();
+  const { data } = await client
+    .from("platform_integrations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   if (!data) throw new Error("التكامل غير موجود.");
   return data as IntegrationRow;
 }
@@ -218,7 +229,10 @@ export async function buildContextForIntegration(id: string): Promise<ConnectorC
   return buildContext(await loadRow(id));
 }
 
-export async function listHealthLogs(integrationId: string | null, limit = 50): Promise<HealthLogView[]> {
+export async function listHealthLogs(
+  integrationId: string | null,
+  limit = 50,
+): Promise<HealthLogView[]> {
   const client = await db();
   let query = client
     .from("integration_health_logs")
@@ -367,7 +381,11 @@ export async function saveIntegration(
   if (!validation.ok) {
     await client
       .from("platform_integrations")
-      .update({ status: "not_configured", last_error_code: "CONFIG_INVALID", last_error_detail: validation.errors.join(" | ") })
+      .update({
+        status: "not_configured",
+        last_error_code: "CONFIG_INVALID",
+        last_error_detail: validation.errors.join(" | "),
+      })
       .eq("id", id);
   }
   return getIntegration(id!);
@@ -378,7 +396,8 @@ export async function saveIntegration(
 function nextStatus(result: HealthResult, failures: number, isEnabled: boolean): IntegrationStatus {
   if (result.ok) return isEnabled ? "connected" : "disabled";
   if (result.code === "SSRF_BLOCKED" || result.code === "CONFIG_INVALID") return "failed";
-  if (result.code === "TIMEOUT" || result.code === "NETWORK_ERROR") return failures >= 3 ? "unavailable" : "degraded";
+  if (result.code === "TIMEOUT" || result.code === "NETWORK_ERROR")
+    return failures >= 3 ? "unavailable" : "degraded";
   return failures >= 3 ? "failed" : "degraded";
 }
 
@@ -487,7 +506,10 @@ export async function testIntegration(
 }
 
 /** تفعيل/تعطيل التكامل. التفعيل يتطلب فحص اتصال ناجح أولاً. */
-export async function setIntegrationEnabled(id: string, enabled: boolean): Promise<IntegrationView> {
+export async function setIntegrationEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<IntegrationView> {
   const client = await db();
   const row = await loadRow(id);
   if (enabled && !row["verified_at"]) {
@@ -516,14 +538,20 @@ export async function setIntegrationActive(id: string): Promise<IntegrationView>
     .update({ is_active: false })
     .eq("configuration_json->>category", "otp")
     .neq("id", id);
-  const { error } = await client.from("platform_integrations").update({ is_active: true }).eq("id", id);
+  const { error } = await client
+    .from("platform_integrations")
+    .update({ is_active: true })
+    .eq("id", id);
   if (error) throw new Error("تعذّر اعتماد التكامل كخدمة فعّالة.");
   return getIntegration(id);
 }
 
 export async function deactivateCategory(): Promise<void> {
   const client = await db();
-  await client.from("platform_integrations").update({ is_active: false }).eq("configuration_json->>category", "otp");
+  await client
+    .from("platform_integrations")
+    .update({ is_active: false })
+    .eq("configuration_json->>category", "otp");
 }
 
 export async function deleteIntegration(id: string): Promise<void> {
@@ -567,7 +595,11 @@ export async function runIntegrationMonitor(): Promise<{ checked: number; failur
     .from("platform_integrations")
     .select("id, monitor_interval_minutes, last_checked_at")
     .eq("is_enabled", true);
-  const rows = (data ?? []) as { id: string; monitor_interval_minutes: number; last_checked_at: string | null }[];
+  const rows = (data ?? []) as {
+    id: string;
+    monitor_interval_minutes: number;
+    last_checked_at: string | null;
+  }[];
   let checked = 0;
   let failures = 0;
   for (const row of rows) {
@@ -620,7 +652,13 @@ export async function resolveActiveOtpIntegration(): Promise<ActiveOtpIntegratio
 /** تسجيل نتيجة تشغيل حقيقية (إرسال رمز) في صحة التكامل. */
 export async function recordRuntimeOutcome(
   integrationId: string,
-  outcome: { ok: boolean; latencyMs: number; statusCode?: number | null; code?: string; detail?: string },
+  outcome: {
+    ok: boolean;
+    latencyMs: number;
+    statusCode?: number | null;
+    code?: string;
+    detail?: string;
+  },
   traceId: string,
 ): Promise<void> {
   const row = await loadRow(integrationId);

@@ -27,7 +27,10 @@ export const saveRbacRole = createServerFn({ method: "POST" })
         code: z
           .string()
           .trim()
-          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+          .regex(
+            /^[a-z][a-z0-9_]{2,39}$/,
+            "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية",
+          ),
         name_ar: z.string().trim().min(2).max(80),
         description: z.string().trim().max(300).nullish(),
         permissions: z.array(permission).max(200),
@@ -56,7 +59,10 @@ export const cloneRbacRole = createServerFn({ method: "POST" })
         code: z
           .string()
           .trim()
-          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+          .regex(
+            /^[a-z][a-z0-9_]{2,39}$/,
+            "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية",
+          ),
         name_ar: z.string().trim().min(2).max(80),
       })
       .parse(input),
@@ -84,7 +90,10 @@ export const createRoleFromTemplate = createServerFn({ method: "POST" })
         code: z
           .string()
           .trim()
-          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+          .regex(
+            /^[a-z][a-z0-9_]{2,39}$/,
+            "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية",
+          ),
         name_ar: z.string().trim().min(2).max(80),
       })
       .parse(input),
@@ -103,7 +112,10 @@ export const saveRbacDepartment = createServerFn({ method: "POST" })
         code: z
           .string()
           .trim()
-          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+          .regex(
+            /^[a-z][a-z0-9_]{2,39}$/,
+            "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية",
+          ),
         name_ar: z.string().trim().min(2).max(80),
         description: z.string().trim().max(300).nullish(),
         parent_department_id: uuid.nullish(),
@@ -291,7 +303,9 @@ export const getRbacAuditPage = createServerFn({ method: "GET" })
 export const requestRbacImpersonation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ targetUserId: uuid, reason, minutes: z.number().int().min(5).max(120) }).parse(input),
+    z
+      .object({ targetUserId: uuid, reason, minutes: z.number().int().min(5).max(120) })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const ops = await import("./rbac-ops.server");
@@ -333,7 +347,9 @@ export const getRbacImpersonationState = createServerFn({ method: "GET" })
 
 export const logRbacImpersonationPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ path: z.string().trim().min(1).max(300) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ path: z.string().trim().min(1).max(300) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const ops = await import("./rbac-ops.server");
     return ops.logImpersonationPage(context.supabase, context.userId, data.path);

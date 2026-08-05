@@ -65,11 +65,21 @@ export function PasswordChecklist({
                 }`}
                 aria-hidden="true"
               >
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
               </span>
-              <span className={`transition-colors duration-300 ${ok ? "font-medium text-success" : "text-muted-foreground"}`}>
+              <span
+                className={`transition-colors duration-300 ${ok ? "font-medium text-success" : "text-muted-foreground"}`}
+              >
                 {rule.label}
               </span>
             </li>
@@ -87,11 +97,26 @@ export function PasswordChecklist({
             aria-hidden="true"
           >
             {breachStatus === "breached" ? (
-              <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+              >
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             )}
@@ -117,7 +142,10 @@ export function PasswordChecklist({
       </ul>
 
       {reason && (
-        <p role="alert" className="mt-3 rounded-[var(--radius-m)] border border-danger/20 bg-danger-soft px-3 py-2 text-[12.5px] leading-6 text-danger">
+        <p
+          role="alert"
+          className="mt-3 rounded-[var(--radius-m)] border border-danger/20 bg-danger-soft px-3 py-2 text-[12.5px] leading-6 text-danger"
+        >
           {reason}
         </p>
       )}

@@ -5,7 +5,14 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FormField, Modal, inputCls, Btn } from "@/lib/list-utils";
-import { assignCompany, assignDeal, assignLead, convertLead, disqualifyLead, moveDealStage } from "@/lib/crm.functions";
+import {
+  assignCompany,
+  assignDeal,
+  assignLead,
+  convertLead,
+  disqualifyLead,
+  moveDealStage,
+} from "@/lib/crm.functions";
 import type { CrmPipelineStageRow, StaffOption } from "@/lib/crm.shared";
 
 type AssignEntity = "lead" | "company" | "deal";
@@ -55,13 +62,19 @@ export function AssignModal({
         <select className={inputCls} value={staffId} onChange={(e) => setStaffId(e.target.value)}>
           <option value="">اختر موظفاً</option>
           {staffOptions.map((s) => (
-            <option key={s.id} value={s.id}>{s.full_name}</option>
+            <option key={s.id} value={s.id}>
+              {s.full_name}
+            </option>
           ))}
         </select>
       </FormField>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>إسناد</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          إسناد
+        </Btn>
       </div>
     </Modal>
   );
@@ -104,11 +117,20 @@ export function DisqualifyLeadModal({
   return (
     <Modal open={open} onClose={onClose} title="استبعاد عميل محتمل" busy={saving}>
       <FormField label="سبب الاستبعاد" required error={error}>
-        <textarea className={inputCls} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <textarea
+          className={inputCls}
+          rows={3}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
       </FormField>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn variant="danger" onClick={submit} loading={saving}>استبعاد</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn variant="danger" onClick={submit} loading={saving}>
+          استبعاد
+        </Btn>
       </div>
     </Modal>
   );
@@ -176,40 +198,77 @@ export function ConvertLeadModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`تحويل العميل المحتمل «${leadName}»`} size="lg" busy={saving}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`تحويل العميل المحتمل «${leadName}»`}
+      size="lg"
+      busy={saving}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="اسم الشركة">
-          <input className={inputCls} value={companyNameInput} onChange={(e) => setCompanyNameInput(e.target.value)} />
+          <input
+            className={inputCls}
+            value={companyNameInput}
+            onChange={(e) => setCompanyNameInput(e.target.value)}
+          />
         </FormField>
         <FormField label="عنوان الصفقة" required error={errors.dealTitle}>
-          <input className={inputCls} value={dealTitle} onChange={(e) => setDealTitle(e.target.value)} />
+          <input
+            className={inputCls}
+            value={dealTitle}
+            onChange={(e) => setDealTitle(e.target.value)}
+          />
         </FormField>
         <FormField label="قيمة الصفقة">
-          <input type="number" min={0} className={inputCls} value={dealAmount} onChange={(e) => setDealAmount(Number(e.target.value) || 0)} />
+          <input
+            type="number"
+            min={0}
+            className={inputCls}
+            value={dealAmount}
+            onChange={(e) => setDealAmount(Number(e.target.value) || 0)}
+          />
         </FormField>
         <FormField label="العملة">
-          <input className={inputCls} maxLength={3} value={dealCurrency} onChange={(e) => setDealCurrency(e.target.value.toUpperCase())} />
+          <input
+            className={inputCls}
+            maxLength={3}
+            value={dealCurrency}
+            onChange={(e) => setDealCurrency(e.target.value.toUpperCase())}
+          />
         </FormField>
         <FormField label="مرحلة خط البيع" required error={errors.stageId}>
           <select className={inputCls} value={stageId} onChange={(e) => setStageId(e.target.value)}>
             <option value="">اختر مرحلة</option>
             {stageOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </select>
         </FormField>
         <FormField label="المسؤول">
-          <select className={inputCls} value={ownerStaffId} onChange={(e) => setOwnerStaffId(e.target.value)}>
+          <select
+            className={inputCls}
+            value={ownerStaffId}
+            onChange={(e) => setOwnerStaffId(e.target.value)}
+          >
             <option value="">الإبقاء على المسؤول الحالي</option>
             {staffOptions.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
+              <option key={s.id} value={s.id}>
+                {s.full_name}
+              </option>
             ))}
           </select>
         </FormField>
       </div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>تحويل</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          تحويل
+        </Btn>
       </div>
     </Modal>
   );
@@ -265,20 +324,31 @@ export function MoveDealStageModal({
         <select className={inputCls} value={stageId} onChange={(e) => setStageId(e.target.value)}>
           <option value="">اختر مرحلة</option>
           {stageOptions.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
       </FormField>
       {selectedStage?.is_lost && (
         <div className="mt-4">
           <FormField label="سبب الخسارة" required>
-            <textarea className={inputCls} rows={2} value={lostReason} onChange={(e) => setLostReason(e.target.value)} />
+            <textarea
+              className={inputCls}
+              rows={2}
+              value={lostReason}
+              onChange={(e) => setLostReason(e.target.value)}
+            />
           </FormField>
         </div>
       )}
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={submit} loading={saving}>تحريك</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={submit} loading={saving}>
+          تحريك
+        </Btn>
       </div>
     </Modal>
   );

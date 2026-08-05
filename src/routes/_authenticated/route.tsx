@@ -16,7 +16,8 @@ function Splash({ text }: { text: string }) {
 }
 
 function AuthGate() {
-  const { authLoading, organizationLoading, session, memberships, allMemberships, authError } = useAuth();
+  const { authLoading, organizationLoading, session, memberships, allMemberships, authError } =
+    useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const loading = authLoading || organizationLoading;
@@ -43,12 +44,19 @@ function AuthGate() {
   useEffect(() => {
     if (loading) return;
     if (!session) {
-      navigate({ to: "/login", search: { redirect: requestedPath.current } as never, replace: true });
+      navigate({
+        to: "/login",
+        search: { redirect: requestedPath.current } as never,
+        replace: true,
+      });
       return;
     }
     if (memberships.length > 0) return;
     // A session exists but no active membership: pending/suspended vs. brand new.
-    navigate({ to: allMemberships.length > 0 ? "/pending-access" : "/onboarding", replace: true } as never);
+    navigate({
+      to: allMemberships.length > 0 ? "/pending-access" : "/onboarding",
+      replace: true,
+    } as never);
   }, [loading, session, memberships.length, allMemberships.length, navigate]);
 
   if (showSplash) {
@@ -75,7 +83,11 @@ function AuthGate() {
   if (memberships.length === 0 && !settled.current) {
     return (
       <Splash
-        text={allMemberships.length > 0 ? "جاري التحقق من حالة عضويتك…" : "جاري توجيهك لإكمال إعداد المكتب…"}
+        text={
+          allMemberships.length > 0
+            ? "جاري التحقق من حالة عضويتك…"
+            : "جاري توجيهك لإكمال إعداد المكتب…"
+        }
       />
     );
   }

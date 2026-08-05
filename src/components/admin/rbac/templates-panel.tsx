@@ -23,7 +23,13 @@ import { cn } from "@/lib/utils";
 
 const TIERS: RoleTemplateTier[] = ["operations", "commercial", "governance", "readonly"];
 
-function PermissionList({ permissions, holder }: { permissions: string[]; holder: Set<string> | null }) {
+function PermissionList({
+  permissions,
+  holder,
+}: {
+  permissions: string[];
+  holder: Set<string> | null;
+}) {
   return (
     <ul className="grid gap-1.5 sm:grid-cols-2">
       {permissions.map((p) => {
@@ -71,7 +77,11 @@ export function TemplatesPanel({
   const [tier, setTier] = useState<RoleTemplateTier | "all">("all");
   const [preview, setPreview] = useState<RoleTemplate | null>(null);
   const [compare, setCompare] = useState<{ a: string; b: string } | null>(null);
-  const [apply, setApply] = useState<{ template: RoleTemplate; code: string; name_ar: string } | null>(null);
+  const [apply, setApply] = useState<{
+    template: RoleTemplate;
+    code: string;
+    name_ar: string;
+  } | null>(null);
 
   const applyFn = useServerFn(createRoleFromTemplate);
   const applyMut = useMutation({
@@ -107,9 +117,9 @@ export function TemplatesPanel({
       <DataCard>
         <div className="space-y-3 p-4">
           <p className="text-[13px] leading-relaxed text-text-muted">
-            القوالب مراجع تشغيلية جاهزة وليست أدواراً إلزامية. عند الاعتماد يُنسخ القالب إلى دور عادي في
-            «الأدوار والصلاحيات» قابل للتعديل والحذف، ولا يُسند لأي موظف تلقائياً. لا يمكنك نسخ صلاحية لا
-            تملكها — ستُرفض العملية على الخادم وتُسجَّل في سجل التدقيق.
+            القوالب مراجع تشغيلية جاهزة وليست أدواراً إلزامية. عند الاعتماد يُنسخ القالب إلى دور
+            عادي في «الأدوار والصلاحيات» قابل للتعديل والحذف، ولا يُسند لأي موظف تلقائياً. لا يمكنك
+            نسخ صلاحية لا تملكها — ستُرفض العملية على الخادم وتُسجَّل في سجل التدقيق.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <div role="tablist" aria-label="تصفية القوالب" className="flex flex-wrap gap-1.5">
@@ -161,18 +171,27 @@ export function TemplatesPanel({
                     </div>
                     <Badge tone="info">{ROLE_TEMPLATE_TIER_LABELS[t.tier]}</Badge>
                   </div>
-                  <p className="flex-1 text-[12.5px] leading-relaxed text-text-muted">{t.summary}</p>
+                  <p className="flex-1 text-[12.5px] leading-relaxed text-text-muted">
+                    {t.summary}
+                  </p>
                   <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
                     <Badge tone="muted">
                       <Layers className="me-1 inline h-3 w-3" aria-hidden />
                       {t.permissions.length} صلاحية
                     </Badge>
-                    {t.permissions.some(isHighRiskPermission) && <Badge tone="warn">يتضمن صلاحيات حساسة</Badge>}
+                    {t.permissions.some(isHighRiskPermission) && (
+                      <Badge tone="warn">يتضمن صلاحيات حساسة</Badge>
+                    )}
                     {blocked > 0 && <Badge tone="red">{blocked} خارج صلاحياتك</Badge>}
                     {existingCodes.has(t.code) && <Badge tone="green">مُطبَّق سابقاً</Badge>}
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Btn size="sm" variant="outline" onClick={() => setPreview(t)} className="flex-1">
+                    <Btn
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPreview(t)}
+                      className="flex-1"
+                    >
                       معاينة الصلاحيات
                     </Btn>
                     <Btn
@@ -311,7 +330,11 @@ export function TemplatesPanel({
               <Btn variant="outline" onClick={() => setApply(null)}>
                 إلغاء
               </Btn>
-              <Btn type="submit" loading={applyMut.isPending} disabled={existingCodes.has(apply.code)}>
+              <Btn
+                type="submit"
+                loading={applyMut.isPending}
+                disabled={existingCodes.has(apply.code)}
+              >
                 إنشاء الدور
               </Btn>
             </div>

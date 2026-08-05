@@ -36,7 +36,11 @@ function ForgotPage() {
         <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm">
           إن كان <b>{email}</b> مسجّلاً لدينا، فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور.
         </div>
-        <Link to="/login" search={{ redirect: "/dashboard" }} className="mt-6 block w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground">
+        <Link
+          to="/login"
+          search={{ redirect: "/dashboard" }}
+          className="mt-6 block w-full rounded-[var(--radius-m)] bg-primary py-3 text-center text-sm font-semibold text-primary-foreground"
+        >
           العودة لتسجيل الدخول
         </Link>
       </AuthShell>
@@ -46,14 +50,26 @@ function ForgotPage() {
     <AuthShell title="نسيت كلمة المرور؟" subtitle="أدخل بريدك لإرسال رابط الاستعادة">
       <form onSubmit={submit} className="space-y-4">
         <Field label="البريد الإلكتروني">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputCls}
+          />
         </Field>
-        <button disabled={loading} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
+        <button
+          disabled={loading}
+          className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+        >
           {loading ? "جاري الإرسال…" : "إرسال الرابط"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        تذكّرت كلمة المرور؟ <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold underline">تسجيل الدخول</Link>
+        تذكّرت كلمة المرور؟{" "}
+        <Link to="/login" search={{ redirect: "/dashboard" }} className="font-semibold underline">
+          تسجيل الدخول
+        </Link>
       </p>
     </AuthShell>
   );

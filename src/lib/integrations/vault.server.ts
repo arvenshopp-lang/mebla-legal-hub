@@ -53,11 +53,20 @@ async function deriveKey(reference: string, fieldKey: string, version: number): 
   const info = `mehla:integration-secret:${reference}:${fieldKey}:v${version}`;
   const cached = keyCache.get(info);
   if (cached) return cached;
-  const ikm = await crypto.subtle.importKey("raw", enc.encode(masterSecret(version)), "HKDF", false, [
-    "deriveBits",
-  ]);
+  const ikm = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(masterSecret(version)),
+    "HKDF",
+    false,
+    ["deriveBits"],
+  );
   const bits = await crypto.subtle.deriveBits(
-    { name: "HKDF", hash: "SHA-256", salt: enc.encode("mehla-integration-vault"), info: enc.encode(info) },
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: enc.encode("mehla-integration-vault"),
+      info: enc.encode(info),
+    },
     ikm,
     256,
   );
@@ -255,13 +264,18 @@ export const IntegrationSecretVault = {
       .select("field_key, masked_hint, status, rotated_at")
       .eq("secret_reference", reference)
       .order("field_key");
-    return ((data ?? []) as { field_key: string; masked_hint: string; status: string; rotated_at: string | null }[]).map(
-      (row) => ({
-        fieldKey: row.field_key,
-        hint: row.masked_hint,
-        status: row.status,
-        rotatedAt: row.rotated_at,
-      }),
-    );
+    return (
+      (data ?? []) as {
+        field_key: string;
+        masked_hint: string;
+        status: string;
+        rotated_at: string | null;
+      }[]
+    ).map((row) => ({
+      fieldKey: row.field_key,
+      hint: row.masked_hint,
+      status: row.status,
+      rotatedAt: row.rotated_at,
+    }));
   },
 };

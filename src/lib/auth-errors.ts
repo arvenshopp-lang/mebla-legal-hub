@@ -11,8 +11,7 @@ export const AUTH_MESSAGES = {
   profileLoadFailed:
     "تم تسجيل الدخول ولكن تعذر تحميل بيانات الحساب. حاول مرة أخرى أو تواصل مع الدعم",
   organizationLoadFailed: "تم تسجيل الدخول ولكن تعذر تحميل بيانات المنشأة",
-  weakPassword:
-    "كلمة المرور المستخدمة ضعيفة أو شائعة الاستخدام، يرجى اختيار كلمة مرور أقوى",
+  weakPassword: "كلمة المرور المستخدمة ضعيفة أو شائعة الاستخدام، يرجى اختيار كلمة مرور أقوى",
   signUpFailed: "تعذر إنشاء الحساب، يرجى المحاولة مرة أخرى",
   emailInvalid: "البريد الإلكتروني غير صحيح، يرجى التحقق منه",
   emailTaken: "هذا البريد مسجّل مسبقاً. سجّل الدخول بدلاً من إنشاء حساب",
@@ -24,8 +23,7 @@ export const AUTH_MESSAGES = {
   reauthRequired: "لتأكيد هويتك، اطلب رمز التحقق ثم أدخله قبل إتمام التغيير",
   sameEmail: "هذا هو بريدك الحالي بالفعل، أدخل بريداً مختلفاً",
   samePassword: "كلمة المرور الجديدة مطابقة للحالية، اختر كلمة مختلفة",
-  emailChangeSent:
-    "أرسلنا رسالة تأكيد إلى البريد الجديد. لن يتغير بريد الدخول قبل تأكيد الرابط",
+  emailChangeSent: "أرسلنا رسالة تأكيد إلى البريد الجديد. لن يتغير بريد الدخول قبل تأكيد الرابط",
   passwordUpdated: "تم تحديث كلمة المرور بنجاح",
   generic: "حدث خطأ غير متوقع. حاول مرة أخرى",
 } as const;
@@ -40,7 +38,8 @@ export function translateAuthError(error: AuthErrorLike): string {
     return AUTH_MESSAGES.invalidCredentials;
   if (code === "email_not_confirmed" || msg.includes("email not confirmed"))
     return AUTH_MESSAGES.emailNotConfirmed;
-  if (code === "user_not_found" || msg.includes("user not found")) return AUTH_MESSAGES.userNotFound;
+  if (code === "user_not_found" || msg.includes("user not found"))
+    return AUTH_MESSAGES.userNotFound;
   if (
     code === "reauthentication_needed" ||
     msg.includes("reauthentication needed") ||
@@ -76,9 +75,14 @@ export function translateAuthError(error: AuthErrorLike): string {
     msg.includes("data breach")
   )
     return AUTH_MESSAGES.weakPassword;
-  if (code === "email_address_invalid" || msg.includes("invalid email") || msg.includes("unable to validate email"))
+  if (
+    code === "email_address_invalid" ||
+    msg.includes("invalid email") ||
+    msg.includes("unable to validate email")
+  )
     return AUTH_MESSAGES.emailInvalid;
-  if (code === "signup_disabled" || msg.includes("signups not allowed")) return AUTH_MESSAGES.signUpFailed;
+  if (code === "signup_disabled" || msg.includes("signups not allowed"))
+    return AUTH_MESSAGES.signUpFailed;
   if (msg.includes("session") && (msg.includes("expired") || msg.includes("missing")))
     return AUTH_MESSAGES.sessionExpired;
   if (
