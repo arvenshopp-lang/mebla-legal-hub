@@ -595,6 +595,491 @@ export type Database = {
           },
         ]
       }
+      crm_activities: {
+        Row: {
+          body: string | null
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          due_at: string | null
+          entity_kind: Database["public"]["Enums"]["crm_entity_kind"]
+          id: string
+          kind: Database["public"]["Enums"]["crm_activity_kind"]
+          lead_id: string | null
+          outcome: string | null
+          owner_staff_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          entity_kind: Database["public"]["Enums"]["crm_entity_kind"]
+          id?: string
+          kind: Database["public"]["Enums"]["crm_activity_kind"]
+          lead_id?: string | null
+          outcome?: string | null
+          owner_staff_id?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          entity_kind?: Database["public"]["Enums"]["crm_entity_kind"]
+          id?: string
+          kind?: Database["public"]["Enums"]["crm_activity_kind"]
+          lead_id?: string | null
+          outcome?: string | null
+          owner_staff_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_companies: {
+        Row: {
+          city: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          legal_name: string | null
+          name: string
+          notes: string | null
+          organization_id: string | null
+          owner_staff_id: string | null
+          phone: string | null
+          sector: string | null
+          size_bracket: string | null
+          source: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          name: string
+          notes?: string | null
+          organization_id?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          sector?: string | null
+          size_bracket?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          name?: string
+          notes?: string | null
+          organization_id?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          sector?: string | null
+          size_bracket?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_companies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_companies_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          city: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_primary: boolean
+          job_title: string | null
+          notes: string | null
+          owner_staff_id: string | null
+          phone: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary?: boolean
+          job_title?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary?: boolean
+          job_title?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          amount: number
+          closed_at: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          expected_close_date: string | null
+          id: string
+          lead_id: string | null
+          lost_reason: string | null
+          notes: string | null
+          owner_staff_id: string | null
+          probability: number
+          source: string | null
+          stage_id: string | null
+          status: Database["public"]["Enums"]["crm_deal_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          utm: Json
+        }
+        Insert: {
+          amount?: number
+          closed_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          probability?: number
+          source?: string | null
+          stage_id?: string | null
+          status?: Database["public"]["Enums"]["crm_deal_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          utm?: Json
+        }
+        Update: {
+          amount?: number
+          closed_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          probability?: number
+          source?: string | null
+          stage_id?: string | null
+          status?: Database["public"]["Enums"]["crm_deal_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          utm?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          converted_at: string | null
+          converted_company_id: string | null
+          converted_contact_id: string | null
+          converted_deal_id: string | null
+          created_at: string
+          created_by: string | null
+          disqualify_reason: string | null
+          email: string | null
+          full_name: string
+          id: string
+          last_activity_at: string | null
+          notes: string | null
+          owner_staff_id: string | null
+          phone: string | null
+          score: number
+          source: string | null
+          status: Database["public"]["Enums"]["crm_lead_status"]
+          updated_at: string
+          updated_by: string | null
+          utm: Json
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          converted_at?: string | null
+          converted_company_id?: string | null
+          converted_contact_id?: string | null
+          converted_deal_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          disqualify_reason?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          score?: number
+          source?: string | null
+          status?: Database["public"]["Enums"]["crm_lead_status"]
+          updated_at?: string
+          updated_by?: string | null
+          utm?: Json
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          converted_at?: string | null
+          converted_company_id?: string | null
+          converted_contact_id?: string | null
+          converted_deal_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          disqualify_reason?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          owner_staff_id?: string | null
+          phone?: string | null
+          score?: number
+          source?: string | null
+          status?: Database["public"]["Enums"]["crm_lead_status"]
+          updated_at?: string
+          updated_by?: string | null
+          utm?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_converted_company_id_fkey"
+            columns: ["converted_company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_converted_contact_id_fkey"
+            columns: ["converted_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_converted_deal_fk"
+            columns: ["converted_deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_lost: boolean
+          is_won: boolean
+          name: string
+          probability: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_won?: boolean
+          name: string
+          probability?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_won?: boolean
+          name?: string
+          probability?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deadlines: {
         Row: {
           case_id: string | null
@@ -2415,6 +2900,144 @@ export type Database = {
           },
         ]
       }
+      hr_documents: {
+        Row: {
+          created_at: string
+          employee_id: string
+          expires_on: string | null
+          id: string
+          issued_on: string | null
+          kind: string
+          notes: string | null
+          storage_path: string | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          kind: string
+          notes?: string | null
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          kind?: string
+          notes?: string | null
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_employees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          email: string
+          employment_status: Database["public"]["Enums"]["hr_employment_status"]
+          employment_type: Database["public"]["Enums"]["hr_employment_type"]
+          ended_at: string | null
+          full_name: string
+          id: string
+          job_title: string | null
+          joined_at: string | null
+          manager_employee_id: string | null
+          notes: string | null
+          phone: string | null
+          staff_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          work_location: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          email: string
+          employment_status?: Database["public"]["Enums"]["hr_employment_status"]
+          employment_type?: Database["public"]["Enums"]["hr_employment_type"]
+          ended_at?: string | null
+          full_name: string
+          id?: string
+          job_title?: string | null
+          joined_at?: string | null
+          manager_employee_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          staff_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          work_location?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          email?: string
+          employment_status?: Database["public"]["Enums"]["hr_employment_status"]
+          employment_type?: Database["public"]["Enums"]["hr_employment_type"]
+          ended_at?: string | null
+          full_name?: string
+          id?: string
+          job_title?: string | null
+          joined_at?: string | null
+          manager_employee_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          staff_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          work_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "platform_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_manager_employee_id_fkey"
+            columns: ["manager_employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_definitions: {
         Row: {
           adapter_type: string
@@ -2650,6 +3273,216 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_campaigns: {
+        Row: {
+          budget_amount: number
+          channel: string
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          ends_on: string | null
+          id: string
+          landing_page_slug: string | null
+          name: string
+          notes: string | null
+          objective: string | null
+          owner_staff_id: string | null
+          spend_amount: number
+          starts_on: string | null
+          status: Database["public"]["Enums"]["marketing_campaign_status"]
+          updated_at: string
+          updated_by: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          budget_amount?: number
+          channel: string
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          ends_on?: string | null
+          id?: string
+          landing_page_slug?: string | null
+          name: string
+          notes?: string | null
+          objective?: string | null
+          owner_staff_id?: string | null
+          spend_amount?: number
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["marketing_campaign_status"]
+          updated_at?: string
+          updated_by?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          budget_amount?: number
+          channel?: string
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          ends_on?: string | null
+          id?: string
+          landing_page_slug?: string | null
+          name?: string
+          notes?: string | null
+          objective?: string | null
+          owner_staff_id?: string | null
+          spend_amount?: number
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["marketing_campaign_status"]
+          updated_at?: string
+          updated_by?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "platform_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaigns_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_conversion_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          event_key: string
+          id: string
+          label: string | null
+          lead_id: string | null
+          occurred_at: string
+          organization_id: string | null
+          source: string | null
+          utm: Json
+          value_amount: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          event_key: string
+          id?: string
+          label?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          organization_id?: string | null
+          source?: string | null
+          utm?: Json
+          value_amount?: number
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          event_key?: string
+          id?: string
+          label?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          organization_id?: string | null
+          source?: string | null
+          utm?: Json
+          value_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_conversion_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_conversion_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_conversion_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_referrals: {
+        Row: {
+          code: string
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          max_uses: number | null
+          referrer_email: string | null
+          referrer_kind: string
+          referrer_name: string | null
+          reward_note: string | null
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          code: string
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_uses?: number | null
+          referrer_email?: string | null
+          referrer_kind?: string
+          referrer_name?: string | null
+          reward_note?: string | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          code?: string
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_uses?: number | null
+          referrer_email?: string | null
+          referrer_kind?: string
+          referrer_name?: string | null
+          reward_note?: string | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_referrals_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "platform_coupons"
             referencedColumns: ["id"]
           },
         ]
@@ -3171,6 +4004,119 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_backup_restore_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          created_at: string
+          decision_note: string | null
+          executed_at: string | null
+          id: string
+          reason: string
+          requested_by: string
+          requested_by_email: string
+          scope: string
+          snapshot_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          decision_note?: string | null
+          executed_at?: string | null
+          id?: string
+          reason: string
+          requested_by: string
+          requested_by_email: string
+          scope?: string
+          snapshot_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          decision_note?: string | null
+          executed_at?: string | null
+          id?: string
+          reason?: string
+          requested_by?: string
+          requested_by_email?: string
+          scope?: string
+          snapshot_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_backup_restore_requests_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "platform_backup_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_backup_snapshots: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          external_id: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          recorded_by: string | null
+          retention_until: string | null
+          size_bytes: number | null
+          source: string
+          started_at: string | null
+          status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          external_id?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          recorded_by?: string | null
+          retention_until?: string | null
+          size_bytes?: number | null
+          source: string
+          started_at?: string | null
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          external_id?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          recorded_by?: string | null
+          retention_until?: string | null
+          size_bytes?: number | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       platform_bank_reconciliations: {
         Row: {
           amount: number
@@ -3640,6 +4586,78 @@ export type Database = {
           is_active?: boolean
           name_ar?: string
           subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      platform_events: {
+        Row: {
+          correlation_id: string | null
+          id: string
+          occurred_at: string
+          payload: Json
+          process_error: string | null
+          processed_at: string | null
+          request_id: string | null
+          source: string
+          topic: string
+        }
+        Insert: {
+          correlation_id?: string | null
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          process_error?: string | null
+          processed_at?: string | null
+          request_id?: string | null
+          source?: string
+          topic: string
+        }
+        Update: {
+          correlation_id?: string | null
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          process_error?: string | null
+          processed_at?: string | null
+          request_id?: string | null
+          source?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      platform_feature_flags: {
+        Row: {
+          audience: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          audience?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          audience?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          key?: string
+          label?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -4141,6 +5159,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_notification_rules: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          label: string
+          target: string
+          template_key: string | null
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          label: string
+          target: string
+          template_key?: string | null
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          target?: string
+          template_key?: string | null
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       platform_number_sequences: {
         Row: {
@@ -5204,6 +6261,378 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sales_document_events: {
+        Row: {
+          actor_email: string | null
+          created_at: string
+          document_id: string
+          event: string
+          from_status: Database["public"]["Enums"]["sales_doc_status"] | null
+          id: string
+          metadata: Json
+          note: string | null
+          to_status: Database["public"]["Enums"]["sales_doc_status"] | null
+        }
+        Insert: {
+          actor_email?: string | null
+          created_at?: string
+          document_id: string
+          event: string
+          from_status?: Database["public"]["Enums"]["sales_doc_status"] | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["sales_doc_status"] | null
+        }
+        Update: {
+          actor_email?: string | null
+          created_at?: string
+          document_id?: string
+          event?: string
+          from_status?: Database["public"]["Enums"]["sales_doc_status"] | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["sales_doc_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_document_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sales_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_document_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          discount_amount: number
+          document_id: string
+          id: string
+          quantity: number
+          sort_order: number
+          unit_price: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          discount_amount?: number
+          document_id: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          discount_amount?: number
+          document_id?: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_document_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sales_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_document_signatures: {
+        Row: {
+          created_at: string
+          document_id: string
+          evidence_hash: string
+          id: string
+          ip: string | null
+          method: string
+          signed_at: string
+          signer_email: string
+          signer_name: string
+          signer_role: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          evidence_hash: string
+          id?: string
+          ip?: string | null
+          method?: string
+          signed_at?: string
+          signer_email: string
+          signer_name: string
+          signer_role?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          evidence_hash?: string
+          id?: string
+          ip?: string | null
+          method?: string
+          signed_at?: string
+          signer_email?: string
+          signer_name?: string
+          signer_role?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_document_signatures_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sales_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_document_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_tax_rate: number
+          default_validity_days: number
+          id: string
+          intro: string | null
+          is_active: boolean
+          items: Json
+          kind: Database["public"]["Enums"]["sales_doc_kind"]
+          name: string
+          terms: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_tax_rate?: number
+          default_validity_days?: number
+          id?: string
+          intro?: string | null
+          is_active?: boolean
+          items?: Json
+          kind: Database["public"]["Enums"]["sales_doc_kind"]
+          name: string
+          terms?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_tax_rate?: number
+          default_validity_days?: number
+          id?: string
+          intro?: string | null
+          is_active?: boolean
+          items?: Json
+          kind?: Database["public"]["Enums"]["sales_doc_kind"]
+          name?: string
+          terms?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sales_documents: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string | null
+          contact_id: string | null
+          converted_invoice_id: string | null
+          converted_subscription_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          deal_id: string | null
+          decided_at: string | null
+          decision_note: string | null
+          discount_amount: number
+          discount_type: string
+          discount_value: number
+          ends_on: string | null
+          first_viewed_at: string | null
+          id: string
+          intro: string | null
+          kind: Database["public"]["Enums"]["sales_doc_kind"]
+          locked: boolean
+          notes: string | null
+          number: string | null
+          organization_id: string | null
+          owner_staff_id: string | null
+          requires_approval: boolean
+          sent_at: string | null
+          starts_on: string | null
+          status: Database["public"]["Enums"]["sales_doc_status"]
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          template_id: string | null
+          terms: string | null
+          title: string
+          total: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          converted_invoice_id?: string | null
+          converted_subscription_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deal_id?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          discount_amount?: number
+          discount_type?: string
+          discount_value?: number
+          ends_on?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          intro?: string | null
+          kind: Database["public"]["Enums"]["sales_doc_kind"]
+          locked?: boolean
+          notes?: string | null
+          number?: string | null
+          organization_id?: string | null
+          owner_staff_id?: string | null
+          requires_approval?: boolean
+          sent_at?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["sales_doc_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          template_id?: string | null
+          terms?: string | null
+          title: string
+          total?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          converted_invoice_id?: string | null
+          converted_subscription_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deal_id?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          discount_amount?: number
+          discount_type?: string
+          discount_value?: number
+          ends_on?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          intro?: string | null
+          kind?: Database["public"]["Enums"]["sales_doc_kind"]
+          locked?: boolean
+          notes?: string | null
+          number?: string | null
+          organization_id?: string | null
+          owner_staff_id?: string | null
+          requires_approval?: boolean
+          sent_at?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["sales_doc_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          template_id?: string | null
+          terms?: string | null
+          title?: string
+          total?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_converted_invoice_id_fkey"
+            columns: ["converted_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "platform_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_converted_subscription_id_fkey"
+            columns: ["converted_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_owner_staff_id_fkey"
+            columns: ["owner_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sales_document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_delivery_logs: {
         Row: {
@@ -6902,6 +8331,22 @@ export type Database = {
         | "execution_against"
         | "other"
       client_type: "individual" | "company" | "government"
+      crm_activity_kind:
+        | "meeting"
+        | "call"
+        | "note"
+        | "task"
+        | "followup"
+        | "email"
+      crm_deal_status: "open" | "won" | "lost" | "abandoned"
+      crm_entity_kind: "lead" | "company" | "contact" | "deal"
+      crm_lead_status:
+        | "new"
+        | "contacted"
+        | "qualified"
+        | "unqualified"
+        | "converted"
+        | "lost"
       deadline_status: "active" | "completed" | "cancelled" | "overdue"
       deadline_type:
         | "objection"
@@ -6925,10 +8370,43 @@ export type Database = {
         | "postponed"
         | "cancelled"
         | "missed"
+      hr_employment_status:
+        | "active"
+        | "probation"
+        | "on_notice"
+        | "suspended"
+        | "terminated"
+        | "resigned"
+      hr_employment_type:
+        | "full_time"
+        | "part_time"
+        | "contract"
+        | "intern"
+        | "vendor"
       invitation_status: "pending" | "accepted" | "revoked" | "expired"
+      marketing_campaign_status:
+        | "draft"
+        | "scheduled"
+        | "running"
+        | "paused"
+        | "completed"
+        | "cancelled"
       member_status: "active" | "suspended" | "pending"
       platform_role: "super_admin" | "staff"
       platform_staff_status: "active" | "suspended"
+      sales_doc_kind: "quote" | "proposal" | "contract"
+      sales_doc_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "sent"
+        | "viewed"
+        | "accepted"
+        | "rejected"
+        | "expired"
+        | "cancelled"
+        | "active"
+        | "terminated"
       subscription_status: "active" | "expired" | "cancelled" | "trial"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status:
@@ -7108,6 +8586,24 @@ export const Constants = {
         "other",
       ],
       client_type: ["individual", "company", "government"],
+      crm_activity_kind: [
+        "meeting",
+        "call",
+        "note",
+        "task",
+        "followup",
+        "email",
+      ],
+      crm_deal_status: ["open", "won", "lost", "abandoned"],
+      crm_entity_kind: ["lead", "company", "contact", "deal"],
+      crm_lead_status: [
+        "new",
+        "contacted",
+        "qualified",
+        "unqualified",
+        "converted",
+        "lost",
+      ],
       deadline_status: ["active", "completed", "cancelled", "overdue"],
       deadline_type: [
         "objection",
@@ -7134,10 +8630,47 @@ export const Constants = {
         "cancelled",
         "missed",
       ],
+      hr_employment_status: [
+        "active",
+        "probation",
+        "on_notice",
+        "suspended",
+        "terminated",
+        "resigned",
+      ],
+      hr_employment_type: [
+        "full_time",
+        "part_time",
+        "contract",
+        "intern",
+        "vendor",
+      ],
       invitation_status: ["pending", "accepted", "revoked", "expired"],
+      marketing_campaign_status: [
+        "draft",
+        "scheduled",
+        "running",
+        "paused",
+        "completed",
+        "cancelled",
+      ],
       member_status: ["active", "suspended", "pending"],
       platform_role: ["super_admin", "staff"],
       platform_staff_status: ["active", "suspended"],
+      sales_doc_kind: ["quote", "proposal", "contract"],
+      sales_doc_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "sent",
+        "viewed",
+        "accepted",
+        "rejected",
+        "expired",
+        "cancelled",
+        "active",
+        "terminated",
+      ],
       subscription_status: ["active", "expired", "cancelled", "trial"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: [
