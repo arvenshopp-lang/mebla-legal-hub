@@ -190,17 +190,17 @@ export function LeadsPanel() {
                     <Td className="text-left">
                       <div className="flex items-center justify-end gap-1">
                         {can("crm.update") && (
-                          <>
-                            <IconBtn
+                          <IconBtn
                               aria-label="تعديل" title="تعديل"
                               onClick={() => setDialog({ kind: "form", initial: leadDraftFromRow(row), editId: row.id })}
                             >
                               <Pencil className="h-4 w-4" aria-hidden />
-                            </IconBtn>
-                            <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
-                              <UserCheck className="h-4 w-4" aria-hidden />
-                            </IconBtn>
-                          </>
+                          </IconBtn>
+                        )}
+                        {can("crm.assign") && (
+                          <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
+                            <UserCheck className="h-4 w-4" aria-hidden />
+                          </IconBtn>
                         )}
                         {can("crm.update") && row.status !== "converted" && (
                           <IconBtn aria-label="تحويل إلى شركة وصفقة" title="تحويل إلى شركة وصفقة" onClick={() => setDialog({ kind: "convert", row })}>
