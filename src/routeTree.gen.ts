@@ -53,6 +53,7 @@ import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
 import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
 import { Route as MehlaAdminContentRouteImport } from './routes/mehla-admin/content'
 import { Route as MehlaAdminAnalyticsRouteImport } from './routes/mehla-admin/analytics'
+import { Route as MehlaAdminActivityRouteImport } from './routes/mehla-admin/activity'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -307,6 +308,11 @@ const MehlaAdminAnalyticsRoute = MehlaAdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminActivityRoute = MehlaAdminActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -519,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/activity': typeof MehlaAdminActivityRoute
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
@@ -597,6 +604,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/activity': typeof MehlaAdminActivityRoute
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
@@ -678,6 +686,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/activity': typeof MehlaAdminActivityRoute
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
@@ -759,6 +768,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/activity'
     | '/mehla-admin/analytics'
     | '/mehla-admin/content'
     | '/mehla-admin/design'
@@ -837,6 +847,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/activity'
     | '/mehla-admin/analytics'
     | '/mehla-admin/content'
     | '/mehla-admin/design'
@@ -917,6 +928,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/activity'
     | '/mehla-admin/analytics'
     | '/mehla-admin/content'
     | '/mehla-admin/design'
@@ -1313,6 +1325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminAnalyticsRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/activity': {
+      id: '/mehla-admin/activity'
+      path: '/activity'
+      fullPath: '/mehla-admin/activity'
+      preLoaderRoute: typeof MehlaAdminActivityRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -1603,6 +1622,7 @@ const MehlaAdminSupportRouteWithChildren =
   MehlaAdminSupportRoute._addFileChildren(MehlaAdminSupportRouteChildren)
 
 interface MehlaAdminRouteRouteChildren {
+  MehlaAdminActivityRoute: typeof MehlaAdminActivityRoute
   MehlaAdminAnalyticsRoute: typeof MehlaAdminAnalyticsRoute
   MehlaAdminContentRoute: typeof MehlaAdminContentRoute
   MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
@@ -1634,6 +1654,7 @@ interface MehlaAdminRouteRouteChildren {
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
+  MehlaAdminActivityRoute: MehlaAdminActivityRoute,
   MehlaAdminAnalyticsRoute: MehlaAdminAnalyticsRoute,
   MehlaAdminContentRoute: MehlaAdminContentRoute,
   MehlaAdminDesignRoute: MehlaAdminDesignRoute,

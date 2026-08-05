@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
+import { CommandPalette, useCommandPalette } from "@/components/admin/command-palette";
 import type { AdminPermission } from "@/lib/admin-permissions";
 
 type NavItem = { to: string; label: string; Icon: typeof Gauge; permission?: AdminPermission };
@@ -84,6 +85,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { to: "/mehla-admin/security", label: "مركز الأمان", Icon: Lock },
       { to: "/mehla-admin/rbac", label: "الأدوار والصلاحيات", Icon: KeyRound, permission: "staff.view" },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
+      { to: "/mehla-admin/activity", label: "سجل النشاط الموحّد", Icon: Activity, permission: "audit.read" },
       { to: "/mehla-admin/failures", label: "سجل الأعطال", Icon: AlertTriangle, permission: "audit.read" },
     ],
   },
@@ -105,6 +107,11 @@ export function AdminShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const palette = useCommandPalette();
+
+  const crumb = NAV.flatMap((g) => g.items).find(
+    (i) => i.to !== "/mehla-admin" && pathname.startsWith(i.to),
+  );
 
   const isActive = (to: string) =>
     to === "/mehla-admin" ? pathname === to || pathname === `${to}/` : pathname.startsWith(to);
@@ -205,12 +212,34 @@ export function AdminShell({
             <Menu className="h-5 w-5" aria-hidden />
           </button>
           <span className="truncate text-sm font-semibold">لوحة إدارة منصة مِهلة</span>
-          <span className="ms-auto hidden rounded-full bg-success-soft px-2.5 py-0.5 text-[11px] font-semibold text-success sm:inline">
+          <button
+            onClick={() => palette.setOpen(true)}
+            aria-label="البحث العالمي (Ctrl أو ⌘ ثم K)"
+            className="ms-auto flex h-10 min-w-11 items-center gap-2 rounded-[var(--radius-m)] border border-border px-3 text-[12.5px] text-muted-foreground transition hover:bg-surface-muted"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">بحث شامل</span>
+            <kbd className="hidden rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold md:inline">
+              ⌘K
+            </kbd>
+          </button>
+          <span className="hidden rounded-full bg-success-soft px-2.5 py-0.5 text-[11px] font-semibold text-success xl:inline">
             بيانات العملاء القانونية غير متاحة لهذه اللوحة
           </span>
         </header>
 
         <main className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-8">
+          <nav aria-label="مسار التنقل" className="mb-3 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <Link to="/mehla-admin" className="rounded-[var(--radius-s)] px-1 py-0.5 hover:text-foreground">
+              لوحة الإدارة
+            </Link>
+            {crumb && (
+              <>
+                <span aria-hidden>/</span>
+                <span className="truncate font-medium text-foreground">{crumb.label}</span>
+              </>
+            )}
+          </nav>
           <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-h3 truncate">{title}</h1>
@@ -221,6 +250,7 @@ export function AdminShell({
           {children}
         </main>
       </div>
+      <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
     </div>
   );
 }
