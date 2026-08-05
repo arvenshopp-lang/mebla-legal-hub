@@ -155,13 +155,15 @@ export const CONTENT_KINDS = {
 
 export type ContentKind = keyof typeof CONTENT_KINDS;
 
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 export type ContentPage = {
   id: string;
   slug: string;
   kind: ContentKind;
   title: string;
   description: string | null;
-  content: Record<string, unknown>;
+  content: Record<string, JsonValue>;
   is_published: boolean;
   published_at: string | null;
   version: number;
