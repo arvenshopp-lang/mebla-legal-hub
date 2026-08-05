@@ -63,7 +63,9 @@ function ActivityPage() {
   const debouncedQuery = useDebounced(q, 350);
 
   const sources = useMemo<ActivitySource[]>(() => {
-    const parsed = src.split(",").filter((s): s is ActivitySource => SOURCES.includes(s as ActivitySource));
+    const parsed = src
+      .split(",")
+      .filter((s: string): s is ActivitySource => SOURCES.includes(s as ActivitySource));
     return parsed.length > 0 ? parsed : SOURCES;
   }, [src]);
 
@@ -86,8 +88,9 @@ function ActivityPage() {
     staleTime: 15_000,
   });
 
-  const setSearch = (patch: Partial<{ q: string; src: string; size: number; page: number }>) =>
-    void navigate({ search: (prev) => ({ ...prev, ...patch }) });
+  type ActivitySearch = { q: string; src: string; size: number; page: number };
+  const setSearch = (patch: Partial<ActivitySearch>) =>
+    void navigate({ search: (prev: ActivitySearch) => ({ ...prev, ...patch }) });
 
   const toggleSource = (source: ActivitySource) => {
     const next = sources.includes(source) ? sources.filter((s) => s !== source) : [...sources, source];
