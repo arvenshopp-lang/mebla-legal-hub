@@ -65,7 +65,11 @@ export const CHECK_LABELS: Record<ReadinessCheck, string> = {
 
 export type CheckState = { ok: boolean; at: string | null; detail: string | null };
 
-export type AgenticLinkStatus = "unlinked" | "linked" | "missing";
+/**
+ * `alias`: عنوان منطقي يُسلَّم إلى الحساب الحقيقي (support/sales/…)، فلا يُربط
+ * بصندوق مستقل عند المزوّد ولا يُزامن بذاته — وهذه حالة سليمة لا خلل.
+ */
+export type AgenticLinkStatus = "unlinked" | "linked" | "missing" | "alias";
 
 export const LINK_STATUS_LABELS: Record<AgenticLinkStatus, string> = {
   unlinked: "غير مرتبط",
