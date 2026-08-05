@@ -156,7 +156,8 @@ function attachmentPayload(value: unknown): Record<string, unknown>[] {
     items.push({
       filename: str(row["filename"] ?? row["file_name"] ?? row["fileName"]) ?? "attachment",
       contentType:
-        str(row["content_type"] ?? row["contentType"] ?? row["mime_type"]) ?? "application/octet-stream",
+        str(row["content_type"] ?? row["contentType"] ?? row["mime_type"]) ??
+        "application/octet-stream",
       content,
       encoding: "base64",
     });
@@ -164,7 +165,10 @@ function attachmentPayload(value: unknown): Record<string, unknown>[] {
   return items;
 }
 
-function sendBody(canonical: Canonical, reference: "inReplyTo" | "forwardOf" | null): Record<string, unknown> {
+function sendBody(
+  canonical: Canonical,
+  reference: "inReplyTo" | "forwardOf" | null,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   const to = addresses(canonical["to"]);
   const cc = addresses(canonical["cc"]);
@@ -251,7 +255,11 @@ function planCall(operation: AgenticOperation, canonical: Canonical): RestCall |
     case "replyAll":
     case "forwardMessage": {
       const reference =
-        operation === "forwardMessage" ? "forwardOf" : operation === "sendMessage" ? null : "inReplyTo";
+        operation === "forwardMessage"
+          ? "forwardOf"
+          : operation === "sendMessage"
+            ? null
+            : "inReplyTo";
       const body = sendBody(canonical, reference);
       if (!body["to"] && !body["cc"] && !body["bcc"]) return { error: "to" };
       return {
@@ -330,14 +338,23 @@ function unwrap(payload: unknown, requestId: string): unknown {
         ? redactAgentic(JSON.stringify(body)).slice(0, 300)
         : redactAgentic(String(body ?? "")).slice(0, 300);
     throw new AgenticMailError(
-      status === 401 || status === 403 ? "unauthorized" : status === 404 ? "not_found" : "provider_error",
+      status === 401 || status === 403
+        ? "unauthorized"
+        : status === 404
+          ? "not_found"
+          : "provider_error",
       detail || `رفض المزوّد الطلب (${status}).`,
       status,
       requestId,
     );
   }
   const inner = body;
-  if (inner && typeof inner === "object" && !Array.isArray(inner) && "data" in (inner as Record<string, unknown>)) {
+  if (
+    inner &&
+    typeof inner === "object" &&
+    !Array.isArray(inner) &&
+    "data" in (inner as Record<string, unknown>)
+  ) {
     return (inner as Record<string, unknown>)["data"];
   }
   return inner;
@@ -428,7 +445,10 @@ export async function restInvoke(
         const content = unwrap(bodyCall.json ?? safeJson(bodyCall.text), bodyCall.requestId);
         if (content && typeof content === "object") {
           return {
-            json: { ...(payload as Record<string, unknown>), ...(content as Record<string, unknown>) },
+            json: {
+              ...(payload as Record<string, unknown>),
+              ...(content as Record<string, unknown>),
+            },
             text: result.text,
             latencyMs: result.latencyMs,
             requestId: result.requestId,
@@ -485,7 +505,12 @@ export async function restInvoke(
       requestId: result.requestId,
     };
   }
-  if (operation === "sendMessage" || operation === "replyMessage" || operation === "replyAll" || operation === "forwardMessage") {
+  if (
+    operation === "sendMessage" ||
+    operation === "replyMessage" ||
+    operation === "replyAll" ||
+    operation === "forwardMessage"
+  ) {
     const root = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
     return {
       json: { ...root, folder: SENT_FOLDER },
@@ -495,5 +520,10 @@ export async function restInvoke(
     };
   }
 
-  return { json: payload ?? null, text: result.text, latencyMs: result.latencyMs, requestId: result.requestId };
+  return {
+    json: payload ?? null,
+    text: result.text,
+    latencyMs: result.latencyMs,
+    requestId: result.requestId,
+  };
 }

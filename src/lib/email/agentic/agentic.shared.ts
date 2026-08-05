@@ -46,7 +46,13 @@ export const OPERATION_LABELS: Record<AgenticOperation, string> = {
 };
 
 /** خطوات الجاهزية الإلزامية قبل تفعيل التكامل. */
-export const READINESS_CHECKS = ["connection", "tools", "mailboxes", "dry_run", "test_send"] as const;
+export const READINESS_CHECKS = [
+  "connection",
+  "tools",
+  "mailboxes",
+  "dry_run",
+  "test_send",
+] as const;
 export type ReadinessCheck = (typeof READINESS_CHECKS)[number];
 
 export const CHECK_LABELS: Record<ReadinessCheck, string> = {

@@ -789,9 +789,7 @@ const agScheduler = (): Promise<AgenticSchedulerMod> =>
 
 const mailboxIdInput = z.object({ mailboxId: z.string().uuid() });
 
-export type AgenticOverviewPayload = Awaited<
-  ReturnType<AgenticOverviewMod["buildOverview"]>
->;
+export type AgenticOverviewPayload = Awaited<ReturnType<AgenticOverviewMod["buildOverview"]>>;
 
 /** حالة التكامل الكاملة: الجاهزية، الأدوات، الصناديق، الجدولة، مسار الإرسال. */
 export const getAgenticMailStatus = createServerFn({ method: "POST" })
@@ -809,7 +807,12 @@ export const testAgenticMailConnection = createServerFn({ method: "POST" })
   .handler(
     async ({
       context,
-    }): Promise<{ ok: boolean; latencyMs: number; server: string | null; error: string | null }> => {
+    }): Promise<{
+      ok: boolean;
+      latencyMs: number;
+      server: string | null;
+      error: string | null;
+    }> => {
       const a = await access();
       const ctx = await a.authorize(
         context.supabase,
@@ -839,7 +842,9 @@ export const testAgenticMailConnection = createServerFn({ method: "POST" })
         ctx.db,
         "connection",
         probe.ok,
-        probe.ok ? `${probe.serverName ?? "MCP"} — ${probe.latencyMs}ms` : probe.error?.message ?? null,
+        probe.ok
+          ? `${probe.serverName ?? "MCP"} — ${probe.latencyMs}ms`
+          : (probe.error?.message ?? null),
       );
       await s.patchAgenticState(ctx.db, (state) => ({
         ...state,
@@ -847,7 +852,11 @@ export const testAgenticMailConnection = createServerFn({ method: "POST" })
         lastTestAt: new Date().toISOString(),
         lastError: probe.ok
           ? state.lastError
-          : { code: probe.error?.code ?? "connection_failed", message: probe.error?.message ?? "", at: new Date().toISOString() },
+          : {
+              code: probe.error?.code ?? "connection_failed",
+              message: probe.error?.message ?? "",
+              at: new Date().toISOString(),
+            },
       }));
       await a.audit(ctx, {
         action: "email.agentic.connection_test",
@@ -860,7 +869,7 @@ export const testAgenticMailConnection = createServerFn({ method: "POST" })
         ok: probe.ok,
         latencyMs: probe.latencyMs,
         server: probe.serverName,
-        error: probe.ok ? null : probe.error?.message ?? "تعذّر الاتصال بخادم المزوّد.",
+        error: probe.ok ? null : (probe.error?.message ?? "تعذّر الاتصال بخادم المزوّد."),
       };
     },
   );
@@ -923,9 +932,7 @@ export const discoverAgenticMailTools = createServerFn({ method: "POST" })
 export const linkAgenticMailboxes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(
-    async ({
-      context,
-    }): Promise<{ linked: number; missing: number; unmatched: string[] }> => {
+    async ({ context }): Promise<{ linked: number; missing: number; unmatched: string[] }> => {
       const a = await access();
       const ctx = await a.authorize(
         context.supabase,
@@ -981,7 +988,11 @@ export const unlinkAgenticMailbox = createServerFn({ method: "POST" })
     const box = await a.assertMailbox(ctx, data.mailboxId);
     await ctx.db
       .from("email_mailboxes")
-      .update({ agentic_mailbox_id: null, agentic_link_status: "unlinked", agentic_unread_count: 0 })
+      .update({
+        agentic_mailbox_id: null,
+        agentic_link_status: "unlinked",
+        agentic_unread_count: 0,
+      })
       .eq("id", box.id);
     await a.audit(ctx, {
       action: "email.agentic.unlink_mailbox",
@@ -999,7 +1010,12 @@ export const dryRunAgenticSync = createServerFn({ method: "POST" })
     async ({
       data,
       context,
-    }): Promise<{ fetched: number; wouldIngest: number; duplicates: number; error: string | null }> => {
+    }): Promise<{
+      fetched: number;
+      wouldIngest: number;
+      duplicates: number;
+      error: string | null;
+    }> => {
       const a = await access();
       const ctx = await a.authorize(
         context.supabase,
@@ -1040,9 +1056,7 @@ export const dryRunAgenticSync = createServerFn({ method: "POST" })
 export const sendAgenticTestMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({ mailboxId: z.string().uuid(), to: z.string().trim().email().max(255) })
-      .parse(input),
+    z.object({ mailboxId: z.string().uuid(), to: z.string().trim().email().max(255) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<{ ok: boolean; error: string | null }> => {
     const a = await access();
@@ -1120,9 +1134,16 @@ export const activateAgenticMail = createServerFn({ method: "POST" })
         action: "email.agentic.activate_blocked",
         description: `منع التفعيل: ${blockers.join(" | ") || "شروط الجاهزية غير مستوفاة."}`,
       });
-      return { ok: false, blockers: blockers.length > 0 ? blockers : ["شروط الجاهزية غير مستوفاة."] };
+      return {
+        ok: false,
+        blockers: blockers.length > 0 ? blockers : ["شروط الجاهزية غير مستوفاة."],
+      };
     }
-    await s.patchAgenticState(ctx.db, (current) => ({ ...current, enabled: true, lastError: null }));
+    await s.patchAgenticState(ctx.db, (current) => ({
+      ...current,
+      enabled: true,
+      lastError: null,
+    }));
     await sched.armScheduler(ctx.db);
     await a.audit(ctx, {
       action: "email.agentic.activate",
@@ -1163,7 +1184,12 @@ export const syncAgenticMailboxNow = createServerFn({ method: "POST" })
     async ({
       data,
       context,
-    }): Promise<{ fetched: number; ingested: number; duplicates: number; error: string | null }> => {
+    }): Promise<{
+      fetched: number;
+      ingested: number;
+      duplicates: number;
+      error: string | null;
+    }> => {
       const a = await access();
       const ctx = await a.authorize(
         context.supabase,

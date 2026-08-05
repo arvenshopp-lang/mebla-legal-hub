@@ -9,7 +9,12 @@
  * كل عملية غير مدعومة من الأدوات المكتشفة تُعاد كـ«غير مدعومة» بلا نتيجة
  * وهمية، ليبقى مسار SMTP/IMAP الحالي هو البديل العامل.
  */
-import { bindArgs, mapCapabilities, mapRestCapabilities, type CapabilityMap } from "./capabilities.server";
+import {
+  bindArgs,
+  mapCapabilities,
+  mapRestCapabilities,
+  type CapabilityMap,
+} from "./capabilities.server";
 import { AgenticMailError, callTool, listTools, redactAgentic } from "./mcp-client.server";
 import {
   isRestProxy,
@@ -107,7 +112,12 @@ export async function invoke(
       result.requestId,
     );
   }
-  return { json: result.json, text: result.text, latencyMs: result.latencyMs, requestId: result.requestId };
+  return {
+    json: result.json,
+    text: result.text,
+    latencyMs: result.latencyMs,
+    requestId: result.requestId,
+  };
 }
 
 /* ------------------------------------------------- تطبيع الاستجابات */
@@ -118,23 +128,37 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-const ARRAY_KEYS = ["messages", "emails", "items", "data", "results", "records", "mailboxes", "accounts", "list"];
+const ARRAY_KEYS = [
+  "messages",
+  "emails",
+  "items",
+  "data",
+  "results",
+  "records",
+  "mailboxes",
+  "accounts",
+  "list",
+];
 
 /** استخراج مصفوفة العناصر من استجابة غير معروفة الشكل مسبقاً. */
 export function extractList(payload: unknown): Record<string, unknown>[] {
-  if (Array.isArray(payload)) return payload.filter((v): v is Record<string, unknown> => Boolean(asRecord(v)));
+  if (Array.isArray(payload))
+    return payload.filter((v): v is Record<string, unknown> => Boolean(asRecord(v)));
   const root = asRecord(payload);
   if (!root) return [];
   for (const key of ARRAY_KEYS) {
     const value = root[key];
-    if (Array.isArray(value)) return value.filter((v): v is Record<string, unknown> => Boolean(asRecord(v)));
+    if (Array.isArray(value))
+      return value.filter((v): v is Record<string, unknown> => Boolean(asRecord(v)));
   }
   for (const value of Object.values(root)) {
     const nested = asRecord(value);
     if (nested) {
       for (const key of ARRAY_KEYS) {
         if (Array.isArray(nested[key])) {
-          return (nested[key] as unknown[]).filter((v): v is Record<string, unknown> => Boolean(asRecord(v)));
+          return (nested[key] as unknown[]).filter((v): v is Record<string, unknown> =>
+            Boolean(asRecord(v)),
+          );
         }
       }
     }
@@ -145,7 +169,14 @@ export function extractList(payload: unknown): Record<string, unknown>[] {
 export function extractCursor(payload: unknown): string | null {
   const root = asRecord(payload);
   if (!root) return null;
-  for (const key of ["nextCursor", "next_cursor", "cursor", "nextPageToken", "next_page_token", "next"]) {
+  for (const key of [
+    "nextCursor",
+    "next_cursor",
+    "cursor",
+    "nextPageToken",
+    "next_page_token",
+    "next",
+  ]) {
     const value = root[key];
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
@@ -158,7 +189,9 @@ function pick(row: Record<string, unknown>, keys: string[]): unknown {
     const direct = row[key];
     if (direct !== undefined && direct !== null && direct !== "") return direct;
   }
-  const lowered = new Map(Object.keys(row).map((k) => [k.toLowerCase().replace(/[^a-z0-9]/g, ""), k]));
+  const lowered = new Map(
+    Object.keys(row).map((k) => [k.toLowerCase().replace(/[^a-z0-9]/g, ""), k]),
+  );
   for (const key of keys) {
     const match = lowered.get(key.toLowerCase().replace(/[^a-z0-9]/g, ""));
     if (match) {
@@ -181,7 +214,11 @@ function asString(value: unknown): string | null {
 }
 
 function addressList(value: unknown): string[] {
-  const raw = Array.isArray(value) ? value : typeof value === "string" ? value.split(/[,;]/) : [value];
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,;]/)
+      : [value];
   return raw
     .map((entry) => asString(entry))
     .filter((entry): entry is string => Boolean(entry && entry.includes("@")))
@@ -219,8 +256,14 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
     ? (/<([^>]+)>/.exec(fromAddressRaw)?.[1] ?? fromAddressRaw).trim().toLowerCase()
     : null;
   const fromName =
-    asString(fromRecord ? pick(fromRecord, ["name", "display_name"]) : pick(row, ["from_name", "sender_name"])) ??
-    (fromAddressRaw && fromAddressRaw.includes("<") ? fromAddressRaw.split("<")[0]!.trim() || null : null);
+    asString(
+      fromRecord
+        ? pick(fromRecord, ["name", "display_name"])
+        : pick(row, ["from_name", "sender_name"]),
+    ) ??
+    (fromAddressRaw && fromAddressRaw.includes("<")
+      ? fromAddressRaw.split("<")[0]!.trim() || null
+      : null);
 
   const referencesRaw = pick(row, ["references", "reference_ids"]);
   const references = Array.isArray(referencesRaw)
@@ -235,7 +278,9 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
     .filter((entry): entry is Record<string, unknown> => Boolean(entry))
     .map((entry) => ({
       fileName: asString(pick(entry, ["filename", "file_name", "name", "title"])) ?? "attachment",
-      contentBase64: asString(pick(entry, ["content_base64", "contentBase64", "content", "data", "base64"])),
+      contentBase64: asString(
+        pick(entry, ["content_base64", "contentBase64", "content", "data", "base64"]),
+      ),
       attachmentId: asString(pick(entry, ["attachment_id", "id", "part_id", "partId"])),
     }))
     .slice(0, MAX_ATTACHMENTS_PER_MESSAGE);
@@ -246,8 +291,12 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
     typeof unreadRaw === "boolean" ? unreadRaw : typeof readRaw === "boolean" ? !readRaw : null;
 
   return {
-    providerId: asString(pick(row, ["id", "uid", "message_uid", "provider_id", "email_id", "mail_id"])),
-    messageId: asString(pick(row, ["message_id", "messageId", "rfc822_message_id", "internet_message_id"])),
+    providerId: asString(
+      pick(row, ["id", "uid", "message_uid", "provider_id", "email_id", "mail_id"]),
+    ),
+    messageId: asString(
+      pick(row, ["message_id", "messageId", "rfc822_message_id", "internet_message_id"]),
+    ),
     subject: asString(pick(row, ["subject", "title"])) ?? "(بلا عنوان)",
     fromAddress,
     fromName,
@@ -257,8 +306,12 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
       ...addressList(pick(row, ["delivered_to", "deliveredTo", "x_original_to", "envelope_to"])),
     ],
     html: asString(pick(row, ["html", "html_body", "body_html", "htmlContent"])),
-    text: asString(pick(row, ["text", "text_body", "body_text", "plain_text", "snippet", "body", "content"])),
-    date: asString(pick(row, ["date", "received_at", "internal_date", "created_at", "timestamp", "sent_at"])),
+    text: asString(
+      pick(row, ["text", "text_body", "body_text", "plain_text", "snippet", "body", "content"]),
+    ),
+    date: asString(
+      pick(row, ["date", "received_at", "internal_date", "created_at", "timestamp", "sent_at"]),
+    ),
     inReplyTo: asString(pick(row, ["in_reply_to", "inReplyTo"])),
     references,
     unread,
@@ -279,7 +332,12 @@ function mergeMessage(base: NormalizedMessage, detail: NormalizedMessage): Norma
   return merged as unknown as NormalizedMessage;
 }
 
-export type ProviderMailbox = { id: string; address: string; displayName: string | null; unread: number | null };
+export type ProviderMailbox = {
+  id: string;
+  address: string;
+  displayName: string | null;
+  unread: number | null;
+};
 
 /** اكتشاف صناديق Hostinger الفعلية. لا يُنشئ أي صندوق داخل مِهلة. */
 export async function discoverProviderMailboxes(correlationId: string): Promise<ProviderMailbox[]> {
@@ -396,15 +454,15 @@ export async function agenticTargets(db: Db, mailboxId?: string): Promise<Agenti
   return ((data ?? []) as Record<string, unknown>[])
     .filter((row) => String(row.type) !== "system" || Boolean(row.agentic_mailbox_id))
     .map((row) => ({
-    id: String(row.id),
-    address: String(row.address),
-    type: String(row.type),
-    providerMailboxId: row.agentic_mailbox_id ? String(row.agentic_mailbox_id) : null,
-    linkStatus: String(row.agentic_link_status ?? "unlinked"),
-    syncEnabled: row.sync_enabled === true,
-    inboundEnabled: row.inbound_enabled === true,
-    isActive: row.is_active === true,
-  }));
+      id: String(row.id),
+      address: String(row.address),
+      type: String(row.type),
+      providerMailboxId: row.agentic_mailbox_id ? String(row.agentic_mailbox_id) : null,
+      linkStatus: String(row.agentic_link_status ?? "unlinked"),
+      syncEnabled: row.sync_enabled === true,
+      inboundEnabled: row.inbound_enabled === true,
+      isActive: row.is_active === true,
+    }));
 }
 
 async function acquireState(
@@ -419,7 +477,11 @@ async function acquireState(
     .eq("provider", PROVIDER)
     .eq("folder", folder)
     .maybeSingle();
-  const row = data as { id: string; provider_cursor: string | null; locked_at: string | null } | null;
+  const row = data as {
+    id: string;
+    provider_cursor: string | null;
+    locked_at: string | null;
+  } | null;
   if (row) {
     const locked = row.locked_at ? Date.parse(row.locked_at) : 0;
     if (locked && Date.now() - locked < LOCK_STALE_MS) return null;
@@ -527,7 +589,12 @@ export async function syncAgenticFolder(
   const release = async (patch: Record<string, unknown>) => {
     await db
       .from("email_sync_state")
-      .update({ locked_at: null, lock_token: null, last_sync_at: new Date().toISOString(), ...patch })
+      .update({
+        locked_at: null,
+        lock_token: null,
+        last_sync_at: new Date().toISOString(),
+        ...patch,
+      })
       .eq("id", state.id);
   };
 
@@ -547,9 +614,8 @@ export async function syncAgenticFolder(
 
     const { ingestInbound } = await import("@/lib/email/workspace.server");
     const { linkInboundToTicket } = await import("@/lib/support/ingest.server");
-    const { inboundAliasAddresses, routeInboundAddress } = await import(
-      "@/lib/email/routing.server"
-    );
+    const { inboundAliasAddresses, routeInboundAddress } =
+      await import("@/lib/email/routing.server");
     // Aliases منطقية فقط: القسم يُحدَّد من ترويسات التسليم لا من الصندوق الحقيقي.
     const aliases = await inboundAliasAddresses(db);
 
@@ -781,7 +847,12 @@ export async function sendViaAgentic(
 ): Promise<AgenticSendResult> {
   const state = await readAgenticState(db);
   if (!state.enabled) {
-    return { ok: false, code: "integration_disabled", message: "تكامل Agentic Mail غير مُفعّل.", unsupported: true };
+    return {
+      ok: false,
+      code: "integration_disabled",
+      message: "تكامل Agentic Mail غير مُفعّل.",
+      unsupported: true,
+    };
   }
   const correlationId = newCorrelationId("send");
   try {
@@ -871,17 +942,27 @@ export async function applyMessageAction(
         : error instanceof AgenticMailError
           ? error.code
           : "action_failed";
-    return { ok: false, code, message: redactAgentic(error instanceof Error ? error.message : String(error)) };
+    return {
+      ok: false,
+      code,
+      message: redactAgentic(error instanceof Error ? error.message : String(error)),
+    };
   }
 }
 
 /** البحث عند المزوّد — للاستخدام الإداري فقط، بلا تخزين نتائج مكرّرة. */
-export async function searchProvider(
-  input: { providerMailboxId: string; query: string; limit?: number },
-): Promise<NormalizedMessage[]> {
+export async function searchProvider(input: {
+  providerMailboxId: string;
+  query: string;
+  limit?: number;
+}): Promise<NormalizedMessage[]> {
   const outcome = await invoke(
     "searchMessages",
-    { mailbox: input.providerMailboxId, query: input.query, limit: Math.min(input.limit ?? 20, 50) },
+    {
+      mailbox: input.providerMailboxId,
+      query: input.query,
+      limit: Math.min(input.limit ?? 20, 50),
+    },
     newCorrelationId("search"),
   );
   return extractList(outcome.json ?? outcome.text).map(normalizeMessage);

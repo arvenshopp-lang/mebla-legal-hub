@@ -79,7 +79,9 @@ function token(): string {
 /** تعقيم أي نص قبل التسجيل أو الإرجاع: يمنع ظهور الرمز أو ترويسة المصادقة. */
 export function redactAgentic(input: string): string {
   const secret = (process.env["HOSTINGER_MAIL_API_TOKEN"] ?? "").trim();
-  let out = String(input).replace(/[\r\n]+/g, " ").slice(0, 600);
+  let out = String(input)
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 600);
   if (secret.length >= 8) out = out.split(secret).join("«محجوب»");
   return out
     .replace(/authorization\s*[:=]\s*\S+/gi, "authorization: «محجوب»")
@@ -226,7 +228,12 @@ async function rpc(
 
   if (response.status >= 300 && response.status < 400) {
     noteFailure();
-    throw new AgenticMailError("redirect_blocked", "رفضت المنصة إعادة توجيه المزوّد.", response.status, requestId);
+    throw new AgenticMailError(
+      "redirect_blocked",
+      "رفضت المنصة إعادة توجيه المزوّد.",
+      response.status,
+      requestId,
+    );
   }
   const raw = await readLimited(response);
 
@@ -255,10 +262,16 @@ async function rpc(
   }
 
   const packets = parseRpcBody(raw);
-  const answer = packets.find((p) => p.id === requestId) ?? packets.find((p) => "result" in p || "error" in p);
+  const answer =
+    packets.find((p) => p.id === requestId) ?? packets.find((p) => "result" in p || "error" in p);
   if (!answer) {
     noteFailure();
-    throw new AgenticMailError("invalid_response", "استجابة غير مفهومة من خادم MCP.", response.status, requestId);
+    throw new AgenticMailError(
+      "invalid_response",
+      "استجابة غير مفهومة من خادم MCP.",
+      response.status,
+      requestId,
+    );
   }
   if (answer.error) {
     const err = answer.error as { code?: number; message?: string };
@@ -373,7 +386,12 @@ export async function listTools(correlationId: string): Promise<McpTool[]> {
     const outcome = await rpc("tools/list", cursor ? { cursor } : {}, { correlationId });
     const list = Array.isArray(outcome.result?.tools) ? (outcome.result?.tools as unknown[]) : [];
     for (const entry of list) {
-      const tool = entry as { name?: unknown; title?: unknown; description?: unknown; inputSchema?: unknown };
+      const tool = entry as {
+        name?: unknown;
+        title?: unknown;
+        description?: unknown;
+        inputSchema?: unknown;
+      };
       if (typeof tool.name !== "string" || !tool.name.trim()) continue;
       tools.push({
         name: tool.name.trim(),
@@ -402,7 +420,9 @@ export async function callTool(
     { correlationId: options.correlationId, timeoutMs: options.timeoutMs },
   );
   const result = outcome.result ?? {};
-  const content = Array.isArray(result.content) ? (result.content as Record<string, unknown>[]) : [];
+  const content = Array.isArray(result.content)
+    ? (result.content as Record<string, unknown>[])
+    : [];
   const text = content
     .filter((part) => part.type === "text" && typeof part.text === "string")
     .map((part) => String(part.text))

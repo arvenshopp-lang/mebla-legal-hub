@@ -68,18 +68,16 @@ export async function syncableMailboxes(db: Db, mailboxId?: string): Promise<Mai
   // الحساب الحقيقي (قد يكون صندوق النظام) مصدر سحب مسموح لأن الأسماء
   // المستعارة تُسلَّم إليه؛ الاستيعاب يبقى تحت الصندوق المنطقي فقط.
   return ((data ?? []) as Record<string, unknown>[])
-    .filter(
-      (row) => String(row.type) !== "system" || mailboxHasOwnCredentials(String(row.address)),
-    )
+    .filter((row) => String(row.type) !== "system" || mailboxHasOwnCredentials(String(row.address)))
     .map((row) => ({
-    id: String(row.id),
-    address: String(row.address),
-    type: String(row.type),
-    folders: foldersOf(row.imap_folders),
-    syncEnabled: row.sync_enabled === true,
-    inboundEnabled: row.inbound_enabled === true,
-    isActive: row.is_active === true,
-  }));
+      id: String(row.id),
+      address: String(row.address),
+      type: String(row.type),
+      folders: foldersOf(row.imap_folders),
+      syncEnabled: row.sync_enabled === true,
+      inboundEnabled: row.inbound_enabled === true,
+      isActive: row.is_active === true,
+    }));
 }
 
 async function loadState(
@@ -361,8 +359,7 @@ export async function syncAllMailboxes(
 ): Promise<SyncOutcome[]> {
   // الحساب الحقيقي فقط يُسجَّل الدخول إليه؛ الأسماء المستعارة تُوجَّه بالترويسات.
   const mailboxes = (await syncableMailboxes(db)).filter(
-    (m) =>
-      m.syncEnabled && m.inboundEnabled && m.isActive && mailboxHasOwnCredentials(m.address),
+    (m) => m.syncEnabled && m.inboundEnabled && m.isActive && mailboxHasOwnCredentials(m.address),
   );
   const outcomes: SyncOutcome[] = [];
   for (const mailbox of mailboxes) {

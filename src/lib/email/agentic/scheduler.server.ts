@@ -220,7 +220,11 @@ export async function runScheduledAgenticSync(db: Db): Promise<ScheduledRun> {
     const message = redactAgentic(error instanceof Error ? error.message : String(error));
     await patchAgenticState(db, (s) => ({
       ...s,
-      lastError: { code: "scheduled_sync_failed", message: message.slice(0, 300), at: new Date().toISOString() },
+      lastError: {
+        code: "scheduled_sync_failed",
+        message: message.slice(0, 300),
+        at: new Date().toISOString(),
+      },
     }));
     return { ran: false, reason: "sync_failed", state: next };
   }
