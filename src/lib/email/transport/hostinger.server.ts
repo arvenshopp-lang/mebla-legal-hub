@@ -331,6 +331,11 @@ export async function syncMailbox(
 ): Promise<SyncOutcome[]> {
   const [mailbox] = await syncableMailboxes(db, mailboxId);
   if (!mailbox) throw new Error("الصندوق غير موجود أو غير مؤهل للمزامنة.");
+  if (!mailboxHasOwnCredentials(mailbox.address)) {
+    throw new Error(
+      `«${mailbox.address}» اسم مستعار بلا بيانات دخول؛ تُسحب رسائله عبر الحساب الحقيقي (${primaryMailboxAddress() || "غير مُعرّف"}).`,
+    );
+  }
   const outcomes: SyncOutcome[] = [];
   for (const folder of mailbox.folders) {
     outcomes.push(await syncMailboxFolder(db, mailbox, folder, triggerSource));
