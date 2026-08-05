@@ -38,7 +38,12 @@ export const salesDetail = createServerFn({ method: "POST" })
     const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
     await g.requireStaff(context.supabase, context.userId, "sales_docs.read");
     const [detail, content] = await Promise.all([engine.getDocumentDetail(data.id), engine.getDocumentContent(data.id)]);
-    return { ...detail, content };
+    // حدود دوال الخادم تنقل JSON فقط، لذا تُطبَّع بيانات الأحداث الحرة قبل الإرجاع.
+    const events = detail.events.map((event) => ({
+      ...event,
+      metadata: JSON.parse(JSON.stringify(event.metadata ?? {})) as Record<string, string | number | boolean | null>,
+    }));
+    return { ...detail, events, content };
   });
 
 export const salesOptions = createServerFn({ method: "POST" })
