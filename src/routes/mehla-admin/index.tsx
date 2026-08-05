@@ -247,7 +247,9 @@ function AdminDashboard() {
             />
             <Stat
               label="آخر ظهور لموظف تشغيل"
-              value={act.sessions.last_staff_seen_at ? fmtDateTime(act.sessions.last_staff_seen_at) : "—"}
+              value={
+                act.sessions.last_staff_seen_at ? fmtDateTime(act.sessions.last_staff_seen_at) : "—"
+              }
               Icon={UserCheck}
             />
             <Stat
@@ -260,7 +262,11 @@ function AdminDashboard() {
               label="صناديق البريد"
               value={fmtNumber(act.email.mailboxes)}
               Icon={Repeat}
-              hint={act.email.last_sync_at ? `آخر مزامنة: ${fmtDateTime(act.email.last_sync_at)}` : "لم تُزامن بعد"}
+              hint={
+                act.email.last_sync_at
+                  ? `آخر مزامنة: ${fmtDateTime(act.email.last_sync_at)}`
+                  : "لم تُزامن بعد"
+              }
             />
             <Stat
               label="حجم المستندات"

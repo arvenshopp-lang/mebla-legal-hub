@@ -61,7 +61,12 @@ export type ServiceHealth = {
     outbox_queued: number;
     outbox_failed: number;
   };
-  sms: { sent_24h: number; failed_24h: number; last_sent_at: string | null; last_error: string | null };
+  sms: {
+    sent_24h: number;
+    failed_24h: number;
+    last_sent_at: string | null;
+    last_error: string | null;
+  };
   otp: { issued_24h: number; verified_24h: number; pending: number };
   payments: {
     providers: number;
@@ -76,7 +81,12 @@ export type ServiceHealth = {
     last_failure_at: string | null;
     last_failure_ref: string | null;
   };
-  database: { size_bytes: number; connections: number; tables_public: number; rls_disabled: number };
+  database: {
+    size_bytes: number;
+    connections: number;
+    tables_public: number;
+    rls_disabled: number;
+  };
 };
 
 export type JobQueue = {
@@ -161,7 +171,13 @@ export const CONTENT_KINDS = {
 
 export type ContentKind = keyof typeof CONTENT_KINDS;
 
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 export type ContentPage = {
   id: string;
