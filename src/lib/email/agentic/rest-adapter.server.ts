@@ -337,8 +337,7 @@ function unwrap(payload: unknown, requestId: string): unknown {
       requestId,
     );
   }
-  const envelope = { status, body } satisfies Partial<Envelope> as Envelope;
-  const inner = envelope.body;
+  const inner = body;
   if (inner && typeof inner === "object" && !Array.isArray(inner) && "data" in (inner as Record<string, unknown>)) {
     return (inner as Record<string, unknown>)["data"];
   }
