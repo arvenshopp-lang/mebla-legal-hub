@@ -7,6 +7,12 @@ export type ActivityOverview = {
   generated_at: string;
   active_users: { today: number; week: number; month: number; events_today: number };
   active_organizations: { today: number; month: number };
+  sessions: {
+    staff_online: number;
+    staff_active_24h: number;
+    staff_devices: number;
+    last_staff_seen_at: string | null;
+  };
   email: {
     total: number;
     inbound: number;
