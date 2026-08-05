@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./styles/fonts.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -102,7 +103,10 @@
 }
 
 @theme inline {
-  --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* الخط الرسمي الوحيد للمنصة — مستضاف محلياً (src/styles/fonts.css) */
+  --font-sans: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Sans Arabic", ui-monospace, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -181,23 +185,77 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    font-family: var(--font-sans);
   }
 
   body {
     background-color: var(--background);
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-feature-settings: "kern", "liga";
+    font-weight: 400;
+    font-feature-settings: "kern", "liga", "calt";
+    font-variant-ligatures: contextual;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     line-height: 1.7;
+    letter-spacing: 0;
+  }
+
+  /* عناصر النماذج لا ترث الخط تلقائياً في المتصفحات — نوحّدها صراحة */
+  input,
+  textarea,
+  select,
+  button,
+  optgroup,
+  option,
+  [role="button"] {
+    font-family: inherit;
+    letter-spacing: inherit;
+  }
+
+  input,
+  textarea,
+  select,
+  table,
+  td,
+  th {
+    font-weight: 400;
+  }
+
+  ::placeholder {
+    font-family: inherit;
+    font-weight: 400;
+    opacity: 1;
+  }
+
+  /* منع قص الحروف العربية (الهمزات والشدّة والتنوين) داخل العناوين المضغوطة */
+  :where(h1, h2, h3, h4, h5, h6) {
+    padding-block: 0.04em;
+    overflow-wrap: break-word;
   }
 
   h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
     line-height: 1.35;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
     font-weight: 700;
     text-wrap: balance;
+  }
+
+  h3, h4 {
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  h5, h6 {
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  /* الأرقام العربية/اللاتينية بعرض ثابت داخل الجداول والإحصائيات */
+  :where(table, [data-numeric]) {
+    font-variant-numeric: tabular-nums;
   }
 
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -229,25 +287,25 @@
 @utility text-display {
   font-size: clamp(2.25rem, 1.4rem + 3.4vw, 3.75rem);
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   font-weight: 700;
 }
 @utility text-h1 {
   font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
   font-weight: 700;
 }
 @utility text-h2 {
   font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
-  line-height: 1.3;
-  letter-spacing: -0.015em;
+  line-height: 1.35;
+  letter-spacing: 0;
   font-weight: 700;
 }
 @utility text-h3 {
   font-size: 1.25rem;
-  line-height: 1.4;
-  font-weight: 700;
+  line-height: 1.45;
+  font-weight: 600;
 }
 @utility text-h4 {
   font-size: 1.0625rem;
@@ -261,14 +319,17 @@
 @utility text-body {
   font-size: 0.9375rem;
   line-height: 1.8;
+  font-weight: 400;
 }
 @utility text-body-sm {
   font-size: 0.875rem;
   line-height: 1.7;
+  font-weight: 400;
 }
 @utility text-caption {
   font-size: 0.75rem;
   line-height: 1.6;
+  font-weight: 400;
   color: var(--text-muted);
 }
 @utility text-label {
@@ -279,6 +340,33 @@
 @utility text-table {
   font-size: 0.875rem;
   line-height: 1.5;
+  font-weight: 400;
+}
+/* عنوان الصفحة داخل اللوحات */
+@utility text-page-title {
+  font-size: clamp(1.375rem, 1.1rem + 0.8vw, 1.625rem);
+  line-height: 1.35;
+  font-weight: 700;
+}
+/* عنوان قسم أو بطاقة */
+@utility text-section-title {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+/* أرقام الإحصائيات */
+@utility text-stat {
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  line-height: 1.2;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* عناصر القوائم والملاحة */
+@utility text-menu {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
 }
 @utility measure {
   max-width: 64ch;
