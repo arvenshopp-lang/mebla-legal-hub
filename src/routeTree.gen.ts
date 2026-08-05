@@ -54,6 +54,7 @@ import { Route as MehlaAdminFlagsRouteImport } from './routes/mehla-admin/flags'
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
 import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
 import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
+import { Route as MehlaAdminCrmRouteImport } from './routes/mehla-admin/crm'
 import { Route as MehlaAdminContentRouteImport } from './routes/mehla-admin/content'
 import { Route as MehlaAdminBackupsRouteImport } from './routes/mehla-admin/backups'
 import { Route as MehlaAdminAnalyticsRouteImport } from './routes/mehla-admin/analytics'
@@ -319,6 +320,11 @@ const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
   path: '/design',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminCrmRoute = MehlaAdminCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const MehlaAdminContentRoute = MehlaAdminContentRouteImport.update({
   id: '/content',
   path: '/content',
@@ -565,6 +571,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/backups': typeof MehlaAdminBackupsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
+  '/mehla-admin/crm': typeof MehlaAdminCrmRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -650,6 +657,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/backups': typeof MehlaAdminBackupsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
+  '/mehla-admin/crm': typeof MehlaAdminCrmRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -738,6 +746,7 @@ export interface FileRoutesById {
   '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/backups': typeof MehlaAdminBackupsRoute
   '/mehla-admin/content': typeof MehlaAdminContentRoute
+  '/mehla-admin/crm': typeof MehlaAdminCrmRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -826,6 +835,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/analytics'
     | '/mehla-admin/backups'
     | '/mehla-admin/content'
+    | '/mehla-admin/crm'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -911,6 +921,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/analytics'
     | '/mehla-admin/backups'
     | '/mehla-admin/content'
+    | '/mehla-admin/crm'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -998,6 +1009,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/analytics'
     | '/mehla-admin/backups'
     | '/mehla-admin/content'
+    | '/mehla-admin/crm'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -1404,6 +1416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminDesignRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/crm': {
+      id: '/mehla-admin/crm'
+      path: '/crm'
+      fullPath: '/mehla-admin/crm'
+      preLoaderRoute: typeof MehlaAdminCrmRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/mehla-admin/content': {
       id: '/mehla-admin/content'
       path: '/content'
@@ -1740,6 +1759,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminAnalyticsRoute: typeof MehlaAdminAnalyticsRoute
   MehlaAdminBackupsRoute: typeof MehlaAdminBackupsRoute
   MehlaAdminContentRoute: typeof MehlaAdminContentRoute
+  MehlaAdminCrmRoute: typeof MehlaAdminCrmRoute
   MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
   MehlaAdminEmailRoute: typeof MehlaAdminEmailRoute
   MehlaAdminFailuresRoute: typeof MehlaAdminFailuresRoute
@@ -1778,6 +1798,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminAnalyticsRoute: MehlaAdminAnalyticsRoute,
   MehlaAdminBackupsRoute: MehlaAdminBackupsRoute,
   MehlaAdminContentRoute: MehlaAdminContentRoute,
+  MehlaAdminCrmRoute: MehlaAdminCrmRoute,
   MehlaAdminDesignRoute: MehlaAdminDesignRoute,
   MehlaAdminEmailRoute: MehlaAdminEmailRoute,
   MehlaAdminFailuresRoute: MehlaAdminFailuresRoute,
