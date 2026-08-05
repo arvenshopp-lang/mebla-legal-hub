@@ -202,10 +202,10 @@ function ContentPage_() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1">
-                      <IconBtn label="تعديل" onClick={() => openEdit(page)} disabled={!manage}>
+                      <IconBtn aria-label="تعديل" title="تعديل" onClick={() => openEdit(page)} disabled={!manage}>
                         <Pencil className="h-4 w-4" aria-hidden />
                       </IconBtn>
-                      <IconBtn label="حذف" tone="danger" onClick={() => setToDelete(page)} disabled={!manage}>
+                      <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setToDelete(page)} disabled={!manage}>
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </IconBtn>
                     </div>
@@ -323,7 +323,7 @@ function ContentPage_() {
         confirmLabel="حذف"
         danger
         loading={deleteMutation.isPending}
-        onCancel={() => setToDelete(null)}
+        onClose={() => setToDelete(null)}
         onConfirm={() => toDelete && deleteMutation.mutate(toDelete.id)}
       />
 
