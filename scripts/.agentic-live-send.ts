@@ -13,7 +13,7 @@ const sent = await restInvoke("sendMessage", {
   subject,
   text: "اختبار إرسال حقيقي من محرك مِهلة عبر Hostinger Agentic Mail.",
   html: "<p dir=\"rtl\">اختبار إرسال حقيقي من محرك مِهلة.</p>",
-  attachments: [{ fileName: "mehla-test.txt", contentBase64: Buffer.from("مِهلة").toString("base64"), contentType: "text/plain" }],
+  attachments: [{ filename: "mehla-test.txt", content_base64: Buffer.from("مِهلة").toString("base64"), content_type: "text/plain" }],
 }, cid, sup);
 console.log("SEND ok, requestId set:", Boolean(sent.requestId), "payload:", JSON.stringify(sent.json).slice(0, 200));
 for (let i = 0; i < 12; i++) {
