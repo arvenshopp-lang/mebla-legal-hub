@@ -192,28 +192,28 @@ export function LeadsPanel() {
                         {can("crm.update") && (
                           <>
                             <IconBtn
-                              label="تعديل"
+                              aria-label="تعديل" title="تعديل"
                               onClick={() => setDialog({ kind: "form", initial: leadDraftFromRow(row), editId: row.id })}
                             >
                               <Pencil className="h-4 w-4" aria-hidden />
                             </IconBtn>
-                            <IconBtn label="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
+                            <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
                               <UserCheck className="h-4 w-4" aria-hidden />
                             </IconBtn>
                           </>
                         )}
                         {can("crm.convert") && row.status !== "converted" && (
-                          <IconBtn label="تحويل إلى شركة وصفقة" onClick={() => setDialog({ kind: "convert", row })}>
+                          <IconBtn aria-label="تحويل إلى شركة وصفقة" title="تحويل إلى شركة وصفقة" onClick={() => setDialog({ kind: "convert", row })}>
                             <Wand2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.update") && row.status !== "unqualified" && (
-                          <IconBtn label="استبعاد" onClick={() => setDialog({ kind: "disqualify", row })}>
+                          <IconBtn aria-label="استبعاد" title="استبعاد" onClick={() => setDialog({ kind: "disqualify", row })}>
                             <UserX className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn label="حذف" danger onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
