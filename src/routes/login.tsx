@@ -21,8 +21,15 @@ export const Route = createFileRoute("/login")({
         content: "سجّل الدخول إلى حسابك في منصة مِهلة لمتابعة القضايا والجلسات.",
       },
       { property: "og:title", content: "تسجيل الدخول | مِهلة" },
-      { property: "og:description", content: "سجّل الدخول إلى حسابك في منصة مِهلة." },
+      {
+        property: "og:description",
+        content: "سجّل الدخول إلى منصة مِهلة لمتابعة قضايا مكتبك وجلساته ومهله النظامية.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/login" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/login" }],
   }),
 });
 
