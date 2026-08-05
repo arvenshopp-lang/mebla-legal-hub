@@ -587,7 +587,10 @@ export async function syncAgenticFolder(
       error: { code: "mailbox_unlinked", message: "الصندوق غير مرتبط بصندوق فعلي عند Hostinger." },
     });
   }
-  if (!dryRun && (!target.isActive || !target.inboundEnabled || !target.syncEnabled)) {
+  // الحساب الحقيقي مصدر سحب: الاستقبال يُفعَّل على الصندوق المنطقي لا عليه،
+  // فلا يُشترط `inbound_enabled` عليه؛ يبقى الاشتراط على الصناديق البشرية.
+  const inboundGate = target.type === "system" ? true : target.inboundEnabled;
+  if (!dryRun && (!target.isActive || !inboundGate || !target.syncEnabled)) {
     return finish({
       ...base,
       error: { code: "sync_disabled", message: "المزامنة أو الاستقبال معطّل لهذا الصندوق." },
