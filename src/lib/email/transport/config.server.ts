@@ -74,6 +74,23 @@ export function transportConfigured(mailboxAddress?: string | null): boolean {
   return secretsStatus(mailboxAddress).complete;
 }
 
+/** عنوان الحساب الحقيقي الوحيد الذي يملك بيانات الدخول. */
+export function primaryMailboxAddress(): string {
+  return (env("MAIL_USER") || env("MAIL_FROM")).toLowerCase();
+}
+
+/**
+ * هل يملك هذا الصندوق بيانات دخول خاصة به فعلاً؟
+ * الأسماء المستعارة (support/sales/...) لا تملك، فلا يُسجَّل الدخول إليها.
+ */
+export function mailboxHasOwnCredentials(mailboxAddress: string): boolean {
+  const address = mailboxAddress.trim().toLowerCase();
+  if (!address) return false;
+  if (address === primaryMailboxAddress()) return true;
+  const suffix = localPartKey(address);
+  return Boolean(suffix && env(`MAIL_USER_${suffix}`) && env(`MAIL_PASSWORD_${suffix}`));
+}
+
 /**
  * تعقيم رسائل الأخطاء قبل أي تسجيل: يمنع ظهور بيانات الاعتماد أو
  * سطور المصادقة الخام في السجلات.
