@@ -167,7 +167,7 @@ export function TemplatesPanel({
                       <Layers className="me-1 inline h-3 w-3" aria-hidden />
                       {t.permissions.length} صلاحية
                     </Badge>
-                    {t.permissions.some(isHighRiskPermission) && <Badge tone="amber">يتضمن صلاحيات حساسة</Badge>}
+                    {t.permissions.some(isHighRiskPermission) && <Badge tone="warn">يتضمن صلاحيات حساسة</Badge>}
                     {blocked > 0 && <Badge tone="red">{blocked} خارج صلاحياتك</Badge>}
                     {existingCodes.has(t.code) && <Badge tone="green">مُطبَّق سابقاً</Badge>}
                   </div>
