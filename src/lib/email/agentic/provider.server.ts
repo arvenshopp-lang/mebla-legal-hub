@@ -574,6 +574,7 @@ export async function syncAgenticFolder(
             "downloadAttachment",
             {
               mailbox: target.providerMailboxId,
+              folder,
               messageId: message.providerId ?? message.messageId,
               attachmentId: item.attachmentId,
             },
