@@ -277,7 +277,7 @@ export async function readActivityFeed(
         ip: r.ip ?? null,
         device: r.device ?? null,
         createdAt: String(r.created_at),
-        metadata: (r.metadata ?? {}) as Record<string, unknown>,
+        metadata: flatMeta(r.metadata),
       });
     }
   }
@@ -304,7 +304,7 @@ export async function readActivityFeed(
         ip: r.ip ?? null,
         device: null,
         createdAt: String(r.created_at),
-        metadata: { organization_id: r.organization_id, ...((r.metadata ?? {}) as object) },
+        metadata: flatMeta({ organization_id: r.organization_id, ...((r.metadata ?? {}) as object) }),
       });
     }
   }
@@ -331,7 +331,7 @@ export async function readActivityFeed(
         ip: r.ip ?? null,
         device: r.device ?? null,
         createdAt: String(r.created_at),
-        metadata: { path: r.path, http_status: r.http_status, error_code: r.error_code },
+        metadata: flatMeta({ path: r.path, http_status: r.http_status, error_code: r.error_code }),
       });
     }
   }
@@ -342,6 +342,18 @@ export async function readActivityFeed(
 }
 
 /* ------------------------------------------------------------- المراقبة */
+
+/** يحوّل الحمولة الوصفية إلى قيم قابلة للنقل الآمن إلى المتصفح. */
+function flatMeta(input: unknown): Record<string, string | number | boolean | null> {
+  if (input === null || typeof input !== "object") return {};
+  const out: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (value === null || value === undefined) out[key] = null;
+    else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") out[key] = value;
+    else out[key] = JSON.stringify(value).slice(0, 300);
+  }
+  return out;
+}
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 

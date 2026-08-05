@@ -54,7 +54,7 @@ export type ActivityEvent = {
   ip: string | null;
   device: string | null;
   createdAt: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, string | number | boolean | null>;
 };
 
 export type ActivityFeed = { events: ActivityEvent[]; total: number; hasMore: boolean };
