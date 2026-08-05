@@ -499,7 +499,11 @@ export const getMarketingPerformanceSummary = createServerFn({ method: "POST" })
     }
 
     function matches(
-      campaign: { utm_campaign: string | null; utm_source: string | null; utm_medium: string | null },
+      campaign: {
+        utm_campaign: string | null;
+        utm_source: string | null;
+        utm_medium: string | null;
+      },
       utm: Json | null,
     ) {
       if (!utm || typeof utm !== "object" || Array.isArray(utm)) return false;

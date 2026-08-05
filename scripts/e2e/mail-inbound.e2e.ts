@@ -13,7 +13,10 @@ const URL_ = "http://localhost:8080/api/public/hooks/email-inbound";
 const KEY = readFileSync("/tmp/inbound-key.txt", "utf8").trim();
 const TAG = `IN-${Date.now()}`;
 
-type Res = { status: number; body: Record<string, unknown> & { success?: boolean; duplicate?: boolean; error?: string } };
+type Res = {
+  status: number;
+  body: Record<string, unknown> & { success?: boolean; duplicate?: boolean; error?: string };
+};
 async function post(
   payload: unknown,
   opts: { key?: string; skew?: number; rawBody?: string } = {},
@@ -273,10 +276,7 @@ await test("INB-16", "مرفق غير مسموح يُرفض وينتقل إلى 
     .from("email_attachments")
     .select("id, is_quarantined, scan_status, scan_detail")
     .eq("message_id", ref.messageId);
-  expect(
-    data.length === 2 && data.every((a) => a.is_quarantined),
-    "لم تُحجر المرفقات المرفوضة",
-  );
+  expect(data.length === 2 && data.every((a) => a.is_quarantined), "لم تُحجر المرفقات المرفوضة");
   quarantinedId = data[0].id;
   return `محجور=${data.length}، السبب: ${String(data[0].scan_detail).slice(0, 40)}…`;
 });
