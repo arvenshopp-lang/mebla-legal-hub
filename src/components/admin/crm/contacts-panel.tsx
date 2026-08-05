@@ -132,7 +132,7 @@ export function ContactsPanel() {
                     <Td>
                       <span className="font-semibold">{row.full_name}</span>
                       {row.is_primary && (
-                        <Badge tone="gold" className="ms-2">
+                        <Badge tone="gold">
                           جهة أساسية
                         </Badge>
                       )}

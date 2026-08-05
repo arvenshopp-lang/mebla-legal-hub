@@ -98,7 +98,7 @@ export function StagesPanel() {
                   <Td>
                     <span className="font-semibold">{row.name}</span>
                     {!row.is_active && (
-                      <Badge tone="muted" className="ms-2">
+                      <Badge tone="muted">
                         معطّلة
                       </Badge>
                     )}
