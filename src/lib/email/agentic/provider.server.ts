@@ -359,7 +359,12 @@ export async function discoverProviderMailboxes(correlationId: string): Promise<
     .filter((entry): entry is ProviderMailbox => Boolean(entry));
 }
 
-export type LinkOutcome = { linked: number; missing: number; unmatched: string[] };
+export type LinkOutcome = {
+  linked: number;
+  missing: number;
+  aliased: number;
+  unmatched: string[];
+};
 
 /**
  * ربط صناديق مِهلة الموجودة بصناديق Hostinger المكتشفة.
