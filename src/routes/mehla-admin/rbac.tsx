@@ -7,6 +7,7 @@ import { ErrorBlock, LoadingBlock, Btn } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { getRbacOverview } from "@/lib/rbac/rbac.functions";
 import { RolesPanel } from "@/components/admin/rbac/roles-panel";
+import { TemplatesPanel } from "@/components/admin/rbac/templates-panel";
 import { DepartmentsPanel } from "@/components/admin/rbac/departments-panel";
 import { GrantsPanel } from "@/components/admin/rbac/grants-panel";
 import { ApprovalsPanel } from "@/components/admin/rbac/approvals-panel";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/mehla-admin/rbac")({
 const TABS = [
   { id: "overview", label: "نظرة عامة" },
   { id: "roles", label: "الأدوار والصلاحيات" },
+  { id: "templates", label: "قوالب الأدوار" },
   { id: "departments", label: "الأقسام" },
   { id: "grants", label: "المنح والتفويض" },
   { id: "approvals", label: "طلبات الاعتماد" },
@@ -109,6 +111,8 @@ function RbacPage() {
               return <OverviewPanel data={data} />;
             case "roles":
               return <RolesPanel data={data} canManage={can("roles.manage")} refresh={refresh} />;
+            case "templates":
+              return <TemplatesPanel data={data} canManage={can("roles.manage")} refresh={refresh} />;
             case "departments":
               return <DepartmentsPanel data={data} canManage={can("staff.manage")} refresh={refresh} />;
             case "grants":
