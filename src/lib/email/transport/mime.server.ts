@@ -168,6 +168,7 @@ export type ParsedMessage = {
   attachments: ParsedAttachment[];
 };
 
+
 function decodeBytes(bytes: Uint8Array, charset: string): string {
   const label = charset.trim().toLowerCase() || "utf-8";
   try {
