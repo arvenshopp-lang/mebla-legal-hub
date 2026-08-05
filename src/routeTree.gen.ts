@@ -51,6 +51,7 @@ import { Route as MehlaAdminIntegrationsRouteImport } from './routes/mehla-admin
 import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
 import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
 import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
+import { Route as MehlaAdminAnalyticsRouteImport } from './routes/mehla-admin/analytics'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -295,6 +296,11 @@ const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
   path: '/design',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const MehlaAdminAnalyticsRoute = MehlaAdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -507,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -583,6 +590,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -662,6 +670,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/mehla-admin/analytics': typeof MehlaAdminAnalyticsRoute
   '/mehla-admin/design': typeof MehlaAdminDesignRoute
   '/mehla-admin/email': typeof MehlaAdminEmailRoute
   '/mehla-admin/failures': typeof MehlaAdminFailuresRoute
@@ -741,6 +750,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/analytics'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -817,6 +827,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/analytics'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -895,6 +906,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
+    | '/mehla-admin/analytics'
     | '/mehla-admin/design'
     | '/mehla-admin/email'
     | '/mehla-admin/failures'
@@ -1275,6 +1287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminDesignRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/mehla-admin/analytics': {
+      id: '/mehla-admin/analytics'
+      path: '/analytics'
+      fullPath: '/mehla-admin/analytics'
+      preLoaderRoute: typeof MehlaAdminAnalyticsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -1565,6 +1584,7 @@ const MehlaAdminSupportRouteWithChildren =
   MehlaAdminSupportRoute._addFileChildren(MehlaAdminSupportRouteChildren)
 
 interface MehlaAdminRouteRouteChildren {
+  MehlaAdminAnalyticsRoute: typeof MehlaAdminAnalyticsRoute
   MehlaAdminDesignRoute: typeof MehlaAdminDesignRoute
   MehlaAdminEmailRoute: typeof MehlaAdminEmailRoute
   MehlaAdminFailuresRoute: typeof MehlaAdminFailuresRoute
@@ -1594,6 +1614,7 @@ interface MehlaAdminRouteRouteChildren {
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
+  MehlaAdminAnalyticsRoute: MehlaAdminAnalyticsRoute,
   MehlaAdminDesignRoute: MehlaAdminDesignRoute,
   MehlaAdminEmailRoute: MehlaAdminEmailRoute,
   MehlaAdminFailuresRoute: MehlaAdminFailuresRoute,
