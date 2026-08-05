@@ -26,6 +26,10 @@ import {
   Plug,
   Palette,
   Receipt,
+  ListChecks,
+  BarChart3,
+  Server,
+  FileText,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +67,11 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: "المنصة",
     items: [
+      { to: "/mehla-admin/analytics", label: "التحليلات والنمو", Icon: BarChart3, permission: "monitoring.read" },
+      { to: "/mehla-admin/services", label: "حالة الخدمات", Icon: Server, permission: "monitoring.read" },
+      { to: "/mehla-admin/jobs", label: "مهام النظام", Icon: ListChecks, permission: "monitoring.read" },
       { to: "/mehla-admin/monitoring", label: "مراقبة النظام", Icon: Activity, permission: "monitoring.read" },
+      { to: "/mehla-admin/content", label: "إدارة المحتوى", Icon: FileText, permission: "settings.manage" },
       { to: "/mehla-admin/settings", label: "إعدادات المنصة", Icon: Settings, permission: "settings.manage" },
       { to: "/mehla-admin/seo", label: "إدارة SEO", Icon: Search, permission: "seo.manage" },
       { to: "/mehla-admin/design", label: "تصميم المنصة", Icon: Palette, permission: "settings.manage" },
