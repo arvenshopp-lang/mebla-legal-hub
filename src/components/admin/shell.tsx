@@ -30,6 +30,12 @@ import {
   BarChart3,
   Server,
   FileText,
+  Handshake,
+  FileSignature,
+  Megaphone,
+  DatabaseBackup,
+  ToggleLeft,
+  UserCog,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
