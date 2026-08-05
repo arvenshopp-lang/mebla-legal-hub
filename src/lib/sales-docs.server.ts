@@ -88,7 +88,9 @@ function mapRow(row: AnyClient): SalesDocRow {
   };
 }
 
-export async function listDocuments(filters: ListFilters): Promise<{ rows: SalesDocRow[]; total: number }> {
+export async function listDocuments(
+  filters: ListFilters,
+): Promise<{ rows: SalesDocRow[]; total: number }> {
   const client = await db();
   let query = client
     .from("sales_documents")
@@ -120,12 +122,24 @@ export type DocumentDetail = {
 
 export async function getDocumentDetail(id: string): Promise<DocumentDetail> {
   const client = await db();
-  const { data: row, error } = await client.from("sales_documents").select(LIST_COLUMNS).eq("id", id).maybeSingle();
+  const { data: row, error } = await client
+    .from("sales_documents")
+    .select(LIST_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
   if (error || !row) throw new Error("المستند غير موجود.");
   const [{ data: items }, { data: events }, { data: signatures }] = await Promise.all([
     client.from("sales_document_items").select("*").eq("document_id", id).order("sort_order"),
-    client.from("sales_document_events").select("*").eq("document_id", id).order("created_at", { ascending: false }),
-    client.from("sales_document_signatures").select("*").eq("document_id", id).order("created_at", { ascending: false }),
+    client
+      .from("sales_document_events")
+      .select("*")
+      .eq("document_id", id)
+      .order("created_at", { ascending: false }),
+    client
+      .from("sales_document_signatures")
+      .select("*")
+      .eq("document_id", id)
+      .order("created_at", { ascending: false }),
   ]);
   return {
     document: mapRow(row),
@@ -191,7 +205,12 @@ async function logEvent(
 
 export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<string> {
   const client = await db();
-  const totals = computeSalesDocTotals(input.items, input.discountType, input.discountValue, input.taxRate);
+  const totals = computeSalesDocTotals(
+    input.items,
+    input.discountType,
+    input.discountValue,
+    input.taxRate,
+  );
 
   if (input.id) {
     const { data: existing } = await client
@@ -275,7 +294,11 @@ export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<strin
 
 export async function deleteDraft(ctx: SalesCtx, id: string): Promise<void> {
   const client = await db();
-  const { data: doc } = await client.from("sales_documents").select("status").eq("id", id).maybeSingle();
+  const { data: doc } = await client
+    .from("sales_documents")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
   if (!doc) throw new Error("المستند غير موجود.");
   if (doc.status !== "draft") throw new Error("لا يمكن حذف إلا مسودة لم تُرسل بعد.");
   const { error } = await client.from("sales_documents").delete().eq("id", id);
@@ -301,7 +324,11 @@ function assertTransition(from: SalesDocStatus, to: SalesDocStatus) {
 
 /* --------------------------------------------------------------- سير الاعتماد */
 
-export async function requestApproval(ctx: SalesCtx, id: string, note?: string | null): Promise<void> {
+export async function requestApproval(
+  ctx: SalesCtx,
+  id: string,
+  note?: string | null,
+): Promise<void> {
   const client = await db();
   const doc = await requireDoc(client, id);
   assertTransition(doc.status, "pending_approval");
@@ -310,7 +337,15 @@ export async function requestApproval(ctx: SalesCtx, id: string, note?: string |
     .update({ status: "pending_approval", updated_by: ctx.staff.email })
     .eq("id", id);
   if (error) fail(error, "تعذّر إرسال طلب الاعتماد.");
-  await logEvent(client, id, "approval_requested", doc.status, "pending_approval", ctx.staff.email, note);
+  await logEvent(
+    client,
+    id,
+    "approval_requested",
+    doc.status,
+    "pending_approval",
+    ctx.staff.email,
+    note,
+  );
   await writeAudit(client, ctx.staff, {
     action: "sales_docs.request_approval",
     entity_type: "sales_document",
@@ -319,12 +354,19 @@ export async function requestApproval(ctx: SalesCtx, id: string, note?: string |
   });
 }
 
-export async function decideApproval(ctx: SalesCtx, id: string, approve: boolean, note?: string | null): Promise<void> {
+export async function decideApproval(
+  ctx: SalesCtx,
+  id: string,
+  approve: boolean,
+  note?: string | null,
+): Promise<void> {
   const client = await db();
   const doc = await requireDoc(client, id);
   if (doc.status !== "pending_approval") throw new Error("المستند ليس بانتظار الاعتماد.");
   if (doc.created_by && doc.created_by === ctx.staff.email) {
-    throw new Error("لا يمكن اعتماد مستند أنشأته بنفسك — يلزم موظف آخر (مبدأ الفصل بين المُنشئ والمعتمد).");
+    throw new Error(
+      "لا يمكن اعتماد مستند أنشأته بنفسك — يلزم موظف آخر (مبدأ الفصل بين المُنشئ والمعتمد).",
+    );
   }
   const toStatus: SalesDocStatus = approve ? "approved" : "draft";
   assertTransition(doc.status, toStatus);
@@ -338,7 +380,15 @@ export async function decideApproval(ctx: SalesCtx, id: string, approve: boolean
     })
     .eq("id", id);
   if (error) fail(error, "تعذّر تسجيل قرار الاعتماد.");
-  await logEvent(client, id, approve ? "approved" : "rejected_approval", doc.status, toStatus, ctx.staff.email, note);
+  await logEvent(
+    client,
+    id,
+    approve ? "approved" : "rejected_approval",
+    doc.status,
+    toStatus,
+    ctx.staff.email,
+    note,
+  );
   await writeAudit(client, ctx.staff, {
     action: approve ? "sales_docs.approve" : "sales_docs.reject_approval",
     entity_type: "sales_document",
@@ -364,7 +414,9 @@ export async function sendDocument(
 
   let number = doc.number as string | null;
   if (!number) {
-    const { data: numberData, error: numberError } = await client.rpc("next_financial_number", { _kind: doc.kind });
+    const { data: numberData, error: numberError } = await client.rpc("next_financial_number", {
+      _kind: doc.kind,
+    });
     if (numberError || !numberData) throw new Error("تعذّر توليد الرقم النظامي للمستند.");
     number = numberData as string;
   }
@@ -386,13 +438,24 @@ export async function sendDocument(
   try {
     const { sendAppEmail } = await import("@/lib/email/app-email.server");
     const React = await import("react");
-    const label = doc.kind === "contract" ? "العقد" : doc.kind === "proposal" ? "المقترح" : "عرض السعر";
+    const label =
+      doc.kind === "contract" ? "العقد" : doc.kind === "proposal" ? "المقترح" : "عرض السعر";
     const element = React.createElement(
       "div",
-      { style: { fontFamily: "sans-serif", direction: "rtl" as const, textAlign: "right" as const } },
+      {
+        style: { fontFamily: "sans-serif", direction: "rtl" as const, textAlign: "right" as const },
+      },
       React.createElement("h2", null, `${label} رقم ${number} — ${doc.title as string}`),
-      React.createElement("p", null, message || "مرفق تفاصيل المستند، يسعدنا استلام ردكم في أقرب وقت."),
-      React.createElement("p", null, `الإجمالي: ${Number(doc.total).toLocaleString("en-US")} ${doc.currency}`),
+      React.createElement(
+        "p",
+        null,
+        message || "مرفق تفاصيل المستند، يسعدنا استلام ردكم في أقرب وقت.",
+      ),
+      React.createElement(
+        "p",
+        null,
+        `الإجمالي: ${Number(doc.total).toLocaleString("en-US")} ${doc.currency}`,
+      ),
     );
     await sendAppEmail({
       to: toEmail,
@@ -456,7 +519,10 @@ export async function activateContract(ctx: SalesCtx, id: string): Promise<void>
   const client = await db();
   const doc = await requireDoc(client, id);
   assertTransition(doc.status, "active");
-  const { error } = await client.from("sales_documents").update({ status: "active", locked: true }).eq("id", id);
+  const { error } = await client
+    .from("sales_documents")
+    .update({ status: "active", locked: true })
+    .eq("id", id);
   if (error) fail(error, "تعذّر تفعيل العقد.");
   await logEvent(client, id, "activated", doc.status, "active", ctx.staff.email);
   await writeAudit(client, ctx.staff, {
@@ -467,7 +533,11 @@ export async function activateContract(ctx: SalesCtx, id: string): Promise<void>
   });
 }
 
-export async function terminateContract(ctx: SalesCtx, id: string, note?: string | null): Promise<void> {
+export async function terminateContract(
+  ctx: SalesCtx,
+  id: string,
+  note?: string | null,
+): Promise<void> {
   const client = await db();
   const doc = await requireDoc(client, id);
   assertTransition(doc.status, "terminated");
@@ -528,9 +598,18 @@ export async function signDocument(
     signed_at: signedAt,
   });
   if (error) fail(error, "تعذّر تسجيل التوقيع.");
-  await logEvent(client, id, "signed", null, null, ctx.staff.email, `توقيع: ${signerName} <${signerEmail}>`, {
-    evidence_hash: evidenceHash,
-  });
+  await logEvent(
+    client,
+    id,
+    "signed",
+    null,
+    null,
+    ctx.staff.email,
+    `توقيع: ${signerName} <${signerEmail}>`,
+    {
+      evidence_hash: evidenceHash,
+    },
+  );
   await writeAudit(client, ctx.staff, {
     action: "sales_docs.sign",
     entity_type: "sales_document",
@@ -542,24 +621,37 @@ export async function signDocument(
 
 /* --------------------------------------------------------------------- التحويل */
 
-export async function convertToInvoice(ctx: SalesCtx, id: string, dueAt?: string | null): Promise<{ invoiceId: string }> {
+export async function convertToInvoice(
+  ctx: SalesCtx,
+  id: string,
+  dueAt?: string | null,
+): Promise<{ invoiceId: string }> {
   const client = await db();
   const detail = await getDocumentDetail(id);
   const doc = detail.document;
-  if (!["accepted", "active"].includes(doc.status)) throw new Error("لا يمكن التحويل لفاتورة إلا لمستند مقبول أو عقد نشط.");
+  if (!["accepted", "active"].includes(doc.status))
+    throw new Error("لا يمكن التحويل لفاتورة إلا لمستند مقبول أو عقد نشط.");
   if (doc.converted_invoice_id) throw new Error("تم تحويل هذا المستند إلى فاتورة مسبقاً.");
 
   let customerName = doc.title;
   let customerEmail: string | null = null;
   if (doc.company_id) {
-    const { data: company } = await client.from("crm_companies").select("name, legal_name, email").eq("id", doc.company_id).maybeSingle();
+    const { data: company } = await client
+      .from("crm_companies")
+      .select("name, legal_name, email")
+      .eq("id", doc.company_id)
+      .maybeSingle();
     if (company) {
       customerName = company.legal_name || company.name;
       customerEmail = company.email ?? null;
     }
   }
   if (doc.contact_id) {
-    const { data: contact } = await client.from("crm_contacts").select("full_name, email").eq("id", doc.contact_id).maybeSingle();
+    const { data: contact } = await client
+      .from("crm_contacts")
+      .select("full_name, email")
+      .eq("id", doc.contact_id)
+      .maybeSingle();
     if (contact) {
       customerEmail = customerEmail ?? contact.email ?? null;
       if (customerName === doc.title) customerName = contact.full_name;
@@ -604,7 +696,9 @@ export async function convertToInvoice(ctx: SalesCtx, id: string, dueAt?: string
     .update({ converted_invoice_id: invoiceId })
     .eq("id", id);
   if (updateError) fail(updateError, "تعذّر تحديث حالة التحويل.");
-  await logEvent(client, id, "converted_to_invoice", null, null, ctx.staff.email, null, { invoice_id: invoiceId });
+  await logEvent(client, id, "converted_to_invoice", null, null, ctx.staff.email, null, {
+    invoice_id: invoiceId,
+  });
   await writeAudit(client, ctx.staff, {
     action: "sales_docs.convert_invoice",
     entity_type: "sales_document",
@@ -625,7 +719,8 @@ export async function convertToSubscription(
   const client = await db();
   const detail = await getDocumentDetail(id);
   const doc = detail.document;
-  if (!["accepted", "active"].includes(doc.status)) throw new Error("لا يمكن التحويل لاشتراك إلا لمستند مقبول أو عقد نشط.");
+  if (!["accepted", "active"].includes(doc.status))
+    throw new Error("لا يمكن التحويل لاشتراك إلا لمستند مقبول أو عقد نشط.");
   if (doc.converted_subscription_id) throw new Error("تم تحويل هذا المستند إلى اشتراك مسبقاً.");
   if (!doc.organization_id) throw new Error("لا يمكن إنشاء اشتراك بدون ربط المستند بمكتب.");
 
@@ -636,11 +731,15 @@ export async function convertToSubscription(
     .eq("role", "owner")
     .limit(1)
     .maybeSingle();
-  const ownerProfile = (owner as AnyClient)?.profiles as { id: string; email: string | null } | null;
+  const ownerProfile = (owner as AnyClient)?.profiles as {
+    id: string;
+    email: string | null;
+  } | null;
   if (!ownerProfile?.id) throw new Error("تعذّر تحديد مالك المكتب لإنشاء الاشتراك.");
 
   const starts = startsOn ?? doc.starts_on ?? new Date().toISOString().slice(0, 10);
-  const ends = endsOn ?? doc.ends_on ?? new Date(Date.now() + 365 * 86400_000).toISOString().slice(0, 10);
+  const ends =
+    endsOn ?? doc.ends_on ?? new Date(Date.now() + 365 * 86400_000).toISOString().slice(0, 10);
 
   const { data: created, error } = await client
     .from("subscriptions")
@@ -684,7 +783,10 @@ export async function convertToSubscription(
 
 export async function listTemplates(): Promise<SalesDocTemplateRow[]> {
   const client = await db();
-  const { data, error } = await client.from("sales_document_templates").select("*").order("created_at", { ascending: false });
+  const { data, error } = await client
+    .from("sales_document_templates")
+    .select("*")
+    .order("created_at", { ascending: false });
   if (error) fail(error, "تعذّر جلب القوالب.");
   return (data ?? []).map((row: AnyClient) => ({
     id: row.id,
@@ -727,7 +829,10 @@ export async function saveTemplate(ctx: SalesCtx, input: TemplateInput): Promise
     updated_by: ctx.staff.email,
   };
   if (input.id) {
-    const { error } = await client.from("sales_document_templates").update(payload).eq("id", input.id);
+    const { error } = await client
+      .from("sales_document_templates")
+      .update(payload)
+      .eq("id", input.id);
     if (error) fail(error, "تعذّر تحديث القالب.");
     await writeAudit(client, ctx.staff, {
       action: "sales_docs.update_template",
@@ -797,7 +902,7 @@ export async function getDocumentContent(id: string): Promise<DocumentContent> {
       .select("name, legal_name")
       .eq("id", data.company_id)
       .maybeSingle();
-    companyName = company ? (company.legal_name || company.name) : null;
+    companyName = company ? company.legal_name || company.name : null;
   }
   if (data.contact_id) {
     const { data: contact } = await client
@@ -833,18 +938,28 @@ export async function pickerOptions(): Promise<PickerOptions> {
   const [orgs, companies, contacts, plans] = await Promise.all([
     client.from("organizations").select("id, name").order("name").limit(500),
     client.from("crm_companies").select("id, name, legal_name").order("name").limit(500),
-    client.from("crm_contacts").select("id, full_name, email, company_id").order("full_name").limit(500),
+    client
+      .from("crm_contacts")
+      .select("id, full_name, email, company_id")
+      .order("full_name")
+      .limit(500),
     client.from("platform_plans").select("code, name_ar").order("code").limit(100),
   ]);
   return {
     organizations: ((orgs.data ?? []) as AnyClient[]).map((o) => ({ id: o.id, name: o.name })),
-    companies: ((companies.data ?? []) as AnyClient[]).map((c) => ({ id: c.id, name: c.legal_name || c.name })),
+    companies: ((companies.data ?? []) as AnyClient[]).map((c) => ({
+      id: c.id,
+      name: c.legal_name || c.name,
+    })),
     contacts: ((contacts.data ?? []) as AnyClient[]).map((c) => ({
       id: c.id,
       name: c.full_name,
       email: c.email ?? null,
       companyId: c.company_id ?? null,
     })),
-    plans: ((plans.data ?? []) as AnyClient[]).map((p) => ({ code: p.code, label: p.name_ar ?? p.code })),
+    plans: ((plans.data ?? []) as AnyClient[]).map((p) => ({
+      code: p.code,
+      label: p.name_ar ?? p.code,
+    })),
   };
 }

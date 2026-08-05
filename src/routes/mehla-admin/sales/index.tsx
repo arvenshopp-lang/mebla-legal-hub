@@ -21,7 +21,12 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { salesExportCsv, salesList } from "@/lib/sales-docs.functions";
-import { KIND_LABELS, STATUS_LABELS, type SalesDocKind, type SalesDocStatus } from "@/lib/sales-docs.shared";
+import {
+  KIND_LABELS,
+  STATUS_LABELS,
+  type SalesDocKind,
+  type SalesDocStatus,
+} from "@/lib/sales-docs.shared";
 import { DocumentFormModal, emptyDraft } from "@/components/admin/sales/document-form";
 import { TemplatesPanel } from "@/components/admin/sales/templates-panel";
 import { KindBadge, Money, StatusBadge, formatDate } from "@/components/admin/sales/shared";
@@ -45,7 +50,9 @@ export const Route = createFileRoute("/mehla-admin/sales/")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({ tab: isTab(search.tab) ? search.tab : ("all" as TabKey) }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: isTab(search.tab) ? search.tab : ("all" as TabKey),
+  }),
   component: SalesPage,
 });
 
@@ -82,7 +89,9 @@ function SalesPage() {
   const exportCsv = async () => {
     try {
       const result = await exportFn({ data: { ...filters, page: 1, pageSize: 100 } });
-      const url = URL.createObjectURL(new Blob([result.content], { type: "text/csv;charset=utf-8" }));
+      const url = URL.createObjectURL(
+        new Blob([result.content], { type: "text/csv;charset=utf-8" }),
+      );
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = result.fileName;
@@ -120,7 +129,10 @@ function SalesPage() {
       }
     >
       <div className="mb-5 -mx-1 overflow-x-auto px-1">
-        <nav className="flex min-w-max gap-1 rounded-[var(--radius-m)] bg-surface-muted p-1" aria-label="أقسام العروض والعقود">
+        <nav
+          className="flex min-w-max gap-1 rounded-[var(--radius-m)] bg-surface-muted p-1"
+          aria-label="أقسام العروض والعقود"
+        >
           {TABS.map((item) => (
             <button
               key={item.key}
@@ -238,7 +250,12 @@ function SalesPage() {
                   </tbody>
                 </table>
               </DataCard>
-              <Pagination page={page} setPage={setPage} total={documents.data?.total ?? 0} pageSize={PAGE_SIZE} />
+              <Pagination
+                page={page}
+                setPage={setPage}
+                total={documents.data?.total ?? 0}
+                pageSize={PAGE_SIZE}
+              />
             </>
           )}
         </SectionCard>

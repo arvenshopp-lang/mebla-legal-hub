@@ -38,7 +38,13 @@ import {
 } from "@/lib/sales-docs.functions";
 import { KIND_LABELS, STATUS_LABELS, type SalesDocStatus } from "@/lib/sales-docs.shared";
 import { DocumentFormModal, type DraftFormValue } from "@/components/admin/sales/document-form";
-import { KindBadge, Money, StatusBadge, formatDate, formatDateTime } from "@/components/admin/sales/shared";
+import {
+  KindBadge,
+  Money,
+  StatusBadge,
+  formatDate,
+  formatDateTime,
+} from "@/components/admin/sales/shared";
 
 export const Route = createFileRoute("/mehla-admin/sales/$id")({
   head: () => ({
@@ -77,11 +83,19 @@ function SalesDocumentPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [sendForm, setSendForm] = useState({ toEmail: "", message: "" });
   const [signForm, setSignForm] = useState({ signerName: "", signerEmail: "", signerRole: "" });
-  const [decisionForm, setDecisionForm] = useState<{ decision: "accepted" | "rejected" | "expired" | "cancelled"; note: string }>({
+  const [decisionForm, setDecisionForm] = useState<{
+    decision: "accepted" | "rejected" | "expired" | "cancelled";
+    note: string;
+  }>({
     decision: "accepted",
     note: "",
   });
-  const [convertForm, setConvertForm] = useState({ dueAt: "", planCode: "", startsOn: "", endsOn: "" });
+  const [convertForm, setConvertForm] = useState({
+    dueAt: "",
+    planCode: "",
+    startsOn: "",
+    endsOn: "",
+  });
   const [note, setNote] = useState("");
 
   const detail = useQuery({
@@ -103,7 +117,11 @@ function SalesDocumentPage() {
   };
 
   const runner = useMutation({
-    mutationFn: async (task: { run: () => Promise<unknown>; success: string; fallback: string }) => {
+    mutationFn: async (task: {
+      run: () => Promise<unknown>;
+      success: string;
+      fallback: string;
+    }) => {
       await task.run();
       return task.success;
     },
@@ -131,7 +149,10 @@ function SalesDocumentPage() {
   if (!can("sales_docs.read")) {
     return (
       <AdminShell title="تفاصيل المستند">
-        <EmptyState title="لا تملك صلاحية الوصول" hint="الوصول يتطلب صلاحية «مشاهدة العروض والعقود»." />
+        <EmptyState
+          title="لا تملك صلاحية الوصول"
+          hint="الوصول يتطلب صلاحية «مشاهدة العروض والعقود»."
+        />
       </AdminShell>
     );
   }
@@ -212,7 +233,9 @@ function SalesDocumentPage() {
               </div>
               <div>
                 <dt className="text-caption">العميل</dt>
-                <dd className="mt-1 text-body-sm">{content.companyName ?? doc.organization_name ?? "—"}</dd>
+                <dd className="mt-1 text-body-sm">
+                  {content.companyName ?? doc.organization_name ?? "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-caption">جهة الاتصال</dt>
@@ -228,7 +251,9 @@ function SalesDocumentPage() {
               <div>
                 <dt className="text-caption">مدة السريان</dt>
                 <dd className="mt-1 text-body-sm">
-                  {doc.starts_on ? `${formatDate(doc.starts_on)} — ${formatDate(doc.ends_on)}` : "—"}
+                  {doc.starts_on
+                    ? `${formatDate(doc.starts_on)} — ${formatDate(doc.ends_on)}`
+                    : "—"}
                 </dd>
               </div>
               <div>
@@ -301,26 +326,37 @@ function SalesDocumentPage() {
             <SectionCard title="المقدمة والشروط">
               {content.intro && <p className="whitespace-pre-line text-body-sm">{content.intro}</p>}
               {content.terms && (
-                <p className="mt-4 whitespace-pre-line text-body-sm text-muted-foreground">{content.terms}</p>
+                <p className="mt-4 whitespace-pre-line text-body-sm text-muted-foreground">
+                  {content.terms}
+                </p>
               )}
             </SectionCard>
           )}
 
-          <SectionCard title="التوقيعات الإلكترونية" description="كل توقيع مرتبط ببصمة تحقق SHA-256 غير قابلة للتعديل.">
+          <SectionCard
+            title="التوقيعات الإلكترونية"
+            description="كل توقيع مرتبط ببصمة تحقق SHA-256 غير قابلة للتعديل."
+          >
             {signatures.length === 0 ? (
               <EmptyState title="لا توجد توقيعات" hint="يُسجّل التوقيع عند قبول العميل للمستند." />
             ) : (
               <ul className="grid gap-3">
                 {signatures.map((signature) => (
-                  <li key={signature.id} className="rounded-[var(--radius-m)] border border-border p-4 text-body-sm">
+                  <li
+                    key={signature.id}
+                    className="rounded-[var(--radius-m)] border border-border p-4 text-body-sm"
+                  >
                     <p className="font-semibold">
-                      {signature.signer_name} <span className="text-muted-foreground">· {signature.signer_email}</span>
+                      {signature.signer_name}{" "}
+                      <span className="text-muted-foreground">· {signature.signer_email}</span>
                     </p>
                     <p className="text-caption mt-1">
                       {signature.signer_role ? `${signature.signer_role} · ` : ""}
                       {formatDateTime(signature.signed_at)}
                     </p>
-                    <p className="text-caption mt-1 break-all font-mono">{signature.evidence_hash}</p>
+                    <p className="text-caption mt-1 break-all font-mono">
+                      {signature.evidence_hash}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -350,7 +386,10 @@ function SalesDocumentPage() {
         </div>
 
         <div className="grid gap-5 self-start">
-          <SectionCard title="الإجراءات المتاحة" description="تظهر الإجراءات المسموحة بحالة المستند وصلاحياتك فقط.">
+          <SectionCard
+            title="الإجراءات المتاحة"
+            description="تظهر الإجراءات المسموحة بحالة المستند وصلاحياتك فقط."
+          >
             <div className="grid gap-2">
               {editable && can("sales_docs.update") && (
                 <Btn variant="outline" onClick={() => setEditOpen(true)}>
@@ -414,7 +453,13 @@ function SalesDocumentPage() {
                     <Btn
                       variant="outline"
                       loading={runner.isPending}
-                      onClick={() => run(() => activateFn({ data: { id, note: null } }), "تم تفعيل العقد.", "تعذّر تفعيل العقد.")}
+                      onClick={() =>
+                        run(
+                          () => activateFn({ data: { id, note: null } }),
+                          "تم تفعيل العقد.",
+                          "تعذّر تفعيل العقد.",
+                        )
+                      }
                     >
                       تفعيل العقد
                     </Btn>
@@ -428,7 +473,11 @@ function SalesDocumentPage() {
               )}
               {["accepted", "active"].includes(status) && can("sales_docs.convert") && (
                 <>
-                  <Btn variant="outline" disabled={!!doc.converted_invoice_id} onClick={() => setDialog("invoice")}>
+                  <Btn
+                    variant="outline"
+                    disabled={!!doc.converted_invoice_id}
+                    onClick={() => setDialog("invoice")}
+                  >
                     {doc.converted_invoice_id ? "حُوّل لفاتورة" : "تحويل لفاتورة"}
                   </Btn>
                   <Btn
@@ -470,7 +519,9 @@ function SalesDocumentPage() {
                     </Link>
                   </li>
                 )}
-                {doc.converted_subscription_id && <li className="text-muted-foreground">اشتراك مرتبط بهذا المستند.</li>}
+                {doc.converted_subscription_id && (
+                  <li className="text-muted-foreground">اشتراك مرتبط بهذا المستند.</li>
+                )}
               </ul>
             </SectionCard>
           )}
@@ -478,7 +529,12 @@ function SalesDocumentPage() {
       </div>
 
       {editOpen && (
-        <DocumentFormModal open onClose={() => setEditOpen(false)} initial={editInitial} onSaved={() => refresh()} />
+        <DocumentFormModal
+          open
+          onClose={() => setEditOpen(false)}
+          initial={editInitial}
+          onSaved={() => refresh()}
+        />
       )}
 
       <Modal open={dialog === "send"} onClose={() => setDialog(null)} title="إرسال المستند للعميل">
@@ -534,7 +590,10 @@ function SalesDocumentPage() {
               className={inputCls}
               value={decisionForm.decision}
               onChange={(e) =>
-                setDecisionForm({ ...decisionForm, decision: e.target.value as typeof decisionForm.decision })
+                setDecisionForm({
+                  ...decisionForm,
+                  decision: e.target.value as typeof decisionForm.decision,
+                })
               }
             >
               <option value="accepted">قبول</option>
@@ -617,7 +676,8 @@ function SalesDocumentPage() {
                         id,
                         signerName: signForm.signerName.trim(),
                         signerEmail: signForm.signerEmail.trim(),
-                        signerRole: signForm.signerRole.trim() === "" ? null : signForm.signerRole.trim(),
+                        signerRole:
+                          signForm.signerRole.trim() === "" ? null : signForm.signerRole.trim(),
                       },
                     }),
                   "تم تسجيل التوقيع مع بصمة التحقق.",
@@ -649,7 +709,10 @@ function SalesDocumentPage() {
               loading={runner.isPending}
               onClick={() =>
                 run(
-                  () => invoiceFn({ data: { id, dueAt: convertForm.dueAt === "" ? null : convertForm.dueAt } }),
+                  () =>
+                    invoiceFn({
+                      data: { id, dueAt: convertForm.dueAt === "" ? null : convertForm.dueAt },
+                    }),
                   "تم إنشاء مسودة الفاتورة في المركز المالي.",
                   "تعذّر تحويل المستند لفاتورة.",
                 )
@@ -661,7 +724,11 @@ function SalesDocumentPage() {
         </div>
       </Modal>
 
-      <Modal open={dialog === "subscription"} onClose={() => setDialog(null)} title="تحويل إلى اشتراك">
+      <Modal
+        open={dialog === "subscription"}
+        onClose={() => setDialog(null)}
+        title="تحويل إلى اشتراك"
+      >
         <div className="grid gap-4">
           <FormField label="الباقة" required>
             <select
@@ -727,7 +794,13 @@ function SalesDocumentPage() {
       <Modal open={dialog === "terminate"} onClose={() => setDialog(null)} title="إنهاء العقد">
         <div className="grid gap-4">
           <FormField label="سبب الإنهاء">
-            <textarea className={inputCls} rows={3} maxLength={400} value={note} onChange={(e) => setNote(e.target.value)} />
+            <textarea
+              className={inputCls}
+              rows={3}
+              maxLength={400}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
           </FormField>
           <div className="flex justify-end gap-2">
             <Btn variant="outline" onClick={() => setDialog(null)}>
@@ -738,7 +811,8 @@ function SalesDocumentPage() {
               loading={runner.isPending}
               onClick={() =>
                 run(
-                  () => terminateFn({ data: { id, note: note.trim() === "" ? null : note.trim() } }),
+                  () =>
+                    terminateFn({ data: { id, note: note.trim() === "" ? null : note.trim() } }),
                   "تم إنهاء العقد.",
                   "تعذّر إنهاء العقد.",
                 )

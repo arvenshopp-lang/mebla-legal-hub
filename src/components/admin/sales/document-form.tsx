@@ -14,7 +14,12 @@ import {
 } from "@/lib/sales-docs.shared";
 import { Money } from "./shared";
 
-export type DraftItem = { description: string; quantity: number; unitPrice: number; discountAmount: number };
+export type DraftItem = {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+};
 
 export type DraftFormValue = {
   id?: string;
@@ -134,7 +139,9 @@ export function DocumentFormModal({
           : prev.items,
       validUntil:
         template.default_validity_days > 0
-          ? new Date(Date.now() + template.default_validity_days * 86_400_000).toISOString().slice(0, 10)
+          ? new Date(Date.now() + template.default_validity_days * 86_400_000)
+              .toISOString()
+              .slice(0, 10)
           : prev.validUntil,
     }));
   };
@@ -184,7 +191,8 @@ export function DocumentFormModal({
     if (form.items.length === 0) nextErrors.items = "أضف بنداً واحداً على الأقل.";
     form.items.forEach((item, index) => {
       if (item.description.trim().length < 2) nextErrors[`item-${index}`] = "وصف البند مطلوب.";
-      if (!(Number(item.quantity) > 0)) nextErrors[`item-${index}`] = "الكمية يجب أن تكون أكبر من صفر.";
+      if (!(Number(item.quantity) > 0))
+        nextErrors[`item-${index}`] = "الكمية يجب أن تكون أكبر من صفر.";
     });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -208,7 +216,11 @@ export function DocumentFormModal({
       <div className="grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="نوع المستند" required>
-            <select className={inputCls} value={form.kind} onChange={(e) => set("kind", e.target.value as SalesDocKind)}>
+            <select
+              className={inputCls}
+              value={form.kind}
+              onChange={(e) => set("kind", e.target.value as SalesDocKind)}
+            >
               {(Object.keys(KIND_LABELS) as SalesDocKind[]).map((kind) => (
                 <option key={kind} value={kind}>
                   {KIND_LABELS[kind]}
@@ -217,7 +229,11 @@ export function DocumentFormModal({
             </select>
           </FormField>
           <FormField label="القالب" hint="اختيار القالب يعبّئ المقدمة والشروط والبنود.">
-            <select className={inputCls} value={form.templateId} onChange={(e) => applyTemplate(e.target.value)}>
+            <select
+              className={inputCls}
+              value={form.templateId}
+              onChange={(e) => applyTemplate(e.target.value)}
+            >
               <option value="">بدون قالب</option>
               {(templates.data?.templates ?? [])
                 .filter((template) => template.is_active)
@@ -231,12 +247,21 @@ export function DocumentFormModal({
         </div>
 
         <FormField label="عنوان المستند" required error={errors.title}>
-          <input className={inputCls} value={form.title} onChange={(e) => set("title", e.target.value)} maxLength={200} />
+          <input
+            className={inputCls}
+            value={form.title}
+            onChange={(e) => set("title", e.target.value)}
+            maxLength={200}
+          />
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField label="المكتب" hint="مطلوب للتحويل لاشتراك.">
-            <select className={inputCls} value={form.organizationId} onChange={(e) => set("organizationId", e.target.value)}>
+            <select
+              className={inputCls}
+              value={form.organizationId}
+              onChange={(e) => set("organizationId", e.target.value)}
+            >
               <option value="">غير مرتبط</option>
               {(options.data?.organizations ?? []).map((org) => (
                 <option key={org.id} value={org.id}>
@@ -246,7 +271,11 @@ export function DocumentFormModal({
             </select>
           </FormField>
           <FormField label="الشركة (CRM)">
-            <select className={inputCls} value={form.companyId} onChange={(e) => set("companyId", e.target.value)}>
+            <select
+              className={inputCls}
+              value={form.companyId}
+              onChange={(e) => set("companyId", e.target.value)}
+            >
               <option value="">غير مرتبط</option>
               {(options.data?.companies ?? []).map((company) => (
                 <option key={company.id} value={company.id}>
@@ -256,7 +285,11 @@ export function DocumentFormModal({
             </select>
           </FormField>
           <FormField label="جهة الاتصال">
-            <select className={inputCls} value={form.contactId} onChange={(e) => set("contactId", e.target.value)}>
+            <select
+              className={inputCls}
+              value={form.contactId}
+              onChange={(e) => set("contactId", e.target.value)}
+            >
               <option value="">غير مرتبط</option>
               {contacts.map((contact) => (
                 <option key={contact.id} value={contact.id}>
@@ -276,7 +309,10 @@ export function DocumentFormModal({
               onClick={() =>
                 setForm((prev) => ({
                   ...prev,
-                  items: [...prev.items, { description: "", quantity: 1, unitPrice: 0, discountAmount: 0 }],
+                  items: [
+                    ...prev.items,
+                    { description: "", quantity: 1, unitPrice: 0, discountAmount: 0 },
+                  ],
                 }))
               }
             >
@@ -285,7 +321,10 @@ export function DocumentFormModal({
           </div>
           <div className="divide-y divide-border">
             {form.items.map((item, index) => (
-              <div key={index} className="grid gap-3 p-4 sm:grid-cols-[1fr_5rem_7rem_7rem_auto] sm:items-end">
+              <div
+                key={index}
+                className="grid gap-3 p-4 sm:grid-cols-[1fr_5rem_7rem_7rem_auto] sm:items-end"
+              >
                 <FormField label="الوصف" error={errors[`item-${index}`]}>
                   <input
                     className={inputCls}
@@ -325,8 +364,14 @@ export function DocumentFormModal({
                   />
                 </FormField>
                 <IconBtn
-                  aria-label="حذف البند" tone="danger"
-                  onClick={() => setForm((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }))}
+                  aria-label="حذف البند"
+                  tone="danger"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      items: prev.items.filter((_, i) => i !== index),
+                    }))
+                  }
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
                 </IconBtn>
@@ -376,24 +421,57 @@ export function DocumentFormModal({
 
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField label="صالح حتى">
-            <input type="date" className={inputCls} value={form.validUntil} onChange={(e) => set("validUntil", e.target.value)} />
+            <input
+              type="date"
+              className={inputCls}
+              value={form.validUntil}
+              onChange={(e) => set("validUntil", e.target.value)}
+            />
           </FormField>
           <FormField label="بداية السريان">
-            <input type="date" className={inputCls} value={form.startsOn} onChange={(e) => set("startsOn", e.target.value)} />
+            <input
+              type="date"
+              className={inputCls}
+              value={form.startsOn}
+              onChange={(e) => set("startsOn", e.target.value)}
+            />
           </FormField>
           <FormField label="نهاية السريان">
-            <input type="date" className={inputCls} value={form.endsOn} onChange={(e) => set("endsOn", e.target.value)} />
+            <input
+              type="date"
+              className={inputCls}
+              value={form.endsOn}
+              onChange={(e) => set("endsOn", e.target.value)}
+            />
           </FormField>
         </div>
 
         <FormField label="المقدمة">
-          <textarea className={inputCls} rows={3} value={form.intro} onChange={(e) => set("intro", e.target.value)} maxLength={2000} />
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={form.intro}
+            onChange={(e) => set("intro", e.target.value)}
+            maxLength={2000}
+          />
         </FormField>
         <FormField label="الشروط والأحكام">
-          <textarea className={inputCls} rows={4} value={form.terms} onChange={(e) => set("terms", e.target.value)} maxLength={4000} />
+          <textarea
+            className={inputCls}
+            rows={4}
+            value={form.terms}
+            onChange={(e) => set("terms", e.target.value)}
+            maxLength={4000}
+          />
         </FormField>
         <FormField label="ملاحظات داخلية" hint="لا تظهر للعميل في ملف PDF.">
-          <textarea className={inputCls} rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} maxLength={1000} />
+          <textarea
+            className={inputCls}
+            rows={2}
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            maxLength={1000}
+          />
         </FormField>
 
         <div className="rounded-[var(--radius-m)] bg-surface-muted p-4 text-body-sm">
@@ -425,8 +503,8 @@ export function DocumentFormModal({
           </dl>
           {totals.requires_approval && (
             <p className="mt-3 text-[12px] text-warning">
-              نسبة الخصم {totals.effective_discount_percent}% تتجاوز الحد المسموح ({APPROVAL_DISCOUNT_PERCENT_THRESHOLD}%)، لذا
-              يلزم اعتماد موظف آخر قبل الإرسال.
+              نسبة الخصم {totals.effective_discount_percent}% تتجاوز الحد المسموح (
+              {APPROVAL_DISCOUNT_PERCENT_THRESHOLD}%)، لذا يلزم اعتماد موظف آخر قبل الإرسال.
             </p>
           )}
         </div>

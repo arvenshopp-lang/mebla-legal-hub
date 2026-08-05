@@ -16,7 +16,10 @@ import type { DocumentDetail } from "@/lib/sales-docs.server";
 const dash = "—";
 const label = (value: string | null | undefined): string => (value && value.trim() ? value : dash);
 
-function meta(detail: DocumentDetail, extra: { companyName: string | null; contactName: string | null; contactEmail: string | null }): PdfMetaRow[] {
+function meta(
+  detail: DocumentDetail,
+  extra: { companyName: string | null; contactName: string | null; contactEmail: string | null },
+): PdfMetaRow[] {
   const doc = detail.document;
   return [
     { label: "العميل", value: label(extra.companyName ?? doc.organization_name) },
@@ -26,7 +29,9 @@ function meta(detail: DocumentDetail, extra: { companyName: string | null; conta
     { label: "صالح حتى", value: doc.valid_until ? formatPdfDate(doc.valid_until) : dash },
     {
       label: "مدة السريان",
-      value: doc.starts_on ? `من ${formatPdfDate(doc.starts_on)} إلى ${formatPdfDate(doc.ends_on)}` : dash,
+      value: doc.starts_on
+        ? `من ${formatPdfDate(doc.starts_on)} إلى ${formatPdfDate(doc.ends_on)}`
+        : dash,
     },
   ];
 }
@@ -77,7 +82,10 @@ function totals(detail: DocumentDetail): PdfTotalRow[] {
   return [
     { label: "الإجمالي قبل الخصم", value: formatPdfMoney(d.subtotal, d.currency) },
     { label: "الخصم", value: formatPdfMoney(d.discount_amount, d.currency) },
-    { label: `ضريبة القيمة المضافة ${d.tax_rate}%`, value: formatPdfMoney(d.tax_amount, d.currency) },
+    {
+      label: `ضريبة القيمة المضافة ${d.tax_rate}%`,
+      value: formatPdfMoney(d.tax_amount, d.currency),
+    },
     { label: "الإجمالي", value: formatPdfMoney(d.total, d.currency), emphasis: true },
   ];
 }

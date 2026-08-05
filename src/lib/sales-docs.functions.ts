@@ -26,7 +26,10 @@ export const salesList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => listFiltersSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     await g.requireStaff(context.supabase, context.userId, "sales_docs.read");
     return engine.listDocuments(data);
   });
@@ -35,13 +38,22 @@ export const salesDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     await g.requireStaff(context.supabase, context.userId, "sales_docs.read");
-    const [detail, content] = await Promise.all([engine.getDocumentDetail(data.id), engine.getDocumentContent(data.id)]);
+    const [detail, content] = await Promise.all([
+      engine.getDocumentDetail(data.id),
+      engine.getDocumentContent(data.id),
+    ]);
     // حدود دوال الخادم تنقل JSON فقط، لذا تُطبَّع بيانات الأحداث الحرة قبل الإرجاع.
     const events = detail.events.map((event) => ({
       ...event,
-      metadata: JSON.parse(JSON.stringify(event.metadata ?? {})) as Record<string, string | number | boolean | null>,
+      metadata: JSON.parse(JSON.stringify(event.metadata ?? {})) as Record<
+        string,
+        string | number | boolean | null
+      >,
     }));
     return { ...detail, events, content };
   });
@@ -49,7 +61,10 @@ export const salesDetail = createServerFn({ method: "POST" })
 export const salesOptions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     await g.requireStaff(context.supabase, context.userId, "sales_docs.read");
     return engine.pickerOptions();
   });
@@ -58,8 +73,15 @@ export const salesSaveDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => draftSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
-    const staff = await g.requireStaff(context.supabase, context.userId, data.id ? "sales_docs.update" : "sales_docs.create");
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      data.id ? "sales_docs.update" : "sales_docs.create",
+    );
     const id = await engine.saveDraft(
       { staff },
       {
@@ -79,7 +101,10 @@ export const salesDeleteDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => deleteSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.delete");
     await engine.deleteDraft({ staff }, data.id);
     return { ok: true };
@@ -89,7 +114,10 @@ export const salesRequestApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => requestApprovalSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.update");
     await engine.requestApproval({ staff }, data.id, data.note ?? null);
     return { ok: true };
@@ -99,7 +127,10 @@ export const salesDecideApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => approveSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.approve");
     await engine.decideApproval({ staff }, data.id, data.approve, data.note ?? null);
     return { ok: true };
@@ -109,7 +140,10 @@ export const salesSend = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => sendSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.send");
     return engine.sendDocument({ staff }, data.id, data.toEmail, data.message ?? null);
   });
@@ -118,7 +152,10 @@ export const salesRecordDecision = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => decisionSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.decide");
     await engine.recordDecision({ staff }, data.id, data.decision, data.note ?? null);
     if (data.decision === "accepted" && data.signerName && data.signerEmail) {
@@ -131,9 +168,18 @@ export const salesSign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => signSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.decide");
-    await engine.signDocument({ staff }, data.id, data.signerName, data.signerEmail, data.signerRole ?? null);
+    await engine.signDocument(
+      { staff },
+      data.id,
+      data.signerName,
+      data.signerEmail,
+      data.signerRole ?? null,
+    );
     return { ok: true };
   });
 
@@ -141,7 +187,10 @@ export const salesActivate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => lifecycleSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.decide");
     await engine.activateContract({ staff }, data.id);
     return { ok: true };
@@ -151,7 +200,10 @@ export const salesTerminate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => lifecycleSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.decide");
     await engine.terminateContract({ staff }, data.id, data.note ?? null);
     return { ok: true };
@@ -161,7 +213,10 @@ export const salesConvertToInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => convertInvoiceSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.convert");
     return engine.convertToInvoice({ staff }, data.id, data.dueAt ?? null);
   });
@@ -170,15 +225,27 @@ export const salesConvertToSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => convertSubscriptionSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.convert");
-    return engine.convertToSubscription({ staff }, data.id, data.planCode, data.startsOn ?? null, data.endsOn ?? null);
+    return engine.convertToSubscription(
+      { staff },
+      data.id,
+      data.planCode,
+      data.startsOn ?? null,
+      data.endsOn ?? null,
+    );
   });
 
 export const salesListTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
     await g.requireStaff(context.supabase, context.userId, "sales_docs.read");
     return { templates: await engine.listTemplates() };
   });
@@ -187,8 +254,15 @@ export const salesSaveTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => templateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
-    const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.manage_templates");
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      "sales_docs.manage_templates",
+    );
     const id = await engine.saveTemplate(
       { staff },
       {
@@ -208,8 +282,15 @@ export const salesDeleteTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => deleteSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [g, engine] = await Promise.all([import("@/lib/admin-guard.server"), import("@/lib/sales-docs.server")]);
-    const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.manage_templates");
+    const [g, engine] = await Promise.all([
+      import("@/lib/admin-guard.server"),
+      import("@/lib/sales-docs.server"),
+    ]);
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      "sales_docs.manage_templates",
+    );
     await engine.deleteTemplate({ staff }, data.id);
     return { ok: true };
   });
@@ -234,7 +315,11 @@ export const salesDocumentPdf = createServerFn({ method: "POST" })
     ]);
     const document = model.salesDocModel(
       detail,
-      { companyName: content.companyName, contactName: content.contactName, contactEmail: content.contactEmail },
+      {
+        companyName: content.companyName,
+        contactName: content.contactName,
+        contactEmail: content.contactEmail,
+      },
       { intro: content.intro, terms: content.terms },
     );
     const bytes = await pdfEngine.renderBillingPdf(document, tax);

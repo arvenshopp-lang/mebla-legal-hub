@@ -19,7 +19,11 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
-import { salesDeleteTemplate, salesListTemplates, salesSaveTemplate } from "@/lib/sales-docs.functions";
+import {
+  salesDeleteTemplate,
+  salesListTemplates,
+  salesSaveTemplate,
+} from "@/lib/sales-docs.functions";
 import { KIND_LABELS, type SalesDocKind, type SalesDocTemplateRow } from "@/lib/sales-docs.shared";
 
 type TemplateForm = {
@@ -125,7 +129,10 @@ export function TemplatesPanel() {
       {templates.isLoading ? (
         <LoadingBlock rows={4} cols={4} />
       ) : (templates.data?.templates.length ?? 0) === 0 ? (
-        <EmptyState title="لا توجد قوالب بعد" hint="أنشئ قالباً لتسريع إعداد العروض والعقود المتكررة." />
+        <EmptyState
+          title="لا توجد قوالب بعد"
+          hint="أنشئ قالباً لتسريع إعداد العروض والعقود المتكررة."
+        />
       ) : (
         <DataCard>
           <table className="w-full text-body-sm">
@@ -147,7 +154,9 @@ export function TemplatesPanel() {
                   <Td>{template.default_tax_rate}%</Td>
                   <Td>{template.default_validity_days} يوم</Td>
                   <Td>
-                    <Badge tone={template.is_active ? "green" : "muted"}>{template.is_active ? "نشط" : "معطّل"}</Badge>
+                    <Badge tone={template.is_active ? "green" : "muted"}>
+                      {template.is_active ? "نشط" : "معطّل"}
+                    </Badge>
                   </Td>
                   <Td>
                     {canManage && (
@@ -155,7 +164,11 @@ export function TemplatesPanel() {
                         <Btn variant="outline" size="sm" onClick={() => setForm(fromRow(template))}>
                           تعديل
                         </Btn>
-                        <IconBtn aria-label="حذف القالب" tone="danger" onClick={() => setPendingDelete(template)}>
+                        <IconBtn
+                          aria-label="حذف القالب"
+                          tone="danger"
+                          onClick={() => setPendingDelete(template)}
+                        >
                           <Trash2 className="h-4 w-4" aria-hidden />
                         </IconBtn>
                       </div>
@@ -179,11 +192,20 @@ export function TemplatesPanel() {
         >
           <div className="grid gap-4">
             <FormField label="اسم القالب" required>
-              <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={150} />
+              <input
+                className={inputCls}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                maxLength={150}
+              />
             </FormField>
             <div className="grid gap-4 sm:grid-cols-3">
               <FormField label="النوع">
-                <select className={inputCls} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as SalesDocKind })}>
+                <select
+                  className={inputCls}
+                  value={form.kind}
+                  onChange={(e) => setForm({ ...form, kind: e.target.value as SalesDocKind })}
+                >
                   {(Object.keys(KIND_LABELS) as SalesDocKind[]).map((kind) => (
                     <option key={kind} value={kind}>
                       {KIND_LABELS[kind]}
@@ -208,15 +230,29 @@ export function TemplatesPanel() {
                   max={365}
                   className={inputCls}
                   value={form.defaultValidityDays}
-                  onChange={(e) => setForm({ ...form, defaultValidityDays: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setForm({ ...form, defaultValidityDays: Number(e.target.value) })
+                  }
                 />
               </FormField>
             </div>
             <FormField label="المقدمة">
-              <textarea className={inputCls} rows={3} value={form.intro} onChange={(e) => setForm({ ...form, intro: e.target.value })} maxLength={2000} />
+              <textarea
+                className={inputCls}
+                rows={3}
+                value={form.intro}
+                onChange={(e) => setForm({ ...form, intro: e.target.value })}
+                maxLength={2000}
+              />
             </FormField>
             <FormField label="الشروط والأحكام">
-              <textarea className={inputCls} rows={4} value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} maxLength={4000} />
+              <textarea
+                className={inputCls}
+                rows={4}
+                value={form.terms}
+                onChange={(e) => setForm({ ...form, terms: e.target.value })}
+                maxLength={4000}
+              />
             </FormField>
             <label className="flex items-center gap-2 text-body-sm">
               <input
