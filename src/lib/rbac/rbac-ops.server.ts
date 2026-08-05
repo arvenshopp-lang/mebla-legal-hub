@@ -237,6 +237,7 @@ export async function createRoleFromTemplate(
   const { ROLE_TEMPLATE_MAP } = await import("./role-templates");
   const template = ROLE_TEMPLATE_MAP[input.templateCode];
   if (!template) throw new Error("قالب الدور غير معروف.");
+  const ctx = await authorize(supabase, userId, "roles.manage", { entityType: "platform_role" });
   const result = await saveRole(supabase, userId, {
     code: input.code,
     name_ar: input.name_ar,
@@ -244,7 +245,6 @@ export async function createRoleFromTemplate(
     permissions: [...template.permissions],
     is_active: true,
   });
-  const ctx = await loadRbacContext(supabase, userId);
   await auditRbac(supabase, {
     actorEmail: ctx.staff.email,
     action: "rbac.role_template_applied",
