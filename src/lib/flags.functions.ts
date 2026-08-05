@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 /** إدارة مفاتيح تشغيل الميزات وقواعد الإشعارات — صلاحية settings.manage لكل عملية كتابة. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -13,7 +14,7 @@ export type FeatureFlag = {
   label: string;
   description: string | null;
   is_enabled: boolean;
-  audience: unknown;
+  audience: Json | null;
   updated_at: string;
 };
 
