@@ -1,5 +1,5 @@
 import type { Json } from "@/integrations/supabase/types";
-/** إدارة مفاتيح تشغيل الميزات وقواعد الإشعارات — صلاحية settings.manage لكل عملية كتابة. */
+/** إدارة مفاتيح تشغيل الميزات وقواعد الإشعارات — صلاحيات feature_flags.* و notification_rules.* لكل عملية. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
