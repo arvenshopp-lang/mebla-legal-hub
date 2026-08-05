@@ -7,7 +7,7 @@ const stamp = Date.now();
 const res = await invoke(
   "sendMessage",
   {
-    mailboxId: real.providerMailboxId,
+    mailbox: real.providerMailboxId,
     from: real.address,
     to: ["support@mehlalex.com"],
     subject: `اختبار توجيه الأسماء المستعارة ${stamp}`,
