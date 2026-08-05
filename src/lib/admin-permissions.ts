@@ -48,6 +48,30 @@ export type AdminPermission =
   | "seo.manage"
   | "monitoring.read"
   | "backups.manage"
+  | "backups.restore"
+  | "crm.read"
+  | "crm.create"
+  | "crm.update"
+  | "crm.delete"
+  | "crm.assign"
+  | "crm.export"
+  | "crm.manage_pipeline"
+  | "sales_docs.read"
+  | "sales_docs.create"
+  | "sales_docs.update"
+  | "sales_docs.delete"
+  | "sales_docs.send"
+  | "sales_docs.approve"
+  | "sales_docs.decide"
+  | "sales_docs.convert"
+  | "sales_docs.manage_templates"
+  | "sales_docs.export"
+  | "hr.read"
+  | "hr.manage"
+  | "hr.documents.read"
+  | "marketing.read"
+  | "marketing.manage"
+  | "marketing.export"
   | "audit.read"
   | "audit.export"
   | "support_access.request"
@@ -128,6 +152,30 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "seo.manage", label: "إدارة SEO", group: "التشغيل", description: "الوسوم والفهرسة وملفات robots وsitemap." },
   { id: "monitoring.read", label: "مراقبة النظام", group: "التشغيل", description: "حالة القاعدة والتخزين والبريد والنطاق." },
   { id: "backups.manage", label: "النسخ الاحتياطي", group: "التشغيل", description: "الاطلاع على حالة النسخ وتصدير البيانات." },
+  { id: "backups.restore", label: "اعتماد الاستعادة", group: "التشغيل", description: "اعتماد أو رفض طلبات استعادة نسخة احتياطية." },
+  { id: "crm.read", label: "مشاهدة CRM", group: "المبيعات وعلاقات العملاء", description: "عرض العملاء المحتملين والشركات وجهات الاتصال والصفقات." },
+  { id: "crm.create", label: "إضافة سجلات CRM", group: "المبيعات وعلاقات العملاء", description: "إنشاء عميل محتمل أو شركة أو جهة اتصال أو صفقة أو نشاط." },
+  { id: "crm.update", label: "تعديل سجلات CRM", group: "المبيعات وعلاقات العملاء", description: "تعديل السجلات وتحويل العميل المحتمل وتحريك مراحل الصفقة." },
+  { id: "crm.delete", label: "حذف سجلات CRM", group: "المبيعات وعلاقات العملاء", description: "حذف سجلات علاقات العملاء نهائياً." },
+  { id: "crm.assign", label: "إسناد سجلات CRM", group: "المبيعات وعلاقات العملاء", description: "إسناد العميل المحتمل أو الصفقة لموظف آخر." },
+  { id: "crm.export", label: "تصدير CRM", group: "المبيعات وعلاقات العملاء", description: "تصدير قوائم CRM بصيغة CSV آمنة." },
+  { id: "crm.manage_pipeline", label: "إدارة خط البيع", group: "المبيعات وعلاقات العملاء", description: "إنشاء وتعديل مراحل خط البيع واحتمالاتها." },
+  { id: "sales_docs.read", label: "مشاهدة العروض والعقود", group: "العروض والعقود", description: "عرض عروض الأسعار والمقترحات والعقود وبنودها." },
+  { id: "sales_docs.create", label: "إنشاء عرض أو عقد", group: "العروض والعقود", description: "إنشاء مسودة عرض سعر أو مقترح أو عقد." },
+  { id: "sales_docs.update", label: "تعديل المسودات", group: "العروض والعقود", description: "تعديل بيانات وبنود المستند قبل اعتماده." },
+  { id: "sales_docs.delete", label: "حذف المسودات", group: "العروض والعقود", description: "حذف مسودة لم تُرسل بعد." },
+  { id: "sales_docs.send", label: "إرسال المستندات", group: "العروض والعقود", description: "إرسال العرض أو العقد للعميل عبر مركز البريد." },
+  { id: "sales_docs.approve", label: "اعتماد المستندات", group: "العروض والعقود", description: "اعتماد المستند قبل إرساله عند تجاوزه حدود الخصم." },
+  { id: "sales_docs.decide", label: "تسجيل قرار العميل", group: "العروض والعقود", description: "تسجيل القبول أو الرفض أو الانتهاء والتوقيع الإلكتروني." },
+  { id: "sales_docs.convert", label: "التحويل لفاتورة أو اشتراك", group: "العروض والعقود", description: "تحويل المستند المقبول إلى فاتورة أو اشتراك." },
+  { id: "sales_docs.manage_templates", label: "إدارة القوالب", group: "العروض والعقود", description: "إنشاء وتعديل قوالب العروض والعقود وشروطها." },
+  { id: "sales_docs.export", label: "تصدير العروض والعقود", group: "العروض والعقود", description: "تصدير قائمة المستندات بصيغة CSV آمنة." },
+  { id: "hr.read", label: "مشاهدة الموظفين", group: "الموارد البشرية", description: "عرض سجل موظفي الشركة وأقسامهم ومدرائهم." },
+  { id: "hr.manage", label: "إدارة الموظفين", group: "الموارد البشرية", description: "إضافة وتعديل بيانات الموظفين ومستنداتهم الوظيفية." },
+  { id: "hr.documents.read", label: "مستندات الموظفين", group: "الموارد البشرية", description: "الاطلاع على العقود والمستندات الوظيفية." },
+  { id: "marketing.read", label: "مشاهدة التسويق", group: "التسويق", description: "عرض الحملات ومصادر العملاء وأحداث التحويل." },
+  { id: "marketing.manage", label: "إدارة التسويق", group: "التسويق", description: "إنشاء وتعديل الحملات وبرامج الإحالة والكوبونات المرتبطة." },
+  { id: "marketing.export", label: "تصدير تقارير التسويق", group: "التسويق", description: "تصدير أداء الحملات وأحداث التحويل بصيغة CSV." },
   { id: "audit.read", label: "سجل التدقيق", group: "الأمان", description: "الاطلاع على سجل التدقيق الكامل." },
   { id: "audit.export", label: "تصدير سجل التدقيق", group: "الأمان", description: "تصدير السجلات بصيغة CSV." },
   { id: "support_access.request", label: "طلب وصول دعم مؤقت", group: "الأمان", description: "طلب وصول مؤقت لبيانات مكتب بموافقته وبسبب مُسجّل." },
