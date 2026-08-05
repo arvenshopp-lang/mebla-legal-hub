@@ -235,6 +235,7 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
   { id: "support_access.request", label: "طلب وصول دعم مؤقت", group: "الأمان", description: "طلب وصول مؤقت لبيانات مكتب بموافقته وبسبب مُسجّل." },
   { id: "staff.view", label: "مشاهدة الفريق", group: "الفريق", description: "عرض فريق إدارة المنصة وصلاحياتهم." },
   { id: "staff.manage", label: "إدارة الفريق", group: "الفريق", description: "إضافة موظفين وتعديل صلاحياتهم وإيقافهم." },
+  { id: "rbac.read", label: "مشاهدة الأدوار والصلاحيات", group: "الفريق", description: "الاطلاع على الأدوار والقوالب والأقسام والمنح دون تعديل." },
   { id: "roles.manage", label: "إدارة الأدوار", group: "الفريق", description: "إنشاء أدوار مخصصة وتحديد صلاحياتها." },
   { id: "departments.read", label: "مشاهدة الأقسام", group: "الأقسام", description: "عرض أقسام المنصة ومدرائها." },
   { id: "departments.manage", label: "إدارة الأقسام", group: "الأقسام", description: "إنشاء وتعديل الأقسام والمدير المباشر." },
