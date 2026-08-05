@@ -626,6 +626,11 @@ export async function syncAgenticFolder(
           { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
           target.address,
         ).address;
+        // الحساب الحقيقي مصدر سحب فقط: بلا Alias مطابق لا تُستوعب الرسالة.
+        if (target.type === "system" && routedAddress === target.address) {
+          rejected += 1;
+          continue;
+        }
         const result = await ingestInbound(db, {
           to: routedAddress,
           from: message.fromAddress,
