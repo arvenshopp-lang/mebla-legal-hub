@@ -9,8 +9,22 @@ export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
       { title: "استعادة كلمة المرور | مِهلة" },
-      { name: "description", content: "استعد كلمة مرور حسابك في منصة مِهلة." },
+      {
+        name: "description",
+        content:
+          "استعد الوصول إلى حسابك في منصة مِهلة: أدخل بريدك الإلكتروني المسجّل ليصلك رابط آمن لإعادة تعيين كلمة المرور خلال دقائق.",
+      },
+      { property: "og:title", content: "استعادة كلمة المرور | مِهلة" },
+      {
+        property: "og:description",
+        content: "رابط آمن لإعادة تعيين كلمة مرور حسابك في منصة مِهلة القانونية.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/forgot-password" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, follow" },
     ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/forgot-password" }],
   }),
 });
 
