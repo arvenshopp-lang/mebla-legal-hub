@@ -213,6 +213,7 @@ function SalesDocumentPage() {
           </Btn>
           <Link
             to="/mehla-admin/sales"
+            search={{ tab: "all" as const }}
             className="inline-flex min-h-10 items-center gap-1.5 rounded-[var(--radius-m)] border border-border px-3 text-body-sm text-foreground transition hover:bg-surface-muted"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> القائمة
