@@ -420,7 +420,7 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
     countOf(db, "platform_staff_sessions", (q) => q.not("revoked_at", "is", null).gte("revoked_at", since30d)),
     countOf(db, "admin_audit_logs", (q) => q.gte("created_at", since24)),
     countOf(db, "system_failures", (q) => q.gte("created_at", since24)),
-    countOf(db, "case_lookup_attempts", (q) => q.gte("created_at", since24)),
+    countOf(db, "case_lookup_attempts", (q) => q.eq("success", false).gte("created_at", since24)),
     db.from("system_failures").select("ref").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     countOf(db, "integration_health_logs", (q) => q.gte("checked_at", since24)),
     countOf(db, "integration_health_logs", (q) => q.neq("result", "success").gte("checked_at", since24)),

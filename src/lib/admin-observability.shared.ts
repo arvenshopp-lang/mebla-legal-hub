@@ -82,6 +82,6 @@ export type MonitoringSnapshot = {
   queues: QueueSnapshot[];
   storage: { documents: number; bytes: number };
   sessions: { active24h: number; total: number; revoked30d: number };
-  security: { adminOps24h: number; failures24h: number; failedLogins24h: number; lastFailureRef: string | null };
+  security: { adminOps24h: number; failures24h: number; blockedLookups24h: number; lastFailureRef: string | null };
   integrations: { checks24h: number; failures24h: number; lastCheckAt: string | null };
 };
