@@ -273,7 +273,9 @@ export async function discoverProviderMailboxes(correlationId: string): Promise<
       if (!address || !address.includes("@")) return null;
       const unread = pick(row, ["unread", "unread_count", "unseen"]);
       return {
-        id: asString(pick(row, ["id", "mailbox_id", "uuid"])) ?? address.toLowerCase(),
+        id:
+          asString(pick(row, ["resource_id", "mailbox_resource_id", "id", "mailbox_id", "uuid"])) ??
+          address.toLowerCase(),
         address: address.toLowerCase(),
         displayName: asString(pick(row, ["display_name", "name", "label"])),
         unread: typeof unread === "number" ? unread : null,
