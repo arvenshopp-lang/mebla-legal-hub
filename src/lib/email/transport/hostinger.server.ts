@@ -28,6 +28,7 @@ const LOCK_STALE_MS = 5 * 60_000;
 export type MailboxSyncTarget = {
   id: string;
   address: string;
+  type: string;
   folders: string[];
   syncEnabled: boolean;
   inboundEnabled: boolean;
@@ -61,13 +62,19 @@ export async function syncableMailboxes(db: Db, mailboxId?: string): Promise<Mai
   let query = db
     .from("email_mailboxes")
     .select("id, address, type, is_active, inbound_enabled, sync_enabled, imap_folders")
-    .neq("type", "system")
     .order("sort_order", { ascending: true });
   if (mailboxId) query = query.eq("id", mailboxId);
   const { data } = await query;
-  return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+  // الحساب الحقيقي (قد يكون صندوق النظام) مصدر سحب مسموح لأن الأسماء
+  // المستعارة تُسلَّم إليه؛ الاستيعاب يبقى تحت الصندوق المنطقي فقط.
+  return ((data ?? []) as Record<string, unknown>[])
+    .filter(
+      (row) => String(row.type) !== "system" || mailboxHasOwnCredentials(String(row.address)),
+    )
+    .map((row) => ({
     id: String(row.id),
     address: String(row.address),
+    type: String(row.type),
     folders: foldersOf(row.imap_folders),
     syncEnabled: row.sync_enabled === true,
     inboundEnabled: row.inbound_enabled === true,
