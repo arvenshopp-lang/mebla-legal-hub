@@ -1,7 +1,7 @@
-import { admin } from "./src/lib/admin-guard.server";
-import { inboundAliasAddresses, routeInboundAddress } from "./src/lib/email/routing.server";
-import { probeConnection } from "./src/lib/email/agentic/mcp-client.server";
-import { discoverProviderMailboxes, newCorrelationId, agenticTargets, syncAgenticMailbox } from "./src/lib/email/agentic/provider.server";
+import { admin } from "../src/lib/admin-guard.server";
+import { inboundAliasAddresses, routeInboundAddress } from "../src/lib/email/routing.server";
+import { probeConnection } from "../src/lib/email/agentic/mcp-client.server";
+import { discoverProviderMailboxes, newCorrelationId, agenticTargets, syncAgenticMailbox } from "../src/lib/email/agentic/provider.server";
 
 const db = await admin();
 const aliases = await inboundAliasAddresses(db);
