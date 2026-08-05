@@ -238,7 +238,7 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
     }))
     .slice(0, MAX_ATTACHMENTS_PER_MESSAGE);
 
-  const unreadRaw = pick(row, ["unread", "is_unread", "isUnread"]);
+  const unreadRaw = pick(row, ["unread", "unseen", "is_unread", "isUnread"]);
   const readRaw = pick(row, ["read", "seen", "is_read", "isRead"]);
   const unread =
     typeof unreadRaw === "boolean" ? unreadRaw : typeof readRaw === "boolean" ? !readRaw : null;
@@ -543,7 +543,7 @@ export async function syncAgenticFolder(
               correlationId,
             );
             const detail = extractList(full.json)[0] ?? asRecord(full.json) ?? null;
-            if (detail) message = { ...message, ...normalizeMessage(detail) };
+            if (detail) message = mergeMessage(message, normalizeMessage(detail));
           } catch (error) {
             if (!(error instanceof UnsupportedOperationError)) throw error;
           }
