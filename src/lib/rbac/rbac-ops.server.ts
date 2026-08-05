@@ -38,6 +38,7 @@ const RBAC_AUDIT_ACTIONS = [
   "authz.allowed",
   "rbac.role_saved",
   "rbac.role_deleted",
+  "rbac.role_template_applied",
   "rbac.department_saved",
   "rbac.staff_org_updated",
   "rbac.grant_created",
