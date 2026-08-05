@@ -438,8 +438,23 @@ export async function restInvoke(
   }
 
   if (operation === "listMessages") {
+    const rows = Array.isArray(payload) ? payload : [];
+    // نطاق IMAP «n:*» يُعيد آخر رسالة حتى لو كان UID أصغر من n،
+    // لذا يُرشَّح الناتج بحدّ المؤشر منعاً لإعادة استيراد الرسالة نفسها.
+    const cursorUid = uidOf(canonical["cursor"]);
+    const fresh =
+      cursorUid === null
+        ? rows
+        : rows.filter((row) => {
+            if (!row || typeof row !== "object") return false;
+            const uid = uidOf((row as Record<string, unknown>)["uid"]);
+            return uid !== null && uid > cursorUid;
+          });
     return {
-      json: { messages: Array.isArray(payload) ? payload : [], nextCursor: highestUid(payload) },
+      json: {
+        messages: fresh,
+        nextCursor: highestUid(fresh) ?? (cursorUid === null ? null : String(cursorUid)),
+      },
       text: result.text,
       latencyMs: result.latencyMs,
       requestId: result.requestId,
