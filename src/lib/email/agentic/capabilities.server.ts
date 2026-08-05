@@ -58,6 +58,9 @@ export type CapabilityMap = {
   tools: McpTool[];
   byOperation: Record<AgenticOperation, McpTool | null>;
   operationNames: Record<AgenticOperation, string | null>;
+  /** وضع وكيل REST: العمليات تُنفَّذ بمسار OpenAPI لا بأداة لكل عملية. */
+  restMode: boolean;
+  restSupported: AgenticOperation[];
 };
 
 /** ربط كل عملية بأداة واحدة على الأكثر، بلا تكرار استخدام الأداة نفسها. */
@@ -83,7 +86,31 @@ export function mapCapabilities(tools: McpTool[]): CapabilityMap {
     AGENTIC_OPERATIONS.map((op) => [op, byOperation[op]?.name ?? null]),
   ) as Record<AgenticOperation, string | null>;
 
-  return { tools, byOperation, operationNames };
+  return { tools, byOperation, operationNames, restMode: false, restSupported: [] };
+}
+
+/**
+ * خريطة قدرات في وضع وكيل REST: تُشتق من عمليات OpenAPI الفعلية،
+ * وتُمثّل كل عملية مدعومة بمُعرّف عمليتها لدى المزوّد لعرضه في الواجهة.
+ */
+export function mapRestCapabilities(
+  tools: McpTool[],
+  supported: Set<AgenticOperation>,
+  operationIds: Record<AgenticOperation, string | null>,
+): CapabilityMap {
+  const byOperation = Object.fromEntries(
+    AGENTIC_OPERATIONS.map((op) => [op, supported.has(op) ? (tools[0] ?? null) : null]),
+  ) as Record<AgenticOperation, McpTool | null>;
+  const operationNames = Object.fromEntries(
+    AGENTIC_OPERATIONS.map((op) => [op, supported.has(op) ? operationIds[op] : null]),
+  ) as Record<AgenticOperation, string | null>;
+  return {
+    tools,
+    byOperation,
+    operationNames,
+    restMode: true,
+    restSupported: AGENTIC_OPERATIONS.filter((op) => supported.has(op)),
+  };
 }
 
 /** المرادفات المسموحة لكل معامل قياسي. */
