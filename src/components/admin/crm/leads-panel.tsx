@@ -68,8 +68,8 @@ export function LeadsPanel() {
   const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
   const stagesQuery = useQuery({ queryKey: ["crm-stages"], queryFn: () => stagesFn({ data: undefined }) });
 
-  const staffOptions = staffQuery.data ?? [];
-  const stageOptions = (stagesQuery.data ?? []).filter((stage) => stage.is_active);
+  const staffOptions = staffQuery.data?.staff ?? [];
+  const stageOptions = (stagesQuery.data?.stages ?? []).filter((stage) => stage.is_active);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
