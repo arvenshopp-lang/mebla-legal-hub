@@ -151,11 +151,12 @@ function attachmentPayload(value: unknown): Record<string, unknown>[] {
   for (const raw of value) {
     if (!raw || typeof raw !== "object") continue;
     const row = raw as Record<string, unknown>;
-    const content = str(row["content_base64"] ?? row["content"]);
+    const content = str(row["content_base64"] ?? row["contentBase64"] ?? row["content"]);
     if (!content) continue;
     items.push({
-      filename: str(row["filename"] ?? row["file_name"]) ?? "attachment",
-      contentType: str(row["content_type"] ?? row["contentType"]) ?? "application/octet-stream",
+      filename: str(row["filename"] ?? row["file_name"] ?? row["fileName"]) ?? "attachment",
+      contentType:
+        str(row["content_type"] ?? row["contentType"] ?? row["mime_type"]) ?? "application/octet-stream",
       content,
       encoding: "base64",
     });
