@@ -351,6 +351,15 @@ export function parseMimeMessage(raw: Uint8Array): ParsedMessage {
     fromName: from.name,
     to: parseAddresses(header(topHeaders, "to")),
     cc: parseAddresses(header(topHeaders, "cc")),
+    deliveredTo: [
+      ...parseAddresses(header(topHeaders, "delivered-to")),
+      ...parseAddresses(header(topHeaders, "x-delivered-to")),
+    ],
+    originalTo: [
+      ...parseAddresses(header(topHeaders, "x-original-to")),
+      ...parseAddresses(header(topHeaders, "envelope-to")),
+      ...parseAddresses(header(topHeaders, "x-forwarded-to")),
+    ],
     date: header(topHeaders, "date").trim() || null,
     html,
     text,
