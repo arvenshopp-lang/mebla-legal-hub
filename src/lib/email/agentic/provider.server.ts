@@ -199,6 +199,8 @@ export type NormalizedMessage = {
   fromAddress: string | null;
   fromName: string | null;
   to: string[];
+  cc: string[];
+  deliveredTo: string[];
   html: string | null;
   text: string | null;
   date: string | null;
@@ -250,6 +252,10 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
     fromAddress,
     fromName,
     to: addressList(pick(row, ["to", "to_addresses", "recipients"])),
+    cc: addressList(pick(row, ["cc", "cc_addresses"])),
+    deliveredTo: [
+      ...addressList(pick(row, ["delivered_to", "deliveredTo", "x_original_to", "envelope_to"])),
+    ],
     html: asString(pick(row, ["html", "html_body", "body_html", "htmlContent"])),
     text: asString(pick(row, ["text", "text_body", "body_text", "plain_text", "snippet", "body", "content"])),
     date: asString(pick(row, ["date", "received_at", "internal_date", "created_at", "timestamp", "sent_at"])),
