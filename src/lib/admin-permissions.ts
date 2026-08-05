@@ -270,11 +270,58 @@ export const PERMISSION_LABELS: Record<string, string> = Object.fromEntries(
 
 export const PERMISSION_GROUPS = Array.from(new Set(ADMIN_PERMISSIONS.map((p) => p.group)));
 
+/**
+ * الصلاحية الموروثة `settings.manage` كانت تغطي وحدات غير مترابطة. هذه هي
+ * الترجمة الرسمية إلى الصلاحيات الدقيقة، ويُعتمد عليها في:
+ *   1) طبقة التشغيل (`expandPermissions`) — حتى لا يفقد أي موظف وصوله لحظة النشر.
+ *   2) Migration توافقية تكتب الصلاحيات الدقيقة في `platform_roles.permissions`
+ *      و`platform_staff.permissions`.
+ * خطة الإلغاء موثّقة في `docs/admin-permissions-catalog.md`.
+ */
+export const SETTINGS_MANAGE_REPLACEMENTS: AdminPermission[] = [
+  "platform_settings.read",
+  "platform_settings.manage",
+  "feature_flags.read",
+  "feature_flags.manage",
+  "notification_rules.read",
+  "notification_rules.manage",
+  "integrations.read",
+  "integrations.manage",
+  "integrations.test",
+  "integrations.activate",
+  "integrations.view_logs",
+  "content.read",
+  "content.manage",
+  "content.publish",
+  "content.rollback",
+  "design.read",
+  "design.manage",
+  "sms.read",
+  "sms.manage",
+  "security.read",
+  "security.manage",
+];
+
 /** الصلاحيات القديمة التي كانت مستخدمة قبل نظام الأدوار — تُترجم للمفاتيح الحديثة. */
 const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "logs.view": ["audit.read"],
   "analytics.view": ["revenue.read"],
-  "content.manage": ["settings.manage"],
+  // الصلاحية الواسعة الموروثة → الصلاحيات الدقيقة (توافق خلفي بلا فقدان وصول).
+  "settings.manage": SETTINGS_MANAGE_REPLACEMENTS,
+  "seo.manage": ["seo.read"],
+  "content.manage": ["content.read"],
+  "content.publish": ["content.read"],
+  "design.manage": ["design.read"],
+  "sms.manage": ["sms.read"],
+  "security.manage": ["security.read"],
+  "feature_flags.manage": ["feature_flags.read"],
+  "notification_rules.manage": ["notification_rules.read"],
+  "integrations.manage": ["integrations.read", "integrations.test", "integrations.view_logs"],
+  "integrations.activate": ["integrations.read"],
+  "platform_settings.manage": ["platform_settings.read"],
+  "backups.manage": ["backups.read"],
+  "backups.restore": ["backups.read"],
+  "staff.view": ["rbac.read"],
   // مركز الدعم: الصلاحيات القديمة تبقى مقبولة وتُخطَّط إلى الصلاحيات الحديثة.
   "tickets.view": ["support.read"],
   "tickets.reply": ["support.reply", "support.close", "support.reopen"],
@@ -293,12 +340,46 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
 
 export function expandPermissions(permissions: string[] | null | undefined): string[] {
   const out = new Set<string>();
-  for (const p of permissions ?? []) {
+  const queue = [...(permissions ?? [])];
+  while (queue.length > 0) {
+    const p = queue.pop()!;
+    if (out.has(p)) continue;
     out.add(p);
-    for (const alias of LEGACY_ALIASES[p] ?? []) out.add(alias);
+    for (const alias of LEGACY_ALIASES[p] ?? []) if (!out.has(alias)) queue.push(alias);
   }
   return Array.from(out);
 }
+
+/** الصلاحيات الحساسة التي لا يمنحها أي قالب افتراضياً إلا للقوالب المختصة. */
+export const HIGH_RISK_PERMISSIONS: AdminPermission[] = [
+  "users.delete",
+  "organizations.delete",
+  "crm.delete",
+  "sales_docs.delete",
+  "billing.refund",
+  "billing.reopen_period",
+  "billing.manage_providers",
+  "backups.restore",
+  "integrations.manage",
+  "security.manage",
+  "security.sessions.manage",
+  "security.events.export",
+  "audit.export",
+  "staff.manage",
+  "roles.manage",
+  "delegation.grant",
+  "approvals.decide",
+  "impersonation.approve",
+  "staff.restrictions.manage",
+  "staff.sessions.revoke",
+];
+
+export function isHighRiskPermission(permission: string): boolean {
+  return (HIGH_RISK_PERMISSIONS as string[]).includes(permission);
+}
+
+/** الصلاحية الموروثة الوحيدة الباقية — ممنوع استخدامها في صفحات أو دوال جديدة. */
+export const LEGACY_PERMISSIONS: string[] = ["settings.manage", "tickets.view", "tickets.reply", "tickets.assign", "email.manage", "email.view", "email.audit"];
 
 export function hasPermission(
   staff: { role: string; permissions: string[] | null; rolePermissions?: string[] | null } | null,
