@@ -9,10 +9,16 @@
  * كل عملية غير مدعومة من الأدوات المكتشفة تُعاد كـ«غير مدعومة» بلا نتيجة
  * وهمية، ليبقى مسار SMTP/IMAP الحالي هو البديل العامل.
  */
-import { bindArgs, mapCapabilities, type CapabilityMap } from "./capabilities.server";
+import { bindArgs, mapCapabilities, mapRestCapabilities, type CapabilityMap } from "./capabilities.server";
 import { AgenticMailError, callTool, listTools, redactAgentic } from "./mcp-client.server";
+import {
+  isRestProxy,
+  listRestOperations,
+  restInvoke,
+  restSupportedOperations,
+} from "./rest-adapter.server";
 import { readAgenticState } from "./state.server";
-import type { AgenticOperation } from "./agentic.shared";
+import { AGENTIC_OPERATIONS, type AgenticOperation } from "./agentic.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -38,6 +44,7 @@ export function newCorrelationId(prefix = "agm"): string {
 /* ------------------------------------------------- اكتشاف الأدوات */
 
 let cache: { map: CapabilityMap; at: number } | null = null;
+let restSupport = new Set<AgenticOperation>();
 
 export async function discoverCapabilities(
   correlationId: string,
@@ -45,7 +52,20 @@ export async function discoverCapabilities(
 ): Promise<CapabilityMap> {
   if (!force && cache && Date.now() - cache.at < 5 * 60_000) return cache.map;
   const tools = await listTools(correlationId);
-  const map = mapCapabilities(tools);
+  let map: CapabilityMap;
+  if (isRestProxy(tools)) {
+    // خادم Hostinger يعرض وكيل REST؛ تُشتق القدرات من عمليات OpenAPI الفعلية.
+    const operations = await listRestOperations(correlationId);
+    const supported = restSupportedOperations(operations);
+    restSupport = supported;
+    const ids = Object.fromEntries(
+      AGENTIC_OPERATIONS.map((op) => [op, supported.has(op) ? op : null]),
+    ) as Record<AgenticOperation, string | null>;
+    map = mapRestCapabilities(tools, supported, ids);
+  } else {
+    restSupport = new Set();
+    map = mapCapabilities(tools);
+  }
   cache = { map, at: Date.now() };
   return map;
 }
@@ -63,6 +83,11 @@ export async function invoke(
   canonical: Record<string, unknown>,
   correlationId: string,
 ): Promise<{ json: unknown | null; text: string; latencyMs: number; requestId: string }> {
+  const map = await discoverCapabilities(correlationId);
+  if (map.restMode) {
+    if (!restSupport.has(operation)) throw new UnsupportedOperationError(operation);
+    return restInvoke(operation, canonical, correlationId, restSupport);
+  }
   const tool = await toolFor(operation, correlationId);
   const bound = bindArgs(tool, canonical);
   if (!bound.ok) {
