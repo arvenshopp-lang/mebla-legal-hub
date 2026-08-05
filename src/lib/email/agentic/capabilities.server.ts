@@ -14,13 +14,20 @@ function normalize(name: string): string {
 
 /** أنماط الأسماء لكل عملية، من الأخص إلى الأعم. */
 const PATTERNS: Record<AgenticOperation, RegExp[]> = {
-  listMailboxes: [/(list|get|fetch)_?(all_)?(mail)?boxes?$/, /(mailbox|account)e?s_?(list|all)/, /list_?(mail_)?accounts?/],
+  listMailboxes: [
+    /(list|get|fetch)_?(all_)?(mail)?boxes?$/,
+    /(mailbox|account)e?s_?(list|all)/,
+    /list_?(mail_)?accounts?/,
+  ],
   listMessages: [
     /(list|fetch)_?(mail_)?(messages|emails|mails)/,
     /(messages|emails)_?(list|recent|latest)/,
     /list_?inbox/,
   ],
-  getMessage: [/(get|read|fetch|show)_?(mail_)?(message|email|mail)$/, /(message|email)_?(detail|content|body|get)/],
+  getMessage: [
+    /(get|read|fetch|show)_?(mail_)?(message|email|mail)$/,
+    /(message|email)_?(detail|content|body|get)/,
+  ],
   searchMessages: [/search/, /(query|find)_?(messages|emails|mail)/],
   sendMessage: [/(send|create_and_send)_?(mail_)?(message|email|mail)?$/, /send/],
   replyMessage: [/reply(_to)?_?(message|email|mail)?$/, /^reply$/],
@@ -73,7 +80,9 @@ export function mapCapabilities(tools: McpTool[]): CapabilityMap {
 
   for (const operation of RESOLUTION_ORDER) {
     for (const pattern of PATTERNS[operation]) {
-      const match = tools.find((tool) => !taken.has(tool.name) && pattern.test(normalize(tool.name)));
+      const match = tools.find(
+        (tool) => !taken.has(tool.name) && pattern.test(normalize(tool.name)),
+      );
       if (match) {
         byOperation[operation] = match;
         taken.add(match.name);
@@ -115,10 +124,35 @@ export function mapRestCapabilities(
 
 /** المرادفات المسموحة لكل معامل قياسي. */
 const ARG_ALIASES: Record<string, string[]> = {
-  mailbox: ["mailbox", "mailbox_id", "mailboxid", "mailbox_name", "account", "account_id", "email_account", "address", "email_address", "from", "from_address", "user", "email"],
+  mailbox: [
+    "mailbox",
+    "mailbox_id",
+    "mailboxid",
+    "mailbox_name",
+    "account",
+    "account_id",
+    "email_account",
+    "address",
+    "email_address",
+    "from",
+    "from_address",
+    "user",
+    "email",
+  ],
   folder: ["folder", "folder_id", "folder_name", "label", "label_id", "path", "mailbox_folder"],
   limit: ["limit", "max", "max_results", "maxresults", "count", "page_size", "per_page", "top"],
-  cursor: ["cursor", "page_token", "pagetoken", "next_cursor", "next_page_token", "offset", "page", "since", "after", "start"],
+  cursor: [
+    "cursor",
+    "page_token",
+    "pagetoken",
+    "next_cursor",
+    "next_page_token",
+    "offset",
+    "page",
+    "since",
+    "after",
+    "start",
+  ],
   messageId: ["message_id", "messageid", "id", "email_id", "mail_id", "uid", "message"],
   threadId: ["thread_id", "threadid", "conversation_id"],
   query: ["query", "q", "search", "search_query", "keyword", "keywords", "text_query"],

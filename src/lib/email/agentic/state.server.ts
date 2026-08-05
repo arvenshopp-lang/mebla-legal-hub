@@ -71,7 +71,8 @@ export async function readAgenticState(db: Db): Promise<AgenticState> {
     .eq("key", SETTINGS_KEY)
     .maybeSingle();
   const value = (data as { value?: unknown } | null)?.value;
-  const stored = value && typeof value === "object" && !Array.isArray(value) ? (value as StoredState) : {};
+  const stored =
+    value && typeof value === "object" && !Array.isArray(value) ? (value as StoredState) : {};
   return hydrate(stored);
 }
 

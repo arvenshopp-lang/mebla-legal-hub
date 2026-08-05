@@ -154,6 +154,8 @@ export function toSafeFailure(error: unknown): SafeFailure {
   const record = error as { code?: unknown; message?: unknown } | null;
   const code = typeof record?.code === "string" && record.code ? record.code : "agentic_failed";
   const raw = typeof record?.message === "string" ? record.message : String(error ?? "");
-  const message = redactAgentic(raw).replace(/\s+at\s+.*/gs, "").trim();
+  const message = redactAgentic(raw)
+    .replace(/\s+at\s+.*/gs, "")
+    .trim();
   return { code, message: message.slice(0, 300) || "تعذّر تنفيذ العملية مع مزوّد البريد." };
 }

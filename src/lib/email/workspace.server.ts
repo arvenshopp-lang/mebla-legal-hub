@@ -40,15 +40,17 @@ export type MailboxScope = { isSuper: boolean; canManage: boolean; departmentId:
 export async function allowedMailboxIds(db: Db, scope: MailboxScope): Promise<string[] | null> {
   if (scope.isSuper || scope.canManage) return null; // null = بلا تقييد
   const { data } = await db.from("email_mailboxes").select("id, department_id, type");
-  return ((data ?? []) as { id: string; department_id: string | null; type: string }[])
-    // صندوق النظام (noreply) لا يظهر لموظف عادي إطلاقاً — إدارة فقط.
-    .filter((m) => m.type !== "system")
-    .filter(
-      (m) =>
-        m.department_id === null ||
-        (scope.departmentId !== null && m.department_id === scope.departmentId),
-    )
-    .map((m) => m.id);
+  return (
+    ((data ?? []) as { id: string; department_id: string | null; type: string }[])
+      // صندوق النظام (noreply) لا يظهر لموظف عادي إطلاقاً — إدارة فقط.
+      .filter((m) => m.type !== "system")
+      .filter(
+        (m) =>
+          m.department_id === null ||
+          (scope.departmentId !== null && m.department_id === scope.departmentId),
+      )
+      .map((m) => m.id)
+  );
 }
 
 /** يمنع أي عملية على صندوق غير مصرّح به — يُستدعى في كل دالة خادم. */

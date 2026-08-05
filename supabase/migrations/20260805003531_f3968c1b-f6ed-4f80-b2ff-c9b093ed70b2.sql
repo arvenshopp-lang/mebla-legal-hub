@@ -1,0 +1,1 @@
+UPDATE public.sms_settings SET code_ttl_minutes = 10, resend_wait_seconds = 60 WHERE code_ttl_minutes <> 10 OR resend_wait_seconds <> 60;

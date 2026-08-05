@@ -162,6 +162,10 @@ export type ParsedMessage = {
   fromName: string | null;
   to: string[];
   cc: string[];
+  /** Delivered-To / X-Delivered-To — أقرب دليل على الـ Alias المستهدف. */
+  deliveredTo: string[];
+  /** X-Original-To / Envelope-To / X-Forwarded-To. */
+  originalTo: string[];
   date: string | null;
   html: string | null;
   text: string | null;
@@ -351,6 +355,15 @@ export function parseMimeMessage(raw: Uint8Array): ParsedMessage {
     fromName: from.name,
     to: parseAddresses(header(topHeaders, "to")),
     cc: parseAddresses(header(topHeaders, "cc")),
+    deliveredTo: [
+      ...parseAddresses(header(topHeaders, "delivered-to")),
+      ...parseAddresses(header(topHeaders, "x-delivered-to")),
+    ],
+    originalTo: [
+      ...parseAddresses(header(topHeaders, "x-original-to")),
+      ...parseAddresses(header(topHeaders, "envelope-to")),
+      ...parseAddresses(header(topHeaders, "x-forwarded-to")),
+    ],
     date: header(topHeaders, "date").trim() || null,
     html,
     text,

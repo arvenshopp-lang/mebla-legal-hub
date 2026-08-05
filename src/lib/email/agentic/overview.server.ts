@@ -74,12 +74,14 @@ export async function mailboxLinks(
     );
 
   const byMailbox = new Map(
-    ((states ?? []) as {
-      mailbox_id: string;
-      last_sync_at: string | null;
-      last_error: string | null;
-      provider_cursor: string | null;
-    }[]).map((row) => [row.mailbox_id, row]),
+    (
+      (states ?? []) as {
+        mailbox_id: string;
+        last_sync_at: string | null;
+        last_error: string | null;
+        provider_cursor: string | null;
+      }[]
+    ).map((row) => [row.mailbox_id, row]),
   );
 
   return visible.map((row) => {

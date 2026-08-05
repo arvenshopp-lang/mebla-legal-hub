@@ -46,7 +46,13 @@ export const OPERATION_LABELS: Record<AgenticOperation, string> = {
 };
 
 /** خطوات الجاهزية الإلزامية قبل تفعيل التكامل. */
-export const READINESS_CHECKS = ["connection", "tools", "mailboxes", "dry_run", "test_send"] as const;
+export const READINESS_CHECKS = [
+  "connection",
+  "tools",
+  "mailboxes",
+  "dry_run",
+  "test_send",
+] as const;
 export type ReadinessCheck = (typeof READINESS_CHECKS)[number];
 
 export const CHECK_LABELS: Record<ReadinessCheck, string> = {
@@ -59,12 +65,17 @@ export const CHECK_LABELS: Record<ReadinessCheck, string> = {
 
 export type CheckState = { ok: boolean; at: string | null; detail: string | null };
 
-export type AgenticLinkStatus = "unlinked" | "linked" | "missing";
+/**
+ * `alias`: عنوان منطقي يُسلَّم إلى الحساب الحقيقي (support/sales/…)، فلا يُربط
+ * بصندوق مستقل عند المزوّد ولا يُزامن بذاته — وهذه حالة سليمة لا خلل.
+ */
+export type AgenticLinkStatus = "unlinked" | "linked" | "missing" | "alias";
 
 export const LINK_STATUS_LABELS: Record<AgenticLinkStatus, string> = {
   unlinked: "غير مرتبط",
   linked: "مرتبط",
   missing: "غير موجود عند المزوّد",
+  alias: "اسم مستعار",
 };
 
 export type AgenticState = {

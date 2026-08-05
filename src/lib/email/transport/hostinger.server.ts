@@ -9,7 +9,13 @@
 import { ImapConnection, ImapError, type MailboxStatus } from "./imap.server";
 import { base64Encode, parseMimeMessage } from "./mime.server";
 import { smtpSend } from "./smtp.server";
-import { secretsStatus, transportConfigured } from "./config.server";
+import {
+  mailboxHasOwnCredentials,
+  primaryMailboxAddress,
+  secretsStatus,
+  transportConfigured,
+} from "./config.server";
+import { inboundAliasAddresses, routeInboundAddress } from "@/lib/email/routing.server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -22,6 +28,7 @@ const LOCK_STALE_MS = 5 * 60_000;
 export type MailboxSyncTarget = {
   id: string;
   address: string;
+  type: string;
   folders: string[];
   syncEnabled: boolean;
   inboundEnabled: boolean;
@@ -55,18 +62,22 @@ export async function syncableMailboxes(db: Db, mailboxId?: string): Promise<Mai
   let query = db
     .from("email_mailboxes")
     .select("id, address, type, is_active, inbound_enabled, sync_enabled, imap_folders")
-    .neq("type", "system")
     .order("sort_order", { ascending: true });
   if (mailboxId) query = query.eq("id", mailboxId);
   const { data } = await query;
-  return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
-    id: String(row.id),
-    address: String(row.address),
-    folders: foldersOf(row.imap_folders),
-    syncEnabled: row.sync_enabled === true,
-    inboundEnabled: row.inbound_enabled === true,
-    isActive: row.is_active === true,
-  }));
+  // الحساب الحقيقي (قد يكون صندوق النظام) مصدر سحب مسموح لأن الأسماء
+  // المستعارة تُسلَّم إليه؛ الاستيعاب يبقى تحت الصندوق المنطقي فقط.
+  return ((data ?? []) as Record<string, unknown>[])
+    .filter((row) => String(row.type) !== "system" || mailboxHasOwnCredentials(String(row.address)))
+    .map((row) => ({
+      id: String(row.id),
+      address: String(row.address),
+      type: String(row.type),
+      folders: foldersOf(row.imap_folders),
+      syncEnabled: row.sync_enabled === true,
+      inboundEnabled: row.inbound_enabled === true,
+      isActive: row.is_active === true,
+    }));
 }
 
 async function loadState(
@@ -208,6 +219,8 @@ export async function syncMailboxFolder(
     const messages = await connection.fetchSince(cursor, FETCH_LIMIT);
     const { ingestInbound } = await import("@/lib/email/workspace.server");
     const { linkInboundToTicket } = await import("@/lib/support/ingest.server");
+    // Aliases منطقية: الرسالة تُستوعب تحت الصندوق المستهدف في ترويسة التسليم.
+    const aliases = await inboundAliasAddresses(db);
 
     let ingested = 0;
     let duplicates = 0;
@@ -227,8 +240,22 @@ export async function syncMailboxFolder(
           rejected += 1;
           continue;
         }
+        const routed = routeInboundAddress(
+          aliases,
+          {
+            deliveredTo: parsed.deliveredTo,
+            originalTo: parsed.originalTo,
+            to: parsed.to,
+            cc: parsed.cc,
+          },
+          mailbox.address,
+        );
+        if (mailbox.type === "system" && !routed.matched) {
+          rejected += 1;
+          continue;
+        }
         const result = await ingestInbound(db, {
-          to: mailbox.address,
+          to: routed.address,
           from: parsed.fromAddress,
           fromName: parsed.fromName,
           subject: parsed.subject,
@@ -252,7 +279,7 @@ export async function syncMailboxFolder(
             mailboxId: result.mailboxId,
             threadId: result.threadId,
             emailMessageId: result.messageId,
-            recipient: mailbox.address,
+            recipient: routed.address,
             from: parsed.fromAddress,
             fromName: parsed.fromName,
             subject: parsed.subject,
@@ -313,6 +340,11 @@ export async function syncMailbox(
 ): Promise<SyncOutcome[]> {
   const [mailbox] = await syncableMailboxes(db, mailboxId);
   if (!mailbox) throw new Error("الصندوق غير موجود أو غير مؤهل للمزامنة.");
+  if (!mailboxHasOwnCredentials(mailbox.address)) {
+    throw new Error(
+      `«${mailbox.address}» اسم مستعار بلا بيانات دخول؛ تُسحب رسائله عبر الحساب الحقيقي (${primaryMailboxAddress() || "غير مُعرّف"}).`,
+    );
+  }
   const outcomes: SyncOutcome[] = [];
   for (const folder of mailbox.folders) {
     outcomes.push(await syncMailboxFolder(db, mailbox, folder, triggerSource));
@@ -325,8 +357,9 @@ export async function syncAllMailboxes(
   db: Db,
   triggerSource: "manual" | "cron" = "cron",
 ): Promise<SyncOutcome[]> {
+  // الحساب الحقيقي فقط يُسجَّل الدخول إليه؛ الأسماء المستعارة تُوجَّه بالترويسات.
   const mailboxes = (await syncableMailboxes(db)).filter(
-    (m) => m.syncEnabled && m.inboundEnabled && m.isActive,
+    (m) => m.syncEnabled && m.inboundEnabled && m.isActive && mailboxHasOwnCredentials(m.address),
   );
   const outcomes: SyncOutcome[] = [];
   for (const mailbox of mailboxes) {
