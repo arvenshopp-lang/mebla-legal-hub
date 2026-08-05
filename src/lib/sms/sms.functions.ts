@@ -223,7 +223,7 @@ export const getSmsSettingsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    await admin.requireStaff(context.supabase, context.userId, "sms.manage");
+    await admin.requireStaff(context.supabase, context.userId, "sms.read");
     const otp = await import("./otp.server");
     const settings = await otp.loadSmsSettings();
     const providers = await import("./providers.server");
