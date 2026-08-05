@@ -539,6 +539,11 @@ export async function syncAgenticFolder(
 
     const { ingestInbound } = await import("@/lib/email/workspace.server");
     const { linkInboundToTicket } = await import("@/lib/support/ingest.server");
+    const { inboundAliasAddresses, routeInboundAddress } = await import(
+      "@/lib/email/routing.server"
+    );
+    // Aliases منطقية فقط: القسم يُحدَّد من ترويسات التسليم لا من الصندوق الحقيقي.
+    const aliases = await inboundAliasAddresses(db);
 
     let ingested = 0;
     let duplicates = 0;
@@ -609,7 +614,11 @@ export async function syncAgenticFolder(
 
       try {
         const result = await ingestInbound(db, {
-          to: target.address,
+          to: routeInboundAddress(
+            aliases,
+            { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
+            target.address,
+          ).address,
           from: message.fromAddress,
           fromName: message.fromName,
           subject: message.subject,
@@ -630,7 +639,11 @@ export async function syncAgenticFolder(
             mailboxId: result.mailboxId,
             threadId: result.threadId,
             emailMessageId: result.messageId,
-            recipient: target.address,
+            recipient: routeInboundAddress(
+              aliases,
+              { deliveredTo: message.deliveredTo, to: message.to, cc: message.cc },
+              target.address,
+            ).address,
             from: message.fromAddress,
             fromName: message.fromName,
             subject: message.subject,
