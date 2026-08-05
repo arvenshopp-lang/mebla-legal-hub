@@ -74,6 +74,34 @@ export const deleteRbacRole = createServerFn({ method: "POST" })
     return ops.deleteRole(context.supabase, context.userId, data.id);
   });
 
+/** إنشاء دور من قالب تشغيلي — القالب يُنسخ كدور عادي ولا يُسند لأحد تلقائياً. */
+export const createRoleFromTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        templateCode: z.string().trim().min(3).max(60),
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z][a-z0-9_]{2,39}$/, "الرمز يبدأ بحرف لاتيني صغير ويحتوي حروفاً وأرقاماً وشرطة سفلية"),
+        name_ar: z.string().trim().min(2).max(80),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.createRoleFromTemplate(context.supabase, context.userId, data);
+  });
+
+const _deleteRbacRoleLegacy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ops = await import("./rbac-ops.server");
+    return ops.deleteRole(context.supabase, context.userId, data.id);
+  });
+
 export const saveRbacDepartment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
