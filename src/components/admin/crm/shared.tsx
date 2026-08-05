@@ -51,3 +51,33 @@ export function Money({ value, currency = "SAR" }: { value: number; currency?: s
 export function OwnerCell({ owner }: { owner: { full_name: string } | null }) {
   return <span>{owner ? owner.full_name : "—"}</span>;
 }
+
+/** تنزيل تصدير CSV لكيان CRM مع رسائل عربية واضحة. */
+export function useCrmCsvExport() {
+  const exportFn = useServerFn(exportCrmCsv);
+  const [exporting, setExporting] = useState<CrmExportEntity | null>(null);
+
+  const download = async (entity: CrmExportEntity) => {
+    setExporting(entity);
+    try {
+      const { csv, filename } = await exportFn({ data: { entity } });
+      const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر تصدير الملف.");
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return { download, exporting };
+}
+
+export type CrmExportEntity = "leads" | "companies" | "contacts" | "deals";
