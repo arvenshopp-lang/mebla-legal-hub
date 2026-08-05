@@ -1155,15 +1155,13 @@ export async function setTicketTags(
       .in("tag_id", removed);
   }
   if (added.length > 0) {
-    await db
-      .from("support_ticket_tags")
-      .insert(
-        added.map((tagId) => ({
-          ticket_id: input.ticketId,
-          tag_id: tagId,
-          created_by: actor.userId,
-        })),
-      );
+    await db.from("support_ticket_tags").insert(
+      added.map((tagId) => ({
+        ticket_id: input.ticketId,
+        tag_id: tagId,
+        created_by: actor.userId,
+      })),
+    );
   }
   for (const tagId of added) {
     await writeTicketEvent(db, {

@@ -268,7 +268,7 @@ export function hasFeature(
   feature: PlanFeatureKey,
 ) {
   if (!overview) return false;
-  if (!Boolean(overview.plan[feature])) return false;
+  if (!overview.plan[feature]) return false;
   return feature === "pdf_search_enabled" ? true : isLive(overview.state);
 }
 

@@ -89,7 +89,10 @@ const legal = boxes.get("legal")!;
 const info = boxes.get("info")!;
 const noreply = boxes.get("noreply")!;
 
-const scope = (departmentId: string | null, extra?: Partial<{ isSuper: boolean; canManage: boolean }>) => ({
+const scope = (
+  departmentId: string | null,
+  extra?: Partial<{ isSuper: boolean; canManage: boolean }>,
+) => ({
   isSuper: extra?.isSuper ?? false,
   canManage: extra?.canManage ?? false,
   departmentId,
@@ -133,21 +136,51 @@ await test("OUT-01", "إنشاء مسودة جديدة", async () => {
   draftId = r.messageId;
   draftThread = r.threadId;
   threadIds.add(r.threadId);
-  const { data } = await db.from("email_messages").select("status, message_id, thread_id").eq("id", draftId).single();
+  const { data } = await db
+    .from("email_messages")
+    .select("status, message_id, thread_id")
+    .eq("id", draftId)
+    .single();
   expect(data.status === "draft", `الحالة ${data.status}`);
   expect(/^<[0-9a-f-]{36}@mehlalex\.com>$/.test(data.message_id), "Message-ID غير مطابق للصيغة");
-  const { data: th } = await db.from("email_threads").select("folder").eq("id", draftThread).single();
+  const { data: th } = await db
+    .from("email_threads")
+    .select("folder")
+    .eq("id", draftThread)
+    .single();
   expect(th.folder === "drafts", `المجلد ${th.folder}`);
-  await e.writeEmailAudit(db, ACTOR, { action: "email.draft.save", threadId: draftThread, messageId: draftId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.draft.save",
+    threadId: draftThread,
+    messageId: draftId,
+    description: TAG,
+  });
   return "مسودة + Message-ID صحيح";
 });
 
 await test("OUT-02", "تعديل المسودة", async () => {
-  await e.saveDraft(db, ACTOR, compose({ draftId, threadId: draftThread, subject: `${TAG} موضوع معدّل`, html: "<p>نص محدّث</p>" }));
-  const { data } = await db.from("email_messages").select("subject, body_text").eq("id", draftId).single();
+  await e.saveDraft(
+    db,
+    ACTOR,
+    compose({
+      draftId,
+      threadId: draftThread,
+      subject: `${TAG} موضوع معدّل`,
+      html: "<p>نص محدّث</p>",
+    }),
+  );
+  const { data } = await db
+    .from("email_messages")
+    .select("subject, body_text")
+    .eq("id", draftId)
+    .single();
   expect(data.subject.endsWith("معدّل"), "لم يُحدَّث الموضوع");
   expect(data.body_text.includes("محدّث"), "لم يُحدَّث النص");
-  await e.writeEmailAudit(db, ACTOR, { action: "email.draft.save", messageId: draftId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.draft.save",
+    messageId: draftId,
+    description: TAG,
+  });
   return "تحديث الموضوع والنص";
 });
 
@@ -155,27 +188,49 @@ let sentTextId = "";
 await test("OUT-03", "إرسال رسالة نصية", async () => {
   providerMode = "ok";
   const before = calls.length;
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} نصية`, html: "نص عادي بدون وسوم" }));
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({ subject: `${TAG} نصية`, html: "نص عادي بدون وسوم" }),
+  );
   threadIds.add(r.threadId);
   sentTextId = r.messageId;
   expect(r.sent, "لم تُرسل");
   expect(calls.length === before + 1, "عدد نداءات المزوّد غير صحيح");
-  const { data } = await db.from("email_messages").select("status, sent_at, provider_ref").eq("id", r.messageId).single();
+  const { data } = await db
+    .from("email_messages")
+    .select("status, sent_at, provider_ref")
+    .eq("id", r.messageId)
+    .single();
   expect(data.status === "sent" && data.sent_at && data.provider_ref, "حالة الرسالة غير مكتملة");
-  await e.writeEmailAudit(db, ACTOR, { action: "email.message.sent", threadId: r.threadId, messageId: r.messageId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.message.sent",
+    threadId: r.threadId,
+    messageId: r.messageId,
+    description: TAG,
+  });
   return "status=sent + provider_ref";
 });
 
 let htmlThread = "";
 await test("OUT-04", "إرسال رسالة HTML", async () => {
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} HTML`, html: "<h2>عنوان</h2><p>فقرة <b>غامقة</b></p>" }));
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({ subject: `${TAG} HTML`, html: "<h2>عنوان</h2><p>فقرة <b>غامقة</b></p>" }),
+  );
   threadIds.add(r.threadId);
   htmlThread = r.threadId;
   expect(r.sent, "لم تُرسل");
   const body = calls.at(-1)!.body as { html: string; text: string };
   expect(body.html.includes("<h2>"), "HTML لم يصل للمزوّد");
   expect(!body.text.includes("<h2>"), "النسخة النصية تحتوي وسوماً");
-  await e.writeEmailAudit(db, ACTOR, { action: "email.message.sent", threadId: r.threadId, messageId: r.messageId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.message.sent",
+    threadId: r.threadId,
+    messageId: r.messageId,
+    description: TAG,
+  });
   return "HTML + نسخة نصية مجرّدة";
 });
 
@@ -186,41 +241,100 @@ await test("OUT-05", "إرسال رسالة بمرفق آمن", async () => {
   threadIds.add(d.threadId);
   attachedMessageId = d.messageId;
   const stored = await att.storeAttachment(db, {
-    messageId: d.messageId, direction: "outbound", fileName: "عقد اختباري.pdf", bytes: bytes.pdf(),
+    messageId: d.messageId,
+    direction: "outbound",
+    fileName: "عقد اختباري.pdf",
+    bytes: bytes.pdf(),
     uploadedByEmail: ACTOR.email,
   });
   attachmentId = stored.id;
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} بمرفق`, draftId: d.messageId, threadId: d.threadId }));
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({ subject: `${TAG} بمرفق`, draftId: d.messageId, threadId: d.threadId }),
+  );
   expect(r.sent, "لم تُرسل");
   const body = calls.at(-1)!.body as { html: string };
-  expect(body.html.includes("المرفقات (1)") && body.html.includes("/storage/v1/object/sign/"), "رابط المرفق الموقّع غير موجود");
+  expect(
+    body.html.includes("المرفقات (1)") && body.html.includes("/storage/v1/object/sign/"),
+    "رابط المرفق الموقّع غير موجود",
+  );
   return "مرفق مُسلَّم كرابط موقّع";
 });
 
 await test("OUT-06", "الرد Reply داخل نفس المحادثة", async () => {
-  const { data: first } = await db.from("email_messages").select("message_id").eq("thread_id", htmlThread).limit(1).single();
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} HTML`, threadId: htmlThread, inReplyTo: first.message_id, html: "<p>رد</p>" }));
+  const { data: first } = await db
+    .from("email_messages")
+    .select("message_id")
+    .eq("thread_id", htmlThread)
+    .limit(1)
+    .single();
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({
+      subject: `${TAG} HTML`,
+      threadId: htmlThread,
+      inReplyTo: first.message_id,
+      html: "<p>رد</p>",
+    }),
+  );
   expect(r.threadId === htmlThread, "أُنشئت محادثة جديدة بدل الرد");
-  const { count } = await db.from("email_messages").select("id", { count: "exact", head: true }).eq("thread_id", htmlThread);
+  const { count } = await db
+    .from("email_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("thread_id", htmlThread);
   expect((count ?? 0) >= 2, "لم تُضف رسالة الرد");
   return `رسائل المحادثة: ${count}`;
 });
 
 await test("OUT-07", "الرد على الجميع Reply All (To + CC)", async () => {
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} HTML`, threadId: htmlThread, to: [RECIPIENT, RECIPIENT2], cc: ["e2e.cc@example.invalid"], html: "<p>رد على الجميع</p>" }));
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({
+      subject: `${TAG} HTML`,
+      threadId: htmlThread,
+      to: [RECIPIENT, RECIPIENT2],
+      cc: ["e2e.cc@example.invalid"],
+      html: "<p>رد على الجميع</p>",
+    }),
+  );
   const body = calls.at(-1)!.body as { to: string; cc: string };
   expect(body.to.includes(RECIPIENT2), "المستلم الثاني مفقود");
   expect(body.cc?.includes("e2e.cc@example.invalid"), "CC مفقود");
-  const { data: th } = await db.from("email_threads").select("participants").eq("id", r.threadId).single();
+  const { data: th } = await db
+    .from("email_threads")
+    .select("participants")
+    .eq("id", r.threadId)
+    .single();
   expect(th.participants.includes("e2e.cc@example.invalid"), "CC لم يُضف للمشاركين");
   return "To وCC صحيحان";
 });
 
 await test("OUT-08", "التحويل Forward مع المرفق", async () => {
-  const d = await e.saveDraft(db, ACTOR, compose({ subject: `إعادة توجيه: ${TAG} بمرفق`, to: [RECIPIENT2] }));
+  const d = await e.saveDraft(
+    db,
+    ACTOR,
+    compose({ subject: `إعادة توجيه: ${TAG} بمرفق`, to: [RECIPIENT2] }),
+  );
   threadIds.add(d.threadId);
-  await att.storeAttachment(db, { messageId: d.messageId, direction: "outbound", fileName: "عقد اختباري.pdf", bytes: bytes.pdf() });
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `إعادة توجيه: ${TAG} بمرفق`, to: [RECIPIENT2], draftId: d.messageId, threadId: d.threadId }));
+  await att.storeAttachment(db, {
+    messageId: d.messageId,
+    direction: "outbound",
+    fileName: "عقد اختباري.pdf",
+    bytes: bytes.pdf(),
+  });
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({
+      subject: `إعادة توجيه: ${TAG} بمرفق`,
+      to: [RECIPIENT2],
+      draftId: d.messageId,
+      threadId: d.threadId,
+    }),
+  );
   expect(r.sent, "لم تُرسل");
   const body = calls.at(-1)!.body as { html: string };
   expect(body.html.includes("المرفقات (1)"), "المرفق لم يُنقل مع التحويل");
@@ -231,22 +345,42 @@ let scheduledId = "";
 await test("OUT-09", "جدولة رسالة", async () => {
   const before = calls.length;
   const when = new Date(Date.now() + 3600_000).toISOString();
-  const r = await e.queueMessage(db, ACTOR, compose({ subject: `${TAG} مجدولة`, scheduledAt: when }));
+  const r = await e.queueMessage(
+    db,
+    ACTOR,
+    compose({ subject: `${TAG} مجدولة`, scheduledAt: when }),
+  );
   threadIds.add(r.threadId);
   scheduledId = r.messageId;
   expect(!r.sent, "أُرسلت رغم الجدولة");
   expect(calls.length === before, "استُدعي المزوّد رغم الجدولة");
-  const { data } = await db.from("email_outbox").select("status, scheduled_at").eq("message_id", scheduledId).single();
+  const { data } = await db
+    .from("email_outbox")
+    .select("status, scheduled_at")
+    .eq("message_id", scheduledId)
+    .single();
   expect(data.status === "scheduled", `حالة القائمة ${data.status}`);
   return "scheduled بلا استدعاء للمزوّد";
 });
 
 await test("OUT-10", "إلغاء رسالة مجدولة قبل الإرسال", async () => {
   await e.discardDraft(db, scheduledId);
-  const { data: msg } = await db.from("email_messages").select("id").eq("id", scheduledId).maybeSingle();
-  const { data: job } = await db.from("email_outbox").select("id").eq("message_id", scheduledId).maybeSingle();
+  const { data: msg } = await db
+    .from("email_messages")
+    .select("id")
+    .eq("id", scheduledId)
+    .maybeSingle();
+  const { data: job } = await db
+    .from("email_outbox")
+    .select("id")
+    .eq("message_id", scheduledId)
+    .maybeSingle();
   expect(!msg && !job, "بقيت آثار للرسالة الملغاة");
-  await e.writeEmailAudit(db, ACTOR, { action: "email.draft.discard", messageId: scheduledId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.draft.discard",
+    messageId: scheduledId,
+    description: TAG,
+  });
   return "حُذفت من الرسائل وقائمة الإرسال";
 });
 
@@ -257,48 +391,92 @@ await test("OUT-11", "فشل المزوّد ثم Retry ناجح", async () => {
   threadIds.add(r.threadId);
   failedId = r.messageId;
   expect(!r.sent && r.failureRef, "لم يُسجَّل مرجع عطل");
-  const { data: job } = await db.from("email_outbox").select("status, attempts, last_error_code, next_attempt_at").eq("message_id", failedId).single();
+  const { data: job } = await db
+    .from("email_outbox")
+    .select("status, attempts, last_error_code, next_attempt_at")
+    .eq("message_id", failedId)
+    .single();
   expect(job.attempts === 1 && job.status === "queued", `القائمة ${job.status}/${job.attempts}`);
   expect(new Date(job.next_attempt_at).getTime() > Date.now(), "لم يُطبَّق التراجع الزمني");
   providerMode = "ok";
-  await db.from("email_outbox").update({ status: "queued", next_attempt_at: new Date().toISOString() }).eq("message_id", failedId);
+  await db
+    .from("email_outbox")
+    .update({ status: "queued", next_attempt_at: new Date().toISOString() })
+    .eq("message_id", failedId);
   const retry = await e.dispatchOne(db, failedId);
   expect(retry.sent, "فشلت إعادة المحاولة");
-  const { data: msg } = await db.from("email_messages").select("status, failure_ref").eq("id", failedId).single();
+  const { data: msg } = await db
+    .from("email_messages")
+    .select("status, failure_ref")
+    .eq("id", failedId)
+    .single();
   expect(msg.status === "sent" && msg.failure_ref === null, "لم تُنظَّف حالة العطل");
-  await e.writeEmailAudit(db, ACTOR, { action: "email.message.retry", messageId: failedId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.message.retry",
+    messageId: failedId,
+    description: TAG,
+  });
   return `مرجع العطل ${r.failureRef} ثم نجاح`;
 });
 
 await test("OUT-12", "منع الإرسال المكرر لنفس الرسالة", async () => {
-  const msg = await expectThrows(() => e.queueMessage(db, ACTOR, compose({ subject: `${TAG} نصية`, draftId: sentTextId })), "أُرسلت");
+  const msg = await expectThrows(
+    () => e.queueMessage(db, ACTOR, compose({ subject: `${TAG} نصية`, draftId: sentTextId })),
+    "أُرسلت",
+  );
   const again = await e.dispatchOne(db, sentTextId);
   expect(!again.sent, "أُعيد إرسال رسالة مُرسلة");
   return msg;
 });
 
 await test("OUT-13", "ثبات Message-ID وThread-ID", async () => {
-  const { data } = await db.from("email_messages").select("id, message_id, thread_id").eq("id", sentTextId).single();
-  const { data: dupe } = await db.from("email_messages").select("id").eq("message_id", data.message_id);
+  const { data } = await db
+    .from("email_messages")
+    .select("id, message_id, thread_id")
+    .eq("id", sentTextId)
+    .single();
+  const { data: dupe } = await db
+    .from("email_messages")
+    .select("id")
+    .eq("message_id", data.message_id);
   expect(dupe.length === 1, "Message-ID مكرر");
   expect(data.thread_id, "Thread-ID مفقود");
   return "معرّفات فريدة ومرتبطة";
 });
 
 await test("OUT-14", "ظهور الرسائل في Sent وOutbox بالحالة الصحيحة", async () => {
-  const { data: th } = await db.from("email_threads").select("folder").eq("id", htmlThread).single();
+  const { data: th } = await db
+    .from("email_threads")
+    .select("folder")
+    .eq("id", htmlThread)
+    .single();
   expect(th.folder === "sent", `مجلد المحادثة ${th.folder}`);
   const sentList = await e.listThreads(db, { mailboxId: support.id, folder: "sent" });
-  expect(sentList.threads.some((t) => t.id === htmlThread), "المحادثة غير ظاهرة في المُرسل");
-  const { data: outboxRows } = await db.from("email_outbox").select("status").eq("message_id", sentTextId).single();
+  expect(
+    sentList.threads.some((t) => t.id === htmlThread),
+    "المحادثة غير ظاهرة في المُرسل",
+  );
+  const { data: outboxRows } = await db
+    .from("email_outbox")
+    .select("status")
+    .eq("message_id", sentTextId)
+    .single();
   expect(outboxRows.status === "sent", `حالة القائمة ${outboxRows.status}`);
   return `Sent=${sentList.total}`;
 });
 
 await test("OUT-15", "سجل التدقيق يغطي كل خطوة", async () => {
-  const { data } = await db.from("email_audit_logs").select("action").ilike("description", `%${TAG}%`);
+  const { data } = await db
+    .from("email_audit_logs")
+    .select("action")
+    .ilike("description", `%${TAG}%`);
   const actions = new Set((data as { action: string }[]).map((r) => r.action));
-  for (const a of ["email.draft.save", "email.message.sent", "email.draft.discard", "email.message.retry"]) {
+  for (const a of [
+    "email.draft.save",
+    "email.message.sent",
+    "email.draft.discard",
+    "email.message.retry",
+  ]) {
     expect(actions.has(a), `إجراء مفقود: ${a}`);
   }
   return `${data.length} قيد تدقيق`;
@@ -309,28 +487,81 @@ let draft2 = { messageId: "", threadId: "" };
 await test("ATT-01", "قبول ملف PDF سليم", async () => {
   draft2 = await e.saveDraft(db, ACTOR, compose({ subject: `${TAG} مرفقات` }));
   threadIds.add(draft2.threadId);
-  const s = await att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "مذكرة.pdf", bytes: bytes.pdf() });
+  const s = await att.storeAttachment(db, {
+    messageId: draft2.messageId,
+    direction: "outbound",
+    fileName: "مذكرة.pdf",
+    bytes: bytes.pdf(),
+  });
   expect(s.mime_type === "application/pdf", "نوع خاطئ");
   return s.file_name;
 });
 await test("ATT-02", "قبول صورة PNG", async () => {
-  const s = await att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "صورة.png", bytes: bytes.png() });
+  const s = await att.storeAttachment(db, {
+    messageId: draft2.messageId,
+    direction: "outbound",
+    fileName: "صورة.png",
+    bytes: bytes.png(),
+  });
   expect(s.is_inline_safe, "الصورة لم تُعلَّم كآمنة للعرض");
   return s.mime_type;
 });
 await test("ATT-03", "رفض ملف تنفيذي", () =>
-  expectThrows(() => att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "virus.exe", bytes: bytes.exe() }), ""));
+  expectThrows(
+    () =>
+      att.storeAttachment(db, {
+        messageId: draft2.messageId,
+        direction: "outbound",
+        fileName: "virus.exe",
+        bytes: bytes.exe(),
+      }),
+    "",
+  ),
+);
 await test("ATT-04", "رفض امتداد مزيّف لا يطابق التوقيع الفعلي", () =>
-  expectThrows(() => att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "تقرير.pdf", bytes: bytes.png() }), "توقيع"));
+  expectThrows(
+    () =>
+      att.storeAttachment(db, {
+        messageId: draft2.messageId,
+        direction: "outbound",
+        fileName: "تقرير.pdf",
+        bytes: bytes.png(),
+      }),
+    "توقيع",
+  ),
+);
 await test("ATT-05", "رفض ملف يتجاوز الحجم", () =>
-  expectThrows(() => att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "كبير.pdf", bytes: bytes.oversize() }), "10"));
+  expectThrows(
+    () =>
+      att.storeAttachment(db, {
+        messageId: draft2.messageId,
+        direction: "outbound",
+        fileName: "كبير.pdf",
+        bytes: bytes.oversize(),
+      }),
+    "10",
+  ),
+);
 await test("ATT-06", "تعدد المرفقات في رسالة واحدة", async () => {
-  const { count } = await db.from("email_attachments").select("id", { count: "exact", head: true }).eq("message_id", draft2.messageId);
+  const { count } = await db
+    .from("email_attachments")
+    .select("id", { count: "exact", head: true })
+    .eq("message_id", draft2.messageId);
   expect((count ?? 0) === 2, `عدد المرفقات ${count}`);
   return "مرفقان مقبولان";
 });
 await test("ATT-07", "رفض تكرار نفس الملف في الرسالة", () =>
-  expectThrows(() => att.storeAttachment(db, { messageId: draft2.messageId, direction: "outbound", fileName: "مذكرة.pdf", bytes: bytes.pdf() }), "مسبقاً"));
+  expectThrows(
+    () =>
+      att.storeAttachment(db, {
+        messageId: draft2.messageId,
+        direction: "outbound",
+        fileName: "مذكرة.pdf",
+        bytes: bytes.pdf(),
+      }),
+    "مسبقاً",
+  ),
+);
 
 let signedUrl = "";
 await test("ATT-08", "الرابط الموقّع يعمل ومدته قصيرة (5 دقائق)", async () => {
@@ -341,9 +572,17 @@ await test("ATT-08", "الرابط الموقّع يعمل ومدته قصيرة
   expect(claims.exp - claims.iat === 300, `TTL=${claims.exp - claims.iat}`);
   const res = await fetch(link.url);
   expect(res.status === 200, `تنزيل فاشل ${res.status}`);
-  await e.writeEmailAudit(db, ACTOR, { action: "email.attachment.download", messageId: attachedMessageId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.attachment.download",
+    messageId: attachedMessageId,
+    description: TAG,
+  });
   await att.bumpDownloadCount(db, attachmentId);
-  const { data } = await db.from("email_attachments").select("download_count").eq("id", attachmentId).single();
+  const { data } = await db
+    .from("email_attachments")
+    .select("download_count")
+    .eq("id", attachmentId)
+    .single();
   expect(data.download_count >= 1, "لم يُسجَّل التنزيل");
   return "200 + TTL=300ث + عدّاد تنزيل";
 });
@@ -360,8 +599,15 @@ await test("ATT-09", "رابط بتوقيع مُتلاعب به يُرفض", asy
 });
 
 await test("ATT-10", "منع الوصول للمرفق من صندوق غير مصرّح", async () => {
-  const { data } = await db.from("email_messages").select("mailbox_id").eq("id", attachedMessageId).single();
-  return await expectThrows(() => e.assertMailboxAccess(db, data.mailbox_id, salesScope), "لا تملك وصولاً");
+  const { data } = await db
+    .from("email_messages")
+    .select("mailbox_id")
+    .eq("id", attachedMessageId)
+    .single();
+  return await expectThrows(
+    () => e.assertMailboxAccess(db, data.mailbox_id, salesScope),
+    "لا تملك وصولاً",
+  );
 });
 
 await test("ATT-11", "عدم تكرار المرفق عند إعادة المحاولة", async () => {
@@ -375,7 +621,11 @@ await test("ATT-11", "عدم تكرار المرفق عند إعادة المح�
 await test("ATT-12", "الحذف مسموح للمسودة وممنوع بعد الإرسال", async () => {
   const list = await att.listAttachments(db, draft2.messageId);
   await att.deleteAttachment(db, list[0]!.id);
-  await e.writeEmailAudit(db, ACTOR, { action: "email.attachment.delete", messageId: draft2.messageId, description: TAG });
+  await e.writeEmailAudit(db, ACTOR, {
+    action: "email.attachment.delete",
+    messageId: draft2.messageId,
+    description: TAG,
+  });
   const after = await att.listAttachments(db, draft2.messageId);
   expect(after.length === 1, "لم يُحذف المرفق");
   await expectThrows(() => att.deleteAttachment(db, attachmentId), "أُرسلت");
@@ -386,7 +636,10 @@ await test("ATT-12", "الحذف مسموح للمسودة وممنوع بعد �
 await test("PERM-01", "موظف الدعم يرى support (والعام) فقط", async () => {
   const ids = await e.allowedMailboxIds(db, supportScope);
   expect(ids!.includes(support.id) && ids!.includes(info.id), "صندوق مفقود");
-  expect(!ids!.includes(sales.id) && !ids!.includes(billing.id) && !ids!.includes(legal.id), "تسريب صناديق أقسام أخرى");
+  expect(
+    !ids!.includes(sales.id) && !ids!.includes(billing.id) && !ids!.includes(legal.id),
+    "تسريب صناديق أقسام أخرى",
+  );
   return `${ids!.length} صندوق`;
 });
 await test("PERM-02", "موظف المبيعات يرى sales فقط", async () => {
@@ -412,13 +665,17 @@ await test("PERM-05", "موظف بلا قسم يرى الصندوق العام i
   return "info فقط";
 });
 await test("PERM-06", "قراءة صندوق غير مصرّح مرفوضة خادمياً", () =>
-  expectThrows(() => e.assertMailboxAccess(db, billing.id, supportScope), "لا تملك وصولاً"));
+  expectThrows(() => e.assertMailboxAccess(db, billing.id, supportScope), "لا تملك وصولاً"),
+);
 await test("PERM-07", "منع الإرسال من صندوق النظام noreply", () =>
-  expectThrows(() => e.saveDraft(db, ACTOR, compose({ mailboxId: noreply.id })), "صندوق النظام"));
+  expectThrows(() => e.saveDraft(db, ACTOR, compose({ mailboxId: noreply.id })), "صندوق النظام"),
+);
 await test("PERM-08", "منع الإسناد على محادثة خارج نطاق الموظف", () =>
-  expectThrows(() => e.assertThreadAccess(db, htmlThread, salesScope), "لا تملك وصولاً"));
+  expectThrows(() => e.assertThreadAccess(db, htmlThread, salesScope), "لا تملك وصولاً"),
+);
 await test("PERM-09", "منع إضافة ملاحظة على محادثة خارج النطاق", () =>
-  expectThrows(() => e.assertThreadAccess(db, htmlThread, financeScope), "لا تملك وصولاً"));
+  expectThrows(() => e.assertThreadAccess(db, htmlThread, financeScope), "لا تملك وصولاً"),
+);
 await test("PERM-10", "مدير المنصة يرى كل الصناديق", async () => {
   const ids = await e.allowedMailboxIds(db, superScope);
   expect(ids === null, "قُيّد مدير المنصة");
@@ -427,40 +684,78 @@ await test("PERM-10", "مدير المنصة يرى كل الصناديق", asyn
 
 /* ================================================== 5) المحادثات والإسناد */
 await test("THR-01", "إسناد المحادثة لموظف ثم تغييره", async () => {
-  const { data: staff } = await db.from("platform_staff").select("user_id, email").limit(1).single();
-  await e.assignThread(db, { threadId: htmlThread, staffUserId: staff.user_id, staffEmail: staff.email });
-  let { data } = await db.from("email_threads").select("assigned_to_email").eq("id", htmlThread).single();
+  const { data: staff } = await db
+    .from("platform_staff")
+    .select("user_id, email")
+    .limit(1)
+    .single();
+  await e.assignThread(db, {
+    threadId: htmlThread,
+    staffUserId: staff.user_id,
+    staffEmail: staff.email,
+  });
+  let { data } = await db
+    .from("email_threads")
+    .select("assigned_to_email")
+    .eq("id", htmlThread)
+    .single();
   expect(data.assigned_to_email === staff.email, "لم يُسند");
   await e.assignThread(db, { threadId: htmlThread, staffUserId: null, staffEmail: null });
-  ({ data } = await db.from("email_threads").select("assigned_to_email").eq("id", htmlThread).single());
+  ({ data } = await db
+    .from("email_threads")
+    .select("assigned_to_email")
+    .eq("id", htmlThread)
+    .single());
   expect(data.assigned_to_email === null, "لم يُلغَ الإسناد");
   return "إسناد ثم إلغاء";
 });
 await test("THR-02", "إضافة وإزالة تسمية", async () => {
   const labels = await e.listLabels(db);
   await e.setThreadLabels(db, { threadId: htmlThread, labelIds: [labels[0]!.id] });
-  let { count } = await db.from("email_thread_labels").select("thread_id", { count: "exact", head: true }).eq("thread_id", htmlThread);
+  let { count } = await db
+    .from("email_thread_labels")
+    .select("thread_id", { count: "exact", head: true })
+    .eq("thread_id", htmlThread);
   expect(count === 1, "لم تُضف التسمية");
   await e.setThreadLabels(db, { threadId: htmlThread, labelIds: [] });
-  ({ count } = await db.from("email_thread_labels").select("thread_id", { count: "exact", head: true }).eq("thread_id", htmlThread));
+  ({ count } = await db
+    .from("email_thread_labels")
+    .select("thread_id", { count: "exact", head: true })
+    .eq("thread_id", htmlThread));
   expect(count === 0, "لم تُزل التسمية");
   return "إضافة/إزالة";
 });
 await test("THR-03", "ملاحظة داخلية لا تُرسل للعميل", async () => {
   const before = calls.length;
-  await e.addNote(db, { threadId: htmlThread, authorId: null as unknown as string, authorEmail: ACTOR.email, body: `${TAG} ملاحظة داخلية` });
+  await e.addNote(db, {
+    threadId: htmlThread,
+    authorId: null as unknown as string,
+    authorEmail: ACTOR.email,
+    body: `${TAG} ملاحظة داخلية`,
+  });
   expect(calls.length === before, "استُدعي المزوّد عند إضافة ملاحظة");
   const detail = await e.getThread(db, htmlThread);
   expect(detail.notes.length === 1, "لم تُحفظ الملاحظة");
-  expect(!detail.messages.some((m) => (m.html ?? "").includes("ملاحظة داخلية")), "الملاحظة تسربت لنص الرسائل");
+  expect(
+    !detail.messages.some((m) => (m.html ?? "").includes("ملاحظة داخلية")),
+    "الملاحظة تسربت لنص الرسائل",
+  );
   return "محفوظة داخلياً فقط";
 });
 await test("THR-04", "تعليم مقروء/غير مقروء ونجمة", async () => {
   await e.setThreadFlags(db, { threadId: htmlThread, is_unread: true, is_starred: true });
-  let { data } = await db.from("email_threads").select("is_unread, is_starred").eq("id", htmlThread).single();
+  let { data } = await db
+    .from("email_threads")
+    .select("is_unread, is_starred")
+    .eq("id", htmlThread)
+    .single();
   expect(data.is_unread && data.is_starred, "لم تُطبَّق العلامات");
   await e.setThreadFlags(db, { threadId: htmlThread, is_unread: false, is_starred: false });
-  ({ data } = await db.from("email_threads").select("is_unread, is_starred").eq("id", htmlThread).single());
+  ({ data } = await db
+    .from("email_threads")
+    .select("is_unread, is_starred")
+    .eq("id", htmlThread)
+    .single());
   expect(!data.is_unread && !data.is_starred, "لم تُلغَ العلامات");
   return "مقروء/نجمة";
 });
@@ -482,11 +777,20 @@ await test("THR-05", "أرشفة ثم استرجاع ثم مهملات", async (
 const ids = [...threadIds, draft2.threadId].filter(Boolean);
 const { data: msgs } = await db.from("email_messages").select("id").in("thread_id", ids);
 for (const m of (msgs ?? []) as { id: string }[]) {
-  const { data: atts } = await db.from("email_attachments").select("storage_path").eq("message_id", m.id);
+  const { data: atts } = await db
+    .from("email_attachments")
+    .select("storage_path")
+    .eq("message_id", m.id);
   const paths = ((atts ?? []) as { storage_path: string }[]).map((a) => a.storage_path);
   if (paths.length) await db.storage.from("email-attachments").remove(paths);
 }
-await db.from("email_outbox").delete().in("message_id", (msgs ?? []).map((m: { id: string }) => m.id));
+await db
+  .from("email_outbox")
+  .delete()
+  .in(
+    "message_id",
+    (msgs ?? []).map((m: { id: string }) => m.id),
+  );
 await db.from("email_notes").delete().in("thread_id", ids);
 await db.from("email_thread_labels").delete().in("thread_id", ids);
 await db.from("email_messages").delete().in("thread_id", ids);

@@ -1410,18 +1410,16 @@ export async function getTaxSettings(): Promise<TaxSettings> {
 export async function saveTaxSettings(ctx: BillingCtx, input: TaxSettings): Promise<void> {
   const client = await db();
   const before = await getTaxSettings();
-  const { error } = await client
-    .from("platform_settings")
-    .upsert(
-      {
-        key: TAX_SETTINGS_KEY,
-        value: input as never,
-        is_public: false,
-        updated_by: ctx.staff.user_id,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "key" },
-    );
+  const { error } = await client.from("platform_settings").upsert(
+    {
+      key: TAX_SETTINGS_KEY,
+      value: input as never,
+      is_public: false,
+      updated_by: ctx.staff.user_id,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
   if (error) fail(error, "تعذّر حفظ إعدادات الضريبة.");
   await writeAudit(client, ctx.staff, {
     action: "billing.tax_settings.update",

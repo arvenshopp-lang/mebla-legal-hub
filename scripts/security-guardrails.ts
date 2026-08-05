@@ -42,10 +42,18 @@ const SECRET_PATTERNS: { id: string; label: string; re: RegExp }[] = [
     label: "رمز JWT لدور الخدمة",
     re: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/,
   },
-  { id: "private_key_block", label: "مفتاح خاص PEM", re: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/ },
+  {
+    id: "private_key_block",
+    label: "مفتاح خاص PEM",
+    re: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/,
+  },
   { id: "openai_key", label: "مفتاح OpenAI", re: /\bsk-[A-Za-z0-9]{24,}/ },
   { id: "aws_access_key", label: "مفتاح AWS", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { id: "sendgrid_key", label: "مفتاح SendGrid", re: /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/ },
+  {
+    id: "sendgrid_key",
+    label: "مفتاح SendGrid",
+    re: /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/,
+  },
   { id: "resend_key", label: "مفتاح Resend", re: /\bre_[A-Za-z0-9]{24,}\b/ },
   { id: "twilio_secret", label: "مفتاح Twilio السرّي", re: /\bSK[0-9a-fA-F]{32}\b/ },
   {
@@ -103,7 +111,8 @@ function scanFile(file: string): void {
     }
 
     if (/console\.(log|info|warn|error|debug|table)\s*\(/.test(raw)) {
-      const envRefs = raw.match(/process\.env\[['"][A-Z0-9_]+['"]\]|process\.env\.[A-Z0-9_]+/g) ?? [];
+      const envRefs =
+        raw.match(/process\.env\[['"][A-Z0-9_]+['"]\]|process\.env\.[A-Z0-9_]+/g) ?? [];
       for (const ref of envRefs) {
         if (SENSITIVE_ENV.test(ref)) {
           violations.push({
@@ -176,7 +185,10 @@ function checkRpcDocumentation(): void {
       });
       continue;
     }
-    const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+    const cells = row
+      .split("|")
+      .slice(1, -1)
+      .map((c) => c.trim());
     if (cells.length < 6 || cells.some((c) => c.length === 0 || c === "—")) {
       violations.push({
         check: "rpc_documentation_incomplete",
@@ -195,7 +207,9 @@ checkRpcDocumentation();
 
 if (violations.length === 0) {
   console.log("✅ حرّاس الأمان (طبقة الكود): لا مخالفات.");
-  console.log("ℹ️  نفّذ scripts/security-guardrails.sql على القاعدة لإكمال فحوص RLS و SECURITY DEFINER.");
+  console.log(
+    "ℹ️  نفّذ scripts/security-guardrails.sql على القاعدة لإكمال فحوص RLS و SECURITY DEFINER.",
+  );
   process.exit(0);
 }
 

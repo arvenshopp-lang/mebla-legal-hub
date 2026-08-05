@@ -144,7 +144,7 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
     return { valid: false, warnings, blocked_rules: blocked, normalized_css: "", size_bytes: size };
   }
 
-  let css = stripComments(raw);
+  const css = stripComments(raw);
 
   // 1) أنماط خطيرة عامة
   if (/javascript\s*:/i.test(css)) blocked.push("استخدام javascript: غير مسموح.");

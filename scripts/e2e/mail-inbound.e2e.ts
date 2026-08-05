@@ -20,7 +20,9 @@ async function post(
 ): Promise<Res> {
   const raw = opts.rawBody ?? JSON.stringify(payload);
   const ts = String(Math.floor(Date.now() / 1000) + (opts.skew ?? 0));
-  const sig = createHmac("sha256", opts.key ?? KEY).update(`${ts}.${raw}`).digest("hex");
+  const sig = createHmac("sha256", opts.key ?? KEY)
+    .update(`${ts}.${raw}`)
+    .digest("hex");
   const res = await fetch(URL_, {
     method: "POST",
     headers: {
@@ -77,7 +79,6 @@ async function accept(payload: ReturnType<typeof msg>, label: string) {
   return `${label} thread=${ref.threadId.slice(0, 8)}`;
 }
 
-
 /** استجابة الويبهوك لا تُفصح عن المعرّفات (بقصد)، فنحلّها من القاعدة بمعرّف المزوّد. */
 async function resolve(providerId: string): Promise<{ threadId: string; messageId: string }> {
   const { data } = await db
@@ -113,7 +114,11 @@ await test("INB-02", "رد على محادثة قائمة يرتبط بنفس Th
   expect(r.status === 200, `HTTP ${r.status}`);
   const ref = await resolve(payload.messageId);
   expect(ref.threadId === supportThread, "أُنشئت محادثة جديدة بدل الربط");
-  const { data } = await db.from("email_threads").select("message_count").eq("id", supportThread).single();
+  const { data } = await db
+    .from("email_threads")
+    .select("message_count")
+    .eq("id", supportThread)
+    .single();
   expect(data.message_count >= 2, `عدد الرسائل ${data.message_count}`);
   return `message_count=${data.message_count}`;
 });
@@ -194,8 +199,8 @@ await test("INB-12", "طلب خارج نافذة Replay يُرفض", async () =>
 
 await test("INB-13", "HTML ضار يُنقّى ولا يُخزَّن كما هو", async () => {
   const payload = msg({
-      subject: `${TAG} HTML ضار`,
-      html: `<p onclick="alert(1)">مرحباً</p><script>fetch('https://evil.test')</script><iframe src="https://evil.test"></iframe><a href="javascript:alert(2)">رابط</a>`,
+    subject: `${TAG} HTML ضار`,
+    html: `<p onclick="alert(1)">مرحباً</p><script>fetch('https://evil.test')</script><iframe src="https://evil.test"></iframe><a href="javascript:alert(2)">رابط</a>`,
   });
   await post(payload);
   const ref = await resolve(payload.messageId);
@@ -211,7 +216,10 @@ await test("INB-13", "HTML ضار يُنقّى ولا يُخزَّن كما هو
 });
 
 await test("INB-14", "الصور الخارجية محجوبة افتراضياً", async () => {
-  const payload = msg({ subject: `${TAG} صورة خارجية`, html: `<p>تتبّع</p><img src="https://tracker.test/p.gif">` });
+  const payload = msg({
+    subject: `${TAG} صورة خارجية`,
+    html: `<p>تتبّع</p><img src="https://tracker.test/p.gif">`,
+  });
   await post(payload);
   const ref = await resolve(payload.messageId);
   const { data } = await db.from("email_messages").select("html").eq("id", ref.messageId).single();
@@ -228,11 +236,11 @@ await test("INB-14", "الصور الخارجية محجوبة افتراضيا�
 let inboundAttachmentId = "";
 await test("INB-15", "مرفق وارد آمن يُقبل", async () => {
   const payload = msg({
-      subject: `${TAG} مرفق آمن`,
-      attachments: [
-        { file_name: "مستند وارد.pdf", content_base64: b64(pdfBytes()) },
-        { file_name: "صورة.png", content_base64: b64(pngBytes()) },
-      ],
+    subject: `${TAG} مرفق آمن`,
+    attachments: [
+      { file_name: "مستند وارد.pdf", content_base64: b64(pdfBytes()) },
+      { file_name: "صورة.png", content_base64: b64(pngBytes()) },
+    ],
   });
   await post(payload);
   const ref = await resolve(payload.messageId);
@@ -241,7 +249,10 @@ await test("INB-15", "مرفق وارد آمن يُقبل", async () => {
     .select("id, scan_status, is_quarantined, mime_type")
     .eq("message_id", ref.messageId);
   expect(data.length === 2, `عدد المرفقات ${data.length}`);
-  expect(data.every((a: any) => !a.is_quarantined), "حُجر مرفق سليم");
+  expect(
+    data.every((a: any) => !a.is_quarantined),
+    "حُجر مرفق سليم",
+  );
   inboundAttachmentId = data[0].id;
   return "مرفقان مقبولان (not_scanned، بلا حجر)";
 });
@@ -249,11 +260,11 @@ await test("INB-15", "مرفق وارد آمن يُقبل", async () => {
 let quarantinedId = "";
 await test("INB-16", "مرفق غير مسموح يُرفض وينتقل إلى Quarantine", async () => {
   const payload = msg({
-      subject: `${TAG} مرفق خبيث`,
-      attachments: [
-        { file_name: "payload.exe", content_base64: b64(new Uint8Array([0x4d, 0x5a, 1, 2, 3])) },
-        { file_name: "مزيّف.pdf", content_base64: b64(pngBytes()) },
-      ],
+    subject: `${TAG} مرفق خبيث`,
+    attachments: [
+      { file_name: "payload.exe", content_base64: b64(new Uint8Array([0x4d, 0x5a, 1, 2, 3])) },
+      { file_name: "مزيّف.pdf", content_base64: b64(pngBytes()) },
+    ],
   });
   await post(payload);
   const ref = await resolve(payload.messageId);
@@ -261,7 +272,10 @@ await test("INB-16", "مرفق غير مسموح يُرفض وينتقل إلى 
     .from("email_attachments")
     .select("id, is_quarantined, scan_status, scan_detail")
     .eq("message_id", ref.messageId);
-  expect(data.length === 2 && data.every((a: any) => a.is_quarantined), "لم تُحجر المرفقات المرفوضة");
+  expect(
+    data.length === 2 && data.every((a: any) => a.is_quarantined),
+    "لم تُحجر المرفقات المرفوضة",
+  );
   quarantinedId = data[0].id;
   return `محجور=${data.length}، السبب: ${String(data[0].scan_detail).slice(0, 40)}…`;
 });
@@ -273,7 +287,11 @@ await test("INB-17", "المرفق المحجور غير قابل للتنزيل
   } catch (error) {
     const m = error instanceof Error ? error.message : "";
     expect(m.includes("محجور"), `رسالة غير متوقعة: ${m}`);
-    const visible = await att.listAttachments(db, (await db.from("email_attachments").select("message_id").eq("id", quarantinedId).single()).data.message_id);
+    const visible = await att.listAttachments(
+      db,
+      (await db.from("email_attachments").select("message_id").eq("id", quarantinedId).single())
+        .data.message_id,
+    );
     expect(!visible.some((v) => v.id === quarantinedId), "المحجور ظاهر في قائمة الواجهة");
     return "مرفوض خادمياً ومستثنى من الواجهة";
   }
@@ -296,7 +314,6 @@ await test("INB-19", "تجاوز حد الاستدعاءات يُرد 429", asyn
       limited += 1;
       break;
     }
-
   }
   expect(limited === 1, `آخر حالة ${last} بلا 429`);
   const { count } = await db
@@ -311,7 +328,10 @@ const ids = Array.from(new Set(created.filter(Boolean)));
 const { data: msgs } = await db.from("email_messages").select("id").in("thread_id", ids);
 const messageIds = ((msgs ?? []) as { id: string }[]).map((m) => m.id);
 if (messageIds.length) {
-  const { data: atts } = await db.from("email_attachments").select("storage_path").in("message_id", messageIds);
+  const { data: atts } = await db
+    .from("email_attachments")
+    .select("storage_path")
+    .in("message_id", messageIds);
   const paths = ((atts ?? []) as { storage_path: string }[]).map((a) => a.storage_path);
   if (paths.length) await db.storage.from("email-attachments").remove(paths);
   await db.from("email_inbound_events").delete().in("thread_id", ids);

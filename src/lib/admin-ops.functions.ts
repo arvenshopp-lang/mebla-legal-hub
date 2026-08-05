@@ -27,7 +27,7 @@ export const getPlatformSettings = createServerFn({ method: "POST" })
 
 const settingsPayload = z.object({
   group: z.enum(["general", "seo", "email"]),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   values: z.record(z.string(), z.any()),
 });
 
@@ -55,18 +55,16 @@ export const savePlatformSettings = createServerFn({ method: "POST" })
     );
 
     for (const [key, value] of Object.entries(data.values)) {
-      const { error } = await db
-        .from("platform_settings")
-        .upsert(
-          {
-            key,
-            value: value as never,
-            is_public: data.group === "seo" || data.group === "general",
-            updated_by: staff.user_id,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" },
-        );
+      const { error } = await db.from("platform_settings").upsert(
+        {
+          key,
+          value: value as never,
+          is_public: data.group === "seo" || data.group === "general",
+          updated_by: staff.user_id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
       if (error) throw new Error("تعذّر حفظ الإعدادات.");
     }
 
