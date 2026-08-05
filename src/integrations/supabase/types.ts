@@ -3335,6 +3335,54 @@ export type Database = {
           },
         ]
       }
+      platform_content_pages: {
+        Row: {
+          content: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          kind: string
+          published_at: string | null
+          published_by: string | null
+          slug: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          published_at?: string | null
+          published_by?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          published_at?: string | null
+          published_by?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       platform_coupon_redemptions: {
         Row: {
           coupon_id: string
@@ -6674,6 +6722,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_activity_overview: { Args: never; Returns: Json }
+      admin_growth_series: { Args: { _days?: number }; Returns: Json }
+      admin_jobs_overview: { Args: never; Returns: Json }
       admin_organization_directory: {
         Args: {
           _limit?: number
@@ -6713,6 +6764,7 @@ export type Database = {
         Returns: Json
       }
       admin_revenue_summary: { Args: never; Returns: Json }
+      admin_service_health: { Args: never; Returns: Json }
       admin_service_usage_summary: { Args: never; Returns: Json }
       admin_user_directory: {
         Args: {
