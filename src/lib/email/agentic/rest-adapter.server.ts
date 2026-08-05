@@ -406,6 +406,37 @@ export async function restInvoke(
 
   const payload = unwrap(result.json ?? safeJson(result.text), result.requestId);
 
+  if (operation === "getMessage" && payload && typeof payload === "object") {
+    // جسم الرسالة عند Hostinger على مسار مستقل؛ يُدمَج ليكتمل التطبيع.
+    const uid = uidOf((payload as Record<string, unknown>)["uid"] ?? canonical["messageId"]);
+    if (uid !== null) {
+      const bodyCall = await callTool(
+        READ_TOOL,
+        {
+          method: "GET",
+          path: `${MAILBOX_PATH}/folders/{folder}/messages/{uid}/text`,
+          path_params: {
+            mailboxResourceId: String(canonical["mailbox"] ?? ""),
+            folder: folderOf(canonical),
+            uid: String(uid),
+          },
+        },
+        { correlationId },
+      );
+      if (!bodyCall.isError) {
+        const content = unwrap(bodyCall.json ?? safeJson(bodyCall.text), bodyCall.requestId);
+        if (content && typeof content === "object") {
+          return {
+            json: { ...(payload as Record<string, unknown>), ...(content as Record<string, unknown>) },
+            text: result.text,
+            latencyMs: result.latencyMs,
+            requestId: result.requestId,
+          };
+        }
+      }
+    }
+  }
+
   if (operation === "listMessages") {
     return {
       json: { messages: Array.isArray(payload) ? payload : [], nextCursor: highestUid(payload) },
