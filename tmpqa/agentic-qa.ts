@@ -18,3 +18,13 @@ const cid = newCorrelationId("qa");
 console.log("PROBE:", JSON.stringify(await probeConnection(cid)).slice(0, 300));
 console.log("PROVIDER MAILBOXES:", JSON.stringify(await discoverProviderMailboxes(cid)).slice(0, 400));
 console.log("TARGETS:", JSON.stringify(await agenticTargets(db)));
+
+const { syncAgenticMailbox } = await import("../src/lib/email/agentic/provider.server");
+const real = (await agenticTargets(db)).find((t) => t.linkStatus === "linked");
+console.log("REAL:", real?.address, real?.syncEnabled);
+if (real) {
+  const dry = await syncAgenticMailbox(db, real.id, { dryRun: true, correlationId: newCorrelationId("qa-dry") });
+  console.log("DRY:", JSON.stringify(dry));
+  const live = await syncAgenticMailbox(db, real.id, { dryRun: false, correlationId: newCorrelationId("qa-live") });
+  console.log("LIVE:", JSON.stringify(live));
+}
