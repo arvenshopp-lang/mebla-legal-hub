@@ -435,7 +435,11 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
           <p className="mt-2 text-body-sm text-muted-foreground">لا توجد صناديق في نطاقك.</p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {mailboxes.map((box) => (
+            {mailboxes.map((box) => {
+              // الحساب الحقيقي هو الصندوق المرتبط فعلياً عند المزوّد؛ الأسماء
+              // المستعارة تُسلَّم إليه ولا تُزامن بذاتها.
+              const isRealAccount = box.linkStatus === "linked";
+              return (
               <li
                 key={box.id}
                 className="rounded-[var(--radius-m)] border border-border p-4 md:flex md:items-start md:justify-between md:gap-4"
@@ -443,11 +447,19 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-medium">{box.address}</span>
-                    <Badge tone={box.linkStatus === "linked" ? "green" : box.linkStatus === "missing" ? "red" : "muted"}>
+                    <Badge
+                      tone={
+                        box.linkStatus === "linked"
+                          ? "green"
+                          : box.linkStatus === "missing"
+                            ? "red"
+                            : "muted"
+                      }
+                    >
                       {LINK_STATUS_LABELS[box.linkStatus]}
                     </Badge>
-                    {!box.syncEnabled && <Badge tone="muted">المزامنة موقوفة</Badge>}
-                    {box.type === "system" && <Badge tone="muted">صندوق نظام</Badge>}
+                    {isRealAccount && !box.syncEnabled && <Badge tone="muted">المزامنة موقوفة</Badge>}
+                    {isRealAccount && <Badge tone="muted">حساب حقيقي</Badge>}
                   </div>
                   <div className="mt-2 space-y-1">
                     <Row label="آخر مزامنة" value={box.lastSyncAt ? fmtDateTime(box.lastSyncAt) : "—"} />
@@ -461,14 +473,14 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                   <Btn
                     variant="secondary"
                     onClick={() => dry.mutate(box.id)}
-                    disabled={dry.isPending || box.linkStatus !== "linked" || box.type === "system"}
+                    disabled={dry.isPending || !isRealAccount}
                   >
                     تشغيل تجريبي
                   </Btn>
                   <Btn
                     variant="secondary"
                     onClick={() => syncOne.mutate(box.id)}
-                    disabled={syncOne.isPending || box.linkStatus !== "linked" || box.type === "system"}
+                    disabled={syncOne.isPending || !isRealAccount}
                   >
                     <RefreshCw className="h-4 w-4" aria-hidden /> مزامنة
                   </Btn>
@@ -476,7 +488,7 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                     <Btn
                       variant="secondary"
                       onClick={() => setTestOpen({ mailboxId: box.id, address: box.address })}
-                      disabled={box.linkStatus !== "linked" || box.type === "system"}
+                      disabled={!isRealAccount}
                     >
                       <Send className="h-4 w-4" aria-hidden /> رسالة اختبار
                     </Btn>
@@ -484,21 +496,26 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                   <Btn
                     variant="ghost"
                     onClick={() => toggleSync.mutate({ mailboxId: box.id, enabled: !box.syncEnabled })}
-                    disabled={toggleSync.isPending || box.type === "system"}
+                    disabled={toggleSync.isPending || !isRealAccount}
                   >
                     {box.syncEnabled ? "إيقاف المزامنة" : "تفعيل المزامنة"}
                   </Btn>
-                  <Btn variant="ghost" onClick={() => resetCursor.mutate(box.id)} disabled={resetCursor.isPending}>
+                  <Btn
+                    variant="ghost"
+                    onClick={() => resetCursor.mutate(box.id)}
+                    disabled={resetCursor.isPending || !isRealAccount}
+                  >
                     <TimerReset className="h-4 w-4" aria-hidden /> تصفير المؤشر
                   </Btn>
-                  {box.linkStatus !== "unlinked" && (
+                  {isRealAccount && (
                     <Btn variant="ghost" onClick={() => unlink.mutate(box.id)} disabled={unlink.isPending}>
                       <Link2Off className="h-4 w-4" aria-hidden /> فك الارتباط
                     </Btn>
                   )}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
