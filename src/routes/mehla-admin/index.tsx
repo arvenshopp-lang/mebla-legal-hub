@@ -28,6 +28,8 @@ import {
 import { AdminShell } from "@/components/admin/shell";
 import { getPlatformMetrics, getPlatformOverview } from "@/lib/admin.functions";
 import { getSystemHealth } from "@/lib/admin-ops.functions";
+import { getActivityOverview } from "@/lib/admin-console.functions";
+import { fmtBytes, fmtNumber } from "@/lib/admin-console.shared";
 import {
   Badge,
   Btn,
@@ -114,6 +116,7 @@ function AdminDashboard() {
   const fetchMetrics = useServerFn(getPlatformMetrics);
   const fetchOverview = useServerFn(getPlatformOverview);
   const fetchHealth = useServerFn(getSystemHealth);
+  const fetchActivity = useServerFn(getActivityOverview);
 
   const metricsQ = useQuery({
     queryKey: ["platform-metrics", window.from, window.to],
@@ -131,6 +134,12 @@ function AdminDashboard() {
     queryFn: () => fetchHealth({ data: undefined }),
     refetchInterval: 120_000,
   });
+  const activityQ = useQuery({
+    queryKey: ["admin-activity-overview"],
+    queryFn: () => fetchActivity({ data: undefined }),
+    refetchInterval: 120_000,
+  });
+  const act = activityQ.data;
 
   const m = metricsQ.data;
 
@@ -196,6 +205,66 @@ function AdminDashboard() {
           </p>
         )}
       </div>
+
+      {act && (
+        <SectionCard
+          title="النشاط الفعلي"
+          description={`آخر قراءة: ${fmtDateTime(act.generated_at)} — بتوقيت الرياض`}
+          className="mb-6"
+        >
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat
+              label="مستخدمون نشطون اليوم"
+              value={fmtNumber(act.active_users.today)}
+              Icon={UserCheck}
+              tone="success"
+              hint={`${fmtNumber(act.active_users.events_today)} حركة اليوم`}
+            />
+            <Stat
+              label="نشطون أسبوعياً / شهرياً"
+              value={`${fmtNumber(act.active_users.week)} / ${fmtNumber(act.active_users.month)}`}
+              Icon={Users}
+            />
+            <Stat
+              label="مكاتب نشطة اليوم"
+              value={fmtNumber(act.active_organizations.today)}
+              Icon={Building2}
+              hint={`${fmtNumber(act.active_organizations.month)} خلال الشهر`}
+            />
+            <Stat
+              label="تذاكر دعم مفتوحة"
+              value={fmtNumber(act.tickets.open)}
+              Icon={LifeBuoy}
+              tone={act.tickets.breached > 0 ? "danger" : "default"}
+              hint={`${fmtNumber(act.tickets.breached)} تجاوزت المهلة`}
+            />
+            <Stat
+              label="رسائل البريد اليوم"
+              value={fmtNumber(act.email.today)}
+              Icon={Mail}
+              hint={`${fmtNumber(act.email.inbound)} وارد · ${fmtNumber(act.email.outbound)} صادر`}
+            />
+            <Stat
+              label="صناديق البريد"
+              value={fmtNumber(act.email.mailboxes)}
+              Icon={Repeat}
+              hint={act.email.last_sync_at ? `آخر مزامنة: ${fmtDateTime(act.email.last_sync_at)}` : "لم تُزامن بعد"}
+            />
+            <Stat
+              label="حجم المستندات"
+              value={fmtBytes(act.storage.documents_bytes + act.storage.attachments_bytes)}
+              Icon={HardDrive}
+              hint={`${fmtNumber(act.storage.documents_count)} مستنداً · ${fmtNumber(act.storage.pages_indexed)} صفحة مفهرسة`}
+            />
+            <Stat
+              label="حجم قاعدة البيانات"
+              value={fmtBytes(act.database.size_bytes)}
+              Icon={Database}
+              hint={`${fmtNumber(act.database.tables)} جدولاً`}
+            />
+          </div>
+        </SectionCard>
+      )}
 
       {!ready ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">
