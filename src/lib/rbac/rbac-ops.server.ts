@@ -223,6 +223,42 @@ export async function saveRole(
   return { id };
 }
 
+/**
+ * إنشاء دور من قالب تشغيلي — القالب نقطة بداية فقط: يُنسخ إلى `platform_roles`
+ * كدور عادي قابل للتعديل والحذف، ولا يُسند لأي موظف تلقائياً. تمرّ العملية بنفس
+ * حراسة عدم التصعيد في `saveRole`، وتُسجَّل في سجل التدقيق باسم القالب المصدر.
+ */
+export async function createRoleFromTemplate(
+  supabase: AnyClient,
+  userId: string,
+  input: { templateCode: string; code: string; name_ar: string },
+) {
+  const { ROLE_TEMPLATE_MAP } = await import("./role-templates");
+  const template = ROLE_TEMPLATE_MAP[input.templateCode];
+  if (!template) throw new Error("قالب الدور غير معروف.");
+  const result = await saveRole(supabase, userId, {
+    code: input.code,
+    name_ar: input.name_ar,
+    description: `${template.summary} (مبني على قالب «${template.name_ar}»)`,
+    permissions: [...template.permissions],
+    is_active: true,
+  });
+  const ctx = await loadRbacContext(supabase, userId);
+  await auditRbac(supabase, {
+    actorEmail: ctx.staff.email,
+    action: "rbac.role_template_applied",
+    entityType: "platform_role",
+    entityId: result.id,
+    description: `إنشاء الدور «${input.name_ar}» من قالب «${template.name_ar}»`,
+    metadata: {
+      template_code: template.code,
+      permissions: template.permissions,
+      trace_ref: ctx.traceRef,
+    },
+  });
+  return result;
+}
+
 /** استنساخ دور قائم بصلاحياته كاملة — يمرّ بنفس حراسة عدم التصعيد. */
 export async function cloneRole(
   supabase: AnyClient,
