@@ -33,7 +33,7 @@ export const listFeatureFlags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<FeatureFlag[]> => {
     const g = await guard();
-    await g.requireActiveStaff(context.supabase, context.userId);
+    await g.requireStaff(context.supabase, context.userId, "feature_flags.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_feature_flags")
       .select("id, key, label, description, is_enabled, audience, updated_at")
@@ -114,7 +114,7 @@ export const listNotificationRules = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<NotificationRule[]> => {
     const g = await guard();
-    await g.requireActiveStaff(context.supabase, context.userId);
+    await g.requireStaff(context.supabase, context.userId, "notification_rules.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_notification_rules")
       .select("id, topic, label, channel, target, template_key, is_enabled, updated_at")

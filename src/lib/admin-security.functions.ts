@@ -12,11 +12,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const securityCenterOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [{ requireActiveStaff, admin }, rotation] = await Promise.all([
+    const [{ requireStaff, admin }, rotation] = await Promise.all([
       import("@/lib/admin-guard.server"),
       import("@/lib/crypto/key-rotation.server"),
     ]);
-    await requireActiveStaff(context.supabase, context.userId);
+    await requireStaff(context.supabase, context.userId, "security.read");
     const db = await admin();
 
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

@@ -124,7 +124,7 @@ const contentSchema = z.object({
 export const listContentPages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContentPage[]> => {
-    await (await guard()).requireActiveStaff(context.supabase, context.userId);
+    await (await guard()).requireStaff(context.supabase, context.userId, "content.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_content_pages")
       .select("id, slug, kind, title, description, content, is_published, published_at, version, updated_at")
