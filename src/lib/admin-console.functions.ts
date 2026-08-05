@@ -139,7 +139,7 @@ export const saveContentPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => contentSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "content.manage");
 
     let parsed: Record<string, unknown>;
     try {
@@ -196,7 +196,7 @@ export const deleteContentPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "content.manage");
     const db = await g.admin();
 
     const { data: existing } = await db

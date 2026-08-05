@@ -168,7 +168,7 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
     },
     {
       key: "pages",
-      permission: "settings.manage",
+      permission: "content.read",
       run: async () => {
         const { data } = await db
           .from("platform_content_pages")

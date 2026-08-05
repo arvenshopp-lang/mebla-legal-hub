@@ -170,7 +170,7 @@ export const registerEncryptionKeyVersion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ version: z.number().int().min(1).max(50) }).parse(d))
   .handler(async ({ data, context }) => {
     const { requireStaff, writeAudit } = await import("@/lib/admin-guard.server");
-    const staff = await requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await requireStaff(context.supabase, context.userId, "security.manage");
     const rotation = await import("@/lib/crypto/key-rotation.server");
     const status = await rotation.registerKeyVersion(data.version, context.userId);
     await writeAudit(context.supabase, staff, {
@@ -197,7 +197,7 @@ export const runReencryptionBatch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { requireStaff, writeAudit } = await import("@/lib/admin-guard.server");
-    const staff = await requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await requireStaff(context.supabase, context.userId, "security.manage");
     const rotation = await import("@/lib/crypto/key-rotation.server");
     const result = await rotation.reencryptBatch({
       entity: data.entity,
@@ -222,7 +222,7 @@ export const retireEncryptionKeyVersion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ version: z.number().int().min(1).max(50) }).parse(d))
   .handler(async ({ data, context }) => {
     const { requireStaff, writeAudit } = await import("@/lib/admin-guard.server");
-    const staff = await requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await requireStaff(context.supabase, context.userId, "security.manage");
     const rotation = await import("@/lib/crypto/key-rotation.server");
     const status = await rotation.retireKeyVersion(data.version);
     await writeAudit(context.supabase, staff, {

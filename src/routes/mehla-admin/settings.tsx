@@ -50,7 +50,7 @@ const EMPTY: GeneralSettings = {
 function SettingsPage() {
   const qc = useQueryClient();
   const { can } = usePlatformAdmin();
-  const canManage = can("settings.manage");
+  const canManage = can("platform_settings.manage");
 
   const settingsFn = useServerFn(getPlatformSettings);
   const settings = useQuery({ queryKey: ["admin-settings"], queryFn: () => settingsFn({ data: undefined }) });

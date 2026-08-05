@@ -57,7 +57,7 @@ const emptyDraft: Draft = {
 
 function ContentPage_() {
   const { can } = usePlatformAdmin();
-  const manage = can("settings.manage");
+  const manage = can("content.manage");
   const queryClient = useQueryClient();
 
   const load = useServerFn(listContentPages);

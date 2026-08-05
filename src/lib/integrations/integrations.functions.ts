@@ -67,7 +67,7 @@ export const getIntegrationsHub = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    await guard.requireStaff(context.supabase, context.userId, "integrations.read");
     const engine = await import("./integrations.server");
     const [definitions, integrations, logs] = await Promise.all([
       engine.listDefinitions(),
@@ -82,7 +82,7 @@ export const saveIntegrationConfig = createServerFn({ method: "POST" })
   .inputValidator((input: SaveIntegrationPayload) => saveSchema.parse(input))
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.manage");
     const engine = await import("./integrations.server");
     const view = await engine.saveIntegration(
       {
@@ -126,7 +126,7 @@ export const testIntegrationConnection = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.test");
     const engine = await import("./integrations.server");
     const result = await engine.testIntegration(data.id, context.userId, "manual");
     await guard.writeAudit(context.supabase, staff, {
@@ -146,7 +146,7 @@ export const setIntegrationEnabledState = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
     const engine = await import("./integrations.server");
     const view = await engine.setIntegrationEnabled(data.id, data.enabled);
     await guard.writeAudit(context.supabase, staff, {
@@ -163,7 +163,7 @@ export const activateIntegration = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
     const engine = await import("./integrations.server");
     const view = await engine.setIntegrationActive(data.id);
     await guard.writeAudit(context.supabase, staff, {
@@ -179,7 +179,7 @@ export const deactivateOtpIntegrations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.activate");
     const engine = await import("./integrations.server");
     await engine.deactivateCategory();
     await guard.writeAudit(context.supabase, staff, {
@@ -195,7 +195,7 @@ export const removeIntegration = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.manage");
     const engine = await import("./integrations.server");
     const view = await engine.getIntegration(data.id);
     await engine.deleteIntegration(data.id);
@@ -216,7 +216,7 @@ export const sendIntegrationTestMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    const staff = await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await guard.requireStaff(context.supabase, context.userId, "integrations.test");
     const dispatch = await import("./otp-dispatch.server");
     const result = await dispatch.sendIntegrationTest(data.id, data.phone);
     await guard.writeAudit(context.supabase, staff, {
@@ -233,7 +233,7 @@ export const refreshIntegrationHealth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const guard = await import("@/lib/admin-guard.server");
-    await guard.requireStaff(context.supabase, context.userId, "settings.manage");
+    await guard.requireStaff(context.supabase, context.userId, "integrations.view_logs");
     const engine = await import("./integrations.server");
     return engine.runIntegrationMonitor();
   });

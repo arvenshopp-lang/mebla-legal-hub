@@ -22,7 +22,7 @@ const draftSchema = z.object({
 /** حرس مالك المنصة — يرفض الموظفين والمشتركين. */
 async function requireOwner(supabase: unknown, userId: string) {
   const guard = await import("@/lib/admin-guard.server");
-  const staff = await guard.requireStaff(supabase, userId, "settings.manage");
+  const staff = await guard.requireStaff(supabase, userId, "design.manage");
   if (staff.role !== "super_admin") {
     throw new Error("محرر تصميم المنصة متاح لمالك المنصة فقط.");
   }

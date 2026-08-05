@@ -59,7 +59,7 @@ export const saveFeatureFlag = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => flagSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "feature_flags.manage");
     const db = await g.admin();
 
     const { data: existing } = data.id
@@ -94,7 +94,7 @@ export const deleteFeatureFlag = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "feature_flags.manage");
     const db = await g.admin();
     const { data: existing } = await (db as AnyClient).from("platform_feature_flags").select("*").eq("id", data.id).maybeSingle();
     if (!existing) throw new Error("هذا المفتاح غير موجود.");
@@ -138,7 +138,7 @@ export const saveNotificationRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ruleSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "notification_rules.manage");
     const db = await g.admin();
 
     const { data: existing } = data.id
@@ -175,7 +175,7 @@ export const deleteNotificationRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "notification_rules.manage");
     const db = await g.admin();
     const { data: existing } = await (db as AnyClient).from("platform_notification_rules").select("*").eq("id", data.id).maybeSingle();
     if (!existing) throw new Error("هذه القاعدة غير موجودة.");

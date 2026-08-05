@@ -223,7 +223,7 @@ export const getSmsSettingsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    await admin.requireStaff(context.supabase, context.userId, "sms.manage");
     const otp = await import("./otp.server");
     const settings = await otp.loadSmsSettings();
     const providers = await import("./providers.server");
@@ -247,7 +247,7 @@ export const updateSmsSettingsAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => settingsSchema.parse(input))
   .handler(async ({ data, context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    const staff = await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await admin.requireStaff(context.supabase, context.userId, "sms.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: before } = await supabaseAdmin.from("sms_settings").select("*").eq("id", true).maybeSingle();
     const health = !data.enabled || data.emergency_email_only ? "disabled" : "operational";
@@ -273,7 +273,7 @@ export const sendTestSmsAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: { phone: string }) => z.object({ phone: phoneSchema }).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    await admin.requireStaff(context.supabase, context.userId, "sms.manage");
     const otp = await import("./otp.server");
     const settings = await otp.loadSmsSettings();
     const parsed = normalizePhone(data.phone, settings.default_dial_code);

@@ -36,7 +36,7 @@ export const savePlatformSettings = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => settingsPayload.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const permission = data.group === "seo" ? "seo.manage" : data.group === "email" ? "email.manage" : "settings.manage";
+    const permission = data.group === "seo" ? "seo.manage" : data.group === "email" ? "email.manage" : "platform_settings.manage";
     const staff = await g.requireStaff(context.supabase, context.userId, permission);
     const db = await g.admin();
 

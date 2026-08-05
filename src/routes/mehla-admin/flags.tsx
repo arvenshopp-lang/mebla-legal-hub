@@ -74,7 +74,7 @@ const CHANNEL_LABELS: Record<RuleForm["channel"], string> = {
 
 function FlagsPage() {
   const { can } = usePlatformAdmin();
-  const canManage = can("settings.manage");
+  const canManage = can("feature_flags.manage");
   const [tab, setTab] = useState<TabId>("flags");
 
   return (

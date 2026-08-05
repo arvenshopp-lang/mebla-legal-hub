@@ -142,7 +142,7 @@ function SecurityCenterPage() {
     }
   };
 
-  const canManageKeys = can("settings.manage");
+  const canManageKeys = can("security.manage");
 
   return (
     <AdminShell
