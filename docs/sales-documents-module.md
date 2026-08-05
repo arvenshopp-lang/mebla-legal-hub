@@ -1,0 +1,40 @@
+# وحدة العروض والمقترحات والعقود — منصة مِهلة
+
+مسار الإدارة: `/mehla-admin/sales` (القائمة والقوالب) و`/mehla-admin/sales/$id` (التفاصيل).
+
+## الطبقات
+
+| الطبقة | الملف | المسؤولية |
+| --- | --- | --- |
+| مشتركة | `src/lib/sales-docs.shared.ts` | الأنواع، التسميات، `computeSalesDocTotals`، خريطة الانتقالات `STATUS_TRANSITIONS`. |
+| تحقّق | `src/lib/sales-docs.schemas.ts` | مخططات Zod لكل مدخل (لا تُقبل إجماليات من المتصفح). |
+| المحرك | `src/lib/sales-docs.server.ts` | القراءة والحفظ، الاعتماد، الإرسال، القرار، التوقيع، التحويل، القوالب، سجل الأحداث والتدقيق. |
+| PDF | `src/lib/sales-docs.pdf.server.ts` | نموذج مستند عربي RTL على محرك المركز المالي الموحّد. |
+| دوال الخادم | `src/lib/sales-docs.functions.ts` | ملف رقيق: تحقق مدخلات + `requireStaff` بصلاحية `sales_docs.*`. |
+| الواجهة | `src/routes/mehla-admin/sales/*`, `src/components/admin/sales/*` | القائمة، النموذج، القوالب، التفاصيل والإجراءات. |
+
+## دورة الحياة
+
+```text
+draft → pending_approval → approved → sent → viewed → accepted → active → terminated
+                    ↘ draft (رفض)            ↘ rejected / expired / cancelled
+```
+
+- الخصم الفعلي > 15% يرفع `requires_approval`، ويمنع الإرسال قبل الاعتماد.
+- الاعتماد يمنع الاعتماد الذاتي: مُنشئ المستند لا يعتمده (مبدأ الفصل).
+- الرقم النظامي يُولَّد عند أول إرسال عبر `next_financial_number`.
+- القبول يقفل المستند (`locked`) فلا تُعدّل بنوده بعده.
+- كل انتقال يُكتب في `sales_document_events` (سجل غير قابل للتعديل) وفي سجل التدقيق الإداري.
+
+## الصلاحيات
+
+`sales_docs.read` للقراءة، `create/update/delete` للمسودات، `send` للإرسال، `approve` للاعتماد،
+`decide` للقرار والتوقيع ودورة حياة العقد، `convert` للتحويل لفاتورة أو اشتراك،
+`manage_templates` للقوالب، `export` لتصدير CSV. الأزرار لا تظهر إلا بالصلاحية وبحالة المستند المناسبة.
+
+## الروابط
+
+- التحويل لفاتورة يمر بدالة `billing_save_draft` نفسها المستخدمة في المركز المالي (ترقيم متسلسل وذرّية).
+- التحويل لاشتراك يتطلّب ربط المستند بمكتب ويستخدم مالك المكتب صاحب العضوية.
+- الإرسال يمر بمحرك البريد `sendAppEmail` مع مفتاح Idempotency لكل مستند/رقم.
+- التوقيع الإلكتروني يخزّن بصمة `SHA-256` لمحتوى المستند مع IP والمتصفح في `sales_document_signatures`.

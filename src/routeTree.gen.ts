@@ -72,9 +72,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as MehlaAdminSalesIndexRouteImport } from './routes/mehla-admin/sales/index'
 import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
+import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sales/$id'
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
@@ -407,6 +409,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const MehlaAdminSalesIndexRoute = MehlaAdminSalesIndexRouteImport.update({
+  id: '/sales/',
+  path: '/sales/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const MehlaAdminBillingIndexRoute = MehlaAdminBillingIndexRouteImport.update({
   id: '/billing/',
   path: '/billing/',
@@ -423,6 +430,11 @@ const MehlaAdminSupportTicketIdRoute =
     path: '/$ticketId',
     getParentRoute: () => MehlaAdminSupportRoute,
   } as any)
+const MehlaAdminSalesIdRoute = MehlaAdminSalesIdRouteImport.update({
+  id: '/sales/$id',
+  path: '/sales/$id',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
 const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
   id: '/billing/$id',
   path: '/billing/$id',
@@ -568,9 +580,11 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
+  '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -648,9 +662,11 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
+  '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -731,9 +747,11 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
+  '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
+  '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -814,9 +832,11 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
     | '/cases/'
     | '/mehla-admin/billing/'
+    | '/mehla-admin/sales/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -894,9 +914,11 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
     | '/cases'
     | '/mehla-admin/billing'
+    | '/mehla-admin/sales'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -976,9 +998,11 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/mehla-admin/billing/$id'
+    | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
+    | '/mehla-admin/sales/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1470,6 +1494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mehla-admin/sales/': {
+      id: '/mehla-admin/sales/'
+      path: '/sales'
+      fullPath: '/mehla-admin/sales/'
+      preLoaderRoute: typeof MehlaAdminSalesIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
     '/mehla-admin/billing/': {
       id: '/mehla-admin/billing/'
       path: '/billing'
@@ -1490,6 +1521,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/mehla-admin/support/$ticketId'
       preLoaderRoute: typeof MehlaAdminSupportTicketIdRouteImport
       parentRoute: typeof MehlaAdminSupportRoute
+    }
+    '/mehla-admin/sales/$id': {
+      id: '/mehla-admin/sales/$id'
+      path: '/sales/$id'
+      fullPath: '/mehla-admin/sales/$id'
+      preLoaderRoute: typeof MehlaAdminSalesIdRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/billing/$id': {
       id: '/mehla-admin/billing/$id'
@@ -1670,7 +1708,9 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminUsersRoute: typeof MehlaAdminUsersRoute
   MehlaAdminIndexRoute: typeof MehlaAdminIndexRoute
   MehlaAdminBillingIdRoute: typeof MehlaAdminBillingIdRoute
+  MehlaAdminSalesIdRoute: typeof MehlaAdminSalesIdRoute
   MehlaAdminBillingIndexRoute: typeof MehlaAdminBillingIndexRoute
+  MehlaAdminSalesIndexRoute: typeof MehlaAdminSalesIndexRoute
 }
 
 const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
@@ -1703,7 +1743,9 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminUsersRoute: MehlaAdminUsersRoute,
   MehlaAdminIndexRoute: MehlaAdminIndexRoute,
   MehlaAdminBillingIdRoute: MehlaAdminBillingIdRoute,
+  MehlaAdminSalesIdRoute: MehlaAdminSalesIdRoute,
   MehlaAdminBillingIndexRoute: MehlaAdminBillingIndexRoute,
+  MehlaAdminSalesIndexRoute: MehlaAdminSalesIndexRoute,
 }
 
 const MehlaAdminRouteRouteWithChildren = MehlaAdminRouteRoute._addFileChildren(
