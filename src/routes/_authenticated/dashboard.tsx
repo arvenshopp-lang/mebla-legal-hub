@@ -6,6 +6,7 @@ import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { ChevronLeft } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardHome,
@@ -111,9 +112,18 @@ function DashboardHome() {
         hearingsToday: hearingsToday.count ?? 0,
         deadlinesSoon: deadlinesSoon.count ?? 0,
         overdueTasks: overdueTasks.count ?? 0,
-        upcomingHearings: (upcomingHearings.data ?? []) as any[],
-        activeDeadlines: (activeDeadlines.data ?? []) as any[],
-        pendingTasks: (pendingTasks.data ?? []) as any[],
+        upcomingHearings: (upcomingHearings.data ?? []) as (Pick<
+          Tables<"hearings">,
+          "id" | "title" | "hearing_date" | "court_name"
+        > & { case: { case_title: string; case_number: string } | null })[],
+        activeDeadlines: (activeDeadlines.data ?? []) as (Pick<
+          Tables<"deadlines">,
+          "id" | "title" | "due_date" | "deadline_type"
+        > & { case: { case_title: string } | null })[],
+        pendingTasks: (pendingTasks.data ?? []) as Pick<
+          Tables<"tasks">,
+          "id" | "title" | "due_date" | "priority" | "status"
+        >[],
       };
     },
   });

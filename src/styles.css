@@ -81,7 +81,8 @@
 
   /* Shadow scale — هادئة ومؤسسية */
   --elevation-xs: 0 1px 2px oklch(0.2315 0.0175 170.34 / 0.05);
-  --elevation-s: 0 1px 3px oklch(0.2315 0.0175 170.34 / 0.07), 0 1px 2px oklch(0.2315 0.0175 170.34 / 0.04);
+  --elevation-s:
+    0 1px 3px oklch(0.2315 0.0175 170.34 / 0.07), 0 1px 2px oklch(0.2315 0.0175 170.34 / 0.04);
   --elevation-m: 0 4px 12px oklch(0.2315 0.0175 170.34 / 0.07);
   --elevation-l: 0 12px 32px -8px oklch(0.2315 0.0175 170.34 / 0.14);
   --elevation-overlay: 0 24px 64px -16px oklch(0.2315 0.0175 170.34 / 0.24);
@@ -235,7 +236,12 @@
     overflow-wrap: break-word;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-sans);
     line-height: 1.35;
     letter-spacing: 0;
@@ -243,12 +249,14 @@
     text-wrap: balance;
   }
 
-  h3, h4 {
+  h3,
+  h4 {
     font-weight: 600;
     line-height: 1.45;
   }
 
-  h5, h6 {
+  h5,
+  h6 {
     font-weight: 600;
     line-height: 1.5;
   }

@@ -28,6 +28,7 @@ import {
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
+import type { Enums, Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 
@@ -53,6 +54,10 @@ export const Route = createFileRoute("/_authenticated/cases/")({
 });
 
 const PAGE_SIZE = 20;
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
 
 const caseSchema = z.object({
   case_title: z.string().trim().min(2, "العنوان مطلوب").max(250),
@@ -133,7 +138,7 @@ function Page() {
         .select("user_id, profile:profiles(id, full_name)")
         .eq("organization_id", activeOrgId!)
         .eq("status", "active");
-      return (data ?? []).map((m: any) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
+      return (data ?? []).map((m) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
     },
   });
 
@@ -155,7 +160,7 @@ function Page() {
         query = query.or(
           `case_title.ilike.%${q}%,case_number.ilike.%${q}%,opponent_name.ilike.%${q}%`,
         );
-      if (status !== "all") query = query.eq("status", status as any);
+      if (status !== "all") query = query.eq("status", status as Enums<"case_status">);
       if (caseType) query = query.ilike("case_type", `%${caseType}%`);
       if (court) query = query.ilike("court_name", `%${court}%`);
       if (lawyer !== "all") query = query.eq("assigned_lawyer_id", lawyer);
@@ -179,7 +184,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setArchiving(null);
     },
-    onError: (e: any) => toast.error("تعذّرت الأرشفة", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّرت الأرشفة", { description: errMsg(e) }),
   });
 
   const statusTone = (s: string) =>
@@ -264,7 +269,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا توجد قضايا بعد"
@@ -312,7 +317,7 @@ function Page() {
                       <Td>{c.client?.full_name ?? "—"}</Td>
                       <Td>{c.court_name ?? "—"}</Td>
                       <Td>
-                        <Badge tone={statusTone(c.status) as any}>
+                        <Badge tone={statusTone(c.status)}>
                           {CASE_STATUS[c.status] ?? c.status}
                         </Badge>
                       </Td>
@@ -402,7 +407,7 @@ export function CaseDialog({
   onClose: () => void;
   editing: CaseRow | null;
   members: { id: string; name: string }[];
-  onCreated?: (c: any) => void;
+  onCreated?: (c: Tables<"cases">) => void;
 }) {
   const { activeOrgId, user } = useAuth();
   const qc = useQueryClient();
@@ -436,7 +441,11 @@ export function CaseDialog({
   if (formKey !== key) {
     setFormKey(key);
     setErrors({});
-    setForm(editing ? { ...(editing as any) } : { status: "open", priority: "medium" });
+    setForm(
+      editing
+        ? { ...(editing as unknown as Partial<CaseForm>) }
+        : { status: "open", priority: "medium" },
+    );
   }
 
   const save = async () => {
@@ -455,11 +464,12 @@ export function CaseDialog({
       return;
     }
     setSaving(true);
-    const payload: any = { ...res.data };
-    Object.keys(payload).forEach((k) => {
-      if (payload[k] === "" || payload[k] === undefined) payload[k] = null;
+    const payload: Partial<TablesInsert<"cases">> = { ...res.data };
+    (Object.keys(payload) as Array<keyof typeof payload>).forEach((k) => {
+      if (payload[k] === "" || payload[k] === undefined)
+        (payload as Record<string, unknown>)[k] = null;
     });
-    let result: any;
+    let result: { data: Tables<"cases"> | null; error: { message: string } | null };
     if (editing) {
       const { data, error } = await supabase
         .from("cases")
@@ -471,7 +481,11 @@ export function CaseDialog({
     } else {
       const { data, error } = await supabase
         .from("cases")
-        .insert({ ...payload, organization_id: activeOrgId, created_by: user?.id })
+        .insert({
+          ...(payload as TablesInsert<"cases">),
+          organization_id: activeOrgId!,
+          created_by: user?.id,
+        })
         .select()
         .single();
       if (!error && data) {
@@ -495,7 +509,7 @@ export function CaseDialog({
     draft.clear();
     qc.invalidateQueries({ queryKey: ["cases"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
-    onCreated?.(result.data);
+    if (result.data) onCreated?.(result.data);
     onClose();
   };
 
@@ -542,7 +556,7 @@ export function CaseDialog({
             className={inputCls}
           >
             <option value="">— بدون —</option>
-            {(clients ?? []).map((c: any) => (
+            {(clients ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.full_name}
               </option>
@@ -552,7 +566,12 @@ export function CaseDialog({
         <FormField label="صفة العميل">
           <select
             value={form.client_role ?? ""}
-            onChange={(e) => setForm({ ...form, client_role: (e.target.value || null) as any })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                client_role: (e.target.value || null) as Enums<"client_role"> | null,
+              })
+            }
             className={inputCls}
           >
             <option value="">—</option>
@@ -601,7 +620,7 @@ export function CaseDialog({
         <FormField label="الحالة *">
           <select
             value={form.status ?? "open"}
-            onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+            onChange={(e) => setForm({ ...form, status: e.target.value as Enums<"case_status"> })}
             className={inputCls}
           >
             {asOptions(CASE_STATUS).map((o) => (
@@ -614,7 +633,9 @@ export function CaseDialog({
         <FormField label="الأولوية *">
           <select
             value={form.priority ?? "medium"}
-            onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, priority: e.target.value as Enums<"case_priority"> })
+            }
             className={inputCls}
           >
             {asOptions(CASE_PRIORITY).map((o) => (

@@ -51,6 +51,8 @@ import {
 } from "@/components/documents/text-intel";
 import { extractableKind } from "@/lib/document-ai.shared";
 import { DocumentRepairButton } from "@/components/documents/repair-panel";
+import type { Tables } from "@/integrations/supabase/types";
+import { errMsg } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
@@ -82,7 +84,12 @@ function Page() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
-  const [deleting, setDeleting] = useState<any | null>(null);
+  type DocumentListRow = Tables<"documents"> & {
+    case: { case_title: string } | null;
+    client: { full_name: string } | null;
+    uploader: { full_name: string } | null;
+  };
+  const [deleting, setDeleting] = useState<DocumentListRow | null>(null);
   const [sharing, setSharing] = useState<SecureDoc | null>(null);
   const [viewingText, setViewingText] = useState<DocumentRow | null>(null);
   const q = useDebounced(search);
@@ -109,11 +116,11 @@ function Page() {
     },
   });
 
-  const jobs = useProcessingJobs((data?.rows ?? []).map((d: any) => d.id));
+  const jobs = useProcessingJobs((data?.rows ?? []).map((d) => d.id));
   const jobFor = (id: string) => (jobs.data ?? []).find((j) => j.document_id === id);
 
   const del = useMutation({
-    mutationFn: async (d: any) => {
+    mutationFn: async (d: DocumentListRow) => {
       await supabase.storage.from("documents").remove([d.file_path]);
       const { error } = await supabase.from("documents").delete().eq("id", d.id);
       if (error) throw error;
@@ -130,7 +137,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["documents"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
   return (
@@ -150,7 +157,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا توجد مستندات"
@@ -182,7 +189,7 @@ function Page() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data.rows.map((d: any) => (
+                  {data.rows.map((d: DocumentListRow) => (
                     <tr key={d.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
                         <div className="flex items-center gap-2">
@@ -435,7 +442,7 @@ function UploadDialog({
         <FormField label="القضية">
           <select value={caseId} onChange={(e) => setCaseId(e.target.value)} className={inputCls}>
             <option value="">— بدون —</option>
-            {(cases ?? []).map((c: any) => (
+            {(cases ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.case_title}
               </option>
@@ -449,7 +456,7 @@ function UploadDialog({
             className={inputCls}
           >
             <option value="">— بدون —</option>
-            {(clients ?? []).map((c: any) => (
+            {(clients ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.full_name}
               </option>

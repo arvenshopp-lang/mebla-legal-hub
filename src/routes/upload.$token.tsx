@@ -12,6 +12,7 @@ import {
 } from "@/lib/client-portal.functions";
 import { ACCEPT_ATTR, MAX_FILES_PER_REQUEST, validateClientFile } from "@/lib/client-portal.shared";
 import { fmtDateTime, fmtSize } from "@/lib/enums";
+import { errMsg } from "@/lib/errors";
 
 export const Route = createFileRoute("/upload/$token")({
   ssr: false,
@@ -77,7 +78,8 @@ function Page() {
         label: p.label,
       }));
       const { slots } = await makeSlots({ data: { token, files: metas } });
-      const uploaded: any[] = [];
+      const uploaded: { name: string; size: number; type: string; label?: string; path: string }[] =
+        [];
       for (let i = 0; i < picked.length; i++) {
         const slot = slots[i];
         const { error: upErr } = await supabase.storage
@@ -90,8 +92,8 @@ function Page() {
       }
       await submitReq({ data: { token, files: uploaded } });
       setDone(true);
-    } catch (e: any) {
-      toast.error("تعذّر الإرسال", { description: e?.message ?? "حاول مرة أخرى" });
+    } catch (e: unknown) {
+      toast.error("تعذّر الإرسال", { description: errMsg(e) || "حاول مرة أخرى" });
     } finally {
       setSending(false);
     }

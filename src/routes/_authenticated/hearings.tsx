@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import type { Tables, Enums, TablesInsert } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -68,6 +69,19 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
+type HearingRow = Tables<"hearings"> & {
+  case?: {
+    id: string;
+    case_title: string;
+    case_number: string | null;
+    client?: { full_name: string } | null;
+  } | null;
+};
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
@@ -75,9 +89,9 @@ function Page() {
   const [status, setStatus] = useState("all");
   const [when, setWhen] = useState<"all" | "upcoming" | "past">("upcoming");
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<HearingRow | null>(null);
   const [open, setOpen] = useState(false);
-  const [deleting, setDeleting] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState<HearingRow | null>(null);
   const q = useDebounced(search);
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -93,7 +107,7 @@ function Page() {
         .eq("organization_id", activeOrgId!)
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q) query = query.or(`title.ilike.%${q}%,court_name.ilike.%${q}%`);
-      if (status !== "all") query = query.eq("status", status as any);
+      if (status !== "all") query = query.eq("status", status as Enums<"hearing_status">);
       const now = new Date().toISOString();
       if (when === "upcoming")
         query = query.gte("hearing_date", now).order("hearing_date", { ascending: true });
@@ -117,7 +131,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
   return (
@@ -140,7 +154,7 @@ function Page() {
             <select
               value={when}
               onChange={(e) => {
-                setWhen(e.target.value as any);
+                setWhen(e.target.value as "all" | "upcoming" | "past");
                 setPage(1);
               }}
               className={inputCls + " max-w-[140px]"}
@@ -170,7 +184,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !data?.rows.length ? (
         <EmptyState
           title="لا توجد جلسات"
@@ -205,7 +219,7 @@ function Page() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data.rows.map((h: any) => (
+                  {data.rows.map((h: HearingRow) => (
                     <tr key={h.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">{h.title}</Td>
                       <Td>{h.case?.case_title ?? "—"}</Td>
@@ -290,7 +304,7 @@ function HearingDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  editing: any;
+  editing: HearingRow | null;
   orgId: string;
   userId?: string;
 }) {
@@ -345,7 +359,7 @@ function HearingDialog({
       return;
     }
     setSaving(true);
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       ...res.data,
       hearing_date: new Date(res.data.hearing_date).toISOString(),
     };
@@ -353,10 +367,15 @@ function HearingDialog({
       if (payload[k] === "") payload[k] = null;
     });
     const q = editing
-      ? supabase.from("hearings").update(payload).eq("id", editing.id)
-      : supabase
+      ? supabase
           .from("hearings")
-          .insert({ ...payload, organization_id: orgId, created_by: userId });
+          .update(payload as Partial<TablesInsert<"hearings">>)
+          .eq("id", editing.id)
+      : supabase.from("hearings").insert({
+          ...(payload as Partial<TablesInsert<"hearings">>),
+          organization_id: orgId,
+          created_by: userId,
+        } as TablesInsert<"hearings">);
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
@@ -387,7 +406,7 @@ function HearingDialog({
               className={inputCls}
             >
               <option value="">— اختر —</option>
-              {(cases ?? []).map((c: any) => (
+              {(cases ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.case_title}
                   {c.case_number ? ` (${c.case_number})` : ""}
@@ -421,7 +440,9 @@ function HearingDialog({
         <FormField label="الحالة *">
           <select
             value={form.status ?? "scheduled"}
-            onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+            onChange={(e) =>
+              setForm({ ...form, status: e.target.value as Enums<"hearing_status"> })
+            }
             className={inputCls}
           >
             {asOptions(HEARING_STATUS).map((o) => (

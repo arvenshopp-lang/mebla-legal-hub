@@ -5,6 +5,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+
+type OrganizationUpdate = Database["public"]["Tables"]["organizations"]["Update"];
 
 export type AdminOrgRow = {
   id: string;
@@ -49,7 +52,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "organizations.read");
     const db = await g.admin();
     const { data: rows, error } = await db.rpc("admin_organization_directory", {
-      _search: data.search || null,
+      _search: data.search || undefined,
       _status: data.status,
       _limit: data.pageSize,
       _offset: (data.page - 1) * data.pageSize,
@@ -105,12 +108,12 @@ export const updateOrganization = createServerFn({ method: "POST" })
     const staff = await g.requireStaff(context.supabase, context.userId, "organizations.update");
     const db = await g.admin();
     const { organizationId, ...fields } = data;
-    const patch = Object.fromEntries(
+    const patch: OrganizationUpdate = Object.fromEntries(
       Object.entries(fields).map(([k, v]) => [
         k,
         typeof v === "string" && v.trim() === "" ? null : v,
       ]),
-    );
+    ) as OrganizationUpdate;
     const { data: before } = await db
       .from("organizations")
       .select("*")
@@ -231,7 +234,7 @@ export const listSupportAccessGrants = createServerFn({ method: "POST" })
         organization_id: string;
         staff_email: string;
         reason: string;
-        scope: string;
+        scope: string[];
         status: string;
         requested_at: string;
         approved_at: string | null;
@@ -266,7 +269,7 @@ export const requestSupportAccess = createServerFn({ method: "POST" })
         staff_user_id: staff.user_id,
         staff_email: staff.email,
         reason: data.reason,
-        scope: data.scope,
+        scope: [data.scope],
         expires_at: expires,
       })
       .select("id")

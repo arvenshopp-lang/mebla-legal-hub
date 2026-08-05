@@ -6,6 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { HR_EMPLOYMENT_STATUS, HR_EMPLOYMENT_TYPE, type HrEmployeeRow } from "@/lib/hr.shared";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 /* ------------------------------------------------------------------ قائمة الموظفين */
 
@@ -48,7 +49,7 @@ export const listHrEmployees = createServerFn({ method: "POST" })
     const { data: rows, error, count } = await q.range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الموظفين.");
 
-    const list = (rows ?? []).map((r: any) => ({
+    const list = (rows ?? []).map((r) => ({
       id: r.id,
       full_name: r.full_name,
       email: r.email,
@@ -100,13 +101,13 @@ export const listUnlinkedPlatformStaff = createServerFn({ method: "POST" })
       .from("hr_employees")
       .select("staff_id")
       .not("staff_id", "is", null);
-    const linkedIds = new Set((linked ?? []).map((r: any) => r.staff_id));
+    const linkedIds = new Set((linked ?? []).map((r) => r.staff_id));
     const { data: staff } = await db
       .from("platform_staff")
       .select("id, full_name, email")
       .order("full_name");
     return {
-      staff: (staff ?? []).filter((s: any) => !linkedIds.has(s.id)) as {
+      staff: (staff ?? []).filter((s) => !linkedIds.has(s.id)) as {
         id: string;
         full_name: string;
         email: string;
@@ -161,7 +162,7 @@ export const getHrEmployee = createServerFn({ method: "POST" })
         .eq("user_id", row.user_id)
         .order("last_seen_at", { ascending: false })
         .limit(50);
-      sessions = (sess ?? []) as typeof sessions;
+      sessions = (sess ?? []) as unknown as typeof sessions;
     }
 
     const { data: audit } = await db
@@ -251,7 +252,7 @@ export const createHrEmployee = createServerFn({ method: "POST" })
     const patch = normalize(data);
     const { data: created, error } = await db
       .from("hr_employees")
-      .insert(patch)
+      .insert(patch as TablesInsert<"hr_employees">)
       .select("id")
       .single();
     if (error) throw new Error("تعذّر إنشاء سجل الموظف.");
@@ -266,7 +267,11 @@ export const createHrEmployee = createServerFn({ method: "POST" })
     return { ok: true as const, id: created.id as string };
   });
 
-async function assertNoManagerCycle(db: any, employeeId: string, managerId: string | null) {
+async function assertNoManagerCycle(
+  db: Awaited<ReturnType<typeof import("@/lib/admin-guard.server").admin>>,
+  employeeId: string,
+  managerId: string | null,
+) {
   if (!managerId) return;
   if (managerId === employeeId) throw new Error("لا يمكن أن يكون الموظف مديره المباشر.");
   let current: string | null = managerId;
@@ -312,7 +317,10 @@ export const updateHrEmployee = createServerFn({ method: "POST" })
     await assertNoManagerCycle(db, employeeId, fields.manager_employee_id || null);
 
     const patch = normalize(fields);
-    const { error } = await db.from("hr_employees").update(patch).eq("id", employeeId);
+    const { error } = await db
+      .from("hr_employees")
+      .update(patch as TablesUpdate<"hr_employees">)
+      .eq("id", employeeId);
     if (error) throw new Error("تعذّر تحديث بيانات الموظف.");
 
     await g.writeAudit(db, staff, {
@@ -471,7 +479,7 @@ export const exportHrEmployees = createServerFn({ method: "POST" })
       )
       .order("full_name");
     return {
-      rows: (rows ?? []).map((r: any) => ({
+      rows: (rows ?? []).map((r) => ({
         full_name: r.full_name,
         email: r.email,
         phone: r.phone ?? "",

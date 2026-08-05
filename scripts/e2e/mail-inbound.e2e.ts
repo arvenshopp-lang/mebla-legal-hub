@@ -13,7 +13,10 @@ const URL_ = "http://localhost:8080/api/public/hooks/email-inbound";
 const KEY = readFileSync("/tmp/inbound-key.txt", "utf8").trim();
 const TAG = `IN-${Date.now()}`;
 
-type Res = { status: number; body: any };
+type Res = {
+  status: number;
+  body: Record<string, unknown> & { success?: boolean; duplicate?: boolean; error?: string };
+};
 async function post(
   payload: unknown,
   opts: { key?: string; skew?: number; rawBody?: string } = {},
@@ -53,7 +56,8 @@ function expect(cond: unknown, message: string) {
 }
 
 const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-const db = supabaseAdmin as never as any; // eslint-disable-line
+// عميل الإدارة مكتوب النوع فعلياً؛ نستخدمه مباشرة دون تخفيف النوع.
+const db = supabaseAdmin;
 
 const msg = (over: Record<string, unknown> = {}) => ({
   to: "support@mehlalex.com",
@@ -250,7 +254,7 @@ await test("INB-15", "مرفق وارد آمن يُقبل", async () => {
     .eq("message_id", ref.messageId);
   expect(data.length === 2, `عدد المرفقات ${data.length}`);
   expect(
-    data.every((a: any) => !a.is_quarantined),
+    data.every((a) => !a.is_quarantined),
     "حُجر مرفق سليم",
   );
   inboundAttachmentId = data[0].id;
@@ -272,10 +276,7 @@ await test("INB-16", "مرفق غير مسموح يُرفض وينتقل إلى 
     .from("email_attachments")
     .select("id, is_quarantined, scan_status, scan_detail")
     .eq("message_id", ref.messageId);
-  expect(
-    data.length === 2 && data.every((a: any) => a.is_quarantined),
-    "لم تُحجر المرفقات المرفوضة",
-  );
+  expect(data.length === 2 && data.every((a) => a.is_quarantined), "لم تُحجر المرفقات المرفوضة");
   quarantinedId = data[0].id;
   return `محجور=${data.length}، السبب: ${String(data[0].scan_detail).slice(0, 40)}…`;
 });

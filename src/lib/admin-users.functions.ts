@@ -45,7 +45,7 @@ export const listPlatformUsers = createServerFn({ method: "POST" })
     const db = await g.admin();
 
     const { data: rows, error } = await db.rpc("admin_user_directory", {
-      _search: data.search || null,
+      _search: data.search || undefined,
       _status: data.status,
       _sort: data.sort,
       _limit: data.pageSize,

@@ -19,6 +19,8 @@ import {
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
 import { describeMutationError } from "@/lib/subscription.shared";
+import type { Tables } from "@/integrations/supabase/types";
+import { errMsg } from "@/lib/errors";
 
 const EVENT_LABEL: Record<string, string> = {
   created: "إنشاء الرابط",
@@ -31,7 +33,10 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
   const { activeRole } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [revoking, setRevoking] = useState<any | null>(null);
+  type DocRequestRow = Tables<"document_requests"> & {
+    creator: { full_name: string } | null;
+  };
+  const [revoking, setRevoking] = useState<DocRequestRow | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const revokeFn = useServerFn(revokeDocumentRequest);
 
@@ -55,7 +60,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
       qc.invalidateQueries({ queryKey: ["doc-requests", caseId] });
       setRevoking(null);
     },
-    onError: (e: any) => toast.error("تعذّر الإلغاء", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الإلغاء", { description: errMsg(e) }),
   });
 
   return (
@@ -77,7 +82,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
         </p>
       ) : (
         <ul className="space-y-3">
-          {rows!.map((r: any) => (
+          {rows!.map((r: DocRequestRow) => (
             <li
               key={r.id}
               className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
@@ -172,14 +177,20 @@ function RequestLog({ requestId }: { requestId: string }) {
         <p className="text-[11px] text-text-muted">لا يوجد سجل بعد.</p>
       ) : (
         <ul className="space-y-1">
-          {data!.map((e: any) => (
+          {data!.map((e: Tables<"document_request_events">) => (
             <li
               key={e.id}
               className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground"
             >
               <span>
                 {EVENT_LABEL[e.event] ?? e.event}
-                {e.detail?.files ? ` (${e.detail.files} ملف)` : ""}
+                {(() => {
+                  const files =
+                    e.detail && typeof e.detail === "object" && !Array.isArray(e.detail)
+                      ? (e.detail as { files?: number }).files
+                      : undefined;
+                  return files ? ` (${files} ملف)` : "";
+                })()}
               </span>
               <span>{fmtDateTime(e.created_at)}</span>
             </li>
@@ -237,8 +248,8 @@ function CreateRequestDialog({
       setLink(`${window.location.origin}/upload/${res.token}`);
       qc.invalidateQueries({ queryKey: ["doc-requests", caseId] });
       toast.success("تم إنشاء الرابط");
-    } catch (e: any) {
-      toast.error("تعذّر إنشاء الرابط", { description: describeMutationError(e?.message) });
+    } catch (e: unknown) {
+      toast.error("تعذّر إنشاء الرابط", { description: describeMutationError(errMsg(e)) });
     } finally {
       setSaving(false);
     }

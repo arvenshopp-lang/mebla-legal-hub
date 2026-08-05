@@ -73,7 +73,7 @@ const csrfMiddleware = createCsrfMiddleware({
 const surfaceMiddleware = createMiddleware().server(async ({ next }) => {
   if (isLovableInternalRequest()) return next();
   const blocked = surfaceGuard();
-  if (blocked) return blocked as any;
+  if (blocked) return blocked;
   return next();
 });
 

@@ -8,6 +8,9 @@ import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
+// خريطة قوالب البريد غير متجانسة الخصائص (كل قالب له Props مختلفة تماماً)،
+// وتُستدعى ديناميكياً حسب النوع القادم من الطلب، لذا لا يوجد شكل واحد آمن للـ Props هنا.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
   signup: SignupEmail,
   invite: InviteEmail,

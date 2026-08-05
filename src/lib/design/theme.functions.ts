@@ -4,7 +4,9 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 import { PAGE_KEYS } from "./pages";
 
 const pageKeySchema = z.string().refine((k) => PAGE_KEYS.includes(k), "مفتاح صفحة غير معروف");
@@ -20,7 +22,7 @@ const draftSchema = z.object({
 });
 
 /** حرس مالك المنصة — يرفض الموظفين والمشتركين. */
-async function requireOwner(supabase: unknown, userId: string) {
+async function requireOwner(supabase: SupabaseClient<Database>, userId: string) {
   const guard = await import("@/lib/admin-guard.server");
   const staff = await guard.requireStaff(supabase, userId, "design.manage");
   if (staff.role !== "super_admin") {

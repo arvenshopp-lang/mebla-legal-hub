@@ -7,6 +7,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { buildCsv } from "@/lib/csv";
+import type { Database } from "@/integrations/supabase/types";
+
+type CrmDealUpdate = Database["public"]["Tables"]["crm_deals"]["Update"];
 import type {
   CrmActivityRow,
   CrmCompanyRow,
@@ -666,7 +669,11 @@ export const getCompanyDetail = createServerFn({ method: "POST" })
         ...company,
         owner: company.owner_staff_id ? (staffMap.get(company.owner_staff_id) ?? null) : null,
       } as CrmCompanyRow,
-      contacts: (contacts ?? []) as CrmContactRow[],
+      contacts: (contacts ?? []).map((c) => ({
+        ...c,
+        company_name: company.name,
+        owner: c.owner_staff_id ? (staffMap.get(c.owner_staff_id) ?? null) : null,
+      })) as CrmContactRow[],
       deals: ((deals ?? []) as AnyClient[]).map((d) => ({
         ...d,
         owner: d.owner_staff_id ? (staffMap.get(d.owner_staff_id) ?? null) : null,
@@ -1288,7 +1295,7 @@ export const moveDealStage = createServerFn({ method: "POST" })
     if (!stage) throw new Error("مرحلة خط البيع غير موجودة.");
     if (stage.is_lost && !nullify(data.lostReason)) throw new Error("اذكر سبب خسارة الصفقة.");
 
-    const patch: Record<string, unknown> = {
+    const patch: CrmDealUpdate = {
       stage_id: data.stageId,
       probability: stage.probability,
       updated_by: staff.user_id,

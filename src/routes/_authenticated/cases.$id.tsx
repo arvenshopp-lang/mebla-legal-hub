@@ -37,6 +37,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { saveCasePartySecure } from "@/lib/pii.functions";
 import { deleteCaseParty, getMyCasePartyPermissions } from "@/lib/case-parties.functions";
 import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
+import type { Enums, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
   component: Page,
@@ -59,6 +60,13 @@ export const Route = createFileRoute("/_authenticated/cases/$id")({
   }),
 });
 
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+type CaseParty = Tables<"case_parties">;
+type CaseUpdate = Tables<"case_updates">;
+
 function Page() {
   const { id } = Route.useParams();
   const { activeOrgId, activeRole } = useAuth();
@@ -66,8 +74,8 @@ function Page() {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [partyOpen, setPartyOpen] = useState(false);
-  const [editingParty, setEditingParty] = useState<any | null>(null);
-  const [deletingParty, setDeletingParty] = useState<any | null>(null);
+  const [editingParty, setEditingParty] = useState<CaseParty | null>(null);
+  const [deletingParty, setDeletingParty] = useState<CaseParty | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
@@ -95,7 +103,7 @@ function Page() {
         .select("user_id, profile:profiles(id, full_name)")
         .eq("organization_id", activeOrgId!)
         .eq("status", "active");
-      return (data ?? []).map((m: any) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
+      return (data ?? []).map((m) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
     },
   });
 
@@ -183,11 +191,11 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["case-parties", id] });
       setDeletingParty(null);
     },
-    onError: (e: any) => toast.error("تعذّر الحذف", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
   const toggleVisibility = useMutation({
-    mutationFn: async (u: any) => {
+    mutationFn: async (u: CaseUpdate) => {
       const { error } = await supabase
         .from("case_updates")
         .update({ is_client_visible: !u.is_client_visible })
@@ -198,7 +206,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["case-updates", id] });
       toast.success("تم التحديث");
     },
-    onError: (e: any) => toast.error("تعذّر التحديث", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر التحديث", { description: errMsg(e) }),
   });
 
   if (isLoading)
@@ -210,7 +218,7 @@ function Page() {
   if (error)
     return (
       <DashboardShell title="القضية">
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       </DashboardShell>
     );
   if (!data)
@@ -339,7 +347,7 @@ function Page() {
             <p className="text-center text-xs text-text-muted py-4">لا يوجد أطراف</p>
           ) : (
             <ul className="space-y-2">
-              {parties!.map((p: any) => (
+              {parties!.map((p) => (
                 <li
                   key={p.id}
                   className="rounded-[var(--radius-m)] bg-surface-muted/60 p-3 text-sm"
@@ -390,7 +398,7 @@ function Page() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <RelatedList loading={loadingHearings} title="الجلسات" empty="لا توجد جلسات">
-          {(hearings ?? []).map((h: any) => (
+          {(hearings ?? []).map((h) => (
             <div key={h.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0">
                 <div className="font-medium truncate">{h.title}</div>
@@ -407,7 +415,7 @@ function Page() {
           ))}
         </RelatedList>
         <RelatedList loading={loadingDeadlines} title="المهل" empty="لا توجد مهل">
-          {(deadlines ?? []).map((d: any) => (
+          {(deadlines ?? []).map((d) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0">
                 <div className="font-medium truncate">{d.title}</div>
@@ -422,7 +430,7 @@ function Page() {
           ))}
         </RelatedList>
         <RelatedList loading={loadingTasks} title="المهام" empty="لا توجد مهام">
-          {(tasks ?? []).map((t: any) => (
+          {(tasks ?? []).map((t) => (
             <div key={t.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0">
                 <div className="font-medium truncate">{t.title}</div>
@@ -435,7 +443,7 @@ function Page() {
           ))}
         </RelatedList>
         <RelatedList loading={loadingDocs} title="المستندات" empty="لا توجد مستندات">
-          {(docs ?? []).map((d: any) => (
+          {(docs ?? []).map((d) => (
             <div key={d.id} className="flex items-center justify-between py-2 text-sm">
               <div className="min-w-0">
                 <div className="font-medium truncate">{d.file_name}</div>
@@ -462,7 +470,7 @@ function Page() {
           <p className="py-4 text-center text-xs text-text-muted">لا يوجد تحديثات</p>
         ) : (
           <ol className="relative border-r border-border pr-4 space-y-4">
-            {updates!.map((u: any) => (
+            {updates!.map((u) => (
               <li key={u.id} className="relative">
                 <span className="absolute -right-[22px] top-1.5 h-3 w-3 rounded-full bg-gold" />
                 <div className="flex flex-wrap items-center gap-2">
@@ -512,7 +520,7 @@ function Page() {
           setEditOpen(false);
           qc.invalidateQueries({ queryKey: ["case", id] });
         }}
-        editing={data as any}
+        editing={data as unknown as Parameters<typeof CaseDialog>[0]["editing"]}
         members={members ?? []}
       />
       <PartyDialog
@@ -534,7 +542,7 @@ function Page() {
   );
 }
 
-function Info({ label, value }: { label: string; value: any }) {
+function Info({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -589,12 +597,12 @@ function PartyDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  editing: any;
+  editing: CaseParty | null;
   caseId: string;
   orgId: string;
 }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<CaseParty>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const savePartySecure = useServerFn(saveCasePartySecure);
@@ -787,7 +795,7 @@ function UpdateDialog({
     const { error } = await supabase.from("case_updates").insert({
       organization_id: orgId,
       case_id: caseId,
-      update_type: type as any,
+      update_type: type as Enums<"update_type">,
       title: title.trim(),
       description: description.trim() || null,
       event_date: new Date().toISOString(),

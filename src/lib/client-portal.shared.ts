@@ -57,6 +57,8 @@ export function validateClientFile(file: { name: string; size: number; type: str
 }
 
 export function sanitizeFileName(name: string) {
+  // نطاق أحرف التحكم مقصود: تنقية أسماء الملفات من محارف التحكم.
+  // eslint-disable-next-line no-control-regex
   return name.replace(/[\\/\u0000-\u001f]/g, "_").slice(-180);
 }
 

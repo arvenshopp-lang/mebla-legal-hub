@@ -66,7 +66,7 @@ function AnalyticsPage() {
     queryFn: () => fn({ data: { days } }),
   });
 
-  const series = data?.series ?? [];
+  const series = useMemo(() => data?.series ?? [], [data]);
   const totals = useMemo(() => {
     const sum = (k: MetricKey) =>
       series.reduce((acc: number, p: GrowthPoint) => acc + Number(p[k] ?? 0), 0);

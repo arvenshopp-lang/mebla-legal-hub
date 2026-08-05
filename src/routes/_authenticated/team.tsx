@@ -29,6 +29,8 @@ import { describeMutationError } from "@/lib/subscription.shared";
 import { describeInviteError } from "@/lib/invitations.shared";
 import { inviteTeamMember } from "@/lib/invitations.functions";
 import { CasePartyPermissionsPanel } from "@/components/team/case-party-permissions";
+import type { Enums, Tables } from "@/integrations/supabase/types";
+import { errMsg } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -70,8 +72,18 @@ function Page() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [removing, setRemoving] = useState<any | null>(null);
-  const [revoking, setRevoking] = useState<any | null>(null);
+  type MemberRow = Tables<"organization_members"> & {
+    profile: {
+      full_name: string | null;
+      email: string | null;
+      phone: string | null;
+      job_title: string | null;
+      avatar_url: string | null;
+    } | null;
+  };
+  type InvitationRow = Tables<"organization_invitations">;
+  const [removing, setRemoving] = useState<MemberRow | null>(null);
+  const [revoking, setRevoking] = useState<InvitationRow | null>(null);
   const admin = canManage(activeRole);
 
   const {
@@ -108,7 +120,7 @@ function Page() {
   });
 
   const changeRole = useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: any }) => {
+    mutationFn: async ({ id, role }: { id: string; role: Enums<"app_role"> }) => {
       const { error } = await supabase.from("organization_members").update({ role }).eq("id", id);
       if (error) throw error;
     },
@@ -116,7 +128,7 @@ function Page() {
       toast.success("تم تحديث الدور");
       qc.invalidateQueries({ queryKey: ["team-members"] });
     },
-    onError: (e: any) => toast.error("تعذّر التحديث", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر التحديث", { description: errMsg(e) }),
   });
 
   const remove = useMutation({
@@ -129,7 +141,7 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["team-members"] });
       setRemoving(null);
     },
-    onError: (e: any) => toast.error("تعذّر الإزالة", { description: e.message }),
+    onError: (e: unknown) => toast.error("تعذّر الإزالة", { description: errMsg(e) }),
   });
 
   const revoke = useMutation({
@@ -145,8 +157,8 @@ function Page() {
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
       setRevoking(null);
     },
-    onError: (e: any) =>
-      toast.error("تعذّر إلغاء الدعوة", { description: describeMutationError(e?.message ?? "") }),
+    onError: (e: unknown) =>
+      toast.error("تعذّر إلغاء الدعوة", { description: describeMutationError(errMsg(e)) }),
   });
 
   const resend = useMutation({
@@ -176,7 +188,7 @@ function Page() {
       }),
   });
 
-  const filtered = (members ?? []).filter((m: any) => {
+  const filtered = (members ?? []).filter((m: MemberRow) => {
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -198,7 +210,7 @@ function Page() {
       {isLoading ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock message={(error as any).message} />
+        <ErrorBlock message={errMsg(error)} />
       ) : !filtered.length ? (
         <EmptyState title="لا يوجد أعضاء" />
       ) : (
@@ -217,7 +229,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((m: any) => {
+                {filtered.map((m: MemberRow) => {
                   const isSelf = m.user_id === user?.id;
                   const isOwner = m.role === "owner";
                   return (
@@ -232,7 +244,12 @@ function Page() {
                         {admin && !isOwner && !isSelf ? (
                           <select
                             value={m.role}
-                            onChange={(e) => changeRole.mutate({ id: m.id, role: e.target.value })}
+                            onChange={(e) =>
+                              changeRole.mutate({
+                                id: m.id,
+                                role: e.target.value as Enums<"app_role">,
+                              })
+                            }
                             className={inputCls + " max-w-[160px] py-1.5"}
                           >
                             {(["admin", "lawyer", "legal_assistant", "viewer"] as const).map(
@@ -293,7 +310,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {invitations!.map((inv: any) => {
+                {invitations!.map((inv: InvitationRow) => {
                   const link = inviteUrl(inv.token);
                   const status = effectiveInviteStatus(inv);
                   return (
@@ -519,7 +536,9 @@ function InviteDialog({
             <FormField label="الدور *">
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as any)}
+                onChange={(e) =>
+                  setRole(e.target.value as "admin" | "lawyer" | "legal_assistant" | "viewer")
+                }
                 className={inputCls}
               >
                 {(["admin", "lawyer", "legal_assistant", "viewer"] as const).map((r) => (
