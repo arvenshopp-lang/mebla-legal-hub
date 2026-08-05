@@ -932,7 +932,14 @@ export const discoverAgenticMailTools = createServerFn({ method: "POST" })
 export const linkAgenticMailboxes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(
-    async ({ context }): Promise<{ linked: number; missing: number; unmatched: string[] }> => {
+    async ({
+      context,
+    }): Promise<{
+      linked: number;
+      missing: number;
+      aliased: number;
+      unmatched: string[];
+    }> => {
       const a = await access();
       const ctx = await a.authorize(
         context.supabase,
@@ -951,13 +958,13 @@ export const linkAgenticMailboxes = createServerFn({ method: "POST" })
           "mailboxes",
           outcome.linked > 0,
           outcome.linked > 0
-            ? `${outcome.linked} صندوق مرتبط${outcome.missing ? ` — ${outcome.missing} غير موجود عند المزوّد` : ""}`
+            ? `${outcome.linked} حساب حقيقي مرتبط${outcome.aliased ? ` — ${outcome.aliased} اسم مستعار` : ""}${outcome.missing ? ` — ${outcome.missing} غير موجود عند المزوّد` : ""}`
             : "لا يوجد صندوق مطابق بين المزوّد ومِهلة.",
         );
         await s.bumpCounters(ctx.db, { mailboxes: outcome.linked });
         await a.audit(ctx, {
           action: "email.agentic.link_mailboxes",
-          description: `ربط الصناديق: ${outcome.linked} مرتبط، ${outcome.missing} غير موجود`,
+          description: `ربط الصناديق: ${outcome.linked} مرتبط، ${outcome.aliased} اسم مستعار، ${outcome.missing} غير موجود`,
           metadata: { unmatched: outcome.unmatched },
         });
         return outcome;
