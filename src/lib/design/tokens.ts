@@ -307,13 +307,10 @@ export function tokensToCss(tokens: DesignTokens, scopeSelector: string): string
   return out.join("\n");
 }
 
-/** روابط الخطوط المعتمدة المطلوبة لهذا التصميم. */
-export function fontLinks(tokens: DesignTokens): string[] {
-  const families = new Set<string>();
-  for (const key of ["--font-arabic", "--font-english", "--font-headings"]) {
-    const value = tokens[key];
-    const font = APPROVED_FONTS.find((f) => f.value === value);
-    if (font?.google) families.add(font.google);
-  }
-  return [...families].map((f) => `https://fonts.googleapis.com/css2?family=${f}&display=swap`);
+/**
+ * أوراق الأنماط المطلوبة للخطوط. الخط الرسمي مستضاف محلياً ضمن حزمة المنصة،
+ * لذلك لا نحتاج أي رابط خارجي — تُعاد قائمة فارغة عمداً.
+ */
+export function fontLinks(_tokens: DesignTokens): string[] {
+  return [];
 }
