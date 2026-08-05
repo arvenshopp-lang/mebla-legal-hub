@@ -318,8 +318,6 @@ const TOOL_BY_KIND: Record<RestCall["kind"], string> = {
   delete: DELETE_TOOL,
 };
 
-type Envelope = { status: number; body: unknown };
-
 function unwrap(payload: unknown, requestId: string): unknown {
   if (!payload || typeof payload !== "object") return payload;
   const root = payload as Record<string, unknown>;
