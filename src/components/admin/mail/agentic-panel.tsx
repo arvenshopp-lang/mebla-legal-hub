@@ -193,7 +193,8 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
       if (result.error) {
         toast.error(result.error);
         invalidate();
-      } else notify(result.ingested > 0 ? `مزامنة ${result.ingested} رسالة جديدة.` : "لا رسائل جديدة.");
+      } else
+        notify(result.ingested > 0 ? `مزامنة ${result.ingested} رسالة جديدة.` : "لا رسائل جديدة.");
       void qc.invalidateQueries({ queryKey: ["mail-threads"] });
     },
     onError: fail,
@@ -203,7 +204,9 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
   const syncAll = useMutation({
     mutationFn: () => syncAllFn({ data: undefined }),
     onSuccess: (result) =>
-      notify(`مزامنة ${result.mailboxes} صندوق: ${result.ingested} رسالة جديدة، ${result.failed} فشل.`),
+      notify(
+        `مزامنة ${result.mailboxes} صندوق: ${result.ingested} رسالة جديدة، ${result.failed} فشل.`,
+      ),
     onError: fail,
   });
 
@@ -354,14 +357,17 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                   {value.ok || skipped ? (
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
                   ) : (
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <XCircle
+                      className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
                   )}
                   <span className="min-w-0">
                     <span className="font-medium">{CHECK_LABELS[check]}</span>
                     <span className="block text-muted-foreground">
                       {skipped
                         ? "غير مطلوب: المزوّد لا يوفّر أداة إرسال."
-                        : value.detail ?? (value.ok ? "مستوفى" : "لم يُنفّذ بعد")}
+                        : (value.detail ?? (value.ok ? "مستوفى" : "لم يُنفّذ بعد"))}
                     </span>
                   </span>
                 </li>
@@ -378,13 +384,22 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
         <div className="rounded-[var(--radius-m)] border border-border p-4">
           <h4 className="text-body-sm font-semibold">التشغيل</h4>
           <div className="mt-3 space-y-1.5">
-            <Row label="آخر اختبار" value={state.lastTestAt ? fmtDateTime(state.lastTestAt) : "—"} />
-            <Row label="آخر مزامنة" value={state.lastSyncAt ? fmtDateTime(state.lastSyncAt) : "—"} />
+            <Row
+              label="آخر اختبار"
+              value={state.lastTestAt ? fmtDateTime(state.lastTestAt) : "—"}
+            />
+            <Row
+              label="آخر مزامنة"
+              value={state.lastSyncAt ? fmtDateTime(state.lastSyncAt) : "—"}
+            />
             <Row
               label="الدورة القادمة"
               value={scheduler.nextRunAt ? fmtDateTime(scheduler.nextRunAt) : "—"}
             />
-            <Row label="زمن الاستجابة" value={state.latencyMs != null ? `${state.latencyMs} م.ث` : "—"} />
+            <Row
+              label="زمن الاستجابة"
+              value={state.latencyMs != null ? `${state.latencyMs} م.ث` : "—"}
+            />
             <Row label="رسائل مستوردة" value={String(state.counters.imported)} />
             <Row label="أخطاء مزامنة" value={String(state.counters.syncErrors)} />
             <Row label="فشل متتالٍ" value={String(scheduler.consecutiveFailures)} />
@@ -396,10 +411,17 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                   : "SMTP فقط"
               }
             />
-            <Row label="قائمة الإرسال" value={`${fallback.pending} بالانتظار · ${fallback.failed} فشل`} />
+            <Row
+              label="قائمة الإرسال"
+              value={`${fallback.pending} بالانتظار · ${fallback.failed} فشل`}
+            />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Btn variant="secondary" onClick={() => syncAll.mutate()} disabled={busy || !state.enabled}>
+            <Btn
+              variant="secondary"
+              onClick={() => syncAll.mutate()}
+              disabled={busy || !state.enabled}
+            >
               <RefreshCw className="h-4 w-4" aria-hidden /> مزامنة الكل
             </Btn>
             <Btn variant="secondary" onClick={() => retry.mutate()} disabled={busy}>
@@ -440,80 +462,91 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
               // المستعارة تُسلَّم إليه ولا تُزامن بذاتها.
               const isRealAccount = box.linkStatus === "linked";
               return (
-              <li
-                key={box.id}
-                className="rounded-[var(--radius-m)] border border-border p-4 md:flex md:items-start md:justify-between md:gap-4"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-medium">{box.address}</span>
-                    <Badge
-                      tone={
-                        box.linkStatus === "linked"
-                          ? "green"
-                          : box.linkStatus === "missing"
-                            ? "red"
-                            : "muted"
-                      }
-                    >
-                      {LINK_STATUS_LABELS[box.linkStatus]}
-                    </Badge>
-                    {isRealAccount && !box.syncEnabled && <Badge tone="muted">المزامنة موقوفة</Badge>}
-                    {isRealAccount && <Badge tone="muted">حساب حقيقي</Badge>}
+                <li
+                  key={box.id}
+                  className="rounded-[var(--radius-m)] border border-border p-4 md:flex md:items-start md:justify-between md:gap-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-medium">{box.address}</span>
+                      <Badge
+                        tone={
+                          box.linkStatus === "linked"
+                            ? "green"
+                            : box.linkStatus === "missing"
+                              ? "red"
+                              : "muted"
+                        }
+                      >
+                        {LINK_STATUS_LABELS[box.linkStatus]}
+                      </Badge>
+                      {isRealAccount && !box.syncEnabled && (
+                        <Badge tone="muted">المزامنة موقوفة</Badge>
+                      )}
+                      {isRealAccount && <Badge tone="muted">حساب حقيقي</Badge>}
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <Row
+                        label="آخر مزامنة"
+                        value={box.lastSyncAt ? fmtDateTime(box.lastSyncAt) : "—"}
+                      />
+                      <Row label="غير مقروء" value={String(box.unreadCount)} />
+                      {box.lastError && (
+                        <p className="text-body-sm text-danger">آخر خطأ: {box.lastError}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-2 space-y-1">
-                    <Row label="آخر مزامنة" value={box.lastSyncAt ? fmtDateTime(box.lastSyncAt) : "—"} />
-                    <Row label="غير مقروء" value={String(box.unreadCount)} />
-                    {box.lastError && (
-                      <p className="text-body-sm text-danger">آخر خطأ: {box.lastError}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
-                  <Btn
-                    variant="secondary"
-                    onClick={() => dry.mutate(box.id)}
-                    disabled={dry.isPending || !isRealAccount}
-                  >
-                    تشغيل تجريبي
-                  </Btn>
-                  <Btn
-                    variant="secondary"
-                    onClick={() => syncOne.mutate(box.id)}
-                    disabled={syncOne.isPending || !isRealAccount}
-                  >
-                    <RefreshCw className="h-4 w-4" aria-hidden /> مزامنة
-                  </Btn>
-                  {sendSupported && (
+                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
                     <Btn
                       variant="secondary"
-                      onClick={() => setTestOpen({ mailboxId: box.id, address: box.address })}
-                      disabled={!isRealAccount}
+                      onClick={() => dry.mutate(box.id)}
+                      disabled={dry.isPending || !isRealAccount}
                     >
-                      <Send className="h-4 w-4" aria-hidden /> رسالة اختبار
+                      تشغيل تجريبي
                     </Btn>
-                  )}
-                  <Btn
-                    variant="ghost"
-                    onClick={() => toggleSync.mutate({ mailboxId: box.id, enabled: !box.syncEnabled })}
-                    disabled={toggleSync.isPending || !isRealAccount}
-                  >
-                    {box.syncEnabled ? "إيقاف المزامنة" : "تفعيل المزامنة"}
-                  </Btn>
-                  <Btn
-                    variant="ghost"
-                    onClick={() => resetCursor.mutate(box.id)}
-                    disabled={resetCursor.isPending || !isRealAccount}
-                  >
-                    <TimerReset className="h-4 w-4" aria-hidden /> تصفير المؤشر
-                  </Btn>
-                  {isRealAccount && (
-                    <Btn variant="ghost" onClick={() => unlink.mutate(box.id)} disabled={unlink.isPending}>
-                      <Link2Off className="h-4 w-4" aria-hidden /> فك الارتباط
+                    <Btn
+                      variant="secondary"
+                      onClick={() => syncOne.mutate(box.id)}
+                      disabled={syncOne.isPending || !isRealAccount}
+                    >
+                      <RefreshCw className="h-4 w-4" aria-hidden /> مزامنة
                     </Btn>
-                  )}
-                </div>
-              </li>
+                    {sendSupported && (
+                      <Btn
+                        variant="secondary"
+                        onClick={() => setTestOpen({ mailboxId: box.id, address: box.address })}
+                        disabled={!isRealAccount}
+                      >
+                        <Send className="h-4 w-4" aria-hidden /> رسالة اختبار
+                      </Btn>
+                    )}
+                    <Btn
+                      variant="ghost"
+                      onClick={() =>
+                        toggleSync.mutate({ mailboxId: box.id, enabled: !box.syncEnabled })
+                      }
+                      disabled={toggleSync.isPending || !isRealAccount}
+                    >
+                      {box.syncEnabled ? "إيقاف المزامنة" : "تفعيل المزامنة"}
+                    </Btn>
+                    <Btn
+                      variant="ghost"
+                      onClick={() => resetCursor.mutate(box.id)}
+                      disabled={resetCursor.isPending || !isRealAccount}
+                    >
+                      <TimerReset className="h-4 w-4" aria-hidden /> تصفير المؤشر
+                    </Btn>
+                    {isRealAccount && (
+                      <Btn
+                        variant="ghost"
+                        onClick={() => unlink.mutate(box.id)}
+                        disabled={unlink.isPending}
+                      >
+                        <Link2Off className="h-4 w-4" aria-hidden /> فك الارتباط
+                      </Btn>
+                    )}
+                  </div>
+                </li>
               );
             })}
           </ul>
@@ -532,13 +565,17 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={run.outcome === "success" ? "green" : "red"}>{run.outcome}</Badge>
                   <Badge tone="muted">{run.triggerSource === "cron" ? "مجدولة" : "يدوية"}</Badge>
-                  <span className="text-caption text-muted-foreground">{fmtDateTime(run.createdAt)}</span>
+                  <span className="text-caption text-muted-foreground">
+                    {fmtDateTime(run.createdAt)}
+                  </span>
                 </div>
                 <p className="mt-2 text-body-sm">
                   مقروء {run.fetched} · مستورد {run.ingested} · مكرّر {run.duplicates} · تذاكر{" "}
                   {run.ticketsCreated} · {run.durationMs} م.ث
                 </p>
-                {run.errorMessage && <p className="mt-1 text-body-sm text-danger">{run.errorMessage}</p>}
+                {run.errorMessage && (
+                  <p className="mt-1 text-body-sm text-danger">{run.errorMessage}</p>
+                )}
               </li>
             ))}
           </ul>
@@ -612,7 +649,11 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
             <Btn type="button" variant="ghost" onClick={() => setDisableOpen(false)}>
               إلغاء
             </Btn>
-            <Btn type="submit" variant="danger" disabled={deactivate.isPending || disableReason.trim().length < 3}>
+            <Btn
+              type="submit"
+              variant="danger"
+              disabled={deactivate.isPending || disableReason.trim().length < 3}
+            >
               تعطيل
             </Btn>
           </div>
