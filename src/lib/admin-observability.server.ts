@@ -386,7 +386,7 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
     sessionsRevoked,
     adminOps,
     failures,
-    failedLogins,
+    blockedLookups,
     lastFailure,
     integrationChecks,
     integrationFailures,
@@ -506,7 +506,7 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
     security: {
       adminOps24h: adminOps,
       failures24h: failures,
-      failedLogins24h: failedLogins,
+      blockedLookups24h: blockedLookups,
       lastFailureRef: (lastFailure?.data?.ref as string | undefined) ?? null,
     },
     integrations: {
