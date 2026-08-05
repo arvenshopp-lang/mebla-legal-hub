@@ -45,7 +45,10 @@ export const Route = createFileRoute("/mehla-admin/activity")({
   head: () => ({
     meta: [
       { title: "سجل النشاط الموحّد · إدارة مِهلة" },
-      { name: "description", content: "سجل موحّد لعمليات الإدارة ونشاط المكاتب والأعطال المسجّلة في منصة مِهلة." },
+      {
+        name: "description",
+        content: "سجل موحّد لعمليات الإدارة ونشاط المكاتب والأعطال المسجّلة في منصة مِهلة.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -53,7 +56,11 @@ export const Route = createFileRoute("/mehla-admin/activity")({
 });
 
 const toneOf = (source: ActivitySource) =>
-  source === "failure" ? ("red" as const) : source === "admin" ? ("info" as const) : ("green" as const);
+  source === "failure"
+    ? ("red" as const)
+    : source === "admin"
+      ? ("info" as const)
+      : ("green" as const);
 
 function ActivityPage() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -63,7 +70,9 @@ function ActivityPage() {
   const debouncedQuery = useDebounced(q, 350);
 
   const sources = useMemo<ActivitySource[]>(() => {
-    const parsed = src.split(",").filter((s): s is ActivitySource => SOURCES.includes(s as ActivitySource));
+    const parsed = src
+      .split(",")
+      .filter((s: string): s is ActivitySource => SOURCES.includes(s as ActivitySource));
     return parsed.length > 0 ? parsed : SOURCES;
   }, [src]);
 
@@ -86,11 +95,14 @@ function ActivityPage() {
     staleTime: 15_000,
   });
 
-  const setSearch = (patch: Partial<{ q: string; src: string; size: number; page: number }>) =>
-    void navigate({ search: (prev) => ({ ...prev, ...patch }) });
+  type ActivitySearch = { q: string; src: string; size: number; page: number };
+  const setSearch = (patch: Partial<ActivitySearch>) =>
+    void navigate({ search: (prev: ActivitySearch) => ({ ...prev, ...patch }) });
 
   const toggleSource = (source: ActivitySource) => {
-    const next = sources.includes(source) ? sources.filter((s) => s !== source) : [...sources, source];
+    const next = sources.includes(source)
+      ? sources.filter((s) => s !== source)
+      : [...sources, source];
     setSearch({ src: (next.length > 0 ? next : SOURCES).join(","), page: 1 });
   };
 
@@ -139,7 +151,10 @@ function ActivityPage() {
         </>
       }
     >
-      <SectionCard title="الفلاتر" description="الفلاتر محفوظة في رابط الصفحة، ويمكنك مشاركتها مع فريقك كما هي.">
+      <SectionCard
+        title="الفلاتر"
+        description="الفلاتر محفوظة في رابط الصفحة، ويمكنك مشاركتها مع فريقك كما هي."
+      >
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="block">
             <span className="mb-1.5 block text-caption">بحث في العملية أو المنفّذ أو الوصف</span>
@@ -196,7 +211,11 @@ function ActivityPage() {
             title="لا توجد أحداث مطابقة"
             hint="جرّب توسيع نطاق الفلاتر أو حذف نص البحث."
             action={
-              <Btn variant="outline" size="sm" onClick={() => setSearch({ q: "", src: SOURCES.join(","), page: 1 })}>
+              <Btn
+                variant="outline"
+                size="sm"
+                onClick={() => setSearch({ q: "", src: SOURCES.join(","), page: 1 })}
+              >
                 إعادة ضبط الفلاتر
               </Btn>
             }
@@ -220,7 +239,9 @@ function ActivityPage() {
                     <tr key={event.id}>
                       <Td>{fmtDateTime(event.createdAt)}</Td>
                       <Td>
-                        <Badge tone={toneOf(event.source)}>{ACTIVITY_SOURCE_LABELS[event.source]}</Badge>
+                        <Badge tone={toneOf(event.source)}>
+                          {ACTIVITY_SOURCE_LABELS[event.source]}
+                        </Badge>
                       </Td>
                       <Td>
                         <span className="font-semibold">{event.action}</span>
@@ -228,7 +249,9 @@ function ActivityPage() {
                       </Td>
                       <Td className="hidden md:table-cell">{event.actor}</Td>
                       <Td className="hidden lg:table-cell">
-                        <span className="block max-w-[320px] truncate">{event.description || "—"}</span>
+                        <span className="block max-w-[320px] truncate">
+                          {event.description || "—"}
+                        </span>
                       </Td>
                       <Td>
                         <Btn size="sm" variant="outline" onClick={() => setDetail(event)}>
@@ -277,7 +300,10 @@ function ActivityPage() {
             <Detail label="النوع" value={ACTIVITY_SOURCE_LABELS[detail.source]} />
             <Detail label="العملية" value={detail.action} />
             <Detail label="المنفّذ" value={detail.actor} />
-            <Detail label="الكيان" value={`${detail.entityType}${detail.entityId ? ` · ${detail.entityId}` : ""}`} />
+            <Detail
+              label="الكيان"
+              value={`${detail.entityType}${detail.entityId ? ` · ${detail.entityId}` : ""}`}
+            />
             <Detail label="الوصف" value={detail.description || "—"} />
             <Detail label="عنوان الشبكة" value={detail.ip ?? "—"} />
             <Detail label="الجهاز" value={detail.device ?? "—"} />
