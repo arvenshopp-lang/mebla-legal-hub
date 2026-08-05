@@ -376,18 +376,26 @@ export type AgenticTarget = {
   isActive: boolean;
 };
 
-/** الصناديق المؤهلة: بشرية، مُفعّلة، مرتبطة فعلياً بصندوق عند المزوّد. */
+/**
+ * الصناديق المؤهلة للمزامنة.
+ *
+ * تشمل الصناديق البشرية، وكذلك الحساب الحقيقي (`type = 'system'`) عندما يكون
+ * مرتبطاً فعلياً عند المزوّد: في إعداد Hostinger الحالي تُسلَّم رسائل الأسماء
+ * المستعارة إلى هذا الحساب، ثم تُوجَّه بالترويسات إلى الصندوق المنطقي. الحساب
+ * الحقيقي مصدر سحب فقط ولا تُستوعب رسالة تحته أبداً.
+ */
 export async function agenticTargets(db: Db, mailboxId?: string): Promise<AgenticTarget[]> {
   let query = db
     .from("email_mailboxes")
     .select(
       "id, address, type, agentic_mailbox_id, agentic_link_status, sync_enabled, inbound_enabled, is_active",
     )
-    .neq("type", "system")
     .order("sort_order", { ascending: true });
   if (mailboxId) query = query.eq("id", mailboxId);
   const { data } = await query;
-  return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+  return ((data ?? []) as Record<string, unknown>[])
+    .filter((row) => String(row.type) !== "system" || Boolean(row.agentic_mailbox_id))
+    .map((row) => ({
     id: String(row.id),
     address: String(row.address),
     type: String(row.type),
