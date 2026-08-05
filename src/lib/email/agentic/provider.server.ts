@@ -368,14 +368,16 @@ export type LinkOutcome = { linked: number; missing: number; unmatched: string[]
  */
 export async function linkMailboxes(db: Db, correlationId: string): Promise<LinkOutcome> {
   const provider = await discoverProviderMailboxes(correlationId);
-  const { data } = await db.from("email_mailboxes").select("id, address");
-  const local = ((data ?? []) as { id: string; address: string }[]).map((row) => ({
+  const { data } = await db.from("email_mailboxes").select("id, address, type");
+  const local = ((data ?? []) as { id: string; address: string; type: string }[]).map((row) => ({
     id: row.id,
     address: row.address.toLowerCase(),
+    type: row.type,
   }));
 
   let linked = 0;
   let missing = 0;
+  let aliased = 0;
   for (const box of local) {
     const match = provider.find((p) => p.address === box.address);
     if (match) {
@@ -386,6 +388,21 @@ export async function linkMailboxes(db: Db, correlationId: string): Promise<Link
           agentic_mailbox_id: match.id,
           agentic_link_status: "linked",
           agentic_unread_count: match.unread ?? 0,
+          agentic_last_error: null,
+        })
+        .eq("id", box.id);
+      continue;
+    }
+    // عنوان غير موجود عند المزوّد وليس صندوقاً حقيقياً ⇒ اسم مستعار منطقي
+    // يُسلَّم إلى الحساب الحقيقي؛ ليس خللاً ولا يُزامن باستقلال.
+    if (box.type === "human") {
+      aliased += 1;
+      await db
+        .from("email_mailboxes")
+        .update({
+          agentic_link_status: "alias",
+          agentic_mailbox_id: null,
+          sync_enabled: false,
           agentic_last_error: null,
         })
         .eq("id", box.id);
@@ -402,7 +419,7 @@ export async function linkMailboxes(db: Db, correlationId: string): Promise<Link
     .filter((p) => !local.some((box) => box.address === p.address))
     .map((p) => p.address);
 
-  return { linked, missing, unmatched };
+  return { linked, missing, aliased, unmatched };
 }
 
 /* ------------------------------------------------- المزامنة */
