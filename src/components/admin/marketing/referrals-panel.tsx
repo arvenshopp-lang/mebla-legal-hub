@@ -67,7 +67,7 @@ export function ReferralsPanel({ canManage }: { canManage: boolean }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {query.data!.rows.map((r) => (
+              {query.data!.rows.map((r: MarketingReferralRow) => (
                 <tr key={r.id} className="hover:bg-surface-muted/60">
                   <Td className="font-medium">{r.code}</Td>
                   <Td>{r.referrer_kind}</Td>

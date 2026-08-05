@@ -175,7 +175,7 @@ export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; c
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {query.data!.rows.map((c) => (
+                {query.data!.rows.map((c: MarketingCampaignRow) => (
                   <tr key={c.id} className="hover:bg-surface-muted/60">
                     <Td>
                       <span className="block max-w-[220px] truncate font-medium">{c.name}</span>

@@ -18,6 +18,7 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { createConversionEvent, listConversionEvents, listMarketingCampaigns } from "@/lib/marketing.functions";
+import type { MarketingConversionEventRow } from "@/lib/marketing.shared";
 
 export function ConversionsPanel({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
@@ -62,7 +63,7 @@ export function ConversionsPanel({ canManage }: { canManage: boolean }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {query.data!.rows.map((e) => (
+                {query.data!.rows.map((e: MarketingConversionEventRow) => (
                   <tr key={e.id} className="hover:bg-surface-muted/60">
                     <Td>{e.campaign_name ?? "—"}</Td>
                     <Td>{e.event_key}</Td>
@@ -150,7 +151,7 @@ function ConversionDialog({ open, onClose, onSaved }: { open: boolean; onClose: 
         <FormField label="الحملة">
           <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)} className={inputCls}>
             <option value="">بدون حملة محددة</option>
-            {(campaigns?.rows ?? []).map((c) => (
+            {(campaigns?.rows ?? []).map((c: { id: string; name: string }) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

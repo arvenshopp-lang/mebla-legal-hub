@@ -50,8 +50,9 @@ function MarketingPage() {
 
   const totals = useMemo(() => {
     const rows = summaryQuery.data?.summary ?? [];
+    type SummaryRow = (typeof rows)[number];
     return rows.reduce(
-      (acc, r) => {
+      (acc: { budget: number; spend: number; leads: number; deals: number; wonAmount: number; conversionEvents: number }, r: SummaryRow) => {
         acc.budget += r.budget_amount;
         acc.spend += r.spend_amount;
         acc.leads += r.leads_count;

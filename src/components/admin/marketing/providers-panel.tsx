@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Badge, EmptyState, ErrorBlock, LoadingBlock } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { listMarketingProviders } from "@/lib/marketing.functions";
+import type { MarketingProviderStatus } from "@/lib/marketing.shared";
 
 export function ProvidersPanel() {
   const listFn = useServerFn(listMarketingProviders);
@@ -19,7 +20,7 @@ export function ProvidersPanel() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {providers.map((p) => (
+      {providers.map((p: MarketingProviderStatus) => (
         <div key={p.provider_key} className="surface-card p-5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
