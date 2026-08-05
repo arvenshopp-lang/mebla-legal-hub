@@ -74,8 +74,7 @@ function buildPrintDocument(html: string, stamp: PrintStamp): string {
 <head>
 <meta charset="utf-8" />
 <title>${stamp.documentTitle} — ${stamp.documentRef}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/fonts/mehla-fonts.css" />
 <style>
   @page { size: A4; margin: 16mm 14mm 24mm; }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

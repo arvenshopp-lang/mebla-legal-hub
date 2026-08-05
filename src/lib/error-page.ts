@@ -5,9 +5,7 @@ export function renderErrorPage(): string {
     <meta charset="utf-8" />
     <title>تعذّر عرض الصفحة | مِهلة</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/fonts/mehla-fonts.css" />
     <style>
       :root { --primary:#173F35; --bg:#F7F8F6; --surface:#FFFFFF; --border:#DDE3DF; --text:#15201C; --muted:#5E6B65; }
       * { box-sizing: border-box; }
@@ -16,7 +14,7 @@ export function renderErrorPage(): string {
              font:15px/1.8 "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif; }
       .card { width:100%; max-width:30rem; background:var(--surface); border:1px solid var(--border);
               border-radius:12px; padding:2rem; }
-      .brand { font-size:15px; font-weight:700; letter-spacing:-0.01em; margin:0 0 1.5rem; }
+      .brand { font-size:15px; font-weight:700; letter-spacing:0; margin:0 0 1.5rem; }
       h1 { font-size:1.25rem; margin:0 0 .5rem; line-height:1.4; }
       p { color:var(--muted); margin:0 0 1.75rem; }
       .actions { display:flex; gap:.5rem; flex-wrap:wrap; }

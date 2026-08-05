@@ -21,17 +21,16 @@ export type TokenDef = {
 
 export type TokenGroup = { id: string; label: string; description?: string; tokens: TokenDef[] };
 
-/** خطوط معتمدة فقط — لا يُسمح بروابط خطوط خارجية عشوائية. */
-export const APPROVED_FONTS: { value: string; label: string; google?: string }[] = [
-  { value: '"IBM Plex Sans Arabic", system-ui, sans-serif', label: "IBM Plex Sans Arabic", google: "IBM+Plex+Sans+Arabic:wght@400;500;600;700" },
-  { value: '"Noto Sans Arabic", system-ui, sans-serif', label: "Noto Sans Arabic", google: "Noto+Sans+Arabic:wght@400;500;600;700" },
-  { value: '"Cairo", system-ui, sans-serif', label: "Cairo", google: "Cairo:wght@400;500;600;700" },
-  { value: '"Tajawal", system-ui, sans-serif', label: "Tajawal", google: "Tajawal:wght@400;500;700" },
-  { value: '"Almarai", system-ui, sans-serif', label: "Almarai", google: "Almarai:wght@400;700" },
-  { value: '"Readex Pro", system-ui, sans-serif', label: "Readex Pro", google: "Readex+Pro:wght@400;500;600" },
-  { value: '"Inter", system-ui, sans-serif', label: "Inter (لاتيني)", google: "Inter:wght@400;500;600;700" },
-  { value: '"IBM Plex Sans", system-ui, sans-serif', label: "IBM Plex Sans (لاتيني)", google: "IBM+Plex+Sans:wght@400;500;600;700" },
-  { value: "system-ui, -apple-system, sans-serif", label: "خط النظام" },
+/**
+ * الخط الرسمي الوحيد للمنصة — IBM Plex Sans Arabic مستضاف محلياً.
+ * لا يُسمح بأي خط خارجي أو رابط CDN؛ خط النظام خيار احتياطي فقط.
+ */
+export const APPROVED_FONTS: { value: string; label: string }[] = [
+  {
+    value: '"IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif',
+    label: "IBM Plex Sans Arabic (الخط الرسمي)",
+  },
+  { value: "system-ui, -apple-system, sans-serif", label: "خط النظام (احتياطي)" },
 ];
 
 const WEIGHTS = ["400", "500", "600", "700", "800"].map((w) => ({ value: w, label: w }));
@@ -308,13 +307,10 @@ export function tokensToCss(tokens: DesignTokens, scopeSelector: string): string
   return out.join("\n");
 }
 
-/** روابط الخطوط المعتمدة المطلوبة لهذا التصميم. */
-export function fontLinks(tokens: DesignTokens): string[] {
-  const families = new Set<string>();
-  for (const key of ["--font-arabic", "--font-english", "--font-headings"]) {
-    const value = tokens[key];
-    const font = APPROVED_FONTS.find((f) => f.value === value);
-    if (font?.google) families.add(font.google);
-  }
-  return [...families].map((f) => `https://fonts.googleapis.com/css2?family=${f}&display=swap`);
+/**
+ * أوراق الأنماط المطلوبة للخطوط. الخط الرسمي مستضاف محلياً ضمن حزمة المنصة،
+ * لذلك لا نحتاج أي رابط خارجي — تُعاد قائمة فارغة عمداً.
+ */
+export function fontLinks(_tokens: DesignTokens): string[] {
+  return [];
 }

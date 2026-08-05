@@ -1082,7 +1082,7 @@ export const sendAgenticTestMessage = createServerFn({ method: "POST" })
             to: [data.to],
             subject,
             text,
-            html: `<div dir="rtl" style="font-family:system-ui">${text}</div>`,
+            html: `<div dir="rtl" style="font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif">${text}</div>`,
           },
           ctx.correlationId,
         ),

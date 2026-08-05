@@ -14,8 +14,9 @@ const CSP = [
   "form-action 'self'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  // الخطوط مستضافة محلياً بالكامل — لا نسمح بأي مصدر خطوط خارجي
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.lovable.dev https://*.lovable.app https://www.google-analytics.com https://region1.google-analytics.com",
   "media-src 'self' blob:",

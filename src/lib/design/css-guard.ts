@@ -13,7 +13,11 @@ export type CssValidation = {
 
 export const MAX_CSS_BYTES = 100 * 1024;
 
-const TRUSTED_IMPORT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
+/**
+ * خطوط المنصة مستضافة محلياً بالكامل، فلا حاجة لأي @import خارجي.
+ * القائمة فارغة عمداً: أي @import إلى نطاق خارجي يُحجب.
+ */
+const TRUSTED_IMPORT_HOSTS: string[] = [];
 
 /** عناصر أمان وقانونية لا يُسمح بإخفائها. */
 const PROTECTED_PATTERNS = [
