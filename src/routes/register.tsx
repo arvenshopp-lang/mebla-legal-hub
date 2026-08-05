@@ -37,8 +37,15 @@ export const Route = createFileRoute("/register")({
       { title: "إنشاء حساب | مِهلة" },
       { name: "description", content: "أنشئ حساباً مجانياً في منصة مِهلة لإدارة قضايا مكتبك." },
       { property: "og:title", content: "إنشاء حساب | مِهلة" },
-      { property: "og:description", content: "أنشئ حساباً مجانياً في منصة مِهلة." },
+      {
+        property: "og:description",
+        content: "أنشئ حساب مكتبك على منصة مِهلة وابدأ إدارة القضايا والجلسات والمهل النظامية.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/register" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/register" }],
   }),
 });
 

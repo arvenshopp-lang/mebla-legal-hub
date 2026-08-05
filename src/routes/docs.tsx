@@ -10,10 +10,16 @@ export const Route = createFileRoute("/docs")({
         content: "دليل استخدام منصة مِهلة، الأسئلة الشائعة، توثيق API، الشروط وسياسة الخصوصية.",
       },
       { property: "og:title", content: "مركز المساعدة — مِهلة" },
-      { property: "og:description", content: "كل ما تحتاجه لاستخدام منصة مِهلة القانونية." },
+      {
+        property: "og:description",
+        content:
+          "دليل الاستخدام، الأسئلة الشائعة، وتوثيق واجهة API لمنصة مِهلة لإدارة الممارسة القانونية.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/docs" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/docs" }],
   }),
   component: Page,
 });

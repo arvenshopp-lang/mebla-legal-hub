@@ -36,8 +36,10 @@ export const Route = createFileRoute("/track")({
         content: "متابعة حالة القضية عبر رمز القضية المكوّن من 10 أرقام.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://mehlalex.com/track" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://mehlalex.com/track" }],
   }),
   component: TrackPage,
 });
