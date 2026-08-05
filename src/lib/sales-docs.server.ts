@@ -765,3 +765,86 @@ export async function deleteTemplate(ctx: SalesCtx, id: string): Promise<void> {
 }
 
 export { APPROVAL_DISCOUNT_PERCENT_THRESHOLD };
+
+/* ------------------------------------------------------------- سياق المستند */
+
+export type DocumentContent = {
+  intro: string | null;
+  terms: string | null;
+  notes: string | null;
+  companyName: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  dealId: string | null;
+  templateId: string | null;
+};
+
+/** بيانات نصية وأطراف المستند — تُستخدم في نموذج PDF ونموذج التعديل. */
+export async function getDocumentContent(id: string): Promise<DocumentContent> {
+  const client = await db();
+  const { data } = await client
+    .from("sales_documents")
+    .select("intro, terms, notes, deal_id, template_id, company_id, contact_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) throw new Error("المستند غير موجود.");
+  let companyName: string | null = null;
+  let contactName: string | null = null;
+  let contactEmail: string | null = null;
+  if (data.company_id) {
+    const { data: company } = await client
+      .from("crm_companies")
+      .select("name, legal_name")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    companyName = company ? (company.legal_name || company.name) : null;
+  }
+  if (data.contact_id) {
+    const { data: contact } = await client
+      .from("crm_contacts")
+      .select("full_name, email")
+      .eq("id", data.contact_id)
+      .maybeSingle();
+    contactName = contact?.full_name ?? null;
+    contactEmail = contact?.email ?? null;
+  }
+  return {
+    intro: data.intro ?? null,
+    terms: data.terms ?? null,
+    notes: data.notes ?? null,
+    companyName,
+    contactName,
+    contactEmail,
+    dealId: data.deal_id ?? null,
+    templateId: data.template_id ?? null,
+  };
+}
+
+export type PickerOptions = {
+  organizations: { id: string; name: string }[];
+  companies: { id: string; name: string }[];
+  contacts: { id: string; name: string; email: string | null; companyId: string | null }[];
+  plans: { code: string; label: string }[];
+};
+
+/** قوائم الاختيار المطلوبة في نموذج المستند (مكاتب، شركات، جهات اتصال، باقات). */
+export async function pickerOptions(): Promise<PickerOptions> {
+  const client = await db();
+  const [orgs, companies, contacts, plans] = await Promise.all([
+    client.from("organizations").select("id, name").order("name").limit(500),
+    client.from("crm_companies").select("id, name, legal_name").order("name").limit(500),
+    client.from("crm_contacts").select("id, full_name, email, company_id").order("full_name").limit(500),
+    client.from("platform_plans").select("code, name_ar").order("code").limit(100),
+  ]);
+  return {
+    organizations: ((orgs.data ?? []) as AnyClient[]).map((o) => ({ id: o.id, name: o.name })),
+    companies: ((companies.data ?? []) as AnyClient[]).map((c) => ({ id: c.id, name: c.legal_name || c.name })),
+    contacts: ((contacts.data ?? []) as AnyClient[]).map((c) => ({
+      id: c.id,
+      name: c.full_name,
+      email: c.email ?? null,
+      companyId: c.company_id ?? null,
+    })),
+    plans: ((plans.data ?? []) as AnyClient[]).map((p) => ({ code: p.code, label: p.name_ar ?? p.code })),
+  };
+}
