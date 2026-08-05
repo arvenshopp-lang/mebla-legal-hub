@@ -7,6 +7,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { buildCsv } from "@/lib/csv";
+import type { Database } from "@/integrations/supabase/types";
+
+type CrmDealUpdate = Database["public"]["Tables"]["crm_deals"]["Update"];
 import type {
   CrmActivityRow,
   CrmCompanyRow,
