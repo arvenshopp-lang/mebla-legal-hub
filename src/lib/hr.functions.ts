@@ -244,7 +244,7 @@ async function assertNoManagerCycle(db: any, employeeId: string, managerId: stri
   for (let i = 0; i < 50 && current; i++) {
     if (seen.has(current)) throw new Error("هذا التعيين يُنشئ حلقة في تسلسل الإدارة.");
     seen.add(current);
-    const { data: row } = await db.from("hr_employees").select("manager_employee_id").eq("id", current).maybeSingle();
+    const { data: row } = (await db.from("hr_employees").select("manager_employee_id").eq("id", current).maybeSingle()) as { data: { manager_employee_id: string | null } | null };
     current = row?.manager_employee_id ?? null;
   }
 }

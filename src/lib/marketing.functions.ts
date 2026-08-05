@@ -509,7 +509,8 @@ export const listMarketingProviders = createServerFn({ method: "POST" })
       .from("platform_integrations")
       .select("provider_key, is_enabled, status, last_checked_at, environment")
       .in("provider_key", MARKETING_PROVIDER_KEYS);
-    const byKey = new Map((configured ?? []).map((c: any) => [c.provider_key, c]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const byKey = new Map<string, any>((configured ?? []).map((c: any) => [c.provider_key, c]));
     const providers = (defs ?? []).map((d: any) => {
       const cfg = byKey.get(d.provider_key);
       return {

@@ -241,7 +241,7 @@ function BackupsPage() {
                   return (
                     <tr key={s.id}>
                       <Td>{BACKUP_KINDS[s.kind] ?? s.kind}</Td>
-                      <Td className="max-w-[180px] truncate" title={s.source}>
+                      <Td className="max-w-[180px] truncate">
                         {s.source}
                         {s.external_id && <span className="text-caption block truncate">{s.external_id}</span>}
                       </Td>
@@ -312,10 +312,10 @@ function BackupsPage() {
                 <tbody className="divide-y divide-border">
                   {requests.map((r) => (
                     <tr key={r.id}>
-                      <Td className="max-w-[160px] truncate" title={r.scope}>
+                      <Td className="max-w-[160px] truncate">
                         {r.scope}
                       </Td>
-                      <Td className="hidden sm:table-cell max-w-[220px] truncate" title={r.reason}>
+                      <Td className="hidden sm:table-cell max-w-[220px] truncate">
                         {r.reason}
                       </Td>
                       <Td>
