@@ -262,6 +262,17 @@ export function normalizeMessage(row: Record<string, unknown>): NormalizedMessag
 
 /* ------------------------------------------------- الصناديق والربط */
 
+/** دمج تفاصيل الرسالة الكاملة فوق المختصرة بلا فقدان قيمة موجودة. */
+function mergeMessage(base: NormalizedMessage, detail: NormalizedMessage): NormalizedMessage {
+  const merged = { ...base } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(detail)) {
+    if (value === null || value === undefined) continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    merged[key] = value;
+  }
+  return merged as unknown as NormalizedMessage;
+}
+
 export type ProviderMailbox = { id: string; address: string; displayName: string | null; unread: number | null };
 
 /** اكتشاف صناديق Hostinger الفعلية. لا يُنشئ أي صندوق داخل مِهلة. */
