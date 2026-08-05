@@ -239,6 +239,25 @@ function AdminDashboard() {
               hint={`${fmtNumber(act.tickets.breached)} تجاوزت المهلة`}
             />
             <Stat
+              label="جلسات فريق التشغيل الآن"
+              value={fmtNumber(act.sessions.staff_online)}
+              Icon={Gauge}
+              tone={act.sessions.staff_online > 0 ? "success" : "default"}
+              hint={`${fmtNumber(act.sessions.staff_active_24h)} خلال ٢٤ ساعة · ${fmtNumber(act.sessions.staff_devices)} جهازاً موثوقاً`}
+            />
+            <Stat
+              label="آخر ظهور لموظف تشغيل"
+              value={act.sessions.last_staff_seen_at ? fmtDateTime(act.sessions.last_staff_seen_at) : "—"}
+              Icon={UserCheck}
+            />
+            <Stat
+              label="تذاكر دعم مفتوحة (مكرر)"
+              value={fmtNumber(act.tickets.open)}
+              Icon={LifeBuoy}
+              tone={act.tickets.breached > 0 ? "danger" : "default"}
+              hint={`${fmtNumber(act.tickets.breached)} تجاوزت المهلة`}
+            />
+            <Stat
               label="رسائل البريد اليوم"
               value={fmtNumber(act.email.today)}
               Icon={Mail}
