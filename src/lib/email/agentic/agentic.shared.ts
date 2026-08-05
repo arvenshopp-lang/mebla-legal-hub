@@ -71,6 +71,7 @@ export const LINK_STATUS_LABELS: Record<AgenticLinkStatus, string> = {
   unlinked: "غير مرتبط",
   linked: "مرتبط",
   missing: "غير موجود عند المزوّد",
+  alias: "اسم مستعار",
 };
 
 export type AgenticState = {
