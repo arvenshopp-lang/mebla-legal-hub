@@ -9,7 +9,13 @@
 import { ImapConnection, ImapError, type MailboxStatus } from "./imap.server";
 import { base64Encode, parseMimeMessage } from "./mime.server";
 import { smtpSend } from "./smtp.server";
-import { secretsStatus, transportConfigured } from "./config.server";
+import {
+  mailboxHasOwnCredentials,
+  primaryMailboxAddress,
+  secretsStatus,
+  transportConfigured,
+} from "./config.server";
+import { inboundAliasAddresses, routeInboundAddress } from "@/lib/email/routing.server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -208,6 +214,8 @@ export async function syncMailboxFolder(
     const messages = await connection.fetchSince(cursor, FETCH_LIMIT);
     const { ingestInbound } = await import("@/lib/email/workspace.server");
     const { linkInboundToTicket } = await import("@/lib/support/ingest.server");
+    // Aliases منطقية: الرسالة تُستوعب تحت الصندوق المستهدف في ترويسة التسليم.
+    const aliases = await inboundAliasAddresses(db);
 
     let ingested = 0;
     let duplicates = 0;
@@ -227,8 +235,18 @@ export async function syncMailboxFolder(
           rejected += 1;
           continue;
         }
+        const routed = routeInboundAddress(
+          aliases,
+          {
+            deliveredTo: parsed.deliveredTo,
+            originalTo: parsed.originalTo,
+            to: parsed.to,
+            cc: parsed.cc,
+          },
+          mailbox.address,
+        );
         const result = await ingestInbound(db, {
-          to: mailbox.address,
+          to: routed.address,
           from: parsed.fromAddress,
           fromName: parsed.fromName,
           subject: parsed.subject,
@@ -252,7 +270,7 @@ export async function syncMailboxFolder(
             mailboxId: result.mailboxId,
             threadId: result.threadId,
             emailMessageId: result.messageId,
-            recipient: mailbox.address,
+            recipient: routed.address,
             from: parsed.fromAddress,
             fromName: parsed.fromName,
             subject: parsed.subject,
