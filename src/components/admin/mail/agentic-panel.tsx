@@ -118,7 +118,9 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
     mutationFn: () => linkFn({ data: undefined }),
     onSuccess: (result) =>
       notify(
-        `ربط ${result.linked} صندوق${result.missing ? ` — ${result.missing} غير موجود عند المزوّد` : ""}`,
+        `ربط ${result.linked} حساب حقيقي${result.aliased ? ` — ${result.aliased} اسم مستعار` : ""}${
+          result.missing ? ` — ${result.missing} غير موجود عند المزوّد` : ""
+        }`,
       ),
     onError: fail,
   });
