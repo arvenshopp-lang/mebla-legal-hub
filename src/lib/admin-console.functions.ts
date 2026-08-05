@@ -156,7 +156,7 @@ export const saveContentPage = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: existing } = await db
       .from("platform_content_pages")
-      .select("id, slug, kind, title, description, content, is_published, version")
+      .select("id, slug, kind, title, description, content, is_published, published_at, version")
       .eq("slug", data.slug)
       .maybeSingle();
 
