@@ -202,7 +202,7 @@ export function LeadsPanel() {
                             </IconBtn>
                           </>
                         )}
-                        {can("crm.convert") && row.status !== "converted" && (
+                        {can("crm.update") && row.status !== "converted" && (
                           <IconBtn aria-label="تحويل إلى شركة وصفقة" title="تحويل إلى شركة وصفقة" onClick={() => setDialog({ kind: "convert", row })}>
                             <Wand2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
