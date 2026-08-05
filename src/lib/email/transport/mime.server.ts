@@ -162,12 +162,15 @@ export type ParsedMessage = {
   fromName: string | null;
   to: string[];
   cc: string[];
+  /** Delivered-To / X-Delivered-To — أقرب دليل على الـ Alias المستهدف. */
+  deliveredTo: string[];
+  /** X-Original-To / Envelope-To / X-Forwarded-To. */
+  originalTo: string[];
   date: string | null;
   html: string | null;
   text: string | null;
   attachments: ParsedAttachment[];
 };
-
 
 function decodeBytes(bytes: Uint8Array, charset: string): string {
   const label = charset.trim().toLowerCase() || "utf-8";
