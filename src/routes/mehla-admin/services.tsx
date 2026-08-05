@@ -10,7 +10,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
-import { Badge, Btn, DataCard, ErrorBlock, SectionCard, StatsSkeleton, Td, Th } from "@/lib/list-utils";
+import {
+  Badge,
+  Btn,
+  DataCard,
+  ErrorBlock,
+  SectionCard,
+  StatsSkeleton,
+  Td,
+  Th,
+} from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { getServiceHealth } from "@/lib/admin-console.functions";
 import { fmtBytes, fmtNumber, type ServiceIntegration } from "@/lib/admin-console.shared";
@@ -26,10 +35,17 @@ export const Route = createFileRoute("/mehla-admin/services")({
 });
 
 const statusTone = (s: string): "green" | "red" | "warn" | "muted" =>
-  s === "healthy" || s === "ok" ? "green" : s === "degraded" ? "warn" : s === "down" || s === "error" ? "red" : "muted";
+  s === "healthy" || s === "ok"
+    ? "green"
+    : s === "degraded"
+      ? "warn"
+      : s === "down" || s === "error"
+        ? "red"
+        : "muted";
 
 const statusLabel = (s: string) =>
-  ({ healthy: "سليمة", ok: "سليمة", degraded: "متذبذبة", down: "متوقفة", error: "خطأ" })[s] ?? "غير مفحوصة";
+  ({ healthy: "سليمة", ok: "سليمة", degraded: "متذبذبة", down: "متوقفة", error: "خطأ" })[s] ??
+  "غير مفحوصة";
 
 function ServicesPage() {
   const fn = useServerFn(getServiceHealth);
@@ -82,11 +98,18 @@ function ServicesPage() {
               label="الأعطال المفتوحة"
               value={fmtNumber(data.reliability.failures_open)}
               tone={data.reliability.failures_open > 0 ? "red" : "green"}
-              hint={data.reliability.last_failure_ref ? `آخر مرجع: ${data.reliability.last_failure_ref}` : "لا أعطال مسجّلة"}
+              hint={
+                data.reliability.last_failure_ref
+                  ? `آخر مرجع: ${data.reliability.last_failure_ref}`
+                  : "لا أعطال مسجّلة"
+              }
             />
           </div>
 
-          <SectionCard title="التكاملات الخارجية" description="تُقرأ الحالة من سجلات الفحص الدورية للتكاملات.">
+          <SectionCard
+            title="التكاملات الخارجية"
+            description="تُقرأ الحالة من سجلات الفحص الدورية للتكاملات."
+          >
             {data.integrations.length === 0 ? (
               <p className="text-body-sm text-muted-foreground">لا توجد تكاملات مُعرّفة.</p>
             ) : (
@@ -108,7 +131,9 @@ function ServicesPage() {
                           <span className="font-semibold">{s.label}</span>
                           <span className="text-caption block">{s.key}</span>
                           {s.last_error && (
-                            <span className="text-caption mt-1 block text-danger">{s.last_error}</span>
+                            <span className="text-caption mt-1 block text-danger">
+                              {s.last_error}
+                            </span>
                           )}
                         </Td>
                         <Td>
@@ -137,17 +162,27 @@ function ServicesPage() {
             <SectionCard title="تفاصيل البريد والرسائل">
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Row label="صناديق البريد" value={fmtNumber(data.email_transport.mailboxes)} />
-                <Row label="بانتظار الإرسال" value={fmtNumber(data.email_transport.outbox_queued)} />
+                <Row
+                  label="بانتظار الإرسال"
+                  value={fmtNumber(data.email_transport.outbox_queued)}
+                />
                 <Row label="رسائل فاشلة" value={fmtNumber(data.email_transport.outbox_failed)} />
-                <Row label="جولات مزامنة فاشلة (24 ساعة)" value={fmtNumber(data.email_transport.failed_runs_24h)} />
+                <Row
+                  label="جولات مزامنة فاشلة (24 ساعة)"
+                  value={fmtNumber(data.email_transport.failed_runs_24h)}
+                />
                 <Row label="رموز تحقق صادرة (24 ساعة)" value={fmtNumber(data.otp.issued_24h)} />
                 <Row label="رموز تحقق مُثبّتة (24 ساعة)" value={fmtNumber(data.otp.verified_24h)} />
               </dl>
               {data.email_transport.last_error && (
-                <p className="text-caption mt-4 text-danger">آخر خطأ مزامنة: {data.email_transport.last_error}</p>
+                <p className="text-caption mt-4 text-danger">
+                  آخر خطأ مزامنة: {data.email_transport.last_error}
+                </p>
               )}
               {data.sms.last_error && (
-                <p className="text-caption mt-2 text-danger">آخر خطأ رسائل: {data.sms.last_error}</p>
+                <p className="text-caption mt-2 text-danger">
+                  آخر خطأ رسائل: {data.sms.last_error}
+                </p>
               )}
             </SectionCard>
 
@@ -158,7 +193,11 @@ function ServicesPage() {
                 <Row label="عدد الجداول" value={fmtNumber(data.database.tables_public)} />
                 <Row
                   label="جداول بدون عزل صفوف"
-                  value={data.database.rls_disabled === 0 ? "لا يوجد" : fmtNumber(data.database.rls_disabled)}
+                  value={
+                    data.database.rls_disabled === 0
+                      ? "لا يوجد"
+                      : fmtNumber(data.database.rls_disabled)
+                  }
                 />
               </dl>
               <div className="mt-4 flex items-center gap-2">
@@ -170,7 +209,9 @@ function ServicesPage() {
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4 text-danger" aria-hidden />
-                    <p className="text-body-sm text-danger">توجد جداول بدون عزل صفوف — تتطلب معالجة فورية.</p>
+                    <p className="text-body-sm text-danger">
+                      توجد جداول بدون عزل صفوف — تتطلب معالجة فورية.
+                    </p>
                   </>
                 )}
               </div>
@@ -203,7 +244,15 @@ function Tile({
     <div className="surface-card p-5">
       <div className="flex items-center justify-between">
         <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
-        <Badge tone={tone}>{tone === "green" ? "مستقرة" : tone === "warn" ? "تحتاج متابعة" : tone === "red" ? "حرجة" : "—"}</Badge>
+        <Badge tone={tone}>
+          {tone === "green"
+            ? "مستقرة"
+            : tone === "warn"
+              ? "تحتاج متابعة"
+              : tone === "red"
+                ? "حرجة"
+                : "—"}
+        </Badge>
       </div>
       <p className="mt-3 text-body-sm font-semibold">{label}</p>
       <p className="text-h5 mt-1">{value}</p>

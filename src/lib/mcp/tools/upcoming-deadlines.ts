@@ -38,7 +38,8 @@ export default defineTool({
     if (error) dbError("قراءة المهل");
 
     const rows = data ?? [];
-    if (rows.length === 0) return result(`لا توجد مهل مستحقة خلال ${days} يوماً.`, { deadlines: [] });
+    if (rows.length === 0)
+      return result(`لا توجد مهل مستحقة خلال ${days} يوماً.`, { deadlines: [] });
 
     const text = rows
       .map((row) => {

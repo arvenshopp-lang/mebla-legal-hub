@@ -55,7 +55,12 @@ export type RbacContext = {
   effectivePermissions: string[];
   /** المنح السارية مفصّلة (للتمييز بين المؤقت والمفوَّض). */
   liveGrants: { permission: string; source: string; expires_at: string; granted_by: string }[];
-  impersonation: { id: string; target_user_id: string; target_email: string | null; expires_at: string } | null;
+  impersonation: {
+    id: string;
+    target_user_id: string;
+    target_email: string | null;
+    expires_at: string;
+  } | null;
   facts: RequestFacts;
   traceRef: string;
 };
@@ -157,7 +162,9 @@ export function ipAllowed(ip: string, allowed: string[]): boolean {
       const bits = Number(bitsRaw);
       if (!Number.isFinite(bits) || !base.includes(".")) return false;
       const octets = Math.floor(bits / 8);
-      return ip.split(".").slice(0, octets).join(".") === base.split(".").slice(0, octets).join(".");
+      return (
+        ip.split(".").slice(0, octets).join(".") === base.split(".").slice(0, octets).join(".")
+      );
     }
     if (value.endsWith(".")) return ip.startsWith(value);
     return ip === value;
@@ -258,7 +265,11 @@ export async function loadRbacContext(userId: string): Promise<RbacContext> {
   const db = await adminDb();
   const facts = requestFacts();
 
-  const { data: staffRow } = await db.from("platform_staff").select(STAFF_COLUMNS).eq("user_id", userId).maybeSingle();
+  const { data: staffRow } = await db
+    .from("platform_staff")
+    .select(STAFF_COLUMNS)
+    .eq("user_id", userId)
+    .maybeSingle();
   const staff = staffRow as RbacStaff | null;
   if (!staff) throw new RbacError("not_staff");
   if (staff.status !== "active") throw new RbacError("suspended");
@@ -284,10 +295,14 @@ export async function loadRbacContext(userId: string): Promise<RbacContext> {
       .maybeSingle(),
   ]);
 
-  const rolePermissions = ((roleRes.data as { permissions: string[] | null } | null)?.permissions ?? []) as string[];
+  const rolePermissions = ((roleRes.data as { permissions: string[] | null } | null)?.permissions ??
+    []) as string[];
   const liveGrants = (grantsRes.data ?? []) as RbacContext["liveGrants"];
   const basePermissions = expandPermissions([...(staff.permissions ?? []), ...rolePermissions]);
-  const effectivePermissions = expandPermissions([...basePermissions, ...liveGrants.map((g) => g.permission)]);
+  const effectivePermissions = expandPermissions([
+    ...basePermissions,
+    ...liveGrants.map((g) => g.permission),
+  ]);
 
   return {
     staff,
@@ -319,7 +334,12 @@ export async function authorize(
   supabase: AnyClient,
   userId: string,
   permission: AdminPermission | string,
-  options: { mutating?: boolean; entityType?: string; entityId?: string | null; description?: string } = {},
+  options: {
+    mutating?: boolean;
+    entityType?: string;
+    entityId?: string | null;
+    description?: string;
+  } = {},
 ): Promise<RbacContext> {
   const db = await adminDb();
   let ctx: RbacContext;
@@ -348,7 +368,13 @@ export async function authorize(
       entityType: options.entityType ?? "authz",
       entityId: options.entityId ?? null,
       description: `رفض «${permission}»: ${DENY_MESSAGES[reason]}`,
-      metadata: { permission, reason, trace_ref: ctx.traceRef, ip: ctx.facts.ip, device: ctx.facts.device },
+      metadata: {
+        permission,
+        reason,
+        trace_ref: ctx.traceRef,
+        ip: ctx.facts.ip,
+        device: ctx.facts.device,
+      },
     });
     throw new RbacError(reason);
   };
@@ -371,12 +397,17 @@ export async function authorize(
     (!limits.effective_from || new Date(limits.effective_from).getTime() <= nowMs) &&
     (!limits.effective_to || new Date(limits.effective_to).getTime() > nowMs);
 
-  if (restrictionsLive && limits && ipAllowed(ctx.facts.ip, limits.denied_ips ?? [])) await deny("ip_blocked");
+  if (restrictionsLive && limits && ipAllowed(ctx.facts.ip, limits.denied_ips ?? []))
+    await deny("ip_blocked");
   if (restrictionsLive && limits?.ip_enforced && !ipAllowed(ctx.facts.ip, limits.allowed_ips ?? []))
     await deny("ip_blocked");
   if (restrictionsLive && limits && (limits.blocked_devices ?? []).includes(ctx.facts.fingerprint))
     await deny("device_blocked");
-  if (restrictionsLive && limits?.device_enforced && !(limits.trusted_devices ?? []).includes(ctx.facts.fingerprint))
+  if (
+    restrictionsLive &&
+    limits?.device_enforced &&
+    !(limits.trusted_devices ?? []).includes(ctx.facts.fingerprint)
+  )
     await deny("device_blocked");
   if (restrictionsLive && limits?.time_enforced) {
     const { minutes, weekday } = riyadhNow();

@@ -4,12 +4,18 @@ import { z } from "zod";
 z.setErrorMap((issue, ctx) => {
   switch (issue.code) {
     case z.ZodIssueCode.invalid_type:
-      if (issue.received === "undefined" || issue.received === "null") return { message: "هذا الحقل مطلوب" };
+      if (issue.received === "undefined" || issue.received === "null")
+        return { message: "هذا الحقل مطلوب" };
       return { message: "قيمة غير صالحة" };
     case z.ZodIssueCode.invalid_enum_value:
       return { message: "اختر قيمة من القائمة" };
     case z.ZodIssueCode.too_small:
-      return { message: issue.minimum === 1 ? "هذا الحقل مطلوب" : `القيمة قصيرة جداً (الحد الأدنى ${issue.minimum})` };
+      return {
+        message:
+          issue.minimum === 1
+            ? "هذا الحقل مطلوب"
+            : `القيمة قصيرة جداً (الحد الأدنى ${issue.minimum})`,
+      };
     case z.ZodIssueCode.too_big:
       return { message: `القيمة طويلة جداً (الحد الأقصى ${issue.maximum})` };
     case z.ZodIssueCode.invalid_string:

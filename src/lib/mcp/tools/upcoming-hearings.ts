@@ -1,11 +1,19 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { dbError, requireDb, resolveOrganization, result, riyadhDateTime, windowEnd } from "../helpers";
+import {
+  dbError,
+  requireDb,
+  resolveOrganization,
+  result,
+  riyadhDateTime,
+  windowEnd,
+} from "../helpers";
 
 export default defineTool({
   name: "upcoming_hearings",
   title: "الجلسات القادمة",
-  description: "يعرض الجلسات المجدولة القادمة لمكتب المستخدم خلال عدد محدد من الأيام بتوقيت الرياض.",
+  description:
+    "يعرض الجلسات المجدولة القادمة لمكتب المستخدم خلال عدد محدد من الأيام بتوقيت الرياض.",
   inputSchema: {
     days: z.number().int().optional().describe("عدد الأيام القادمة (1 إلى 120، الافتراضي 14)."),
     limit: z.number().int().optional().describe("عدد النتائج (1 إلى 50، الافتراضي 20)."),
@@ -32,7 +40,8 @@ export default defineTool({
     if (error) dbError("قراءة الجلسات");
 
     const rows = data ?? [];
-    if (rows.length === 0) return result(`لا توجد جلسات مجدولة خلال ${days} يوماً.`, { hearings: [] });
+    if (rows.length === 0)
+      return result(`لا توجد جلسات مجدولة خلال ${days} يوماً.`, { hearings: [] });
 
     const text = rows
       .map((row) => {

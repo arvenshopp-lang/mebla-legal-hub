@@ -55,6 +55,7 @@ export function summarizeRepair(report: RepairReport): string {
   if (report.requeued) parts.push(`أُعيدت معالجة ${report.requeued}`);
   if (report.missing) parts.push(`${report.missing} مفقود`);
   if (report.invalid) parts.push(`${report.invalid} غير صالح`);
-  if (!report.relinked && !report.missing && !report.invalid) parts.push("جميعها قابلة للعرض والتنزيل");
+  if (!report.relinked && !report.missing && !report.invalid)
+    parts.push("جميعها قابلة للعرض والتنزيل");
   return `${parts.join(" · ")}.`;
 }

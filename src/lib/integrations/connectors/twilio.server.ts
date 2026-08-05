@@ -18,7 +18,13 @@ import {
   type ValidationResult,
   type VerifyOtpResult,
 } from "./base.server";
-import { IntegrationHttpError, buildAuthParts, evaluateSuccess, integrationFetch, joinUrl } from "../http.server";
+import {
+  IntegrationHttpError,
+  buildAuthParts,
+  evaluateSuccess,
+  integrationFetch,
+  joinUrl,
+} from "../http.server";
 
 const VERIFY_BASE = "https://verify.twilio.com";
 
@@ -29,7 +35,11 @@ function accountSid(context: ConnectorContext): string {
 }
 
 function serviceSid(context: ConnectorContext): string | null {
-  return context.secrets["service_sid"] ?? (context.configuration["service_sid"] as string | undefined) ?? null;
+  return (
+    context.secrets["service_sid"] ??
+    (context.configuration["service_sid"] as string | undefined) ??
+    null
+  );
 }
 
 async function authHeaders(context: ConnectorContext): Promise<Record<string, string>> {
@@ -67,8 +77,10 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
   validateConfig(context: ConnectorContext): ValidationResult {
     const errors: string[] = [];
     if (!context.baseUrl) errors.push("رابط الخدمة (Base URL) مطلوب.");
-    if (!context.secrets["account_sid"] && !context.secrets["username"]) errors.push("Account SID مطلوب.");
-    if (!context.secrets["api_secret"] && !context.secrets["password"]) errors.push("API Secret مطلوب.");
+    if (!context.secrets["account_sid"] && !context.secrets["username"])
+      errors.push("Account SID مطلوب.");
+    if (!context.secrets["api_secret"] && !context.secrets["password"])
+      errors.push("API Secret مطلوب.");
     if (!serviceSid(context) && !context.secrets["sender_id"]) {
       errors.push("يلزم تحديد Service SID (Verify) أو اسم/رقم المُرسل.");
     }
@@ -93,9 +105,20 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
         expectJson: true,
       });
       if (!verdict.ok) {
-        return { ok: false, statusCode: response.status, latencyMs: response.latencyMs, code: verdict.code, detail: verdict.detail };
+        return {
+          ok: false,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
+          code: verdict.code,
+          detail: verdict.detail,
+        };
       }
-      return { ok: true, statusCode: response.status, latencyMs: response.latencyMs, detail: "الحساب نشط وبيانات الربط صحيحة." };
+      return {
+        ok: true,
+        statusCode: response.status,
+        latencyMs: response.latencyMs,
+        detail: "الحساب نشط وبيانات الربط صحيحة.",
+      };
     } catch (error) {
       return toHealthFailure(error, Date.now() - started);
     }
@@ -103,7 +126,10 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
 
   async sendOtp(context: ConnectorContext, input: SendOtpInput): Promise<SendOtpResult> {
     const service = serviceSid(context);
-    const headers = { ...(await authHeaders(context)), "Content-Type": "application/x-www-form-urlencoded" };
+    const headers = {
+      ...(await authHeaders(context)),
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
 
     if (service) {
       const params = new URLSearchParams({ To: input.phone, Channel: "sms" });
@@ -122,9 +148,14 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
         expectedValue: null,
         expectJson: true,
       });
-      if (!verdict.ok) throw new IntegrationHttpError(verdict.code, verdict.detail, response.status);
+      if (!verdict.ok)
+        throw new IntegrationHttpError(verdict.code, verdict.detail, response.status);
       const payload = response.json as { sid?: string } | null;
-      return { reference: payload?.sid ?? null, latencyMs: response.latencyMs, remoteVerification: true };
+      return {
+        reference: payload?.sid ?? null,
+        latencyMs: response.latencyMs,
+        remoteVerification: true,
+      };
     }
 
     const params = new URLSearchParams({ To: input.phone, Body: input.text });
@@ -147,7 +178,11 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
     });
     if (!verdict.ok) throw new IntegrationHttpError(verdict.code, verdict.detail, response.status);
     const payload = response.json as { sid?: string } | null;
-    return { reference: payload?.sid ?? null, latencyMs: response.latencyMs, remoteVerification: false };
+    return {
+      reference: payload?.sid ?? null,
+      latencyMs: response.latencyMs,
+      remoteVerification: false,
+    };
   }
 
   override async verifyOtp(
@@ -160,14 +195,18 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
     const response = await integrationFetch({
       method: "POST",
       url: joinUrl(VERIFY_BASE, `/v2/Services/${service}/VerificationCheck`),
-      headers: { ...(await authHeaders(context)), "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        ...(await authHeaders(context)),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
       body: params.toString(),
       timeoutMs: context.timeoutMs,
       policy: urlPolicy(context),
     });
     const payload = response.json as { status?: string; valid?: boolean } | null;
     return {
-      verified: response.status < 400 && (payload?.valid === true || payload?.status === "approved"),
+      verified:
+        response.status < 400 && (payload?.valid === true || payload?.status === "approved"),
       latencyMs: response.latencyMs,
     };
   }
@@ -179,7 +218,10 @@ export class TwilioVerifyConnector extends BaseOtpConnector {
     try {
       const response = await integrationFetch({
         method: "GET",
-        url: joinUrl(context.baseUrl, `/2010-04-01/Accounts/${accountSid(context)}/Messages/${input.referenceId}.json`),
+        url: joinUrl(
+          context.baseUrl,
+          `/2010-04-01/Accounts/${accountSid(context)}/Messages/${input.referenceId}.json`,
+        ),
         headers: await authHeaders(context),
         timeoutMs: context.timeoutMs,
         policy: urlPolicy(context),

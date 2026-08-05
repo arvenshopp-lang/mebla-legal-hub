@@ -18,8 +18,22 @@ import { fmtDate } from "@/lib/enums";
 import { createHrDocument, deleteHrDocument, listHrDocuments } from "@/lib/hr.functions";
 import type { HrDocumentRow } from "@/lib/hr.shared";
 
-type DocForm = { kind: string; title: string; storagePath: string; issuedOn: string; expiresOn: string; notes: string };
-const EMPTY_DOC: DocForm = { kind: "", title: "", storagePath: "", issuedOn: "", expiresOn: "", notes: "" };
+type DocForm = {
+  kind: string;
+  title: string;
+  storagePath: string;
+  issuedOn: string;
+  expiresOn: string;
+  notes: string;
+};
+const EMPTY_DOC: DocForm = {
+  kind: "",
+  title: "",
+  storagePath: "",
+  issuedOn: "",
+  expiresOn: "",
+  notes: "",
+};
 
 export function EmployeeDocumentsModal({
   open,
@@ -109,7 +123,10 @@ export function EmployeeDocumentsModal({
       ) : query.isError ? (
         <ErrorBlock message="تعذّر تحميل مستندات الموظف." />
       ) : documents.length === 0 ? (
-        <EmptyState title="لا توجد مستندات" hint="أضف مستندات العقد أو الهوية أو الشهادات الخاصة بالموظف." />
+        <EmptyState
+          title="لا توجد مستندات"
+          hint="أضف مستندات العقد أو الهوية أو الشهادات الخاصة بالموظف."
+        />
       ) : (
         <ul className="divide-y divide-border rounded-[var(--radius-m)] border border-border">
           {documents.map((d) => (
@@ -127,7 +144,12 @@ export function EmployeeDocumentsModal({
                 </div>
               </div>
               {canManage && (
-                <IconBtn tone="danger" title="حذف المستند" aria-label={`حذف مستند ${d.title}`} onClick={() => setToDelete(d)}>
+                <IconBtn
+                  tone="danger"
+                  title="حذف المستند"
+                  aria-label={`حذف مستند ${d.title}`}
+                  onClick={() => setToDelete(d)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </IconBtn>
               )}
@@ -140,10 +162,18 @@ export function EmployeeDocumentsModal({
         {form && (
           <div className="space-y-4">
             <FormField label="نوع المستند" required hint="مثال: عقد عمل، هوية، شهادة">
-              <input className={inputCls} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} />
+              <input
+                className={inputCls}
+                value={form.kind}
+                onChange={(e) => setForm({ ...form, kind: e.target.value })}
+              />
             </FormField>
             <FormField label="عنوان المستند" required>
-              <input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <input
+                className={inputCls}
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
             </FormField>
             <FormField label="مسار التخزين" hint="اختياري">
               <input
@@ -155,17 +185,35 @@ export function EmployeeDocumentsModal({
             </FormField>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="تاريخ الإصدار">
-                <input type="date" className={inputCls} value={form.issuedOn} onChange={(e) => setForm({ ...form, issuedOn: e.target.value })} />
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={form.issuedOn}
+                  onChange={(e) => setForm({ ...form, issuedOn: e.target.value })}
+                />
               </FormField>
               <FormField label="تاريخ الانتهاء">
-                <input type="date" className={inputCls} value={form.expiresOn} onChange={(e) => setForm({ ...form, expiresOn: e.target.value })} />
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={form.expiresOn}
+                  onChange={(e) => setForm({ ...form, expiresOn: e.target.value })}
+                />
               </FormField>
             </div>
             <FormField label="ملاحظات">
-              <textarea className={inputCls} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <textarea
+                className={inputCls}
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
             </FormField>
             {error && (
-              <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+              <p
+                role="alert"
+                className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+              >
                 {error}
               </p>
             )}

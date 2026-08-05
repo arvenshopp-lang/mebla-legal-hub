@@ -30,8 +30,14 @@ function Stat({ label, value, hint }: { label: string; value: React.ReactNode; h
 export function OverviewPanel() {
   const summaryFn = useServerFn(pipelineSummary);
   const reportFn = useServerFn(sourceReport);
-  const summaryQuery = useQuery({ queryKey: ["crm-pipeline"], queryFn: () => summaryFn({ data: undefined }) });
-  const reportQuery = useQuery({ queryKey: ["crm-sources"], queryFn: () => reportFn({ data: undefined }) });
+  const summaryQuery = useQuery({
+    queryKey: ["crm-pipeline"],
+    queryFn: () => summaryFn({ data: undefined }),
+  });
+  const reportQuery = useQuery({
+    queryKey: ["crm-sources"],
+    queryFn: () => reportFn({ data: undefined }),
+  });
 
   const forecast = summaryQuery.data?.forecast;
   const stages = summaryQuery.data?.summary ?? [];
@@ -50,13 +56,20 @@ export function OverviewPanel() {
             value={<Money value={forecast?.total_open_amount ?? 0} />}
             hint={`${forecast?.open_deals_count ?? 0} صفقة مفتوحة`}
           />
-          <Stat label="التوقع المرجّح" value={<Money value={forecast?.total_weighted_amount ?? 0} />} hint="مرجّح باحتمالية المرحلة" />
+          <Stat
+            label="التوقع المرجّح"
+            value={<Money value={forecast?.total_weighted_amount ?? 0} />}
+            hint="مرجّح باحتمالية المرحلة"
+          />
           <Stat label="مكتسب (٣٠ يوماً)" value={<Money value={forecast?.won_amount_30d ?? 0} />} />
           <Stat label="مفقود (٣٠ يوماً)" value={<Money value={forecast?.lost_amount_30d ?? 0} />} />
         </div>
       )}
 
-      <SectionCard title="توزيع خط البيع" description="قيمة الصفقات المفتوحة في كل مرحلة والقيمة المرجّحة.">
+      <SectionCard
+        title="توزيع خط البيع"
+        description="قيمة الصفقات المفتوحة في كل مرحلة والقيمة المرجّحة."
+      >
         {summaryQuery.isLoading ? (
           <SectionLoader rows={4} />
         ) : stages.length === 0 ? (
@@ -72,7 +85,8 @@ export function OverviewPanel() {
                     {stage.is_lost && <Badge tone="red">خسارة</Badge>}
                   </span>
                   <span className="text-caption">
-                    {stage.deals_count} صفقة · <Money value={stage.total_amount} /> · مرجّح <Money value={stage.weighted_amount} />
+                    {stage.deals_count} صفقة · <Money value={stage.total_amount} /> · مرجّح{" "}
+                    <Money value={stage.weighted_amount} />
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -87,7 +101,10 @@ export function OverviewPanel() {
         )}
       </SectionCard>
 
-      <SectionCard title="تقرير المصادر" description="أداء العملاء المحتملين والصفقات بحسب مصدر الاستقطاب.">
+      <SectionCard
+        title="تقرير المصادر"
+        description="أداء العملاء المحتملين والصفقات بحسب مصدر الاستقطاب."
+      >
         {reportQuery.isLoading ? (
           <SectionLoader rows={4} />
         ) : reportQuery.isError ? (
@@ -130,7 +147,10 @@ export function OverviewPanel() {
         {reportQuery.isLoading ? (
           <SectionLoader rows={3} />
         ) : (reportQuery.data?.utm.length ?? 0) === 0 ? (
-          <EmptyState title="لا توجد بيانات UTM" hint="أضف وسوم الحملة عند إنشاء الصفقات لتتبع الأداء." />
+          <EmptyState
+            title="لا توجد بيانات UTM"
+            hint="أضف وسوم الحملة عند إنشاء الصفقات لتتبع الأداء."
+          />
         ) : (
           <DataCard>
             <table className="w-full min-w-[38rem] text-body-sm">
@@ -145,7 +165,10 @@ export function OverviewPanel() {
               </thead>
               <tbody>
                 {reportQuery.data?.utm.map((row) => (
-                  <tr key={`${row.utm_source}-${row.utm_medium}-${row.utm_campaign}`} className="border-t border-border">
+                  <tr
+                    key={`${row.utm_source}-${row.utm_medium}-${row.utm_campaign}`}
+                    className="border-t border-border"
+                  >
                     <Td>{row.utm_source}</Td>
                     <Td>{row.utm_medium}</Td>
                     <Td>{row.utm_campaign}</Td>

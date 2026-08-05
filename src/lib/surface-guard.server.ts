@@ -1,5 +1,11 @@
 import { getRequest } from "@tanstack/react-start/server";
-import { isPathAllowed, isUniversalPath, ownerSurface, resolveSurface, surfaceUrl } from "@/config/surfaces";
+import {
+  isPathAllowed,
+  isUniversalPath,
+  ownerSurface,
+  resolveSurface,
+  surfaceUrl,
+} from "@/config/surfaces";
 
 /**
  * حارس النطاقات على الخادم:
@@ -25,16 +31,23 @@ export function surfaceGuard(): Response | null {
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
 
   // نداءات الخادم والأصول تمر دائماً.
-  if (pathname.startsWith("/_serverFn") || pathname.startsWith("/_build") || pathname.startsWith("/assets")) {
+  if (
+    pathname.startsWith("/_serverFn") ||
+    pathname.startsWith("/_build") ||
+    pathname.startsWith("/assets")
+  ) {
     return null;
   }
 
   if (surface.apiOnly) {
     if (pathname.startsWith("/api")) return null;
-    return new Response(JSON.stringify({ error: "not_found", message: "This host serves the API only." }), {
-      status: 404,
-      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
-    });
+    return new Response(
+      JSON.stringify({ error: "not_found", message: "This host serves the API only." }),
+      {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+      },
+    );
   }
 
   if (isUniversalPath(pathname)) return null;

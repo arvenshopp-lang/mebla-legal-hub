@@ -66,7 +66,10 @@ export async function saveDraft<T>(userKey: string, scope: string, value: T): Pr
   }
 }
 
-export async function loadDraft<T>(userKey: string, scope: string): Promise<DraftEnvelope<T> | null> {
+export async function loadDraft<T>(
+  userKey: string,
+  scope: string,
+): Promise<DraftEnvelope<T> | null> {
   const store = storage();
   if (!store) return null;
   const raw = store.getItem(draftKey(userKey, scope));
@@ -96,7 +99,10 @@ export function clearAllDrafts(): void {
 }
 
 /** يحذف الحقول التي يُمنع حفظها (كلمة المرور، رمز التحقق، …). */
-export function redactDraft<T extends Record<string, unknown>>(value: T, omit: readonly string[]): Partial<T> {
+export function redactDraft<T extends Record<string, unknown>>(
+  value: T,
+  omit: readonly string[],
+): Partial<T> {
   const out: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
     if (omit.includes(key)) continue;
@@ -112,6 +118,7 @@ export function isMeaningfulDraft(value: unknown): boolean {
   if (typeof value === "string") return value.trim().length > 0;
   if (typeof value === "number" || typeof value === "boolean") return true;
   if (Array.isArray(value)) return value.some(isMeaningfulDraft);
-  if (typeof value === "object") return Object.values(value as Record<string, unknown>).some(isMeaningfulDraft);
+  if (typeof value === "object")
+    return Object.values(value as Record<string, unknown>).some(isMeaningfulDraft);
   return false;
 }

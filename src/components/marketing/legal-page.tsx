@@ -48,8 +48,14 @@ export function LegalPage({
               {section.items && (
                 <ul className="mt-3 space-y-2">
                   {section.items.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-body-sm text-muted-foreground">
-                      <span className="mt-2.5 h-1 w-3 shrink-0 rounded-full bg-border-strong" aria-hidden />
+                    <li
+                      key={item}
+                      className="flex items-start gap-2.5 text-body-sm text-muted-foreground"
+                    >
+                      <span
+                        className="mt-2.5 h-1 w-3 shrink-0 rounded-full bg-border-strong"
+                        aria-hidden
+                      />
                       {item}
                     </li>
                   ))}
@@ -61,7 +67,11 @@ export function LegalPage({
 
         <p className="mt-12 rounded-[var(--radius-m)] bg-surface-muted p-4 text-body-sm text-muted-foreground">
           لأي استفسار نظامي يمكنك مراسلتنا على{" "}
-          <a href="mailto:support@mehlalex.com" dir="ltr" className="font-medium text-foreground underline-offset-4 hover:underline">
+          <a
+            href="mailto:support@mehlalex.com"
+            dir="ltr"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
             support@mehlalex.com
           </a>
           .

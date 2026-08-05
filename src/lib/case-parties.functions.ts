@@ -57,7 +57,9 @@ export const listCasePartyAudit = createServerFn({ method: "POST" })
 
     let query = context.supabase
       .from("case_party_audit_logs")
-      .select("id, case_id, party_id, action, actor_id, before_values, after_values, changed_fields, created_at")
+      .select(
+        "id, case_id, party_id, action, actor_id, before_values, after_values, changed_fields, created_at",
+      )
       .eq("organization_id", data.organizationId)
       .order("created_at", { ascending: false })
       .limit(data.limit);
@@ -147,11 +149,17 @@ export const grantCasePartyPermission = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
 
-    await logPermissionChange(context.supabase, data.organizationId, "case_party_permission.grant", data.userId, {
-      permission: data.permission,
-      expires_at: data.expiresAt ?? null,
-      reason: data.reason,
-    });
+    await logPermissionChange(
+      context.supabase,
+      data.organizationId,
+      "case_party_permission.grant",
+      data.userId,
+      {
+        permission: data.permission,
+        expires_at: data.expiresAt ?? null,
+        reason: data.reason,
+      },
+    );
     return { ok: true };
   });
 

@@ -3,7 +3,13 @@
  * تُستخدم من دوال الخادم `crm.functions.ts` ومن مكونات الواجهة في `src/routes/mehla-admin/crm*`.
  */
 
-export type CrmLeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted" | "lost";
+export type CrmLeadStatus =
+  | "new"
+  | "contacted"
+  | "qualified"
+  | "unqualified"
+  | "converted"
+  | "lost";
 export type CrmDealStatus = "open" | "won" | "lost" | "abandoned";
 export type CrmEntityKind = "lead" | "company" | "contact" | "deal";
 export type CrmActivityKind = "meeting" | "call" | "note" | "task" | "followup" | "email";

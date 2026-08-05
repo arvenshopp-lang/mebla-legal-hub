@@ -36,7 +36,8 @@ export function StatusBadge({ status }: { status: string }) {
 
 export function PriorityBadge({ priority }: { priority: string }) {
   const key = priority as TicketPriority;
-  const tone = key === "urgent" ? "red" : key === "high" ? "warn" : key === "medium" ? "gold" : "muted";
+  const tone =
+    key === "urgent" ? "red" : key === "high" ? "warn" : key === "medium" ? "gold" : "muted";
   return <Badge tone={tone}>{TICKET_PRIORITY_LABELS_AR[key] ?? priority}</Badge>;
 }
 
@@ -114,7 +115,7 @@ export function BreakdownTable({
 }: {
   caption: string;
   head: string[];
-  rows: (ReactNode[])[];
+  rows: ReactNode[][];
   empty?: string;
 }) {
   return (
@@ -130,7 +131,10 @@ export function BreakdownTable({
             <thead>
               <tr className="border-b border-border bg-surface-muted/60">
                 {head.map((h) => (
-                  <th key={h} className="whitespace-nowrap px-4 py-2.5 text-[11.5px] font-semibold text-muted-foreground">
+                  <th
+                    key={h}
+                    className="whitespace-nowrap px-4 py-2.5 text-[11.5px] font-semibold text-muted-foreground"
+                  >
                     {h}
                   </th>
                 ))}

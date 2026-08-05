@@ -8,8 +8,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { CLIENT_TYPE, asOptions, fmtDate } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
-  Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
+  PageToolbar,
+  EmptyState,
+  LoadingBlock,
+  ErrorBlock,
+  DataCard,
+  Th,
+  Td,
+  BusyOverlay,
+  IconBtn,
+  Modal,
+  FormField,
+  inputCls,
+  Btn,
+  Badge,
+  useDebounced,
+  ConfirmDialog,
+  Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Trash2 } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
@@ -25,10 +40,16 @@ export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
     meta: [
       { title: "العملاء | مِهلة" },
-      { name: "description", content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا." },
+      {
+        name: "description",
+        content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا.",
+      },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "العملاء | مِهلة" },
-      { property: "og:description", content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا." },
+      {
+        property: "og:description",
+        content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -50,8 +71,14 @@ const clientSchema = z.object({
 type ClientForm = z.infer<typeof clientSchema>;
 
 type ClientRow = {
-  id: string; full_name: string; client_type: string; company_name: string | null;
-  phone: string | null; email: string | null; city: string | null; status: string;
+  id: string;
+  full_name: string;
+  client_type: string;
+  company_name: string | null;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  status: string;
   created_at: string;
 };
 
@@ -79,8 +106,11 @@ function Page() {
         const res = await piiSearch({ data: { organizationId: activeOrgId!, value: digits } });
         piiIds = res.ids;
       }
-      let query = supabase.from("clients").select("*", { count: "exact" })
-        .eq("organization_id", activeOrgId!).order("created_at", { ascending: false })
+      let query = supabase
+        .from("clients")
+        .select("*", { count: "exact" })
+        .eq("organization_id", activeOrgId!)
+        .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (piiIds?.length) {
         query = query.in("id", piiIds);
@@ -112,52 +142,108 @@ function Page() {
       <PageToolbar
         searching={isFetching && !isLoading}
         search={search}
-        setSearch={(v) => { setSearch(v); setPage(1); }}
+        setSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
         canAdd={canEdit(activeRole)}
-        onAdd={() => { setEditing(null); setOpen(true); }}
+        onAdd={() => {
+          setEditing(null);
+          setOpen(true);
+        }}
         addLabel="عميل جديد"
         filters={
-          <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className={inputCls + " max-w-[160px]"}>
+          <select
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value);
+              setPage(1);
+            }}
+            className={inputCls + " max-w-[160px]"}
+          >
             <option value="all">كل الأنواع</option>
-            {asOptions(CLIENT_TYPE).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {asOptions(CLIENT_TYPE).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         }
       />
-      {isLoading ? <LoadingBlock /> : error ? <ErrorBlock message={(error as any).message} /> :
-        !data?.rows.length ? (
-          <EmptyState
-            title="لا يوجد عملاء بعد"
-            hint="أضف أول عميل لبدء إدارة قضاياه"
-            action={canEdit(activeRole) && <Btn onClick={() => { setEditing(null); setOpen(true); }}>إضافة عميل</Btn>}
-          />
-        ) : (
-          <>
-            <BusyOverlay busy={isFetching && !isLoading}>
+      {isLoading ? (
+        <LoadingBlock />
+      ) : error ? (
+        <ErrorBlock message={(error as any).message} />
+      ) : !data?.rows.length ? (
+        <EmptyState
+          title="لا يوجد عملاء بعد"
+          hint="أضف أول عميل لبدء إدارة قضاياه"
+          action={
+            canEdit(activeRole) && (
+              <Btn
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                إضافة عميل
+              </Btn>
+            )
+          }
+        />
+      ) : (
+        <>
+          <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
-                  <tr><Th>الاسم</Th><Th>النوع</Th><Th>الجوال</Th><Th>المدينة</Th><Th>تاريخ الإضافة</Th><Th>{" "}</Th></tr>
+                  <tr>
+                    <Th>الاسم</Th>
+                    <Th>النوع</Th>
+                    <Th>الجوال</Th>
+                    <Th>المدينة</Th>
+                    <Th>تاريخ الإضافة</Th>
+                    <Th> </Th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.rows.map((c) => (
                     <tr key={c.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
                         {c.full_name}
-                        {c.company_name && <div className="text-xs text-muted-foreground">{c.company_name}</div>}
+                        {c.company_name && (
+                          <div className="text-xs text-muted-foreground">{c.company_name}</div>
+                        )}
                       </Td>
-                      <Td><Badge>{CLIENT_TYPE[c.client_type] ?? c.client_type}</Badge></Td>
+                      <Td>
+                        <Badge>{CLIENT_TYPE[c.client_type] ?? c.client_type}</Badge>
+                      </Td>
                       <Td>{c.phone ?? "—"}</Td>
                       <Td>{c.city ?? "—"}</Td>
                       <Td>{fmtDate(c.created_at)}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
                           {canEdit(activeRole) && (
-                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted">
+                            <button
+                              onClick={() => {
+                                setEditing(c);
+                                setOpen(true);
+                              }}
+                              className="rounded-lg p-1.5 hover:bg-surface-muted"
+                            >
                               <Pencil className="h-4 w-4" />
                             </button>
                           )}
                           {canManage(activeRole) && (
-                            <IconBtn tone="danger" aria-label="حذف" title="حذف" loading={del.isPending && deleting?.id === c.id} onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></IconBtn>
+                            <IconBtn
+                              tone="danger"
+                              aria-label="حذف"
+                              title="حذف"
+                              loading={del.isPending && deleting?.id === c.id}
+                              onClick={() => setDeleting(c)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </IconBtn>
                           )}
                         </div>
                       </Td>
@@ -166,10 +252,10 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
-            </BusyOverlay>
-            <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
-          </>
-        )}
+          </BusyOverlay>
+          <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
+        </>
+      )}
 
       <ClientDialog open={open} onClose={() => setOpen(false)} editing={editing} />
       <ConfirmDialog
@@ -184,7 +270,17 @@ function Page() {
   );
 }
 
-export function ClientDialog({ open, onClose, editing, onCreated }: { open: boolean; onClose: () => void; editing: ClientRow | null; onCreated?: (c: any) => void }) {
+export function ClientDialog({
+  open,
+  onClose,
+  editing,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  editing: ClientRow | null;
+  onCreated?: (c: any) => void;
+}) {
   const { activeOrgId } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState<Partial<ClientForm>>({});
@@ -192,7 +288,10 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
   const [saving, setSaving] = useState(false);
   const saveSecure = useServerFn(saveClientSecure);
   const { data: mask } = useMaskedPii(activeOrgId, "client", editing?.id);
-  const [piiEdit, setPiiEdit] = useState<{ field: "national_id" | "commercial_registration"; value: string } | null>(null);
+  const [piiEdit, setPiiEdit] = useState<{
+    field: "national_id" | "commercial_registration";
+    value: string;
+  } | null>(null);
   const draft = useDialogDraft<ClientForm>({
     name: "clients",
     open,
@@ -216,7 +315,9 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
     const res = clientSchema.safeParse({ ...form, client_type: form.client_type ?? "individual" });
     if (!res.success) {
       const errs: Record<string, string> = {};
-      res.error.issues.forEach((i) => { errs[i.path[0] as string] = i.message; });
+      res.error.issues.forEach((i) => {
+        errs[i.path[0] as string] = i.message;
+      });
       setErrors(errs);
       toast.error("تحقق من الحقول المطلوبة", { description: Object.values(errs)[0] as string });
       return;
@@ -246,7 +347,10 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
     }
   };
 
-  const piiField = form.client_type === "individual" || !form.client_type ? "national_id" : "commercial_registration";
+  const piiField =
+    form.client_type === "individual" || !form.client_type
+      ? "national_id"
+      : "commercial_registration";
   const piiMask = (mask?.[piiField] ?? "—") as string;
 
   return (
@@ -254,7 +358,11 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="الاسم الكامل *">
-          <input value={form.full_name ?? ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} />
+          <input
+            value={form.full_name ?? ""}
+            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            className={inputCls}
+          />
           {errors.full_name && <span className="text-xs text-danger">{errors.full_name}</span>}
         </FormField>
         <FormField label="نوع العميل *">
@@ -263,9 +371,11 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
             onChange={(e) => {
               const next = e.target.value as ClientForm["client_type"];
               // تفريغ حقول الجهة عند التحويل إلى «فرد» حتى لا تُحفظ بيانات لا تنتمي للعميل
-              setForm((prev) => (next === "individual"
-                ? { ...prev, client_type: next, company_name: null }
-                : { ...prev, client_type: next }));
+              setForm((prev) =>
+                next === "individual"
+                  ? { ...prev, client_type: next, company_name: null }
+                  : { ...prev, client_type: next },
+              );
               setPiiEdit(null);
               setErrors((prev) => {
                 const { company_name: _omit, ...rest } = prev;
@@ -274,12 +384,20 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
             }}
             className={inputCls}
           >
-            {asOptions(CLIENT_TYPE).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {asOptions(CLIENT_TYPE).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </FormField>
         {form.client_type !== "individual" && (
           <FormField label="اسم الجهة/الشركة">
-            <input value={form.company_name ?? ""} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className={inputCls} />
+            <input
+              value={form.company_name ?? ""}
+              onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+              className={inputCls}
+            />
           </FormField>
         )}
         <PiiSecureInput
@@ -292,21 +410,43 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
           onCancelEdit={() => setPiiEdit(null)}
         />
         <FormField label="الجوال">
-          <input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
+          <input
+            value={form.phone ?? ""}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="البريد الإلكتروني">
-          <input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
+          <input
+            type="email"
+            value={form.email ?? ""}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className={inputCls}
+          />
           {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
         </FormField>
         <FormField label="المدينة">
-          <input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />
+          <input
+            value={form.city ?? ""}
+            onChange={(e) => setForm({ ...form, city: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="العنوان">
-          <input value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} />
+          <input
+            value={form.address ?? ""}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <div className="md:col-span-2">
           <FormField label="ملاحظات">
-            <textarea rows={3} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls} />
+            <textarea
+              rows={3}
+              value={form.notes ?? ""}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className={inputCls}
+            />
           </FormField>
         </div>
       </div>
@@ -314,8 +454,12 @@ export function ClientDialog({ open, onClose, editing, onCreated }: { open: bool
         <div className="me-auto">
           <DraftStatus draft={draft as never} />
         </div>
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={save} loading={saving}>
+          {saving ? "جاري الحفظ…" : "حفظ"}
+        </Btn>
       </div>
     </Modal>
   );

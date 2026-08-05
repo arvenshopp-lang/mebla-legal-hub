@@ -25,7 +25,12 @@ import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { exportAuditLogs, listAuditLogs, type AuditLogRow } from "@/lib/admin-ops.functions";
 
 export const Route = createFileRoute("/mehla-admin/logs")({
-  head: () => ({ meta: [{ title: "سجل التدقيق · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "سجل التدقيق · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: LogsPage,
 });
 
@@ -107,10 +112,12 @@ function LogsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const resetPage = <T,>(setter: (v: T) => void) => (value: T) => {
-    setPage(1);
-    setter(value);
-  };
+  const resetPage =
+    <T,>(setter: (v: T) => void) =>
+    (value: T) => {
+      setPage(1);
+      setter(value);
+    };
 
   return (
     <AdminShell
@@ -118,7 +125,12 @@ function LogsPage() {
       description="سجل غير قابل للتعديل لكل عملية إدارية، يوثّق المنفّذ والقيم قبل/بعد وعنوان الشبكة والجهاز."
       actions={
         canExport ? (
-          <Btn size="sm" variant="outline" loading={exportCsv.isPending} onClick={() => exportCsv.mutate()}>
+          <Btn
+            size="sm"
+            variant="outline"
+            loading={exportCsv.isPending}
+            onClick={() => exportCsv.mutate()}
+          >
             <Download className="h-4 w-4" aria-hidden /> تصدير CSV
           </Btn>
         ) : undefined
@@ -173,7 +185,10 @@ function LogsPage() {
       {isLoading ? (
         <LoadingBlock rows={8} cols={4} />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا توجد سجلات مطابقة" hint="جرّب توسيع المدة الزمنية أو إزالة عوامل التصفية." />
+        <EmptyState
+          title="لا توجد سجلات مطابقة"
+          hint="جرّب توسيع المدة الزمنية أو إزالة عوامل التصفية."
+        />
       ) : (
         <>
           <DataCard>
@@ -193,7 +208,9 @@ function LogsPage() {
               <tbody className="divide-y divide-border">
                 {rows.map((l) => (
                   <tr key={l.id} className="hover:bg-surface-muted/60">
-                    <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{fmtDateTime(l.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-[12px] text-muted-foreground">
+                      {fmtDateTime(l.created_at)}
+                    </Td>
                     <Td className="text-left text-[12px]">{l.actor_email ?? "—"}</Td>
                     <Td>
                       <Badge tone="info">{ACTION_LABELS[l.action] ?? l.action}</Badge>
@@ -222,7 +239,12 @@ function LogsPage() {
         </>
       )}
 
-      <Modal open={Boolean(detail)} onClose={() => setDetail(null)} title="تفاصيل العملية" size="lg">
+      <Modal
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        title="تفاصيل العملية"
+        size="lg"
+      >
         {detail && (
           <div className="space-y-4 text-body-sm">
             <dl className="grid gap-3 sm:grid-cols-2">

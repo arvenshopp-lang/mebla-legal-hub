@@ -43,7 +43,8 @@ async function runOperation(
     {
       authType: context.authType,
       secrets: context.secrets,
-      apiKeyHeaderName: (context.configuration["api_key_header_name"] as string | undefined) ?? null,
+      apiKeyHeaderName:
+        (context.configuration["api_key_header_name"] as string | undefined) ?? null,
       apiKeyPrefix: (context.configuration["api_key_prefix"] as string | undefined) ?? null,
       apiKeyQueryName: (context.configuration["api_key_query_name"] as string | undefined) ?? null,
       tokenUrl: (context.configuration["token_url"] as string | undefined) ?? null,
@@ -65,7 +66,10 @@ async function runOperation(
 
   return integrationFetch({
     method: operation.method,
-    url: joinUrl(context.baseUrl, operation.path, { ...pairsToRecord(operation.query, values), ...auth.query }),
+    url: joinUrl(context.baseUrl, operation.path, {
+      ...pairsToRecord(operation.query, values),
+      ...auth.query,
+    }),
     headers,
     body,
     timeoutMs: context.timeoutMs,
@@ -141,7 +145,13 @@ export class CustomRestOtpConnector extends BaseOtpConnector {
         expectJson: spec.expectJson,
       });
       if (!verdict.ok) {
-        return { ok: false, statusCode: response.status, latencyMs: response.latencyMs, code: verdict.code, detail: verdict.detail };
+        return {
+          ok: false,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
+          code: verdict.code,
+          detail: verdict.detail,
+        };
       }
       return {
         ok: true,
@@ -156,7 +166,8 @@ export class CustomRestOtpConnector extends BaseOtpConnector {
 
   async sendOtp(context: ConnectorContext, input: SendOtpInput): Promise<SendOtpResult> {
     const operation = context.mapping?.send;
-    if (!operation?.enabled) throw new IntegrationHttpError("NOT_SUPPORTED", "send mapping disabled");
+    if (!operation?.enabled)
+      throw new IntegrationHttpError("NOT_SUPPORTED", "send mapping disabled");
     const values: Values = {
       phone: input.phone,
       code: input.code,
@@ -202,7 +213,11 @@ export class CustomRestOtpConnector extends BaseOtpConnector {
       expectedValue: operation.expectedValue,
       expectJson: true,
     });
-    return { verified: verdict.ok, latencyMs: response.latencyMs, detail: verdict.ok ? undefined : verdict.code };
+    return {
+      verified: verdict.ok,
+      latencyMs: response.latencyMs,
+      detail: verdict.ok ? undefined : verdict.code,
+    };
   }
 
   override async getDeliveryStatus(
@@ -217,7 +232,9 @@ export class CustomRestOtpConnector extends BaseOtpConnector {
         reference_id: input.referenceId,
         trace_id: input.traceId,
       });
-      const value = operation.resultJsonPath ? readJsonPath(response.json, operation.resultJsonPath) : null;
+      const value = operation.resultJsonPath
+        ? readJsonPath(response.json, operation.resultJsonPath)
+        : null;
       return { status: value == null ? "unknown" : String(value).toLowerCase().slice(0, 40) };
     } catch {
       return { status: "unknown" };

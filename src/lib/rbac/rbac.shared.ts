@@ -86,7 +86,15 @@ export function clockToMinutes(value: string): number {
   return Math.max(0, Math.min(1440, Number(h) * 60 + Number(m)));
 }
 
-export const WEEKDAY_LABELS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+export const WEEKDAY_LABELS = [
+  "الأحد",
+  "الإثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
+  "السبت",
+];
 
 export type RbacDenyReason =
   | "not_staff"

@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  SMS_DISABLED_CONFIG,
-  normalizePhone,
-  type SmsPublicConfig,
-} from "./sms.shared";
+import { SMS_DISABLED_CONFIG, normalizePhone, type SmsPublicConfig } from "./sms.shared";
 
 const phoneSchema = z.string().trim().min(6).max(24);
 const codeSchema = z.string().trim().min(4).max(8);
@@ -21,7 +17,10 @@ const settingsSchema = z.object({
   sender_id: z.string().trim().max(60).nullable(),
   sender_name: z.string().trim().max(80).nullable(),
   default_country: z.string().trim().min(2).max(2),
-  default_dial_code: z.string().trim().regex(/^\+\d{1,4}$/),
+  default_dial_code: z
+    .string()
+    .trim()
+    .regex(/^\+\d{1,4}$/),
   code_length: z.number().int().min(4).max(8),
   code_ttl_minutes: z.number().int().min(1).max(30),
   resend_wait_seconds: z.number().int().min(15).max(600),
@@ -60,20 +59,21 @@ export const getSmsPublicConfig = createServerFn({ method: "GET" }).handler(
 
 /** طلب رمز تحقق لرقم جوال (تسجيل جديد أو توثيق لاحق). */
 export const requestPhoneCode = createServerFn({ method: "POST" })
-  .inputValidator((input: {
-    phone: string;
-    purpose: z.infer<typeof purposeSchema>;
-    email?: string;
-    idempotencyKey?: string;
-  }) =>
-    z
-      .object({
-        phone: phoneSchema,
-        purpose: purposeSchema,
-        email: z.string().trim().email().max(180).optional(),
-        idempotencyKey: z.string().trim().min(8).max(80).optional(),
-      })
-      .parse(input),
+  .inputValidator(
+    (input: {
+      phone: string;
+      purpose: z.infer<typeof purposeSchema>;
+      email?: string;
+      idempotencyKey?: string;
+    }) =>
+      z
+        .object({
+          phone: phoneSchema,
+          purpose: purposeSchema,
+          email: z.string().trim().email().max(180).optional(),
+          idempotencyKey: z.string().trim().min(8).max(80).optional(),
+        })
+        .parse(input),
   )
   .handler(async ({ data }) => {
     const otp = await import("./otp.server");
@@ -119,8 +119,9 @@ export const getPhoneChallenge = createServerFn({ method: "POST" })
 
 /** تحقق من رمز قبل إنشاء الحساب (لا يتطلب جلسة). */
 export const verifyPhoneCode = createServerFn({ method: "POST" })
-  .inputValidator((input: { phone: string; code: string; purpose: z.infer<typeof purposeSchema> }) =>
-    z.object({ phone: phoneSchema, code: codeSchema, purpose: purposeSchema }).parse(input),
+  .inputValidator(
+    (input: { phone: string; code: string; purpose: z.infer<typeof purposeSchema> }) =>
+      z.object({ phone: phoneSchema, code: codeSchema, purpose: purposeSchema }).parse(input),
   )
   .handler(async ({ data }) => {
     const otp = await import("./otp.server");
@@ -223,7 +224,7 @@ export const getSmsSettingsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    await admin.requireStaff(context.supabase, context.userId, "sms.read");
     const otp = await import("./otp.server");
     const settings = await otp.loadSmsSettings();
     const providers = await import("./providers.server");
@@ -231,7 +232,9 @@ export const getSmsSettingsAdmin = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: logs } = await supabaseAdmin
       .from("sms_delivery_logs")
-      .select("id, provider, purpose, action, phone_masked, outcome, error_code, error_message, latency_ms, trace_ref, created_at")
+      .select(
+        "id, provider, purpose, action, phone_masked, outcome, error_code, error_message, latency_ms, trace_ref, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(50);
     return {
@@ -247,9 +250,13 @@ export const updateSmsSettingsAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => settingsSchema.parse(input))
   .handler(async ({ data, context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    const staff = await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await admin.requireStaff(context.supabase, context.userId, "sms.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: before } = await supabaseAdmin.from("sms_settings").select("*").eq("id", true).maybeSingle();
+    const { data: before } = await supabaseAdmin
+      .from("sms_settings")
+      .select("*")
+      .eq("id", true)
+      .maybeSingle();
     const health = !data.enabled || data.emergency_email_only ? "disabled" : "operational";
     const { error } = await supabaseAdmin
       .from("sms_settings")
@@ -273,7 +280,7 @@ export const sendTestSmsAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: { phone: string }) => z.object({ phone: phoneSchema }).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await import("@/lib/admin-guard.server");
-    await admin.requireStaff(context.supabase, context.userId, "settings.manage");
+    await admin.requireStaff(context.supabase, context.userId, "sms.manage");
     const otp = await import("./otp.server");
     const settings = await otp.loadSmsSettings();
     const parsed = normalizePhone(data.phone, settings.default_dial_code);

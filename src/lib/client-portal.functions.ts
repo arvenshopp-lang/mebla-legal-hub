@@ -26,7 +26,8 @@ const fileMetaSchema = z.object({
 export const getUploadRequest = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } =
+      await import("./client-portal.server");
     const ipAddress = clientIp();
     const guard = await guardUploadToken(ipAddress);
     if (guard.limited) return { state: "rate_limited" as const };
@@ -56,10 +57,13 @@ export const getUploadRequest = createServerFn({ method: "POST" })
 
 export const createUploadSlots = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    tokenSchema.extend({ files: z.array(fileMetaSchema).min(1).max(MAX_FILES_PER_REQUEST) }).parse(d),
+    tokenSchema
+      .extend({ files: z.array(fileMetaSchema).min(1).max(MAX_FILES_PER_REQUEST) })
+      .parse(d),
   )
   .handler(async ({ data }) => {
-    const { loadRequestByToken, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const { loadRequestByToken, clientIp, guardUploadToken } =
+      await import("./client-portal.server");
     const guard = await guardUploadToken(clientIp());
     if (guard.limited) throw new Error("تم تجاوز عدد المحاولات المسموح بها، حاول لاحقاً.");
     const found = await loadRequestByToken(data.token);
@@ -89,11 +93,17 @@ export const createUploadSlots = createServerFn({ method: "POST" })
 export const submitUploadRequest = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     tokenSchema
-      .extend({ files: z.array(fileMetaSchema.extend({ path: z.string().min(5).max(400) })).min(1).max(MAX_FILES_PER_REQUEST) })
+      .extend({
+        files: z
+          .array(fileMetaSchema.extend({ path: z.string().min(5).max(400) }))
+          .min(1)
+          .max(MAX_FILES_PER_REQUEST),
+      })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } = await import("./client-portal.server");
+    const { loadRequestByToken, logEvent, clientIp, guardUploadToken } =
+      await import("./client-portal.server");
     const guard = await guardUploadToken(clientIp());
     if (guard.limited) throw new Error("تم تجاوز عدد المحاولات المسموح بها، حاول لاحقاً.");
     const found = await loadRequestByToken(data.token);
@@ -106,7 +116,8 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
     for (const f of data.files) {
       const err = validateClientFile(f);
       if (err) throw new Error(`${f.name}: ${err}`);
-      if (!f.path.startsWith(prefix) || f.path.includes("..")) throw new Error("مسار ملف غير صالح.");
+      if (!f.path.startsWith(prefix) || f.path.includes(".."))
+        throw new Error("مسار ملف غير صالح.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -162,12 +173,18 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
 
 /* ---------------------------- case tracking ---------------------------- */
 
-const codeSchema = z.object({ code: z.string().trim().regex(/^[0-9]{10}$/, "الرمز يجب أن يتكون من 10 أرقام") });
+const codeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{10}$/, "الرمز يجب أن يتكون من 10 أرقام"),
+});
 
 export const lookupCaseStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => codeSchema.parse(d))
   .handler(async ({ data }) => {
-    const { hashText, checkLookupRateLimit, recordLookupAttempt, clientIp } = await import("./client-portal.server");
+    const { hashText, checkLookupRateLimit, recordLookupAttempt, clientIp } =
+      await import("./client-portal.server");
     const ip = clientIp();
     const ipHash = await hashText(`lookup:${ip}`);
 
@@ -177,15 +194,23 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
       .from("cases")
-      .select("id, public_code, status, updated_at, last_activity_at, next_action_date, organization_id")
+      .select(
+        "id, public_code, status, updated_at, last_activity_at, next_action_date, organization_id",
+      )
       .eq("public_code", data.code)
       .maybeSingle();
 
     await recordLookupAttempt(ipHash, data.code, !!row);
     if (!row) return { state: "not_found" as const };
 
-    const [{ data: org }, { data: updates }, { data: hearings }, { data: deadlines }, { data: docs }, { data: requests }] =
-      await Promise.all([
+    const [
+      { data: org },
+      { data: updates },
+      { data: hearings },
+      { data: deadlines },
+      { data: docs },
+      { data: requests },
+    ] = await Promise.all([
       supabaseAdmin
         .from("organizations")
         .select("name, phone, email, city, is_active")
@@ -263,4 +288,3 @@ export const lookupCaseStatus = createServerFn({ method: "POST" })
       })),
     };
   });
-

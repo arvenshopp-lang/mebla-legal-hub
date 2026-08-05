@@ -69,13 +69,20 @@ export function FeatureLine({
           {available ? <Check className="h-3 w-3" /> : <Lock className="h-2.5 w-2.5" />}
         </span>
         <span className="min-w-0">
-          <span className={cn("block text-[13.5px]", !available && "text-muted-foreground")}>{label}</span>
+          <span className={cn("block text-[13.5px]", !available && "text-muted-foreground")}>
+            {label}
+          </span>
           {!available && requiredPlan && (
             <span className="block text-[11.5px] text-text-muted">متوفرة في {requiredPlan}</span>
           )}
         </span>
       </span>
-      <span className={cn("shrink-0 text-[12.5px] tabular-nums", available ? "text-foreground" : "text-text-muted")}>
+      <span
+        className={cn(
+          "shrink-0 text-[12.5px] tabular-nums",
+          available ? "text-foreground" : "text-text-muted",
+        )}
+      >
         {value ?? (available ? "متوفر" : "غير متوفر")}
       </span>
     </li>

@@ -48,7 +48,13 @@ export function UpgradeNotice({
 }
 
 /** Renders children only when the plan includes the capability. */
-export function FeatureGate({ feature, children }: { feature: PlanFeatureKey; children: ReactNode }) {
+export function FeatureGate({
+  feature,
+  children,
+}: {
+  feature: PlanFeatureKey;
+  children: ReactNode;
+}) {
   const { overview, isLoading, can } = useSubscription();
   if (isLoading) return <SectionLoader label="جاري التحقق من الباقة…" />;
   if (can(feature)) return <>{children}</>;

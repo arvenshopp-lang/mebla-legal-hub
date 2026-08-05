@@ -125,7 +125,11 @@ export async function dispatchOtpText(
       purpose: input.purpose,
       traceId: input.traceRef,
     });
-    await recordRuntimeOutcome(active.view.id, { ok: true, latencyMs: result.latencyMs }, input.traceRef);
+    await recordRuntimeOutcome(
+      active.view.id,
+      { ok: true, latencyMs: result.latencyMs },
+      input.traceRef,
+    );
     return {
       provider: active.view.providerKey,
       integrationId: active.view.id,
@@ -135,7 +139,12 @@ export async function dispatchOtpText(
       source: "integration",
     };
   } catch (error) {
-    const anyError = error as { code?: string; status?: number | null; detail?: string; message?: string };
+    const anyError = error as {
+      code?: string;
+      status?: number | null;
+      detail?: string;
+      message?: string;
+    };
     const code = anyError?.code ?? "PROVIDER_ERROR";
     await recordRuntimeOutcome(
       active.view.id,
@@ -182,7 +191,12 @@ export async function dispatchOtpVerify(input: {
     );
     return result.verified;
   } catch (error) {
-    const anyError = error as { code?: string; status?: number | null; detail?: string; message?: string };
+    const anyError = error as {
+      code?: string;
+      status?: number | null;
+      detail?: string;
+      message?: string;
+    };
     await recordRuntimeOutcome(
       input.integrationId,
       {
@@ -206,7 +220,13 @@ export async function dispatchOtpVerify(input: {
 export async function sendIntegrationTest(
   integrationId: string,
   phone: string,
-): Promise<{ ok: boolean; traceId: string; code: string | null; message: string; reference: string | null }> {
+): Promise<{
+  ok: boolean;
+  traceId: string;
+  code: string | null;
+  message: string;
+  reference: string | null;
+}> {
   const engine = await import("./integrations.server");
   const { getConnector } = await import("./connectors/registry.server");
   const traceId = newTraceId();
@@ -231,7 +251,12 @@ export async function sendIntegrationTest(
       reference: result.reference,
     };
   } catch (error) {
-    const anyError = error as { code?: string; status?: number | null; detail?: string; message?: string };
+    const anyError = error as {
+      code?: string;
+      status?: number | null;
+      detail?: string;
+      message?: string;
+    };
     const code = anyError?.code ?? "PROVIDER_ERROR";
     await engine.recordRuntimeOutcome(
       view.id,

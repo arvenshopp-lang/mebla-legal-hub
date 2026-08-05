@@ -18,7 +18,12 @@ export default defineTool({
     assign_to_me: z.boolean().optional().describe("إسناد المهمة للمستخدم الحالي (الافتراضي: نعم)."),
     organization_id: z.string().optional().describe("معرّف المكتب عند العضوية في أكثر من مكتب."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
   handler: async (input, ctx) => {
     const db = requireDb(ctx);
     const organizationId = await resolveOrganization(db, ctx, input.organization_id);
@@ -37,8 +42,14 @@ export default defineTool({
     let caseId: string | null = null;
     if (input.case_reference?.trim()) {
       const reference = input.case_reference.trim();
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference);
-      let lookup = db.from("cases").select("id, case_title").eq("organization_id", organizationId).limit(1);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        reference,
+      );
+      let lookup = db
+        .from("cases")
+        .select("id, case_title")
+        .eq("organization_id", organizationId)
+        .limit(1);
       lookup = isUuid
         ? lookup.eq("id", reference)
         : lookup.or(`case_number.eq.${reference},public_code.eq.${reference}`);

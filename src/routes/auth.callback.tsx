@@ -20,20 +20,22 @@ function AuthCallback() {
       const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
       const flowType = url.searchParams.get("type") ?? hashParams.get("type");
       if (code) {
-        try { await supabase.auth.exchangeCodeForSession(window.location.href); } catch {}
+        try {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+        } catch {}
       }
       const refreshed = await refresh();
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         const storedRedirect = sessionStorage.getItem("mehla_auth_redirect");
         sessionStorage.removeItem("mehla_auth_redirect");
-        const safeRedirect = storedRedirect?.startsWith("/") && !storedRedirect.startsWith("//")
-          ? storedRedirect
-          : "/dashboard";
-        const target =
-          safeRedirect.startsWith("/invite/")
-            ? safeRedirect
-            : flowType === "signup" || flowType === "email_change"
+        const safeRedirect =
+          storedRedirect?.startsWith("/") && !storedRedirect.startsWith("//")
+            ? storedRedirect
+            : "/dashboard";
+        const target = safeRedirect.startsWith("/invite/")
+          ? safeRedirect
+          : flowType === "signup" || flowType === "email_change"
             ? "/auth/verified"
             : refreshed.memberships.length > 0
               ? safeRedirect

@@ -18,7 +18,11 @@ import {
   Th,
   inputCls,
 } from "@/lib/list-utils";
-import { billingDecideRefund, billingListCreditNotes, billingListRefunds } from "@/lib/billing/billing.functions";
+import {
+  billingDecideRefund,
+  billingListCreditNotes,
+  billingListRefunds,
+} from "@/lib/billing/billing.functions";
 import { formatDateTime, type BillingRow } from "@/lib/billing/billing.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { Money, RefundStatusBadge } from "./shared";
@@ -30,7 +34,10 @@ export function RefundsPanel() {
   const { can } = usePlatformAdmin();
   const [page, setPage] = useState(1);
   const [notesPage, setNotesPage] = useState(1);
-  const [deciding, setDeciding] = useState<{ row: BillingRow; decision: "approve" | "reject" } | null>(null);
+  const [deciding, setDeciding] = useState<{
+    row: BillingRow;
+    decision: "approve" | "reject";
+  } | null>(null);
   const [reason, setReason] = useState("");
 
   const listFn = useServerFn(billingListRefunds);
@@ -39,7 +46,8 @@ export function RefundsPanel() {
 
   const refunds = useQuery({
     queryKey: ["billing-refunds", page],
-    queryFn: () => listFn({ data: { page, pageSize: PAGE_SIZE, status: null, method: null, search: null } }),
+    queryFn: () =>
+      listFn({ data: { page, pageSize: PAGE_SIZE, status: null, method: null, search: null } }),
   });
 
   const creditNotes = useQuery({
@@ -72,13 +80,19 @@ export function RefundsPanel() {
 
   return (
     <div className="space-y-6">
-      <SectionCard title="طلبات الاسترداد" description="لا يُنفّذ أي استرداد دون اعتماد موظف مخوّل.">
+      <SectionCard
+        title="طلبات الاسترداد"
+        description="لا يُنفّذ أي استرداد دون اعتماد موظف مخوّل."
+      >
         {refunds.isLoading ? (
           <LoadingBlock rows={5} cols={5} />
         ) : refunds.isError ? (
           <ErrorBlock message={(refunds.error as Error).message} />
         ) : rows.length === 0 ? (
-          <EmptyState title="لا توجد طلبات استرداد" hint="تُنشأ الطلبات من قائمة المدفوعات أو صفحة الفاتورة." />
+          <EmptyState
+            title="لا توجد طلبات استرداد"
+            hint="تُنشأ الطلبات من قائمة المدفوعات أو صفحة الفاتورة."
+          />
         ) : (
           <DataCard>
             <table className="w-full text-body-sm">
@@ -119,7 +133,9 @@ export function RefundsPanel() {
                       <Td>
                         <RefundStatusBadge status={row["status"] as string} />
                       </Td>
-                      <Td className="max-w-[180px] truncate">{(row["requested_by_email"] as string) ?? "—"}</Td>
+                      <Td className="max-w-[180px] truncate">
+                        {(row["requested_by_email"] as string) ?? "—"}
+                      </Td>
                       <Td>{formatDateTime((row["created_at"] as string) ?? null)}</Td>
                       <Td className="text-left">
                         {row["status"] === "pending" && can("billing.refund") && (
@@ -150,10 +166,18 @@ export function RefundsPanel() {
             </table>
           </DataCard>
         )}
-        <Pagination page={page} setPage={setPage} total={refunds.data?.total ?? 0} pageSize={PAGE_SIZE} />
+        <Pagination
+          page={page}
+          setPage={setPage}
+          total={refunds.data?.total ?? 0}
+          pageSize={PAGE_SIZE}
+        />
       </SectionCard>
 
-      <SectionCard title="إشعارات الخصم" description="تُصدر بأرقام نظامية مستقلة ولا تُحذف نهائياً.">
+      <SectionCard
+        title="إشعارات الخصم"
+        description="تُصدر بأرقام نظامية مستقلة ولا تُحذف نهائياً."
+      >
         {creditNotes.isLoading ? (
           <LoadingBlock rows={4} cols={4} />
         ) : (creditNotes.data?.rows ?? []).length === 0 ? (
@@ -177,7 +201,9 @@ export function RefundsPanel() {
                   return (
                     <tr key={row["id"] as string} className="border-t border-border">
                       <Td>
-                        <span className="font-semibold tabular-nums">{row["number"] as string}</span>
+                        <span className="font-semibold tabular-nums">
+                          {row["number"] as string}
+                        </span>
                       </Td>
                       <Td>{joined?.number ?? "—"}</Td>
                       <Td>
@@ -195,7 +221,12 @@ export function RefundsPanel() {
             </table>
           </DataCard>
         )}
-        <Pagination page={notesPage} setPage={setNotesPage} total={creditNotes.data?.total ?? 0} pageSize={PAGE_SIZE} />
+        <Pagination
+          page={notesPage}
+          setPage={setNotesPage}
+          total={creditNotes.data?.total ?? 0}
+          pageSize={PAGE_SIZE}
+        />
       </SectionCard>
 
       <Modal
@@ -209,8 +240,16 @@ export function RefundsPanel() {
         }
       >
         <div className="space-y-4">
-          <FormField label={deciding?.decision === "approve" ? "ملاحظة (اختياري)" : "سبب الرفض"} required={deciding?.decision === "reject"}>
-            <textarea rows={3} className={inputCls} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <FormField
+            label={deciding?.decision === "approve" ? "ملاحظة (اختياري)" : "سبب الرفض"}
+            required={deciding?.decision === "reject"}
+          >
+            <textarea
+              rows={3}
+              className={inputCls}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn variant="outline" onClick={() => setDeciding(null)} disabled={decide.isPending}>

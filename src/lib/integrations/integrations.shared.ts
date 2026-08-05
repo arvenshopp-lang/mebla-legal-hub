@@ -37,15 +37,16 @@ export const STATUS_LABELS: Record<IntegrationStatus, string> = {
   disabled: "معطّل",
 };
 
-export const STATUS_TONES: Record<IntegrationStatus, "green" | "gold" | "red" | "muted" | "info"> = {
-  not_configured: "muted",
-  verifying: "info",
-  connected: "green",
-  degraded: "gold",
-  unavailable: "red",
-  failed: "red",
-  disabled: "muted",
-};
+export const STATUS_TONES: Record<IntegrationStatus, "green" | "gold" | "red" | "muted" | "info"> =
+  {
+    not_configured: "muted",
+    verifying: "info",
+    connected: "green",
+    degraded: "gold",
+    unavailable: "red",
+    failed: "red",
+    disabled: "muted",
+  };
 
 export type AuthType =
   | "api_key_header"
@@ -250,7 +251,13 @@ export type IntegrationView = {
   lastErrorDetail: string | null;
   lastTraceId: string | null;
   createdAt: string;
-  secretHints: { fieldKey: string; label: string; hint: string; status: string; rotatedAt: string | null }[];
+  secretHints: {
+    fieldKey: string;
+    label: string;
+    hint: string;
+    status: string;
+    rotatedAt: string | null;
+  }[];
   healthCheck: HealthCheckSpec;
   mapping: CustomMapping;
   allowedHosts: string[];
@@ -326,7 +333,8 @@ export function suggestNameFromUrl(baseUrl: string): { suggestion: string; host:
   try {
     const url = new URL(baseUrl.trim());
     const host = url.hostname.replace(/^www\./, "");
-    const core = host.split(".").filter((p) => !["api", "rest", "cloud", "el", "sms"].includes(p))[0] ?? host;
+    const core =
+      host.split(".").filter((p) => !["api", "rest", "cloud", "el", "sms"].includes(p))[0] ?? host;
     return { suggestion: core.charAt(0).toUpperCase() + core.slice(1), host };
   } catch {
     return null;

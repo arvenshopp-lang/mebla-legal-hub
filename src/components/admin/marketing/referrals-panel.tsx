@@ -21,7 +21,12 @@ import {
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import type { MarketingReferralRow } from "@/lib/marketing.shared";
-import { createMarketingReferral, listCouponsForMarketing, listMarketingReferrals, updateMarketingReferral } from "@/lib/marketing.functions";
+import {
+  createMarketingReferral,
+  listCouponsForMarketing,
+  listMarketingReferrals,
+  updateMarketingReferral,
+} from "@/lib/marketing.functions";
 
 export function ReferralsPanel({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
@@ -51,7 +56,10 @@ export function ReferralsPanel({ canManage }: { canManage: boolean }) {
       ) : query.isError ? (
         <ErrorBlock message="تعذّر تحميل برامج الإحالة." />
       ) : (query.data?.rows.length ?? 0) === 0 ? (
-        <EmptyState title="لا توجد برامج إحالة" hint="أنشئ برنامج إحالة لمتابعة العملاء المُحالين ومكافآتهم." />
+        <EmptyState
+          title="لا توجد برامج إحالة"
+          hint="أنشئ برنامج إحالة لمتابعة العملاء المُحالين ومكافآتهم."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[820px] text-right">
@@ -74,7 +82,9 @@ export function ReferralsPanel({ canManage }: { canManage: boolean }) {
                   <Td>
                     <span className="block max-w-[180px] truncate">{r.referrer_name ?? "—"}</span>
                     {r.referrer_email && (
-                      <span className="block truncate text-[11px] text-muted-foreground">{r.referrer_email}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {r.referrer_email}
+                      </span>
                     )}
                   </Td>
                   <Td>{r.coupon_code ?? "—"}</Td>
@@ -82,7 +92,9 @@ export function ReferralsPanel({ canManage }: { canManage: boolean }) {
                     {r.uses_count} / {r.max_uses ?? "بلا حد"}
                   </Td>
                   <Td>
-                    <Badge tone={r.is_active ? "green" : "muted"}>{r.is_active ? "نشط" : "معطّل"}</Badge>
+                    <Badge tone={r.is_active ? "green" : "muted"}>
+                      {r.is_active ? "نشط" : "معطّل"}
+                    </Badge>
                   </Td>
                   <Td className="text-left">
                     {canManage && (
@@ -180,16 +192,32 @@ function ReferralDialog({
           />
         </FormField>
         <FormField label="نوع المُحيل" required hint="مثال: عميل، شريك، موظف">
-          <input value={form.referrerKind} onChange={(e) => setForm({ ...form, referrerKind: e.target.value })} className={inputCls} />
+          <input
+            value={form.referrerKind}
+            onChange={(e) => setForm({ ...form, referrerKind: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="اسم المُحيل">
-          <input value={form.referrerName} onChange={(e) => setForm({ ...form, referrerName: e.target.value })} className={inputCls} />
+          <input
+            value={form.referrerName}
+            onChange={(e) => setForm({ ...form, referrerName: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="بريد المُحيل">
-          <input value={form.referrerEmail} onChange={(e) => setForm({ ...form, referrerEmail: e.target.value })} className={inputCls} />
+          <input
+            value={form.referrerEmail}
+            onChange={(e) => setForm({ ...form, referrerEmail: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الكوبون المرتبط">
-          <select value={form.couponId} onChange={(e) => setForm({ ...form, couponId: e.target.value })} className={inputCls}>
+          <select
+            value={form.couponId}
+            onChange={(e) => setForm({ ...form, couponId: e.target.value })}
+            className={inputCls}
+          >
             <option value="">بلا كوبون</option>
             {(couponsData?.coupons ?? []).map((c: { id: string; code: string }) => (
               <option key={c.id} value={c.id}>
@@ -199,10 +227,20 @@ function ReferralDialog({
           </select>
         </FormField>
         <FormField label="الحد الأقصى للاستخدام" hint="اتركه فارغاً لعدم التحديد">
-          <input type="number" min={0} value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} className={inputCls} />
+          <input
+            type="number"
+            min={0}
+            value={form.maxUses}
+            onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="تسمية داخلية">
-          <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className={inputCls} />
+          <input
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الحالة">
           <select
@@ -228,7 +266,10 @@ function ReferralDialog({
         <p className="mt-3 text-caption">آخر تحديث: {fmtDate(editingRow.updated_at)}</p>
       )}
       {error && (
-        <p role="alert" className="mt-4 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+        <p
+          role="alert"
+          className="mt-4 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+        >
           {error}
         </p>
       )}

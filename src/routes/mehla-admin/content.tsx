@@ -21,7 +21,11 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
-import { deleteContentPage, listContentPages, saveContentPage } from "@/lib/admin-console.functions";
+import {
+  deleteContentPage,
+  listContentPages,
+  saveContentPage,
+} from "@/lib/admin-console.functions";
 import { CONTENT_KINDS, type ContentKind, type ContentPage } from "@/lib/admin-console.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 
@@ -57,7 +61,7 @@ const emptyDraft: Draft = {
 
 function ContentPage_() {
   const { can } = usePlatformAdmin();
-  const manage = can("settings.manage");
+  const manage = can("content.manage");
   const queryClient = useQueryClient();
 
   const load = useServerFn(listContentPages);
@@ -202,10 +206,21 @@ function ContentPage_() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1">
-                      <IconBtn aria-label="تعديل" title="تعديل" onClick={() => openEdit(page)} disabled={!manage}>
+                      <IconBtn
+                        aria-label="تعديل"
+                        title="تعديل"
+                        onClick={() => openEdit(page)}
+                        disabled={!manage}
+                      >
                         <Pencil className="h-4 w-4" aria-hidden />
                       </IconBtn>
-                      <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setToDelete(page)} disabled={!manage}>
+                      <IconBtn
+                        aria-label="حذف"
+                        title="حذف"
+                        tone="danger"
+                        onClick={() => setToDelete(page)}
+                        disabled={!manage}
+                      >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </IconBtn>
                     </div>
@@ -232,7 +247,12 @@ function ContentPage_() {
         {draft && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="المعرّف (Slug)" required error={errors.slug} hint="مثال: pricing-hero">
+              <FormField
+                label="المعرّف (Slug)"
+                required
+                error={errors.slug}
+                hint="مثال: pricing-hero"
+              >
                 <input
                   className={inputCls}
                   dir="ltr"
@@ -329,7 +349,11 @@ function ContentPage_() {
 
       {!isLoading && !isError && (
         <p className="text-caption mt-4">
-          <button type="button" className="underline underline-offset-4" onClick={() => void refetch()}>
+          <button
+            type="button"
+            className="underline underline-offset-4"
+            onClick={() => void refetch()}
+          >
             تحديث القائمة
           </button>
         </p>

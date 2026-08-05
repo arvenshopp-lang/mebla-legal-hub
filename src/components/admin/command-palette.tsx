@@ -86,7 +86,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }, [open, rows, cursor, navigate, onClose]);
 
   useEffect(() => {
-    listRef.current?.querySelector<HTMLElement>('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+    listRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
   }, [cursor]);
 
   if (!open) return null;
@@ -116,7 +118,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             aria-label="نص البحث"
             className="h-14 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-text-muted"
           />
-          {isFetching && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />}
+          {isFetching && (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />
+          )}
           <button
             onClick={onClose}
             aria-label="إغلاق البحث"
@@ -169,11 +173,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       )}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-semibold">{row.hit.title}</span>
-                        <span className="block truncate text-[12px] text-muted-foreground">{row.hit.subtitle}</span>
+                        <span className="block truncate text-[13.5px] font-semibold">
+                          {row.hit.title}
+                        </span>
+                        <span className="block truncate text-[12px] text-muted-foreground">
+                          {row.hit.subtitle}
+                        </span>
                       </span>
                       {index === cursor && (
-                        <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                        <CornerDownLeft
+                          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
                       )}
                     </button>
                   </li>

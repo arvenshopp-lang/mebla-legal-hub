@@ -20,7 +20,11 @@ const guard = (): Promise<Guard> => import("@/lib/admin-guard.server");
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;
 
-const rpc = async <T>(supabase: AnyClient, name: string, args?: Record<string, unknown>): Promise<T> => {
+const rpc = async <T>(
+  supabase: AnyClient,
+  name: string,
+  args?: Record<string, unknown>,
+): Promise<T> => {
   const { data, error } = await (supabase as AnyClient).rpc(name, args ?? {});
   if (error) throw new Error("تعذّر قراءة بيانات التشغيل. حاول التحديث بعد لحظات.");
   return data as T;
@@ -113,7 +117,10 @@ const contentSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9][a-z0-9-]{1,62}$/, "المعرّف يقبل الحروف اللاتينية الصغيرة والأرقام والشرطة فقط"),
+    .regex(
+      /^[a-z0-9][a-z0-9-]{1,62}$/,
+      "المعرّف يقبل الحروف اللاتينية الصغيرة والأرقام والشرطة فقط",
+    ),
   kind: z.enum(["home", "pricing", "faq", "legal", "banner", "contact", "page"]),
   title: z.string().trim().min(2, "العنوان مطلوب").max(160),
   description: z.string().trim().max(500).optional().nullable(),
@@ -124,10 +131,12 @@ const contentSchema = z.object({
 export const listContentPages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContentPage[]> => {
-    await (await guard()).requireActiveStaff(context.supabase, context.userId);
+    await (await guard()).requireStaff(context.supabase, context.userId, "content.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_content_pages")
-      .select("id, slug, kind, title, description, content, is_published, published_at, version, updated_at")
+      .select(
+        "id, slug, kind, title, description, content, is_published, published_at, version, updated_at",
+      )
       .order("kind", { ascending: true })
       .order("slug", { ascending: true });
     if (error) throw new Error("تعذّر قراءة محتوى الموقع.");
@@ -139,7 +148,7 @@ export const saveContentPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => contentSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "content.manage");
 
     let parsed: Record<string, unknown>;
     try {
@@ -175,7 +184,12 @@ export const saveContentPage = createServerFn({ method: "POST" })
     };
 
     const { data: saved, error } = existing
-      ? await db.from("platform_content_pages").update(payload).eq("id", existing.id).select("id").maybeSingle()
+      ? await db
+          .from("platform_content_pages")
+          .update(payload)
+          .eq("id", existing.id)
+          .select("id")
+          .maybeSingle()
       : await db.from("platform_content_pages").insert(payload).select("id").maybeSingle();
     if (error) throw new Error("تعذّر حفظ المحتوى. تأكد من صحة المعرّف.");
 
@@ -196,7 +210,7 @@ export const deleteContentPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "content.manage");
     const db = await g.admin();
 
     const { data: existing } = await db

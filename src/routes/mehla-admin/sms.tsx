@@ -28,7 +28,8 @@ export const Route = createFileRoute("/mehla-admin/sms")({
       { title: "خدمة الرسائل وتوثيق الجوال | إدارة مِهلة" },
       {
         name: "description",
-        content: "إدارة مزوّد الرسائل النصية، نمط التسجيل، توثيق الجوال، وسجل الإرسال داخل منصة مِهلة.",
+        content:
+          "إدارة مزوّد الرسائل النصية، نمط التسجيل، توثيق الجوال، وسجل الإرسال داخل منصة مِهلة.",
       },
       { property: "og:title", content: "خدمة الرسائل وتوثيق الجوال | إدارة مِهلة" },
       { property: "og:description", content: "تحكم كامل في مزوّد الرسائل وسياسات توثيق الجوال." },
@@ -77,7 +78,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="text-label mb-1.5 block text-foreground">{label}</span>
@@ -201,7 +210,10 @@ function SmsSettingsPage() {
       {isLoading || !draft ? (
         <LoadingBlock />
       ) : error ? (
-        <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-4 text-sm text-danger">
+        <div
+          role="alert"
+          className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-4 text-sm text-danger"
+        >
           {(error as Error).message}
         </div>
       ) : (
@@ -218,7 +230,8 @@ function SmsSettingsPage() {
             </div>
             {data!.settings.last_error_reason && (
               <p className="text-[12px] leading-6 text-text-muted">
-                آخر فشل: {fmtDateTime(data!.settings.last_failure_at)} — {data!.settings.last_error_reason}
+                آخر فشل: {fmtDateTime(data!.settings.last_failure_at)} —{" "}
+                {data!.settings.last_error_reason}
                 {data!.settings.last_trace_ref ? ` (مرجع: ${data!.settings.last_trace_ref})` : ""}
               </p>
             )}
@@ -271,7 +284,10 @@ function SmsSettingsPage() {
                 className={inputCls}
               />
             </Row>
-            <Row label="الرابط الأساسي (Base URL)" hint="اتركه فارغاً لاستخدام الرابط الافتراضي للمزوّد.">
+            <Row
+              label="الرابط الأساسي (Base URL)"
+              hint="اتركه فارغاً لاستخدام الرابط الافتراضي للمزوّد."
+            >
               <input
                 value={draft.base_url ?? ""}
                 onChange={(e) => set("base_url", e.target.value || null)}
@@ -304,7 +320,8 @@ function SmsSettingsPage() {
               />
             </Row>
             <p className="text-[12px] leading-6 text-text-muted">
-              مفتاح المزوّد وسرّه محفوظان في أسرار المنصة (SMS_API_KEY و SMS_API_SECRET) ولا يظهران هنا إطلاقاً.
+              مفتاح المزوّد وسرّه محفوظان في أسرار المنصة (SMS_API_KEY و SMS_API_SECRET) ولا يظهران
+              هنا إطلاقاً.
             </p>
           </Section>
 
@@ -442,7 +459,10 @@ function SmsSettingsPage() {
             ) : (
               <ul className="divide-y divide-border text-[12.5px]">
                 {data!.logs.map((log) => (
-                  <li key={log.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <li
+                    key={log.id}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2"
+                  >
                     <span className="font-medium text-foreground" dir="ltr">
                       {log.phone_masked}
                     </span>

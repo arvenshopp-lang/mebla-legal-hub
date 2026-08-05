@@ -37,20 +37,24 @@ export async function linkInboundToTicket(
     duplicate: boolean;
   },
 ): Promise<IngestTicketResult> {
-  if (input.duplicate) return { outcome: "skipped", ticketId: null, ticketNumber: null, reason: "duplicate_message" };
+  if (input.duplicate)
+    return { outcome: "skipped", ticketId: null, ticketNumber: null, reason: "duplicate_message" };
   if (!TICKETING_MAILBOXES.includes(input.recipient.trim().toLowerCase())) {
-    return { outcome: "skipped", ticketId: null, ticketNumber: null, reason: "mailbox_not_ticketing" };
+    return {
+      outcome: "skipped",
+      ticketId: null,
+      ticketNumber: null,
+      reason: "mailbox_not_ticketing",
+    };
   }
 
   const dedupeKey = `inbound:${input.providerMessageId ?? input.emailMessageId}`.slice(0, 200);
-  const { error: claimError } = await db
-    .from("support_ticket_ingest")
-    .insert({
-      dedupe_key: dedupeKey,
-      email_message_id: input.emailMessageId,
-      thread_id: input.threadId,
-      outcome: "skipped",
-    });
+  const { error: claimError } = await db.from("support_ticket_ingest").insert({
+    dedupe_key: dedupeKey,
+    email_message_id: input.emailMessageId,
+    thread_id: input.threadId,
+    outcome: "skipped",
+  });
   if (claimError && String(claimError.code) === "23505") {
     return { outcome: "skipped", ticketId: null, ticketNumber: null, reason: "already_processed" };
   }
@@ -75,11 +79,14 @@ export async function linkInboundToTicket(
   if (linkedTicketId) {
     const { data: ticketRow } = await db
       .from("support_tickets")
-      .select("id, ticket_number, reference, subject, status, organization_id, user_id, assigned_to, team_id, merged_into_id")
+      .select(
+        "id, ticket_number, reference, subject, status, organization_id, user_id, assigned_to, team_id, merged_into_id",
+      )
       .eq("id", linkedTicketId)
       .maybeSingle();
     const ticket = ticketRow as Record<string, unknown> | null;
-    const targetId = (ticket?.["merged_into_id"] as string | null) ?? (ticket?.["id"] as string | undefined);
+    const targetId =
+      (ticket?.["merged_into_id"] as string | null) ?? (ticket?.["id"] as string | undefined);
     if (ticket && targetId) {
       await appendCustomerReply(db, targetId, {
         authorName: input.fromName ?? input.from,
@@ -154,7 +161,11 @@ export async function appendCustomerReply(
     .select("status, paused_at, paused_total_seconds")
     .eq("id", ticketId)
     .maybeSingle();
-  const ticket = ticketRow as { status: string; paused_at: string | null; paused_total_seconds: number } | null;
+  const ticket = ticketRow as {
+    status: string;
+    paused_at: string | null;
+    paused_total_seconds: number;
+  } | null;
 
   const patch: Record<string, unknown> = { last_customer_reply_at: nowIso, last_reply_at: nowIso };
   if (ticket?.paused_at) {
@@ -171,7 +182,8 @@ export async function appendCustomerReply(
         .select("reopened_count")
         .eq("id", ticketId)
         .maybeSingle();
-      patch["reopened_count"] = ((countRow as { reopened_count: number } | null)?.reopened_count ?? 0) + 1;
+      patch["reopened_count"] =
+        ((countRow as { reopened_count: number } | null)?.reopened_count ?? 0) + 1;
       patch["closed_at"] = null;
     }
   }

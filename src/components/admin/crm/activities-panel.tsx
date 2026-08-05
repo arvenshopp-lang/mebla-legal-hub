@@ -23,7 +23,12 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
-import { completeActivity, deleteActivity, listActivities, listStaffOptions } from "@/lib/crm.functions";
+import {
+  completeActivity,
+  deleteActivity,
+  listActivities,
+  listStaffOptions,
+} from "@/lib/crm.functions";
 import {
   CRM_ACTIVITY_KIND_LABEL,
   CRM_ENTITY_KIND_LABEL,
@@ -35,10 +40,21 @@ import { ActivityFormModal, emptyActivityDraft } from "./activity-form";
 import { ActivityKindBadge, OwnerCell } from "./shared";
 
 const PAGE_SIZE = 20;
-const KINDS: (CrmActivityKind | "all")[] = ["all", "meeting", "call", "note", "task", "followup", "email"];
+const KINDS: (CrmActivityKind | "all")[] = [
+  "all",
+  "meeting",
+  "call",
+  "note",
+  "task",
+  "followup",
+  "email",
+];
 const ENTITIES: (CrmEntityKind | "all")[] = ["all", "lead", "company", "contact", "deal"];
 
-type Dialog = { kind: "none" } | { kind: "complete"; row: CrmActivityRow } | { kind: "delete"; row: CrmActivityRow };
+type Dialog =
+  | { kind: "none" }
+  | { kind: "complete"; row: CrmActivityRow }
+  | { kind: "delete"; row: CrmActivityRow };
 
 export function ActivitiesPanel() {
   const { can } = usePlatformAdmin();
@@ -59,11 +75,25 @@ export function ActivitiesPanel() {
   const debounced = useDebounced(search);
 
   const filters = useMemo(
-    () => ({ search: debounced, kind, entityKind, onlyOpen, page, pageSize: PAGE_SIZE, ownerStaffId: "" }),
+    () => ({
+      search: debounced,
+      kind,
+      entityKind,
+      onlyOpen,
+      page,
+      pageSize: PAGE_SIZE,
+      ownerStaffId: "",
+    }),
     [debounced, kind, entityKind, onlyOpen, page],
   );
-  const query = useQuery({ queryKey: ["crm-activities", filters], queryFn: () => listFn({ data: filters }) });
-  const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
+  const query = useQuery({
+    queryKey: ["crm-activities", filters],
+    queryFn: () => listFn({ data: filters }),
+  });
+  const staffQuery = useQuery({
+    queryKey: ["crm-staff"],
+    queryFn: () => staffFn({ data: undefined }),
+  });
   const staffOptions = staffQuery.data?.staff ?? [];
 
   const refresh = () => {
@@ -157,7 +187,10 @@ export function ActivitiesPanel() {
       ) : query.isError ? (
         <ErrorBlock message="تعذّر جلب الأنشطة. تأكد من صلاحية «قراءة CRM» ثم أعد المحاولة." />
       ) : (query.data?.rows.length ?? 0) === 0 ? (
-        <EmptyState title="لا توجد أنشطة" hint="تُنشأ الأنشطة من صفحات العملاء المحتملين والصفقات." />
+        <EmptyState
+          title="لا توجد أنشطة"
+          hint="تُنشأ الأنشطة من صفحات العملاء المحتملين والصفقات."
+        />
       ) : (
         <>
           <DataCard>
@@ -178,7 +211,9 @@ export function ActivitiesPanel() {
                   <tr key={row.id} className="border-t border-border">
                     <Td>
                       <span className="font-semibold">{row.subject}</span>
-                      {row.body && <span className="text-caption line-clamp-1 block">{row.body}</span>}
+                      {row.body && (
+                        <span className="text-caption line-clamp-1 block">{row.body}</span>
+                      )}
                     </Td>
                     <Td>
                       <ActivityKindBadge kind={row.kind} />
@@ -186,7 +221,11 @@ export function ActivitiesPanel() {
                     <Td>{CRM_ENTITY_KIND_LABEL[row.entity_kind]}</Td>
                     <Td>{row.due_at ? fmtDateTime(row.due_at) : "—"}</Td>
                     <Td>
-                      {row.completed_at ? <Badge tone="green">مكتمل</Badge> : <Badge tone="warn">قائم</Badge>}
+                      {row.completed_at ? (
+                        <Badge tone="green">مكتمل</Badge>
+                      ) : (
+                        <Badge tone="warn">قائم</Badge>
+                      )}
                     </Td>
                     <Td>
                       <OwnerCell owner={row.owner} />
@@ -194,12 +233,21 @@ export function ActivitiesPanel() {
                     <Td className="text-left">
                       <div className="flex items-center justify-end gap-1">
                         {can("crm.update") && !row.completed_at && (
-                          <IconBtn aria-label="إكمال" title="إكمال" onClick={() => setDialog({ kind: "complete", row })}>
+                          <IconBtn
+                            aria-label="إكمال"
+                            title="إكمال"
+                            onClick={() => setDialog({ kind: "complete", row })}
+                          >
                             <Check className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
@@ -210,7 +258,12 @@ export function ActivitiesPanel() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 

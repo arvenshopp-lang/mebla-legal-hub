@@ -14,7 +14,14 @@ import { WebhooksPanel } from "@/components/admin/billing/webhooks-panel";
 import { SettingsPanel } from "@/components/admin/billing/settings-panel";
 import { ReportsPanel } from "@/components/admin/billing/reports-panel";
 
-type TabKey = "invoices" | "payments" | "refunds" | "reconciliation" | "webhooks" | "reports" | "settings";
+type TabKey =
+  | "invoices"
+  | "payments"
+  | "refunds"
+  | "reconciliation"
+  | "webhooks"
+  | "reports"
+  | "settings";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "invoices", label: "الفواتير" },
@@ -35,7 +42,9 @@ export const Route = createFileRoute("/mehla-admin/billing/")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({ tab: isTab(search.tab) ? search.tab : ("invoices" as TabKey) }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: isTab(search.tab) ? search.tab : ("invoices" as TabKey),
+  }),
   component: BillingPage,
 });
 
@@ -55,7 +64,10 @@ function BillingPage() {
   if (!can("billing.read")) {
     return (
       <AdminShell title="المركز المالي">
-        <EmptyState title="لا تملك صلاحية الوصول" hint="الوصول إلى المركز المالي يتطلب صلاحية «مشاهدة المركز المالي»." />
+        <EmptyState
+          title="لا تملك صلاحية الوصول"
+          hint="الوصول إلى المركز المالي يتطلب صلاحية «مشاهدة المركز المالي»."
+        />
       </AdminShell>
     );
   }
@@ -68,7 +80,10 @@ function BillingPage() {
       description="الفواتير والمدفوعات والاستردادات والمطابقة البنكية ومزودو الدفع — بيانات فعلية بسجل تدقيق كامل."
     >
       <div className="mb-5 -mx-1 overflow-x-auto px-1">
-        <nav className="flex min-w-max gap-1 rounded-[var(--radius-m)] bg-surface-muted p-1" aria-label="أقسام المركز المالي">
+        <nav
+          className="flex min-w-max gap-1 rounded-[var(--radius-m)] bg-surface-muted p-1"
+          aria-label="أقسام المركز المالي"
+        >
           {TABS.map((item) => (
             <button
               key={item.key}
@@ -76,7 +91,9 @@ function BillingPage() {
               aria-current={tab === item.key ? "page" : undefined}
               onClick={() => navigate({ search: { tab: item.key }, replace: true })}
               className={`min-h-10 whitespace-nowrap rounded-[var(--radius-s)] px-3.5 text-body-sm transition ${
-                tab === item.key ? "bg-surface font-semibold text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                tab === item.key
+                  ? "bg-surface font-semibold text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {item.label}
@@ -90,7 +107,12 @@ function BillingPage() {
       {tab === "refunds" && <RefundsPanel />}
       {tab === "reconciliation" && <ReconciliationPanel />}
       {tab === "webhooks" && <WebhooksPanel />}
-      {tab === "reports" && (can("billing.view_reports") ? <ReportsPanel /> : <EmptyState title="التقارير غير متاحة لصلاحيتك" />)}
+      {tab === "reports" &&
+        (can("billing.view_reports") ? (
+          <ReportsPanel />
+        ) : (
+          <EmptyState title="التقارير غير متاحة لصلاحيتك" />
+        ))}
       {tab === "settings" && <SettingsPanel />}
     </AdminShell>
   );

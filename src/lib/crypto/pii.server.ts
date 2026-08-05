@@ -114,7 +114,11 @@ function contextInfo(organizationId: string, field: PiiField, version: number): 
 }
 
 async function fieldKey(organizationId: string, field: PiiField, version: number) {
-  return hkdf(readSecret(masterSecretName(version)), contextInfo(organizationId, field, version), "AES-GCM");
+  return hkdf(
+    readSecret(masterSecretName(version)),
+    contextInfo(organizationId, field, version),
+    "AES-GCM",
+  );
 }
 
 /** يشفّر قيمة حساسة. يعيد null للقيم الفارغة كي لا نخزّن حشواً بلا معنى. */
@@ -129,7 +133,11 @@ export async function encryptPii(
   const key = await fieldKey(organizationId, field, version);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv, additionalData: enc.encode(contextInfo(organizationId, field, version)) },
+    {
+      name: "AES-GCM",
+      iv,
+      additionalData: enc.encode(contextInfo(organizationId, field, version)),
+    },
     key,
     enc.encode(value),
   );

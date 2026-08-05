@@ -14,8 +14,10 @@ function json(body: unknown, status = 200) {
 
 async function handle(request: Request) {
   const provided =
-    request.headers.get("apikey") ?? (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  const expected = process.env["SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
+    request.headers.get("apikey") ??
+    (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const expected =
+    process.env["SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
   if (!expected || !provided || provided !== expected) return json({ error: "unauthorized" }, 401);
 
   try {

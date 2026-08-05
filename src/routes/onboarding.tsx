@@ -11,8 +11,15 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
-  const { session, authLoading, organizationLoading, memberships, allMemberships, refresh, setActiveOrgId } =
-    useAuth();
+  const {
+    session,
+    authLoading,
+    organizationLoading,
+    memberships,
+    allMemberships,
+    refresh,
+    setActiveOrgId,
+  } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -43,7 +50,8 @@ function OnboardingPage() {
 
     if (error || !data?.[0]?.organization_id) {
       setSubmitting(false);
-      const isDuplicate = error?.message?.includes("already belongs") || error?.message?.includes("already");
+      const isDuplicate =
+        error?.message?.includes("already belongs") || error?.message?.includes("already");
       return toast.error(isDuplicate ? "لديك مكتب مُفعّل بالفعل" : "تعذّر إنشاء المكتب", {
         description: isDuplicate ? "سنوجهك إلى لوحة التحكم." : error?.message,
       });
@@ -74,12 +82,29 @@ function OnboardingPage() {
     <AuthShell title="أنشئ مكتبك" subtitle="ستدير قضايا مكتبك بشكل مستقل تماماً">
       <form onSubmit={submit} className="space-y-4">
         <Field label="اسم المكتب">
-          <input required disabled={submitting} value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="مثال: مكتب المحامي عبدالله للاستشارات" />
+          <input
+            required
+            disabled={submitting}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputCls}
+            placeholder="مثال: مكتب المحامي عبدالله للاستشارات"
+          />
         </Field>
         <Field label="المدينة (اختياري)">
-          <input disabled={submitting} value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="الرياض" />
+          <input
+            disabled={submitting}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className={inputCls}
+            placeholder="الرياض"
+          />
         </Field>
-        <button type="submit" disabled={submitting || !name.trim()} className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
+        <button
+          type="submit"
+          disabled={submitting || !name.trim()}
+          className="w-full rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60"
+        >
           {submitting ? "جاري الإنشاء…" : "إنشاء المكتب والمتابعة"}
         </button>
       </form>

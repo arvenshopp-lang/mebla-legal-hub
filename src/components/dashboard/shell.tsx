@@ -132,12 +132,20 @@ export function DashboardShell({
             className="flex w-full items-center justify-between gap-2 rounded-[var(--radius-m)] border border-border bg-surface-muted px-3 py-2.5 text-right transition hover:border-border-strong"
           >
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-semibold">{active?.organization?.name ?? "—"}</span>
+              <span className="block truncate text-[13px] font-semibold">
+                {active?.organization?.name ?? "—"}
+              </span>
               <span className="block text-[11px] text-muted-foreground">
                 {activeRole ? ROLE_LABELS[activeRole] : ""}
               </span>
             </span>
-            <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition", orgOpen && "rotate-180")} aria-hidden />
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-muted-foreground transition",
+                orgOpen && "rotate-180",
+              )}
+              aria-hidden
+            />
           </button>
           {orgOpen && memberships.length > 1 && (
             <ul className="mt-1.5 space-y-0.5">
@@ -166,7 +174,9 @@ export function DashboardShell({
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
             {!mini && (
-              <p className="px-3 pb-2 text-[11px] font-semibold tracking-wide text-text-muted">{group.label}</p>
+              <p className="px-3 pb-2 text-[11px] font-semibold tracking-wide text-text-muted">
+                {group.label}
+              </p>
             )}
             <ul className="space-y-0.5">
               {group.items.map(({ to, label, Icon }) => {
@@ -186,7 +196,10 @@ export function DashboardShell({
                       )}
                     >
                       {activeItem && (
-                        <span className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary" aria-hidden />
+                        <span
+                          className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary"
+                          aria-hidden
+                        />
                       )}
                       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
                       {!mini && <span className="truncate">{label}</span>}
@@ -240,7 +253,12 @@ export function DashboardShell({
         </>
       )}
 
-      <div className={cn("transition-[margin] duration-[var(--duration-base)]", collapsed ? "lg:mr-[72px]" : "lg:mr-64")}>
+      <div
+        className={cn(
+          "transition-[margin] duration-[var(--duration-base)]",
+          collapsed ? "lg:mr-[72px]" : "lg:mr-64",
+        )}
+      >
         <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border bg-surface/85 backdrop-blur">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:px-6">
             <div className="flex min-w-0 items-center gap-2">
@@ -256,11 +274,17 @@ export function DashboardShell({
                 onClick={toggleCollapsed}
                 aria-label={collapsed ? "توسيع القائمة الجانبية" : "تصغير القائمة الجانبية"}
               >
-                {collapsed ? <PanelRightOpen className="h-5 w-5" aria-hidden /> : <PanelRightClose className="h-5 w-5" aria-hidden />}
+                {collapsed ? (
+                  <PanelRightOpen className="h-5 w-5" aria-hidden />
+                ) : (
+                  <PanelRightClose className="h-5 w-5" aria-hidden />
+                )}
               </button>
               <div className="min-w-0">
                 <h1 className="truncate text-[15px] font-bold sm:text-base">{title}</h1>
-                {description && <p className="truncate text-[12px] text-muted-foreground">{description}</p>}
+                {description && (
+                  <p className="truncate text-[12px] text-muted-foreground">{description}</p>
+                )}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -299,11 +323,17 @@ export function StatCard({
     danger: "bg-danger",
   }[tone];
   return (
-    <div className="surface-card relative overflow-hidden p-4 sm:p-5" aria-busy={loading || undefined}>
+    <div
+      className="surface-card relative overflow-hidden p-4 sm:p-5"
+      aria-busy={loading || undefined}
+    >
       <span className={cn("absolute inset-y-0 right-0 w-[3px]", accent)} aria-hidden />
       <p className="text-[12.5px] text-muted-foreground">{label}</p>
       {loading ? (
-        <div className="mt-2 h-7 w-16 animate-pulse rounded-[var(--radius-s)] bg-surface-muted" aria-hidden />
+        <div
+          className="mt-2 h-7 w-16 animate-pulse rounded-[var(--radius-s)] bg-surface-muted"
+          aria-hidden
+        />
       ) : (
         <p className="mt-2 text-[28px] font-bold leading-none tabular-nums">{value}</p>
       )}

@@ -8,8 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import {
-  Badge, Btn, EmptyState, ErrorBlock, FormField, LoadingBlock, Pagination,
-  inputCls, useDebounced,
+  Badge,
+  Btn,
+  EmptyState,
+  ErrorBlock,
+  FormField,
+  LoadingBlock,
+  Pagination,
+  inputCls,
+  useDebounced,
 } from "@/lib/list-utils";
 import { ExtractedTextDialog, type DocumentRow } from "@/components/documents/text-intel";
 
@@ -18,9 +25,15 @@ export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({
     meta: [
       { title: "البحث في المستندات | مِهلة" },
-      { name: "description", content: "ابحث داخل نصوص مستندات مكتبك وملفات PDF المفهرسة والصور الممسوحة ضوئياً." },
+      {
+        name: "description",
+        content: "ابحث داخل نصوص مستندات مكتبك وملفات PDF المفهرسة والصور الممسوحة ضوئياً.",
+      },
       { property: "og:title", content: "البحث في المستندات | مِهلة" },
-      { property: "og:description", content: "بحث نصي متقدم داخل مستندات القضايا مع تحديد الصفحة المطابقة." },
+      {
+        property: "og:description",
+        content: "بحث نصي متقدم داخل مستندات القضايا مع تحديد الصفحة المطابقة.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -91,18 +104,31 @@ function SearchPanel() {
     queryKey: ["cases-basic", activeOrgId],
     enabled: !!activeOrgId,
     queryFn: async () =>
-      (await supabase.from("cases").select("id, case_title").eq("organization_id", activeOrgId!)).data ?? [],
+      (await supabase.from("cases").select("id, case_title").eq("organization_id", activeOrgId!))
+        .data ?? [],
   });
   const { data: clients } = useQuery({
     queryKey: ["clients-basic", activeOrgId],
     enabled: !!activeOrgId,
     queryFn: async () =>
-      (await supabase.from("clients").select("id, full_name").eq("organization_id", activeOrgId!)).data ?? [],
+      (await supabase.from("clients").select("id, full_name").eq("organization_id", activeOrgId!))
+        .data ?? [],
   });
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
-    queryKey: ["document-search", activeOrgId, q, caseId, clientId, fileType, ocrOnly, from, to, page],
+    queryKey: [
+      "document-search",
+      activeOrgId,
+      q,
+      caseId,
+      clientId,
+      fileType,
+      ocrOnly,
+      from,
+      to,
+      page,
+    ],
     enabled: !!activeOrgId && q.trim().length >= 2,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("search_document_pages", {
@@ -122,17 +148,22 @@ function SearchPanel() {
     },
   });
 
-  const resetPage = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
-    setPage(1);
-  };
+  const resetPage =
+    <T,>(setter: (v: T) => void) =>
+    (v: T) => {
+      setter(v);
+      setPage(1);
+    };
 
   return (
     <div className="space-y-5">
       <div className="surface-card p-4 sm:p-5">
         <label className="relative block">
           <span className="sr-only">كلمة البحث داخل المستندات</span>
-          <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Search
+            className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <input
             value={term}
             onChange={(e) => resetPage(setTerm)(e.target.value)}
@@ -143,23 +174,39 @@ function SearchPanel() {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <FormField label="القضية">
-            <select value={caseId} onChange={(e) => resetPage(setCaseId)(e.target.value)} className={inputCls}>
+            <select
+              value={caseId}
+              onChange={(e) => resetPage(setCaseId)(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل القضايا</option>
               {(cases ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.case_title}</option>
+                <option key={c.id} value={c.id}>
+                  {c.case_title}
+                </option>
               ))}
             </select>
           </FormField>
           <FormField label="العميل">
-            <select value={clientId} onChange={(e) => resetPage(setClientId)(e.target.value)} className={inputCls}>
+            <select
+              value={clientId}
+              onChange={(e) => resetPage(setClientId)(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل العملاء</option>
               {(clients ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.full_name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.full_name}
+                </option>
               ))}
             </select>
           </FormField>
           <FormField label="نوع الملف">
-            <select value={fileType} onChange={(e) => resetPage(setFileType)(e.target.value)} className={inputCls}>
+            <select
+              value={fileType}
+              onChange={(e) => resetPage(setFileType)(e.target.value)}
+              className={inputCls}
+            >
               <option value="">كل الأنواع</option>
               <option value="pdf">PDF</option>
               <option value="word">Word</option>
@@ -168,14 +215,28 @@ function SearchPanel() {
             </select>
           </FormField>
           <FormField label="من تاريخ">
-            <input type="date" value={from} onChange={(e) => resetPage(setFrom)(e.target.value)} className={inputCls} />
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => resetPage(setFrom)(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
           <FormField label="إلى تاريخ">
-            <input type="date" value={to} onChange={(e) => resetPage(setTo)(e.target.value)} className={inputCls} />
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => resetPage(setTo)(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
           <FormField label="مصدر النص">
             <label className="mt-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={ocrOnly} onChange={(e) => resetPage(setOcrOnly)(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={ocrOnly}
+                onChange={(e) => resetPage(setOcrOnly)(e.target.checked)}
+              />
               الصفحات المقروءة ضوئياً فقط
             </label>
           </FormField>
@@ -211,7 +272,8 @@ function SearchPanel() {
                       <p className="mt-1 text-[12px] text-muted-foreground">
                         صفحة {hit.page_number}
                         {hit.case_title ? ` · ${hit.case_title}` : ""}
-                        {hit.client_name ? ` · ${hit.client_name}` : ""} · {fmtDate(hit.document_created_at)}
+                        {hit.client_name ? ` · ${hit.client_name}` : ""} ·{" "}
+                        {fmtDate(hit.document_created_at)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

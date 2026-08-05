@@ -8,8 +8,20 @@
 export const ROOT_DOMAIN = "mehlalex.com";
 
 export type SurfaceId =
-  | "www" | "app" | "client" | "upload" | "status" | "api" | "docs"
-  | "billing" | "mail" | "calendar" | "files" | "ai" | "notifications" | "analytics";
+  | "www"
+  | "app"
+  | "client"
+  | "upload"
+  | "status"
+  | "api"
+  | "docs"
+  | "billing"
+  | "mail"
+  | "calendar"
+  | "files"
+  | "ai"
+  | "notifications"
+  | "analytics";
 
 export interface SurfaceDef {
   id: SurfaceId;
@@ -38,9 +50,22 @@ export const SURFACES: SurfaceDef[] = [
     description: "لوحة التحكم، العملاء، القضايا، الجلسات، المهل، المستندات، الفريق، الإعدادات.",
     entry: "/dashboard",
     allow: [
-      "/dashboard", "/clients", "/cases", "/hearings", "/deadlines", "/tasks",
-      "/documents", "/team", "/settings", "/onboarding", "/pending-access",
-      "/login", "/register", "/forgot-password", "/reset-password", "/auth",
+      "/dashboard",
+      "/clients",
+      "/cases",
+      "/hearings",
+      "/deadlines",
+      "/tasks",
+      "/documents",
+      "/team",
+      "/settings",
+      "/onboarding",
+      "/pending-access",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/reset-password",
+      "/auth",
     ],
     requiresLawyerAuth: true,
   },
@@ -102,20 +127,92 @@ export const SURFACES: SurfaceDef[] = [
     requiresLawyerAuth: false,
   },
   // ————— نطاقات محجوزة للتوسع المستقبلي (تُفعّل بإزالة planned) —————
-  { id: "billing", subdomain: "billing", label: "الفواتير", description: "الاشتراكات والفواتير.", entry: "/billing", allow: ["/billing"], requiresLawyerAuth: true, planned: true },
-  { id: "mail", subdomain: "mail", label: "البريد", description: "بريد المكتب والقوالب.", entry: "/mail", allow: ["/mail"], requiresLawyerAuth: true, planned: true },
-  { id: "calendar", subdomain: "calendar", label: "التقويم", description: "الجلسات والمواعيد.", entry: "/calendar", allow: ["/calendar"], requiresLawyerAuth: true, planned: true },
-  { id: "files", subdomain: "files", label: "الملفات", description: "أرشيف المستندات.", entry: "/files", allow: ["/files"], requiresLawyerAuth: true, planned: true },
-  { id: "ai", subdomain: "ai", label: "الذكاء الاصطناعي", description: "المساعد القانوني وتحليل الوثائق.", entry: "/ai", allow: ["/ai"], requiresLawyerAuth: true, planned: true },
-  { id: "notifications", subdomain: "notifications", label: "التنبيهات", description: "مركز الإشعارات.", entry: "/notifications", allow: ["/notifications"], requiresLawyerAuth: true, planned: true },
-  { id: "analytics", subdomain: "analytics", label: "التحليلات", description: "تقارير الأداء.", entry: "/analytics", allow: ["/analytics"], requiresLawyerAuth: true, planned: true },
+  {
+    id: "billing",
+    subdomain: "billing",
+    label: "الفواتير",
+    description: "الاشتراكات والفواتير.",
+    entry: "/billing",
+    allow: ["/billing"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "mail",
+    subdomain: "mail",
+    label: "البريد",
+    description: "بريد المكتب والقوالب.",
+    entry: "/mail",
+    allow: ["/mail"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "calendar",
+    subdomain: "calendar",
+    label: "التقويم",
+    description: "الجلسات والمواعيد.",
+    entry: "/calendar",
+    allow: ["/calendar"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "files",
+    subdomain: "files",
+    label: "الملفات",
+    description: "أرشيف المستندات.",
+    entry: "/files",
+    allow: ["/files"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "ai",
+    subdomain: "ai",
+    label: "الذكاء الاصطناعي",
+    description: "المساعد القانوني وتحليل الوثائق.",
+    entry: "/ai",
+    allow: ["/ai"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "notifications",
+    subdomain: "notifications",
+    label: "التنبيهات",
+    description: "مركز الإشعارات.",
+    entry: "/notifications",
+    allow: ["/notifications"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
+  {
+    id: "analytics",
+    subdomain: "analytics",
+    label: "التحليلات",
+    description: "تقارير الأداء.",
+    entry: "/analytics",
+    allow: ["/analytics"],
+    requiresLawyerAuth: true,
+    planned: true,
+  },
 ];
 
 /** النطاق الذي تُدار فيه الجلسة وتسجيل الدخول (SSO مركزي). */
 export const AUTH_SURFACE: SurfaceId = "app";
 
 /** مسارات تعمل على كل النطاقات (أصول، صحة، مصادقة خلفية). */
-const UNIVERSAL_PREFIXES = ["/api", "/share", "/_serverFn", "/_build", "/assets", "/favicon", "/robots.txt", "/sitemap.xml"];
+const UNIVERSAL_PREFIXES = [
+  "/api",
+  "/share",
+  "/_serverFn",
+  "/_build",
+  "/assets",
+  "/favicon",
+  "/robots.txt",
+  "/sitemap.xml",
+];
 
 export function getSurface(id: SurfaceId): SurfaceDef {
   const s = SURFACES.find((x) => x.id === id);
@@ -138,7 +235,9 @@ export function resolveSurface(host?: string | null): SurfaceDef | null {
 }
 
 function matches(prefixes: string[], pathname: string) {
-  return prefixes.some((p) => (p === "/" ? pathname === "/" : pathname === p || pathname.startsWith(`${p}/`)));
+  return prefixes.some((p) =>
+    p === "/" ? pathname === "/" : pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
 export function isUniversalPath(pathname: string) {

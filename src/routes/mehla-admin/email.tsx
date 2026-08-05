@@ -28,7 +28,12 @@ import {
 } from "@/lib/admin-ops.functions";
 
 export const Route = createFileRoute("/mehla-admin/email")({
-  head: () => ({ meta: [{ title: "البريد والقوالب · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "البريد والقوالب · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: EmailPage,
 });
 
@@ -55,12 +60,21 @@ function EmailPage() {
   const canManage = can("email.manage");
 
   const settingsFn = useServerFn(getPlatformSettings);
-  const settings = useQuery({ queryKey: ["admin-settings"], queryFn: () => settingsFn({ data: undefined }) });
+  const settings = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: () => settingsFn({ data: undefined }),
+  });
 
   const [sender, setSender] = useState({ from_name: "", from_email: "", reply_to: "", footer: "" });
   useEffect(() => {
     const s = settings.data?.settings?.email as Record<string, string> | undefined;
-    if (s) setSender({ from_name: s.from_name ?? "", from_email: s.from_email ?? "", reply_to: s.reply_to ?? "", footer: s.footer ?? "" });
+    if (s)
+      setSender({
+        from_name: s.from_name ?? "",
+        from_email: s.from_email ?? "",
+        reply_to: s.reply_to ?? "",
+        footer: s.footer ?? "",
+      });
   }, [settings.data]);
 
   const saveSettingsFn = useServerFn(savePlatformSettings);
@@ -74,7 +88,10 @@ function EmailPage() {
   });
 
   const listFn = useServerFn(listEmailTemplates);
-  const templates = useQuery({ queryKey: ["admin-email-templates"], queryFn: () => listFn({ data: undefined }) });
+  const templates = useQuery({
+    queryKey: ["admin-email-templates"],
+    queryFn: () => listFn({ data: undefined }),
+  });
 
   const [form, setForm] = useState<TemplateForm | null>(null);
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -102,9 +119,15 @@ function EmailPage() {
   });
 
   return (
-    <AdminShell title="البريد والقوالب" description="بيانات المُرسل الرسمي وقوالب الرسائل التي تُستخدم في مراسلات المنصة.">
+    <AdminShell
+      title="البريد والقوالب"
+      description="بيانات المُرسل الرسمي وقوالب الرسائل التي تُستخدم في مراسلات المنصة."
+    >
       <div className="space-y-6">
-        <SectionCard title="المُرسل الرسمي" description="يظهر هذا الاسم والبريد للمستلمين في كل رسائل المنصة.">
+        <SectionCard
+          title="المُرسل الرسمي"
+          description="يظهر هذا الاسم والبريد للمستلمين في كل رسائل المنصة."
+        >
           {settings.isLoading ? (
             <LoadingBlock rows={2} cols={2} />
           ) : (
@@ -189,13 +212,18 @@ function EmailPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold">
-                        {t.name_ar} <span className="text-[12px] text-muted-foreground">({t.code})</span>
+                        {t.name_ar}{" "}
+                        <span className="text-[12px] text-muted-foreground">({t.code})</span>
                       </p>
-                      <p className="mt-0.5 truncate text-body-sm text-muted-foreground">{t.subject}</p>
+                      <p className="mt-0.5 truncate text-body-sm text-muted-foreground">
+                        {t.subject}
+                      </p>
                       <p className="text-caption mt-1">آخر تحديث {fmtDateTime(t.updated_at)}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <Badge tone={t.is_active ? "green" : "muted"}>{t.is_active ? "مُفعّل" : "معطّل"}</Badge>
+                      <Badge tone={t.is_active ? "green" : "muted"}>
+                        {t.is_active ? "مُفعّل" : "معطّل"}
+                      </Badge>
                       {canManage && (
                         <>
                           <IconBtn
@@ -213,7 +241,11 @@ function EmailPage() {
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
-                          <IconBtn aria-label="حذف القالب" tone="danger" onClick={() => setToDelete({ id: t.id, name: t.name_ar })}>
+                          <IconBtn
+                            aria-label="حذف القالب"
+                            tone="danger"
+                            onClick={() => setToDelete({ id: t.id, name: t.name_ar })}
+                          >
                             <Trash2 className="h-4 w-4 text-danger" aria-hidden />
                           </IconBtn>
                         </>
@@ -250,7 +282,11 @@ function EmailPage() {
                   required
                 />
               </FormField>
-              <FormField label="رمز القالب" required hint="حروف إنجليزية صغيرة وشرطات فقط، ولا يُعاد استخدامه.">
+              <FormField
+                label="رمز القالب"
+                required
+                hint="حروف إنجليزية صغيرة وشرطات فقط، ولا يُعاد استخدامه."
+              >
                 <input
                   className={inputCls}
                   value={form.code}

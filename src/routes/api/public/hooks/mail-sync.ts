@@ -39,9 +39,7 @@ export const Route = createFileRoute("/api/public/hooks/mail-sync")({
           const { admin } = await import("@/lib/admin-guard.server");
           const db = await admin();
 
-          const { runScheduledAgenticSync } = await import(
-            "@/lib/email/agentic/scheduler.server"
-          );
+          const { runScheduledAgenticSync } = await import("@/lib/email/agentic/scheduler.server");
           const agentic = await runScheduledAgenticSync(db);
 
           const { transportConfigured } = await import("@/lib/email/transport/config.server");

@@ -8,11 +8,24 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ShieldCheck, Trash2 } from "lucide-react";
 import {
-  Badge, Btn, DataCard, EmptyState, ErrorBlock, FormField, IconBtn, LoadingBlock, Modal, Td, Th, inputCls,
+  Badge,
+  Btn,
+  DataCard,
+  EmptyState,
+  ErrorBlock,
+  FormField,
+  IconBtn,
+  LoadingBlock,
+  Modal,
+  Td,
+  Th,
+  inputCls,
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
-  grantCasePartyPermission, listCasePartyGrants, revokeCasePartyPermission,
+  grantCasePartyPermission,
+  listCasePartyGrants,
+  revokeCasePartyPermission,
 } from "@/lib/case-parties.functions";
 
 const PERMISSIONS = [
@@ -34,7 +47,13 @@ interface Member {
   profile?: { full_name?: string | null } | null;
 }
 
-export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; members: Member[] }) {
+export function CasePartyPermissionsPanel({
+  orgId,
+  members,
+}: {
+  orgId: string;
+  members: Member[];
+}) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -62,7 +81,13 @@ export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; m
   const [expiresAt, setExpiresAt] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const reset = () => { setUserId(""); setPermission("case_parties.create"); setReason(""); setExpiresAt(""); setErrors({}); };
+  const reset = () => {
+    setUserId("");
+    setPermission("case_parties.create");
+    setReason("");
+    setExpiresAt("");
+    setErrors({});
+  };
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["case-party-grants", orgId] });
@@ -91,7 +116,11 @@ export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; m
 
   const revoke = useMutation({
     mutationFn: async (id: string) => revokeFn({ data: { organizationId: orgId, id } }),
-    onSuccess: () => { toast.success("تم سحب الصلاحية"); invalidate(); setRevoking(null); },
+    onSuccess: () => {
+      toast.success("تم سحب الصلاحية");
+      invalidate();
+      setRevoking(null);
+    },
     onError: (e: Error) => toast.error("تعذّر سحب الصلاحية", { description: e.message }),
   });
 
@@ -115,30 +144,53 @@ export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; m
             صلاحيات بيانات أطراف القضية
           </h2>
           <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            الكتابة على بيانات الأطراف لا تُمنح بالدور، بل بصلاحية صريحة لكل عملية. المالك والمدير يملكانها ضمناً،
-            وكل إنشاء أو تعديل أو حذف يُسجَّل بالقيم قبل وبعد.
+            الكتابة على بيانات الأطراف لا تُمنح بالدور، بل بصلاحية صريحة لكل عملية. المالك والمدير
+            يملكانها ضمناً، وكل إنشاء أو تعديل أو حذف يُسجَّل بالقيم قبل وبعد.
           </p>
         </div>
-        <Btn size="sm" onClick={() => { reset(); setOpen(true); }}>منح صلاحية</Btn>
+        <Btn
+          size="sm"
+          onClick={() => {
+            reset();
+            setOpen(true);
+          }}
+        >
+          منح صلاحية
+        </Btn>
       </div>
 
       {grants.isPending ? (
-        <DataCard><div className="p-4"><LoadingBlock rows={3} cols={4} /></div></DataCard>
+        <DataCard>
+          <div className="p-4">
+            <LoadingBlock rows={3} cols={4} />
+          </div>
+        </DataCard>
       ) : grants.isError ? (
         <ErrorBlock message="تعذّر تحميل الصلاحيات الممنوحة." />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا توجد صلاحيات ممنوحة" hint="لا يملك أي عضو — غير المالك والمدير — صلاحية الكتابة على بيانات الأطراف." />
+        <EmptyState
+          title="لا توجد صلاحيات ممنوحة"
+          hint="لا يملك أي عضو — غير المالك والمدير — صلاحية الكتابة على بيانات الأطراف."
+        />
       ) : (
         <DataCard>
           <table className="min-w-full">
             <thead className="bg-surface-muted/60">
-              <tr><Th>العضو</Th><Th>الصلاحية</Th><Th>السبب</Th><Th>تنتهي في</Th><Th>{" "}</Th></tr>
+              <tr>
+                <Th>العضو</Th>
+                <Th>الصلاحية</Th>
+                <Th>السبب</Th>
+                <Th>تنتهي في</Th>
+                <Th> </Th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((g) => (
                 <tr key={g.id} className="hover:bg-surface-muted/40">
                   <Td className="font-medium">{nameOf(g.user_id)}</Td>
-                  <Td><Badge tone="muted">{PERMISSION_LABELS[g.permission] ?? g.permission}</Badge></Td>
+                  <Td>
+                    <Badge tone="muted">{PERMISSION_LABELS[g.permission] ?? g.permission}</Badge>
+                  </Td>
                   <Td className="max-w-[280px] truncate">{g.reason ?? "—"}</Td>
                   <Td>{g.expires_at ? fmtDate(g.expires_at) : "بلا تاريخ انتهاء"}</Td>
                   <Td>
@@ -147,7 +199,10 @@ export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; m
                       aria-label="سحب الصلاحية"
                       title="سحب الصلاحية"
                       loading={revoke.isPending && revoking === g.id}
-                      onClick={() => { setRevoking(g.id); revoke.mutate(g.id); }}
+                      onClick={() => {
+                        setRevoking(g.id);
+                        revoke.mutate(g.id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </IconBtn>
@@ -165,24 +220,51 @@ export function CasePartyPermissionsPanel({ orgId, members }: { orgId: string; m
             <select value={userId} onChange={(e) => setUserId(e.target.value)} className={inputCls}>
               <option value="">— اختر العضو —</option>
               {grantable.map((m) => (
-                <option key={m.user_id} value={m.user_id}>{m.profile?.full_name ?? m.user_id}</option>
+                <option key={m.user_id} value={m.user_id}>
+                  {m.profile?.full_name ?? m.user_id}
+                </option>
               ))}
             </select>
           </FormField>
           <FormField label="الصلاحية" required>
-            <select value={permission} onChange={(e) => setPermission(e.target.value as PermissionId)} className={inputCls}>
-              {PERMISSIONS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            <select
+              value={permission}
+              onChange={(e) => setPermission(e.target.value as PermissionId)}
+              className={inputCls}
+            >
+              {PERMISSIONS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </FormField>
           <FormField label="السبب الإداري" error={errors.reason} required>
-            <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} placeholder="مثال: تكليف بإدخال أطراف قضايا التنفيذ" />
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className={inputCls}
+              placeholder="مثال: تكليف بإدخال أطراف قضايا التنفيذ"
+            />
           </FormField>
-          <FormField label="تاريخ الانتهاء (اختياري)" hint="بعد هذا التاريخ تسقط الصلاحية تلقائياً.">
-            <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className={inputCls} />
+          <FormField
+            label="تاريخ الانتهاء (اختياري)"
+            hint="بعد هذا التاريخ تسقط الصلاحية تلقائياً."
+          >
+            <input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
           <div className="flex justify-end gap-2">
-            <Btn variant="outline" onClick={() => setOpen(false)}>إلغاء</Btn>
-            <Btn onClick={submit} loading={grant.isPending}>منح</Btn>
+            <Btn variant="outline" onClick={() => setOpen(false)}>
+              إلغاء
+            </Btn>
+            <Btn onClick={submit} loading={grant.isPending}>
+              منح
+            </Btn>
           </div>
         </div>
       </Modal>

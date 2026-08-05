@@ -111,7 +111,12 @@ async function buildTextPdf(text: string, title: string): Promise<PDFDocument> {
   const size = 11;
   const lineHeight = 18;
   const maxWidth = A4.width - margin * 2;
-  const lines = wrapText(text.trim() || "لا يوجد نص قابل للعرض في هذا الملف.", font, size, maxWidth);
+  const lines = wrapText(
+    text.trim() || "لا يوجد نص قابل للعرض في هذا الملف.",
+    font,
+    size,
+    maxWidth,
+  );
 
   let page = pdf.addPage([A4.width, A4.height]);
   let y = A4.height - margin;
@@ -143,10 +148,7 @@ async function buildTextPdf(text: string, title: string): Promise<PDFDocument> {
   return pdf;
 }
 
-async function buildImagePdf(
-  bytes: Uint8Array,
-  mimeType: string | null,
-): Promise<PDFDocument> {
+async function buildImagePdf(bytes: Uint8Array, mimeType: string | null): Promise<PDFDocument> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const isPng = /png/i.test(mimeType ?? "") || bytes[0] === 0x89;

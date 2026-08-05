@@ -35,7 +35,15 @@ const RANGES = [
   { days: 90, label: "٩٠ يوماً" },
 ] as const;
 
-type MetricKey = "active_users" | "organizations" | "users" | "cases" | "documents" | "emails" | "tickets" | "revenue";
+type MetricKey =
+  | "active_users"
+  | "organizations"
+  | "users"
+  | "cases"
+  | "documents"
+  | "emails"
+  | "tickets"
+  | "revenue";
 
 const METRICS: { key: MetricKey; label: string }[] = [
   { key: "active_users", label: "المستخدمون النشطون" },
@@ -60,14 +68,18 @@ function AnalyticsPage() {
 
   const series = data?.series ?? [];
   const totals = useMemo(() => {
-    const sum = (k: MetricKey) => series.reduce((acc: number, p: GrowthPoint) => acc + Number(p[k] ?? 0), 0);
+    const sum = (k: MetricKey) =>
+      series.reduce((acc: number, p: GrowthPoint) => acc + Number(p[k] ?? 0), 0);
     return {
       organizations: sum("organizations"),
       users: sum("users"),
       cases: sum("cases"),
       documents: sum("documents"),
       revenue: sum("revenue"),
-      peakActive: series.reduce((m: number, p: GrowthPoint) => Math.max(m, Number(p.active_users ?? 0)), 0),
+      peakActive: series.reduce(
+        (m: number, p: GrowthPoint) => Math.max(m, Number(p.active_users ?? 0)),
+        0,
+      ),
     };
   }, [series]);
 
@@ -104,8 +116,17 @@ function AnalyticsPage() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Tile Icon={Building2} label="مكاتب جديدة" value={fmtNumber(totals.organizations)} />
-            <Tile Icon={Users} label="مستخدمون جدد" value={fmtNumber(totals.users)} hint={`أعلى نشاط يومي: ${fmtNumber(totals.peakActive)}`} />
-            <Tile Icon={FileText} label="قضايا ومستندات" value={`${fmtNumber(totals.cases)} / ${fmtNumber(totals.documents)}`} />
+            <Tile
+              Icon={Users}
+              label="مستخدمون جدد"
+              value={fmtNumber(totals.users)}
+              hint={`أعلى نشاط يومي: ${fmtNumber(totals.peakActive)}`}
+            />
+            <Tile
+              Icon={FileText}
+              label="قضايا ومستندات"
+              value={`${fmtNumber(totals.cases)} / ${fmtNumber(totals.documents)}`}
+            />
             <Tile Icon={TrendingUp} label="إيرادات الفترة" value={fmtMoney(totals.revenue)} />
           </div>
 
@@ -141,8 +162,13 @@ function AnalyticsPage() {
                 {series.map((p: GrowthPoint) => {
                   const value = Number(p[metric] ?? 0);
                   return (
-                    <div key={p.day} className="flex min-w-[10px] flex-1 flex-col items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">{value > 0 ? fmtNumber(value) : ""}</span>
+                    <div
+                      key={p.day}
+                      className="flex min-w-[10px] flex-1 flex-col items-center gap-1"
+                    >
+                      <span className="text-[10px] text-muted-foreground">
+                        {value > 0 ? fmtNumber(value) : ""}
+                      </span>
                       <div
                         className="w-full rounded-t-[3px] bg-primary/80 transition-[height] motion-reduce:transition-none"
                         style={{ height: `${Math.max(2, (value / max) * 150)}px` }}
@@ -175,7 +201,9 @@ function AnalyticsPage() {
                         <tr key={o.organization_id}>
                           <Td>
                             <span className="font-semibold">{o.name}</span>
-                            <span className="text-caption block">{fmtNumber(o.users)} مستخدماً</span>
+                            <span className="text-caption block">
+                              {fmtNumber(o.users)} مستخدماً
+                            </span>
                           </Td>
                           <Td>{fmtNumber(o.events)}</Td>
                           <Td className="hidden sm:table-cell">{fmtNumber(o.cases)}</Td>
@@ -188,13 +216,19 @@ function AnalyticsPage() {
               )}
             </SectionCard>
 
-            <SectionCard title="استهلاك الخدمات المدفوعة" description="عدّادات الاستخدام المسجّلة على مستوى المنصة.">
+            <SectionCard
+              title="استهلاك الخدمات المدفوعة"
+              description="عدّادات الاستخدام المسجّلة على مستوى المنصة."
+            >
               {data.ai_usage.length === 0 ? (
                 <EmptyState title="لا يوجد استهلاك" hint="لم تُسجّل عدّادات استخدام بعد." />
               ) : (
                 <ul className="divide-y divide-border">
                   {data.ai_usage.map((u) => (
-                    <li key={u.metric} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                    <li
+                      key={u.metric}
+                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                    >
                       <span className="text-body-sm font-medium">{u.metric}</span>
                       <Badge tone="info">{fmtNumber(u.total)}</Badge>
                     </li>
@@ -210,7 +244,17 @@ function AnalyticsPage() {
   );
 }
 
-function Tile({ Icon, label, value, hint }: { Icon: typeof Users; label: string; value: string; hint?: string }) {
+function Tile({
+  Icon,
+  label,
+  value,
+  hint,
+}: {
+  Icon: typeof Users;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="surface-card p-5">
       <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />

@@ -19,10 +19,12 @@ const BTN_BASE =
   "disabled:pointer-events-none disabled:opacity-50";
 
 const BTN_VARIANTS: Record<BtnVariant, string> = {
-  primary: "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-active",
+  primary:
+    "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-active",
   secondary: "bg-primary-soft text-primary hover:bg-primary-soft/70 active:bg-primary-soft",
   tertiary: "bg-surface-muted text-foreground hover:bg-border/60",
-  outline: "border border-border bg-surface text-foreground hover:bg-surface-muted hover:border-border-strong",
+  outline:
+    "border border-border bg-surface text-foreground hover:bg-surface-muted hover:border-border-strong",
   ghost: "bg-transparent text-foreground hover:bg-surface-muted",
   danger: "bg-danger text-primary-foreground hover:brightness-95 active:brightness-90",
   link: "bg-transparent px-0 text-primary underline underline-offset-4 hover:text-primary-hover",
@@ -175,12 +177,40 @@ export function PageToolbar({
 
 /* ------------------------------------------------------------------- States */
 
-export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
+export function EmptyState({
+  title,
+  hint,
+  action,
+}: {
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden className="mb-4 text-border-strong">
-        <rect x="10.5" y="6.5" width="35" height="43" rx="3" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M18 18h20M18 26h20M18 34h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg
+        width="56"
+        height="56"
+        viewBox="0 0 56 56"
+        fill="none"
+        aria-hidden
+        className="mb-4 text-border-strong"
+      >
+        <rect
+          x="10.5"
+          y="6.5"
+          width="35"
+          height="43"
+          rx="3"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M18 18h20M18 26h20M18 34h12"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
       <p className="text-h4">{title}</p>
       {hint && <p className="measure mt-1.5 text-body-sm text-muted-foreground">{hint}</p>}
@@ -191,7 +221,12 @@ export function EmptyState({ title, hint, action }: { title: string; hint?: stri
 
 /** لبنة هيكل عظمي أساسية (Skeleton) — تحترم prefers-reduced-motion عبر animate-pulse. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn("animate-pulse rounded-[var(--radius-s)] bg-surface-muted", className)} />;
+  return (
+    <div
+      aria-hidden
+      className={cn("animate-pulse rounded-[var(--radius-s)] bg-surface-muted", className)}
+    />
+  );
 }
 
 /** أسطر نصية هيكلية بعرض متدرّج. */
@@ -199,7 +234,10 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
   return (
     <div className={cn("space-y-2", className)} aria-hidden>
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton key={i} className={cn("h-3.5", i === lines - 1 ? "w-1/2" : i % 2 ? "w-5/6" : "w-full")} />
+        <Skeleton
+          key={i}
+          className={cn("h-3.5", i === lines - 1 ? "w-1/2" : i % 2 ? "w-5/6" : "w-full")}
+        />
       ))}
     </div>
   );
@@ -208,7 +246,12 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
 /** هيكل عظمي لجدول داخل بطاقة — يستخدم أثناء التحميل الأول للقوائم. */
 export function LoadingBlock({ rows = 5, cols = 3 }: { rows?: number; cols?: number }) {
   return (
-    <div className="surface-card divide-y divide-border" role="status" aria-live="polite" aria-busy="true">
+    <div
+      className="surface-card divide-y divide-border"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <span className="sr-only">جاري التحميل…</span>
       <div className="flex items-center gap-4 bg-surface-muted/50 px-5 py-3.5">
         {Array.from({ length: cols }).map((_, i) => (
@@ -244,7 +287,13 @@ export function StatsSkeleton({ count = 4 }: { count?: number }) {
 }
 
 /** حالة تحميل لقسم داخلي (بطاقة/تبويب) مع نص وصفي. */
-export function SectionLoader({ label = "جاري التحميل…", rows = 3 }: { label?: string; rows?: number }) {
+export function SectionLoader({
+  label = "جاري التحميل…",
+  rows = 3,
+}: {
+  label?: string;
+  rows?: number;
+}) {
   return (
     <div role="status" aria-busy="true" aria-live="polite" className="py-2">
       <span className="sr-only">{label}</span>
@@ -268,7 +317,12 @@ export function BusyOverlay({
 }) {
   return (
     <div className="relative" aria-busy={busy || undefined}>
-      <div className={cn("transition-opacity duration-[var(--duration-fast)]", busy && "pointer-events-none opacity-55")}>
+      <div
+        className={cn(
+          "transition-opacity duration-[var(--duration-fast)]",
+          busy && "pointer-events-none opacity-55",
+        )}
+      >
         {children}
       </div>
       {busy && (
@@ -290,7 +344,10 @@ export function IconBtn({
   className,
   children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean; tone?: "default" | "danger" }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  loading?: boolean;
+  tone?: "default" | "danger";
+}) {
   return (
     <button
       type="button"
@@ -301,7 +358,9 @@ export function IconBtn({
         "rounded-[var(--radius-s)] p-1.5 transition-colors duration-[var(--duration-fast)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         "disabled:opacity-50",
-        tone === "danger" ? "text-danger hover:bg-danger-soft" : "text-foreground hover:bg-surface-muted",
+        tone === "danger"
+          ? "text-danger hover:bg-danger-soft"
+          : "text-foreground hover:bg-surface-muted",
         className,
       )}
     >
@@ -414,7 +473,10 @@ export function Modal({
           size === "lg" ? "sm:max-w-3xl" : "sm:max-w-lg",
         )}
       >
-        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
+        <div
+          className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden"
+          aria-hidden
+        />
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div className="min-w-0">
             <h3 id={titleId} className="text-h4 truncate">

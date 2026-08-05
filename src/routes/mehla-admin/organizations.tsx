@@ -36,7 +36,9 @@ import {
 } from "@/lib/admin-orgs.functions";
 
 export const Route = createFileRoute("/mehla-admin/organizations")({
-  head: () => ({ meta: [{ title: "المكاتب · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "المكاتب · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: OrganizationsPage,
 });
 
@@ -70,14 +72,20 @@ function OrganizationsPage() {
   const canSupport = can("support_access.request");
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"all" | "active" | "suspended" | "subscribed" | "unsubscribed">("all");
+  const [status, setStatus] = useState<
+    "all" | "active" | "suspended" | "subscribed" | "unsubscribed"
+  >("all");
   const [page, setPage] = useState(1);
   const debounced = useDebounced(search, 350);
   const [detail, setDetail] = useState<AdminOrgRow | null>(null);
   const [editForm, setEditForm] = useState<AdminOrgRow | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [grantForm, setGrantForm] = useState<{ reason: string; scope: string; hours: number } | null>(null);
+  const [grantForm, setGrantForm] = useState<{
+    reason: string;
+    scope: string;
+    hours: number;
+  } | null>(null);
 
   const listFn = useServerFn(listOrganizations);
   const query = useQuery({
@@ -128,7 +136,9 @@ function OrganizationsPage() {
   const toggleFn = useServerFn(setOrganizationActive);
   const toggle = useMutation({
     mutationFn: (v: { active: boolean }) =>
-      toggleFn({ data: { organizationId: detail!.id, active: v.active, reason: suspendReason || undefined } }),
+      toggleFn({
+        data: { organizationId: detail!.id, active: v.active, reason: suspendReason || undefined },
+      }),
     onSuccess: (_r, v) => {
       toast.success(v.active ? "تم إعادة تفعيل المكتب." : "تم إيقاف المكتب.");
       setSuspendReason("");
@@ -140,7 +150,8 @@ function OrganizationsPage() {
 
   const deleteFn = useServerFn(deleteOrganization);
   const remove = useMutation({
-    mutationFn: () => deleteFn({ data: { organizationId: detail!.id, confirmName: deleteConfirm } }),
+    mutationFn: () =>
+      deleteFn({ data: { organizationId: detail!.id, confirmName: deleteConfirm } }),
     onSuccess: () => {
       toast.success("تم حذف المكتب.");
       setDeleteConfirm("");
@@ -255,7 +266,9 @@ function OrganizationsPage() {
                     <Td>{o.clients_count}</Td>
                     <Td>
                       {o.documents_count}
-                      <span className="block text-[11px] text-muted-foreground">{bytes(Number(o.storage_bytes))}</span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        {bytes(Number(o.storage_bytes))}
+                      </span>
                     </Td>
                     <Td>
                       {o.subscription_status === "active" ? (
@@ -279,12 +292,22 @@ function OrganizationsPage() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 
       {/* تفاصيل المكتب */}
-      <Modal open={Boolean(detail) && !editForm} onClose={() => setDetail(null)} title={detail?.name ?? ""} size="lg">
+      <Modal
+        open={Boolean(detail) && !editForm}
+        onClose={() => setDetail(null)}
+        title={detail?.name ?? ""}
+        size="lg"
+      >
         {detail && (
           <div className="space-y-6">
             <dl className="grid gap-4 sm:grid-cols-3">
@@ -318,8 +341,12 @@ function OrganizationsPage() {
                   {(members.data?.members ?? []).map((m) => (
                     <li key={m.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
                       <div className="min-w-0">
-                        <p className="truncate text-body-sm font-medium">{m.profiles?.full_name ?? "—"}</p>
-                        <p className="truncate text-[12px] text-muted-foreground">{m.profiles?.email ?? "—"}</p>
+                        <p className="truncate text-body-sm font-medium">
+                          {m.profiles?.full_name ?? "—"}
+                        </p>
+                        <p className="truncate text-[12px] text-muted-foreground">
+                          {m.profiles?.email ?? "—"}
+                        </p>
                       </div>
                       <Badge tone={m.status === "active" ? "green" : "muted"}>
                         {ROLE_LABELS[m.role] ?? m.role}
@@ -333,10 +360,13 @@ function OrganizationsPage() {
             {can("audit.read") && (
               <div>
                 <h4 className="text-label mb-2 flex items-center gap-2">
-                  <ShieldQuestion className="h-4 w-4 text-muted-foreground" aria-hidden /> منح وصول الدعم
+                  <ShieldQuestion className="h-4 w-4 text-muted-foreground" aria-hidden /> منح وصول
+                  الدعم
                 </h4>
                 {(grants.data?.grants.length ?? 0) === 0 ? (
-                  <p className="text-body-sm text-muted-foreground">لا توجد منح وصول لهذا المكتب.</p>
+                  <p className="text-body-sm text-muted-foreground">
+                    لا توجد منح وصول لهذا المكتب.
+                  </p>
                 ) : (
                   <ul className="space-y-2">
                     {grants.data!.grants.map((g) => (
@@ -346,8 +376,20 @@ function OrganizationsPage() {
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="font-medium">{g.staff_email}</span>
-                          <Badge tone={g.status === "approved" ? "green" : g.status === "pending" ? "warn" : "muted"}>
-                            {g.status === "approved" ? "مفعّلة" : g.status === "pending" ? "بانتظار موافقة المكتب" : "منتهية/ملغاة"}
+                          <Badge
+                            tone={
+                              g.status === "approved"
+                                ? "green"
+                                : g.status === "pending"
+                                  ? "warn"
+                                  : "muted"
+                            }
+                          >
+                            {g.status === "approved"
+                              ? "مفعّلة"
+                              : g.status === "pending"
+                                ? "بانتظار موافقة المكتب"
+                                : "منتهية/ملغاة"}
                           </Badge>
                         </div>
                         <p className="mt-1 text-muted-foreground">{g.reason}</p>
@@ -355,7 +397,12 @@ function OrganizationsPage() {
                           طُلبت {fmtDateTime(g.requested_at)} · تنتهي {fmtDateTime(g.expires_at)}
                         </p>
                         {canSupport && g.status !== "revoked" && (
-                          <Btn variant="outline" size="sm" className="mt-2" onClick={() => revoke.mutate(g.id)}>
+                          <Btn
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => revoke.mutate(g.id)}
+                          >
                             إلغاء المنحة
                           </Btn>
                         )}
@@ -383,7 +430,11 @@ function OrganizationsPage() {
                     تعديل بيانات المكتب
                   </Btn>
                   {detail.is_active ? (
-                    <Btn variant="danger" loading={toggle.isPending} onClick={() => toggle.mutate({ active: false })}>
+                    <Btn
+                      variant="danger"
+                      loading={toggle.isPending}
+                      onClick={() => toggle.mutate({ active: false })}
+                    >
                       إيقاف المكتب
                     </Btn>
                   ) : (
@@ -434,7 +485,12 @@ function OrganizationsPage() {
       </Modal>
 
       {/* تعديل بيانات المكتب */}
-      <Modal open={Boolean(editForm)} onClose={() => setEditForm(null)} title="تعديل بيانات المكتب" size="lg">
+      <Modal
+        open={Boolean(editForm)}
+        onClose={() => setEditForm(null)}
+        title="تعديل بيانات المكتب"
+        size="lg"
+      >
         {editForm && (
           <form
             className="space-y-4"
@@ -484,7 +540,9 @@ function OrganizationsPage() {
                 <input
                   className={inputCls}
                   value={editForm.commercial_registration ?? ""}
-                  onChange={(e) => setEditForm({ ...editForm, commercial_registration: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, commercial_registration: e.target.value })
+                  }
                 />
               </FormField>
               <FormField label="الرقم الضريبي">
@@ -565,7 +623,11 @@ function OrganizationsPage() {
               <Btn variant="outline" onClick={() => setGrantForm(null)}>
                 إلغاء
               </Btn>
-              <Btn type="submit" loading={requestGrant.isPending} disabled={grantForm.reason.trim().length < 10}>
+              <Btn
+                type="submit"
+                loading={requestGrant.isPending}
+                disabled={grantForm.reason.trim().length < 10}
+              >
                 إرسال الطلب
               </Btn>
             </div>

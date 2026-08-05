@@ -7,7 +7,11 @@ import { AuthShell } from "@/routes/login";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import { supabase } from "@/integrations/supabase/client";
-import { getInvitation, joinOrganization, requestInviteResendFn } from "@/lib/invitations.functions";
+import {
+  getInvitation,
+  joinOrganization,
+  requestInviteResendFn,
+} from "@/lib/invitations.functions";
 import {
   describeInviteError,
   INVITE_MESSAGES,
@@ -67,13 +71,17 @@ function InvitePage() {
       if (result.state === "joined") {
         await refresh();
         toast.success(
-          result.alreadyMember ? "أنت عضو في هذا المكتب بالفعل" : `تم انضمامك إلى ${result.orgName}`,
+          result.alreadyMember
+            ? "أنت عضو في هذا المكتب بالفعل"
+            : `تم انضمامك إلى ${result.orgName}`,
         );
         navigate({ to: "/dashboard", replace: true });
         return;
       }
       if (result.state === "email_mismatch") {
-        toast.error(`هذه الدعوة صادرة لبريد آخر (${result.maskedEmail}). سجّل الدخول بالبريد المدعو.`);
+        toast.error(
+          `هذه الدعوة صادرة لبريد آخر (${result.maskedEmail}). سجّل الدخول بالبريد المدعو.`,
+        );
         void preview.refetch();
         return;
       }
@@ -192,7 +200,10 @@ function InvitePage() {
           >
             تسجيل الدخول
           </Link>
-          <Link to="/" className="text-center text-[12px] text-muted-foreground hover:text-foreground">
+          <Link
+            to="/"
+            className="text-center text-[12px] text-muted-foreground hover:text-foreground"
+          >
             العودة للصفحة الرئيسية
           </Link>
         </div>
@@ -208,10 +219,7 @@ function InvitePage() {
         <Row label="المكتب" value={data.orgName ?? "—"} />
         <Row label="الصفة" value={ROLE_LABEL[role]} />
         <Row label="البريد المدعو" value={<span dir="ltr">{data.maskedEmail}</span>} />
-        <Row
-          label="صلاحية الرابط"
-          value={data.expiresAt ? fmtDate(data.expiresAt) : "—"}
-        />
+        <Row label="صلاحية الرابط" value={data.expiresAt ? fmtDate(data.expiresAt) : "—"} />
       </div>
       <p className="mt-4 text-[12.5px] leading-relaxed text-muted-foreground">{ROLE_HINT[role]}</p>
 

@@ -28,7 +28,10 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   partially_refunded: "مرتجعة جزئياً",
 };
 
-export const INVOICE_STATUS_TONES: Record<InvoiceStatus, "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"> = {
+export const INVOICE_STATUS_TONES: Record<
+  InvoiceStatus,
+  "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"
+> = {
   draft: "muted",
   issued: "info",
   pending: "warn",
@@ -61,7 +64,10 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   partially_refunded: "مُستردة جزئياً",
 };
 
-export const PAYMENT_STATUS_TONES: Record<PaymentStatus, "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"> = {
+export const PAYMENT_STATUS_TONES: Record<
+  PaymentStatus,
+  "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"
+> = {
   pending: "warn",
   processing: "info",
   paid: "green",
@@ -258,7 +264,12 @@ export function computeTotals(
     if (!taxExempt) taxTotal += (gross - discount) * (Number(taxRate) / 100);
   }
   const total = round2(Math.max(subtotal - discountTotal, 0) + taxTotal);
-  return { subtotal: round2(subtotal), discountTotal: round2(discountTotal), taxTotal: round2(taxTotal), total };
+  return {
+    subtotal: round2(subtotal),
+    discountTotal: round2(discountTotal),
+    taxTotal: round2(taxTotal),
+    total,
+  };
 }
 
 export function formatMoney(amount: number | string | null | undefined, currency = "SAR"): string {
@@ -271,7 +282,11 @@ export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("ar-SA-u-ca-gregory", { year: "numeric", month: "2-digit", day: "2-digit" });
+  return date.toLocaleDateString("ar-SA-u-ca-gregory", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 }
 
 export function formatDateTime(value: string | null | undefined): string {
@@ -311,12 +326,30 @@ export type BillingReports = {
   };
   aging: { key: AgingBucketKey; label: string; count: number; amount: number }[];
   by_plan: { label: string; count: number; invoiced: number; collected: number }[];
-  by_office: { label: string; count: number; invoiced: number; collected: number; outstanding: number }[];
+  by_office: {
+    label: string;
+    count: number;
+    invoiced: number;
+    collected: number;
+    outstanding: number;
+  }[];
   by_month: { month: string; invoiced: number; collected: number; count: number }[];
   payments_by_method: { label: string; count: number; amount: number }[];
-  unmatched_payments: { id: string; number: string; amount: number; created_at: string; method: string }[];
+  unmatched_payments: {
+    id: string;
+    number: string;
+    amount: number;
+    created_at: string;
+    method: string;
+  }[];
 };
 /** قيمة قابلة للتسلسل عبر حدود الخادم (JSON فقط). */
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 /** صف بيانات مالي قابل للتسلسل — يُستخدم في مخرجات دوال الخادم. */
 export type BillingRow = { [key: string]: JsonValue };

@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from "react";
 
 import {
   Body,
@@ -10,22 +10,22 @@ import {
   Html,
   Preview,
   Text,
-} from '@react-email/components'
+} from "@react-email/components";
 
-import { styles } from './brand'
+import { styles } from "./brand";
 
 interface EmailChangeEmailProps {
-  siteName: string
+  siteName: string;
   // oldEmail is the user's current address (HookData.OldEmail). For the
   // NEW-recipient half of a secure email_change fanout, `email` equals the
   // recipient (NEW), so the "from" line must render oldEmail.
-  oldEmail: string
-  email: string
-  newEmail: string
-  confirmationUrl: string
+  oldEmail: string;
+  email: string;
+  newEmail: string;
+  confirmationUrl: string;
 }
 
-const ltr = { direction: 'ltr' as const, display: 'inline-block' }
+const ltr = { direction: "ltr" as const, display: "inline-block" };
 
 export const EmailChangeEmail = ({
   siteName,
@@ -42,19 +42,16 @@ export const EmailChangeEmail = ({
         <Hr style={styles.rule} />
         <Heading style={styles.h1}>تأكيد تغيير البريد الإلكتروني</Heading>
         <Text style={styles.text}>
-          تم طلب تغيير البريد الإلكتروني لحسابك في {siteName} من{' '}
-          <span style={ltr}>{oldEmail}</span> إلى{' '}
-          <span style={ltr}>{newEmail}</span>. اضغط الزر التالي لتأكيد التغيير.
+          تم طلب تغيير البريد الإلكتروني لحسابك في {siteName} من <span style={ltr}>{oldEmail}</span>{" "}
+          إلى <span style={ltr}>{newEmail}</span>. اضغط الزر التالي لتأكيد التغيير.
         </Text>
         <Button style={styles.button} href={confirmationUrl}>
           تأكيد التغيير
         </Button>
-        <Text style={styles.footer}>
-          إذا لم تطلب هذا التغيير، يرجى تأمين حسابك على الفور.
-        </Text>
+        <Text style={styles.footer}>إذا لم تطلب هذا التغيير، يرجى تأمين حسابك على الفور.</Text>
       </Container>
     </Body>
   </Html>
-)
+);
 
-export default EmailChangeEmail
+export default EmailChangeEmail;

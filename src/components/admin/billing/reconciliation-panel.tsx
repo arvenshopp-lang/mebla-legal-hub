@@ -41,7 +41,14 @@ export function ReconciliationPanel() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
-  const [entry, setEntry] = useState({ statementRef: "", bankName: "", amount: "", valueDate: "", payerName: "", notes: "" });
+  const [entry, setEntry] = useState({
+    statementRef: "",
+    bankName: "",
+    amount: "",
+    valueDate: "",
+    payerName: "",
+    notes: "",
+  });
   const [matching, setMatching] = useState<BillingRow | null>(null);
   const [matchPaymentId, setMatchPaymentId] = useState("");
   const [ignoring, setIgnoring] = useState<BillingRow | null>(null);
@@ -63,12 +70,14 @@ export function ReconciliationPanel() {
 
   const entries = useQuery({
     queryKey: ["billing-reconciliation", status, page],
-    queryFn: () => listFn({ data: { status, page, pageSize: PAGE_SIZE, method: null, search: null } }),
+    queryFn: () =>
+      listFn({ data: { status, page, pageSize: PAGE_SIZE, method: null, search: null } }),
   });
 
   const openPayments = useQuery({
     queryKey: ["billing-payments-unmatched"],
-    queryFn: () => paymentsFn({ data: { status: "paid", page: 1, pageSize: 100, method: null, search: null } }),
+    queryFn: () =>
+      paymentsFn({ data: { status: "paid", page: 1, pageSize: 100, method: null, search: null } }),
     enabled: Boolean(matching),
   });
 
@@ -94,14 +103,22 @@ export function ReconciliationPanel() {
     onSuccess: () => {
       toast.success("تم إضافة الحركة البنكية");
       setAddOpen(false);
-      setEntry({ statementRef: "", bankName: "", amount: "", valueDate: "", payerName: "", notes: "" });
+      setEntry({
+        statementRef: "",
+        bankName: "",
+        amount: "",
+        valueDate: "",
+        payerName: "",
+        notes: "",
+      });
       invalidate();
     },
     onError: (error: Error) => toast.error("تعذّر إضافة الحركة", { description: error.message }),
   });
 
   const match = useMutation({
-    mutationFn: () => matchFn({ data: { entryId: (matching?.["id"] as string) ?? "", paymentId: matchPaymentId } }),
+    mutationFn: () =>
+      matchFn({ data: { entryId: (matching?.["id"] as string) ?? "", paymentId: matchPaymentId } }),
     onSuccess: () => {
       toast.success("تمت المطابقة بنجاح");
       setMatching(null);
@@ -112,7 +129,8 @@ export function ReconciliationPanel() {
   });
 
   const ignore = useMutation({
-    mutationFn: () => ignoreFn({ data: { entryId: (ignoring?.["id"] as string) ?? "", reason: ignoreReason } }),
+    mutationFn: () =>
+      ignoreFn({ data: { entryId: (ignoring?.["id"] as string) ?? "", reason: ignoreReason } }),
     onSuccess: () => {
       toast.success("تم تجاهل الحركة مع تسجيل السبب");
       setIgnoring(null);
@@ -124,7 +142,13 @@ export function ReconciliationPanel() {
 
   const closePeriod = useMutation({
     mutationFn: () =>
-      closeFn({ data: { periodStart: period.periodStart, periodEnd: period.periodEnd, notes: period.notes || null } }),
+      closeFn({
+        data: {
+          periodStart: period.periodStart,
+          periodEnd: period.periodEnd,
+          notes: period.notes || null,
+        },
+      }),
     onSuccess: () => {
       toast.success("تم إقفال الفترة المالية");
       setCloseOpen(false);
@@ -135,7 +159,8 @@ export function ReconciliationPanel() {
   });
 
   const requestReopen = useMutation({
-    mutationFn: () => requestFn({ data: { periodId: (reopening?.["id"] as string) ?? "", reason: reopenReason } }),
+    mutationFn: () =>
+      requestFn({ data: { periodId: (reopening?.["id"] as string) ?? "", reason: reopenReason } }),
     onSuccess: () => {
       toast.success("تم تسجيل طلب إعادة الفتح بانتظار اعتماد موظف آخر");
       setReopening(null);
@@ -192,7 +217,10 @@ export function ReconciliationPanel() {
         ) : entries.isError ? (
           <ErrorBlock message={(entries.error as Error).message} />
         ) : rows.length === 0 ? (
-          <EmptyState title="لا توجد حركات بنكية" hint="أضف حركات كشف الحساب لمطابقتها بالتحويلات المسجّلة." />
+          <EmptyState
+            title="لا توجد حركات بنكية"
+            hint="أضف حركات كشف الحساب لمطابقتها بالتحويلات المسجّلة."
+          />
         ) : (
           <DataCard>
             <table className="w-full text-body-sm">
@@ -220,12 +248,24 @@ export function ReconciliationPanel() {
                       <Money value={row["amount"] as number} />
                     </Td>
                     <Td>{formatDate((row["value_date"] as string) ?? null)}</Td>
-                    <Td className="max-w-[180px] truncate">{(row["payer_name"] as string) ?? "—"}</Td>
+                    <Td className="max-w-[180px] truncate">
+                      {(row["payer_name"] as string) ?? "—"}
+                    </Td>
                     <Td>
                       <Badge
-                        tone={row["status"] === "matched" ? "green" : row["status"] === "ignored" ? "muted" : "warn"}
+                        tone={
+                          row["status"] === "matched"
+                            ? "green"
+                            : row["status"] === "ignored"
+                              ? "muted"
+                              : "warn"
+                        }
                       >
-                        {row["status"] === "matched" ? "مطابقة" : row["status"] === "ignored" ? "متجاهلة" : "غير مطابقة"}
+                        {row["status"] === "matched"
+                          ? "مطابقة"
+                          : row["status"] === "ignored"
+                            ? "متجاهلة"
+                            : "غير مطابقة"}
                       </Badge>
                     </Td>
                     <Td className="text-left">
@@ -262,7 +302,12 @@ export function ReconciliationPanel() {
             </table>
           </DataCard>
         )}
-        <Pagination page={page} setPage={setPage} total={entries.data?.total ?? 0} pageSize={PAGE_SIZE} />
+        <Pagination
+          page={page}
+          setPage={setPage}
+          total={entries.data?.total ?? 0}
+          pageSize={PAGE_SIZE}
+        />
       </SectionCard>
 
       <SectionCard
@@ -305,7 +350,9 @@ export function ReconciliationPanel() {
                             {row["status"] === "closed" ? "مقفلة" : "مفتوحة"}
                           </Badge>
                         </Td>
-                        <Td className="max-w-[180px] truncate">{(row["closed_by_email"] as string) ?? "—"}</Td>
+                        <Td className="max-w-[180px] truncate">
+                          {(row["closed_by_email"] as string) ?? "—"}
+                        </Td>
                         <Td>{formatDateTime((row["closed_at"] as string) ?? null)}</Td>
                         <Td className="text-left">
                           {row["status"] === "closed" && can("billing.close_period") && (
@@ -340,14 +387,29 @@ export function ReconciliationPanel() {
                       className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-m)] border border-border p-3"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-body-sm font-medium">{row["reason"] as string}</p>
+                        <p className="truncate text-body-sm font-medium">
+                          {row["reason"] as string}
+                        </p>
                         <p className="text-caption">
-                          {(row["requested_by_email"] as string) ?? "—"} · {formatDateTime((row["created_at"] as string) ?? null)}
+                          {(row["requested_by_email"] as string) ?? "—"} ·{" "}
+                          {formatDateTime((row["created_at"] as string) ?? null)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge tone={row["status"] === "approved" ? "green" : row["status"] === "rejected" ? "red" : "warn"}>
-                          {row["status"] === "approved" ? "معتمد" : row["status"] === "rejected" ? "مرفوض" : "بانتظار الاعتماد"}
+                        <Badge
+                          tone={
+                            row["status"] === "approved"
+                              ? "green"
+                              : row["status"] === "rejected"
+                                ? "red"
+                                : "warn"
+                          }
+                        >
+                          {row["status"] === "approved"
+                            ? "معتمد"
+                            : row["status"] === "rejected"
+                              ? "مرفوض"
+                              : "بانتظار الاعتماد"}
                         </Badge>
                         {row["status"] === "pending" && can("billing.reopen_period") && (
                           <Btn
@@ -380,7 +442,11 @@ export function ReconciliationPanel() {
               />
             </FormField>
             <FormField label="البنك">
-              <input className={inputCls} value={entry.bankName} onChange={(e) => setEntry({ ...entry, bankName: e.target.value })} />
+              <input
+                className={inputCls}
+                value={entry.bankName}
+                onChange={(e) => setEntry({ ...entry, bankName: e.target.value })}
+              />
             </FormField>
             <FormField label="المبلغ" required>
               <input
@@ -402,10 +468,18 @@ export function ReconciliationPanel() {
               />
             </FormField>
             <FormField label="اسم المُحوِّل">
-              <input className={inputCls} value={entry.payerName} onChange={(e) => setEntry({ ...entry, payerName: e.target.value })} />
+              <input
+                className={inputCls}
+                value={entry.payerName}
+                onChange={(e) => setEntry({ ...entry, payerName: e.target.value })}
+              />
             </FormField>
             <FormField label="ملاحظات">
-              <input className={inputCls} value={entry.notes} onChange={(e) => setEntry({ ...entry, notes: e.target.value })} />
+              <input
+                className={inputCls}
+                value={entry.notes}
+                onChange={(e) => setEntry({ ...entry, notes: e.target.value })}
+              />
             </FormField>
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -414,7 +488,11 @@ export function ReconciliationPanel() {
             </Btn>
             <Btn
               loading={add.isPending}
-              disabled={entry.statementRef.trim().length < 3 || !(Number(entry.amount) > 0) || !entry.valueDate}
+              disabled={
+                entry.statementRef.trim().length < 3 ||
+                !(Number(entry.amount) > 0) ||
+                !entry.valueDate
+              }
               onClick={() => add.mutate()}
             >
               إضافة
@@ -426,7 +504,11 @@ export function ReconciliationPanel() {
       <Modal open={Boolean(matching)} onClose={() => setMatching(null)} title="مطابقة الحركة بدفعة">
         <div className="space-y-4">
           <FormField label="الدفعة" required hint="تظهر الدفعات المعتمدة فقط.">
-            <select className={inputCls} value={matchPaymentId} onChange={(e) => setMatchPaymentId(e.target.value)}>
+            <select
+              className={inputCls}
+              value={matchPaymentId}
+              onChange={(e) => setMatchPaymentId(e.target.value)}
+            >
               <option value="">اختر دفعة…</option>
               {(openPayments.data?.rows ?? []).map((row) => {
                 const joined = row["platform_invoices"] as { number?: string } | null;
@@ -442,23 +524,41 @@ export function ReconciliationPanel() {
             <Btn variant="outline" onClick={() => setMatching(null)} disabled={match.isPending}>
               رجوع
             </Btn>
-            <Btn loading={match.isPending} disabled={!matchPaymentId} onClick={() => match.mutate()}>
+            <Btn
+              loading={match.isPending}
+              disabled={!matchPaymentId}
+              onClick={() => match.mutate()}
+            >
               تأكيد المطابقة
             </Btn>
           </div>
         </div>
       </Modal>
 
-      <Modal open={Boolean(ignoring)} onClose={() => setIgnoring(null)} title="تجاهل الحركة البنكية">
+      <Modal
+        open={Boolean(ignoring)}
+        onClose={() => setIgnoring(null)}
+        title="تجاهل الحركة البنكية"
+      >
         <div className="space-y-4">
           <FormField label="سبب التجاهل" required hint="5 أحرف على الأقل.">
-            <textarea rows={3} className={inputCls} value={ignoreReason} onChange={(e) => setIgnoreReason(e.target.value)} />
+            <textarea
+              rows={3}
+              className={inputCls}
+              value={ignoreReason}
+              onChange={(e) => setIgnoreReason(e.target.value)}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn variant="outline" onClick={() => setIgnoring(null)} disabled={ignore.isPending}>
               رجوع
             </Btn>
-            <Btn variant="danger" loading={ignore.isPending} disabled={ignoreReason.trim().length < 5} onClick={() => ignore.mutate()}>
+            <Btn
+              variant="danger"
+              loading={ignore.isPending}
+              disabled={ignoreReason.trim().length < 5}
+              onClick={() => ignore.mutate()}
+            >
               تأكيد
             </Btn>
           </div>
@@ -486,15 +586,26 @@ export function ReconciliationPanel() {
             </FormField>
           </div>
           <FormField label="ملاحظات">
-            <textarea rows={2} className={inputCls} value={period.notes} onChange={(e) => setPeriod({ ...period, notes: e.target.value })} />
+            <textarea
+              rows={2}
+              className={inputCls}
+              value={period.notes}
+              onChange={(e) => setPeriod({ ...period, notes: e.target.value })}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Btn variant="outline" onClick={() => setCloseOpen(false)} disabled={closePeriod.isPending}>
+            <Btn
+              variant="outline"
+              onClick={() => setCloseOpen(false)}
+              disabled={closePeriod.isPending}
+            >
               إلغاء
             </Btn>
             <Btn
               loading={closePeriod.isPending}
-              disabled={!period.periodStart || !period.periodEnd || period.periodEnd < period.periodStart}
+              disabled={
+                !period.periodStart || !period.periodEnd || period.periodEnd < period.periodStart
+              }
               onClick={() => closePeriod.mutate()}
             >
               إقفال الفترة
@@ -503,16 +614,33 @@ export function ReconciliationPanel() {
         </div>
       </Modal>
 
-      <Modal open={Boolean(reopening)} onClose={() => setReopening(null)} title="طلب إعادة فتح فترة">
+      <Modal
+        open={Boolean(reopening)}
+        onClose={() => setReopening(null)}
+        title="طلب إعادة فتح فترة"
+      >
         <div className="space-y-4">
           <FormField label="المبرر" required hint="10 أحرف على الأقل — يُعتمد الطلب من موظف آخر.">
-            <textarea rows={3} className={inputCls} value={reopenReason} onChange={(e) => setReopenReason(e.target.value)} />
+            <textarea
+              rows={3}
+              className={inputCls}
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Btn variant="outline" onClick={() => setReopening(null)} disabled={requestReopen.isPending}>
+            <Btn
+              variant="outline"
+              onClick={() => setReopening(null)}
+              disabled={requestReopen.isPending}
+            >
               رجوع
             </Btn>
-            <Btn loading={requestReopen.isPending} disabled={reopenReason.trim().length < 10} onClick={() => requestReopen.mutate()}>
+            <Btn
+              loading={requestReopen.isPending}
+              disabled={reopenReason.trim().length < 10}
+              onClick={() => requestReopen.mutate()}
+            >
               تسجيل الطلب
             </Btn>
           </div>

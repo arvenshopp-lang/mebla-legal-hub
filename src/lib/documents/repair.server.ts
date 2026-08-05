@@ -94,7 +94,9 @@ async function findRelinkCandidates(organizationId: string, path: string): Promi
   const fileName = path.split("/").pop() ?? "";
   if (!fileName) return [];
   const stem = fileName.replace(/\.[^.]+$/, "").toLowerCase();
-  const folders = Array.from(new Set([organizationId, path.split("/").slice(0, -1).join("/")].filter(Boolean)));
+  const folders = Array.from(
+    new Set([organizationId, path.split("/").slice(0, -1).join("/")].filter(Boolean)),
+  );
   const candidates: string[] = [`${organizationId}/${fileName}`];
 
   for (const folder of folders) {
@@ -121,7 +123,9 @@ async function repairOne(doc: DocRow, organizationId: string): Promise<DocumentR
   }
 
   let activePath = normalized || doc.file_path;
-  let attempt = activePath ? await probe(activePath, doc.id) : { ok: false, contentType: null, errorCode: "PATH_EMPTY", missing: true };
+  let attempt = activePath
+    ? await probe(activePath, doc.id)
+    : { ok: false, contentType: null, errorCode: "PATH_EMPTY", missing: true };
 
   if (!attempt.ok) {
     for (const candidate of await findRelinkCandidates(organizationId, activePath)) {
@@ -238,7 +242,9 @@ export async function runDocumentRepair(input: RepairInput): Promise<RepairRepor
       .select("document_id")
       .eq("organization_id", input.organizationId)
       .eq("status", "failed");
-    const failedIds = new Set((failed ?? []).map((row: { document_id: string }) => row.document_id));
+    const failedIds = new Set(
+      (failed ?? []).map((row: { document_id: string }) => row.document_id),
+    );
     targets = all.filter(
       (doc) =>
         doc.file_status !== "AVAILABLE" ||

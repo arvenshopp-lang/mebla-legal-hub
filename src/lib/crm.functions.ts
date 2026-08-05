@@ -25,7 +25,13 @@ import type {
 
 const optionalTrimmed = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
 const nullify = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
-const emailOrEmpty = z.string().trim().max(160).email("بريد إلكتروني غير صحيح").optional().or(z.literal(""));
+const emailOrEmpty = z
+  .string()
+  .trim()
+  .max(160)
+  .email("بريد إلكتروني غير صحيح")
+  .optional()
+  .or(z.literal(""));
 
 const PageInput = {
   search: z.string().trim().max(120).default(""),
@@ -44,7 +50,11 @@ async function staffOptionsMap(db: AnyClient): Promise<Map<string, StaffOption>>
 type AnyClient = any;
 
 async function assertStaffActive(db: AnyClient, staffId: string) {
-  const { data } = await db.from("platform_staff").select("id, status").eq("id", staffId).maybeSingle();
+  const { data } = await db
+    .from("platform_staff")
+    .select("id, status")
+    .eq("id", staffId)
+    .maybeSingle();
   if (!data || data.status !== "active") throw new Error("الموظف المحدد غير متاح للإسناد.");
 }
 
@@ -82,10 +92,15 @@ export const upsertPipelineStage = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.manage_pipeline");
     const db = await g.admin();
-    if (data.is_won && data.is_lost) throw new Error("لا يمكن أن تكون المرحلة مكسوبة ومفقودة معاً.");
+    if (data.is_won && data.is_lost)
+      throw new Error("لا يمكن أن تكون المرحلة مكسوبة ومفقودة معاً.");
     const { id, ...fields } = data;
     if (id) {
-      const { data: before } = await db.from("crm_pipeline_stages").select("*").eq("id", id).maybeSingle();
+      const { data: before } = await db
+        .from("crm_pipeline_stages")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (!before) throw new Error("المرحلة غير موجودة.");
       const { error } = await db.from("crm_pipeline_stages").update(fields).eq("id", id);
       if (error) throw new Error("تعذّر تحديث المرحلة.");
@@ -98,7 +113,11 @@ export const upsertPipelineStage = createServerFn({ method: "POST" })
         after: fields,
       });
     } else {
-      const { data: row, error } = await db.from("crm_pipeline_stages").insert(fields).select("id").maybeSingle();
+      const { data: row, error } = await db
+        .from("crm_pipeline_stages")
+        .insert(fields)
+        .select("id")
+        .maybeSingle();
       if (error) throw new Error("تعذّر إنشاء المرحلة.");
       await g.writeAudit(db, staff, {
         action: "crm.pipeline_stage.create",
@@ -118,9 +137,17 @@ export const deletePipelineStage = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.manage_pipeline");
     const db = await g.admin();
-    const { count } = await db.from("crm_deals").select("id", { count: "exact", head: true }).eq("stage_id", data.id);
-    if ((count ?? 0) > 0) throw new Error("لا يمكن حذف مرحلة مرتبطة بصفقات. عطّلها بدلاً من الحذف.");
-    const { data: before } = await db.from("crm_pipeline_stages").select("*").eq("id", data.id).maybeSingle();
+    const { count } = await db
+      .from("crm_deals")
+      .select("id", { count: "exact", head: true })
+      .eq("stage_id", data.id);
+    if ((count ?? 0) > 0)
+      throw new Error("لا يمكن حذف مرحلة مرتبطة بصفقات. عطّلها بدلاً من الحذف.");
+    const { data: before } = await db
+      .from("crm_pipeline_stages")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("المرحلة غير موجودة.");
     const { error } = await db.from("crm_pipeline_stages").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف المرحلة.");
@@ -152,7 +179,14 @@ export const listStaffOptions = createServerFn({ method: "POST" })
 /* العملاء المحتملون (Leads)                                                */
 /* ======================================================================== */
 
-const LeadStatusEnum = z.enum(["new", "contacted", "qualified", "unqualified", "converted", "lost"]);
+const LeadStatusEnum = z.enum([
+  "new",
+  "contacted",
+  "qualified",
+  "unqualified",
+  "converted",
+  "lost",
+]);
 
 export const listLeads = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -171,15 +205,25 @@ export const listLeads = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_leads").select("*", { count: "exact" });
-    if (data.search) q = q.or(`full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%,company_name.ilike.%${data.search}%`);
+    if (data.search)
+      q = q.or(
+        `full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%,company_name.ilike.%${data.search}%`,
+      );
     if (data.status !== "all") q = q.eq("status", data.status);
     if (data.source) q = q.eq("source", data.source);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة العملاء المحتملين.");
     const staffMap = await staffOptionsMap(db);
-    const list: CrmLeadRow[] = (rows ?? []).map((r: AnyClient) => ({ ...r, owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null }));
+    const list: CrmLeadRow[] = (rows ?? []).map((r: AnyClient) => ({
+      ...r,
+      owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null,
+    }));
     return { rows: list, total: count ?? 0 };
   });
 
@@ -199,7 +243,10 @@ export const getLeadDetail = createServerFn({ method: "POST" })
       .eq("lead_id", data.id)
       .order("created_at", { ascending: false });
     return {
-      lead: { ...lead, owner: lead.owner_staff_id ? (staffMap.get(lead.owner_staff_id) ?? null) : null } as CrmLeadRow,
+      lead: {
+        ...lead,
+        owner: lead.owner_staff_id ? (staffMap.get(lead.owner_staff_id) ?? null) : null,
+      } as CrmLeadRow,
       activities: ((activities ?? []) as AnyClient[]).map((a) => ({
         ...a,
         owner: a.owner_staff_id ? (staffMap.get(a.owner_staff_id) ?? null) : null,
@@ -239,7 +286,11 @@ export const createLead = createServerFn({ method: "POST" })
       utm: data.utm ?? {},
       created_by: staff.user_id,
     };
-    const { data: row, error } = await db.from("crm_leads").insert(payload).select("id").maybeSingle();
+    const { data: row, error } = await db
+      .from("crm_leads")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error("تعذّر إنشاء العميل المحتمل.");
     await g.writeAudit(db, staff, {
       action: "crm.lead.create",
@@ -253,7 +304,9 @@ export const createLead = createServerFn({ method: "POST" })
 
 export const updateLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...leadInputShape }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), ...leadInputShape }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
@@ -309,15 +362,24 @@ export const deleteLead = createServerFn({ method: "POST" })
 
 export const assignLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.assign");
     const db = await g.admin();
     await assertStaffActive(db, data.staffId);
-    const { data: before } = await db.from("crm_leads").select("id, full_name, owner_staff_id").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_leads")
+      .select("id, full_name, owner_staff_id")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("العميل المحتمل غير موجود.");
-    const { error } = await db.from("crm_leads").update({ owner_staff_id: data.staffId }).eq("id", data.id);
+    const { error } = await db
+      .from("crm_leads")
+      .update({ owner_staff_id: data.staffId })
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر إسناد العميل المحتمل.");
     await g.writeAudit(db, staff, {
       action: "crm.lead.assign",
@@ -333,15 +395,25 @@ export const assignLead = createServerFn({ method: "POST" })
 export const disqualifyLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ id: z.string().uuid(), reason: z.string().trim().min(3, "اذكر سبب الاستبعاد").max(400) }).parse(input),
+    z
+      .object({
+        id: z.string().uuid(),
+        reason: z.string().trim().min(3, "اذكر سبب الاستبعاد").max(400),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_leads").select("id, full_name, status").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_leads")
+      .select("id, full_name, status")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("العميل المحتمل غير موجود.");
-    if (before.status === "converted") throw new Error("لا يمكن استبعاد عميل محتمل تم تحويله بالفعل.");
+    if (before.status === "converted")
+      throw new Error("لا يمكن استبعاد عميل محتمل تم تحويله بالفعل.");
     const { error } = await db
       .from("crm_leads")
       .update({ status: "unqualified", disqualify_reason: data.reason })
@@ -382,7 +454,11 @@ export const convertLead = createServerFn({ method: "POST" })
     if (!lead) throw new Error("العميل المحتمل غير موجود.");
     if (lead.status === "converted") throw new Error("تم تحويل هذا العميل المحتمل مسبقاً.");
 
-    const { data: stage } = await db.from("crm_pipeline_stages").select("*").eq("id", data.stageId).maybeSingle();
+    const { data: stage } = await db
+      .from("crm_pipeline_stages")
+      .select("*")
+      .eq("id", data.stageId)
+      .maybeSingle();
     if (!stage) throw new Error("مرحلة خط البيع غير موجودة.");
 
     if (data.ownerStaffId) await assertStaffActive(db, data.ownerStaffId);
@@ -395,7 +471,12 @@ export const convertLead = createServerFn({ method: "POST" })
     if (lead.email) orParts.push(`email.eq.${lead.email}`);
     if (lead.phone) orParts.push(`phone.eq.${lead.phone}`);
     if (orParts.length > 0) {
-      const { data: existingContact } = await db.from("crm_contacts").select("*").or(orParts.join(",")).limit(1).maybeSingle();
+      const { data: existingContact } = await db
+        .from("crm_contacts")
+        .select("*")
+        .or(orParts.join(","))
+        .limit(1)
+        .maybeSingle();
       if (existingContact) {
         contactId = existingContact.id;
         companyId = existingContact.company_id;
@@ -514,14 +595,24 @@ export const listCompanies = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_companies").select("*", { count: "exact" });
-    if (data.search) q = q.or(`name.ilike.%${data.search}%,legal_name.ilike.%${data.search}%,email.ilike.%${data.search}%,city.ilike.%${data.search}%`);
+    if (data.search)
+      q = q.or(
+        `name.ilike.%${data.search}%,legal_name.ilike.%${data.search}%,email.ilike.%${data.search}%,city.ilike.%${data.search}%`,
+      );
     if (data.status) q = q.eq("status", data.status);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الشركات.");
     const staffMap = await staffOptionsMap(db);
-    const list: CrmCompanyRow[] = (rows ?? []).map((r: AnyClient) => ({ ...r, owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null }));
+    const list: CrmCompanyRow[] = (rows ?? []).map((r: AnyClient) => ({
+      ...r,
+      owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null,
+    }));
     return { rows: list, total: count ?? 0 };
   });
 
@@ -532,13 +623,29 @@ export const getCompanyDetail = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staffCtx = await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
-    const { data: company } = await db.from("crm_companies").select("*").eq("id", data.id).maybeSingle();
+    const { data: company } = await db
+      .from("crm_companies")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!company) throw new Error("الشركة غير موجودة.");
     const staffMap = await staffOptionsMap(db);
     const [{ data: contacts }, { data: deals }, { data: activities }] = await Promise.all([
-      db.from("crm_contacts").select("*").eq("company_id", data.id).order("is_primary", { ascending: false }),
-      db.from("crm_deals").select("*").eq("company_id", data.id).order("created_at", { ascending: false }),
-      db.from("crm_activities").select("*").eq("company_id", data.id).order("created_at", { ascending: false }),
+      db
+        .from("crm_contacts")
+        .select("*")
+        .eq("company_id", data.id)
+        .order("is_primary", { ascending: false }),
+      db
+        .from("crm_deals")
+        .select("*")
+        .eq("company_id", data.id)
+        .order("created_at", { ascending: false }),
+      db
+        .from("crm_activities")
+        .select("*")
+        .eq("company_id", data.id)
+        .order("created_at", { ascending: false }),
     ]);
     let documents: AnyClient[] = [];
     const canReadDocs = await g
@@ -555,10 +662,19 @@ export const getCompanyDetail = createServerFn({ method: "POST" })
     }
     void staffCtx;
     return {
-      company: { ...company, owner: company.owner_staff_id ? (staffMap.get(company.owner_staff_id) ?? null) : null } as CrmCompanyRow,
+      company: {
+        ...company,
+        owner: company.owner_staff_id ? (staffMap.get(company.owner_staff_id) ?? null) : null,
+      } as CrmCompanyRow,
       contacts: (contacts ?? []) as CrmContactRow[],
-      deals: ((deals ?? []) as AnyClient[]).map((d) => ({ ...d, owner: d.owner_staff_id ? (staffMap.get(d.owner_staff_id) ?? null) : null })) as CrmDealRow[],
-      activities: ((activities ?? []) as AnyClient[]).map((a) => ({ ...a, owner: a.owner_staff_id ? (staffMap.get(a.owner_staff_id) ?? null) : null })) as CrmActivityRow[],
+      deals: ((deals ?? []) as AnyClient[]).map((d) => ({
+        ...d,
+        owner: d.owner_staff_id ? (staffMap.get(d.owner_staff_id) ?? null) : null,
+      })) as CrmDealRow[],
+      activities: ((activities ?? []) as AnyClient[]).map((a) => ({
+        ...a,
+        owner: a.owner_staff_id ? (staffMap.get(a.owner_staff_id) ?? null) : null,
+      })) as CrmActivityRow[],
       documents,
     };
   });
@@ -601,7 +717,11 @@ export const createCompany = createServerFn({ method: "POST" })
       owner_staff_id: nullify(data.owner_staff_id),
       created_by: staff.user_id,
     };
-    const { data: row, error } = await db.from("crm_companies").insert(payload).select("id").maybeSingle();
+    const { data: row, error } = await db
+      .from("crm_companies")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error("تعذّر إنشاء الشركة.");
     await g.writeAudit(db, staff, {
       action: "crm.company.create",
@@ -615,12 +735,18 @@ export const createCompany = createServerFn({ method: "POST" })
 
 export const updateCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...companyInputShape }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), ...companyInputShape }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_companies").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_companies")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("الشركة غير موجودة.");
     if (data.owner_staff_id) await assertStaffActive(db, data.owner_staff_id);
     const patch = {
@@ -658,7 +784,11 @@ export const deleteCompany = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.delete");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_companies").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_companies")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("الشركة غير موجودة.");
     const { error } = await db.from("crm_companies").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف الشركة. تأكد من عدم وجود جهات اتصال أو صفقات مرتبطة.");
@@ -674,15 +804,24 @@ export const deleteCompany = createServerFn({ method: "POST" })
 
 export const assignCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.assign");
     const db = await g.admin();
     await assertStaffActive(db, data.staffId);
-    const { data: before } = await db.from("crm_companies").select("id, name, owner_staff_id").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_companies")
+      .select("id, name, owner_staff_id")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("الشركة غير موجودة.");
-    const { error } = await db.from("crm_companies").update({ owner_staff_id: data.staffId }).eq("id", data.id);
+    const { error } = await db
+      .from("crm_companies")
+      .update({ owner_staff_id: data.staffId })
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر إسناد الشركة.");
     await g.writeAudit(db, staff, {
       action: "crm.company.assign",
@@ -715,17 +854,29 @@ export const listContacts = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_contacts").select("*", { count: "exact" });
-    if (data.search) q = q.or(`full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%`);
+    if (data.search)
+      q = q.or(
+        `full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%`,
+      );
     if (data.companyId) q = q.eq("company_id", data.companyId);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة جهات الاتصال.");
     const staffMap = await staffOptionsMap(db);
-    const companyIds = [...new Set((rows ?? []).map((r: AnyClient) => r.company_id).filter(Boolean))];
+    const companyIds = [
+      ...new Set((rows ?? []).map((r: AnyClient) => r.company_id).filter(Boolean)),
+    ];
     const companyMap = new Map<string, string>();
     if (companyIds.length) {
-      const { data: companies } = await db.from("crm_companies").select("id, name").in("id", companyIds);
+      const { data: companies } = await db
+        .from("crm_companies")
+        .select("id, name")
+        .in("id", companyIds);
       for (const c of companies ?? []) companyMap.set(c.id, c.name);
     }
     const list: CrmContactRow[] = (rows ?? []).map((r: AnyClient) => ({
@@ -768,7 +919,11 @@ export const createContact = createServerFn({ method: "POST" })
       owner_staff_id: nullify(data.owner_staff_id),
       created_by: staff.user_id,
     };
-    const { data: row, error } = await db.from("crm_contacts").insert(payload).select("id").maybeSingle();
+    const { data: row, error } = await db
+      .from("crm_contacts")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error("تعذّر إنشاء جهة الاتصال.");
     await g.writeAudit(db, staff, {
       action: "crm.contact.create",
@@ -782,12 +937,18 @@ export const createContact = createServerFn({ method: "POST" })
 
 export const updateContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...contactInputShape }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), ...contactInputShape }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_contacts").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_contacts")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("جهة الاتصال غير موجودة.");
     if (data.owner_staff_id) await assertStaffActive(db, data.owner_staff_id);
     const patch = {
@@ -822,7 +983,11 @@ export const deleteContact = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.delete");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_contacts").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_contacts")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("جهة الاتصال غير موجودة.");
     const { error } = await db.from("crm_contacts").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف جهة الاتصال.");
@@ -866,7 +1031,11 @@ export const listDeals = createServerFn({ method: "POST" })
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     if (data.companyId) q = q.eq("company_id", data.companyId);
     const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الصفقات.");
     const staffMap = await staffOptionsMap(db);
     const [{ data: stages }, { data: companies }, { data: contacts }] = await Promise.all([
@@ -897,12 +1066,23 @@ export const getDealDetail = createServerFn({ method: "POST" })
     const { data: deal } = await db.from("crm_deals").select("*").eq("id", data.id).maybeSingle();
     if (!deal) throw new Error("الصفقة غير موجودة.");
     const staffMap = await staffOptionsMap(db);
-    const [{ data: stage }, { data: company }, { data: contact }, { data: activities }] = await Promise.all([
-      deal.stage_id ? db.from("crm_pipeline_stages").select("id, name").eq("id", deal.stage_id).maybeSingle() : Promise.resolve({ data: null }),
-      deal.company_id ? db.from("crm_companies").select("id, name").eq("id", deal.company_id).maybeSingle() : Promise.resolve({ data: null }),
-      deal.contact_id ? db.from("crm_contacts").select("id, full_name").eq("id", deal.contact_id).maybeSingle() : Promise.resolve({ data: null }),
-      db.from("crm_activities").select("*").eq("deal_id", data.id).order("created_at", { ascending: false }),
-    ]);
+    const [{ data: stage }, { data: company }, { data: contact }, { data: activities }] =
+      await Promise.all([
+        deal.stage_id
+          ? db.from("crm_pipeline_stages").select("id, name").eq("id", deal.stage_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        deal.company_id
+          ? db.from("crm_companies").select("id, name").eq("id", deal.company_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        deal.contact_id
+          ? db.from("crm_contacts").select("id, full_name").eq("id", deal.contact_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        db
+          .from("crm_activities")
+          .select("*")
+          .eq("deal_id", data.id)
+          .order("created_at", { ascending: false }),
+      ]);
     let documents: AnyClient[] = [];
     const canReadDocs = await g
       .requireStaff(context.supabase, context.userId, "sales_docs.read")
@@ -924,7 +1104,10 @@ export const getDealDetail = createServerFn({ method: "POST" })
         contact_name: contact?.full_name ?? null,
         owner: deal.owner_staff_id ? (staffMap.get(deal.owner_staff_id) ?? null) : null,
       } as CrmDealRow,
-      activities: ((activities ?? []) as AnyClient[]).map((a) => ({ ...a, owner: a.owner_staff_id ? (staffMap.get(a.owner_staff_id) ?? null) : null })) as CrmActivityRow[],
+      activities: ((activities ?? []) as AnyClient[]).map((a) => ({
+        ...a,
+        owner: a.owner_staff_id ? (staffMap.get(a.owner_staff_id) ?? null) : null,
+      })) as CrmActivityRow[],
       documents,
     };
   });
@@ -949,7 +1132,11 @@ export const createDeal = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.create");
     const db = await g.admin();
-    const { data: stage } = await db.from("crm_pipeline_stages").select("*").eq("id", data.stage_id).maybeSingle();
+    const { data: stage } = await db
+      .from("crm_pipeline_stages")
+      .select("*")
+      .eq("id", data.stage_id)
+      .maybeSingle();
     if (!stage) throw new Error("مرحلة خط البيع غير موجودة.");
     if (data.owner_staff_id) await assertStaffActive(db, data.owner_staff_id);
     const payload = {
@@ -967,7 +1154,11 @@ export const createDeal = createServerFn({ method: "POST" })
       owner_staff_id: nullify(data.owner_staff_id),
       created_by: staff.user_id,
     };
-    const { data: row, error } = await db.from("crm_deals").insert(payload).select("id").maybeSingle();
+    const { data: row, error } = await db
+      .from("crm_deals")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error("تعذّر إنشاء الصفقة.");
     await g.writeAudit(db, staff, {
       action: "crm.deal.create",
@@ -981,14 +1172,17 @@ export const createDeal = createServerFn({ method: "POST" })
 
 export const updateDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...dealInputShape }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), ...dealInputShape }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
     const db = await g.admin();
     const { data: before } = await db.from("crm_deals").select("*").eq("id", data.id).maybeSingle();
     if (!before) throw new Error("الصفقة غير موجودة.");
-    if (before.status !== "open") throw new Error("لا يمكن تعديل صفقة مغلقة (مكسوبة/مفقودة/متروكة).");
+    if (before.status !== "open")
+      throw new Error("لا يمكن تعديل صفقة مغلقة (مكسوبة/مفقودة/متروكة).");
     if (data.owner_staff_id) await assertStaffActive(db, data.owner_staff_id);
     const patch = {
       title: data.title,
@@ -1038,15 +1232,24 @@ export const deleteDeal = createServerFn({ method: "POST" })
 
 export const assignDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), staffId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.assign");
     const db = await g.admin();
     await assertStaffActive(db, data.staffId);
-    const { data: before } = await db.from("crm_deals").select("id, title, owner_staff_id").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_deals")
+      .select("id, title, owner_staff_id")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("الصفقة غير موجودة.");
-    const { error } = await db.from("crm_deals").update({ owner_staff_id: data.staffId }).eq("id", data.id);
+    const { error } = await db
+      .from("crm_deals")
+      .update({ owner_staff_id: data.staffId })
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر إسناد الصفقة.");
     await g.writeAudit(db, staff, {
       action: "crm.deal.assign",
@@ -1077,7 +1280,11 @@ export const moveDealStage = createServerFn({ method: "POST" })
     const { data: before } = await db.from("crm_deals").select("*").eq("id", data.id).maybeSingle();
     if (!before) throw new Error("الصفقة غير موجودة.");
     if (before.status !== "open") throw new Error("لا يمكن تحريك صفقة مغلقة.");
-    const { data: stage } = await db.from("crm_pipeline_stages").select("*").eq("id", data.stageId).maybeSingle();
+    const { data: stage } = await db
+      .from("crm_pipeline_stages")
+      .select("*")
+      .eq("id", data.stageId)
+      .maybeSingle();
     if (!stage) throw new Error("مرحلة خط البيع غير موجودة.");
     if (stage.is_lost && !nullify(data.lostReason)) throw new Error("اذكر سبب خسارة الصفقة.");
 
@@ -1145,10 +1352,20 @@ export const listActivities = createServerFn({ method: "POST" })
     if (data.companyId) q = q.eq("company_id", data.companyId);
     if (data.dealId) q = q.eq("deal_id", data.dealId);
     const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q.order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await q
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الأنشطة.");
     const staffMap = await staffOptionsMap(db);
-    const list: CrmActivityRow[] = (rows ?? []).map((r: AnyClient) => ({ ...r, owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null }));
+    const list: CrmActivityRow[] = (rows ?? []).map((r: AnyClient) => ({
+      ...r,
+      owner: r.owner_staff_id ? (staffMap.get(r.owner_staff_id) ?? null) : null,
+    }));
     return { rows: list, total: count ?? 0 };
   });
 
@@ -1173,7 +1390,12 @@ export const createActivity = createServerFn({ method: "POST" })
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.create");
     const db = await g.admin();
     if (data.owner_staff_id) await assertStaffActive(db, data.owner_staff_id);
-    const linkId = { lead: data.lead_id, company: data.company_id, contact: data.contact_id, deal: data.deal_id }[data.entity_kind];
+    const linkId = {
+      lead: data.lead_id,
+      company: data.company_id,
+      contact: data.contact_id,
+      deal: data.deal_id,
+    }[data.entity_kind];
     if (!nullify(linkId)) throw new Error("يجب اختيار السجل المرتبط بالنشاط.");
     const payload = {
       kind: data.kind,
@@ -1188,9 +1410,17 @@ export const createActivity = createServerFn({ method: "POST" })
       deal_id: nullify(data.deal_id),
       created_by: staff.user_id,
     };
-    const { data: row, error } = await db.from("crm_activities").insert(payload).select("id").maybeSingle();
+    const { data: row, error } = await db
+      .from("crm_activities")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error("تعذّر إنشاء النشاط.");
-    if (data.lead_id) await db.from("crm_leads").update({ last_activity_at: new Date().toISOString() }).eq("id", data.lead_id);
+    if (data.lead_id)
+      await db
+        .from("crm_leads")
+        .update({ last_activity_at: new Date().toISOString() })
+        .eq("id", data.lead_id);
     await g.writeAudit(db, staff, {
       action: "crm.activity.create",
       entity_type: "crm_activity",
@@ -1203,12 +1433,18 @@ export const createActivity = createServerFn({ method: "POST" })
 
 export const completeActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), outcome: optionalTrimmed(500) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), outcome: optionalTrimmed(500) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.update");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_activities").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_activities")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("النشاط غير موجود.");
     const { error } = await db
       .from("crm_activities")
@@ -1232,7 +1468,11 @@ export const deleteActivity = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.delete");
     const db = await g.admin();
-    const { data: before } = await db.from("crm_activities").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await db
+      .from("crm_activities")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("النشاط غير موجود.");
     const { error } = await db.from("crm_activities").delete().eq("id", data.id);
     if (error) throw new Error("تعذّر حذف النشاط.");
@@ -1261,7 +1501,9 @@ export const pipelineSummary = createServerFn({ method: "POST" })
       db.from("crm_deals").select("id, amount, stage_id, status, closed_at"),
     ]);
     const summary: CrmPipelineSummary[] = ((stages ?? []) as AnyClient[]).map((s) => {
-      const stageDeals = ((deals ?? []) as AnyClient[]).filter((d) => d.stage_id === s.id && d.status === "open");
+      const stageDeals = ((deals ?? []) as AnyClient[]).filter(
+        (d) => d.stage_id === s.id && d.status === "open",
+      );
       const total = stageDeals.reduce((acc, d) => acc + Number(d.amount), 0);
       return {
         stage_id: s.id,
@@ -1281,7 +1523,10 @@ export const pipelineSummary = createServerFn({ method: "POST" })
     const forecast: CrmForecast = {
       total_open_amount: openDeals.reduce((acc, d) => acc + Number(d.amount), 0),
       total_weighted_amount: Math.round(
-        openDeals.reduce((acc, d) => acc + Number(d.amount) * ((stageProbMap.get(d.stage_id) ?? 0) / 100), 0),
+        openDeals.reduce(
+          (acc, d) => acc + Number(d.amount) * ((stageProbMap.get(d.stage_id) ?? 0) / 100),
+          0,
+        ),
       ),
       won_amount_30d: ((deals ?? []) as AnyClient[])
         .filter((d) => d.status === "won" && d.closed_at && d.closed_at >= since30)
@@ -1307,14 +1552,28 @@ export const sourceReport = createServerFn({ method: "POST" })
     const bySource = new Map<string, CrmSourceReport>();
     for (const l of (leads ?? []) as AnyClient[]) {
       const key = l.source || "غير محدد";
-      const row = bySource.get(key) ?? { source: key, leads_count: 0, converted_count: 0, deals_count: 0, won_deals_count: 0, won_amount: 0 };
+      const row = bySource.get(key) ?? {
+        source: key,
+        leads_count: 0,
+        converted_count: 0,
+        deals_count: 0,
+        won_deals_count: 0,
+        won_amount: 0,
+      };
       row.leads_count += 1;
       if (l.status === "converted") row.converted_count += 1;
       bySource.set(key, row);
     }
     for (const d of (deals ?? []) as AnyClient[]) {
       const key = d.source || "غير محدد";
-      const row = bySource.get(key) ?? { source: key, leads_count: 0, converted_count: 0, deals_count: 0, won_deals_count: 0, won_amount: 0 };
+      const row = bySource.get(key) ?? {
+        source: key,
+        leads_count: 0,
+        converted_count: 0,
+        deals_count: 0,
+        won_deals_count: 0,
+        won_amount: 0,
+      };
       row.deals_count += 1;
       if (d.status === "won") {
         row.won_deals_count += 1;
@@ -1352,7 +1611,9 @@ export const sourceReport = createServerFn({ method: "POST" })
 
 export const exportCrmCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ entity: z.enum(["leads", "companies", "contacts", "deals"]) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ entity: z.enum(["leads", "companies", "contacts", "deals"]) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "crm.export");
@@ -1360,28 +1621,80 @@ export const exportCrmCsv = createServerFn({ method: "POST" })
 
     let csv = "";
     if (data.entity === "leads") {
-      const { data: rows } = await db.from("crm_leads").select("*").order("created_at", { ascending: false });
+      const { data: rows } = await db
+        .from("crm_leads")
+        .select("*")
+        .order("created_at", { ascending: false });
       csv = buildCsv(
         ["الاسم", "الشركة", "البريد", "الجوال", "الحالة", "المصدر", "النقاط", "تاريخ الإنشاء"],
-        ((rows ?? []) as AnyClient[]).map((r) => [r.full_name, r.company_name, r.email, r.phone, r.status, r.source, r.score, r.created_at]),
+        ((rows ?? []) as AnyClient[]).map((r) => [
+          r.full_name,
+          r.company_name,
+          r.email,
+          r.phone,
+          r.status,
+          r.source,
+          r.score,
+          r.created_at,
+        ]),
       );
     } else if (data.entity === "companies") {
-      const { data: rows } = await db.from("crm_companies").select("*").order("created_at", { ascending: false });
+      const { data: rows } = await db
+        .from("crm_companies")
+        .select("*")
+        .order("created_at", { ascending: false });
       csv = buildCsv(
         ["الاسم", "القطاع", "المدينة", "البريد", "الجوال", "الحالة", "تاريخ الإنشاء"],
-        ((rows ?? []) as AnyClient[]).map((r) => [r.name, r.sector, r.city, r.email, r.phone, r.status, r.created_at]),
+        ((rows ?? []) as AnyClient[]).map((r) => [
+          r.name,
+          r.sector,
+          r.city,
+          r.email,
+          r.phone,
+          r.status,
+          r.created_at,
+        ]),
       );
     } else if (data.entity === "contacts") {
-      const { data: rows } = await db.from("crm_contacts").select("*").order("created_at", { ascending: false });
+      const { data: rows } = await db
+        .from("crm_contacts")
+        .select("*")
+        .order("created_at", { ascending: false });
       csv = buildCsv(
         ["الاسم", "المسمى الوظيفي", "البريد", "الجوال", "أساسية", "تاريخ الإنشاء"],
-        ((rows ?? []) as AnyClient[]).map((r) => [r.full_name, r.job_title, r.email, r.phone, r.is_primary ? "نعم" : "لا", r.created_at]),
+        ((rows ?? []) as AnyClient[]).map((r) => [
+          r.full_name,
+          r.job_title,
+          r.email,
+          r.phone,
+          r.is_primary ? "نعم" : "لا",
+          r.created_at,
+        ]),
       );
     } else {
-      const { data: rows } = await db.from("crm_deals").select("*").order("created_at", { ascending: false });
+      const { data: rows } = await db
+        .from("crm_deals")
+        .select("*")
+        .order("created_at", { ascending: false });
       csv = buildCsv(
-        ["العنوان", "القيمة", "العملة", "الاحتمالية", "الحالة", "تاريخ الإغلاق المتوقع", "تاريخ الإنشاء"],
-        ((rows ?? []) as AnyClient[]).map((r) => [r.title, r.amount, r.currency, r.probability, r.status, r.expected_close_date, r.created_at]),
+        [
+          "العنوان",
+          "القيمة",
+          "العملة",
+          "الاحتمالية",
+          "الحالة",
+          "تاريخ الإغلاق المتوقع",
+          "تاريخ الإنشاء",
+        ],
+        ((rows ?? []) as AnyClient[]).map((r) => [
+          r.title,
+          r.amount,
+          r.currency,
+          r.probability,
+          r.status,
+          r.expected_close_date,
+          r.created_at,
+        ]),
       );
     }
 

@@ -38,7 +38,13 @@ export const createTicketSchema = z.object({
   category: shortText(40, "التصنيف"),
   priority: z.enum(TICKET_PRIORITIES).optional(),
   channel: z.enum(TICKET_CHANNELS).default("internal"),
-  requesterEmail: z.string().trim().toLowerCase().email("بريد إلكتروني غير صالح").optional().nullable(),
+  requesterEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("بريد إلكتروني غير صالح")
+    .optional()
+    .nullable(),
   requesterName: z.string().trim().max(160).optional().nullable(),
   organizationId: uuid.optional().nullable(),
   teamId: uuid.optional().nullable(),

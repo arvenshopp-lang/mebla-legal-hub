@@ -16,15 +16,45 @@ export function OverviewPanel({
   report: SupportReportData | undefined;
   onQueue: (key: QueueKey) => void;
 }) {
-  const kpis: { label: string; value: string; queue?: QueueKey; tone?: "default" | "success" | "warning" | "danger"; hint?: string }[] = [
+  const kpis: {
+    label: string;
+    value: string;
+    queue?: QueueKey;
+    tone?: "default" | "success" | "warning" | "danger";
+    hint?: string;
+  }[] = [
     { label: "التذاكر المفتوحة", value: String(counts?.open ?? 0), queue: "open" },
-    { label: "غير المسندة", value: String(counts?.unassigned ?? 0), queue: "unassigned", tone: "warning" },
+    {
+      label: "غير المسندة",
+      value: String(counts?.unassigned ?? 0),
+      queue: "unassigned",
+      tone: "warning",
+    },
     { label: "تذاكري", value: String(counts?.mine ?? 0), queue: "mine" },
-    { label: "مهدَّدة بخرق المهلة", value: String(counts?.at_risk ?? 0), queue: "at_risk", tone: "warning" },
-    { label: "متجاوزة للمهلة", value: String(counts?.breached ?? 0), queue: "breached", tone: "danger" },
+    {
+      label: "مهدَّدة بخرق المهلة",
+      value: String(counts?.at_risk ?? 0),
+      queue: "at_risk",
+      tone: "warning",
+    },
+    {
+      label: "متجاوزة للمهلة",
+      value: String(counts?.breached ?? 0),
+      queue: "breached",
+      tone: "danger",
+    },
     { label: "مصعّدة", value: String(counts?.escalated ?? 0), queue: "escalated", tone: "danger" },
-    { label: "بانتظار العميل", value: String(counts?.awaiting_reply ?? 0), queue: "awaiting_reply" },
-    { label: "بحاجة لمراجعة هوية", value: String(counts?.needs_review ?? 0), queue: "needs_review", tone: "warning" },
+    {
+      label: "بانتظار العميل",
+      value: String(counts?.awaiting_reply ?? 0),
+      queue: "awaiting_reply",
+    },
+    {
+      label: "بحاجة لمراجعة هوية",
+      value: String(counts?.needs_review ?? 0),
+      queue: "needs_review",
+      tone: "warning",
+    },
   ];
 
   return (
@@ -109,7 +139,12 @@ export function OverviewPanel({
         </>
       )}
 
-      {!report && <EmptyState title="لا توجد بيانات تشغيلية بعد" hint="ستظهر المؤشرات بعد وصول أول تذاكر الدعم." />}
+      {!report && (
+        <EmptyState
+          title="لا توجد بيانات تشغيلية بعد"
+          hint="ستظهر المؤشرات بعد وصول أول تذاكر الدعم."
+        />
+      )}
     </div>
   );
 }

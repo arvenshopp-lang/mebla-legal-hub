@@ -31,7 +31,10 @@ import {
   type RbacOverview,
 } from "./shared";
 
-const STATUS: Record<RbacImpersonation["status"], { label: string; tone: "gold" | "green" | "red" | "muted" }> = {
+const STATUS: Record<
+  RbacImpersonation["status"],
+  { label: string; tone: "gold" | "green" | "red" | "muted" }
+> = {
   pending: { label: "بانتظار الاعتماد", tone: "gold" },
   active: { label: "جلسة نشطة", tone: "green" },
   ended: { label: "منتهية", tone: "muted" },
@@ -52,7 +55,11 @@ export function ImpersonationPanel({
   canApprove: boolean;
   refresh: () => void;
 }) {
-  const [form, setForm] = useState<{ targetUserId: string; reason: string; minutes: number } | null>(null);
+  const [form, setForm] = useState<{
+    targetUserId: string;
+    reason: string;
+    minutes: number;
+  } | null>(null);
   const [decision, setDecision] = useState<{
     row: RbacImpersonation;
     decision: "approved" | "rejected";
@@ -85,7 +92,9 @@ export function ImpersonationPanel({
 
   const decide = useMutation({
     mutationFn: () =>
-      decideFn({ data: { id: decision!.row.id, decision: decision!.decision, reason: decision!.reason } }),
+      decideFn({
+        data: { id: decision!.row.id, decision: decision!.decision, reason: decision!.reason },
+      }),
     onSuccess: () => after("تم تسجيل القرار."),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -117,8 +126,12 @@ export function ImpersonationPanel({
         }
       >
         <div className="grid gap-3 sm:grid-cols-3">
-          <KeyValue label="جلسات نشطة">{data.impersonations.filter((i) => i.status === "active").length}</KeyValue>
-          <KeyValue label="طلبات معلّقة">{data.impersonations.filter((i) => i.status === "pending").length}</KeyValue>
+          <KeyValue label="جلسات نشطة">
+            {data.impersonations.filter((i) => i.status === "active").length}
+          </KeyValue>
+          <KeyValue label="طلبات معلّقة">
+            {data.impersonations.filter((i) => i.status === "pending").length}
+          </KeyValue>
           <KeyValue label="جلستك الحالية">
             {data.me.impersonation ? `${data.me.impersonation.target_email ?? "—"}` : "لا يوجد"}
           </KeyValue>
@@ -127,7 +140,10 @@ export function ImpersonationPanel({
 
       {data.impersonations.length === 0 ? (
         <DataCard>
-          <EmptyState title="لا توجد جلسات انتحال" hint="تُستخدم للدعم الفني فقط وبموافقة موثّقة." />
+          <EmptyState
+            title="لا توجد جلسات انتحال"
+            hint="تُستخدم للدعم الفني فقط وبموافقة موثّقة."
+          />
         </DataCard>
       ) : (
         <ul className="grid gap-3">
@@ -138,7 +154,8 @@ export function ImpersonationPanel({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold">
-                      {i.actor_email ?? staffName(data.staff, i.actor_user_id)} ← {i.target_email ?? i.target_user_id}
+                      {i.actor_email ?? staffName(data.staff, i.actor_user_id)} ←{" "}
+                      {i.target_email ?? i.target_user_id}
                     </p>
                     <p className="text-caption mt-0.5">{i.reason}</p>
                   </div>
@@ -204,7 +221,10 @@ export function ImpersonationPanel({
               request.mutate();
             }}
           >
-            <Field label="معرّف المستخدم المستهدف" hint="UUID للمستخدم داخل المنصة — لا يمكن انتحال حسابك.">
+            <Field
+              label="معرّف المستخدم المستهدف"
+              hint="UUID للمستخدم داخل المنصة — لا يمكن انتحال حسابك."
+            >
               <input
                 className={inputCls}
                 dir="ltr"
@@ -223,7 +243,10 @@ export function ImpersonationPanel({
                 onChange={(e) => setForm({ ...form, minutes: Number(e.target.value) })}
               />
             </Field>
-            <Field label="سبب الانتحال" hint="لا يقل عن 10 أحرف — يظهر في سجل التدقيق وطلب الاعتماد.">
+            <Field
+              label="سبب الانتحال"
+              hint="لا يقل عن 10 أحرف — يظهر في سجل التدقيق وطلب الاعتماد."
+            >
               <textarea
                 className={inputCls}
                 rows={3}
@@ -258,7 +281,8 @@ export function ImpersonationPanel({
             }}
           >
             <p className="text-body-sm text-muted-foreground">
-              {decision.row.actor_email} ← {decision.row.target_email ?? decision.row.target_user_id}
+              {decision.row.actor_email} ←{" "}
+              {decision.row.target_email ?? decision.row.target_user_id}
             </p>
             <Field label="تعليل القرار">
               <textarea
@@ -313,7 +337,12 @@ export function ImpersonationPanel({
         )}
       </Modal>
 
-      <Modal open={!!pages} onClose={() => setPages(null)} title="الصفحات التي زارها المنتحِل" size="lg">
+      <Modal
+        open={!!pages}
+        onClose={() => setPages(null)}
+        title="الصفحات التي زارها المنتحِل"
+        size="lg"
+      >
         {events.isPending ? (
           <SectionLoader label="جاري تحميل سجل الصفحات…" rows={4} />
         ) : events.isError ? (
@@ -323,7 +352,10 @@ export function ImpersonationPanel({
         ) : (
           <ul className="max-h-[50vh] space-y-1.5 overflow-y-auto text-[12px]">
             {(events.data ?? []).map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 border-b border-border pb-1.5">
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-3 border-b border-border pb-1.5"
+              >
                 <span dir="ltr" className="font-mono">
                   {p.path ?? "—"}
                 </span>

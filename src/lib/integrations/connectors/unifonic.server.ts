@@ -74,9 +74,20 @@ export class UnifonicOtpConnector extends BaseOtpConnector {
         expectJson: true,
       });
       if (!verdict.ok) {
-        return { ok: false, statusCode: response.status, latencyMs: response.latencyMs, code: verdict.code, detail: verdict.detail };
+        return {
+          ok: false,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
+          code: verdict.code,
+          detail: verdict.detail,
+        };
       }
-      return { ok: true, statusCode: response.status, latencyMs: response.latencyMs, detail: "معرّف التطبيق صحيح والحساب فعّال." };
+      return {
+        ok: true,
+        statusCode: response.status,
+        latencyMs: response.latencyMs,
+        detail: "معرّف التطبيق صحيح والحساب فعّال.",
+      };
     } catch (error) {
       return toHealthFailure(error, Date.now() - started);
     }

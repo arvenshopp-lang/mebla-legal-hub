@@ -4,11 +4,26 @@ import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
-import { LimitBar, FeatureLine, NoticeBanner, StateBadge } from "@/components/subscription/subscription-ui";
+import {
+  LimitBar,
+  FeatureLine,
+  NoticeBanner,
+  StateBadge,
+} from "@/components/subscription/subscription-ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { signInvoiceUrl } from "@/lib/subscription.functions";
-import { Badge, Btn, DataCard, EmptyState, ErrorBlock, SectionCard, SectionLoader, Td, Th } from "@/lib/list-utils";
+import {
+  Badge,
+  Btn,
+  DataCard,
+  EmptyState,
+  ErrorBlock,
+  SectionCard,
+  SectionLoader,
+  Td,
+  Th,
+} from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
   SUPPORT_LABELS,
@@ -24,7 +39,10 @@ export const Route = createFileRoute("/_authenticated/subscription")({
   head: () => ({
     meta: [
       { title: "الاشتراك · مِهلة" },
-      { name: "description", content: "حالة اشتراك مكتبك في مِهلة: الباقة، المدة المتبقية، الحدود المستخدمة والفواتير." },
+      {
+        name: "description",
+        content: "حالة اشتراك مكتبك في مِهلة: الباقة، المدة المتبقية، الحدود المستخدمة والفواتير.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -68,9 +86,13 @@ function SubscriptionPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[12px] text-muted-foreground">الباقة الحالية</p>
-                <h2 className="mt-1 text-[24px] font-bold leading-tight">{overview.plan.name_ar}</h2>
+                <h2 className="mt-1 text-[24px] font-bold leading-tight">
+                  {overview.plan.name_ar}
+                </h2>
                 {overview.plan.description && (
-                  <p className="mt-1.5 max-w-xl text-[13px] text-muted-foreground">{overview.plan.description}</p>
+                  <p className="mt-1.5 max-w-xl text-[13px] text-muted-foreground">
+                    {overview.plan.description}
+                  </p>
                 )}
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -82,11 +104,21 @@ function SubscriptionPage() {
             </div>
 
             <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <InfoCell label="تاريخ البداية" value={overview.subscription ? fmtDate(overview.subscription.starts_at) : "—"} />
-              <InfoCell label="تاريخ الانتهاء" value={overview.subscription ? fmtDate(overview.subscription.ends_at) : "—"} />
+              <InfoCell
+                label="تاريخ البداية"
+                value={overview.subscription ? fmtDate(overview.subscription.starts_at) : "—"}
+              />
+              <InfoCell
+                label="تاريخ الانتهاء"
+                value={overview.subscription ? fmtDate(overview.subscription.ends_at) : "—"}
+              />
               <InfoCell
                 label="قيمة الاشتراك"
-                value={overview.subscription ? SAR(overview.subscription.amount, overview.subscription.currency) : "—"}
+                value={
+                  overview.subscription
+                    ? SAR(overview.subscription.amount, overview.subscription.currency)
+                    : "—"
+                }
               />
               <InfoCell
                 label="التجديد التلقائي"
@@ -115,7 +147,12 @@ function SubscriptionPage() {
             <SectionCard title="مميزات باقتك" description="ما تملكه وما لا تملكه بوضوح">
               <ul className="divide-y divide-border">
                 {buildFeatureRows(overview).map((f) => (
-                  <FeatureLine key={f.key} label={f.label} available={f.available} requiredPlan={f.requiredPlan} />
+                  <FeatureLine
+                    key={f.key}
+                    label={f.label}
+                    available={f.available}
+                    requiredPlan={f.requiredPlan}
+                  />
                 ))}
               </ul>
             </SectionCard>
@@ -127,7 +164,11 @@ function SubscriptionPage() {
                   available
                   value={SUPPORT_LABELS[overview.plan.support_level] ?? overview.plan.support_level}
                 />
-                <FeatureLine label="زمن الاستجابة (SLA)" available value={`${overview.plan.sla_hours} ساعة`} />
+                <FeatureLine
+                  label="زمن الاستجابة (SLA)"
+                  available
+                  value={`${overview.plan.sla_hours} ساعة`}
+                />
                 {(overview.plan.features ?? []).map((extra) => (
                   <FeatureLine key={extra} label={extra} available value="مشمولة" />
                 ))}
@@ -137,7 +178,10 @@ function SubscriptionPage() {
 
           {/* Upgrade options */}
           {overview.upgrade_plans.length > 0 && (
-            <SectionCard title="الترقية" description="اختر الباقة المناسبة وسيتواصل فريق مِهلة لإتمام التفعيل">
+            <SectionCard
+              title="الترقية"
+              description="اختر الباقة المناسبة وسيتواصل فريق مِهلة لإتمام التفعيل"
+            >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {overview.upgrade_plans.map((p) => {
                   const current = p.code === overview.plan.code;
@@ -182,7 +226,10 @@ function SubscriptionPage() {
           {/* History */}
           <SectionCard title="سجل الاشتراكات">
             {overview.history.length === 0 ? (
-              <EmptyState title="لا توجد اشتراكات سابقة" hint="سيظهر هنا كل اشتراك يتم تفعيله لمكتبك." />
+              <EmptyState
+                title="لا توجد اشتراكات سابقة"
+                hint="سيظهر هنا كل اشتراك يتم تفعيله لمكتبك."
+              />
             ) : (
               <DataCard>
                 <table className="w-full min-w-[620px] text-right">
@@ -203,7 +250,9 @@ function SubscriptionPage() {
                         <Td>{fmtDate(h.ends_at)}</Td>
                         <Td className="tabular-nums">{SAR(h.amount, h.currency)}</Td>
                         <Td>
-                          <Badge tone={HISTORY_TONE[h.status] ?? "muted"}>{STATE_LABELS[h.status as SubscriptionState] ?? h.status}</Badge>
+                          <Badge tone={HISTORY_TONE[h.status] ?? "muted"}>
+                            {STATE_LABELS[h.status as SubscriptionState] ?? h.status}
+                          </Badge>
                         </Td>
                       </tr>
                     ))}
@@ -238,8 +287,20 @@ function SubscriptionPage() {
                         <Td>{inv.paid_at ? fmtDate(inv.paid_at) : "—"}</Td>
                         <Td>{inv.payment_method ?? "—"}</Td>
                         <Td>
-                          <Badge tone={inv.status === "paid" ? "green" : inv.status === "refunded" ? "muted" : "warn"}>
-                            {inv.status === "paid" ? "مدفوعة" : inv.status === "refunded" ? "مُستردة" : "غير مدفوعة"}
+                          <Badge
+                            tone={
+                              inv.status === "paid"
+                                ? "green"
+                                : inv.status === "refunded"
+                                  ? "muted"
+                                  : "warn"
+                            }
+                          >
+                            {inv.status === "paid"
+                              ? "مدفوعة"
+                              : inv.status === "refunded"
+                                ? "مُستردة"
+                                : "غير مدفوعة"}
                           </Badge>
                         </Td>
                         <Td className="text-left">

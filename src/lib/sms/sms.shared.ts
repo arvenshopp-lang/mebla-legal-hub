@@ -38,7 +38,12 @@ export const SIGNUP_MODE_HINTS: Record<SignupMode, string> = {
   outage_bypass: "يُستخدم أثناء انقطاع المزوّد: يُحفظ الرقم ويؤجَّل التوثيق دون تعطيل التسجيل.",
 };
 
-export type PhoneVerificationStatus = "not_required" | "pending" | "verified" | "failed" | "disabled";
+export type PhoneVerificationStatus =
+  | "not_required"
+  | "pending"
+  | "verified"
+  | "failed"
+  | "disabled";
 
 export const PHONE_STATUS_LABELS: Record<PhoneVerificationStatus, string> = {
   not_required: "غير مطلوب",
@@ -143,7 +148,8 @@ export function normalizePhone(raw: string, defaultDialCode = "+966"): PhonePars
   }
 
   if (!cleaned.startsWith("+")) digits = `${dial}${digits.replace(/^0+/, "")}`;
-  if (!/^\d{8,15}$/.test(digits)) return { ok: false, message: "صيغة رقم الجوال الدولي غير صحيحة." };
+  if (!/^\d{8,15}$/.test(digits))
+    return { ok: false, message: "صيغة رقم الجوال الدولي غير صحيحة." };
   return { ok: true, e164: `+${digits}`, national: `+${digits}` };
 }
 
@@ -165,7 +171,8 @@ export function phoneFieldVisible(config: SmsPublicConfig): boolean {
 
 export const SMS_MESSAGES = {
   disabled: "خدمة الرسائل النصية غير مُشغّلة حالياً.",
-  outage: "خدمة الرسائل غير متاحة مؤقتاً. يمكنك متابعة إنشاء الحساب وتوثيق رقمك لاحقاً من الإعدادات.",
+  outage:
+    "خدمة الرسائل غير متاحة مؤقتاً. يمكنك متابعة إنشاء الحساب وتوثيق رقمك لاحقاً من الإعدادات.",
   rateLimited: "تجاوزت عدد المحاولات المسموح بها. انتظر قليلاً ثم أعد المحاولة.",
   invalidCode: "الرمز غير صحيح. تأكد من الرمز المرسل وأعد المحاولة.",
   expiredCode: "انتهت صلاحية الرمز. اطلب رمزاً جديداً.",

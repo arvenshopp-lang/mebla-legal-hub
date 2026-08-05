@@ -8,8 +8,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { CASE_STATUS, CASE_PRIORITY, CLIENT_ROLE, asOptions, fmtDate } from "@/lib/enums";
 import {
-  PageToolbar, EmptyState, LoadingBlock, ErrorBlock, DataCard, Th, Td, BusyOverlay, IconBtn,
-  Modal, FormField, inputCls, Btn, Badge, useDebounced, ConfirmDialog, Pagination,
+  PageToolbar,
+  EmptyState,
+  LoadingBlock,
+  ErrorBlock,
+  DataCard,
+  Th,
+  Td,
+  BusyOverlay,
+  IconBtn,
+  Modal,
+  FormField,
+  inputCls,
+  Btn,
+  Badge,
+  useDebounced,
+  ConfirmDialog,
+  Pagination,
 } from "@/lib/list-utils";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
@@ -21,10 +36,16 @@ export const Route = createFileRoute("/_authenticated/cases/")({
   head: () => ({
     meta: [
       { title: "القضايا | مِهلة" },
-      { name: "description", content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع." },
+      {
+        name: "description",
+        content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع.",
+      },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "القضايا | مِهلة" },
-      { property: "og:description", content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع." },
+      {
+        property: "og:description",
+        content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -38,14 +59,34 @@ const caseSchema = z.object({
   case_number: z.string().max(80).optional().nullable(),
   case_type: z.string().max(80).optional().nullable(),
   client_id: z.string().uuid().optional().nullable(),
-  client_role: z.enum(["plaintiff","defendant","appellant","respondent","execution_applicant","execution_against","other"]).optional().nullable(),
+  client_role: z
+    .enum([
+      "plaintiff",
+      "defendant",
+      "appellant",
+      "respondent",
+      "execution_applicant",
+      "execution_against",
+      "other",
+    ])
+    .optional()
+    .nullable(),
   court_name: z.string().max(150).optional().nullable(),
   court_branch: z.string().max(150).optional().nullable(),
   judicial_circuit: z.string().max(80).optional().nullable(),
   judge_name: z.string().max(150).optional().nullable(),
   opponent_name: z.string().max(250).optional().nullable(),
-  status: z.enum(["draft","open","in_progress","waiting","judgment_issued","execution","closed","archived"]),
-  priority: z.enum(["low","medium","high","urgent"]),
+  status: z.enum([
+    "draft",
+    "open",
+    "in_progress",
+    "waiting",
+    "judgment_issued",
+    "execution",
+    "closed",
+    "archived",
+  ]),
+  priority: z.enum(["low", "medium", "high", "urgent"]),
   assigned_lawyer_id: z.string().uuid().optional().nullable(),
   opened_at: z.string().optional().nullable(),
   description: z.string().max(3000).optional().nullable(),
@@ -54,10 +95,17 @@ const caseSchema = z.object({
 type CaseForm = z.infer<typeof caseSchema>;
 
 type CaseRow = {
-  id: string; case_title: string; case_number: string | null; case_type: string | null;
-  court_name: string | null; status: string; priority: string;
-  assigned_lawyer_id: string | null; client_id: string | null;
-  next_action_date: string | null; last_activity_at: string;
+  id: string;
+  case_title: string;
+  case_number: string | null;
+  case_type: string | null;
+  court_name: string | null;
+  status: string;
+  priority: string;
+  assigned_lawyer_id: string | null;
+  client_id: string | null;
+  next_action_date: string | null;
+  last_activity_at: string;
   client?: { full_name: string } | null;
   lawyer?: { full_name: string } | null;
 };
@@ -80,8 +128,11 @@ function Page() {
     queryKey: ["members-basic", activeOrgId],
     enabled: !!activeOrgId,
     queryFn: async () => {
-      const { data } = await supabase.from("organization_members")
-        .select("user_id, profile:profiles(id, full_name)").eq("organization_id", activeOrgId!).eq("status", "active");
+      const { data } = await supabase
+        .from("organization_members")
+        .select("user_id, profile:profiles(id, full_name)")
+        .eq("organization_id", activeOrgId!)
+        .eq("status", "active");
       return (data ?? []).map((m: any) => ({ id: m.user_id, name: m.profile?.full_name ?? "—" }));
     },
   });
@@ -91,11 +142,19 @@ function Page() {
     queryKey: ["cases", activeOrgId, q, status, caseType, court, lawyer, page],
     enabled: !!activeOrgId,
     queryFn: async () => {
-      let query = supabase.from("cases")
-        .select("id, case_title, case_number, case_type, court_name, status, priority, assigned_lawyer_id, client_id, next_action_date, last_activity_at, client:clients(full_name), lawyer:profiles!cases_assigned_lawyer_id_fkey(full_name)", { count: "exact" })
-        .eq("organization_id", activeOrgId!).order("last_activity_at", { ascending: false })
+      let query = supabase
+        .from("cases")
+        .select(
+          "id, case_title, case_number, case_type, court_name, status, priority, assigned_lawyer_id, client_id, next_action_date, last_activity_at, client:clients(full_name), lawyer:profiles!cases_assigned_lawyer_id_fkey(full_name)",
+          { count: "exact" },
+        )
+        .eq("organization_id", activeOrgId!)
+        .order("last_activity_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-      if (q) query = query.or(`case_title.ilike.%${q}%,case_number.ilike.%${q}%,opponent_name.ilike.%${q}%`);
+      if (q)
+        query = query.or(
+          `case_title.ilike.%${q}%,case_number.ilike.%${q}%,opponent_name.ilike.%${q}%`,
+        );
       if (status !== "all") query = query.eq("status", status as any);
       if (caseType) query = query.ilike("case_type", `%${caseType}%`);
       if (court) query = query.ilike("court_name", `%${court}%`);
@@ -108,7 +167,10 @@ function Page() {
 
   const archive = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("cases").update({ status: "archived" as const, closed_at: new Date().toISOString().slice(0, 10) }).eq("id", id);
+      const { error } = await supabase
+        .from("cases")
+        .update({ status: "archived" as const, closed_at: new Date().toISOString().slice(0, 10) })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -121,67 +183,181 @@ function Page() {
   });
 
   const statusTone = (s: string) =>
-    s === "closed" || s === "archived" ? "muted" :
-    s === "judgment_issued" ? "green" :
-    s === "waiting" ? "warn" :
-    s === "execution" ? "gold" : "default";
+    s === "closed" || s === "archived"
+      ? "muted"
+      : s === "judgment_issued"
+        ? "green"
+        : s === "waiting"
+          ? "warn"
+          : s === "execution"
+            ? "gold"
+            : "default";
 
   return (
     <DashboardShell title="القضايا">
       <PageToolbar
         searching={isFetching && !isLoading}
         search={search}
-        setSearch={(v) => { setSearch(v); setPage(1); }}
+        setSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
         canAdd={canEdit(activeRole)}
-        onAdd={() => { setEditing(null); setOpen(true); }}
+        onAdd={() => {
+          setEditing(null);
+          setOpen(true);
+        }}
         addLabel="قضية جديدة"
         filters={
           <>
-            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className={inputCls + " max-w-[160px]"}>
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+              className={inputCls + " max-w-[160px]"}
+            >
               <option value="all">كل الحالات</option>
-              {asOptions(CASE_STATUS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {asOptions(CASE_STATUS).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
-            <input placeholder="نوع القضية" value={caseType} onChange={(e) => { setCaseType(e.target.value); setPage(1); }} className={inputCls + " max-w-[140px]"} />
-            <input placeholder="المحكمة" value={court} onChange={(e) => { setCourt(e.target.value); setPage(1); }} className={inputCls + " max-w-[140px]"} />
-            <select value={lawyer} onChange={(e) => { setLawyer(e.target.value); setPage(1); }} className={inputCls + " max-w-[160px]"}>
+            <input
+              placeholder="نوع القضية"
+              value={caseType}
+              onChange={(e) => {
+                setCaseType(e.target.value);
+                setPage(1);
+              }}
+              className={inputCls + " max-w-[140px]"}
+            />
+            <input
+              placeholder="المحكمة"
+              value={court}
+              onChange={(e) => {
+                setCourt(e.target.value);
+                setPage(1);
+              }}
+              className={inputCls + " max-w-[140px]"}
+            />
+            <select
+              value={lawyer}
+              onChange={(e) => {
+                setLawyer(e.target.value);
+                setPage(1);
+              }}
+              className={inputCls + " max-w-[160px]"}
+            >
               <option value="all">كل المحامين</option>
-              {(members ?? []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {(members ?? []).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
             </select>
           </>
         }
       />
-      {isLoading ? <LoadingBlock /> : error ? <ErrorBlock message={(error as any).message} /> :
-        !data?.rows.length ? (
-          <EmptyState title="لا توجد قضايا بعد" hint="ابدأ بإضافة أول قضية" action={canEdit(activeRole) && <Btn onClick={() => { setEditing(null); setOpen(true); }}>إضافة قضية</Btn>} />
-        ) : (
-          <>
-            <BusyOverlay busy={isFetching && !isLoading}>
+      {isLoading ? (
+        <LoadingBlock />
+      ) : error ? (
+        <ErrorBlock message={(error as any).message} />
+      ) : !data?.rows.length ? (
+        <EmptyState
+          title="لا توجد قضايا بعد"
+          hint="ابدأ بإضافة أول قضية"
+          action={
+            canEdit(activeRole) && (
+              <Btn
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                إضافة قضية
+              </Btn>
+            )
+          }
+        />
+      ) : (
+        <>
+          <BusyOverlay busy={isFetching && !isLoading}>
             <DataCard>
               <table className="min-w-full">
                 <thead className="bg-surface-muted/60">
-                  <tr><Th>العنوان</Th><Th>الرقم</Th><Th>العميل</Th><Th>المحكمة</Th><Th>الحالة</Th><Th>الأولوية</Th><Th>المسؤول</Th><Th>آخر نشاط</Th><Th>{" "}</Th></tr>
+                  <tr>
+                    <Th>العنوان</Th>
+                    <Th>الرقم</Th>
+                    <Th>العميل</Th>
+                    <Th>المحكمة</Th>
+                    <Th>الحالة</Th>
+                    <Th>الأولوية</Th>
+                    <Th>المسؤول</Th>
+                    <Th>آخر نشاط</Th>
+                    <Th> </Th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.rows.map((c) => (
                     <tr key={c.id} className="hover:bg-surface-muted/40">
                       <Td className="font-medium">
-                        <Link to="/cases/$id" params={{ id: c.id }} className="hover:underline">{c.case_title}</Link>
+                        <Link to="/cases/$id" params={{ id: c.id }} className="hover:underline">
+                          {c.case_title}
+                        </Link>
                       </Td>
                       <Td>{c.case_number ?? "—"}</Td>
                       <Td>{c.client?.full_name ?? "—"}</Td>
                       <Td>{c.court_name ?? "—"}</Td>
-                      <Td><Badge tone={statusTone(c.status) as any}>{CASE_STATUS[c.status] ?? c.status}</Badge></Td>
-                      <Td><Badge tone={c.priority === "urgent" ? "red" : c.priority === "high" ? "warn" : "muted"}>{CASE_PRIORITY[c.priority] ?? c.priority}</Badge></Td>
+                      <Td>
+                        <Badge tone={statusTone(c.status) as any}>
+                          {CASE_STATUS[c.status] ?? c.status}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        <Badge
+                          tone={
+                            c.priority === "urgent"
+                              ? "red"
+                              : c.priority === "high"
+                                ? "warn"
+                                : "muted"
+                          }
+                        >
+                          {CASE_PRIORITY[c.priority] ?? c.priority}
+                        </Badge>
+                      </Td>
                       <Td>{c.lawyer?.full_name ?? "—"}</Td>
                       <Td>{fmtDate(c.last_activity_at)}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
-                          <Link to="/cases/$id" params={{ id: c.id }} className="rounded-lg p-1.5 hover:bg-surface-muted"><ExternalLink className="h-4 w-4" /></Link>
+                          <Link
+                            to="/cases/$id"
+                            params={{ id: c.id }}
+                            className="rounded-lg p-1.5 hover:bg-surface-muted"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
                           {canEdit(activeRole) && (
-                            <button onClick={() => { setEditing(c); setOpen(true); }} className="rounded-lg p-1.5 hover:bg-surface-muted"><Pencil className="h-4 w-4" /></button>
+                            <button
+                              onClick={() => {
+                                setEditing(c);
+                                setOpen(true);
+                              }}
+                              className="rounded-lg p-1.5 hover:bg-surface-muted"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
                           )}
                           {canManage(activeRole) && c.status !== "archived" && (
-                            <button onClick={() => setArchiving(c)} className="rounded-lg p-1.5 text-warning hover:bg-warning-soft"><Archive className="h-4 w-4" /></button>
+                            <button
+                              onClick={() => setArchiving(c)}
+                              className="rounded-lg p-1.5 text-warning hover:bg-warning-soft"
+                            >
+                              <Archive className="h-4 w-4" />
+                            </button>
                           )}
                         </div>
                       </Td>
@@ -190,12 +366,17 @@ function Page() {
                 </tbody>
               </table>
             </DataCard>
-            </BusyOverlay>
-            <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
-          </>
-        )}
+          </BusyOverlay>
+          <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
+        </>
+      )}
 
-      <CaseDialog open={open} onClose={() => setOpen(false)} editing={editing} members={members ?? []} />
+      <CaseDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        editing={editing}
+        members={members ?? []}
+      />
       <ConfirmDialog
         open={!!archiving}
         onClose={() => setArchiving(null)}
@@ -210,9 +391,18 @@ function Page() {
   );
 }
 
-export function CaseDialog({ open, onClose, editing, members, onCreated }: {
-  open: boolean; onClose: () => void; editing: CaseRow | null;
-  members: { id: string; name: string }[]; onCreated?: (c: any) => void;
+export function CaseDialog({
+  open,
+  onClose,
+  editing,
+  members,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  editing: CaseRow | null;
+  members: { id: string; name: string }[];
+  onCreated?: (c: any) => void;
 }) {
   const { activeOrgId, user } = useAuth();
   const qc = useQueryClient();
@@ -234,7 +424,11 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
     queryKey: ["clients-basic", activeOrgId],
     enabled: !!activeOrgId && open,
     queryFn: async () => {
-      const { data } = await supabase.from("clients").select("id, full_name").eq("organization_id", activeOrgId!).order("full_name");
+      const { data } = await supabase
+        .from("clients")
+        .select("id, full_name")
+        .eq("organization_id", activeOrgId!)
+        .order("full_name");
       return data ?? [];
     },
   });
@@ -246,35 +440,57 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   }
 
   const save = async () => {
-    const res = caseSchema.safeParse({ ...form, status: form.status ?? "open", priority: form.priority ?? "medium" });
+    const res = caseSchema.safeParse({
+      ...form,
+      status: form.status ?? "open",
+      priority: form.priority ?? "medium",
+    });
     if (!res.success) {
       const errs: Record<string, string> = {};
-      res.error.issues.forEach((i) => { errs[i.path[0] as string] = i.message; });
+      res.error.issues.forEach((i) => {
+        errs[i.path[0] as string] = i.message;
+      });
       setErrors(errs);
       toast.error("تحقق من الحقول المطلوبة", { description: Object.values(errs)[0] as string });
       return;
     }
     setSaving(true);
     const payload: any = { ...res.data };
-    Object.keys(payload).forEach((k) => { if (payload[k] === "" || payload[k] === undefined) payload[k] = null; });
+    Object.keys(payload).forEach((k) => {
+      if (payload[k] === "" || payload[k] === undefined) payload[k] = null;
+    });
     let result: any;
     if (editing) {
-      const { data, error } = await supabase.from("cases").update(payload).eq("id", editing.id).select().single();
+      const { data, error } = await supabase
+        .from("cases")
+        .update(payload)
+        .eq("id", editing.id)
+        .select()
+        .single();
       result = { data, error };
     } else {
-      const { data, error } = await supabase.from("cases")
+      const { data, error } = await supabase
+        .from("cases")
         .insert({ ...payload, organization_id: activeOrgId, created_by: user?.id })
-        .select().single();
+        .select()
+        .single();
       if (!error && data) {
         await supabase.from("case_updates").insert({
-          organization_id: activeOrgId!, case_id: data.id, update_type: "case_created",
-          title: "تم إنشاء القضية", event_date: new Date().toISOString(), created_by: user?.id,
+          organization_id: activeOrgId!,
+          case_id: data.id,
+          update_type: "case_created",
+          title: "تم إنشاء القضية",
+          event_date: new Date().toISOString(),
+          created_by: user?.id,
         });
       }
       result = { data, error };
     }
     setSaving(false);
-    if (result.error) return toast.error("تعذّر الحفظ", { description: describeMutationError(result.error.message) });
+    if (result.error)
+      return toast.error("تعذّر الحفظ", {
+        description: describeMutationError(result.error.message),
+      });
     toast.success(editing ? "تم التحديث" : "تم إنشاء القضية");
     draft.clear();
     qc.invalidateQueries({ queryKey: ["cases"] });
@@ -284,82 +500,183 @@ export function CaseDialog({ open, onClose, editing, members, onCreated }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "تعديل قضية" : "قضية جديدة"} size="lg" busy={loadingClients} busyLabel="جاري تجهيز النموذج…">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={editing ? "تعديل قضية" : "قضية جديدة"}
+      size="lg"
+      busy={loadingClients}
+      busyLabel="جاري تجهيز النموذج…"
+    >
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <FormField label="عنوان القضية *">
-            <input value={form.case_title ?? ""} onChange={(e) => setForm({ ...form, case_title: e.target.value })} className={inputCls} />
+            <input
+              value={form.case_title ?? ""}
+              onChange={(e) => setForm({ ...form, case_title: e.target.value })}
+              className={inputCls}
+            />
             {errors.case_title && <span className="text-xs text-danger">{errors.case_title}</span>}
           </FormField>
         </div>
         <FormField label="رقم القضية">
-          <input value={form.case_number ?? ""} onChange={(e) => setForm({ ...form, case_number: e.target.value })} className={inputCls} />
+          <input
+            value={form.case_number ?? ""}
+            onChange={(e) => setForm({ ...form, case_number: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="نوع القضية">
-          <input value={form.case_type ?? ""} onChange={(e) => setForm({ ...form, case_type: e.target.value })} placeholder="تجاري، أحوال، عمالي…" className={inputCls} />
+          <input
+            value={form.case_type ?? ""}
+            onChange={(e) => setForm({ ...form, case_type: e.target.value })}
+            placeholder="تجاري، أحوال، عمالي…"
+            className={inputCls}
+          />
         </FormField>
         <FormField label="العميل">
-          <select value={form.client_id ?? ""} onChange={(e) => setForm({ ...form, client_id: e.target.value || null })} className={inputCls}>
+          <select
+            value={form.client_id ?? ""}
+            onChange={(e) => setForm({ ...form, client_id: e.target.value || null })}
+            className={inputCls}
+          >
             <option value="">— بدون —</option>
-            {(clients ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+            {(clients ?? []).map((c: any) => (
+              <option key={c.id} value={c.id}>
+                {c.full_name}
+              </option>
+            ))}
           </select>
         </FormField>
         <FormField label="صفة العميل">
-          <select value={form.client_role ?? ""} onChange={(e) => setForm({ ...form, client_role: (e.target.value || null) as any })} className={inputCls}>
+          <select
+            value={form.client_role ?? ""}
+            onChange={(e) => setForm({ ...form, client_role: (e.target.value || null) as any })}
+            className={inputCls}
+          >
             <option value="">—</option>
-            {asOptions(CLIENT_ROLE).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {asOptions(CLIENT_ROLE).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </FormField>
         <FormField label="اسم الخصم">
-          <input value={form.opponent_name ?? ""} onChange={(e) => setForm({ ...form, opponent_name: e.target.value })} className={inputCls} />
+          <input
+            value={form.opponent_name ?? ""}
+            onChange={(e) => setForm({ ...form, opponent_name: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="المحكمة">
-          <input value={form.court_name ?? ""} onChange={(e) => setForm({ ...form, court_name: e.target.value })} className={inputCls} />
+          <input
+            value={form.court_name ?? ""}
+            onChange={(e) => setForm({ ...form, court_name: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الفرع">
-          <input value={form.court_branch ?? ""} onChange={(e) => setForm({ ...form, court_branch: e.target.value })} className={inputCls} />
+          <input
+            value={form.court_branch ?? ""}
+            onChange={(e) => setForm({ ...form, court_branch: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الدائرة">
-          <input value={form.judicial_circuit ?? ""} onChange={(e) => setForm({ ...form, judicial_circuit: e.target.value })} className={inputCls} />
+          <input
+            value={form.judicial_circuit ?? ""}
+            onChange={(e) => setForm({ ...form, judicial_circuit: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="القاضي">
-          <input value={form.judge_name ?? ""} onChange={(e) => setForm({ ...form, judge_name: e.target.value })} className={inputCls} />
+          <input
+            value={form.judge_name ?? ""}
+            onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الحالة *">
-          <select value={form.status ?? "open"} onChange={(e) => setForm({ ...form, status: e.target.value as any })} className={inputCls}>
-            {asOptions(CASE_STATUS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <select
+            value={form.status ?? "open"}
+            onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+            className={inputCls}
+          >
+            {asOptions(CASE_STATUS).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </FormField>
         <FormField label="الأولوية *">
-          <select value={form.priority ?? "medium"} onChange={(e) => setForm({ ...form, priority: e.target.value as any })} className={inputCls}>
-            {asOptions(CASE_PRIORITY).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <select
+            value={form.priority ?? "medium"}
+            onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
+            className={inputCls}
+          >
+            {asOptions(CASE_PRIORITY).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </FormField>
         <FormField label="المحامي المسؤول">
-          <select value={form.assigned_lawyer_id ?? ""} onChange={(e) => setForm({ ...form, assigned_lawyer_id: e.target.value || null })} className={inputCls}>
+          <select
+            value={form.assigned_lawyer_id ?? ""}
+            onChange={(e) => setForm({ ...form, assigned_lawyer_id: e.target.value || null })}
+            className={inputCls}
+          >
             <option value="">—</option>
-            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
           </select>
         </FormField>
         <FormField label="تاريخ الفتح">
-          <input type="date" value={form.opened_at ?? ""} onChange={(e) => setForm({ ...form, opened_at: e.target.value })} className={inputCls} />
+          <input
+            type="date"
+            value={form.opened_at ?? ""}
+            onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <div className="md:col-span-2">
           <FormField label="الوصف">
-            <textarea rows={3} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} />
+            <textarea
+              rows={3}
+              value={form.description ?? ""}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className={inputCls}
+            />
           </FormField>
         </div>
         <div className="md:col-span-2">
           <FormField label="ملاحظات داخلية">
-            <textarea rows={2} value={form.internal_notes ?? ""} onChange={(e) => setForm({ ...form, internal_notes: e.target.value })} className={inputCls} />
+            <textarea
+              rows={2}
+              value={form.internal_notes ?? ""}
+              onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
+              className={inputCls}
+            />
           </FormField>
         </div>
       </div>
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-        <div className="me-auto"><DraftStatus draft={draft as never} /></div>
-        <Btn variant="outline" onClick={onClose} disabled={saving}>إلغاء</Btn>
-        <Btn onClick={save} loading={saving}>{saving ? "جاري الحفظ…" : "حفظ"}</Btn>
+        <div className="me-auto">
+          <DraftStatus draft={draft as never} />
+        </div>
+        <Btn variant="outline" onClick={onClose} disabled={saving}>
+          إلغاء
+        </Btn>
+        <Btn onClick={save} loading={saving}>
+          {saving ? "جاري الحفظ…" : "حفظ"}
+        </Btn>
       </div>
     </Modal>
   );

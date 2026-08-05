@@ -61,7 +61,10 @@ export type PasswordStrengthState = {
   acceptable: boolean;
 };
 
-export function usePasswordStrength(password: string, ctx: PasswordContext = {}): PasswordStrengthState {
+export function usePasswordStrength(
+  password: string,
+  ctx: PasswordContext = {},
+): PasswordStrengthState {
   const { name, email } = ctx;
   const stableCtx = useMemo<PasswordContext>(() => ({ name, email }), [name, email]);
 
@@ -93,9 +96,7 @@ export function usePasswordStrength(password: string, ctx: PasswordContext = {})
     };
   }, [password, stableCtx]);
 
-  const score: StrengthLevel = password
-    ? (zxcvbnScore ?? heuristicScore(password, stableCtx))
-    : 0;
+  const score: StrengthLevel = password ? (zxcvbnScore ?? heuristicScore(password, stableCtx)) : 0;
 
   // فحص التسريبات: بعد استيفاء الشروط الأساسية فقط، مع debounce وإلغاء الطلبات القديمة.
   useEffect(() => {
@@ -161,8 +162,7 @@ export function usePasswordStrength(password: string, ctx: PasswordContext = {})
   if (breachStatus === "checking") notice = "جارٍ التحقق من أمان كلمة المرور…";
   else if (breachStatus === "unavailable")
     notice = "تعذر إكمال الفحص الإضافي، وتم التحقق من قوة كلمة المرور محلياً";
-  else if (edgeWhitespace)
-    notice = "كلمة المرور تبدأ أو تنتهي بمسافة — تأكد أن ذلك مقصود.";
+  else if (edgeWhitespace) notice = "كلمة المرور تبدأ أو تنتهي بمسافة — تأكد أن ذلك مقصود.";
 
   const acceptable =
     rules.valid && strongEnough && breachStatus !== "breached" && breachStatus !== "checking";

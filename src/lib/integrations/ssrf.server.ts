@@ -41,7 +41,10 @@ function ipv4Parts(host: string): number[] | null {
 
 /** هل العنوان ينتمي لشبكة داخلية أو محجوزة؟ */
 export function isPrivateIp(address: string): boolean {
-  const host = address.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const host = address
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "");
   const v4 = ipv4Parts(host);
   if (v4) {
     const [a, b] = v4 as [number, number, number, number];

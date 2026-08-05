@@ -30,7 +30,9 @@ import { fmtDateTime } from "@/lib/enums";
 import { buildCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/mehla-admin/support")({
-  head: () => ({ meta: [{ title: "مركز الدعم · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "مركز الدعم · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: SupportPage,
 });
 
@@ -72,10 +74,18 @@ function SupportPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const debounced = useDebounced(search);
 
-  const { data: tickets, isLoading, isFetching } = useQuery({
+  const {
+    data: tickets,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["admin-tickets", debounced, statusFilter],
     queryFn: async () => {
-      let q = supabase.from("support_tickets").select("*").order("last_reply_at", { ascending: false }).limit(200);
+      let q = supabase
+        .from("support_tickets")
+        .select("*")
+        .order("last_reply_at", { ascending: false })
+        .limit(200);
       if (statusFilter === "open") q = q.neq("status", "closed");
       else if (statusFilter === "rated") q = q.not("rated_at", "is", null);
       else if (statusFilter !== "all") q = q.eq("status", statusFilter as never);
@@ -94,7 +104,10 @@ function SupportPage() {
       const ids = Array.from(
         new Set((tickets ?? []).map((t) => t.user_id).filter((id): id is string => !!id)),
       );
-      const { data, error } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ids);
       if (error) throw error;
       return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
     },
@@ -114,41 +127,42 @@ function SupportPage() {
         searching={isFetching && !isLoading}
         filters={
           <>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="حالة التذكرة"
-            className={`${inputCls} w-auto min-w-[150px]`}
-          >
-            <option value="open">التذاكر المفتوحة</option>
-            <option value="all">كل التذاكر</option>
-            <option value="rated">التذاكر المُقيَّمة</option>
-            {Object.entries(TICKET_STATUS_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-          <Btn
-            variant="ghost"
-            disabled={rated.length === 0}
-            onClick={() =>
-              downloadCsv(
-                rated.map((t) => ({
-                  المرجع: t.reference,
-                  الموضوع: t.subject,
-                  "بريد المشترك": (t.user_id ? requesters?.[t.user_id]?.email : t.requester_email) ?? "",
-                  التقييم: t.rating ?? "",
-                  الملاحظة: t.rating_comment ?? "",
-                  الموظف: t.rated_staff_name ?? "",
-                  "تاريخ التقييم": fmtDateTime(t.rated_at),
-                })),
-                `mehla-support-ratings-${new Date().toISOString().slice(0, 10)}.csv`,
-              )
-            }
-          >
-            <Download className="h-4 w-4" aria-hidden /> تصدير التقييمات
-          </Btn>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="حالة التذكرة"
+              className={`${inputCls} w-auto min-w-[150px]`}
+            >
+              <option value="open">التذاكر المفتوحة</option>
+              <option value="all">كل التذاكر</option>
+              <option value="rated">التذاكر المُقيَّمة</option>
+              {Object.entries(TICKET_STATUS_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+            <Btn
+              variant="ghost"
+              disabled={rated.length === 0}
+              onClick={() =>
+                downloadCsv(
+                  rated.map((t) => ({
+                    المرجع: t.reference,
+                    الموضوع: t.subject,
+                    "بريد المشترك":
+                      (t.user_id ? requesters?.[t.user_id]?.email : t.requester_email) ?? "",
+                    التقييم: t.rating ?? "",
+                    الملاحظة: t.rating_comment ?? "",
+                    الموظف: t.rated_staff_name ?? "",
+                    "تاريخ التقييم": fmtDateTime(t.rated_at),
+                  })),
+                  `mehla-support-ratings-${new Date().toISOString().slice(0, 10)}.csv`,
+                )
+              }
+            >
+              <Download className="h-4 w-4" aria-hidden /> تصدير التقييمات
+            </Btn>
           </>
         }
       />
@@ -195,15 +209,27 @@ function SupportPage() {
                   </Td>
                   <Td>{TICKET_CATEGORY_LABELS[t.category] ?? t.category}</Td>
                   <Td>
-                    <Badge tone={t.priority === "urgent" || t.priority === "high" ? "red" : "muted"}>
+                    <Badge
+                      tone={t.priority === "urgent" || t.priority === "high" ? "red" : "muted"}
+                    >
                       {TICKET_PRIORITY_LABELS[t.priority] ?? t.priority}
                     </Badge>
                   </Td>
                   <Td>
-                    <Badge tone={statusTone(t.status)}>{TICKET_STATUS_LABELS[t.status] ?? t.status}</Badge>
+                    <Badge tone={statusTone(t.status)}>
+                      {TICKET_STATUS_LABELS[t.status] ?? t.status}
+                    </Badge>
                   </Td>
-                  <Td>{t.rated_at ? <Stars value={Number(t.rating ?? 0)} /> : <span className="text-muted-foreground">—</span>}</Td>
-                  <Td className="text-[12px] text-muted-foreground">{fmtDateTime(t.last_reply_at)}</Td>
+                  <Td>
+                    {t.rated_at ? (
+                      <Stars value={Number(t.rating ?? 0)} />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </Td>
+                  <Td className="text-[12px] text-muted-foreground">
+                    {fmtDateTime(t.last_reply_at)}
+                  </Td>
                 </tr>
               ))}
             </tbody>
@@ -277,12 +303,14 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
                 <span className="font-semibold">تقييم المشترك</span>
                 <Stars value={Number(data.ticket.rating ?? 0)} />
                 <span className="text-muted-foreground">
-                  {data.ticket.rated_staff_name ? `· الموظف: ${data.ticket.rated_staff_name}` : ""} ·{" "}
-                  {fmtDateTime(data.ticket.rated_at)}
+                  {data.ticket.rated_staff_name ? `· الموظف: ${data.ticket.rated_staff_name}` : ""}{" "}
+                  · {fmtDateTime(data.ticket.rated_at)}
                 </span>
               </div>
               {data.ticket.rating_comment && (
-                <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-6">{data.ticket.rating_comment}</p>
+                <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-6">
+                  {data.ticket.rating_comment}
+                </p>
               )}
             </div>
           )}
@@ -290,7 +318,9 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
           <div className="max-h-[320px] space-y-3 overflow-y-auto pl-1">
             <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted px-3.5 py-3 text-[13px] leading-6">
               <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-                <span className="font-semibold text-foreground">{data.requester?.full_name ?? "المشترك"}</span>
+                <span className="font-semibold text-foreground">
+                  {data.requester?.full_name ?? "المشترك"}
+                </span>
                 <span>{fmtDateTime(data.ticket.created_at)}</span>
               </div>
               <p className="whitespace-pre-wrap">{data.ticket.description}</p>
@@ -299,12 +329,16 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
               <div
                 key={m.id}
                 className={`rounded-[var(--radius-m)] border px-3.5 py-3 text-[13px] leading-6 ${
-                  m.is_staff ? "border-primary/25 bg-primary/[0.06]" : "border-border bg-surface-muted"
+                  m.is_staff
+                    ? "border-primary/25 bg-primary/[0.06]"
+                    : "border-border bg-surface-muted"
                 }`}
               >
                 <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
                   <span className="font-semibold text-foreground">
-                    {m.is_staff ? m.author_name || "فريق مِهلة" : data.requester?.full_name ?? "المشترك"}
+                    {m.is_staff
+                      ? m.author_name || "فريق مِهلة"
+                      : (data.requester?.full_name ?? "المشترك")}
                   </span>
                   <span>{fmtDateTime(m.created_at)}</span>
                 </div>

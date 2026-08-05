@@ -53,7 +53,9 @@ function toCsv(rows: Record<string, unknown>[]) {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
+  return [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join(
+    "\n",
+  );
 }
 
 function downloadCsv(filename: string, csv: string) {
@@ -68,7 +70,13 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; canExport: boolean }) {
+export function CampaignsPanel({
+  canManage,
+  canExport,
+}: {
+  canManage: boolean;
+  canExport: boolean;
+}) {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | MarketingCampaignStatus>("all");
@@ -146,7 +154,12 @@ export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; c
 
       {canExport && (
         <div className="flex justify-end">
-          <Btn variant="outline" size="sm" loading={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
+          <Btn
+            variant="outline"
+            size="sm"
+            loading={exportMutation.isPending}
+            onClick={() => exportMutation.mutate()}
+          >
             <Download className="h-4 w-4" aria-hidden /> تصدير CSV
           </Btn>
         </div>
@@ -180,12 +193,16 @@ export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; c
                     <Td>
                       <span className="block max-w-[220px] truncate font-medium">{c.name}</span>
                       {c.utm_campaign && (
-                        <span className="block truncate text-[11px] text-muted-foreground">{c.utm_campaign}</span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {c.utm_campaign}
+                        </span>
                       )}
                     </Td>
                     <Td>{c.channel}</Td>
                     <Td>
-                      <Badge tone={STATUS_TONE[c.status]}>{MARKETING_CAMPAIGN_STATUS_LABELS[c.status]}</Badge>
+                      <Badge tone={STATUS_TONE[c.status]}>
+                        {MARKETING_CAMPAIGN_STATUS_LABELS[c.status]}
+                      </Badge>
                     </Td>
                     <Td className="tabular-nums">
                       {c.budget_amount.toLocaleString("ar-SA")} {c.currency}
@@ -194,7 +211,8 @@ export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; c
                       {c.spend_amount.toLocaleString("ar-SA")} {c.currency}
                     </Td>
                     <Td>
-                      {c.starts_on ? fmtDate(c.starts_on) : "—"} — {c.ends_on ? fmtDate(c.ends_on) : "مستمرة"}
+                      {c.starts_on ? fmtDate(c.starts_on) : "—"} —{" "}
+                      {c.ends_on ? fmtDate(c.ends_on) : "مستمرة"}
                     </Td>
                     <Td>{c.coupon_code ?? "—"}</Td>
                     <Td className="text-left">
@@ -203,7 +221,11 @@ export function CampaignsPanel({ canManage, canExport }: { canManage: boolean; c
                           <IconBtn aria-label="تعديل الحملة" onClick={() => setEditing(c)}>
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
-                          <IconBtn aria-label="حذف الحملة" tone="danger" onClick={() => setDeleting(c)}>
+                          <IconBtn
+                            aria-label="حذف الحملة"
+                            tone="danger"
+                            onClick={() => setDeleting(c)}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         </div>
@@ -310,15 +332,25 @@ function CampaignDialog({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="اسم الحملة" required>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+          <input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="القناة" required hint="مثال: بحث مدفوع، سوشيال ميديا، بريد إلكتروني">
-          <input value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={inputCls} />
+          <input
+            value={form.channel}
+            onChange={(e) => setForm({ ...form, channel: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الحالة">
           <select
             value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value as MarketingCampaignStatus })}
+            onChange={(e) =>
+              setForm({ ...form, status: e.target.value as MarketingCampaignStatus })
+            }
             className={inputCls}
           >
             {MARKETING_CAMPAIGN_STATUS.map((s) => (
@@ -329,7 +361,11 @@ function CampaignDialog({
           </select>
         </FormField>
         <FormField label="الهدف">
-          <input value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} className={inputCls} />
+          <input
+            value={form.objective}
+            onChange={(e) => setForm({ ...form, objective: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الميزانية">
           <input
@@ -350,10 +386,18 @@ function CampaignDialog({
           />
         </FormField>
         <FormField label="العملة">
-          <input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className={inputCls} />
+          <input
+            value={form.currency}
+            onChange={(e) => setForm({ ...form, currency: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="الكوبون المرتبط">
-          <select value={form.couponId} onChange={(e) => setForm({ ...form, couponId: e.target.value })} className={inputCls}>
+          <select
+            value={form.couponId}
+            onChange={(e) => setForm({ ...form, couponId: e.target.value })}
+            className={inputCls}
+          >
             <option value="">بلا كوبون</option>
             {(couponsData?.coupons ?? []).map((c: { id: string; code: string }) => (
               <option key={c.id} value={c.id}>
@@ -363,22 +407,48 @@ function CampaignDialog({
           </select>
         </FormField>
         <FormField label="تاريخ البدء">
-          <input type="date" value={form.startsOn} onChange={(e) => setForm({ ...form, startsOn: e.target.value })} className={inputCls} />
+          <input
+            type="date"
+            value={form.startsOn}
+            onChange={(e) => setForm({ ...form, startsOn: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="تاريخ الانتهاء">
-          <input type="date" value={form.endsOn} onChange={(e) => setForm({ ...form, endsOn: e.target.value })} className={inputCls} />
+          <input
+            type="date"
+            value={form.endsOn}
+            onChange={(e) => setForm({ ...form, endsOn: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="مصدر UTM (utm_source)">
-          <input value={form.utmSource} onChange={(e) => setForm({ ...form, utmSource: e.target.value })} className={inputCls} />
+          <input
+            value={form.utmSource}
+            onChange={(e) => setForm({ ...form, utmSource: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="وسيط UTM (utm_medium)">
-          <input value={form.utmMedium} onChange={(e) => setForm({ ...form, utmMedium: e.target.value })} className={inputCls} />
+          <input
+            value={form.utmMedium}
+            onChange={(e) => setForm({ ...form, utmMedium: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="حملة UTM (utm_campaign)">
-          <input value={form.utmCampaign} onChange={(e) => setForm({ ...form, utmCampaign: e.target.value })} className={inputCls} />
+          <input
+            value={form.utmCampaign}
+            onChange={(e) => setForm({ ...form, utmCampaign: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="مسار صفحة الهبوط">
-          <input value={form.landingPageSlug} onChange={(e) => setForm({ ...form, landingPageSlug: e.target.value })} className={inputCls} />
+          <input
+            value={form.landingPageSlug}
+            onChange={(e) => setForm({ ...form, landingPageSlug: e.target.value })}
+            className={inputCls}
+          />
         </FormField>
       </div>
       <div className="mt-4">
@@ -391,7 +461,10 @@ function CampaignDialog({
         </FormField>
       </div>
       {error && (
-        <p role="alert" className="mt-4 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+        <p
+          role="alert"
+          className="mt-4 rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+        >
           {error}
         </p>
       )}

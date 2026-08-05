@@ -39,7 +39,11 @@ function parseUa(ua: string): { browser: string; os: string; device: string } {
           : /Linux/.test(ua)
             ? "Linux"
             : "غير معروف";
-  const device = /iPad|Tablet/.test(ua) ? "تابلت" : /Mobile|iPhone|Android/.test(ua) ? "جوال" : "حاسب";
+  const device = /iPad|Tablet/.test(ua)
+    ? "تابلت"
+    : /Mobile|iPhone|Android/.test(ua)
+      ? "جوال"
+      : "حاسب";
   return { browser, os, device };
 }
 
@@ -170,7 +174,8 @@ export async function consumeAccessToken(token: string): Promise<ResolvedToken> 
 
   if (error || !data) throw new Error("رابط غير صالح.");
   if (data.revoked_at) throw new Error("تم إلغاء هذا الرابط.");
-  if (new Date(data.expires_at).getTime() <= Date.now()) throw new Error("انتهت صلاحية هذا الرابط.");
+  if (new Date(data.expires_at).getTime() <= Date.now())
+    throw new Error("انتهت صلاحية هذا الرابط.");
   if (data.used_count >= data.max_uses) throw new Error("تم استهلاك هذا الرابط.");
 
   const { error: bumpError } = await db
@@ -323,15 +328,21 @@ export async function readOriginal(
     if (response.status === 404) await updateFileStatus("FILE_MISSING");
     throw new StorageReadError("الملف غير متاح في المخزن.", trace);
   }
-  const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(trace.contentType);
-  if (trace.contentType.includes("text/html") || (!supportedViewerType && !options.allowProcessingFormat)) {
+  const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(
+    trace.contentType,
+  );
+  if (
+    trace.contentType.includes("text/html") ||
+    (!supportedViewerType && !options.allowProcessingFormat)
+  ) {
     trace.errorCode = "UNSUPPORTED_CONTENT_TYPE";
     await updateFileStatus("INVALID_FILE");
     throw new StorageReadError("نوع الملف المسترجع غير صالح للعرض.", trace);
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
-  const validSignature = options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
+  const validSignature =
+    options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
   if (!bytes.length || beginsWithHtml(bytes) || !validSignature) {
     trace.errorCode = beginsWithHtml(bytes) ? "HTML_BODY_REJECTED" : "FILE_SIGNATURE_MISMATCH";
     await updateFileStatus("INVALID_FILE");
@@ -357,7 +368,9 @@ export async function loadDocumentForStamp(documentId: string) {
   const db = await admin();
   const { data, error } = await db
     .from("documents")
-    .select("id, organization_id, file_name, file_path, file_type, file_status, is_confidential, document_category")
+    .select(
+      "id, organization_id, file_name, file_path, file_type, file_status, is_confidential, document_category",
+    )
     .eq("id", documentId)
     .maybeSingle();
   if (error || !data) throw new Error("المستند غير موجود.");

@@ -26,7 +26,12 @@ import {
   billingListInvoices,
   billingSaveDraft,
 } from "@/lib/billing/billing.functions";
-import { INVOICE_STATUSES, INVOICE_STATUS_LABELS, formatDate, type InvoiceRow } from "@/lib/billing/billing.shared";
+import {
+  INVOICE_STATUSES,
+  INVOICE_STATUS_LABELS,
+  formatDate,
+  type InvoiceRow,
+} from "@/lib/billing/billing.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { DraftFormModal, draftFromInvoice, emptyDraft, type DraftFormValue } from "./draft-form";
 import { InvoiceStatusBadge, Money } from "./shared";
@@ -60,7 +65,15 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
     queryKey: ["billing-invoices", debounced, status, page],
     queryFn: () =>
       listFn({
-        data: { search: debounced || null, status, page, pageSize: PAGE_SIZE, organizationId: null, from: null, to: null },
+        data: {
+          search: debounced || null,
+          status,
+          page,
+          pageSize: PAGE_SIZE,
+          organizationId: null,
+          from: null,
+          to: null,
+        },
       }),
   });
 
@@ -114,7 +127,11 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
       }),
     onSuccess: (result) => {
       toast.success(`تم إصدار الفاتورة ${result.number}`, {
-        description: issueNotify ? (result.emailed ? "تم إرسالها بالبريد." : "تعذّر إرسال البريد — سُجّل العطل.") : undefined,
+        description: issueNotify
+          ? result.emailed
+            ? "تم إرسالها بالبريد."
+            : "تعذّر إرسال البريد — سُجّل العطل."
+          : undefined,
       });
       setIssuing(null);
       invalidate();
@@ -198,7 +215,9 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
         <EmptyState
           title="لا توجد فواتير مطابقة"
           hint="ابدأ بإنشاء مسودة فاتورة، ثم أصدرها لتحصل على رقم نظامي نهائي."
-          action={can("billing.create") ? <Btn onClick={openNewDraft}>فاتورة جديدة</Btn> : undefined}
+          action={
+            can("billing.create") ? <Btn onClick={openNewDraft}>فاتورة جديدة</Btn> : undefined
+          }
         />
       ) : (
         <DataCard>
@@ -229,7 +248,9 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
                   </Td>
                   <Td>
                     <span className="block truncate font-medium">{row.customer_name}</span>
-                    {row.organization_name && <span className="text-caption block truncate">{row.organization_name}</span>}
+                    {row.organization_name && (
+                      <span className="text-caption block truncate">{row.organization_name}</span>
+                    )}
                   </Td>
                   <Td>
                     <Money value={row.total} currency={row.currency} />
@@ -279,7 +300,9 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
                           <FileCheck2 className="h-4 w-4 text-success" aria-hidden />
                         </Btn>
                       )}
-                      {["issued", "pending", "partially_paid", "overdue", "draft"].includes(row.status) &&
+                      {["issued", "pending", "partially_paid", "overdue", "draft"].includes(
+                        row.status,
+                      ) &&
                         can("billing.cancel") && (
                           <Btn
                             variant="ghost"
@@ -319,8 +342,16 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
         description="بعد الإصدار لا يمكن تعديل البنود — يمكن التحصيل أو الإلغاء بسبب مُسجّل فقط."
       >
         <div className="space-y-4">
-          <FormField label="تاريخ الاستحقاق" hint="يُحتسب من مهلة السداد الافتراضية إن تُرك فارغاً.">
-            <input type="date" className={inputCls} value={issueDueAt} onChange={(e) => setIssueDueAt(e.target.value)} />
+          <FormField
+            label="تاريخ الاستحقاق"
+            hint="يُحتسب من مهلة السداد الافتراضية إن تُرك فارغاً."
+          >
+            <input
+              type="date"
+              className={inputCls}
+              value={issueDueAt}
+              onChange={(e) => setIssueDueAt(e.target.value)}
+            />
           </FormField>
           <label className="flex items-center gap-2.5 text-body-sm">
             <input
@@ -350,7 +381,12 @@ export function InvoicesPanel({ defaultTaxRate }: { defaultTaxRate: number }) {
       >
         <div className="space-y-4">
           <FormField label="سبب الإلغاء" required hint="5 أحرف على الأقل.">
-            <textarea rows={3} className={inputCls} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+            <textarea
+              rows={3}
+              className={inputCls}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn variant="outline" onClick={() => setCancelling(null)} disabled={cancel.isPending}>

@@ -30,7 +30,15 @@ import { AssignModal, ConvertLeadModal, DisqualifyLeadModal } from "./action-mod
 import { LeadStatusBadge, OwnerCell, useCrmCsvExport } from "./shared";
 
 const PAGE_SIZE = 20;
-const STATUSES: (CrmLeadStatus | "all")[] = ["all", "new", "contacted", "qualified", "unqualified", "converted", "lost"];
+const STATUSES: (CrmLeadStatus | "all")[] = [
+  "all",
+  "new",
+  "contacted",
+  "qualified",
+  "unqualified",
+  "converted",
+  "lost",
+];
 
 type Dialog =
   | { kind: "none" }
@@ -65,8 +73,14 @@ export function LeadsPanel() {
     queryKey: ["crm-leads", filters],
     queryFn: () => listFn({ data: filters }),
   });
-  const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
-  const stagesQuery = useQuery({ queryKey: ["crm-stages"], queryFn: () => stagesFn({ data: undefined }) });
+  const staffQuery = useQuery({
+    queryKey: ["crm-staff"],
+    queryFn: () => staffFn({ data: undefined }),
+  });
+  const stagesQuery = useQuery({
+    queryKey: ["crm-stages"],
+    queryFn: () => stagesFn({ data: undefined }),
+  });
 
   const staffOptions = staffQuery.data?.staff ?? [];
   const stageOptions = (stagesQuery.data?.stages ?? []).filter((stage) => stage.is_active);
@@ -125,7 +139,11 @@ export function LeadsPanel() {
               ))}
             </select>
             {can("crm.export") && (
-              <Btn variant="outline" loading={exporting === "leads"} onClick={() => void download("leads")}>
+              <Btn
+                variant="outline"
+                loading={exporting === "leads"}
+                onClick={() => void download("leads")}
+              >
                 <Download className="h-4 w-4" aria-hidden /> تصدير
               </Btn>
             )}
@@ -143,7 +161,9 @@ export function LeadsPanel() {
           hint="أضف أول عميل محتمل لتبدأ متابعة الفرص التجارية."
           action={
             can("crm.create") ? (
-              <Btn onClick={() => setDialog({ kind: "form", initial: emptyLeadDraft() })}>إضافة عميل محتمل</Btn>
+              <Btn onClick={() => setDialog({ kind: "form", initial: emptyLeadDraft() })}>
+                إضافة عميل محتمل
+              </Btn>
             ) : undefined
           }
         />
@@ -191,29 +211,53 @@ export function LeadsPanel() {
                       <div className="flex items-center justify-end gap-1">
                         {can("crm.update") && (
                           <IconBtn
-                              aria-label="تعديل" title="تعديل"
-                              onClick={() => setDialog({ kind: "form", initial: leadDraftFromRow(row), editId: row.id })}
-                            >
-                              <Pencil className="h-4 w-4" aria-hidden />
+                            aria-label="تعديل"
+                            title="تعديل"
+                            onClick={() =>
+                              setDialog({
+                                kind: "form",
+                                initial: leadDraftFromRow(row),
+                                editId: row.id,
+                              })
+                            }
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.assign") && (
-                          <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
+                          <IconBtn
+                            aria-label="إسناد لموظف"
+                            title="إسناد لموظف"
+                            onClick={() => setDialog({ kind: "assign", row })}
+                          >
                             <UserCheck className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.update") && row.status !== "converted" && (
-                          <IconBtn aria-label="تحويل إلى شركة وصفقة" title="تحويل إلى شركة وصفقة" onClick={() => setDialog({ kind: "convert", row })}>
+                          <IconBtn
+                            aria-label="تحويل إلى شركة وصفقة"
+                            title="تحويل إلى شركة وصفقة"
+                            onClick={() => setDialog({ kind: "convert", row })}
+                          >
                             <Wand2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.update") && row.status !== "unqualified" && (
-                          <IconBtn aria-label="استبعاد" title="استبعاد" onClick={() => setDialog({ kind: "disqualify", row })}>
+                          <IconBtn
+                            aria-label="استبعاد"
+                            title="استبعاد"
+                            onClick={() => setDialog({ kind: "disqualify", row })}
+                          >
                             <UserX className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
@@ -224,7 +268,12 @@ export function LeadsPanel() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 
@@ -250,7 +299,12 @@ export function LeadsPanel() {
         />
       )}
       {dialog.kind === "disqualify" && (
-        <DisqualifyLeadModal open onClose={() => setDialog({ kind: "none" })} onSaved={refresh} id={dialog.row.id} />
+        <DisqualifyLeadModal
+          open
+          onClose={() => setDialog({ kind: "none" })}
+          onSaved={refresh}
+          id={dialog.row.id}
+        />
       )}
       {dialog.kind === "convert" && (
         <ConvertLeadModal

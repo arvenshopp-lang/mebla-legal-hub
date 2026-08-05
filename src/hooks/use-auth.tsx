@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES, logAuthEvent, translateAuthError } from "@/lib/auth-errors";
@@ -104,7 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Loads profile + memberships. Never signs the user out on failure. */
   const loadUserData = useCallback(
-    async (currentUser: User, currentRequestId: number, background = false): Promise<OrgMembership[]> => {
+    async (
+      currentUser: User,
+      currentRequestId: number,
+      background = false,
+    ): Promise<OrgMembership[]> => {
       if (!background) {
         setProfileLoading(true);
         setOrganizationLoading(true);
@@ -242,9 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Safari يُطلق INITIAL_SESSION/SIGNED_IN عند الرجوع من تطبيق آخر لنفس
       // المستخدم؛ نُحدّث البيانات في الخلفية دون شاشة «جاري التحقق».
       const sameUser =
-        bootstrapped.current &&
-        !!nextSession?.user &&
-        loadedUserId.current === nextSession.user.id;
+        bootstrapped.current && !!nextSession?.user && loadedUserId.current === nextSession.user.id;
       if (sameUser) {
         setSession(nextSession);
         void runLoad(nextSession ?? null, true);

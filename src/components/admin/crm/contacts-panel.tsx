@@ -25,7 +25,12 @@ import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { deleteContact, listCompanies, listContacts, listStaffOptions } from "@/lib/crm.functions";
 import type { CrmContactRow } from "@/lib/crm.shared";
-import { ContactFormModal, contactDraftFromRow, emptyContactDraft, type ContactDraft } from "./contact-form";
+import {
+  ContactFormModal,
+  contactDraftFromRow,
+  emptyContactDraft,
+  type ContactDraft,
+} from "./contact-form";
 import { OwnerCell, useCrmCsvExport } from "./shared";
 
 const PAGE_SIZE = 20;
@@ -54,15 +59,25 @@ export function ContactsPanel() {
     () => ({ search: debounced, page, pageSize: PAGE_SIZE, companyId: "", ownerStaffId: "" }),
     [debounced, page],
   );
-  const query = useQuery({ queryKey: ["crm-contacts", filters], queryFn: () => listFn({ data: filters }) });
-  const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
+  const query = useQuery({
+    queryKey: ["crm-contacts", filters],
+    queryFn: () => listFn({ data: filters }),
+  });
+  const staffQuery = useQuery({
+    queryKey: ["crm-staff"],
+    queryFn: () => staffFn({ data: undefined }),
+  });
   const companiesQuery = useQuery({
     queryKey: ["crm-company-options"],
-    queryFn: () => companiesFn({ data: { search: "", page: 1, pageSize: 200, status: "", ownerStaffId: "" } }),
+    queryFn: () =>
+      companiesFn({ data: { search: "", page: 1, pageSize: 200, status: "", ownerStaffId: "" } }),
   });
 
   const staffOptions = staffQuery.data?.staff ?? [];
-  const companyOptions = (companiesQuery.data?.rows ?? []).map((row) => ({ id: row.id, name: row.name }));
+  const companyOptions = (companiesQuery.data?.rows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+  }));
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["crm-contacts"] });
@@ -98,7 +113,11 @@ export function ContactsPanel() {
         onAdd={() => setDialog({ kind: "form", initial: emptyContactDraft() })}
         filters={
           can("crm.export") ? (
-            <Btn variant="outline" loading={exporting === "contacts"} onClick={() => void download("contacts")}>
+            <Btn
+              variant="outline"
+              loading={exporting === "contacts"}
+              onClick={() => void download("contacts")}
+            >
               <Download className="h-4 w-4" aria-hidden /> تصدير
             </Btn>
           ) : undefined
@@ -131,11 +150,7 @@ export function ContactsPanel() {
                   <tr key={row.id} className="border-t border-border">
                     <Td>
                       <span className="font-semibold">{row.full_name}</span>
-                      {row.is_primary && (
-                        <Badge tone="gold">
-                          جهة أساسية
-                        </Badge>
-                      )}
+                      {row.is_primary && <Badge tone="gold">جهة أساسية</Badge>}
                     </Td>
                     <Td>{row.company_name ?? "—"}</Td>
                     <Td>{row.job_title ?? "—"}</Td>
@@ -157,13 +172,24 @@ export function ContactsPanel() {
                           <IconBtn
                             aria-label="تعديل"
                             title="تعديل"
-                            onClick={() => setDialog({ kind: "form", initial: contactDraftFromRow(row), editId: row.id })}
+                            onClick={() =>
+                              setDialog({
+                                kind: "form",
+                                initial: contactDraftFromRow(row),
+                                editId: row.id,
+                              })
+                            }
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
@@ -174,7 +200,12 @@ export function ContactsPanel() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 

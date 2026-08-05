@@ -40,7 +40,10 @@ export const STATUS_LABELS: Record<SalesDocStatus, string> = {
   terminated: "منتهٍ",
 };
 
-export const STATUS_TONE: Record<SalesDocStatus, "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"> = {
+export const STATUS_TONE: Record<
+  SalesDocStatus,
+  "default" | "green" | "gold" | "red" | "warn" | "muted" | "info"
+> = {
   draft: "muted",
   pending_approval: "warn",
   approved: "info",
@@ -87,10 +90,15 @@ export function computeSalesDocTotals(
   taxRate: number,
 ): SalesDocTotals {
   const subtotal = round2(
-    items.reduce((sum, it) => sum + Math.max(0, it.quantity * it.unit_price - it.discount_amount), 0),
+    items.reduce(
+      (sum, it) => sum + Math.max(0, it.quantity * it.unit_price - it.discount_amount),
+      0,
+    ),
   );
   const rawDiscount =
-    discountType === "percent" ? (subtotal * Math.max(0, discountValue)) / 100 : Math.max(0, discountValue);
+    discountType === "percent"
+      ? (subtotal * Math.max(0, discountValue)) / 100
+      : Math.max(0, discountValue);
   const discountAmount = round2(Math.min(rawDiscount, subtotal));
   const taxable = round2(Math.max(0, subtotal - discountAmount));
   const taxAmount = round2((taxable * Math.max(0, taxRate)) / 100);

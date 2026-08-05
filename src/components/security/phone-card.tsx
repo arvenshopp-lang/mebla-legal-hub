@@ -114,13 +114,15 @@ export function PhoneVerificationCard() {
               </span>
             )}
             {status.data?.verifiedAt && (
-              <span className="text-[12px] text-text-muted">وثّق في {fmtDateTime(status.data.verifiedAt)}</span>
+              <span className="text-[12px] text-text-muted">
+                وثّق في {fmtDateTime(status.data.verifiedAt)}
+              </span>
             )}
           </div>
 
           <p className="text-[12.5px] leading-6 text-text-muted">
-            توثيق رقم الجوال منفصل تماماً عن التحقق بخطوتين، وكلاهما اختياري ولا يؤثر على صلاحياتك أو وصولك
-            إلى بيانات المكتب.
+            توثيق رقم الجوال منفصل تماماً عن التحقق بخطوتين، وكلاهما اختياري ولا يؤثر على صلاحياتك
+            أو وصولك إلى بيانات المكتب.
           </p>
 
           {serviceOff ? (
@@ -165,7 +167,9 @@ export function PhoneVerificationCard() {
                     <input
                       value={code}
                       onChange={(e) =>
-                        setCode(e.target.value.replace(/\D/g, "").slice(0, config.data?.codeLength ?? 6))
+                        setCode(
+                          e.target.value.replace(/\D/g, "").slice(0, config.data?.codeLength ?? 6),
+                        )
                       }
                       inputMode="numeric"
                       autoComplete="one-time-code"
@@ -187,7 +191,9 @@ export function PhoneVerificationCard() {
               {challenge.active && (
                 <p role="status" className="text-[12px] text-text-muted">
                   الرمز صالح لمدة {formatCountdown(challenge.secondsLeft)}
-                  {challenge.attemptsLeft !== null ? ` — محاولات متبقية: ${challenge.attemptsLeft}` : ""}
+                  {challenge.attemptsLeft !== null
+                    ? ` — محاولات متبقية: ${challenge.attemptsLeft}`
+                    : ""}
                 </p>
               )}
               {challenge.expired && (

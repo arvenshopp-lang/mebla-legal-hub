@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { isPathAllowed, isUniversalPath, ownerSurface, resolveSurface, surfaceUrl } from "@/config/surfaces";
+import {
+  isPathAllowed,
+  isUniversalPath,
+  ownerSurface,
+  resolveSurface,
+  surfaceUrl,
+} from "@/config/surfaces";
 
 /**
  * نسخة العميل من حارس النطاقات: تمنع التنقل داخل التطبيق إلى مسار
@@ -43,7 +49,10 @@ export function useSurfaceHref(path: string) {
     const host = window.location.host;
     const current = resolveSurface(host);
     const clean = path.split("?")[0].split("#")[0];
-    if (!current || isPathAllowed(current, clean)) { setHref(path); return; }
+    if (!current || isPathAllowed(current, clean)) {
+      setHref(path);
+      return;
+    }
     const target = surfaceUrl(ownerSurface(clean).id, path, host);
     setHref(target || path);
   }, [path]);

@@ -112,7 +112,11 @@ async function updateJob(
 }
 
 /** يُنشئ سجل المعالجة أو يعيد استخدامه — يمنع معالجة الملف نفسه مرتين. */
-export async function ensureJob(organizationId: string, documentId: string, processingType: string) {
+export async function ensureJob(
+  organizationId: string,
+  documentId: string,
+  processingType: string,
+) {
   const { data: existing } = await supabase
     .from("document_processing_jobs")
     .select("id, status, attempts")
@@ -243,8 +247,9 @@ async function extractPdf(
 async function extractDocx(input: PipelineInput): Promise<PageText[]> {
   const mammoth = await import("mammoth/mammoth.browser.js");
   try {
-    const { value } = await (mammoth as { extractRawText: (o: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> })
-      .extractRawText({ arrayBuffer: await input.file.arrayBuffer() });
+    const { value } = await (
+      mammoth as { extractRawText: (o: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> }
+    ).extractRawText({ arrayBuffer: await input.file.arrayBuffer() });
     const text = value.replace(/\s+\n/g, "\n").trim();
     if (!text) throw new ProcessingError("NO_TEXT_FOUND");
     // DOCX لا يحمل ترقيم صفحات ثابتاً؛ يُقسَّم إلى مقاطع بحجم صفحة تقريبية.
@@ -319,7 +324,9 @@ async function extractImage(
  * Runs the whole pipeline for one document and persists the indexed pages.
  * Safe to call again after a failure — pages are replaced, not duplicated.
  */
-export async function processDocument(input: PipelineInput): Promise<{ pages: number; ocrPages: number }> {
+export async function processDocument(
+  input: PipelineInput,
+): Promise<{ pages: number; ocrPages: number }> {
   const report = input.onProgress ?? (() => {});
   const kind = extractableKind(input.fileName, input.mimeType);
   if (!kind) throw new ProcessingError("UNSUPPORTED_TYPE");
@@ -358,7 +365,12 @@ export async function processDocument(input: PipelineInput): Promise<{ pages: nu
     if (usable.length === 0) throw new ProcessingError("NO_TEXT_FOUND");
 
     await updateJob(input.documentId, { status: "indexing", progress: 90 });
-    report({ status: "indexing", progress: 90, pagesDone: usable.length, pagesTotal: pages.length });
+    report({
+      status: "indexing",
+      progress: 90,
+      pagesDone: usable.length,
+      pagesTotal: pages.length,
+    });
 
     await supabase.from("document_pages").delete().eq("document_id", input.documentId);
     const { error: insertError } = await supabase.from("document_pages").insert(
@@ -384,7 +396,12 @@ export async function processDocument(input: PipelineInput): Promise<{ pages: nu
       ocr_pages: ocrPages,
       completed_at: new Date().toISOString(),
     });
-    report({ status: "completed", progress: 100, pagesDone: usable.length, pagesTotal: pages.length });
+    report({
+      status: "completed",
+      progress: 100,
+      pagesDone: usable.length,
+      pagesTotal: pages.length,
+    });
     return { pages: usable.length, ocrPages };
   } catch (e) {
     const code = e instanceof ProcessingError ? e.code : "UNKNOWN";
@@ -420,12 +437,16 @@ export async function reprocessDocument(args: {
       headers: { Accept: "application/octet-stream, application/pdf, image/*, application/json" },
     });
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: unknown; message?: unknown } | null;
-      const code = response.status === 403
-        ? "ACCESS_LINK_EXPIRED"
-        : response.status === 404
-          ? "FILE_MISSING"
-          : "DOWNLOAD_FAILED";
+      const payload = (await response.json().catch(() => null)) as {
+        error?: unknown;
+        message?: unknown;
+      } | null;
+      const code =
+        response.status === 403
+          ? "ACCESS_LINK_EXPIRED"
+          : response.status === 404
+            ? "FILE_MISSING"
+            : "DOWNLOAD_FAILED";
       throw new ProcessingError(
         code,
         typeof payload?.message === "string" ? payload.message : undefined,

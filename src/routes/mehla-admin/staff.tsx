@@ -7,7 +7,11 @@ import { Plus, Settings2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { createStaffMember, updateStaffMember } from "@/lib/admin.functions";
-import { ADMIN_PERMISSIONS, PERMISSION_GROUPS, type AdminPermission } from "@/lib/admin-permissions";
+import {
+  ADMIN_PERMISSIONS,
+  PERMISSION_GROUPS,
+  type AdminPermission,
+} from "@/lib/admin-permissions";
 import {
   Badge,
   Btn,
@@ -25,7 +29,12 @@ import { fmtDate } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 
 export const Route = createFileRoute("/mehla-admin/staff")({
-  head: () => ({ meta: [{ title: "فريق الإدارة · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "فريق الإدارة · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: StaffPage,
 });
 
@@ -95,7 +104,12 @@ function StaffPage() {
       description="موظفو منصة مِهلة وصلاحياتهم التشغيلية. لا يملك أي موظف صلاحية الاطلاع على بيانات القضايا."
       actions={
         canManage ? (
-          <Btn onClick={() => { setError(null); setEditing(EMPTY); }}>
+          <Btn
+            onClick={() => {
+              setError(null);
+              setEditing(EMPTY);
+            }}
+          >
             <Plus className="h-4 w-4" aria-hidden /> موظف جديد
           </Btn>
         ) : undefined
@@ -104,7 +118,10 @@ function StaffPage() {
       {isLoading ? (
         <LoadingBlock rows={4} cols={5} />
       ) : (rows ?? []).length === 0 ? (
-        <EmptyState title="لا يوجد موظفون" hint="أضف موظفاً مسجلاً في المنصة لمنحه صلاحيات الإدارة." />
+        <EmptyState
+          title="لا يوجد موظفون"
+          hint="أضف موظفاً مسجلاً في المنصة لمنحه صلاحيات الإدارة."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[720px] text-right">
@@ -207,7 +224,9 @@ function StaffPage() {
               <FormField label="الدور" required>
                 <select
                   value={editing.role}
-                  onChange={(e) => setEditing({ ...editing, role: e.target.value as Editing["role"] })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, role: e.target.value as Editing["role"] })
+                  }
                   className={inputCls}
                 >
                   <option value="staff">موظف</option>
@@ -218,7 +237,9 @@ function StaffPage() {
                 <FormField label="الحالة" required>
                   <select
                     value={editing.status}
-                    onChange={(e) => setEditing({ ...editing, status: e.target.value as Editing["status"] })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, status: e.target.value as Editing["status"] })
+                    }
                     className={inputCls}
                   >
                     <option value="active">نشط</option>
@@ -246,13 +267,17 @@ function StaffPage() {
                                 ...editing,
                                 permissions: e.target.checked
                                   ? [...editing.permissions, p.id]
-                                  : editing.permissions.filter((x) => x !== (p.id as AdminPermission)),
+                                  : editing.permissions.filter(
+                                      (x) => x !== (p.id as AdminPermission),
+                                    ),
                               })
                             }
                           />
                           <span>
                             <span className="font-medium">{p.label}</span>
-                            <span className="block text-[11px] text-muted-foreground">{p.description}</span>
+                            <span className="block text-[11px] text-muted-foreground">
+                              {p.description}
+                            </span>
                           </span>
                         </label>
                       ))}
@@ -263,7 +288,10 @@ function StaffPage() {
             )}
 
             {error && (
-              <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+              <p
+                role="alert"
+                className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+              >
                 {error}
               </p>
             )}

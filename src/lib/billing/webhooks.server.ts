@@ -11,7 +11,12 @@
  * - تحديد معدل الطلبات، وسجل نجاح/فشل، ولا تُكشف أي أسرار أو أثر تنفيذ.
  */
 import { getProvider } from "./providers.server";
-import { applyProviderPaymentState, logAttempt, newCorrelationId, type BillingCtx } from "./billing.server";
+import {
+  applyProviderPaymentState,
+  logAttempt,
+  newCorrelationId,
+  type BillingCtx,
+} from "./billing.server";
 import type { BillingRow } from "./billing.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,7 +28,8 @@ const RATE_MAX_PER_WINDOW = 120;
 const MAX_ATTEMPTS = 5;
 const RETRY_BACKOFF_MS = [60_000, 300_000, 900_000, 3_600_000, 10_800_000];
 
-const SENSITIVE_KEY = /(secret|token|password|api[_-]?key|authorization|cvv|cvc|pan|iban|card[_-]?number|number$)/i;
+const SENSITIVE_KEY =
+  /(secret|token|password|api[_-]?key|authorization|cvv|cvc|pan|iban|card[_-]?number|number$)/i;
 
 async function db(): Promise<AnyClient> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -64,7 +70,9 @@ function safeHeaders(headers: Headers): Record<string, string> {
   headers.forEach((value, key) => {
     const lower = key.toLowerCase();
     if (!SAFE_HEADERS.includes(lower)) return;
-    out[lower] = lower.includes("signature") ? `${value.slice(0, 8)}…(${value.length})` : value.slice(0, 200);
+    out[lower] = lower.includes("signature")
+      ? `${value.slice(0, 8)}…(${value.length})`
+      : value.slice(0, 200);
   });
   return out;
 }
@@ -84,9 +92,13 @@ const ok = (body: BillingRow = {}): Outcome => ({ status: 200, body: { received:
 /** المزوّدون المسموح لهم بإرسال رسائل واردة — يجب أن يكونوا مُعرّفين في قاعدة البيانات. */
 const PROVIDER_ALLOWLIST = new Set(["moyasar"]);
 
-export async function handleProviderWebhook(providerCode: string, request: Request): Promise<Outcome> {
+export async function handleProviderWebhook(
+  providerCode: string,
+  request: Request,
+): Promise<Outcome> {
   const correlationId = newCorrelationId("whk");
-  const requestId = request.headers.get("cf-ray") ?? request.headers.get("x-request-id") ?? correlationId;
+  const requestId =
+    request.headers.get("cf-ray") ?? request.headers.get("x-request-id") ?? correlationId;
   const code = String(providerCode ?? "").toLowerCase();
 
   if (!PROVIDER_ALLOWLIST.has(code)) return { status: 404, body: { error: "مزوّد غير معروف." } };
@@ -98,7 +110,8 @@ export async function handleProviderWebhook(providerCode: string, request: Reque
     .select("code, supports_webhooks, settings")
     .eq("code", code)
     .maybeSingle();
-  if (!config || !config.supports_webhooks) return { status: 404, body: { error: "مزوّد غير معروف." } };
+  if (!config || !config.supports_webhooks)
+    return { status: 404, body: { error: "مزوّد غير معروف." } };
 
   // تحديد معدل الطلبات لكل مزوّد
   const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
@@ -112,7 +125,8 @@ export async function handleProviderWebhook(providerCode: string, request: Reque
   }
 
   const rawBody = await request.text();
-  if (rawBody.length > MAX_BODY_BYTES) return { status: 413, body: { error: "حجم الرسالة كبير جداً." } };
+  if (rawBody.length > MAX_BODY_BYTES)
+    return { status: 413, body: { error: "حجم الرسالة كبير جداً." } };
 
   const provider = getProvider(code);
   const headers = allHeaders(request.headers);
@@ -239,7 +253,13 @@ type ProcessInput = {
   provider: string;
   correlationId: string;
   requestId: string;
-  event: { eventId: string | null; eventType: string | null; providerPaymentId: string | null; status: string | null; amount: number | null } | null;
+  event: {
+    eventId: string | null;
+    eventType: string | null;
+    providerPaymentId: string | null;
+    status: string | null;
+    amount: number | null;
+  } | null;
   attempts: number;
 };
 
@@ -248,11 +268,16 @@ async function processEvent(input: ProcessInput): Promise<Outcome> {
   const started = Date.now();
 
   const finish = async (patch: BillingRow) => {
-    if (input.rowId) await client.from("platform_payment_webhooks").update(patch).eq("id", input.rowId);
+    if (input.rowId)
+      await client.from("platform_payment_webhooks").update(patch).eq("id", input.rowId);
   };
 
   if (!input.event?.providerPaymentId || !input.event.status) {
-    await finish({ status: "ignored", processed_at: new Date().toISOString(), last_error: "حدث غير مرتبط بدفعة" });
+    await finish({
+      status: "ignored",
+      processed_at: new Date().toISOString(),
+      last_error: "حدث غير مرتبط بدفعة",
+    });
     return ok({ ignored: true });
   }
 
@@ -312,7 +337,9 @@ async function processEvent(input: ProcessInput): Promise<Outcome> {
 }
 
 /** إعادة معالجة الرسائل الفاشلة المستحقة، ثم ترحيل المستنفدة إلى طابور الرسائل الفاشلة نهائياً. */
-export async function processRetryQueue(limit = 20): Promise<{ retried: number; processed: number; deadLetter: number }> {
+export async function processRetryQueue(
+  limit = 20,
+): Promise<{ retried: number; processed: number; deadLetter: number }> {
   const client = await db();
   const { data } = await client
     .from("platform_payment_webhooks")
@@ -356,7 +383,13 @@ export async function processRetryQueue(limit = 20): Promise<{ retried: number; 
 
 export async function listWebhookEvents(
   _ctx: BillingCtx,
-  filters: { status?: string | null; provider?: string | null; search?: string | null; page: number; pageSize: number },
+  filters: {
+    status?: string | null;
+    provider?: string | null;
+    search?: string | null;
+    page: number;
+    pageSize: number;
+  },
 ): Promise<{ rows: BillingRow[]; total: number }> {
   const client = await db();
   let query = client
@@ -366,14 +399,19 @@ export async function listWebhookEvents(
       { count: "exact" },
     );
   if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
-  if (filters.provider && filters.provider !== "all") query = query.eq("provider", filters.provider);
+  if (filters.provider && filters.provider !== "all")
+    query = query.eq("provider", filters.provider);
   const search = filters.search?.trim();
   if (search) {
     const safe = search.replace(/[%,()]/g, " ");
-    query = query.or(`event_id.ilike.%${safe}%,event_type.ilike.%${safe}%,correlation_id.ilike.%${safe}%`);
+    query = query.or(
+      `event_id.ilike.%${safe}%,event_type.ilike.%${safe}%,correlation_id.ilike.%${safe}%`,
+    );
   }
   const from = (filters.page - 1) * filters.pageSize;
-  const { data, count } = await query.order("received_at", { ascending: false }).range(from, from + filters.pageSize - 1);
+  const { data, count } = await query
+    .order("received_at", { ascending: false })
+    .range(from, from + filters.pageSize - 1);
   return { rows: (data ?? []) as BillingRow[], total: count ?? 0 };
 }
 
@@ -437,7 +475,9 @@ async function webhookRow(id: string): Promise<BillingRow> {
   const client = await db();
   const { data } = await client
     .from("platform_payment_webhooks")
-    .select("id, provider, event_id, event_type, status, attempts, raw_body, correlation_id, request_id")
+    .select(
+      "id, provider, event_id, event_type, status, attempts, raw_body, correlation_id, request_id",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!data) throw new Error("الرسالة غير موجودة.");
@@ -445,7 +485,10 @@ async function webhookRow(id: string): Promise<BillingRow> {
 }
 
 /** إعادة معالجة رسالة واحدة يدوياً — لا يُعاد تحليل التوقيع لأن الرسالة موثّقة سابقاً. */
-export async function retryWebhookEvent(ctx: BillingCtx, id: string): Promise<{ processed: boolean; status: string }> {
+export async function retryWebhookEvent(
+  ctx: BillingCtx,
+  id: string,
+): Promise<{ processed: boolean; status: string }> {
   const client = await db();
   const row = await webhookRow(id);
   const status = String(row["status"]);
@@ -525,7 +568,10 @@ export async function retryWebhookEvent(ctx: BillingCtx, id: string): Promise<{ 
 }
 
 /** ترحيل رسالة إلى طابور الرسائل الفاشلة نهائياً بسبب مُسجّل. */
-export async function markWebhookDeadLetter(ctx: BillingCtx, input: { id: string; reason: string }): Promise<void> {
+export async function markWebhookDeadLetter(
+  ctx: BillingCtx,
+  input: { id: string; reason: string },
+): Promise<void> {
   const client = await db();
   const row = await webhookRow(input.id);
   if (String(row["status"]) === "processed") throw new Error("لا يمكن ترحيل رسالة مُعالجة.");
@@ -538,17 +584,27 @@ export async function markWebhookDeadLetter(ctx: BillingCtx, input: { id: string
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.id);
-  await auditWebhook(ctx, row, "billing.webhook.dead_letter", "ترحيل رسالة مزوّد دفع إلى الطابور الفاشل نهائياً", {
-    status: "dead_letter",
-    reason: input.reason,
-  });
+  await auditWebhook(
+    ctx,
+    row,
+    "billing.webhook.dead_letter",
+    "ترحيل رسالة مزوّد دفع إلى الطابور الفاشل نهائياً",
+    {
+      status: "dead_letter",
+      reason: input.reason,
+    },
+  );
 }
 
 /** إعادة فتح رسالة فاشلة نهائياً بعد معالجة سبب الفشل. */
-export async function reopenWebhookEvent(ctx: BillingCtx, input: { id: string; reason: string }): Promise<void> {
+export async function reopenWebhookEvent(
+  ctx: BillingCtx,
+  input: { id: string; reason: string },
+): Promise<void> {
   const client = await db();
   const row = await webhookRow(input.id);
-  if (String(row["status"]) !== "dead_letter") throw new Error("الرسالة ليست في الطابور الفاشل نهائياً.");
+  if (String(row["status"]) !== "dead_letter")
+    throw new Error("الرسالة ليست في الطابور الفاشل نهائياً.");
   await client
     .from("platform_payment_webhooks")
     .update({
@@ -559,8 +615,14 @@ export async function reopenWebhookEvent(ctx: BillingCtx, input: { id: string; r
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.id);
-  await auditWebhook(ctx, row, "billing.webhook.reopen", "إعادة فتح رسالة من الطابور الفاشل نهائياً", {
-    status: "failed",
-    reason: input.reason,
-  });
+  await auditWebhook(
+    ctx,
+    row,
+    "billing.webhook.reopen",
+    "إعادة فتح رسالة من الطابور الفاشل نهائياً",
+    {
+      status: "failed",
+      reason: input.reason,
+    },
+  );
 }

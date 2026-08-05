@@ -15,7 +15,11 @@ export async function trackFailure(input: {
   documentId?: string | null;
 }): Promise<string | null> {
   const message =
-    input.error instanceof Error ? input.error.message : typeof input.error === "string" ? input.error : "";
+    input.error instanceof Error
+      ? input.error.message
+      : typeof input.error === "string"
+        ? input.error
+        : "";
   try {
     const res = await reportFailure({
       data: {

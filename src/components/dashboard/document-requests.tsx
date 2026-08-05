@@ -6,7 +6,16 @@ import { Copy, Link2, Plus, Share2, Ban, ChevronDown, ChevronUp } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit } from "@/hooks/use-auth";
 import { fmtDateTime } from "@/lib/enums";
-import { Badge, Btn, ConfirmDialog, FormField, IconBtn, Modal, SectionLoader, inputCls } from "@/lib/list-utils";
+import {
+  Badge,
+  Btn,
+  ConfirmDialog,
+  FormField,
+  IconBtn,
+  Modal,
+  SectionLoader,
+  inputCls,
+} from "@/lib/list-utils";
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
 import { describeMutationError } from "@/lib/subscription.shared";
@@ -69,12 +78,23 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
       ) : (
         <ul className="space-y-3">
           {rows!.map((r: any) => (
-            <li key={r.id} className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4">
+            <li
+              key={r.id}
+              className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-sm">{r.title}</span>
-                    <Badge tone={r.status === "completed" ? "green" : r.status === "active" ? "gold" : "muted"}>
+                    <Badge
+                      tone={
+                        r.status === "completed"
+                          ? "green"
+                          : r.status === "active"
+                            ? "gold"
+                            : "muted"
+                      }
+                    >
                       {DOC_REQUEST_STATUS[r.status] ?? r.status}
                     </Badge>
                   </div>
@@ -82,7 +102,9 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
                     أُنشئ {fmtDateTime(r.created_at)} · بواسطة {r.creator?.full_name ?? "—"}
                     {r.expires_at ? ` · ينتهي ${fmtDateTime(r.expires_at)}` : ""}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">الملفات المرفوعة: {r.file_count}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    الملفات المرفوعة: {r.file_count}
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <button
@@ -90,7 +112,11 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
                     className="rounded-lg p-1.5 hover:bg-surface"
                     title="السجل"
                   >
-                    {expanded === r.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {expanded === r.id ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </button>
                   {r.status === "active" && canEdit(activeRole) && (
                     <IconBtn
@@ -129,7 +155,13 @@ function RequestLog({ requestId }: { requestId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["doc-request-events", requestId],
     queryFn: async () =>
-      (await supabase.from("document_request_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false })).data ?? [],
+      (
+        await supabase
+          .from("document_request_events")
+          .select("*")
+          .eq("request_id", requestId)
+          .order("created_at", { ascending: false })
+      ).data ?? [],
   });
   return (
     <div className="mt-3 border-t border-border pt-3">
@@ -141,8 +173,14 @@ function RequestLog({ requestId }: { requestId: string }) {
       ) : (
         <ul className="space-y-1">
           {data!.map((e: any) => (
-            <li key={e.id} className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
-              <span>{EVENT_LABEL[e.event] ?? e.event}{e.detail?.files ? ` (${e.detail.files} ملف)` : ""}</span>
+            <li
+              key={e.id}
+              className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground"
+            >
+              <span>
+                {EVENT_LABEL[e.event] ?? e.event}
+                {e.detail?.files ? ` (${e.detail.files} ملف)` : ""}
+              </span>
               <span>{fmtDateTime(e.created_at)}</span>
             </li>
           ))}
@@ -152,7 +190,15 @@ function RequestLog({ requestId }: { requestId: string }) {
   );
 }
 
-function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose: () => void; caseId: string }) {
+function CreateRequestDialog({
+  open,
+  onClose,
+  caseId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  caseId: string;
+}) {
   const qc = useQueryClient();
   const createFn = useServerFn(createDocumentRequest);
   const [title, setTitle] = useState("");
@@ -162,13 +208,23 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
 
-  const reset = () => { setTitle(""); setMessage(""); setItemsText(""); setExpires(""); setLink(null); };
+  const reset = () => {
+    setTitle("");
+    setMessage("");
+    setItemsText("");
+    setExpires("");
+    setLink(null);
+  };
 
   const submit = async () => {
     if (title.trim().length < 2) return toast.error("أدخل عنواناً للطلب");
     setSaving(true);
     try {
-      const items = itemsText.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20);
+      const items = itemsText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 20);
       const res = await createFn({
         data: {
           caseId,
@@ -202,48 +258,109 @@ function CreateRequestDialog({ open, onClose, caseId }: { open: boolean; onClose
     if (!link) return;
     const text = `مرحباً، يرجى رفع المستندات المطلوبة عبر الرابط الآمن التالي:\n${link}`;
     if (navigator.share) {
-      try { await navigator.share({ title: "طلب مستندات", text }); return; } catch { /* cancelled */ }
+      try {
+        await navigator.share({ title: "طلب مستندات", text });
+        return;
+      } catch {
+        /* cancelled */
+      }
     }
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   };
 
   return (
-    <Modal open={open} onClose={() => { reset(); onClose(); }} title={link ? "الرابط جاهز" : "إنشاء طلب مستندات"} size="lg">
+    <Modal
+      open={open}
+      onClose={() => {
+        reset();
+        onClose();
+      }}
+      title={link ? "الرابط جاهز" : "إنشاء طلب مستندات"}
+      size="lg"
+    >
       {link ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            هذا الرابط يعمل <strong>مرة واحدة فقط</strong> ولن يظهر مجدداً. انسخه الآن وأرسله للعميل.
+            هذا الرابط يعمل <strong>مرة واحدة فقط</strong> ولن يظهر مجدداً. انسخه الآن وأرسله
+            للعميل.
           </p>
           <div className="flex items-center gap-2 rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
             <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 break-all text-xs" dir="ltr">{link}</span>
+            <span className="min-w-0 flex-1 break-all text-xs" dir="ltr">
+              {link}
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Btn onClick={copy}><Copy className="ms-1 inline h-4 w-4" /> نسخ الرابط</Btn>
-            <Btn variant="outline" onClick={share}><Share2 className="ms-1 inline h-4 w-4" /> مشاركة</Btn>
+            <Btn onClick={copy}>
+              <Copy className="ms-1 inline h-4 w-4" /> نسخ الرابط
+            </Btn>
+            <Btn variant="outline" onClick={share}>
+              <Share2 className="ms-1 inline h-4 w-4" /> مشاركة
+            </Btn>
             <div className="flex-1" />
-            <Btn variant="ghost" onClick={() => { reset(); onClose(); }}>إغلاق</Btn>
+            <Btn
+              variant="ghost"
+              onClick={() => {
+                reset();
+                onClose();
+              }}
+            >
+              إغلاق
+            </Btn>
           </div>
         </div>
       ) : (
         <>
           <div className="grid gap-4">
             <FormField label="عنوان الطلب *">
-              <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} placeholder="مستندات مطلوبة لدعوى المطالبة" />
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={inputCls}
+                placeholder="مستندات مطلوبة لدعوى المطالبة"
+              />
             </FormField>
             <FormField label="رسالة للعميل">
-              <textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} className={inputCls} placeholder="يرجى رفع المستندات التالية في أقرب وقت." />
+              <textarea
+                rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className={inputCls}
+                placeholder="يرجى رفع المستندات التالية في أقرب وقت."
+              />
             </FormField>
             <FormField label="المستندات المطلوبة" hint="اكتب كل مستند في سطر مستقل">
-              <textarea rows={4} value={itemsText} onChange={(e) => setItemsText(e.target.value)} className={inputCls} placeholder={"صورة الهوية\nالعقد\nالفواتير"} />
+              <textarea
+                rows={4}
+                value={itemsText}
+                onChange={(e) => setItemsText(e.target.value)}
+                className={inputCls}
+                placeholder={"صورة الهوية\nالعقد\nالفواتير"}
+              />
             </FormField>
             <FormField label="تاريخ الانتهاء (اختياري)">
-              <input type="datetime-local" value={expires} onChange={(e) => setExpires(e.target.value)} className={inputCls} />
+              <input
+                type="datetime-local"
+                value={expires}
+                onChange={(e) => setExpires(e.target.value)}
+                className={inputCls}
+              />
             </FormField>
           </div>
           <div className="mt-5 flex justify-end gap-2">
-            <Btn variant="outline" onClick={() => { reset(); onClose(); }} disabled={saving}>إلغاء</Btn>
-            <Btn onClick={submit} loading={saving}>{saving ? "جاري إنشاء الرابط…" : "إنشاء الرابط"}</Btn>
+            <Btn
+              variant="outline"
+              onClick={() => {
+                reset();
+                onClose();
+              }}
+              disabled={saving}
+            >
+              إلغاء
+            </Btn>
+            <Btn onClick={submit} loading={saving}>
+              {saving ? "جاري إنشاء الرابط…" : "إنشاء الرابط"}
+            </Btn>
           </div>
         </>
       )}

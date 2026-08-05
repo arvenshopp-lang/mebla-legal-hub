@@ -5,7 +5,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ShieldOff } from "lucide-react";
 import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
-import { Badge, Btn, DataCard, EmptyState, Modal, PageToolbar, SectionCard, Td, Th, inputCls } from "@/lib/list-utils";
+import {
+  Badge,
+  Btn,
+  DataCard,
+  EmptyState,
+  Modal,
+  PageToolbar,
+  SectionCard,
+  Td,
+  Th,
+  inputCls,
+} from "@/lib/list-utils";
 import { createRbacGrant, revokeRbacGrant } from "@/lib/rbac/rbac.functions";
 import {
   Field,
@@ -110,7 +121,12 @@ export function GrantsPanel({
       if (status === "revoked" && st.label !== "مسحوب") return false;
       if (!q) return true;
       const holder = staffName(data.staff, g.grantee_user_id);
-      return g.permission.includes(q) || holder.includes(q) || (g.reference ?? "").includes(q) || g.reason.includes(q);
+      return (
+        g.permission.includes(q) ||
+        holder.includes(q) ||
+        (g.reference ?? "").includes(q) ||
+        g.reason.includes(q)
+      );
     });
   }, [data.grants, data.staff, now, search, status]);
 
@@ -130,7 +146,10 @@ export function GrantsPanel({
         ) : (
           <ul className="space-y-2 text-[13px]">
             {data.me.liveGrants.map((g) => (
-              <li key={`${g.permission}-${g.expires_at}`} className="flex flex-wrap items-center gap-2">
+              <li
+                key={`${g.permission}-${g.expires_at}`}
+                className="flex flex-wrap items-center gap-2"
+              >
                 <span className="font-mono text-[12px]">{g.permission}</span>
                 <Badge tone={g.source === "delegation" ? "info" : "gold"}>
                   {g.source === "delegation" ? "تفويض" : "مؤقت"}
@@ -169,7 +188,10 @@ export function GrantsPanel({
 
         {rows.length === 0 ? (
           <DataCard>
-            <EmptyState title="لا توجد منح مطابقة" hint="أصدر منحاً مؤقتاً محدد المدة عند الحاجة التشغيلية." />
+            <EmptyState
+              title="لا توجد منح مطابقة"
+              hint="أصدر منحاً مؤقتاً محدد المدة عند الحاجة التشغيلية."
+            />
           </DataCard>
         ) : (
           <DataCard>
@@ -191,7 +213,9 @@ export function GrantsPanel({
                     return (
                       <tr key={g.id} className="border-t border-border">
                         <Td>
-                          <span className="block font-semibold">{staffName(data.staff, g.grantee_user_id)}</span>
+                          <span className="block font-semibold">
+                            {staffName(data.staff, g.grantee_user_id)}
+                          </span>
                           <span className="block text-[11px] text-text-muted">
                             بواسطة {g.granted_by_email ?? staffName(data.staff, g.granted_by)}
                           </span>
@@ -199,7 +223,9 @@ export function GrantsPanel({
                         <Td>
                           <span className="font-mono text-[12px]">{g.permission}</span>
                           <span className="text-caption mt-0.5 block">{g.reason}</span>
-                          {g.reference && <span className="text-caption block">مرجع: {g.reference}</span>}
+                          {g.reference && (
+                            <span className="text-caption block">مرجع: {g.reference}</span>
+                          )}
                         </Td>
                         <Td>
                           <Badge tone={g.source === "delegation" ? "info" : "gold"}>
@@ -208,18 +234,28 @@ export function GrantsPanel({
                         </Td>
                         <Td>
                           <span className="block text-[12px]">من {formatRiyadh(g.starts_at)}</span>
-                          <span className="block text-[12px]">إلى {formatRiyadh(g.expires_at)}</span>
+                          <span className="block text-[12px]">
+                            إلى {formatRiyadh(g.expires_at)}
+                          </span>
                           {st.label === "سارٍ" && (
-                            <span className="text-caption block">يتبقى {remainingLabel(g.expires_at, now)}</span>
+                            <span className="text-caption block">
+                              يتبقى {remainingLabel(g.expires_at, now)}
+                            </span>
                           )}
                         </Td>
                         <Td>
                           <Badge tone={st.tone}>{st.label}</Badge>
-                          {g.revoke_reason && <span className="text-caption mt-0.5 block">{g.revoke_reason}</span>}
+                          {g.revoke_reason && (
+                            <span className="text-caption mt-0.5 block">{g.revoke_reason}</span>
+                          )}
                         </Td>
                         <Td>
                           {canGrant && !g.revoked_at && new Date(g.expires_at).getTime() > now && (
-                            <Btn size="sm" variant="outline" onClick={() => setRevoke({ grant: g, reason: "" })}>
+                            <Btn
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setRevoke({ grant: g, reason: "" })}
+                            >
                               <ShieldOff className="h-4 w-4" aria-hidden /> سحب
                             </Btn>
                           )}
@@ -260,7 +296,9 @@ export function GrantsPanel({
               <select
                 className={inputCls}
                 value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value as GrantForm["source"] })}
+                onChange={(e) =>
+                  setForm({ ...form, source: e.target.value as GrantForm["source"] })
+                }
               >
                 <option value="temporary">منح مؤقت</option>
                 <option value="delegation">تفويض</option>
@@ -340,7 +378,8 @@ export function GrantsPanel({
             }}
           >
             <p className="text-body-sm text-muted-foreground">
-              سحب «{revoke.grant.permission}» من {staffName(data.staff, revoke.grant.grantee_user_id)}.
+              سحب «{revoke.grant.permission}» من{" "}
+              {staffName(data.staff, revoke.grant.grantee_user_id)}.
             </p>
             <Field label="سبب السحب">
               <textarea

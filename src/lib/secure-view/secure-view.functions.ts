@@ -76,7 +76,11 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
+      context.supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", context.userId)
+        .maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")
@@ -176,7 +180,11 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
+      context.supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", context.userId)
+        .maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")
@@ -222,9 +230,7 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
 export const listDocumentShareLinks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({ organizationId: z.string().uuid(), documentId: z.string().uuid() })
-      .parse(input),
+    z.object({ organizationId: z.string().uuid(), documentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase

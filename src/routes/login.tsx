@@ -16,7 +16,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "تسجيل الدخول | مِهلة" },
-      { name: "description", content: "سجّل الدخول إلى حسابك في منصة مِهلة لمتابعة القضايا والجلسات." },
+      {
+        name: "description",
+        content: "سجّل الدخول إلى حسابك في منصة مِهلة لمتابعة القضايا والجلسات.",
+      },
       { property: "og:title", content: "تسجيل الدخول | مِهلة" },
       { property: "og:description", content: "سجّل الدخول إلى حسابك في منصة مِهلة." },
     ],
@@ -25,8 +28,15 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect } = useSearch({ from: "/login" });
-  const { session, authLoading, organizationLoading, memberships, allMemberships, refresh, signIn } =
-    useAuth();
+  const {
+    session,
+    authLoading,
+    organizationLoading,
+    memberships,
+    allMemberships,
+    refresh,
+    signIn,
+  } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +67,14 @@ function LoginPage() {
       replace: true,
     } as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, organizationLoading, session, memberships.length, allMemberships.length, safeRedirect]);
+  }, [
+    authLoading,
+    organizationLoading,
+    session,
+    memberships.length,
+    allMemberships.length,
+    safeRedirect,
+  ]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +131,11 @@ function LoginPage() {
     if (result.error) {
       setGoogleLoading(false);
       setFormError("تعذر بدء تسجيل الدخول عبر Google. حاول مرة أخرى.");
-      logAuthEvent({ route: "/login", action: "sign_in_google", sanitizedMessage: "oauth_start_failed" });
+      logAuthEvent({
+        route: "/login",
+        action: "sign_in_google",
+        sanitizedMessage: "oauth_start_failed",
+      });
     }
   };
 
@@ -162,76 +183,118 @@ function LoginPage() {
     );
   }
 
-  return <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
-    <button
-      type="button"
-      onClick={google}
-      disabled={googleLoading}
-      aria-busy={googleLoading}
-      className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
-    >
-      <GoogleIcon />
-      <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
-    </button>
-    <p className="mt-2 text-center text-[11px] leading-5 text-text-muted">
-      دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
-    </p>
-    <div className="my-5 flex items-center gap-3 text-xs text-text-muted">
-      <div className="h-px flex-1 bg-surface-muted" /> أو <div className="h-px flex-1 bg-surface-muted" />
-    </div>
-    <form onSubmit={submit} noValidate className="space-y-4">
-      {formError && (
-        <div role="alert" className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-[12.5px] leading-6 text-danger">
-          {formError}
-          {needsConfirmation && (
-            <button
-              type="button"
-              onClick={resendConfirmation}
-              disabled={actionBusy === "resend"}
-              className="mt-2 block font-semibold underline disabled:opacity-60"
-            >
-              {actionBusy === "resend" ? "جاري الإرسال…" : "إعادة إرسال رابط التأكيد"}
-            </button>
-          )}
-        </div>
-      )}
-      {notice && (
-        <div role="status" className="rounded-[var(--radius-m)] border border-success/25 bg-success-soft p-3 text-[12.5px] leading-6 text-success">
-          {notice}
-        </div>
-      )}
-      <Field label="البريد الإلكتروني">
-        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInputCls} />
-      </Field>
-      <Field label="كلمة المرور">
-        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
-      </Field>
-      <div className="text-left">
-        <Link to="/forgot-password" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
-          نسيت كلمة المرور؟
-        </Link>
-      </div>
-      <button type="submit" disabled={loading} aria-busy={loading} className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60">
-        {loading ? "جاري تسجيل الدخول…" : "دخول"}
-      </button>
+  return (
+    <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
       <button
         type="button"
-        onClick={requestMagicLink}
-        disabled={actionBusy === "magic"}
-        className="w-full text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
+        onClick={google}
+        disabled={googleLoading}
+        aria-busy={googleLoading}
+        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
       >
-        {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
+        <GoogleIcon />
+        <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
       </button>
-    </form>
-    <p className="mt-6 text-center text-sm text-muted-foreground">
-      ليس لديك حساب؟ <Link to="/register" className="font-semibold text-foreground underline">إنشاء حساب</Link>
-    </p>
-  </AuthShell>;
+      <p className="mt-2 text-center text-[11px] leading-5 text-text-muted">
+        دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
+      </p>
+      <div className="my-5 flex items-center gap-3 text-xs text-text-muted">
+        <div className="h-px flex-1 bg-surface-muted" /> أو{" "}
+        <div className="h-px flex-1 bg-surface-muted" />
+      </div>
+      <form onSubmit={submit} noValidate className="space-y-4">
+        {formError && (
+          <div
+            role="alert"
+            className="rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3 text-[12.5px] leading-6 text-danger"
+          >
+            {formError}
+            {needsConfirmation && (
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                disabled={actionBusy === "resend"}
+                className="mt-2 block font-semibold underline disabled:opacity-60"
+              >
+                {actionBusy === "resend" ? "جاري الإرسال…" : "إعادة إرسال رابط التأكيد"}
+              </button>
+            )}
+          </div>
+        )}
+        {notice && (
+          <div
+            role="status"
+            className="rounded-[var(--radius-m)] border border-success/25 bg-success-soft p-3 text-[12.5px] leading-6 text-success"
+          >
+            {notice}
+          </div>
+        )}
+        <Field label="البريد الإلكتروني">
+          <input
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={fieldInputCls}
+          />
+        </Field>
+        <Field label="كلمة المرور">
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={fieldInputCls}
+          />
+        </Field>
+        <div className="text-left">
+          <Link
+            to="/forgot-password"
+            className="text-xs font-medium text-muted-foreground underline hover:text-foreground"
+          >
+            نسيت كلمة المرور؟
+          </Link>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          aria-busy={loading}
+          className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60"
+        >
+          {loading ? "جاري تسجيل الدخول…" : "دخول"}
+        </button>
+        <button
+          type="button"
+          onClick={requestMagicLink}
+          disabled={actionBusy === "magic"}
+          className="w-full text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
+        >
+          {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
+        </button>
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        ليس لديك حساب؟{" "}
+        <Link to="/register" className="font-semibold text-foreground underline">
+          إنشاء حساب
+        </Link>
+      </p>
+    </AuthShell>
+  );
 }
 
 export { inputCls } from "@/lib/list-utils";
 
-export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+export function Field({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+}) {
   return (
     <label className="block">
       <span className="text-label mb-1.5 block text-foreground">{label}</span>
@@ -253,7 +316,10 @@ export function AuthShell({
   return (
     <div dir="rtl" className="flex min-h-dvh flex-col bg-background px-4 py-10">
       <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center">
-        <Link to="/" className="mb-8 block text-center text-[17px] font-bold tracking-tight text-foreground">
+        <Link
+          to="/"
+          className="mb-8 block text-center text-[17px] font-bold tracking-tight text-foreground"
+        >
           مِهلة <span className="text-text-muted">·</span>{" "}
           <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </Link>

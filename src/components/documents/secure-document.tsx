@@ -83,7 +83,8 @@ export function useSecureDocument() {
           organizationId: doc.organization_id || activeOrgId!,
           documentId: doc.id,
           kind,
-          sourcePage: typeof window === "undefined" ? "app" : window.location.pathname.slice(0, 120),
+          sourcePage:
+            typeof window === "undefined" ? "app" : window.location.pathname.slice(0, 120),
           sessionId: env.sessionId,
         },
       });
@@ -186,8 +187,15 @@ export function SecureDocumentViewer({
           className="h-[70vh] w-full rounded-lg border border-border bg-surface-muted"
         >
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-sm text-muted-foreground">لا يدعم عارض جهازك العرض المضمّن لهذا المستند.</p>
-            <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline">
+            <p className="text-sm text-muted-foreground">
+              لا يدعم عارض جهازك العرض المضمّن لهذا المستند.
+            </p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary underline"
+            >
               <ExternalLink className="h-4 w-4" /> فتح النسخة المائية في عارض الجهاز
             </a>
           </div>
@@ -238,8 +246,7 @@ export function ShareDocumentDialog({
       toast.success("تم إنشاء رابط مشاركة مائي");
       void qc.invalidateQueries({ queryKey: ["doc-share-links", doc?.id] });
     },
-    onError: (error: Error) =>
-      toast.error("تعذّر إنشاء الرابط", { description: error.message }),
+    onError: (error: Error) => toast.error("تعذّر إنشاء الرابط", { description: error.message }),
   });
 
   const kill = useMutation({
@@ -279,7 +286,9 @@ export function ShareDocumentDialog({
             max={30}
             className={inputCls}
             value={days}
-            onChange={(event) => setDays(Math.min(30, Math.max(1, Number(event.target.value) || 7)))}
+            onChange={(event) =>
+              setDays(Math.min(30, Math.max(1, Number(event.target.value) || 7)))
+            }
           />
         </FormField>
         <Btn onClick={() => add.mutate()} loading={add.isPending}>

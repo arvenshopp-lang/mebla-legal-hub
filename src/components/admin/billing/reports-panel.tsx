@@ -11,7 +11,20 @@ const startOfMonth = () => {
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 };
 
-const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const MONTHS = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
 const monthLabel = (value: string) => {
   const [year, month] = value.split("-");
   return `${MONTHS[Number(month) - 1] ?? month} ${year}`;
@@ -23,7 +36,10 @@ export function ReportsPanel() {
 
   const reportsFn = useServerFn(billingReports);
   const range = useMemo(
-    () => ({ from: new Date(`${from}T00:00:00`).toISOString(), to: new Date(`${to}T23:59:59`).toISOString() }),
+    () => ({
+      from: new Date(`${from}T00:00:00`).toISOString(),
+      to: new Date(`${to}T23:59:59`).toISOString(),
+    }),
     [from, to],
   );
 
@@ -39,24 +55,45 @@ export function ReportsPanel() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-label">
           <span className="mb-1.5 block">من تاريخ</span>
-          <input type="date" className={`${inputCls} w-44`} value={from} onChange={(event) => setFrom(event.target.value)} />
+          <input
+            type="date"
+            className={`${inputCls} w-44`}
+            value={from}
+            onChange={(event) => setFrom(event.target.value)}
+          />
         </label>
         <label className="text-label">
           <span className="mb-1.5 block">إلى تاريخ</span>
-          <input type="date" className={`${inputCls} w-44`} value={to} onChange={(event) => setTo(event.target.value)} />
+          <input
+            type="date"
+            className={`${inputCls} w-44`}
+            value={to}
+            onChange={(event) => setTo(event.target.value)}
+          />
         </label>
-        {data && <p className="text-caption pb-2">آخر تحديث: {formatDateTime(data.generated_at)}</p>}
+        {data && (
+          <p className="text-caption pb-2">آخر تحديث: {formatDateTime(data.generated_at)}</p>
+        )}
       </div>
 
       {query.isPending ? (
         <SectionLoader label="جاري احتساب التقارير…" rows={4} />
       ) : query.isError || !data ? (
-        <ErrorBlock message={(query.error as Error | undefined)?.message ?? "تعذّر إعداد التقارير المالية."} />
+        <ErrorBlock
+          message={(query.error as Error | undefined)?.message ?? "تعذّر إعداد التقارير المالية."}
+        />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard label="إجمالي المُفتَّر" value={<Money value={data.summary.invoiced_total} />} />
-            <KpiCard label="المُحصَّل" value={<Money value={data.summary.collected_total} />} tone="success" />
+            <KpiCard
+              label="إجمالي المُفتَّر"
+              value={<Money value={data.summary.invoiced_total} />}
+            />
+            <KpiCard
+              label="المُحصَّل"
+              value={<Money value={data.summary.collected_total} />}
+              tone="success"
+            />
             <KpiCard
               label="المستحق غير المسدَّد"
               value={<Money value={data.summary.outstanding_total} />}
@@ -70,7 +107,10 @@ export function ReportsPanel() {
             />
           </div>
 
-          <SectionCard title="أعمار الدين" description="توزيع المبالغ غير المسدَّدة حسب تأخر الاستحقاق.">
+          <SectionCard
+            title="أعمار الدين"
+            description="توزيع المبالغ غير المسدَّدة حسب تأخر الاستحقاق."
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-body-sm">
                 <thead>
@@ -99,25 +139,44 @@ export function ReportsPanel() {
             <SectionCard title="حسب الباقة">
               <Table
                 head={["الباقة", "العدد", "المُفتَّر", "المُحصَّل"]}
-                rows={data.by_plan.map((row) => [row.label, String(row.count), row.invoiced, row.collected])}
+                rows={data.by_plan.map((row) => [
+                  row.label,
+                  String(row.count),
+                  row.invoiced,
+                  row.collected,
+                ])}
               />
             </SectionCard>
             <SectionCard title="حسب المكتب">
               <Table
                 head={["المكتب", "المُفتَّر", "المُحصَّل", "المتبقي"]}
-                rows={data.by_office.map((row) => [row.label, row.invoiced, row.collected, row.outstanding])}
+                rows={data.by_office.map((row) => [
+                  row.label,
+                  row.invoiced,
+                  row.collected,
+                  row.outstanding,
+                ])}
               />
             </SectionCard>
             <SectionCard title="حسب الشهر">
               <Table
                 head={["الشهر", "المُفتَّر", "المُحصَّل", "العدد"]}
-                rows={data.by_month.map((row) => [monthLabel(row.month), row.invoiced, row.collected, String(row.count)])}
+                rows={data.by_month.map((row) => [
+                  monthLabel(row.month),
+                  row.invoiced,
+                  row.collected,
+                  String(row.count),
+                ])}
               />
             </SectionCard>
             <SectionCard title="حسب طريقة السداد">
               <Table
                 head={["الطريقة", "العدد", "المبلغ"]}
-                rows={data.payments_by_method.map((row) => [row.label, String(row.count), row.amount])}
+                rows={data.payments_by_method.map((row) => [
+                  row.label,
+                  String(row.count),
+                  row.amount,
+                ])}
               />
             </SectionCard>
           </div>

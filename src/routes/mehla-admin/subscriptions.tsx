@@ -33,7 +33,9 @@ import {
 import { fmtDate, fmtDateTime, fmtSize } from "@/lib/enums";
 
 export const Route = createFileRoute("/mehla-admin/subscriptions")({
-  head: () => ({ meta: [{ title: "الاشتراكات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "الاشتراكات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: SubscriptionsPage,
 });
 
@@ -58,10 +60,18 @@ function SubscriptionsPage() {
   const resumeFn = useServerFn(resumeSubscription);
   const autoRenewFn = useServerFn(setSubscriptionAutoRenew);
 
-  const { data: rows, isLoading, isFetching } = useQuery({
+  const {
+    data: rows,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["admin-subscriptions", debounced, statusFilter],
     queryFn: async () => {
-      let q = supabase.from("subscriptions").select("*").order("created_at", { ascending: false }).limit(200);
+      let q = supabase
+        .from("subscriptions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (debounced.trim()) q = q.ilike("email", `%${debounced.trim()}%`);
       if (statusFilter !== "all") q = q.eq("status", statusFilter as never);
       const { data, error } = await q;
@@ -179,7 +189,9 @@ function SubscriptionsPage() {
                                 : "muted"
                         }
                       >
-                        {status === "suspended" ? "موقوف" : (SUBSCRIPTION_STATUS_LABELS[status] ?? status)}
+                        {status === "suspended"
+                          ? "موقوف"
+                          : (SUBSCRIPTION_STATUS_LABELS[status] ?? status)}
                       </Badge>
                       {suspended && s.suspension_reason && (
                         <span className="mt-1 block max-w-[220px] truncate text-[11px] text-muted-foreground">
@@ -189,7 +201,9 @@ function SubscriptionsPage() {
                     </Td>
                     <Td>
                       <button
-                        onClick={() => toggleRenew.mutate({ id: String(s.id), autoRenew: !s.auto_renew })}
+                        onClick={() =>
+                          toggleRenew.mutate({ id: String(s.id), autoRenew: !s.auto_renew })
+                        }
                         className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
                       >
                         <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
@@ -214,7 +228,9 @@ function SubscriptionsPage() {
                         ) : (
                           s.status === "active" && (
                             <button
-                              onClick={() => setSuspending({ id: String(s.id), email: String(s.email) })}
+                              onClick={() =>
+                                setSuspending({ id: String(s.id), email: String(s.email) })
+                              }
                               className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-warning hover:bg-warning-soft"
                             >
                               <PauseCircle className="h-3.5 w-3.5" aria-hidden /> إيقاف
@@ -223,7 +239,9 @@ function SubscriptionsPage() {
                         )}
                         {s.status === "active" && (
                           <button
-                            onClick={() => setCancelling({ id: String(s.id), email: String(s.email) })}
+                            onClick={() =>
+                              setCancelling({ id: String(s.id), email: String(s.email) })
+                            }
                             className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
                           >
                             <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
@@ -301,7 +319,10 @@ function SuspendDialog({
           <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
         </FormField>
         {error && (
-          <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+          <p
+            role="alert"
+            className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+          >
             {error}
           </p>
         )}
@@ -343,7 +364,12 @@ function DetailDialog({ id, onClose }: { id: string | null; onClose: () => void 
     : [];
 
   return (
-    <Modal open={!!id} onClose={onClose} title="تفاصيل الاشتراك" description="بيانات تشغيلية فقط دون أي محتوى قانوني.">
+    <Modal
+      open={!!id}
+      onClose={onClose}
+      title="تفاصيل الاشتراك"
+      description="بيانات تشغيلية فقط دون أي محتوى قانوني."
+    >
       {isLoading || !data ? (
         <LoadingBlock rows={4} cols={2} />
       ) : (
@@ -355,7 +381,9 @@ function DetailDialog({ id, onClose }: { id: string | null; onClose: () => void 
             <Row label="طريقة التفعيل">{data.subscription.activation_method}</Row>
             <Row label="البداية">{fmtDate(data.subscription.starts_at)}</Row>
             <Row label="الانتهاء">{fmtDate(data.subscription.ends_at)}</Row>
-            <Row label="التجديد التلقائي">{data.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}</Row>
+            <Row label="التجديد التلقائي">
+              {data.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}
+            </Row>
             <Row label="مساحة التخزين">{fmtSize(data.usage.storage_bytes)}</Row>
             {data.subscription.suspended_at && (
               <Row label="موقوف بتاريخ">{fmtDateTime(data.subscription.suspended_at)}</Row>
@@ -364,15 +392,22 @@ function DetailDialog({ id, onClose }: { id: string | null; onClose: () => void 
               <Row label="سبب الإيقاف">{data.subscription.suspension_reason}</Row>
             )}
             <Row label="آخر تعديل">
-              {data.subscription.last_modified_at ? fmtDateTime(data.subscription.last_modified_at) : "—"}
+              {data.subscription.last_modified_at
+                ? fmtDateTime(data.subscription.last_modified_at)
+                : "—"}
               {data.lastModifiedByName ? ` · ${data.lastModifiedByName}` : ""}
             </Row>
           </dl>
 
           <div className="space-y-2">
-            <p className="text-[12px] font-semibold text-muted-foreground">الاستخدام مقابل حدود الباقة</p>
+            <p className="text-[12px] font-semibold text-muted-foreground">
+              الاستخدام مقابل حدود الباقة
+            </p>
             {limits.map(([label, used, max]) => (
-              <div key={label} className="flex items-center justify-between rounded-[var(--radius-m)] bg-surface-muted px-3 py-2">
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-[var(--radius-m)] bg-surface-muted px-3 py-2"
+              >
                 <span>{label}</span>
                 <span className="tabular-nums">
                   {used} / {max === null ? "غير محدود" : max}
@@ -411,7 +446,9 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
 
   const { data: plans } = useQuery({
     queryKey: ["admin-plans-options"],
-    queryFn: async () => (await supabase.from("platform_plans").select("code, name_ar").order("sort_order")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("platform_plans").select("code, name_ar").order("sort_order")).data ??
+      [],
   });
 
   const startsAt = useMemo(() => new Date(), [open]);
@@ -424,7 +461,8 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
   const planLabel =
     planCode === "custom"
       ? customLabel.trim() || "باقة مخصصة"
-      : ((plans ?? []).find((p: { code: string; name_ar: string }) => p.code === planCode)?.name_ar ?? planCode);
+      : ((plans ?? []).find((p: { code: string; name_ar: string }) => p.code === planCode)
+          ?.name_ar ?? planCode);
 
   const reset = () => {
     setEmail("");
@@ -471,7 +509,8 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
 
   const submit = () => {
     setError(null);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError("أدخل بريداً إلكترونياً صالحاً.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()))
+      return setError("أدخل بريداً إلكترونياً صالحاً.");
     if (amount.trim() === "" || Number.isNaN(Number(amount)) || Number(amount) < 0)
       return setError("أدخل قيمة اشتراك صالحة.");
     if (!endsAt) return setError("حدد مدة الاشتراك أو تاريخ الانتهاء.");
@@ -479,10 +518,19 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="تفعيل اشتراك جديد" description="يُفعّل الاشتراك للمشتركين المسجلين فقط.">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="تفعيل اشتراك جديد"
+      description="يُفعّل الاشتراك للمشتركين المسجلين فقط."
+    >
       <div className="space-y-4">
         <FormField label="الباقة" required>
-          <select value={planCode} onChange={(e) => setPlanCode(e.target.value)} className={inputCls}>
+          <select
+            value={planCode}
+            onChange={(e) => setPlanCode(e.target.value)}
+            className={inputCls}
+          >
             {(plans ?? []).map((p: { code: string; name_ar: string }) => (
               <option key={p.code} value={p.code}>
                 {p.name_ar}
@@ -554,7 +602,12 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
         )}
         {durationMode === "date" && (
           <FormField label="تاريخ الانتهاء" required>
-            <input type="date" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} className={inputCls} />
+            <input
+              type="date"
+              value={manualEnd}
+              onChange={(e) => setManualEnd(e.target.value)}
+              className={inputCls}
+            />
           </FormField>
         )}
 
@@ -587,12 +640,16 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
 
         {endsAt && (
           <p className="rounded-[var(--radius-m)] bg-surface-muted px-3 py-2.5 text-[12px] text-muted-foreground">
-            يبدأ اليوم وينتهي في <strong className="text-foreground">{fmtDate(endsAt.toISOString())}</strong>
+            يبدأ اليوم وينتهي في{" "}
+            <strong className="text-foreground">{fmtDate(endsAt.toISOString())}</strong>
           </p>
         )}
 
         {error && (
-          <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+          <p
+            role="alert"
+            className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+          >
             {error}
           </p>
         )}

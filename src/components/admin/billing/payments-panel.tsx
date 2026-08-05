@@ -53,7 +53,10 @@ export function PaymentsPanel() {
   const [page, setPage] = useState(1);
   const debounced = useDebounced(search);
 
-  const [deciding, setDeciding] = useState<{ row: BillingRow; decision: "approve" | "reject" } | null>(null);
+  const [deciding, setDeciding] = useState<{
+    row: BillingRow;
+    decision: "approve" | "reject";
+  } | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
   const [refunding, setRefunding] = useState<BillingRow | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
@@ -66,12 +69,14 @@ export function PaymentsPanel() {
 
   const query = useQuery({
     queryKey: ["billing-payments", debounced, status, method, page],
-    queryFn: () => listFn({ data: { search: debounced || null, status, method, page, pageSize: PAGE_SIZE } }),
+    queryFn: () =>
+      listFn({ data: { search: debounced || null, status, method, page, pageSize: PAGE_SIZE } }),
   });
 
   const attempts = useQuery({
     queryKey: ["billing-attempts"],
-    queryFn: () => attemptsFn({ data: { page: 1, pageSize: 15, status: null, method: null, search: null } }),
+    queryFn: () =>
+      attemptsFn({ data: { page: 1, pageSize: 15, status: null, method: null, search: null } }),
   });
 
   const invalidate = () => {
@@ -178,7 +183,10 @@ export function PaymentsPanel() {
       ) : query.isError ? (
         <ErrorBlock message={(query.error as Error).message} />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا توجد دفعات مطابقة" hint="تُسجّل الدفعات من صفحة الفاتورة أو تُستقبل من مزوّد الدفع." />
+        <EmptyState
+          title="لا توجد دفعات مطابقة"
+          hint="تُسجّل الدفعات من صفحة الفاتورة أو تُستقبل من مزوّد الدفع."
+        />
       ) : (
         <DataCard>
           <table className="w-full text-body-sm">
@@ -222,12 +230,18 @@ export function PaymentsPanel() {
                         </span>
                       )}
                     </Td>
-                    <Td>{PAYMENT_METHOD_LABELS[row["method"] as never] ?? (row["method"] as string)}</Td>
+                    <Td>
+                      {PAYMENT_METHOD_LABELS[row["method"] as never] ?? (row["method"] as string)}
+                    </Td>
                     <Td>
                       <PaymentStatusBadge status={rowStatus} />
                     </Td>
-                    <Td className="max-w-[180px] truncate" >
-                      <span dir="ltr">{(row["bank_reference"] as string) ?? (row["provider_payment_id"] as string) ?? "—"}</span>
+                    <Td className="max-w-[180px] truncate">
+                      <span dir="ltr">
+                        {(row["bank_reference"] as string) ??
+                          (row["provider_payment_id"] as string) ??
+                          "—"}
+                      </span>
                     </Td>
                     <Td>{formatDateTime((row["created_at"] as string) ?? null)}</Td>
                     <Td className="text-left">
@@ -276,9 +290,17 @@ export function PaymentsPanel() {
         </DataCard>
       )}
 
-      <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+      <Pagination
+        page={page}
+        setPage={setPage}
+        total={query.data?.total ?? 0}
+        pageSize={PAGE_SIZE}
+      />
 
-      <SectionCard title="محاولات الدفع والاتصال" description="أحدث 15 محاولة — تُستخدم لتشخيص أعطال المزوّد.">
+      <SectionCard
+        title="محاولات الدفع والاتصال"
+        description="أحدث 15 محاولة — تُستخدم لتشخيص أعطال المزوّد."
+      >
         {attempts.isLoading ? (
           <LoadingBlock rows={4} cols={4} />
         ) : (attempts.data?.rows ?? []).length === 0 ? (
@@ -301,9 +323,13 @@ export function PaymentsPanel() {
                     <Td>{row["operation"] as string}</Td>
                     <Td>{row["provider"] as string}</Td>
                     <Td>
-                      <PaymentStatusBadge status={row["status"] === "success" ? "paid" : "failed"} />
+                      <PaymentStatusBadge
+                        status={row["status"] === "success" ? "paid" : "failed"}
+                      />
                     </Td>
-                    <Td className="max-w-[280px] truncate">{(row["error_message"] as string) ?? "—"}</Td>
+                    <Td className="max-w-[280px] truncate">
+                      {(row["error_message"] as string) ?? "—"}
+                    </Td>
                     <Td>{formatDateTime((row["created_at"] as string) ?? null)}</Td>
                   </tr>
                 ))}
@@ -370,7 +396,12 @@ export function PaymentsPanel() {
             />
           </FormField>
           <FormField label="سبب الاسترداد" required hint="5 أحرف على الأقل.">
-            <textarea rows={3} className={inputCls} value={refundReason} onChange={(e) => setRefundReason(e.target.value)} />
+            <textarea
+              rows={3}
+              className={inputCls}
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+            />
           </FormField>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn variant="outline" onClick={() => setRefunding(null)} disabled={refund.isPending}>

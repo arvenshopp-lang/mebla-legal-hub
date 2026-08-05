@@ -23,7 +23,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     if (isApi) {
       return applySecurityHeaders(
         Response.json(
-          { error: "internal_error", message: "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح." },
+          {
+            error: "internal_error",
+            message: "تعذر تحميل المستند. الرابط غير صالح أو الملف غير متاح.",
+          },
           { status: 500, headers: { "cache-control": "no-store" } },
         ),
       );
@@ -76,5 +79,10 @@ const surfaceMiddleware = createMiddleware().server(async ({ next }) => {
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, securityHeadersMiddleware, csrfMiddleware, surfaceMiddleware],
+  requestMiddleware: [
+    errorMiddleware,
+    securityHeadersMiddleware,
+    csrfMiddleware,
+    surfaceMiddleware,
+  ],
 }));

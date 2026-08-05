@@ -13,7 +13,10 @@ export const Route = createFileRoute("/mehla-admin/monitoring")({
   head: () => ({
     meta: [
       { title: "مراقبة النظام · إدارة مِهلة" },
-      { name: "description", content: "زمن الاستجابة والطوابير والجلسات ومؤشرات الأمان في منصة مِهلة بقيم فعلية." },
+      {
+        name: "description",
+        content: "زمن الاستجابة والطوابير والجلسات ومؤشرات الأمان في منصة مِهلة بقيم فعلية.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -147,8 +150,8 @@ function MonitoringPage() {
                 <Row label="وقت القراءة" value={fmtDateTime(ops.checkedAt)} />
               </dl>
               <p className="text-caption mt-4">
-                قياس زمن الاستعلامات البطيئة على مستوى محرّك قاعدة البيانات غير متاح لهذه اللوحة، لذلك نعرض زمن
-                استجابة القراءة الفعلي بدلاً من رقم تقديري.
+                قياس زمن الاستعلامات البطيئة على مستوى محرّك قاعدة البيانات غير متاح لهذه اللوحة،
+                لذلك نعرض زمن استجابة القراءة الفعلي بدلاً من رقم تقديري.
               </p>
             </SectionCard>
 
@@ -162,9 +165,16 @@ function MonitoringPage() {
                 />
                 <Row
                   label="آخر فحص تكامل"
-                  value={ops.integrations.lastCheckAt ? fmtDateTime(ops.integrations.lastCheckAt) : "لم يُشغّل بعد"}
+                  value={
+                    ops.integrations.lastCheckAt
+                      ? fmtDateTime(ops.integrations.lastCheckAt)
+                      : "لم يُشغّل بعد"
+                  }
                 />
-                <Row label="محاولات متابعة مرفوضة (٢٤س)" value={fmtNumber(ops.security.blockedLookups24h)} />
+                <Row
+                  label="محاولات متابعة مرفوضة (٢٤س)"
+                  value={fmtNumber(ops.security.blockedLookups24h)}
+                />
                 <Row label="آخر مرجع عطل" value={ops.security.lastFailureRef ?? "—"} />
                 <Row
                   label="آخر حركة في سجل التدقيق"
@@ -173,8 +183,8 @@ function MonitoringPage() {
               </dl>
               <p className="text-caption mt-4">
                 <Plug className="me-1 inline h-3.5 w-3.5" aria-hidden />
-                النسخ الاحتياطي اليومي مُدار على مستوى الاستضافة، والوصول للمستندات يتم عبر روابط موقّعة قصيرة الأجل
-                فقط.
+                النسخ الاحتياطي اليومي مُدار على مستوى الاستضافة، والوصول للمستندات يتم عبر روابط
+                موقّعة قصيرة الأجل فقط.
               </p>
             </SectionCard>
           </div>

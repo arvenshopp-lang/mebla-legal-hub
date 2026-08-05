@@ -59,8 +59,14 @@ export function SettingsPanel() {
   const previewFn = useServerFn(billingPreviewSequence);
   const taxFn = useServerFn(billingSaveTaxSettings);
 
-  const settings = useQuery({ queryKey: ["billing-settings"], queryFn: () => settingsFn({ data: undefined as never }) });
-  const stats = useQuery({ queryKey: ["billing-provider-stats"], queryFn: () => statsFn({ data: undefined as never }) });
+  const settings = useQuery({
+    queryKey: ["billing-settings"],
+    queryFn: () => settingsFn({ data: undefined as never }),
+  });
+  const stats = useQuery({
+    queryKey: ["billing-provider-stats"],
+    queryFn: () => statsFn({ data: undefined as never }),
+  });
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["billing-settings"] });
@@ -92,7 +98,8 @@ export function SettingsPanel() {
   });
 
   const saveSecrets = useMutation({
-    mutationFn: (input: { code: string; secrets: Record<string, string> }) => secretsFn({ data: input as never }),
+    mutationFn: (input: { code: string; secrets: Record<string, string> }) =>
+      secretsFn({ data: input as never }),
     onSuccess: () => {
       toast.success("تم حفظ المفاتيح مشفّرة داخل الخزنة.");
       setSecretsFor(null);
@@ -125,12 +132,19 @@ export function SettingsPanel() {
   }, [activeProvider]);
 
   /* -------------------------------------------------------------- الترقيم */
-  const [seqEdit, setSeqEdit] = useState<{ kind: SequenceKind; periodKey: string; prefix: string; padding: number } | null>(
-    null,
-  );
+  const [seqEdit, setSeqEdit] = useState<{
+    kind: SequenceKind;
+    periodKey: string;
+    prefix: string;
+    padding: number;
+  } | null>(null);
   const saveSequence = useMutation({
-    mutationFn: (input: { kind: SequenceKind; periodKey: string; prefix: string; padding: number }) =>
-      sequenceFn({ data: input as never }),
+    mutationFn: (input: {
+      kind: SequenceKind;
+      periodKey: string;
+      prefix: string;
+      padding: number;
+    }) => sequenceFn({ data: input as never }),
     onSuccess: () => {
       toast.success("تم تحديث إعدادات الترقيم.");
       setSeqEdit(null);
@@ -145,7 +159,9 @@ export function SettingsPanel() {
     queryKey: ["billing-sequence-preview", year],
     queryFn: async () => {
       const kinds: SequenceKind[] = ["invoice", "quote", "credit_note"];
-      const results = await Promise.all(kinds.map((kind) => previewFn({ data: { kind, periodKey: year } })));
+      const results = await Promise.all(
+        kinds.map((kind) => previewFn({ data: { kind, periodKey: year } })),
+      );
       return results;
     },
   });
@@ -175,7 +191,8 @@ export function SettingsPanel() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  if (settings.isPending) return <SectionLoader label="جاري تحميل إعدادات المركز المالي…" rows={5} />;
+  if (settings.isPending)
+    return <SectionLoader label="جاري تحميل إعدادات المركز المالي…" rows={5} />;
   if (settings.isError) return <ErrorBlock message={(settings.error as Error).message} />;
 
   return (
@@ -209,7 +226,8 @@ export function SettingsPanel() {
                             : "warn"
                       }
                     >
-                      {PROVIDER_STATUS_LABELS[provider.connection_status] ?? provider.connection_status}
+                      {PROVIDER_STATUS_LABELS[provider.connection_status] ??
+                        provider.connection_status}
                     </Badge>
                     {stat?.mode && (
                       <Badge tone={stat.mode === "production" ? "green" : "warn"}>
@@ -217,7 +235,9 @@ export function SettingsPanel() {
                       </Badge>
                     )}
                   </div>
-                  {provider.description && <p className="text-caption mt-1">{provider.description}</p>}
+                  {provider.description && (
+                    <p className="text-caption mt-1">{provider.description}</p>
+                  )}
                   <dl className="mt-3 grid gap-x-6 gap-y-1 text-caption sm:grid-cols-2">
                     <div>آخر اختبار: {formatDateTime(provider.last_tested_at)}</div>
                     <div>مسار الرسائل: {provider.webhook_path ?? "—"}</div>
@@ -225,7 +245,8 @@ export function SettingsPanel() {
                     <div>آخر عملية فاشلة: {formatDateTime(stat?.last_failure_at ?? null)}</div>
                     {stat?.supports_webhooks && (
                       <div>
-                        رسائل فاشلة: {stat?.webhook_failed ?? 0} — فاشلة نهائياً: {stat?.webhook_dead_letter ?? 0}
+                        رسائل فاشلة: {stat?.webhook_failed ?? 0} — فاشلة نهائياً:{" "}
+                        {stat?.webhook_dead_letter ?? 0}
                       </div>
                     )}
                   </dl>
@@ -240,7 +261,7 @@ export function SettingsPanel() {
                       {provider.secrets.map((secret) => (
                         <li key={secret.fieldKey}>
                           <Badge tone={secret.status === "stored" ? "green" : "muted"}>
-                            {(SECRET_LABELS[secret.fieldKey] ?? secret.fieldKey)}: {secret.hint}
+                            {SECRET_LABELS[secret.fieldKey] ?? secret.fieldKey}: {secret.hint}
                           </Badge>
                         </li>
                       ))}
@@ -285,7 +306,9 @@ export function SettingsPanel() {
                       variant={provider.is_enabled ? "outline" : "primary"}
                       size="sm"
                       loading={enable.isPending && enable.variables?.code === provider.code}
-                      onClick={() => enable.mutate({ code: provider.code, enabled: !provider.is_enabled })}
+                      onClick={() =>
+                        enable.mutate({ code: provider.code, enabled: !provider.is_enabled })
+                      }
                     >
                       {provider.is_enabled ? "تعطيل" : "تفعيل"}
                     </Btn>
@@ -351,7 +374,12 @@ export function SettingsPanel() {
         description="تُطبَّق على الفواتير الجديدة. الفواتير المُصدرة تحتفظ بنسبتها المحفوظة وقت الإصدار."
         actions={
           manage && (
-            <Btn size="sm" loading={saveTax.isPending} onClick={() => saveTax.mutate()} disabled={!taxDirty}>
+            <Btn
+              size="sm"
+              loading={saveTax.isPending}
+              onClick={() => saveTax.mutate()}
+              disabled={!taxDirty}
+            >
               <CheckCircle2 className="h-4 w-4" aria-hidden /> حفظ
             </Btn>
           )
@@ -459,7 +487,9 @@ export function SettingsPanel() {
                 type="password"
                 autoComplete="new-password"
                 value={secretValues[key] ?? ""}
-                onChange={(event) => setSecretValues({ ...secretValues, [key]: event.target.value })}
+                onChange={(event) =>
+                  setSecretValues({ ...secretValues, [key]: event.target.value })
+                }
               />
             </FormField>
           ))}
@@ -495,7 +525,9 @@ export function SettingsPanel() {
               <input
                 className={inputCls}
                 value={seqEdit.prefix}
-                onChange={(event) => setSeqEdit({ ...seqEdit, prefix: event.target.value.toUpperCase() })}
+                onChange={(event) =>
+                  setSeqEdit({ ...seqEdit, prefix: event.target.value.toUpperCase() })
+                }
               />
             </FormField>
             <FormField label="عدد الخانات" required hint="بين 3 و 10.">
@@ -503,7 +535,9 @@ export function SettingsPanel() {
                 className={inputCls}
                 inputMode="numeric"
                 value={String(seqEdit.padding)}
-                onChange={(event) => setSeqEdit({ ...seqEdit, padding: Math.round(num(event.target.value)) })}
+                onChange={(event) =>
+                  setSeqEdit({ ...seqEdit, padding: Math.round(num(event.target.value)) })
+                }
               />
             </FormField>
             <div className="flex justify-end gap-2">

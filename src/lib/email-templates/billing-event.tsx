@@ -55,7 +55,9 @@ const money = (value: number, currency: string) =>
   }`;
 
 const hijriSafeDate = (value: string | null) =>
-  value ? new Intl.DateTimeFormat("ar-SA-u-nu-latn", { dateStyle: "long" }).format(new Date(value)) : "—";
+  value
+    ? new Intl.DateTimeFormat("ar-SA-u-nu-latn", { dateStyle: "long" }).format(new Date(value))
+    : "—";
 
 function bodyText(props: BillingEventEmailProps): string {
   const { event, currency } = props;
@@ -91,7 +93,9 @@ export function BillingEventEmail(props: BillingEventEmailProps) {
         <Container style={container}>
           <Text style={brand}>مِهلة | MEHLA</Text>
           <Heading style={heading}>{title}</Heading>
-          <Text style={text}>{props.customerName ? `عناية ${props.customerName}،` : "مرحباً،"}</Text>
+          <Text style={text}>
+            {props.customerName ? `عناية ${props.customerName}،` : "مرحباً،"}
+          </Text>
           <Text style={text}>{bodyText(props)}</Text>
           <Section style={box}>
             <Text style={row}>رقم الفاتورة: {props.invoiceNumber}</Text>
@@ -101,7 +105,8 @@ export function BillingEventEmail(props: BillingEventEmailProps) {
           </Section>
           <Hr style={hr} />
           <Text style={footer}>
-            هذه رسالة تلقائية بخصوص حسابك في منصة مِهلة. للاستفسارات المالية يمكنك الرد على هذه الرسالة.
+            هذه رسالة تلقائية بخصوص حسابك في منصة مِهلة. للاستفسارات المالية يمكنك الرد على هذه
+            الرسالة.
           </Text>
         </Container>
       </Body>
@@ -111,9 +116,18 @@ export function BillingEventEmail(props: BillingEventEmailProps) {
 
 export default BillingEventEmail;
 
-const main = { backgroundColor: "#ffffff", fontFamily: "'IBM Plex Sans Arabic', Arial, sans-serif" };
+const main = {
+  backgroundColor: "#ffffff",
+  fontFamily: "'IBM Plex Sans Arabic', Arial, sans-serif",
+};
 const container = { padding: "28px 24px", maxWidth: "560px", margin: "0 auto" };
-const brand = { color: "#173F35", fontSize: "15px", fontWeight: 700, letterSpacing: "0.5px", margin: "0 0 18px" };
+const brand = {
+  color: "#173F35",
+  fontSize: "15px",
+  fontWeight: 700,
+  letterSpacing: "0.5px",
+  margin: "0 0 18px",
+};
 const heading = { color: "#173F35", fontSize: "21px", margin: "0 0 14px" };
 const text = { color: "#33403c", fontSize: "15px", lineHeight: "26px", margin: "0 0 12px" };
 const box = {

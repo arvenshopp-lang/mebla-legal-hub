@@ -34,7 +34,9 @@ export async function consumeOcrQuota(supabase: Client, organizationId: string, 
     _pages: pages,
   });
   if (error) throw new Error("تعذّر التحقق من حصة القراءة الضوئية في باقتك.");
-  const row = (data as { allowed: boolean; used: number; monthly_limit: number | null }[] | null)?.[0];
+  const row = (
+    data as { allowed: boolean; used: number; monthly_limit: number | null }[] | null
+  )?.[0];
   if (!row?.allowed) {
     const limit = row?.monthly_limit ?? 0;
     throw new Error(

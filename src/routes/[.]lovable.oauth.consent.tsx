@@ -58,7 +58,9 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
       <p className="mt-3 text-sm text-muted-foreground">
         انتهت صلاحية الطلب أو أنه غير صالح. أعد المحاولة من التطبيق الذي بدأ الربط.
       </p>
-      <p className="mt-2 text-xs text-muted-foreground/80">{String((error as Error)?.message ?? error)}</p>
+      <p className="mt-2 text-xs text-muted-foreground/80">
+        {String((error as Error)?.message ?? error)}
+      </p>
     </ConsentShell>
   ),
 });
@@ -106,11 +108,14 @@ function ConsentPage() {
     <ConsentShell>
       <h1 className="text-xl font-semibold text-foreground">ربط «{clientName}» بحسابك في مِهلة</h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        بالموافقة، سيتمكن هذا التطبيق من قراءة قضاياك وجلساتك ومهلك ومهامك، وإنشاء مهام جديدة، بصلاحياتك
-        نفسها وداخل مكتبك فقط. يمكنك إلغاء الربط في أي وقت من إعدادات حسابك.
+        بالموافقة، سيتمكن هذا التطبيق من قراءة قضاياك وجلساتك ومهلك ومهامك، وإنشاء مهام جديدة،
+        بصلاحياتك نفسها وداخل مكتبك فقط. يمكنك إلغاء الربط في أي وقت من إعدادات حسابك.
       </p>
       {error ? (
-        <p role="alert" className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p
+          role="alert"
+          className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           {error}
         </p>
       ) : null}

@@ -9,7 +9,9 @@ import { z } from "zod";
 
 const listSchema = z.object({
   search: z.string().trim().max(120).optional().default(""),
-  status: z.enum(["all", "active", "suspended", "no_org", "subscribed", "unsubscribed"]).default("all"),
+  status: z
+    .enum(["all", "active", "suspended", "no_org", "subscribed", "unsubscribed"])
+    .default("all"),
   sort: z.enum(["created_desc", "created_asc", "name_asc"]).default("created_desc"),
   page: z.number().int().min(1).max(500).default(1),
   pageSize: z.number().int().min(5).max(100).default(20),
@@ -75,7 +77,11 @@ export const listPlatformUsers = createServerFn({ method: "POST" })
 
 /* ------------------------------------------------------------- الحالة والحذف */
 
-const toggleSchema = z.object({ userId: z.string().uuid(), active: z.boolean(), reason: z.string().trim().max(300).optional() });
+const toggleSchema = z.object({
+  userId: z.string().uuid(),
+  active: z.boolean(),
+  reason: z.string().trim().max(300).optional(),
+});
 
 export const setUserActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -86,13 +92,22 @@ export const setUserActive = createServerFn({ method: "POST" })
     if (data.userId === context.userId) throw new Error("لا يمكنك إيقاف حسابك بنفسك.");
     const db = await g.admin();
 
-    const { data: before } = await db.from("profiles").select("id, email, is_active").eq("id", data.userId).maybeSingle();
+    const { data: before } = await db
+      .from("profiles")
+      .select("id, email, is_active")
+      .eq("id", data.userId)
+      .maybeSingle();
     if (!before) throw new Error("المستخدم غير موجود.");
 
-    const { error } = await db.from("profiles").update({ is_active: data.active }).eq("id", data.userId);
+    const { error } = await db
+      .from("profiles")
+      .update({ is_active: data.active })
+      .eq("id", data.userId);
     if (error) throw new Error("تعذّر تحديث حالة الحساب.");
     try {
-      await db.auth.admin.updateUserById(data.userId, { ban_duration: data.active ? "none" : "876000h" });
+      await db.auth.admin.updateUserById(data.userId, {
+        ban_duration: data.active ? "none" : "876000h",
+      });
     } catch {
       /* تعطيل الجلسة غير متاح — الحساب معلّق على مستوى المنصة */
     }
@@ -118,10 +133,18 @@ export const deletePlatformUser = createServerFn({ method: "POST" })
     if (data.userId === context.userId) throw new Error("لا يمكنك حذف حسابك بنفسك.");
     const db = await g.admin();
 
-    const { data: before } = await db.from("profiles").select("id, full_name, email").eq("id", data.userId).maybeSingle();
+    const { data: before } = await db
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", data.userId)
+      .maybeSingle();
     if (!before) throw new Error("المستخدم غير موجود.");
 
-    const { data: staffRow } = await db.from("platform_staff").select("id, role").eq("user_id", data.userId).maybeSingle();
+    const { data: staffRow } = await db
+      .from("platform_staff")
+      .select("id, role")
+      .eq("user_id", data.userId)
+      .maybeSingle();
     if (staffRow?.role === "super_admin") throw new Error("لا يمكن حذف مالك المنصة.");
 
     const { error } = await db.auth.admin.deleteUser(data.userId);
@@ -148,7 +171,8 @@ function publishableClient() {
       global: {
         fetch: (input: RequestInfo | URL, init?: RequestInit) => {
           const h = new Headers(init?.headers);
-          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+            h.delete("Authorization");
           h.set("apikey", key);
           return fetch(input, { ...init, headers: h });
         },
@@ -157,7 +181,10 @@ function publishableClient() {
   });
 }
 
-const emailOnly = z.object({ userId: z.string().uuid(), email: z.string().trim().toLowerCase().email() });
+const emailOnly = z.object({
+  userId: z.string().uuid(),
+  email: z.string().trim().toLowerCase().email(),
+});
 
 export const resendUserVerification = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -220,7 +247,14 @@ export const listUserNotes = createServerFn({ method: "POST" })
       .eq("user_id", data.userId)
       .order("created_at", { ascending: false })
       .limit(50);
-    return { notes: (rows ?? []) as { id: string; body: string; author_name: string; created_at: string }[] };
+    return {
+      notes: (rows ?? []) as {
+        id: string;
+        body: string;
+        author_name: string;
+        created_at: string;
+      }[],
+    };
   });
 
 export const addUserNote = createServerFn({ method: "POST" })

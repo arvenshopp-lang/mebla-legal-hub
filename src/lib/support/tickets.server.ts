@@ -49,7 +49,10 @@ export async function loadSupportActor(
   staff: { user_id: string; email: string; full_name: string; role: string },
   effectivePermissions: string[],
 ): Promise<SupportActor> {
-  const { data } = await db.from("support_team_members").select("team_id").eq("user_id", staff.user_id);
+  const { data } = await db
+    .from("support_team_members")
+    .select("team_id")
+    .eq("user_id", staff.user_id);
   const isSuper = staff.role === "super_admin";
   return {
     userId: staff.user_id,
@@ -87,9 +90,18 @@ export type SupportQueueKey =
   | "closed"
   | "needs_review";
 
-export async function queueCounts(db: Db, actor: SupportActor): Promise<Record<SupportQueueKey, number>> {
+export async function queueCounts(
+  db: Db,
+  actor: SupportActor,
+): Promise<Record<SupportQueueKey, number>> {
   const base = () =>
-    applyScope(db.from("support_tickets").select("id", { count: "exact", head: true }).is("merged_into_id", null), actor);
+    applyScope(
+      db
+        .from("support_tickets")
+        .select("id", { count: "exact", head: true })
+        .is("merged_into_id", null),
+      actor,
+    );
 
   const queries: Record<SupportQueueKey, () => Db> = {
     all: () => base(),
@@ -100,7 +112,8 @@ export async function queueCounts(db: Db, actor: SupportActor): Promise<Record<S
     awaiting_reply: () => base().eq("status", "awaiting_reply"),
     pending_internal: () => base().eq("status", "pending_internal"),
     escalated: () => base().eq("status", "escalated"),
-    at_risk: () => base().in("sla_state", ["warning", "critical"]).not("status", "in", "(closed,resolved)"),
+    at_risk: () =>
+      base().in("sla_state", ["warning", "critical"]).not("status", "in", "(closed,resolved)"),
     breached: () => base().eq("sla_state", "breached"),
     resolved: () => base().eq("status", "resolved"),
     closed: () => base().eq("status", "closed"),
@@ -150,15 +163,19 @@ export async function listTickets(
   query = applyScope(query, actor);
   if (filters.status === "open") query = query.not("status", "in", "(closed,resolved)");
   else if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
-  if (filters.priority && filters.priority !== "all") query = query.eq("priority", filters.priority);
-  if (filters.category && filters.category !== "all") query = query.eq("category", filters.category);
+  if (filters.priority && filters.priority !== "all")
+    query = query.eq("priority", filters.priority);
+  if (filters.category && filters.category !== "all")
+    query = query.eq("category", filters.category);
   if (filters.channel && filters.channel !== "all") query = query.eq("channel", filters.channel);
   if (filters.teamId && filters.teamId !== "all") query = query.eq("team_id", filters.teamId);
   if (filters.assignedTo === "me") query = query.eq("assigned_to", actor.userId);
-  else if (filters.assignedTo && filters.assignedTo !== "all") query = query.eq("assigned_to", filters.assignedTo);
+  else if (filters.assignedTo && filters.assignedTo !== "all")
+    query = query.eq("assigned_to", filters.assignedTo);
   if (filters.onlyUnassigned) query = query.is("assigned_to", null);
   if (filters.slaState === "at_risk") query = query.in("sla_state", ["warning", "critical"]);
-  else if (filters.slaState && filters.slaState !== "all") query = query.eq("sla_state", filters.slaState);
+  else if (filters.slaState && filters.slaState !== "all")
+    query = query.eq("sla_state", filters.slaState);
   if (filters.onlyBreached) query = query.eq("sla_state", "breached");
   if (filters.needsReview) query = query.eq("needs_identity_review", true);
   if (filters.organizationId) query = query.eq("organization_id", filters.organizationId);
@@ -184,21 +201,34 @@ async function decorate(db: Db, rows: Record<string, unknown>[]): Promise<Ticket
   const staffIds = unique(rows.map((r) => r["assigned_to"] as string | null));
 
   const [teams, orgs, staff] = await Promise.all([
-    teamIds.length ? db.from("support_teams").select("id, name_ar").in("id", teamIds) : { data: [] },
+    teamIds.length
+      ? db.from("support_teams").select("id, name_ar").in("id", teamIds)
+      : { data: [] },
     orgIds.length ? db.from("organizations").select("id, name").in("id", orgIds) : { data: [] },
-    staffIds.length ? db.from("platform_staff").select("user_id, full_name").in("user_id", staffIds) : { data: [] },
+    staffIds.length
+      ? db.from("platform_staff").select("user_id, full_name").in("user_id", staffIds)
+      : { data: [] },
   ]);
 
-  const teamMap = new Map(((teams.data ?? []) as { id: string; name_ar: string }[]).map((t) => [t.id, t.name_ar]));
-  const orgMap = new Map(((orgs.data ?? []) as { id: string; name: string }[]).map((o) => [o.id, o.name]));
+  const teamMap = new Map(
+    ((teams.data ?? []) as { id: string; name_ar: string }[]).map((t) => [t.id, t.name_ar]),
+  );
+  const orgMap = new Map(
+    ((orgs.data ?? []) as { id: string; name: string }[]).map((o) => [o.id, o.name]),
+  );
   const staffMap = new Map(
-    ((staff.data ?? []) as { user_id: string; full_name: string }[]).map((s) => [s.user_id, s.full_name]),
+    ((staff.data ?? []) as { user_id: string; full_name: string }[]).map((s) => [
+      s.user_id,
+      s.full_name,
+    ]),
   );
 
   return rows.map((r) => ({
     ...(r as unknown as TicketListRow),
     team_name: r["team_id"] ? (teamMap.get(r["team_id"] as string) ?? null) : null,
-    organization_name: r["organization_id"] ? (orgMap.get(r["organization_id"] as string) ?? null) : null,
+    organization_name: r["organization_id"]
+      ? (orgMap.get(r["organization_id"] as string) ?? null)
+      : null,
     assignee_name: r["assigned_to"] ? (staffMap.get(r["assigned_to"] as string) ?? null) : null,
     last_activity_at: (r["updated_at"] as string) ?? (r["created_at"] as string),
   }));
@@ -208,29 +238,57 @@ function unique(values: (string | null)[]): string[] {
   return Array.from(new Set(values.filter((v): v is string => !!v)));
 }
 
-export async function getTicket(db: Db, actor: SupportActor, ticketId: string): Promise<TicketDetail> {
-  const { data: row } = await db.from("support_tickets").select(TICKET_COLUMNS).eq("id", ticketId).maybeSingle();
+export async function getTicket(
+  db: Db,
+  actor: SupportActor,
+  ticketId: string,
+): Promise<TicketDetail> {
+  const { data: row } = await db
+    .from("support_tickets")
+    .select(TICKET_COLUMNS)
+    .eq("id", ticketId)
+    .maybeSingle();
   if (!row) throw new Error("التذكرة غير موجودة.");
   const ticket = row as Record<string, unknown>;
 
   if (!actor.canViewAllOffices) {
     const mine =
       ticket["assigned_to"] === actor.userId ||
-      (typeof ticket["team_id"] === "string" && actor.teamIds.includes(ticket["team_id"] as string));
+      (typeof ticket["team_id"] === "string" &&
+        actor.teamIds.includes(ticket["team_id"] as string));
     if (!mine) throw new Error("هذه التذكرة خارج نطاق فرقك.");
   }
 
   const [messages, notes, events, slaEvents, tags, policy, subscription] = await Promise.all([
     db.from("support_ticket_messages").select("*").eq("ticket_id", ticketId).order("created_at"),
     db.from("support_internal_notes").select("*").eq("ticket_id", ticketId).order("created_at"),
-    db.from("support_ticket_events").select("*").eq("ticket_id", ticketId).order("created_at", { ascending: false }),
-    db.from("support_sla_events").select("*").eq("ticket_id", ticketId).order("occurred_at", { ascending: false }),
-    db.from("support_ticket_tags").select("tag_id, support_tags(id, name_ar, color)").eq("ticket_id", ticketId),
+    db
+      .from("support_ticket_events")
+      .select("*")
+      .eq("ticket_id", ticketId)
+      .order("created_at", { ascending: false }),
+    db
+      .from("support_sla_events")
+      .select("*")
+      .eq("ticket_id", ticketId)
+      .order("occurred_at", { ascending: false }),
+    db
+      .from("support_ticket_tags")
+      .select("tag_id, support_tags(id, name_ar, color)")
+      .eq("ticket_id", ticketId),
     ticket["sla_policy_id"]
-      ? db.from("support_sla_policies").select("name_ar").eq("id", ticket["sla_policy_id"]).maybeSingle()
+      ? db
+          .from("support_sla_policies")
+          .select("name_ar")
+          .eq("id", ticket["sla_policy_id"])
+          .maybeSingle()
       : Promise.resolve({ data: null }),
     ticket["subscription_id"]
-      ? db.from("subscriptions").select("plan_code").eq("id", ticket["subscription_id"]).maybeSingle()
+      ? db
+          .from("subscriptions")
+          .select("plan_code")
+          .eq("id", ticket["subscription_id"])
+          .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -250,7 +308,11 @@ export async function getTicket(db: Db, actor: SupportActor, ticketId: string): 
       is_staff: m["is_staff"] as boolean,
       body: m["body"] as string,
       created_at: m["created_at"] as string,
-      attachments: (m["attachments"] ?? []) as { id: string; file_name: string; size_bytes: number }[],
+      attachments: (m["attachments"] ?? []) as {
+        id: string;
+        file_name: string;
+        size_bytes: number;
+      }[],
     })),
     notes: ((notes.data ?? []) as Record<string, unknown>[]).map((n) => ({
       id: n["id"] as string,
@@ -260,14 +322,24 @@ export async function getTicket(db: Db, actor: SupportActor, ticketId: string): 
     })),
     events: (events.data ?? []) as TicketDetail["events"],
     slaEvents: (slaEvents.data ?? []) as TicketDetail["slaEvents"],
-    tags: ((tags.data ?? []) as { support_tags: { id: string; name_ar: string; color: string } | null }[])
+    tags: (
+      (tags.data ?? []) as { support_tags: { id: string; name_ar: string; color: string } | null }[]
+    )
       .map((t) => t.support_tags)
       .filter((t): t is { id: string; name_ar: string; color: string } => !!t),
     allowedTransitions: ticket["merged_into_id"]
       ? []
-      : (["new", "in_progress", "awaiting_reply", "pending_internal", "escalated", "resolved", "closed"] as TicketStatus[]).filter(
-          (s) => canTransition(status, s),
-        ),
+      : (
+          [
+            "new",
+            "in_progress",
+            "awaiting_reply",
+            "pending_internal",
+            "escalated",
+            "resolved",
+            "closed",
+          ] as TicketStatus[]
+        ).filter((s) => canTransition(status, s)),
   };
 }
 
@@ -326,7 +398,11 @@ export async function resolveIdentity(
   let name = input.name ?? null;
 
   if (!userId && email) {
-    const { data } = await db.from("profiles").select("id, full_name").eq("email", email).maybeSingle();
+    const { data } = await db
+      .from("profiles")
+      .select("id, full_name")
+      .eq("email", email)
+      .maybeSingle();
     const profile = data as { id: string; full_name: string | null } | null;
     if (profile) {
       userId = profile.id;
@@ -349,7 +425,11 @@ export async function resolveIdentity(
   if (!organizationId && email) {
     const domain = email.split("@")[1];
     if (domain && !FREE_MAIL_DOMAINS.includes(domain)) {
-      const { data } = await db.from("organizations").select("id, email").ilike("email", `%@${domain}`).limit(2);
+      const { data } = await db
+        .from("organizations")
+        .select("id, email")
+        .ilike("email", `%@${domain}`)
+        .limit(2);
       const orgs = (data ?? []) as { id: string }[];
       if (orgs.length === 1 && orgs[0]) {
         organizationId = orgs[0].id;
@@ -385,7 +465,14 @@ export async function resolveIdentity(
   };
 }
 
-const FREE_MAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "icloud.com", "live.com"];
+const FREE_MAIL_DOMAINS = [
+  "gmail.com",
+  "hotmail.com",
+  "outlook.com",
+  "yahoo.com",
+  "icloud.com",
+  "live.com",
+];
 
 /* ------------------------------------------------------------ الإنشاء */
 
@@ -404,7 +491,10 @@ export type CreateTicketInput = {
   actor?: { userId: string; name: string } | null;
 };
 
-export async function createTicket(db: Db, input: CreateTicketInput): Promise<{ id: string; ticketNumber: string }> {
+export async function createTicket(
+  db: Db,
+  input: CreateTicketInput,
+): Promise<{ id: string; ticketNumber: string }> {
   const subject = input.subject.trim().slice(0, 300) || "(بدون موضوع)";
   const description = input.description.trim() || "—";
 
@@ -418,7 +508,12 @@ export async function createTicket(db: Db, input: CreateTicketInput): Promise<{ 
     default_priority: TicketPriority;
     default_team_id: string | null;
     sla_policy_id: string | null;
-  } | null) ?? { code: "general", default_priority: "medium" as TicketPriority, default_team_id: null, sla_policy_id: null };
+  } | null) ?? {
+    code: "general",
+    default_priority: "medium" as TicketPriority,
+    default_team_id: null,
+    sla_policy_id: null,
+  };
 
   const identity = await resolveIdentity(db, {
     email: input.requesterEmail ?? null,
@@ -430,7 +525,11 @@ export async function createTicket(db: Db, input: CreateTicketInput): Promise<{ 
 
   let teamId = category.default_team_id;
   if (!teamId) {
-    const { data } = await db.from("support_teams").select("id").eq("is_default", true).maybeSingle();
+    const { data } = await db
+      .from("support_teams")
+      .select("id")
+      .eq("is_default", true)
+      .maybeSingle();
     teamId = (data as { id: string } | null)?.id ?? null;
   }
 
@@ -483,7 +582,13 @@ export async function createTicket(db: Db, input: CreateTicketInput): Promise<{ 
     actorId: input.actor?.userId ?? identity.userId,
     actorName: input.actor?.name ?? identity.requesterName ?? input.requesterEmail ?? "النظام",
     actorKind: input.actor ? "staff" : input.channel === "email" ? "customer" : "system",
-    after: { status: "new", priority, category: category.code, channel: input.channel, team_id: teamId },
+    after: {
+      status: "new",
+      priority,
+      category: category.code,
+      channel: input.channel,
+      team_id: teamId,
+    },
   });
   await writeSlaEvent(db, {
     ticketId: ticket.id,
@@ -495,7 +600,10 @@ export async function createTicket(db: Db, input: CreateTicketInput): Promise<{ 
   });
 
   if (input.sourceEmailThreadId) {
-    await db.from("email_threads").update({ ticket_id: ticket.id }).eq("id", input.sourceEmailThreadId);
+    await db
+      .from("email_threads")
+      .update({ ticket_id: ticket.id })
+      .eq("id", input.sourceEmailThreadId);
   }
   return { id: ticket.id, ticketNumber: ticket.ticket_number };
 }
@@ -518,7 +626,11 @@ async function policyById(db: Db, id: string): Promise<SlaPolicy> {
 type TicketRow = Record<string, unknown>;
 
 async function loadTicket(db: Db, ticketId: string): Promise<TicketRow> {
-  const { data } = await db.from("support_tickets").select(TICKET_COLUMNS).eq("id", ticketId).maybeSingle();
+  const { data } = await db
+    .from("support_tickets")
+    .select(TICKET_COLUMNS)
+    .eq("id", ticketId)
+    .maybeSingle();
   if (!data) throw new Error("التذكرة غير موجودة.");
   const row = data as TicketRow;
   if (row["merged_into_id"]) throw new Error("هذه التذكرة مدموجة ولا تقبل أي تعديل.");
@@ -530,11 +642,16 @@ async function slaUpdatesForTransition(
   db: Db,
   ticket: TicketRow,
   to: TicketStatus,
-): Promise<{ patch: Record<string, unknown>; events: { type: string; reason: string; seconds?: number }[] }> {
+): Promise<{
+  patch: Record<string, unknown>;
+  events: { type: string; reason: string; seconds?: number }[];
+}> {
   const patch: Record<string, unknown> = {};
   const events: { type: string; reason: string; seconds?: number }[] = [];
   const from = ticket["status"] as TicketStatus;
-  const policy = ticket["sla_policy_id"] ? await policyById(db, ticket["sla_policy_id"] as string) : null;
+  const policy = ticket["sla_policy_id"]
+    ? await policyById(db, ticket["sla_policy_id"] as string)
+    : null;
   const nowIso = new Date().toISOString();
 
   const wasPaused = !!ticket["paused_at"];
@@ -551,13 +668,17 @@ async function slaUpdatesForTransition(
       Math.round((Date.now() - new Date(ticket["paused_at"] as string).getTime()) / 1000),
     );
     patch["paused_at"] = null;
-    patch["paused_total_seconds"] = ((ticket["paused_total_seconds"] as number) ?? 0) + pausedSeconds;
+    patch["paused_total_seconds"] =
+      ((ticket["paused_total_seconds"] as number) ?? 0) + pausedSeconds;
     if (policy) {
       const shifted = await shiftDueDates(
         db,
         policy,
         {
-          first: (ticket["first_response_at"] ? null : (ticket["due_first_response_at"] as string | null)) ?? null,
+          first:
+            (ticket["first_response_at"]
+              ? null
+              : (ticket["due_first_response_at"] as string | null)) ?? null,
           resolution: (ticket["due_resolution_at"] as string | null) ?? null,
         },
         pausedSeconds,
@@ -565,7 +686,11 @@ async function slaUpdatesForTransition(
       if (shifted.first) patch["due_first_response_at"] = shifted.first;
       if (shifted.resolution) patch["due_resolution_at"] = shifted.resolution;
     }
-    events.push({ type: "resumed", reason: "استئناف العدّاد بعد انتهاء الانتظار.", seconds: pausedSeconds });
+    events.push({
+      type: "resumed",
+      reason: "استئناف العدّاد بعد انتهاء الانتظار.",
+      seconds: pausedSeconds,
+    });
   }
 
   if (TERMINAL_STATUSES.includes(to) && !ticket["resolved_at"]) {
@@ -588,7 +713,11 @@ async function slaUpdatesForTransition(
   return { patch, events };
 }
 
-function nextSlaState(ticket: TicketRow, patch: Record<string, unknown>, policy: SlaPolicy | null): string {
+function nextSlaState(
+  ticket: TicketRow,
+  patch: Record<string, unknown>,
+  policy: SlaPolicy | null,
+): string {
   const merged = { ...ticket, ...patch } as TicketRow;
   return evaluateSlaState(
     {
@@ -612,11 +741,14 @@ export async function transitionTicket(
   const ticket = await loadTicket(db, input.ticketId);
   const from = ticket["status"] as TicketStatus;
   if (from === input.to) return { status: from, slaState: ticket["sla_state"] as string };
-  if (!canTransition(from, input.to)) throw new Error("هذا الانتقال غير مسموح في دورة حياة التذكرة.");
+  if (!canTransition(from, input.to))
+    throw new Error("هذا الانتقال غير مسموح في دورة حياة التذكرة.");
 
   const { patch, events } = await slaUpdatesForTransition(db, ticket, input.to);
   patch["status"] = input.to;
-  const policy = ticket["sla_policy_id"] ? await policyById(db, ticket["sla_policy_id"] as string) : null;
+  const policy = ticket["sla_policy_id"]
+    ? await policyById(db, ticket["sla_policy_id"] as string)
+    : null;
   patch["sla_state"] = nextSlaState(ticket, patch, policy);
 
   const { error } = await db.from("support_tickets").update(patch).eq("id", input.ticketId);
@@ -672,7 +804,8 @@ export async function replyToTicket(
     await writeSlaEvent(db, {
       ticketId: input.ticketId,
       eventType:
-        ticket["due_first_response_at"] && new Date(ticket["due_first_response_at"] as string).getTime() < Date.now()
+        ticket["due_first_response_at"] &&
+        new Date(ticket["due_first_response_at"] as string).getTime() < Date.now()
           ? "breached"
           : "met",
       metric: "first_response",
@@ -693,7 +826,8 @@ export async function replyToTicket(
 
   let emailSent = false;
   let failureRef: string | null = null;
-  const recipient = (ticket["requester_email"] as string | null) ?? (await requesterEmail(db, ticket));
+  const recipient =
+    (ticket["requester_email"] as string | null) ?? (await requesterEmail(db, ticket));
   if ((input.sendEmail ?? true) && recipient) {
     const mailboxId = await teamMailboxId(db, ticket["team_id"] as string | null);
     if (mailboxId) {
@@ -713,17 +847,30 @@ export async function replyToTicket(
       );
       emailSent = result.sent;
       failureRef = result.failureRef ?? null;
-      await db.from("email_messages").update({ ticket_id: input.ticketId }).eq("id", result.messageId);
-      await db.from("email_threads").update({ ticket_id: input.ticketId }).eq("id", result.threadId);
+      await db
+        .from("email_messages")
+        .update({ ticket_id: input.ticketId })
+        .eq("id", result.messageId);
+      await db
+        .from("email_threads")
+        .update({ ticket_id: input.ticketId })
+        .eq("id", result.threadId);
       if (!ticket["source_email_thread_id"]) {
-        await db.from("support_tickets").update({ source_email_thread_id: result.threadId }).eq("id", input.ticketId);
+        await db
+          .from("support_tickets")
+          .update({ source_email_thread_id: result.threadId })
+          .eq("id", input.ticketId);
       }
     }
   }
 
   const target = input.nextStatus ?? "awaiting_reply";
   if (canTransition(ticket["status"] as TicketStatus, target)) {
-    await transitionTicket(db, actor, { ticketId: input.ticketId, to: target, reason: "بعد رد فريق الدعم." });
+    await transitionTicket(db, actor, {
+      ticketId: input.ticketId,
+      to: target,
+      reason: "بعد رد فريق الدعم.",
+    });
   }
   return { emailSent, failureRef };
 }
@@ -737,7 +884,11 @@ async function requesterEmail(db: Db, ticket: TicketRow): Promise<string | null>
 
 async function teamMailboxId(db: Db, teamId: string | null): Promise<string | null> {
   if (teamId) {
-    const { data } = await db.from("support_teams").select("mailbox_id").eq("id", teamId).maybeSingle();
+    const { data } = await db
+      .from("support_teams")
+      .select("mailbox_id")
+      .eq("id", teamId)
+      .maybeSingle();
     const mailboxId = (data as { mailbox_id: string | null } | null)?.mailbox_id ?? null;
     if (mailboxId) return mailboxId;
   }
@@ -792,7 +943,12 @@ export async function addInternalNote(
 export async function assignTicket(
   db: Db,
   actor: SupportActor,
-  input: { ticketId: string; assignedTo?: string | null; teamId?: string | null; reason?: string | null },
+  input: {
+    ticketId: string;
+    assignedTo?: string | null;
+    teamId?: string | null;
+    reason?: string | null;
+  },
 ): Promise<void> {
   const ticket = await loadTicket(db, input.ticketId);
   const patch: Record<string, unknown> = {};
@@ -804,16 +960,24 @@ export async function assignTicket(
   if (error) throw new Error("تعذّر تنفيذ الإسناد.");
   await writeTicketEvent(db, {
     ticketId: input.ticketId,
-    eventType: input.teamId !== undefined && input.assignedTo === undefined ? "team_changed" : "assigned",
+    eventType:
+      input.teamId !== undefined && input.assignedTo === undefined ? "team_changed" : "assigned",
     actorId: actor.userId,
     actorName: actor.name,
     before: { assigned_to: ticket["assigned_to"], team_id: ticket["team_id"] },
-    after: { assigned_to: patch["assigned_to"] ?? ticket["assigned_to"], team_id: patch["team_id"] ?? ticket["team_id"] },
+    after: {
+      assigned_to: patch["assigned_to"] ?? ticket["assigned_to"],
+      team_id: patch["team_id"] ?? ticket["team_id"],
+    },
     reason: input.reason ?? null,
   });
 
   if ((ticket["status"] as TicketStatus) === "new" && input.assignedTo) {
-    await transitionTicket(db, actor, { ticketId: input.ticketId, to: "in_progress", reason: "بدء المعالجة بعد الإسناد." });
+    await transitionTicket(db, actor, {
+      ticketId: input.ticketId,
+      to: "in_progress",
+      reason: "بدء المعالجة بعد الإسناد.",
+    });
   }
 }
 
@@ -832,7 +996,9 @@ export async function escalateTicket(
     .eq("from_level", (ticket["escalation_level"] as number) ?? 0)
     .order("sort_order")
     .limit(1);
-  const rule = ((ruleRow ?? []) as { target_team_id: string | null; target_user_id: string | null }[])[0] ?? null;
+  const rule =
+    ((ruleRow ?? []) as { target_team_id: string | null; target_user_id: string | null }[])[0] ??
+    null;
 
   let targetTeam = rule?.target_team_id ?? null;
   if (!targetTeam && ticket["team_id"]) {
@@ -872,7 +1038,7 @@ export async function escalateTicket(
     policyId: (ticket["sla_policy_id"] as string | null) ?? null,
     reason: input.reason,
   });
-  return { level, teamId: targetTeam ?? ((ticket["team_id"] as string | null) ?? null) };
+  return { level, teamId: targetTeam ?? (ticket["team_id"] as string | null) ?? null };
 }
 
 /* ------------------------------------------------------------ الدمج والتقسيم */
@@ -886,9 +1052,18 @@ export async function mergeTickets(
   const source = await loadTicket(db, input.sourceId);
   const target = await loadTicket(db, input.targetId);
 
-  await db.from("support_ticket_messages").update({ ticket_id: input.targetId }).eq("ticket_id", input.sourceId);
-  await db.from("email_messages").update({ ticket_id: input.targetId }).eq("ticket_id", input.sourceId);
-  await db.from("email_threads").update({ ticket_id: input.targetId }).eq("ticket_id", input.sourceId);
+  await db
+    .from("support_ticket_messages")
+    .update({ ticket_id: input.targetId })
+    .eq("ticket_id", input.sourceId);
+  await db
+    .from("email_messages")
+    .update({ ticket_id: input.targetId })
+    .eq("ticket_id", input.sourceId);
+  await db
+    .from("email_threads")
+    .update({ ticket_id: input.targetId })
+    .eq("ticket_id", input.sourceId);
 
   await db
     .from("support_tickets")
@@ -923,7 +1098,13 @@ export async function mergeTickets(
 export async function splitTicket(
   db: Db,
   actor: SupportActor,
-  input: { ticketId: string; subject: string; description: string; category?: string | null; reason: string },
+  input: {
+    ticketId: string;
+    subject: string;
+    description: string;
+    category?: string | null;
+    reason: string;
+  },
 ): Promise<{ id: string; ticketNumber: string }> {
   const source = await loadTicket(db, input.ticketId);
   const created = await createTicket(db, {
@@ -958,18 +1139,29 @@ export async function setTicketTags(
   input: { ticketId: string; tagIds: string[] },
 ): Promise<void> {
   await loadTicket(db, input.ticketId);
-  const { data } = await db.from("support_ticket_tags").select("tag_id").eq("ticket_id", input.ticketId);
+  const { data } = await db
+    .from("support_ticket_tags")
+    .select("tag_id")
+    .eq("ticket_id", input.ticketId);
   const current = ((data ?? []) as { tag_id: string }[]).map((t) => t.tag_id);
   const added = input.tagIds.filter((t) => !current.includes(t));
   const removed = current.filter((t) => !input.tagIds.includes(t));
 
   if (removed.length > 0) {
-    await db.from("support_ticket_tags").delete().eq("ticket_id", input.ticketId).in("tag_id", removed);
-  }
-  if (added.length > 0) {
     await db
       .from("support_ticket_tags")
-      .insert(added.map((tagId) => ({ ticket_id: input.ticketId, tag_id: tagId, created_by: actor.userId })));
+      .delete()
+      .eq("ticket_id", input.ticketId)
+      .in("tag_id", removed);
+  }
+  if (added.length > 0) {
+    await db.from("support_ticket_tags").insert(
+      added.map((tagId) => ({
+        ticket_id: input.ticketId,
+        tag_id: tagId,
+        created_by: actor.userId,
+      })),
+    );
   }
   for (const tagId of added) {
     await writeTicketEvent(db, {
@@ -1007,8 +1199,14 @@ export async function updateTicketFields(
   // تغيير الأولوية أو التصنيف يعيد اختيار سياسة المهل ومواعيدها من تاريخ الإنشاء.
   const identityPlan = ticket["subscription_id"]
     ? ((
-        await db.from("subscriptions").select("plan_code").eq("id", ticket["subscription_id"]).maybeSingle()
-      ).data as { plan_code: string } | null)?.plan_code ?? null
+        (
+          await db
+            .from("subscriptions")
+            .select("plan_code")
+            .eq("id", ticket["subscription_id"])
+            .maybeSingle()
+        ).data as { plan_code: string } | null
+      )?.plan_code ?? null)
     : null;
   const policy = await selectPolicy(db, {
     planCode: identityPlan,
@@ -1029,7 +1227,10 @@ export async function updateTicketFields(
     actorId: actor.userId,
     actorName: actor.name,
     before: { priority: ticket["priority"], category: ticket["category"] },
-    after: { priority: patch["priority"] ?? ticket["priority"], category: patch["category"] ?? ticket["category"] },
+    after: {
+      priority: patch["priority"] ?? ticket["priority"],
+      category: patch["category"] ?? ticket["category"],
+    },
     reason: input.reason ?? null,
   });
   await writeSlaEvent(db, {
@@ -1037,7 +1238,9 @@ export async function updateTicketFields(
     eventType: "recalculated",
     metric: "both",
     policyId: policy.id,
-    dueAt: (patch["due_resolution_at"] as string | null) ?? (ticket["due_resolution_at"] as string | null),
+    dueAt:
+      (patch["due_resolution_at"] as string | null) ??
+      (ticket["due_resolution_at"] as string | null),
     reason: `إعادة حساب المهل بعد تغيير ${input.priority ? "الأولوية" : "التصنيف"}.`,
   });
 }
@@ -1045,7 +1248,9 @@ export async function updateTicketFields(
 /* ------------------------------------------------------------ مسح المهل الدوري */
 
 /** يُشغَّل دورياً: تحذيرات 75% و90%، تسجيل التجاوز، والتصعيد التلقائي. */
-export async function runSlaSweep(db: Db): Promise<{ scanned: number; warned: number; breached: number; escalated: number }> {
+export async function runSlaSweep(
+  db: Db,
+): Promise<{ scanned: number; warned: number; breached: number; escalated: number }> {
   const { data } = await db
     .from("support_tickets")
     .select(TICKET_COLUMNS)
@@ -1059,11 +1264,16 @@ export async function runSlaSweep(db: Db): Promise<{ scanned: number; warned: nu
   let escalated = 0;
 
   for (const ticket of tickets) {
-    const policy = ticket["sla_policy_id"] ? await policyById(db, ticket["sla_policy_id"] as string) : null;
+    const policy = ticket["sla_policy_id"]
+      ? await policyById(db, ticket["sla_policy_id"] as string)
+      : null;
     const state = nextSlaState(ticket, {}, policy);
     if (state === ticket["sla_state"]) continue;
 
-    await db.from("support_tickets").update({ sla_state: state }).eq("id", ticket["id"] as string);
+    await db
+      .from("support_tickets")
+      .update({ sla_state: state })
+      .eq("id", ticket["id"] as string);
     if (state === "warning" || state === "critical") {
       warned += 1;
       await writeSlaEvent(db, {
@@ -1088,7 +1298,14 @@ export async function runSlaSweep(db: Db): Promise<{ scanned: number; warned: nu
       if (((ticket["escalation_level"] as number) ?? 0) === 0) {
         await escalateTicket(
           db,
-          { userId: "", email: "system@mehlalex.com", name: "النظام", isSuper: true, canViewAllOffices: true, teamIds: [] },
+          {
+            userId: "",
+            email: "system@mehlalex.com",
+            name: "النظام",
+            isSuper: true,
+            canViewAllOffices: true,
+            teamIds: [],
+          },
           { ticketId: ticket["id"] as string, reason: "تصعيد تلقائي بعد تجاوز المهلة." },
         ).catch(() => undefined);
         escalated += 1;

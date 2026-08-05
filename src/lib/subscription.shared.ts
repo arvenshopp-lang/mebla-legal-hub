@@ -3,13 +3,7 @@
  * Every number here originates from the database (`my_subscription_overview`).
  */
 
-export type SubscriptionState =
-  | "active"
-  | "trial"
-  | "expired"
-  | "suspended"
-  | "cancelled"
-  | "none";
+export type SubscriptionState = "active" | "trial" | "expired" | "suspended" | "cancelled" | "none";
 
 export type PlanFeatureKey =
   | "ai_enabled"
@@ -171,7 +165,13 @@ function tone(percent: number | null): LimitRow["tone"] {
 const NUM = (n: number) => n.toLocaleString("ar-SA-u-nu-latn");
 
 export function buildLimits(plan: SubscriptionPlan, usage: SubscriptionUsage): LimitRow[] {
-  const rows: Array<{ key: LimitKey; label: string; used: number; max: number | null; fmt?: (n: number) => string }> = [
+  const rows: Array<{
+    key: LimitKey;
+    label: string;
+    used: number;
+    max: number | null;
+    fmt?: (n: number) => string;
+  }> = [
     { key: "users", label: "المستخدمون", used: usage.users, max: plan.max_users },
     { key: "cases", label: "القضايا", used: usage.cases, max: plan.max_cases },
     { key: "clients", label: "العملاء", used: usage.clients, max: plan.max_clients },
@@ -183,12 +183,18 @@ export function buildLimits(plan: SubscriptionPlan, usage: SubscriptionUsage): L
       max: plan.storage_gb === null ? null : plan.storage_gb * GB,
       fmt: fmtGb,
     },
-    { key: "ocr_pages", label: "صفحات القراءة الضوئية (شهرياً)", used: usage.ocr_pages, max: plan.ocr_pages_monthly },
+    {
+      key: "ocr_pages",
+      label: "صفحات القراءة الضوئية (شهرياً)",
+      used: usage.ocr_pages,
+      max: plan.ocr_pages_monthly,
+    },
   ];
 
   return rows.map(({ key, label, used, max, fmt }) => {
     const format = fmt ?? ((n: number) => NUM(n));
-    const percent = max && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : max === 0 ? 100 : null;
+    const percent =
+      max && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : max === 0 ? 100 : null;
     return {
       key,
       label,
@@ -230,7 +236,10 @@ export const FEATURE_ORDER: PlanFeatureKey[] = [
 ];
 
 /** The cheapest public plan that includes the given capability. */
-export function findRequiredPlan(feature: PlanFeatureKey, plans: UpgradePlanOption[]): string | null {
+export function findRequiredPlan(
+  feature: PlanFeatureKey,
+  plans: UpgradePlanOption[],
+): string | null {
   if (feature === "pdf_search_enabled" || feature === "client_upload_enabled") {
     return plans.length > 0 ? plans[0].name_ar : null;
   }
@@ -254,9 +263,12 @@ export function buildFeatureRows(overview: SubscriptionOverview): FeatureRow[] {
   });
 }
 
-export function hasFeature(overview: SubscriptionOverview | null | undefined, feature: PlanFeatureKey) {
+export function hasFeature(
+  overview: SubscriptionOverview | null | undefined,
+  feature: PlanFeatureKey,
+) {
   if (!overview) return false;
-  if (!Boolean(overview.plan[feature])) return false;
+  if (!overview.plan[feature]) return false;
   return feature === "pdf_search_enabled" ? true : isLive(overview.state);
 }
 
@@ -316,11 +328,28 @@ export function expiryNotice(overview: SubscriptionOverview | null | undefined):
     };
   }
   if (days === null) return null;
-  if (days <= 1) return { tone: "danger", title: days <= 0 ? "ينتهي اشتراكك اليوم" : "متبقي يوم واحد", body: "جدّد الآن حتى لا تتوقف المزايا المدفوعة." };
-  if (days <= 3) return { tone: "danger", title: `متبقي ${NUM(days)} أيام على انتهاء الاشتراك`, body: "نوصي بالتجديد الآن لتفادي توقف المزايا." };
-  if (days <= 7) return { tone: "danger", title: `متبقي ${NUM(days)} أيام`, body: "اشتراكك على وشك الانتهاء." };
-  if (days <= 14) return { tone: "warn", title: `متبقي ${NUM(days)} يوماً`, body: "يمكنك التجديد مبكراً من صفحة الاشتراك." };
-  if (days <= 30) return { tone: "info", title: `متبقي ${NUM(days)} يوماً`, body: "اشتراكك ينتهي خلال شهر." };
+  if (days <= 1)
+    return {
+      tone: "danger",
+      title: days <= 0 ? "ينتهي اشتراكك اليوم" : "متبقي يوم واحد",
+      body: "جدّد الآن حتى لا تتوقف المزايا المدفوعة.",
+    };
+  if (days <= 3)
+    return {
+      tone: "danger",
+      title: `متبقي ${NUM(days)} أيام على انتهاء الاشتراك`,
+      body: "نوصي بالتجديد الآن لتفادي توقف المزايا.",
+    };
+  if (days <= 7)
+    return { tone: "danger", title: `متبقي ${NUM(days)} أيام`, body: "اشتراكك على وشك الانتهاء." };
+  if (days <= 14)
+    return {
+      tone: "warn",
+      title: `متبقي ${NUM(days)} يوماً`,
+      body: "يمكنك التجديد مبكراً من صفحة الاشتراك.",
+    };
+  if (days <= 30)
+    return { tone: "info", title: `متبقي ${NUM(days)} يوماً`, body: "اشتراكك ينتهي خلال شهر." };
   return null;
 }
 
@@ -370,6 +399,9 @@ export function translateSubscriptionError(message?: string | null): string | nu
 }
 
 /** Ready-to-use toast payload for any mutation failure. */
-export function describeMutationError(message?: string | null, fallback = "حاول مرة أخرى."): string {
+export function describeMutationError(
+  message?: string | null,
+  fallback = "حاول مرة أخرى.",
+): string {
   return translateSubscriptionError(message) ?? fallback;
 }

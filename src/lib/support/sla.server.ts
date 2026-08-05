@@ -4,7 +4,12 @@
  * كل الحسابات «وقت عمل» بتوقيت الرياض: تقويم أيام وساعات العمل + جدول العطلات،
  * مع إيقاف العدّاد أثناء انتظار المكتب أو جهة داخلية. الواجهة لا تحسب أي مهلة.
  */
-import { PAUSING_STATUSES, type SlaState, type TicketPriority, type TicketStatus } from "./support.shared";
+import {
+  PAUSING_STATUSES,
+  type SlaState,
+  type TicketPriority,
+  type TicketStatus,
+} from "./support.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -47,7 +52,9 @@ export async function loadCalendar(db: Db, calendarId: string): Promise<Calendar
     .eq("calendar_id", calendarId);
   return {
     ...cal,
-    holidays: new Set(((holidayRows ?? []) as { holiday_date: string }[]).map((h) => h.holiday_date)),
+    holidays: new Set(
+      ((holidayRows ?? []) as { holiday_date: string }[]).map((h) => h.holiday_date),
+    ),
   };
 }
 
@@ -208,7 +215,9 @@ export function evaluateSlaState(
     !!ticket.due_first_response_at &&
     new Date(ticket.due_first_response_at).getTime() < nowMs;
   const breachedResolution =
-    !ticket.resolved_at && !!ticket.due_resolution_at && new Date(ticket.due_resolution_at).getTime() < nowMs;
+    !ticket.resolved_at &&
+    !!ticket.due_resolution_at &&
+    new Date(ticket.due_resolution_at).getTime() < nowMs;
 
   if (ticket.resolved_at) {
     const late =

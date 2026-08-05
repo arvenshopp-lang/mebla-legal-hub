@@ -69,7 +69,9 @@ export function DocumentRepairButton() {
             error instanceof Error ? error.message : null,
           );
           setRows((prev) =>
-            prev.map((r) => (r.documentId === item.documentId ? { ...r, reindexError: message } : r)),
+            prev.map((r) =>
+              r.documentId === item.documentId ? { ...r, reindexError: message } : r,
+            ),
           );
         }
       }
@@ -119,19 +121,30 @@ export function DocumentRepairButton() {
             ) : (
               <ul className="divide-y divide-border rounded-[var(--radius-m)] ring-1 ring-inset ring-border">
                 {rows.map((row) => (
-                  <li key={row.documentId} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+                  <li
+                    key={row.documentId}
+                    className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                  >
                     <span className="min-w-0 flex-1 truncate font-medium">{row.fileName}</span>
-                    <Badge tone={REPAIR_OUTCOME_TONE[row.outcome]}>{REPAIR_OUTCOME_LABELS[row.outcome]}</Badge>
+                    <Badge tone={REPAIR_OUTCOME_TONE[row.outcome]}>
+                      {REPAIR_OUTCOME_LABELS[row.outcome]}
+                    </Badge>
                     {row.downloadable && (
                       <Badge tone="muted">
                         <ShieldCheck className="me-1 inline h-3 w-3" /> التنزيل المائي يعمل
                       </Badge>
                     )}
                     {row.reindexed && <Badge tone="green">أُعيدت الفهرسة</Badge>}
-                    {reindexing === row.documentId && <Badge tone="warn">جاري إعادة الفهرسة…</Badge>}
-                    {row.reindexError && <span className="text-[11px] text-danger">{row.reindexError}</span>}
+                    {reindexing === row.documentId && (
+                      <Badge tone="warn">جاري إعادة الفهرسة…</Badge>
+                    )}
+                    {row.reindexError && (
+                      <span className="text-[11px] text-danger">{row.reindexError}</span>
+                    )}
                     {row.traceRef && (
-                      <span className="text-[11px] text-muted-foreground">مرجع العطل: {row.traceRef}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        مرجع العطل: {row.traceRef}
+                      </span>
                     )}
                   </li>
                 ))}
@@ -140,7 +153,8 @@ export function DocumentRepairButton() {
 
             {report.missing > 0 && (
               <p className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2 text-[12px] text-danger">
-                المستندات المفقودة لم يُعثر على ملفها في مساحة التخزين، ويلزم إعادة رفعها من نسختها الأصلية.
+                المستندات المفقودة لم يُعثر على ملفها في مساحة التخزين، ويلزم إعادة رفعها من نسختها
+                الأصلية.
               </p>
             )}
 

@@ -95,7 +95,10 @@ export const decisionSchema = z.object({
   decision: z.enum(["accepted", "rejected", "expired", "cancelled"]),
   note: optionalText(400),
   signerName: optionalText(150),
-  signerEmail: z.union([z.literal(""), z.string().trim().email()]).nullable().optional(),
+  signerEmail: z
+    .union([z.literal(""), z.string().trim().email()])
+    .nullable()
+    .optional(),
 });
 
 export const signSchema = z.object({

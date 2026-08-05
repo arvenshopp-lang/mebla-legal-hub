@@ -94,7 +94,10 @@ const campaignInput = z.object({
 
 function n(fields: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(fields).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v]),
+    Object.entries(fields).map(([k, v]) => [
+      k,
+      typeof v === "string" && v.trim() === "" ? null : v,
+    ]),
   );
 }
 
@@ -123,7 +126,11 @@ export const createMarketingCampaign = createServerFn({ method: "POST" })
       notes: data.notes,
       owner_staff_id: staff.id,
     });
-    const { data: created, error } = await db.from("marketing_campaigns").insert(patch).select("id").single();
+    const { data: created, error } = await db
+      .from("marketing_campaigns")
+      .insert(patch)
+      .select("id")
+      .single();
     if (error) throw new Error("تعذّر إنشاء الحملة.");
     await g.writeAudit(db, staff, {
       action: "marketing.campaign.create",
@@ -137,13 +144,19 @@ export const createMarketingCampaign = createServerFn({ method: "POST" })
 
 export const updateMarketingCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => campaignInput.extend({ campaignId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    campaignInput.extend({ campaignId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "marketing.manage");
     const db = await g.admin();
     const { campaignId, ...fields } = data;
-    const { data: before } = await db.from("marketing_campaigns").select("*").eq("id", campaignId).maybeSingle();
+    const { data: before } = await db
+      .from("marketing_campaigns")
+      .select("*")
+      .eq("id", campaignId)
+      .maybeSingle();
     if (!before) throw new Error("الحملة غير موجودة.");
     const patch = n({
       name: fields.name,
@@ -182,7 +195,11 @@ export const deleteMarketingCampaign = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "marketing.manage");
     const db = await g.admin();
-    const { data: before } = await db.from("marketing_campaigns").select("id, name").eq("id", data.campaignId).maybeSingle();
+    const { data: before } = await db
+      .from("marketing_campaigns")
+      .select("id, name")
+      .eq("id", data.campaignId)
+      .maybeSingle();
     if (!before) throw new Error("الحملة غير موجودة.");
     const { error } = await db.from("marketing_campaigns").delete().eq("id", data.campaignId);
     if (error) throw new Error("تعذّر حذف الحملة. تحقق من عدم وجود أحداث تحويل مرتبطة.");
@@ -271,7 +288,11 @@ export const createConversionEvent = createServerFn({ method: "POST" })
       source: data.source,
       occurred_at: data.occurredAt || new Date().toISOString(),
     });
-    const { data: created, error } = await db.from("marketing_conversion_events").insert(patch).select("id").single();
+    const { data: created, error } = await db
+      .from("marketing_conversion_events")
+      .insert(patch)
+      .select("id")
+      .single();
     if (error) throw new Error("تعذّر تسجيل حدث التحويل.");
     await g.writeAudit(db, staff, {
       action: "marketing.conversion.create",
@@ -287,7 +308,9 @@ export const createConversionEvent = createServerFn({ method: "POST" })
 
 export const listMarketingReferrals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ search: z.string().trim().max(120).default("") }).parse(input ?? {}))
+  .inputValidator((input: unknown) =>
+    z.object({ search: z.string().trim().max(120).default("") }).parse(input ?? {}),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     await g.requireStaff(context.supabase, context.userId, "marketing.read");
@@ -343,7 +366,11 @@ export const createMarketingReferral = createServerFn({ method: "POST" })
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "marketing.manage");
     const db = await g.admin();
-    const { data: dup } = await db.from("marketing_referrals").select("id").eq("code", data.code).maybeSingle();
+    const { data: dup } = await db
+      .from("marketing_referrals")
+      .select("id")
+      .eq("code", data.code)
+      .maybeSingle();
     if (dup) throw new Error("رمز الإحالة مستخدم مسبقاً.");
     const patch = n({
       code: data.code,
@@ -357,7 +384,11 @@ export const createMarketingReferral = createServerFn({ method: "POST" })
       is_active: data.isActive,
       created_by: staff.user_id,
     });
-    const { data: created, error } = await db.from("marketing_referrals").insert(patch).select("id").single();
+    const { data: created, error } = await db
+      .from("marketing_referrals")
+      .insert(patch)
+      .select("id")
+      .single();
     if (error) throw new Error("تعذّر إنشاء برنامج الإحالة.");
     await g.writeAudit(db, staff, {
       action: "marketing.referral.create",
@@ -371,13 +402,19 @@ export const createMarketingReferral = createServerFn({ method: "POST" })
 
 export const updateMarketingReferral = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => referralInput.extend({ referralId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    referralInput.extend({ referralId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "marketing.manage");
     const db = await g.admin();
     const { referralId, ...fields } = data;
-    const { data: before } = await db.from("marketing_referrals").select("id, code").eq("id", referralId).maybeSingle();
+    const { data: before } = await db
+      .from("marketing_referrals")
+      .select("id, code")
+      .eq("id", referralId)
+      .maybeSingle();
     if (!before) throw new Error("برنامج الإحالة غير موجود.");
     const patch = n({
       referrer_kind: fields.referrerKind,
@@ -429,10 +466,18 @@ export const getMarketingPerformanceSummary = createServerFn({ method: "POST" })
 
     const { data: campaigns } = await db
       .from("marketing_campaigns")
-      .select("id, name, utm_source, utm_medium, utm_campaign, budget_amount, spend_amount, currency, status");
+      .select(
+        "id, name, utm_source, utm_medium, utm_campaign, budget_amount, spend_amount, currency, status",
+      );
 
-    const { data: leads } = await db.from("crm_leads").select("id, utm, status").not("utm", "eq", "{}");
-    const { data: deals } = await db.from("crm_deals").select("id, utm, amount, status").not("utm", "eq", "{}");
+    const { data: leads } = await db
+      .from("crm_leads")
+      .select("id, utm, status")
+      .not("utm", "eq", "{}");
+    const { data: deals } = await db
+      .from("crm_deals")
+      .select("id, utm, amount, status")
+      .not("utm", "eq", "{}");
     const { data: events } = await db
       .from("marketing_conversion_events")
       .select("campaign_id, value_amount");
@@ -448,7 +493,9 @@ export const getMarketingPerformanceSummary = createServerFn({ method: "POST" })
 
     function matches(campaign: any, utm: any) {
       if (!utm || typeof utm !== "object") return false;
-      const c = campaign.utm_campaign, s = campaign.utm_source, m = campaign.utm_medium;
+      const c = campaign.utm_campaign,
+        s = campaign.utm_source,
+        m = campaign.utm_medium;
       if (!c && !s && !m) return false;
       const uc = utm.utm_campaign ?? utm.campaign ?? null;
       const us = utm.utm_source ?? utm.source ?? null;
@@ -538,7 +585,9 @@ export const exportMarketingCampaigns = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: rows } = await db
       .from("marketing_campaigns")
-      .select("name, channel, status, budget_amount, spend_amount, currency, starts_on, ends_on, utm_source, utm_medium, utm_campaign")
+      .select(
+        "name, channel, status, budget_amount, spend_amount, currency, starts_on, ends_on, utm_source, utm_medium, utm_campaign",
+      )
       .order("created_at", { ascending: false });
     return { rows: rows ?? [] };
   });

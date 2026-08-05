@@ -33,7 +33,7 @@ export const listFeatureFlags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<FeatureFlag[]> => {
     const g = await guard();
-    await g.requireActiveStaff(context.supabase, context.userId);
+    await g.requireStaff(context.supabase, context.userId, "feature_flags.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_feature_flags")
       .select("id, key, label, description, is_enabled, audience, updated_at")
@@ -48,7 +48,10 @@ const flagSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9][a-z0-9_.-]{1,80}$/, "المفتاح يقبل الحروف اللاتينية الصغيرة والأرقام والشرطة فقط"),
+    .regex(
+      /^[a-z0-9][a-z0-9_.-]{1,80}$/,
+      "المفتاح يقبل الحروف اللاتينية الصغيرة والأرقام والشرطة فقط",
+    ),
   label: z.string().trim().min(2).max(160),
   description: z.string().trim().max(500).optional().nullable(),
   isEnabled: z.boolean().default(false),
@@ -59,11 +62,15 @@ export const saveFeatureFlag = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => flagSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "feature_flags.manage");
     const db = await g.admin();
 
     const { data: existing } = data.id
-      ? await (db as AnyClient).from("platform_feature_flags").select("*").eq("id", data.id).maybeSingle()
+      ? await (db as AnyClient)
+          .from("platform_feature_flags")
+          .select("*")
+          .eq("id", data.id)
+          .maybeSingle()
       : { data: null };
 
     const payload = {
@@ -74,8 +81,17 @@ export const saveFeatureFlag = createServerFn({ method: "POST" })
       updated_by: staff.user_id,
     };
     const { data: saved, error } = existing
-      ? await (db as AnyClient).from("platform_feature_flags").update(payload).eq("id", existing.id).select("id").maybeSingle()
-      : await (db as AnyClient).from("platform_feature_flags").insert(payload).select("id").maybeSingle();
+      ? await (db as AnyClient)
+          .from("platform_feature_flags")
+          .update(payload)
+          .eq("id", existing.id)
+          .select("id")
+          .maybeSingle()
+      : await (db as AnyClient)
+          .from("platform_feature_flags")
+          .insert(payload)
+          .select("id")
+          .maybeSingle();
     if (error) throw new Error("تعذّر حفظ مفتاح التشغيل — تأكد من عدم تكرار المفتاح.");
 
     await g.writeAudit(db, staff, {
@@ -94,11 +110,18 @@ export const deleteFeatureFlag = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(context.supabase, context.userId, "feature_flags.manage");
     const db = await g.admin();
-    const { data: existing } = await (db as AnyClient).from("platform_feature_flags").select("*").eq("id", data.id).maybeSingle();
+    const { data: existing } = await (db as AnyClient)
+      .from("platform_feature_flags")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!existing) throw new Error("هذا المفتاح غير موجود.");
-    const { error } = await (db as AnyClient).from("platform_feature_flags").delete().eq("id", data.id);
+    const { error } = await (db as AnyClient)
+      .from("platform_feature_flags")
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر حذف المفتاح.");
     await g.writeAudit(db, staff, {
       action: "feature_flag_deleted",
@@ -114,7 +137,7 @@ export const listNotificationRules = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<NotificationRule[]> => {
     const g = await guard();
-    await g.requireActiveStaff(context.supabase, context.userId);
+    await g.requireStaff(context.supabase, context.userId, "notification_rules.read");
     const { data, error } = await (context.supabase as AnyClient)
       .from("platform_notification_rules")
       .select("id, topic, label, channel, target, template_key, is_enabled, updated_at")
@@ -138,11 +161,19 @@ export const saveNotificationRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ruleSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      "notification_rules.manage",
+    );
     const db = await g.admin();
 
     const { data: existing } = data.id
-      ? await (db as AnyClient).from("platform_notification_rules").select("*").eq("id", data.id).maybeSingle()
+      ? await (db as AnyClient)
+          .from("platform_notification_rules")
+          .select("*")
+          .eq("id", data.id)
+          .maybeSingle()
       : { data: null };
 
     const payload = {
@@ -155,8 +186,17 @@ export const saveNotificationRule = createServerFn({ method: "POST" })
       created_by: staff.user_id,
     };
     const { data: saved, error } = existing
-      ? await (db as AnyClient).from("platform_notification_rules").update(payload).eq("id", existing.id).select("id").maybeSingle()
-      : await (db as AnyClient).from("platform_notification_rules").insert(payload).select("id").maybeSingle();
+      ? await (db as AnyClient)
+          .from("platform_notification_rules")
+          .update(payload)
+          .eq("id", existing.id)
+          .select("id")
+          .maybeSingle()
+      : await (db as AnyClient)
+          .from("platform_notification_rules")
+          .insert(payload)
+          .select("id")
+          .maybeSingle();
     if (error) throw new Error("تعذّر حفظ قاعدة الإشعار.");
 
     await g.writeAudit(db, staff, {
@@ -175,11 +215,22 @@ export const deleteNotificationRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "settings.manage");
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      "notification_rules.manage",
+    );
     const db = await g.admin();
-    const { data: existing } = await (db as AnyClient).from("platform_notification_rules").select("*").eq("id", data.id).maybeSingle();
+    const { data: existing } = await (db as AnyClient)
+      .from("platform_notification_rules")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!existing) throw new Error("هذه القاعدة غير موجودة.");
-    const { error } = await (db as AnyClient).from("platform_notification_rules").delete().eq("id", data.id);
+    const { error } = await (db as AnyClient)
+      .from("platform_notification_rules")
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error("تعذّر حذف القاعدة.");
     await g.writeAudit(db, staff, {
       action: "notification_rule_deleted",

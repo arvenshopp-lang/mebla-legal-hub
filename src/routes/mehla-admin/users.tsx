@@ -36,7 +36,9 @@ import {
 } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/mehla-admin/users")({
-  head: () => ({ meta: [{ title: "المستخدمون · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "المستخدمون · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: UsersPage,
 });
 
@@ -108,7 +110,8 @@ function UsersPage() {
   const verifyFn = useServerFn(resendUserVerification);
   const verify = useMutation({
     mutationFn: (v: { userId: string; email: string }) => verifyFn({ data: v }),
-    onSuccess: (r) => toast.success(r.alreadyConfirmed ? "البريد مُفعّل مسبقاً." : "تم إرسال رابط التفعيل."),
+    onSuccess: (r) =>
+      toast.success(r.alreadyConfirmed ? "البريد مُفعّل مسبقاً." : "تم إرسال رابط التفعيل."),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -121,7 +124,8 @@ function UsersPage() {
 
   const addNoteFn = useServerFn(addUserNote);
   const addNote = useMutation({
-    mutationFn: () => addNoteFn({ data: { userId: detail!.id, userEmail: detail!.email ?? "", body: noteBody } }),
+    mutationFn: () =>
+      addNoteFn({ data: { userId: detail!.id, userEmail: detail!.email ?? "", body: noteBody } }),
     onSuccess: () => {
       setNoteBody("");
       toast.success("تم حفظ الملاحظة.");
@@ -133,7 +137,10 @@ function UsersPage() {
   const rows = query.data?.rows ?? [];
 
   return (
-    <AdminShell title="المستخدمون" description="حسابات المشتركين وحالة تفعيلها واشتراكاتها — دون أي وصول لبيانات القضايا.">
+    <AdminShell
+      title="المستخدمون"
+      description="حسابات المشتركين وحالة تفعيلها واشتراكاتها — دون أي وصول لبيانات القضايا."
+    >
       <PageToolbar
         search={search}
         setSearch={(v) => {
@@ -201,14 +208,19 @@ function UsersPage() {
                     <Td>
                       <div className="min-w-0">
                         <p className="truncate font-semibold">{u.full_name}</p>
-                        <p className="truncate text-[12px] text-muted-foreground">{u.email ?? "—"}</p>
+                        <p className="truncate text-[12px] text-muted-foreground">
+                          {u.email ?? "—"}
+                        </p>
                       </div>
                     </Td>
                     <Td>
                       {u.organization_name ? (
                         <span className="text-[13px]">
                           {u.organization_name}
-                          <span className="text-muted-foreground"> · {u.org_member_count} أعضاء</span>
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · {u.org_member_count} أعضاء
+                          </span>
                         </span>
                       ) : (
                         <Badge tone="muted">بدون مكتب</Badge>
@@ -228,7 +240,11 @@ function UsersPage() {
                     </Td>
                     <Td>
                       <div className="flex flex-wrap gap-1.5">
-                        {u.is_active ? <Badge tone="green">نشط</Badge> : <Badge tone="red">موقوف</Badge>}
+                        {u.is_active ? (
+                          <Badge tone="green">نشط</Badge>
+                        ) : (
+                          <Badge tone="red">موقوف</Badge>
+                        )}
                         {!u.email_confirmed && <Badge tone="warn">بريد غير مُفعّل</Badge>}
                         {u.is_platform_staff && <Badge tone="info">فريق المنصة</Badge>}
                       </div>
@@ -248,7 +264,12 @@ function UsersPage() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 
@@ -271,7 +292,10 @@ function UsersPage() {
                 label="نهاية الاشتراك"
                 value={detail.subscription_ends_at ? fmtDate(detail.subscription_ends_at) : "—"}
               />
-              <Info label="آخر دخول" value={detail.last_sign_in_at ? fmtDateTime(detail.last_sign_in_at) : "—"} />
+              <Info
+                label="آخر دخول"
+                value={detail.last_sign_in_at ? fmtDateTime(detail.last_sign_in_at) : "—"}
+              />
               <Info label="تفعيل البريد" value={detail.email_confirmed ? "مُفعّل" : "غير مُفعّل"} />
             </dl>
 
@@ -338,11 +362,16 @@ function UsersPage() {
               {notes.isLoading ? (
                 <LoadingBlock rows={2} cols={1} />
               ) : (notes.data?.notes.length ?? 0) === 0 ? (
-                <p className="text-body-sm text-muted-foreground">لا توجد ملاحظات على هذا الحساب.</p>
+                <p className="text-body-sm text-muted-foreground">
+                  لا توجد ملاحظات على هذا الحساب.
+                </p>
               ) : (
                 <ul className="space-y-3">
                   {notes.data!.notes.map((n) => (
-                    <li key={n.id} className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
+                    <li
+                      key={n.id}
+                      className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3"
+                    >
                       <p className="text-body-sm whitespace-pre-wrap">{n.body}</p>
                       <p className="text-caption mt-1.5">
                         {n.author_name} · {fmtDateTime(n.created_at)}

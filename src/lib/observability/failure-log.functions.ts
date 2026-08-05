@@ -3,7 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** أسطح النظام المسموح الإبلاغ عنها من الواجهة. */
-const SURFACES = ["secure_view", "support_ticket", "support_message", "support_rating", "print"] as const;
+const SURFACES = [
+  "secure_view",
+  "support_ticket",
+  "support_message",
+  "support_rating",
+  "print",
+] as const;
 
 export type SystemFailureRow = {
   id: string;
@@ -93,7 +99,10 @@ export const listSystemFailures = createServerFn({ method: "POST" })
 
     if (data.search) {
       const term = data.search.replace(/[%,()]/g, " ").trim();
-      if (term) query = query.or(`ref.ilike.%${term}%,error_message.ilike.%${term}%,action.ilike.%${term}%`);
+      if (term)
+        query = query.or(
+          `ref.ilike.%${term}%,error_message.ilike.%${term}%,action.ilike.%${term}%`,
+        );
     }
     if (data.surface !== "all") query = query.eq("surface", data.surface);
     if (data.from) query = query.gte("created_at", new Date(data.from).toISOString());

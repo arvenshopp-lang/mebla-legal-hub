@@ -70,7 +70,9 @@ function itemsTable(invoice: InvoiceDetail): PdfTable {
 }
 
 function paymentsTable(invoice: InvoiceDetail): PdfTable | null {
-  const settled = invoice.payments.filter((payment) => payment.status !== "pending" && payment.status !== "failed");
+  const settled = invoice.payments.filter(
+    (payment) => payment.status !== "pending" && payment.status !== "failed",
+  );
   if (settled.length === 0) return null;
   return {
     title: "الدفعات المعتمدة",
@@ -228,7 +230,10 @@ export function receiptModel(source: ReceiptSource): PdfDocumentModel {
       { label: "المكتب", value: label(invoice.organization_name) },
       { label: "البريد الإلكتروني", value: label(invoice.customer_email) },
       { label: "الرقم الضريبي للعميل", value: label(invoice.tax_number) },
-      { label: "تاريخ السداد", value: formatPdfDateTime(payment.paid_at ?? payment.received_at ?? payment.created_at) },
+      {
+        label: "تاريخ السداد",
+        value: formatPdfDateTime(payment.paid_at ?? payment.received_at ?? payment.created_at),
+      },
       { label: "طريقة السداد", value: PAYMENT_METHOD_LABELS[payment.method] ?? payment.method },
       { label: "اعتمدها", value: label(payment.approved_by_email) },
       { label: "تاريخ الاعتماد", value: formatPdfDateTime(payment.approved_at) },
@@ -241,7 +246,11 @@ export function receiptModel(source: ReceiptSource): PdfDocumentModel {
         : []),
       { label: "إجمالي الفاتورة", value: formatPdfMoney(invoice.total, currency) },
       { label: "إجمالي المسدّد على الفاتورة", value: formatPdfMoney(invoice.paid_total, currency) },
-      { label: "المتبقي على الفاتورة", value: formatPdfMoney(invoice.remaining, currency), emphasis: true },
+      {
+        label: "المتبقي على الفاتورة",
+        value: formatPdfMoney(invoice.remaining, currency),
+        emphasis: true,
+      },
     ],
     blocks: payment.notes ? [{ title: "ملاحظات", lines: [payment.notes] }] : [],
     fileName: `RECEIPT-${invoice.number}-${payment.id.slice(0, 8)}.pdf`,
@@ -294,7 +303,10 @@ export function statementModel(source: StatementSource): PdfDocumentModel {
       { label: "السجل التجاري", value: label(source.commercialRegistration) },
       { label: "بداية الفترة", value: formatPdfDate(source.from) },
       { label: "نهاية الفترة", value: formatPdfDate(source.to) },
-      { label: "رصيد مستحق قبل الفترة", value: formatPdfMoney(source.openingOutstanding, currency) },
+      {
+        label: "رصيد مستحق قبل الفترة",
+        value: formatPdfMoney(source.openingOutstanding, currency),
+      },
       { label: "عدد الفواتير", value: String(source.invoices.length) },
     ],
     tables: [
@@ -312,7 +324,8 @@ export function statementModel(source: StatementSource): PdfDocumentModel {
           invoice.number,
           formatPdfDate(invoice.issued_at),
           formatPdfDate(invoice.due_at),
-          INVOICE_STATUS_LABELS[invoice.status as keyof typeof INVOICE_STATUS_LABELS] ?? invoice.status,
+          INVOICE_STATUS_LABELS[invoice.status as keyof typeof INVOICE_STATUS_LABELS] ??
+            invoice.status,
           formatPdfMoney(invoice.total, currency),
           formatPdfMoney(invoice.remaining, currency),
         ]),
@@ -338,8 +351,10 @@ export function statementModel(source: StatementSource): PdfDocumentModel {
         rows: source.payments.map((payment) => [
           formatPdfDate(payment.date),
           payment.invoice_number,
-          PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS] ?? payment.method,
-          PAYMENT_STATUS_LABELS[payment.status as keyof typeof PAYMENT_STATUS_LABELS] ?? payment.status,
+          PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS] ??
+            payment.method,
+          PAYMENT_STATUS_LABELS[payment.status as keyof typeof PAYMENT_STATUS_LABELS] ??
+            payment.status,
           formatPdfMoney(payment.amount, currency),
         ]),
         emptyLabel: "لا توجد دفعات في هذه الفترة.",
@@ -350,7 +365,11 @@ export function statementModel(source: StatementSource): PdfDocumentModel {
       { label: "إجمالي الفواتير", value: formatPdfMoney(source.totals.invoiced, currency) },
       { label: "إجمالي المُحصَّل", value: formatPdfMoney(source.totals.collected, currency) },
       { label: "إجمالي المسترد", value: formatPdfMoney(source.totals.refunded, currency) },
-      { label: "الرصيد المستحق", value: formatPdfMoney(source.totals.outstanding, currency), emphasis: true },
+      {
+        label: "الرصيد المستحق",
+        value: formatPdfMoney(source.totals.outstanding, currency),
+        emphasis: true,
+      },
     ],
     blocks: [
       {

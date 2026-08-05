@@ -25,11 +25,7 @@ export type SecureTokenKind =
   | "share"
   | "process";
 
-export type DocumentClassification =
-  | "internal"
-  | "confidential"
-  | "secret"
-  | "highly_confidential";
+export type DocumentClassification = "internal" | "confidential" | "secret" | "highly_confidential";
 
 /** العبارة الصغيرة التي تُضاف للمستندات المصنّفة فقط. */
 export const CLASSIFICATION_NOTES: Record<DocumentClassification, string | null> = {
@@ -83,7 +79,9 @@ export function watermarkLinesFor(
     second: "2-digit",
     hour12: false,
   });
-  const session = detail.sessionId?.trim() ? ` | Session: ${detail.sessionId.trim().slice(0, 36)}` : "";
+  const session = detail.sessionId?.trim()
+    ? ` | Session: ${detail.sessionId.trim().slice(0, 36)}`
+    : "";
   return [office, `${prefix}: ${user}${email} | ${openedAt}${session}`];
 }
 

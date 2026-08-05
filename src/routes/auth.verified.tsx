@@ -43,11 +43,22 @@ function VerifiedPage() {
         </div>
         <div className="rounded-[var(--radius-l)] border border-border bg-surface p-8 shadow-sm">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-8 w-8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>
-          <h1 className="mt-6 text-2xl font-bold text-foreground">تم تأكيد بريدك الإلكتروني بنجاح</h1>
+          <h1 className="mt-6 text-2xl font-bold text-foreground">
+            تم تأكيد بريدك الإلكتروني بنجاح
+          </h1>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
             حسابك جاهز الآن. يمكنك متابعة قضاياك وجلساتك ومهلك النظامية من داخل المنصة.
           </p>

@@ -109,11 +109,7 @@ export async function decryptJson<T>(serialized: string): Promise<T | null> {
     const merged = fromBase64(serialized);
     const iv = merged.slice(0, 12);
     const cipher = merged.slice(12);
-    const plain = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      key,
-      cipher as BufferSource,
-    );
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher as BufferSource);
     return JSON.parse(new TextDecoder().decode(plain)) as T;
   } catch {
     return null;

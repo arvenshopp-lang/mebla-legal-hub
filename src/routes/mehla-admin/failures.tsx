@@ -20,11 +20,17 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
-import { listSystemFailures, type SystemFailureRow } from "@/lib/observability/failure-log.functions";
+import {
+  listSystemFailures,
+  type SystemFailureRow,
+} from "@/lib/observability/failure-log.functions";
 
 export const Route = createFileRoute("/mehla-admin/failures")({
   head: () => ({
-    meta: [{ title: "سجل الأعطال · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "سجل الأعطال · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: FailuresPage,
 });
@@ -55,7 +61,8 @@ function FailuresPage() {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["admin-failures", debounced, surface, from, to, page],
-    queryFn: () => listFn({ data: { search: debounced, surface, from, to, page, pageSize: PAGE_SIZE } }),
+    queryFn: () =>
+      listFn({ data: { search: debounced, surface, from, to, page, pageSize: PAGE_SIZE } }),
   });
 
   const rows = data?.rows ?? [];
@@ -122,7 +129,10 @@ function FailuresPage() {
       {isLoading ? (
         <LoadingBlock rows={8} cols={4} />
       ) : rows.length === 0 ? (
-        <EmptyState title="لا توجد أعطال مسجّلة" hint="جرّب توسيع المدة الزمنية أو إزالة عوامل التصفية." />
+        <EmptyState
+          title="لا توجد أعطال مسجّلة"
+          hint="جرّب توسيع المدة الزمنية أو إزالة عوامل التصفية."
+        />
       ) : (
         <>
           <DataCard>
@@ -141,7 +151,9 @@ function FailuresPage() {
               <tbody className="divide-y divide-border">
                 {rows.map((row) => (
                   <tr key={row.id} className="hover:bg-surface-muted/60">
-                    <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{fmtDateTime(row.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-[12px] text-muted-foreground">
+                      {fmtDateTime(row.created_at)}
+                    </Td>
                     <Td className="text-left">
                       <button
                         type="button"
@@ -186,14 +198,20 @@ function FailuresPage() {
               <Row label="السطح" value={SURFACE_LABELS[detail.surface] ?? detail.surface} />
               <Row label="الإجراء" value={detail.action} />
               <Row label="رمز الخطأ" value={detail.error_code ?? "—"} />
-              <Row label="حالة الاستجابة" value={detail.http_status ? String(detail.http_status) : "—"} />
+              <Row
+                label="حالة الاستجابة"
+                value={detail.http_status ? String(detail.http_status) : "—"}
+              />
               <Row label="المسار" value={detail.path ?? "—"} />
               <Row label="المكتب" value={detail.organization_id ?? "—"} />
               <Row label="المستخدم" value={detail.user_id ?? "—"} />
               <Row label="المستند" value={detail.document_id ?? "—"} />
               <Row label="التذكرة" value={detail.ticket_id ?? "—"} />
               <Row label="عنوان الشبكة" value={detail.ip ?? "—"} />
-              <Row label="الجهاز" value={[detail.device, detail.os].filter(Boolean).join(" · ") || "—"} />
+              <Row
+                label="الجهاز"
+                value={[detail.device, detail.os].filter(Boolean).join(" · ") || "—"}
+              />
               <Row label="المتصفح" value={detail.browser ?? "—"} />
             </dl>
             <div>
@@ -211,7 +229,9 @@ function FailuresPage() {
                 dir="ltr"
                 className="max-h-40 overflow-auto rounded-[var(--radius-m)] bg-surface-muted p-3 font-mono text-[12px] leading-5"
               >
-                {detail.metadata && Object.keys(detail.metadata).length ? JSON.stringify(detail.metadata, null, 2) : "—"}
+                {detail.metadata && Object.keys(detail.metadata).length
+                  ? JSON.stringify(detail.metadata, null, 2)
+                  : "—"}
               </pre>
             </div>
           </div>

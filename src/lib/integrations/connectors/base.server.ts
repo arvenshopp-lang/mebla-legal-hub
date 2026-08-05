@@ -147,7 +147,13 @@ export abstract class BaseOtpConnector implements OtpProviderConnector {
 
 /** يحوّل أي خطأ اتصال إلى نتيجة فحص آمنة بلا كشف أسرار. */
 export function toHealthFailure(error: unknown, latencyMs: number): HealthResult {
-  const anyError = error as { code?: string; status?: number | null; detail?: string; reason?: string; message?: string };
+  const anyError = error as {
+    code?: string;
+    status?: number | null;
+    detail?: string;
+    reason?: string;
+    message?: string;
+  };
   const code = anyError?.code ?? "NETWORK_ERROR";
   const detail = (anyError?.detail || anyError?.reason || anyError?.message || "").slice(0, 400);
   return { ok: false, statusCode: anyError?.status ?? null, latencyMs, code, detail };

@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from "react";
 
 import {
   Body,
@@ -10,19 +10,16 @@ import {
   Html,
   Preview,
   Text,
-} from '@react-email/components'
+} from "@react-email/components";
 
-import { styles } from './brand'
+import { styles } from "./brand";
 
 interface RecoveryEmailProps {
-  siteName: string
-  confirmationUrl: string
+  siteName: string;
+  confirmationUrl: string;
 }
 
-export const RecoveryEmail = ({
-  siteName,
-  confirmationUrl,
-}: RecoveryEmailProps) => (
+export const RecoveryEmail = ({ siteName, confirmationUrl }: RecoveryEmailProps) => (
   <Html lang="ar" dir="rtl">
     <Head />
     <Preview>إعادة تعيين كلمة المرور في {siteName}</Preview>
@@ -32,8 +29,8 @@ export const RecoveryEmail = ({
         <Hr style={styles.rule} />
         <Heading style={styles.h1}>إعادة تعيين كلمة المرور</Heading>
         <Text style={styles.text}>
-          وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك في {siteName}. اضغط
-          الزر التالي لتعيين كلمة مرور جديدة.
+          وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك في {siteName}. اضغط الزر التالي لتعيين
+          كلمة مرور جديدة.
         </Text>
         <Button style={styles.button} href={confirmationUrl}>
           تعيين كلمة مرور جديدة
@@ -44,6 +41,6 @@ export const RecoveryEmail = ({
       </Container>
     </Body>
   </Html>
-)
+);
 
-export default RecoveryEmail
+export default RecoveryEmail;

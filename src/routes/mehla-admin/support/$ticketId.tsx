@@ -48,11 +48,20 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
-import { PriorityBadge, SlaBadge, StatusBadge, Stars, channelLabel } from "@/components/admin/support/shared";
+import {
+  PriorityBadge,
+  SlaBadge,
+  StatusBadge,
+  Stars,
+  channelLabel,
+} from "@/components/admin/support/shared";
 
 export const Route = createFileRoute("/mehla-admin/support/$ticketId")({
   head: () => ({
-    meta: [{ title: "تفاصيل تذكرة الدعم · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "تفاصيل تذكرة الدعم · إدارة مِهلة" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: TicketDetailPage,
 });
@@ -193,7 +202,8 @@ function TicketDetailPage() {
   });
 
   const reviewIdentity = useMutation({
-    mutationFn: async (organizationId: string | null) => identityFn({ data: { ticketId, organizationId } }),
+    mutationFn: async (organizationId: string | null) =>
+      identityFn({ data: { ticketId, organizationId } }),
     onSuccess: () => {
       toast.success("تم تأكيد هوية مُقدّم الطلب");
       invalidate();
@@ -230,8 +240,12 @@ function TicketDetailPage() {
   });
 
   const split = useMutation({
-    mutationFn: async (input: { subject: string; description: string; category: string | null; reason: string }) =>
-      splitFn({ data: { ticketId, ...input } }),
+    mutationFn: async (input: {
+      subject: string;
+      description: string;
+      category: string | null;
+      reason: string;
+    }) => splitFn({ data: { ticketId, ...input } }),
     onSuccess: (created) => {
       toast.success(`تم إنشاء التذكرة ${created.ticketNumber ?? ""}`.trim());
       setSplitOpen(false);
@@ -243,7 +257,14 @@ function TicketDetailPage() {
 
   const timeline = useMemo(() => {
     if (!data) return [];
-    type Entry = { id: string; at: string; kind: "event" | "sla"; title: string; body?: string | null; actor?: string | null };
+    type Entry = {
+      id: string;
+      at: string;
+      kind: "event" | "sla";
+      title: string;
+      body?: string | null;
+      actor?: string | null;
+    };
     const entries: Entry[] = [
       ...data.events.map((e) => ({
         id: `e-${e.id}`,
@@ -294,7 +315,10 @@ function TicketDetailPage() {
   const ref = t.ticket_number ?? t.reference;
 
   return (
-    <AdminShell title={`${ref} — ${t.subject}`} description={`قناة الوصول: ${channelLabel(t.channel)}`}>
+    <AdminShell
+      title={`${ref} — ${t.subject}`}
+      description={`قناة الوصول: ${channelLabel(t.channel)}`}
+    >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Link to="/mehla-admin/support">
           <Btn variant="ghost" size="sm">
@@ -326,7 +350,9 @@ function TicketDetailPage() {
                 <article
                   key={m.id}
                   className={`rounded-[var(--radius-m)] border px-3.5 py-3 text-[13px] leading-6 ${
-                    m.is_staff ? "border-primary/25 bg-primary/[0.06]" : "border-border bg-surface-muted"
+                    m.is_staff
+                      ? "border-primary/25 bg-primary/[0.06]"
+                      : "border-border bg-surface-muted"
                   }`}
                 >
                   <header className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
@@ -337,10 +363,15 @@ function TicketDetailPage() {
                   {m.attachments.length > 0 && (
                     <ul className="mt-2 space-y-1">
                       {m.attachments.map((a) => (
-                        <li key={a.id} className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                        <li
+                          key={a.id}
+                          className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                        >
                           <Paperclip className="h-3.5 w-3.5" aria-hidden />
                           <span>{a.file_name}</span>
-                          <span className="tabular-nums">({Math.max(1, Math.round(a.size_bytes / 1024))} ك.ب)</span>
+                          <span className="tabular-nums">
+                            ({Math.max(1, Math.round(a.size_bytes / 1024))} ك.ب)
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -351,7 +382,10 @@ function TicketDetailPage() {
           </SectionCard>
 
           {perms.reply && !t.merged_into_id && (
-            <SectionCard title="الرد على المكتب" description="يُرسل الرد من صندوق فريق الدعم ويُسجَّل في الخط الزمني.">
+            <SectionCard
+              title="الرد على المكتب"
+              description="يُرسل الرد من صندوق فريق الدعم ويُسجَّل في الخط الزمني."
+            >
               <div className="space-y-3.5">
                 <FormField label="نص الرد" required>
                   <textarea
@@ -365,10 +399,19 @@ function TicketDetailPage() {
                 </FormField>
                 <div className="grid gap-3.5 sm:grid-cols-2">
                   <FormField label="نسخة إلى (CC)" hint="بريد واحد أو أكثر مفصولة بفاصلة">
-                    <input value={ccRaw} onChange={(e) => setCcRaw(e.target.value)} className={inputCls} dir="ltr" />
+                    <input
+                      value={ccRaw}
+                      onChange={(e) => setCcRaw(e.target.value)}
+                      className={inputCls}
+                      dir="ltr"
+                    />
                   </FormField>
                   <FormField label="الحالة بعد الرد">
-                    <select value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} className={inputCls}>
+                    <select
+                      value={nextStatus}
+                      onChange={(e) => setNextStatus(e.target.value)}
+                      className={inputCls}
+                    >
                       <option value="">دون تغيير</option>
                       {data.allowedTransitions.map((s) => (
                         <option key={s} value={s}>
@@ -379,11 +422,19 @@ function TicketDetailPage() {
                   </FormField>
                 </div>
                 <label className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" checked={replyAll} onChange={(e) => setReplyAll(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={replyAll}
+                    onChange={(e) => setReplyAll(e.target.checked)}
+                  />
                   الرد على الجميع (تضمين مستلمي المحادثة)
                 </label>
                 <div className="flex justify-end">
-                  <Btn loading={reply.isPending} disabled={!replyBody.trim()} onClick={() => reply.mutate()}>
+                  <Btn
+                    loading={reply.isPending}
+                    disabled={!replyBody.trim()}
+                    onClick={() => reply.mutate()}
+                  >
                     إرسال الرد
                   </Btn>
                 </div>
@@ -391,14 +442,20 @@ function TicketDetailPage() {
             </SectionCard>
           )}
 
-          <SectionCard title="الملاحظات الداخلية" description="لا تُرسل للمكتب ولا تظهر في أي بريد.">
+          <SectionCard
+            title="الملاحظات الداخلية"
+            description="لا تُرسل للمكتب ولا تظهر في أي بريد."
+          >
             <div className="space-y-3">
               {data.notes.length === 0 ? (
                 <p className="text-[13px] text-muted-foreground">لا ملاحظات داخلية بعد.</p>
               ) : (
                 <ul className="space-y-2.5">
                   {data.notes.map((n) => (
-                    <li key={n.id} className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft/40 px-3.5 py-2.5">
+                    <li
+                      key={n.id}
+                      className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft/40 px-3.5 py-2.5"
+                    >
                       <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
                         <span className="font-semibold text-foreground">{n.author_name}</span>
                         <span>{fmtDateTime(n.created_at)}</span>
@@ -449,7 +506,9 @@ function TicketDetailPage() {
                     />
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[13px] font-semibold">{entry.title}</span>
-                      <span className="text-[11.5px] text-muted-foreground">{fmtDateTime(entry.at)}</span>
+                      <span className="text-[11.5px] text-muted-foreground">
+                        {fmtDateTime(entry.at)}
+                      </span>
                     </div>
                     <p className="text-[12px] text-muted-foreground">
                       {entry.actor ?? "—"}
@@ -469,12 +528,17 @@ function TicketDetailPage() {
               <Row label="الباقة" value={t.subscription_plan ?? "—"} />
               <Row label="البريد" value={t.requester_email ?? "—"} ltr />
               <Row label="الاسم" value={t.requester_name ?? "—"} />
-              <Row label="مصدر الهوية" value={IDENTITY_SOURCE_LABELS[t.identity_source ?? "unknown"] ?? "—"} />
+              <Row
+                label="مصدر الهوية"
+                value={IDENTITY_SOURCE_LABELS[t.identity_source ?? "unknown"] ?? "—"}
+              />
               <Row label="القناة" value={channelLabel(t.channel)} />
             </dl>
             {t.needs_identity_review && perms.reply && (
               <div className="mt-3 rounded-[var(--radius-m)] border border-warning/30 bg-warning-soft/50 p-3">
-                <p className="mb-2 text-[12.5px]">هوية مُقدّم الطلب غير مؤكدة. أكّد الربط بعد التحقق.</p>
+                <p className="mb-2 text-[12.5px]">
+                  هوية مُقدّم الطلب غير مؤكدة. أكّد الربط بعد التحقق.
+                </p>
                 <Btn
                   size="sm"
                   variant="outline"
@@ -500,7 +564,11 @@ function TicketDetailPage() {
               />
               <Row
                 label="الحل"
-                value={t.resolved_at ? `تم بعد ${humanDuration(t.created_at, t.resolved_at)}` : dueLabel(t.due_resolution_at)}
+                value={
+                  t.resolved_at
+                    ? `تم بعد ${humanDuration(t.created_at, t.resolved_at)}`
+                    : dueLabel(t.due_resolution_at)
+                }
               />
               <Row label="حالة المهلة" value={<SlaBadge state={t.sla_state} />} />
               {t.paused_at && <Row label="العدّاد" value="موقوف بانتظار طرف آخر" />}
@@ -618,7 +686,12 @@ function TicketDetailPage() {
           <SectionCard title="الإجراءات">
             <div className="space-y-3.5">
               <FormField label="سبب الإجراء" hint="يُسجَّل في الخط الزمني وسجل التدقيق.">
-                <input value={transitionReason} onChange={(e) => setTransitionReason(e.target.value)} className={inputCls} maxLength={500} />
+                <input
+                  value={transitionReason}
+                  onChange={(e) => setTransitionReason(e.target.value)}
+                  className={inputCls}
+                  maxLength={500}
+                />
               </FormField>
               <div className="flex flex-wrap gap-2">
                 {data.allowedTransitions.map((to) => {
@@ -643,7 +716,12 @@ function TicketDetailPage() {
               {perms.escalate && (
                 <div className="rounded-[var(--radius-m)] border border-border p-3">
                   <FormField label="سبب التصعيد" required>
-                    <input value={escalateReason} onChange={(e) => setEscalateReason(e.target.value)} className={inputCls} maxLength={500} />
+                    <input
+                      value={escalateReason}
+                      onChange={(e) => setEscalateReason(e.target.value)}
+                      className={inputCls}
+                      maxLength={500}
+                    />
                   </FormField>
                   <div className="mt-2 flex justify-end">
                     <Btn
@@ -671,7 +749,12 @@ function TicketDetailPage() {
                   </>
                 )}
                 {perms.reply && !t.rated_at && (
-                  <Btn variant="ghost" size="sm" loading={requestCsat.isPending} onClick={() => requestCsat.mutate()}>
+                  <Btn
+                    variant="ghost"
+                    size="sm"
+                    loading={requestCsat.isPending}
+                    onClick={() => requestCsat.mutate()}
+                  >
                     <Star className="h-4 w-4" aria-hidden /> طلب تقييم
                   </Btn>
                 )}
@@ -690,10 +773,14 @@ function TicketDetailPage() {
                   {t.rated_staff_name ? `الموظف: ${t.rated_staff_name} · ` : ""}
                   {fmtDateTime(t.rated_at)}
                 </p>
-                {t.rating_comment && <p className="whitespace-pre-wrap leading-6">{t.rating_comment}</p>}
+                {t.rating_comment && (
+                  <p className="whitespace-pre-wrap leading-6">{t.rating_comment}</p>
+                )}
               </div>
             ) : (
-              <p className="text-[13px] text-muted-foreground">لم يُقيَّم المكتب هذه التذكرة بعد.</p>
+              <p className="text-[13px] text-muted-foreground">
+                لم يُقيَّم المكتب هذه التذكرة بعد.
+              </p>
             )}
           </SectionCard>
         </aside>
@@ -721,7 +808,10 @@ function Row({ label, value, ltr }: { label: string; value: React.ReactNode; ltr
   return (
     <div className="flex items-start justify-between gap-3">
       <dt className="shrink-0 text-[12px] text-muted-foreground">{label}</dt>
-      <dd className={`min-w-0 break-words text-end font-medium ${ltr ? "dir-ltr" : ""}`} dir={ltr ? "ltr" : undefined}>
+      <dd
+        className={`min-w-0 break-words text-end font-medium ${ltr ? "dir-ltr" : ""}`}
+        dir={ltr ? "ltr" : undefined}
+      >
         {value}
       </dd>
     </div>
@@ -748,18 +838,35 @@ function MergeModal({
   const { data } = useQuery({
     queryKey: ["support-merge-candidates", search],
     enabled: open,
-    queryFn: () => listFn({ data: { ...(search.trim() ? { search: search.trim() } : {}), status: "open", limit: 20 } }),
+    queryFn: () =>
+      listFn({
+        data: { ...(search.trim() ? { search: search.trim() } : {}), status: "open", limit: 20 },
+      }),
   });
   const candidates = (data?.rows ?? []).filter((r) => r.id !== currentId);
 
   return (
-    <Modal open={open} onClose={onClose} title="دمج التذكرة" description="تُغلق التذكرة الحالية وتُنقل رسائلها إلى التذكرة الهدف.">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="دمج التذكرة"
+      description="تُغلق التذكرة الحالية وتُنقل رسائلها إلى التذكرة الهدف."
+    >
       <div className="space-y-4">
         <FormField label="بحث عن التذكرة الهدف">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} className={inputCls} placeholder="الموضوع أو الرقم…" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={inputCls}
+            placeholder="الموضوع أو الرقم…"
+          />
         </FormField>
         <FormField label="التذكرة الهدف" required>
-          <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className={inputCls}>
+          <select
+            value={targetId}
+            onChange={(e) => setTargetId(e.target.value)}
+            className={inputCls}
+          >
             <option value="">اختر تذكرة…</option>
             {candidates.map((c) => (
               <option key={c.id} value={c.id}>
@@ -769,13 +876,22 @@ function MergeModal({
           </select>
         </FormField>
         <FormField label="سبب الدمج" required>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} maxLength={500} />
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className={inputCls}
+            maxLength={500}
+          />
         </FormField>
         <div className="flex justify-end gap-2">
           <Btn variant="ghost" onClick={onClose}>
             إلغاء
           </Btn>
-          <Btn loading={pending} disabled={!targetId || !reason.trim()} onClick={() => onSubmit(targetId, reason.trim())}>
+          <Btn
+            loading={pending}
+            disabled={!targetId || !reason.trim()}
+            onClick={() => onSubmit(targetId, reason.trim())}
+          >
             دمج
           </Btn>
         </div>
@@ -795,7 +911,12 @@ function SplitModal({
   onClose: () => void;
   categories: { code: string; name: string }[];
   pending: boolean;
-  onSubmit: (input: { subject: string; description: string; category: string | null; reason: string }) => void;
+  onSubmit: (input: {
+    subject: string;
+    description: string;
+    category: string | null;
+    reason: string;
+  }) => void;
 }) {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -803,16 +924,35 @@ function SplitModal({
   const [reason, setReason] = useState("");
 
   return (
-    <Modal open={open} onClose={onClose} title="تقسيم التذكرة" description="تُفتح تذكرة جديدة مرتبطة بالتذكرة الحالية.">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="تقسيم التذكرة"
+      description="تُفتح تذكرة جديدة مرتبطة بالتذكرة الحالية."
+    >
       <div className="space-y-4">
         <FormField label="موضوع التذكرة الجديدة" required>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputCls} maxLength={300} />
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className={inputCls}
+            maxLength={300}
+          />
         </FormField>
         <FormField label="الوصف" required>
-          <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
+          <textarea
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={inputCls}
+          />
         </FormField>
         <FormField label="التصنيف" hint="اتركه فارغاً لاستخدام تصنيف التذكرة الأصلية.">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={inputCls}
+          >
             <option value="">كما هو</option>
             {categories.map((c) => (
               <option key={c.code} value={c.code}>
@@ -822,7 +962,12 @@ function SplitModal({
           </select>
         </FormField>
         <FormField label="سبب التقسيم" required>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} maxLength={500} />
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className={inputCls}
+            maxLength={500}
+          />
         </FormField>
         <div className="flex justify-end gap-2">
           <Btn variant="ghost" onClick={onClose}>

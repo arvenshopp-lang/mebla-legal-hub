@@ -19,7 +19,9 @@ import {
 } from "@/lib/list-utils";
 
 export const Route = createFileRoute("/mehla-admin/plans")({
-  head: () => ({ meta: [{ title: "الباقات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "الباقات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: PlansPage,
 });
 
@@ -69,7 +71,10 @@ function PlansPage() {
   const { data: plans, isLoading } = useQuery({
     queryKey: ["admin-plans"],
     queryFn: async () => {
-      const { data, error: e } = await supabase.from("platform_plans").select("*").order("sort_order");
+      const { data, error: e } = await supabase
+        .from("platform_plans")
+        .select("*")
+        .order("sort_order");
       if (e) throw e;
       return data ?? [];
     },
@@ -127,7 +132,12 @@ function PlansPage() {
       title="الباقات"
       description="أسعار وحدود الباقات المعروضة على الموقع والمستخدمة في التفعيل."
       actions={
-        <Btn onClick={() => { setError(null); setForm(EMPTY_FORM); }}>
+        <Btn
+          onClick={() => {
+            setError(null);
+            setForm(EMPTY_FORM);
+          }}
+        >
           <Plus className="h-4 w-4" aria-hidden /> باقة جديدة
         </Btn>
       }
@@ -165,7 +175,9 @@ function PlansPage() {
                         ai_enabled: p.ai_enabled,
                         is_active: p.is_active,
                         is_public: p.is_public,
-                        features: Array.isArray(p.features) ? (p.features as string[]).join("\n") : "",
+                        features: Array.isArray(p.features)
+                          ? (p.features as string[]).join("\n")
+                          : "",
                       });
                     }}
                   >
@@ -183,7 +195,9 @@ function PlansPage() {
               }
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={p.is_active ? "green" : "muted"}>{p.is_active ? "مفعّلة" : "معطّلة"}</Badge>
+                <Badge tone={p.is_active ? "green" : "muted"}>
+                  {p.is_active ? "مفعّلة" : "معطّلة"}
+                </Badge>
                 {p.is_public && <Badge tone="info">معروضة للعامة</Badge>}
                 {p.ai_enabled && <Badge tone="gold">ذكاء اصطناعي</Badge>}
               </div>
@@ -223,33 +237,83 @@ function PlansPage() {
               />
             </FormField>
             <FormField label="اسم الباقة" required>
-              <input value={form.name_ar} onChange={(e) => setForm({ ...form, name_ar: e.target.value })} className={inputCls} />
+              <input
+                value={form.name_ar}
+                onChange={(e) => setForm({ ...form, name_ar: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <div className="sm:col-span-2">
               <FormField label="الوصف">
-                <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} />
+                <input
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className={inputCls}
+                />
               </FormField>
             </div>
             <FormField label="السعر الشهري" required>
-              <input type="number" min={0} value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.price_monthly}
+                onChange={(e) => setForm({ ...form, price_monthly: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="السعر السنوي" required>
-              <input type="number" min={0} value={form.price_yearly} onChange={(e) => setForm({ ...form, price_yearly: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.price_yearly}
+                onChange={(e) => setForm({ ...form, price_yearly: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="عدد المستخدمين" hint="اتركه فارغاً لبلا حد">
-              <input type="number" min={0} value={form.max_users} onChange={(e) => setForm({ ...form, max_users: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.max_users}
+                onChange={(e) => setForm({ ...form, max_users: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="عدد القضايا" hint="اتركه فارغاً لبلا حد">
-              <input type="number" min={0} value={form.max_cases} onChange={(e) => setForm({ ...form, max_cases: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.max_cases}
+                onChange={(e) => setForm({ ...form, max_cases: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="عدد المستندات" hint="اتركه فارغاً لبلا حد">
-              <input type="number" min={0} value={form.max_documents} onChange={(e) => setForm({ ...form, max_documents: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.max_documents}
+                onChange={(e) => setForm({ ...form, max_documents: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="عدد الفروع" hint="اتركه فارغاً لبلا حد">
-              <input type="number" min={0} value={form.max_branches} onChange={(e) => setForm({ ...form, max_branches: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.max_branches}
+                onChange={(e) => setForm({ ...form, max_branches: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <FormField label="التخزين (جيجابايت)" hint="اتركه فارغاً لبلا حد">
-              <input type="number" min={0} value={form.storage_gb} onChange={(e) => setForm({ ...form, storage_gb: e.target.value })} className={inputCls} />
+              <input
+                type="number"
+                min={0}
+                value={form.storage_gb}
+                onChange={(e) => setForm({ ...form, storage_gb: e.target.value })}
+                className={inputCls}
+              />
             </FormField>
             <div className="sm:col-span-2">
               <FormField label="المميزات" hint="ميزة واحدة في كل سطر.">
@@ -282,7 +346,10 @@ function PlansPage() {
             </div>
 
             {error && (
-              <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger sm:col-span-2">
+              <p
+                role="alert"
+                className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger sm:col-span-2"
+              >
                 {error}
               </p>
             )}
@@ -295,7 +362,8 @@ function PlansPage() {
                 loading={save.isPending}
                 onClick={() => {
                   setError(null);
-                  if (!form.code.trim() || !form.name_ar.trim()) return setError("الرمز والاسم مطلوبان.");
+                  if (!form.code.trim() || !form.name_ar.trim())
+                    return setError("الرمز والاسم مطلوبان.");
                   save.mutate(form);
                 }}
               >

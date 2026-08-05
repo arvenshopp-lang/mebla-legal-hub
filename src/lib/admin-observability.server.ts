@@ -22,7 +22,10 @@ type AnyClient = any;
 /** يبني دالة تحقق صلاحية واحدة لكل الأقسام بدل استعلام متكرر. */
 export function permissionChecker(staff: StaffRow): (p: AdminPermission) => boolean {
   if (staff.role === "super_admin") return () => true;
-  const all = expandPermissions([...(staff.permissions ?? []), ...(staff.platform_roles?.permissions ?? [])]);
+  const all = expandPermissions([
+    ...(staff.permissions ?? []),
+    ...(staff.platform_roles?.permissions ?? []),
+  ]);
   return (p) => all.includes(p);
 }
 
@@ -33,7 +36,11 @@ function like(term: string): string {
 
 const LIMIT = 5;
 
-export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: string): Promise<GlobalSearchResult> {
+export async function runGlobalSearch(
+  db: AnyClient,
+  staff: StaffRow,
+  rawQuery: string,
+): Promise<GlobalSearchResult> {
   const query = rawQuery.trim().slice(0, 80);
   const can = permissionChecker(staff);
   const groups: SearchGroup[] = [];
@@ -53,7 +60,9 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
         const { data } = await db
           .from("organizations")
           .select("id, name, city, email, commercial_registration")
-          .or(`name.ilike.${pattern},email.ilike.${pattern},commercial_registration.ilike.${pattern}`)
+          .or(
+            `name.ilike.${pattern},email.ilike.${pattern},commercial_registration.ilike.${pattern}`,
+          )
           .limit(LIMIT);
         return (data ?? []).map((r: AnyClient) => ({
           id: String(r.id),
@@ -104,7 +113,9 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
         const { data } = await db
           .from("platform_invoices")
           .select("id, number, customer_name, status, total")
-          .or(`number.ilike.${pattern},customer_name.ilike.${pattern},customer_email.ilike.${pattern}`)
+          .or(
+            `number.ilike.${pattern},customer_name.ilike.${pattern},customer_email.ilike.${pattern}`,
+          )
           .limit(LIMIT);
         return (data ?? []).map((r: AnyClient) => ({
           id: String(r.id),
@@ -121,7 +132,9 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
         const { data } = await db
           .from("platform_payments")
           .select("id, invoice_id, provider, provider_reference, bank_reference, status, amount")
-          .or(`provider_reference.ilike.${pattern},bank_reference.ilike.${pattern},provider.ilike.${pattern}`)
+          .or(
+            `provider_reference.ilike.${pattern},bank_reference.ilike.${pattern},provider.ilike.${pattern}`,
+          )
           .limit(LIMIT);
         return (data ?? []).map((r: AnyClient) => ({
           id: String(r.id),
@@ -138,7 +151,9 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
         const { data } = await db
           .from("support_tickets")
           .select("id, reference, subject, status, requester_email")
-          .or(`reference.ilike.${pattern},subject.ilike.${pattern},requester_email.ilike.${pattern}`)
+          .or(
+            `reference.ilike.${pattern},subject.ilike.${pattern},requester_email.ilike.${pattern}`,
+          )
           .limit(LIMIT);
         return (data ?? []).map((r: AnyClient) => ({
           id: String(r.id),
@@ -168,7 +183,7 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
     },
     {
       key: "pages",
-      permission: "settings.manage",
+      permission: "content.read",
       run: async () => {
         const { data } = await db
           .from("platform_content_pages")
@@ -239,7 +254,14 @@ export async function runGlobalSearch(db: AnyClient, staff: StaffRow, rawQuery: 
 
 export async function readActivityFeed(
   db: AnyClient,
-  options: { sources: ActivitySource[]; search: string; from: string | null; to: string | null; limit: number; offset: number },
+  options: {
+    sources: ActivitySource[];
+    search: string;
+    from: string | null;
+    to: string | null;
+    limit: number;
+    offset: number;
+  },
 ): Promise<ActivityFeed> {
   const { sources, search, from, to, limit, offset } = options;
   const pattern = search.trim() ? like(search.trim().slice(0, 80)) : null;
@@ -258,11 +280,15 @@ export async function readActivityFeed(
   if (sources.includes("admin")) {
     let q = db
       .from("admin_audit_logs")
-      .select("id, action, actor_email, entity_type, entity_id, description, ip, device, created_at, metadata", {
-        count: "exact",
-      });
+      .select(
+        "id, action, actor_email, entity_type, entity_id, description, ip, device, created_at, metadata",
+        {
+          count: "exact",
+        },
+      );
     q = applyRange(q, "created_at");
-    if (pattern) q = q.or(`action.ilike.${pattern},actor_email.ilike.${pattern},description.ilike.${pattern}`);
+    if (pattern)
+      q = q.or(`action.ilike.${pattern},actor_email.ilike.${pattern},description.ilike.${pattern}`);
     const { data, count } = await q.order("created_at", { ascending: false }).limit(window);
     total += count ?? 0;
     for (const r of (data ?? []) as AnyClient[]) {
@@ -285,9 +311,12 @@ export async function readActivityFeed(
   if (sources.includes("tenant")) {
     let q = db
       .from("activity_logs")
-      .select("id, action, entity_type, entity_id, description, ip, created_at, metadata, organization_id", {
-        count: "exact",
-      });
+      .select(
+        "id, action, entity_type, entity_id, description, ip, created_at, metadata, organization_id",
+        {
+          count: "exact",
+        },
+      );
     q = applyRange(q, "created_at");
     if (pattern) q = q.or(`action.ilike.${pattern},description.ilike.${pattern}`);
     const { data, count } = await q.order("created_at", { ascending: false }).limit(window);
@@ -304,7 +333,10 @@ export async function readActivityFeed(
         ip: r.ip ?? null,
         device: null,
         createdAt: String(r.created_at),
-        metadata: flatMeta({ organization_id: r.organization_id, ...((r.metadata ?? {}) as object) }),
+        metadata: flatMeta({
+          organization_id: r.organization_id,
+          ...((r.metadata ?? {}) as object),
+        }),
       });
     }
   }
@@ -312,11 +344,15 @@ export async function readActivityFeed(
   if (sources.includes("failure")) {
     let q = db
       .from("system_failures")
-      .select("id, ref, action, surface, error_code, error_message, ip, device, created_at, path, http_status", {
-        count: "exact",
-      });
+      .select(
+        "id, ref, action, surface, error_code, error_message, ip, device, created_at, path, http_status",
+        {
+          count: "exact",
+        },
+      );
     q = applyRange(q, "created_at");
-    if (pattern) q = q.or(`ref.ilike.${pattern},action.ilike.${pattern},error_message.ilike.${pattern}`);
+    if (pattern)
+      q = q.or(`ref.ilike.${pattern},action.ilike.${pattern},error_message.ilike.${pattern}`);
     const { data, count } = await q.order("created_at", { ascending: false }).limit(window);
     total += count ?? 0;
     for (const r of (data ?? []) as AnyClient[]) {
@@ -338,7 +374,11 @@ export async function readActivityFeed(
 
   collected.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
   const page = collected.slice(offset, offset + limit);
-  return { events: page, total, hasMore: collected.length > offset + limit || total > offset + limit };
+  return {
+    events: page,
+    total,
+    hasMore: collected.length > offset + limit || total > offset + limit,
+  };
 }
 
 /* ------------------------------------------------------------- المراقبة */
@@ -349,7 +389,8 @@ function flatMeta(input: unknown): Record<string, string | number | boolean | nu
   const out: Record<string, string | number | boolean | null> = {};
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
     if (value === null || value === undefined) out[key] = null;
-    else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") out[key] = value;
+    else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+      out[key] = value;
     else out[key] = JSON.stringify(value).slice(0, 300);
   }
   return out;
@@ -357,7 +398,11 @@ function flatMeta(input: unknown): Record<string, string | number | boolean | nu
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 
-async function countOf(db: AnyClient, table: string, build: (q: AnyClient) => AnyClient): Promise<number> {
+async function countOf(
+  db: AnyClient,
+  table: string,
+  build: (q: AnyClient) => AnyClient,
+): Promise<number> {
   const { count } = await build(db.from(table).select("id", { count: "exact", head: true }));
   return count ?? 0;
 }
@@ -374,7 +419,10 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
   const { data: docs } = await db.from("documents").select("file_size");
   const storageLatency = Date.now() - storageStart;
   const documents = docs?.length ?? 0;
-  const bytes = (docs ?? []).reduce((sum: number, d: AnyClient) => sum + Number(d.file_size ?? 0), 0);
+  const bytes = (docs ?? []).reduce(
+    (sum: number, d: AnyClient) => sum + Number(d.file_size ?? 0),
+    0,
+  );
 
   const [
     mailPending,
@@ -415,27 +463,54 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    countOf(db, "otp_verifications", (q) => q.is("consumed_at", null).gte("expires_at", new Date().toISOString())),
-    countOf(db, "otp_verifications", (q) => q.eq("delivery_status", "failed").gte("created_at", since24)),
-    countOf(db, "otp_verifications", (q) => q.not("consumed_at", "is", null).gte("created_at", since24)),
-    countOf(db, "platform_payment_webhooks", (q) => q.in("status", ["received", "pending", "retrying"])),
+    countOf(db, "otp_verifications", (q) =>
+      q.is("consumed_at", null).gte("expires_at", new Date().toISOString()),
+    ),
+    countOf(db, "otp_verifications", (q) =>
+      q.eq("delivery_status", "failed").gte("created_at", since24),
+    ),
+    countOf(db, "otp_verifications", (q) =>
+      q.not("consumed_at", "is", null).gte("created_at", since24),
+    ),
+    countOf(db, "platform_payment_webhooks", (q) =>
+      q.in("status", ["received", "pending", "retrying"]),
+    ),
     countOf(db, "platform_payment_webhooks", (q) => q.eq("status", "failed")),
-    countOf(db, "platform_payment_webhooks", (q) => q.not("processed_at", "is", null).gte("received_at", since24)),
-    countOf(db, "document_processing_jobs", (q) => q.in("status", ["queued", "extracting", "ocr_processing", "indexing"])),
+    countOf(db, "platform_payment_webhooks", (q) =>
+      q.not("processed_at", "is", null).gte("received_at", since24),
+    ),
+    countOf(db, "document_processing_jobs", (q) =>
+      q.in("status", ["queued", "extracting", "ocr_processing", "indexing"]),
+    ),
     countOf(db, "document_processing_jobs", (q) => q.eq("status", "failed")),
-    countOf(db, "document_processing_jobs", (q) => q.eq("status", "completed").gte("updated_at", since24)),
+    countOf(db, "document_processing_jobs", (q) =>
+      q.eq("status", "completed").gte("updated_at", since24),
+    ),
     countOf(db, "pii_reencryption_jobs", (q) => q.in("status", ["queued", "running"])),
     countOf(db, "pii_reencryption_jobs", (q) => q.eq("status", "failed")),
-    countOf(db, "pii_reencryption_jobs", (q) => q.eq("status", "completed").gte("updated_at", since24)),
-    countOf(db, "platform_staff_sessions", (q) => q.is("revoked_at", null).gte("last_seen_at", since24)),
+    countOf(db, "pii_reencryption_jobs", (q) =>
+      q.eq("status", "completed").gte("updated_at", since24),
+    ),
+    countOf(db, "platform_staff_sessions", (q) =>
+      q.is("revoked_at", null).gte("last_seen_at", since24),
+    ),
     countOf(db, "platform_staff_sessions", (q) => q.is("revoked_at", null)),
-    countOf(db, "platform_staff_sessions", (q) => q.not("revoked_at", "is", null).gte("revoked_at", since30d)),
+    countOf(db, "platform_staff_sessions", (q) =>
+      q.not("revoked_at", "is", null).gte("revoked_at", since30d),
+    ),
     countOf(db, "admin_audit_logs", (q) => q.gte("created_at", since24)),
     countOf(db, "system_failures", (q) => q.gte("created_at", since24)),
     countOf(db, "case_lookup_attempts", (q) => q.eq("success", false).gte("created_at", since24)),
-    db.from("system_failures").select("ref").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    db
+      .from("system_failures")
+      .select("ref")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     countOf(db, "integration_health_logs", (q) => q.gte("checked_at", since24)),
-    countOf(db, "integration_health_logs", (q) => q.neq("result", "success").gte("checked_at", since24)),
+    countOf(db, "integration_health_logs", (q) =>
+      q.neq("result", "success").gte("checked_at", since24),
+    ),
     db
       .from("integration_health_logs")
       .select("checked_at")
@@ -500,7 +575,10 @@ export async function readMonitoringSnapshot(db: AnyClient): Promise<MonitoringS
     },
   ];
 
-  const slowest = slowestIntegration?.data as { internal_name?: string; latency_ms?: number } | null | undefined;
+  const slowest = slowestIntegration?.data as
+    | { internal_name?: string; latency_ms?: number }
+    | null
+    | undefined;
 
   return {
     checkedAt: new Date().toISOString(),

@@ -113,7 +113,9 @@ export function AuditPanel() {
                     <Th>العملية</Th>
                     <Th>المورد</Th>
                     <Th>الوصف</Th>
-                    <Th className="w-24"><span className="sr-only">تفاصيل</span></Th>
+                    <Th className="w-24">
+                      <span className="sr-only">تفاصيل</span>
+                    </Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,7 +161,12 @@ export function AuditPanel() {
               </table>
             </div>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 
@@ -174,7 +181,10 @@ export function AuditPanel() {
               <span className="text-text-muted">الجهاز: </span>
               {details.device ?? "—"} · {details.browser ?? "—"}
             </p>
-            <pre dir="ltr" className="max-h-72 overflow-auto rounded-[var(--radius-m)] bg-surface-muted p-3 text-[11px]">
+            <pre
+              dir="ltr"
+              className="max-h-72 overflow-auto rounded-[var(--radius-m)] bg-surface-muted p-3 text-[11px]"
+            >
               {JSON.stringify(details.metadata ?? {}, null, 2)}
             </pre>
           </div>

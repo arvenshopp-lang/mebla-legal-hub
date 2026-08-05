@@ -24,7 +24,12 @@ import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { deleteCompany, listCompanies, listStaffOptions } from "@/lib/crm.functions";
 import type { CrmCompanyRow } from "@/lib/crm.shared";
-import { CompanyFormModal, companyDraftFromRow, emptyCompanyDraft, type CompanyDraft } from "./company-form";
+import {
+  CompanyFormModal,
+  companyDraftFromRow,
+  emptyCompanyDraft,
+  type CompanyDraft,
+} from "./company-form";
 import { AssignModal } from "./action-modals";
 import { OwnerCell, useCrmCsvExport } from "./shared";
 
@@ -54,8 +59,14 @@ export function CompaniesPanel() {
     () => ({ search: debounced, page, pageSize: PAGE_SIZE, status: "", ownerStaffId: "" }),
     [debounced, page],
   );
-  const query = useQuery({ queryKey: ["crm-companies", filters], queryFn: () => listFn({ data: filters }) });
-  const staffQuery = useQuery({ queryKey: ["crm-staff"], queryFn: () => staffFn({ data: undefined }) });
+  const query = useQuery({
+    queryKey: ["crm-companies", filters],
+    queryFn: () => listFn({ data: filters }),
+  });
+  const staffQuery = useQuery({
+    queryKey: ["crm-staff"],
+    queryFn: () => staffFn({ data: undefined }),
+  });
   const staffOptions = staffQuery.data?.staff ?? [];
 
   const refresh = () => {
@@ -92,7 +103,11 @@ export function CompaniesPanel() {
         onAdd={() => setDialog({ kind: "form", initial: emptyCompanyDraft() })}
         filters={
           can("crm.export") ? (
-            <Btn variant="outline" loading={exporting === "companies"} onClick={() => void download("companies")}>
+            <Btn
+              variant="outline"
+              loading={exporting === "companies"}
+              onClick={() => void download("companies")}
+            >
               <Download className="h-4 w-4" aria-hidden /> تصدير
             </Btn>
           ) : undefined
@@ -125,7 +140,9 @@ export function CompaniesPanel() {
                   <tr key={row.id} className="border-t border-border">
                     <Td>
                       <span className="font-semibold">{row.name}</span>
-                      {row.legal_name && <span className="text-caption block">{row.legal_name}</span>}
+                      {row.legal_name && (
+                        <span className="text-caption block">{row.legal_name}</span>
+                      )}
                     </Td>
                     <Td>{row.sector ?? "—"}</Td>
                     <Td>{row.city ?? "—"}</Td>
@@ -147,18 +164,33 @@ export function CompaniesPanel() {
                           <IconBtn
                             aria-label="تعديل"
                             title="تعديل"
-                            onClick={() => setDialog({ kind: "form", initial: companyDraftFromRow(row), editId: row.id })}
+                            onClick={() =>
+                              setDialog({
+                                kind: "form",
+                                initial: companyDraftFromRow(row),
+                                editId: row.id,
+                              })
+                            }
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.assign") && (
-                          <IconBtn aria-label="إسناد لموظف" title="إسناد لموظف" onClick={() => setDialog({ kind: "assign", row })}>
+                          <IconBtn
+                            aria-label="إسناد لموظف"
+                            title="إسناد لموظف"
+                            onClick={() => setDialog({ kind: "assign", row })}
+                          >
                             <UserCheck className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
                         {can("crm.delete") && (
-                          <IconBtn aria-label="حذف" title="حذف" tone="danger" onClick={() => setDialog({ kind: "delete", row })}>
+                          <IconBtn
+                            aria-label="حذف"
+                            title="حذف"
+                            tone="danger"
+                            onClick={() => setDialog({ kind: "delete", row })}
+                          >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </IconBtn>
                         )}
@@ -169,7 +201,12 @@ export function CompaniesPanel() {
               </tbody>
             </table>
           </DataCard>
-          <Pagination page={page} setPage={setPage} total={query.data?.total ?? 0} pageSize={PAGE_SIZE} />
+          <Pagination
+            page={page}
+            setPage={setPage}
+            total={query.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
         </>
       )}
 

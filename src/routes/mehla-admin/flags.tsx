@@ -38,7 +38,10 @@ export const Route = createFileRoute("/mehla-admin/flags")({
   head: () => ({
     meta: [
       { title: "مفاتيح التشغيل وقواعد الإشعارات · إدارة مِهلة" },
-      { name: "description", content: "إدارة مفاتيح تفعيل الميزات وقواعد إرسال الإشعارات في منصة مِهلة." },
+      {
+        name: "description",
+        content: "إدارة مفاتيح تفعيل الميزات وقواعد إرسال الإشعارات في منصة مِهلة.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -51,7 +54,13 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-type FlagForm = { id?: string; key: string; label: string; description: string; isEnabled: boolean };
+type FlagForm = {
+  id?: string;
+  key: string;
+  label: string;
+  description: string;
+  isEnabled: boolean;
+};
 const EMPTY_FLAG: FlagForm = { key: "", label: "", description: "", isEnabled: false };
 
 type RuleForm = {
@@ -63,7 +72,14 @@ type RuleForm = {
   templateKey: string;
   isEnabled: boolean;
 };
-const EMPTY_RULE: RuleForm = { topic: "", label: "", channel: "internal", target: "", templateKey: "", isEnabled: true };
+const EMPTY_RULE: RuleForm = {
+  topic: "",
+  label: "",
+  channel: "internal",
+  target: "",
+  templateKey: "",
+  isEnabled: true,
+};
 
 const CHANNEL_LABELS: Record<RuleForm["channel"], string> = {
   email: "بريد إلكتروني",
@@ -74,7 +90,7 @@ const CHANNEL_LABELS: Record<RuleForm["channel"], string> = {
 
 function FlagsPage() {
   const { can } = usePlatformAdmin();
-  const canManage = can("settings.manage");
+  const canManage = can("feature_flags.manage");
   const [tab, setTab] = useState<TabId>("flags");
 
   return (
@@ -93,7 +109,9 @@ function FlagsPage() {
               className={cn(
                 "rounded-[var(--radius-m)] px-3.5 py-2 text-[13px] font-medium transition",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                tab === t.id ? "bg-primary text-primary-foreground" : "bg-surface text-foreground hover:bg-surface-muted",
+                tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface text-foreground hover:bg-surface-muted",
               )}
             >
               {t.label}
@@ -102,7 +120,11 @@ function FlagsPage() {
         </div>
       </div>
 
-      {tab === "flags" ? <FeatureFlagsPanel canManage={canManage} /> : <NotificationRulesPanel canManage={canManage} />}
+      {tab === "flags" ? (
+        <FeatureFlagsPanel canManage={canManage} />
+      ) : (
+        <NotificationRulesPanel canManage={canManage} />
+      )}
     </AdminShell>
   );
 }
@@ -171,7 +193,10 @@ function FeatureFlagsPanel({ canManage }: { canManage: boolean }) {
       ) : query.isError ? (
         <ErrorBlock message="تعذّر تحميل مفاتيح التشغيل." />
       ) : (query.data ?? []).length === 0 ? (
-        <EmptyState title="لا توجد مفاتيح تشغيل" hint="أنشئ مفتاحاً للتحكم في تفعيل ميزة جديدة تدريجياً." />
+        <EmptyState
+          title="لا توجد مفاتيح تشغيل"
+          hint="أنشئ مفتاحاً للتحكم في تفعيل ميزة جديدة تدريجياً."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[720px] text-right">
@@ -192,9 +217,13 @@ function FeatureFlagsPanel({ canManage }: { canManage: boolean }) {
                     <span dir="ltr">{f.key}</span>
                   </Td>
                   <Td className="font-medium">{f.label}</Td>
-                  <Td className="max-w-[280px] truncate text-muted-foreground">{f.description ?? "—"}</Td>
+                  <Td className="max-w-[280px] truncate text-muted-foreground">
+                    {f.description ?? "—"}
+                  </Td>
                   <Td>
-                    <Badge tone={f.is_enabled ? "green" : "muted"}>{f.is_enabled ? "مُفعَّل" : "معطَّل"}</Badge>
+                    <Badge tone={f.is_enabled ? "green" : "muted"}>
+                      {f.is_enabled ? "مُفعَّل" : "معطَّل"}
+                    </Badge>
                   </Td>
                   <Td className="text-[12px] text-muted-foreground">{fmtDateTime(f.updated_at)}</Td>
                   {canManage && (
@@ -251,7 +280,11 @@ function FeatureFlagsPanel({ canManage }: { canManage: boolean }) {
               />
             </FormField>
             <FormField label="التسمية" required>
-              <input className={inputCls} value={editing.label} onChange={(e) => setEditing({ ...editing, label: e.target.value })} />
+              <input
+                className={inputCls}
+                value={editing.label}
+                onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+              />
             </FormField>
             <FormField label="الوصف">
               <textarea
@@ -271,7 +304,10 @@ function FeatureFlagsPanel({ canManage }: { canManage: boolean }) {
               تفعيل المفتاح
             </label>
             {error && (
-              <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+              <p
+                role="alert"
+                className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+              >
                 {error}
               </p>
             )}
@@ -375,7 +411,10 @@ function NotificationRulesPanel({ canManage }: { canManage: boolean }) {
       ) : query.isError ? (
         <ErrorBlock message="تعذّر تحميل قواعد الإشعارات." />
       ) : (query.data ?? []).length === 0 ? (
-        <EmptyState title="لا توجد قواعد إشعارات" hint="أنشئ قاعدة لتوجيه إشعارات موضوع تشغيلي معيّن." />
+        <EmptyState
+          title="لا توجد قواعد إشعارات"
+          hint="أنشئ قاعدة لتوجيه إشعارات موضوع تشغيلي معيّن."
+        />
       ) : (
         <DataCard>
           <table className="w-full min-w-[760px] text-right">
@@ -398,13 +437,17 @@ function NotificationRulesPanel({ canManage }: { canManage: boolean }) {
                   </Td>
                   <Td className="font-medium">{r.label}</Td>
                   <Td>
-                    <Badge tone="info">{CHANNEL_LABELS[r.channel as RuleForm["channel"]] ?? r.channel}</Badge>
+                    <Badge tone="info">
+                      {CHANNEL_LABELS[r.channel as RuleForm["channel"]] ?? r.channel}
+                    </Badge>
                   </Td>
                   <Td className="max-w-[220px] truncate text-left text-[12px] text-muted-foreground">
                     <span dir="ltr">{r.target}</span>
                   </Td>
                   <Td>
-                    <Badge tone={r.is_enabled ? "green" : "muted"}>{r.is_enabled ? "مُفعَّلة" : "معطَّلة"}</Badge>
+                    <Badge tone={r.is_enabled ? "green" : "muted"}>
+                      {r.is_enabled ? "مُفعَّلة" : "معطَّلة"}
+                    </Badge>
                   </Td>
                   <Td className="text-[12px] text-muted-foreground">{fmtDateTime(r.updated_at)}</Td>
                   {canManage && (
@@ -464,13 +507,19 @@ function NotificationRulesPanel({ canManage }: { canManage: boolean }) {
                 />
               </FormField>
               <FormField label="التسمية" required>
-                <input className={inputCls} value={editing.label} onChange={(e) => setEditing({ ...editing, label: e.target.value })} />
+                <input
+                  className={inputCls}
+                  value={editing.label}
+                  onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                />
               </FormField>
               <FormField label="القناة" required>
                 <select
                   className={inputCls}
                   value={editing.channel}
-                  onChange={(e) => setEditing({ ...editing, channel: e.target.value as RuleForm["channel"] })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, channel: e.target.value as RuleForm["channel"] })
+                  }
                 >
                   {Object.entries(CHANNEL_LABELS).map(([id, label]) => (
                     <option key={id} value={id}>
@@ -506,7 +555,10 @@ function NotificationRulesPanel({ canManage }: { canManage: boolean }) {
               تفعيل القاعدة
             </label>
             {error && (
-              <p role="alert" className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger">
+              <p
+                role="alert"
+                className="rounded-[var(--radius-m)] bg-danger-soft px-3 py-2.5 text-[12px] text-danger"
+              >
                 {error}
               </p>
             )}

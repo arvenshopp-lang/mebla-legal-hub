@@ -17,7 +17,11 @@ export async function listMfaFactors(): Promise<MfaFactor[]> {
   return (data?.totp ?? []) as MfaFactor[];
 }
 
-export async function startTotpEnrollment(): Promise<{ factorId: string; qrSvg: string; secret: string }> {
+export async function startTotpEnrollment(): Promise<{
+  factorId: string;
+  qrSvg: string;
+  secret: string;
+}> {
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: `مِهلة ${new Date().toLocaleDateString("ar-SA")}`,

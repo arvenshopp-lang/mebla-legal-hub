@@ -12,7 +12,10 @@ const ocrSchema = z.object({
   organizationId: z.string().uuid(),
   documentId: z.string().uuid(),
   pageNumber: z.number().int().min(1).max(2000),
-  mimeType: z.string().trim().regex(/^image\/(png|jpeg|webp)$/, "صيغة صورة غير مدعومة"),
+  mimeType: z
+    .string()
+    .trim()
+    .regex(/^image\/(png|jpeg|webp)$/, "صيغة صورة غير مدعومة"),
   // ~8MB من base64 لكل صفحة كحد أقصى
   imageBase64: z.string().min(64).max(11_000_000),
   languageHint: z.enum(["ar", "en", "mixed"]).default("mixed"),
@@ -22,15 +25,25 @@ export const ocrDocumentPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ocrSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const [{ requireDocumentPermission, consumeOcrQuota }, { assertEntitlement }, { getOcrProvider }] =
-      await Promise.all([
-        import("@/lib/document-ai.server"),
-        import("@/lib/subscription.server"),
-        import("@/lib/ocr.server"),
-      ]);
+    const [
+      { requireDocumentPermission, consumeOcrQuota },
+      { assertEntitlement },
+      { getOcrProvider },
+    ] = await Promise.all([
+      import("@/lib/document-ai.server"),
+      import("@/lib/subscription.server"),
+      import("@/lib/ocr.server"),
+    ]);
 
-    await requireDocumentPermission(context.supabase, context.userId, data.organizationId, "documents.run_ocr");
-    await assertEntitlement(context.supabase, data.organizationId, { feature: "pdf_search_enabled" });
+    await requireDocumentPermission(
+      context.supabase,
+      context.userId,
+      data.organizationId,
+      "documents.run_ocr",
+    );
+    await assertEntitlement(context.supabase, data.organizationId, {
+      feature: "pdf_search_enabled",
+    });
 
     // المستند يجب أن يكون داخل المكتب نفسه (RLS + تحقق صريح).
     const { data: doc } = await context.supabase

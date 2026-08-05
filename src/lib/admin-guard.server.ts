@@ -31,14 +31,19 @@ export async function requireStaff(
   const db = supabase as AnyClient;
   const { data, error } = await db
     .from("platform_staff")
-    .select("id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)")
+    .select(
+      "id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)",
+    )
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
   const staff = data as StaffRow | null;
   if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
   if (staff.role === "super_admin") return staff;
-  const all = expandPermissions([...(staff.permissions ?? []), ...(staff.platform_roles?.permissions ?? [])]);
+  const all = expandPermissions([
+    ...(staff.permissions ?? []),
+    ...(staff.platform_roles?.permissions ?? []),
+  ]);
   if (!all.includes(permission)) throw new Error("لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.");
   return staff;
 }
@@ -47,7 +52,9 @@ export async function requireStaff(
 export async function requireActiveStaff(supabase: AnyClient, userId: string): Promise<StaffRow> {
   const { data } = await supabase
     .from("platform_staff")
-    .select("id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)")
+    .select(
+      "id, user_id, full_name, email, role, status, permissions, role_id, department_id, platform_roles(permissions)",
+    )
     .eq("user_id", userId)
     .maybeSingle();
   const staff = data as StaffRow | null;
