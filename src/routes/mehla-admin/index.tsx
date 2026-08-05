@@ -209,7 +209,7 @@ function AdminDashboard() {
       {act && (
         <SectionCard
           title="النشاط الفعلي"
-          description={`آخل قراءة: ${fmtDateTime(act.generated_at)} — بتوقيت الرياض`}
+          description={`آخر قراءة: ${fmtDateTime(act.generated_at)} — بتوقيت الرياض`}
           className="mb-6"
         >
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
