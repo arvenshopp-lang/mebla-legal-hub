@@ -226,7 +226,9 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
         return;
       }
       notify(
-        result.ingested > 0 ? `مزامنة ${summary}.` : `اكتملت المزامنة (${summary}) بلا رسائل جديدة.`,
+        result.ingested > 0
+          ? `مزامنة ${summary}.`
+          : `اكتملت المزامنة (${summary}) بلا رسائل جديدة.`,
       );
     },
     onError: fail,

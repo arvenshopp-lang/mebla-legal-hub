@@ -833,7 +833,8 @@ export async function replyToTicket(
     try {
       const mailboxId = await teamMailboxId(db, ticket["team_id"] as string | null);
       if (mailboxId) {
-        const number = (ticket["ticket_number"] as string | null) ?? (ticket["reference"] as string);
+        const number =
+          (ticket["ticket_number"] as string | null) ?? (ticket["reference"] as string);
         const result = await queueMessage(
           db,
           { userId: actor.userId, email: actor.email },
