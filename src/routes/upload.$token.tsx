@@ -116,7 +116,12 @@ function Page() {
           <div className="mt-1 text-xs text-text-muted">منصة إدارة القضايا</div>
         </div>
 
-        {isLoading ? (
+        {!tokenLooksValid ? (
+          <Notice
+            title="رابط غير صالح"
+            body="هذا الرابط غير صحيح أو غير مكتمل. تأكد من نسخ الرابط كاملاً، أو تواصل مع المحامي للحصول على رابط جديد."
+          />
+        ) : isLoading ? (
           <Card>
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" /> جاري التحقق من الرابط…
