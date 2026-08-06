@@ -226,6 +226,7 @@ function NewTicketModal({
       return data.id as string;
     },
     onSuccess: (id) => {
+      track("support_ticket_created", { action_source: "dashboard" });
       toast.success("تم إرسال التذكرة", { description: "سيصلك رد فريق الدعم داخل المنصة." });
       onClose();
       onCreated(id);
