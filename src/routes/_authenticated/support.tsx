@@ -6,6 +6,7 @@ import { failureHint, trackFailure } from "@/lib/observability/report-failure";
 import { ArrowRight, LifeBuoy, Plus, Send, Star } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { fmtDateTime } from "@/lib/enums";
