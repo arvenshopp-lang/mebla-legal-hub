@@ -1,10 +1,4 @@
-export {
-  track,
-  trackScreen,
-  startAnalytics,
-  stopAnalytics,
-  isAnalyticsEnabled,
-} from "./client";
+export { track, trackScreen, startAnalytics, stopAnalytics, isAnalyticsEnabled } from "./client";
 export {
   isAnalyticsConsentGranted,
   setAnalyticsConsent,
