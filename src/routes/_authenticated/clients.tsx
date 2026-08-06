@@ -347,6 +347,14 @@ export function ClientDialog({
         },
       });
       toast.success(editing ? "تم التحديث" : "تم إنشاء العميل");
+      if (!editing) {
+        // «أول عميل» يُقاس من الخادم بعد نجاح الإنشاء فعلياً — لا نعتمد على حالة الواجهة
+        const { count } = await supabase
+          .from("clients")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", activeOrgId!);
+        if (count === 1) track("first_client_created", { action_source: "dashboard" });
+      }
       draft.clear();
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["pii-mask"] });
