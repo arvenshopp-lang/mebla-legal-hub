@@ -392,6 +392,7 @@ function UploadDialog({
       return toast.error("تعذّر الحفظ", { description: describeMutationError(dbErr.message) });
     }
     toast.success("تم الرفع");
+    track("document_uploaded", { action_source: "dashboard" });
     await audit({
       organizationId: orgId,
       action: "document.upload",
