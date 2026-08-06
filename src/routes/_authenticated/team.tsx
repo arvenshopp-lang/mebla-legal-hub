@@ -460,6 +460,7 @@ function InviteDialog({
       });
       setLink(result.inviteUrl);
       setEmailDelivered(result.emailSent);
+      track("team_member_invited", { action_source: "dashboard" });
       if (result.emailSent) {
         toast.success("تم إرسال الدعوة بالبريد الإلكتروني");
       } else {
