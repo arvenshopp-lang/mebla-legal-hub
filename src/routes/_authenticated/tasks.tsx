@@ -423,6 +423,7 @@ function TaskDialog({
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    if (!editing) track("task_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
     draft.clear();
     qc.invalidateQueries({ queryKey: ["tasks"] });
