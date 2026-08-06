@@ -222,6 +222,7 @@ function RegisterPage() {
       !showPhone || !phoneParsed.ok ? "not_required" : phoneVerified ? "verified" : "pending";
 
     const { data, error } = await supabase.auth.signUp({
+      // بدء إنشاء الحساب بعد اجتياز التحقق من الحقول والتحقق الخادمي
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -245,6 +246,7 @@ function RegisterPage() {
     if (data.session) {
       draft.clear();
       const refreshed = await refresh();
+      track("signup_completed", { auth_method: "email", action_source: "onboarding" });
       toast.success("تم إنشاء حسابك بنجاح");
       navigate({
         to: postAuthTarget ?? (refreshed.memberships.length > 0 ? "/dashboard" : "/onboarding"),
@@ -254,6 +256,7 @@ function RegisterPage() {
       draft.clear();
       setEmailSent(email.trim().toLowerCase());
       setResendAt(Date.now());
+      track("signup_completed", { auth_method: "email", action_source: "onboarding" });
       toast.success("تم إنشاء حسابك بنجاح", { description: "أرسلنا رابط تأكيد البريد الإلكتروني" });
     }
   };
@@ -315,6 +318,8 @@ function RegisterPage() {
     if (googleLoading) return;
     setGoogleLoading(true);
     sessionStorage.setItem("mehla_auth_redirect", postAuthTarget ?? "/onboarding");
+    sessionStorage.setItem("mehla_signup_intent", "google");
+    track("signup_started", { auth_method: "google", action_source: "onboarding" });
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback`,
     });
