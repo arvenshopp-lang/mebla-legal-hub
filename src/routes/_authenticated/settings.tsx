@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canManage } from "@/hooks/use-auth";
 import { FormField, inputCls, Btn, LoadingBlock } from "@/lib/list-utils";
 import { SecurityTab } from "@/components/security/security-tab";
+import { UsageAnalyticsCard } from "@/components/settings/usage-analytics-card";
 import type { TablesInsert, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -32,9 +33,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
-  const [tab, setTab] = useState<"profile" | "organization" | "notifications" | "security">(
-    "profile",
-  );
+  const [tab, setTab] = useState<
+    "profile" | "organization" | "notifications" | "security" | "privacy"
+  >("profile");
 
   return (
     <DashboardShell title="الإعدادات">
@@ -44,10 +45,13 @@ function Page() {
           { k: "organization", l: "المكتب" },
           { k: "notifications", l: "التنبيهات" },
           { k: "security", l: "الأمان" },
+          { k: "privacy", l: "الخصوصية" },
         ].map((t) => (
           <button
             key={t.k}
-            onClick={() => setTab(t.k as "profile" | "organization" | "notifications" | "security")}
+            onClick={() =>
+              setTab(t.k as "profile" | "organization" | "notifications" | "security" | "privacy")
+            }
             className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
           >
             {t.l}
@@ -58,6 +62,7 @@ function Page() {
       {tab === "organization" && <OrgTab orgId={activeOrgId} canManage={canManage(activeRole)} />}
       {tab === "notifications" && <NotifTab orgId={activeOrgId} userId={user?.id} />}
       {tab === "security" && <SecurityTab orgId={activeOrgId} isOrgAdmin={canManage(activeRole)} />}
+      {tab === "privacy" && <UsageAnalyticsCard />}
     </DashboardShell>
   );
 }
