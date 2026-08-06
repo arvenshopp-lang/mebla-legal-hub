@@ -6,6 +6,7 @@ import { failureHint, trackFailure } from "@/lib/observability/report-failure";
 import { ArrowRight, LifeBuoy, Plus, Send, Star } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { fmtDateTime } from "@/lib/enums";
@@ -225,6 +226,7 @@ function NewTicketModal({
       return data.id as string;
     },
     onSuccess: (id) => {
+      track("support_ticket_created", { action_source: "dashboard" });
       toast.success("تم إرسال التذكرة", { description: "سيصلك رد فريق الدعم داخل المنصة." });
       onClose();
       onCreated(id);

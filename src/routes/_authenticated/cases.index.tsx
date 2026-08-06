@@ -5,6 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { CASE_STATUS, CASE_PRIORITY, CLIENT_ROLE, asOptions, fmtDate } from "@/lib/enums";
 import {
@@ -506,6 +507,14 @@ export function CaseDialog({
         description: describeMutationError(result.error.message),
       });
     toast.success(editing ? "تم التحديث" : "تم إنشاء القضية");
+    if (!editing) {
+      // «أول قضية» تُقاس من الخادم بعد نجاح الإنشاء فعلياً
+      const { count } = await supabase
+        .from("cases")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", activeOrgId!);
+      if (count === 1) track("first_case_created", { action_source: "dashboard" });
+    }
     draft.clear();
     qc.invalidateQueries({ queryKey: ["cases"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });

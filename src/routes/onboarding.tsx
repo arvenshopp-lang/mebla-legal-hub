@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
@@ -85,6 +86,7 @@ function OnboardingPage() {
       });
     }
     toast.success(data[0].already_exists ? "تم العثور على مكتبك" : "تم إنشاء مكتبك بنجاح");
+    if (!data[0].already_exists) track("onboarding_completed", { action_source: "onboarding" });
     navigate({ to: "/dashboard", replace: true });
   };
 

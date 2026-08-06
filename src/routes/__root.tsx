@@ -15,6 +15,13 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../hooks/use-auth";
 import { useSurfaceGuard } from "../hooks/use-surface-guard";
 import { initAnalytics, trackPageView } from "../lib/analytics";
+import {
+  isAnalyticsConsentGranted,
+  screenNameForPath,
+  startAnalytics,
+  subscribeToAnalyticsConsent,
+  trackScreen,
+} from "../lib/product-analytics";
 import { getThemeCacheVersion } from "../lib/design/theme.functions";
 import { pageKeyForPath } from "../lib/design/pages";
 import "../lib/zod-ar";
@@ -182,8 +189,22 @@ function RootComponent() {
     initAnalytics();
   }, []);
 
+  // تحليلات المنتج: تهيئة واحدة، بعد الموافقة الصريحة فقط
+  useEffect(() => {
+    if (isAnalyticsConsentGranted()) startAnalytics();
+    return subscribeToAnalyticsConsent((granted) => {
+      if (granted) startAnalytics();
+    });
+  }, []);
+
   useEffect(() => {
     trackPageView(pathname);
+  }, [pathname]);
+
+  // اسم شاشة ثابت فقط — لا رابط ولا Query Params ولا معرّفات
+  useEffect(() => {
+    const screen = screenNameForPath(pathname);
+    if (screen) trackScreen(screen);
   }, [pathname]);
 
   return (

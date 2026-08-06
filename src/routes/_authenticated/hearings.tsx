@@ -6,6 +6,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { HEARING_STATUS, asOptions, fmtDateTime } from "@/lib/enums";
 import {
@@ -379,6 +380,7 @@ function HearingDialog({
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    if (!editing) track("hearing_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تم إنشاء الجلسة");
     draft.clear();
     qc.invalidateQueries({ queryKey: ["hearings"] });

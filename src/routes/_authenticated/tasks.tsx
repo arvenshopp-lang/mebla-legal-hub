@@ -6,6 +6,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { TASK_STATUS, TASK_PRIORITY, asOptions, fmtDate, daysUntil } from "@/lib/enums";
 import {
@@ -422,6 +423,7 @@ function TaskDialog({
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    if (!editing) track("task_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
     draft.clear();
     qc.invalidateQueries({ queryKey: ["tasks"] });

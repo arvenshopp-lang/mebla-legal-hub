@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import { audit } from "@/lib/audit";
@@ -391,6 +392,7 @@ function UploadDialog({
       return toast.error("تعذّر الحفظ", { description: describeMutationError(dbErr.message) });
     }
     toast.success("تم الرفع");
+    track("document_uploaded", { action_source: "dashboard" });
     await audit({
       organizationId: orgId,
       action: "document.upload",

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -31,6 +32,11 @@ function AuthCallback() {
       if (data.session) {
         const storedRedirect = sessionStorage.getItem("mehla_auth_redirect");
         sessionStorage.removeItem("mehla_auth_redirect");
+        // إكمال التسجيل عبر Google يُسجَّل مرة واحدة فقط، بعد نجاح الجلسة فعلياً
+        if (sessionStorage.getItem("mehla_signup_intent") === "google") {
+          sessionStorage.removeItem("mehla_signup_intent");
+          track("signup_completed", { auth_method: "google", action_source: "onboarding" });
+        }
         const safeRedirect =
           storedRedirect?.startsWith("/") && !storedRedirect.startsWith("//")
             ? storedRedirect
