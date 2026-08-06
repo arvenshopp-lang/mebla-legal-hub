@@ -2,6 +2,24 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+/** Maps database guard/quota signals to accurate Arabic messages for the user. */
+function describeRequestError(message: string | undefined): string {
+  const raw = message ?? "";
+  if (raw.includes("FEATURE_UNAVAILABLE:client_upload")) {
+    return "رفع مستندات العملاء غير متاح في باقتك الحالية. فعّل باقة أعلى لإنشاء روابط الرفع.";
+  }
+  if (raw.includes("SUBSCRIPTION_SUSPENDED")) {
+    return "اشتراك المكتب موقوف حالياً، تعذّر إنشاء الرابط.";
+  }
+  if (raw.includes("EXPIRY_MUST_BE_FUTURE")) {
+    return "تاريخ انتهاء الرابط يجب أن يكون في المستقبل.";
+  }
+  if (raw.includes("row-level security") || raw.includes("permission denied")) {
+    return "لا تملك صلاحية إنشاء روابط رفع لهذه القضية.";
+  }
+  return "تعذّر إنشاء الرابط، حاول مرة أخرى.";
+}
+
 const createSchema = z.object({
   caseId: z.string().uuid(),
   title: z.string().trim().min(2).max(150),
@@ -41,7 +59,7 @@ export const createDocumentRequest = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error("تعذّر إنشاء الرابط: لا تملك صلاحية كافية.");
+    if (error) throw new Error(describeRequestError(error.message));
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("document_request_events").insert({
