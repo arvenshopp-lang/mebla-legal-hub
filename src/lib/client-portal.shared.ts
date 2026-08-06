@@ -1,6 +1,19 @@
 export const MAX_UPLOAD_SIZE = 20 * 1024 * 1024; // 20MB
 export const MAX_FILES_PER_REQUEST = 15;
 
+/**
+ * الحد الأدنى/الأقصى لطول توكن الروابط العامة (رفع المستندات ومشاركتها).
+ * تُستخدم في العميل والخادم معاً حتى يُعرض التوكن المشوّه كـ«رابط غير صالح»
+ * بدل خطأ تقني غير مفهوم.
+ */
+export const PORTAL_TOKEN_MIN = 20;
+export const PORTAL_TOKEN_MAX = 200;
+
+export function isPortalTokenShape(token: string | undefined | null): boolean {
+  const value = (token ?? "").trim();
+  return value.length >= PORTAL_TOKEN_MIN && value.length <= PORTAL_TOKEN_MAX;
+}
+
 export const ALLOWED_EXTENSIONS = [
   "pdf",
   "doc",

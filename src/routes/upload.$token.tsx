@@ -10,7 +10,12 @@ import {
   createUploadSlots,
   submitUploadRequest,
 } from "@/lib/client-portal.functions";
-import { ACCEPT_ATTR, MAX_FILES_PER_REQUEST, validateClientFile } from "@/lib/client-portal.shared";
+import {
+  ACCEPT_ATTR,
+  MAX_FILES_PER_REQUEST,
+  isPortalTokenShape,
+  validateClientFile,
+} from "@/lib/client-portal.shared";
 import { fmtDateTime, fmtSize } from "@/lib/enums";
 import { errMsg } from "@/lib/errors";
 
@@ -31,6 +36,9 @@ type Picked = { id: string; file: File; label?: string };
 
 function Page() {
   const { token } = Route.useParams();
+  // توكن مشوّه الشكل لا يمكن أن يكون صالحاً أبداً، فلا نستهلك طلباً للخادم
+  // ولا نُظهر «خطأ غير متوقع» الذي يدفع العميل لإعادة المحاولة بلا جدوى.
+  const tokenLooksValid = isPortalTokenShape(token);
   const getReq = useServerFn(getUploadRequest);
   const makeSlots = useServerFn(createUploadSlots);
   const submitReq = useServerFn(submitUploadRequest);
@@ -43,6 +51,7 @@ function Page() {
     queryKey: ["upload-request", token],
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: tokenLooksValid,
     queryFn: () => getReq({ data: { token } }),
   });
 
@@ -107,7 +116,12 @@ function Page() {
           <div className="mt-1 text-xs text-text-muted">منصة إدارة القضايا</div>
         </div>
 
-        {isLoading ? (
+        {!tokenLooksValid ? (
+          <Notice
+            title="رابط غير صالح"
+            body="هذا الرابط غير صحيح أو غير مكتمل. تأكد من نسخ الرابط كاملاً، أو تواصل مع المحامي للحصول على رابط جديد."
+          />
+        ) : isLoading ? (
           <Card>
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" /> جاري التحقق من الرابط…
