@@ -379,6 +379,7 @@ function HearingDialog({
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
+    if (!editing) track("hearing_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تم إنشاء الجلسة");
     draft.clear();
     qc.invalidateQueries({ queryKey: ["hearings"] });
