@@ -3,7 +3,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Inbox, PenSquare, PlugZap, Search, Star, Settings2, Tag, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Inbox,
+  PenSquare,
+  PlugZap,
+  Search,
+  Star,
+  Settings2,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import {
   Badge,
