@@ -7,6 +7,8 @@ import {
   validateClientFile,
   sanitizeFileName,
   fileExtension,
+  PORTAL_TOKEN_MIN,
+  PORTAL_TOKEN_MAX,
 } from "./client-portal.shared";
 
 /* ------------------------------------------------------------------ *
@@ -14,7 +16,9 @@ import {
  * They never accept ids — only opaque secrets — and never leak PII.
  * ------------------------------------------------------------------ */
 
-const tokenSchema = z.object({ token: z.string().min(20).max(200) });
+const tokenSchema = z.object({
+  token: z.string().min(PORTAL_TOKEN_MIN).max(PORTAL_TOKEN_MAX),
+});
 
 const fileMetaSchema = z.object({
   name: z.string().min(1).max(200),
