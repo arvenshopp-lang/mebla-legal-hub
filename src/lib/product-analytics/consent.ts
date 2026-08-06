@@ -5,6 +5,18 @@
 const CONSENT_KEY = "mehla.usage_analytics.consent";
 const ANON_ID_KEY = "mehla.usage_analytics.aid";
 const CONSENT_EVENT = "mehla:usage-analytics-consent";
+/** نسخة سياسة الكوكيز — تغييرها يعني طلب موافقة جديدة عند الاقتضاء. */
+export const COOKIE_POLICY_VERSION = "1";
+const RECORD_KEY = "mehla.consent.record";
+export const COOKIE_PREFS_EVENT = "mehla:open-cookie-preferences";
+
+export type ConsentRecord = {
+  /** الفئة الاختيارية الوحيدة المفعّلة حالياً في المنصة */
+  category: "analytics";
+  granted: boolean;
+  version: string;
+  decided_at: string;
+};
 
 export function isAnalyticsConsentGranted(): boolean {
   if (typeof window === "undefined") return false;
@@ -15,11 +27,49 @@ export function isAnalyticsConsentGranted(): boolean {
   }
 }
 
+/** سجل الموافقة التقني: الفئة والنسخة والتاريخ فقط — لا يُربط بأي بيانات قضايا أو مستخدم. */
+export function getConsentRecord(): ConsentRecord | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(RECORD_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ConsentRecord>;
+    if (typeof parsed?.granted !== "boolean" || typeof parsed?.version !== "string") return null;
+    return {
+      category: "analytics",
+      granted: parsed.granted,
+      version: parsed.version,
+      decided_at: typeof parsed.decided_at === "string" ? parsed.decided_at : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** هل يحتاج الزائر لاتخاذ قرار (لم يقرر بعد، أو قرّر على نسخة سياسة أقدم)؟ */
+export function isConsentDecisionNeeded(): boolean {
+  const record = getConsentRecord();
+  return !record || record.version !== COOKIE_POLICY_VERSION;
+}
+
+/** يفتح مركز تفضيلات ملفات تعريف الارتباط من أي مكان (مثل رابط الفوتر). */
+export function openCookiePreferences(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(COOKIE_PREFS_EVENT));
+}
+
 export function setAnalyticsConsent(granted: boolean): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(CONSENT_KEY, granted ? "granted" : "denied");
     if (!granted) window.localStorage.removeItem(ANON_ID_KEY);
+    const record: ConsentRecord = {
+      category: "analytics",
+      granted,
+      version: COOKIE_POLICY_VERSION,
+      decided_at: new Date().toISOString(),
+    };
+    window.localStorage.setItem(RECORD_KEY, JSON.stringify(record));
   } catch {
     // التخزين غير متاح — نتجاهل بصمت ولا نُظهر أي خطأ للمستخدم
   }
