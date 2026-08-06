@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/lib/list-utils";
+import { AdminShell } from "@/components/admin/shell";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { OverviewPanel } from "@/components/admin/crm/overview-panel";
 import { LeadsPanel } from "@/components/admin/crm/leads-panel";
@@ -34,22 +34,19 @@ function CrmPage() {
 
   if (!can("crm.read")) {
     return (
-      <div>
-        <PageHeader title="علاقات العملاء" />
+      <AdminShell title="علاقات العملاء">
         <p className="surface-card p-5 text-body-sm text-muted-foreground">
           لا تملك صلاحية «مشاهدة CRM». تواصل مع مالك المنصة لمنحك الصلاحية.
         </p>
-      </div>
+      </AdminShell>
     );
   }
 
   return (
-    <div>
-      <PageHeader
-        title="علاقات العملاء (CRM)"
-        description="متابعة العملاء المحتملين والشركات والصفقات وأنشطة فريق المبيعات."
-      />
-
+    <AdminShell
+      title="علاقات العملاء (CRM)"
+      description="متابعة العملاء المحتملين والشركات والصفقات وأنشطة فريق المبيعات."
+    >
       <div className="mb-5 overflow-x-auto">
         <div
           role="tablist"
@@ -82,6 +79,6 @@ function CrmPage() {
       {tab === "deals" && <DealsPanel />}
       {tab === "stages" && <StagesPanel />}
       {tab === "activities" && <ActivitiesPanel />}
-    </div>
+    </AdminShell>
   );
 }
