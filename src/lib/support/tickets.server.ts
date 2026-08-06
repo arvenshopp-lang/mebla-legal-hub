@@ -829,38 +829,43 @@ export async function replyToTicket(
   const recipient =
     (ticket["requester_email"] as string | null) ?? (await requesterEmail(db, ticket));
   if ((input.sendEmail ?? true) && recipient) {
-    const mailboxId = await teamMailboxId(db, ticket["team_id"] as string | null);
-    if (mailboxId) {
-      const number = (ticket["ticket_number"] as string | null) ?? (ticket["reference"] as string);
-      const result = await queueMessage(
-        db,
-        { userId: actor.userId, email: actor.email },
-        {
-          mailboxId,
-          threadId: (ticket["source_email_thread_id"] as string | null) ?? null,
-          to: [recipient],
-          cc: [],
-          bcc: [],
-          subject: `[${number}] ${ticket["subject"] as string}`,
-          html: `<div dir="rtl">${escapeHtml(body).replace(/\n/g, "<br/>")}</div>`,
-        },
-      );
-      emailSent = result.sent;
-      failureRef = result.failureRef ?? null;
-      await db
-        .from("email_messages")
-        .update({ ticket_id: input.ticketId })
-        .eq("id", result.messageId);
-      await db
-        .from("email_threads")
-        .update({ ticket_id: input.ticketId })
-        .eq("id", result.threadId);
-      if (!ticket["source_email_thread_id"]) {
+    // الرد محفوظ فعلاً في هذه المرحلة؛ فشل البريد لا يُلغيه ولا يُفشل العملية.
+    try {
+      const mailboxId = await teamMailboxId(db, ticket["team_id"] as string | null);
+      if (mailboxId) {
+        const number = (ticket["ticket_number"] as string | null) ?? (ticket["reference"] as string);
+        const result = await queueMessage(
+          db,
+          { userId: actor.userId, email: actor.email },
+          {
+            mailboxId,
+            threadId: (ticket["source_email_thread_id"] as string | null) ?? null,
+            to: [recipient],
+            cc: [],
+            bcc: [],
+            subject: `[${number}] ${ticket["subject"] as string}`,
+            html: `<div dir="rtl">${escapeHtml(body).replace(/\n/g, "<br/>")}</div>`,
+          },
+        );
+        emailSent = result.sent;
+        failureRef = result.failureRef ?? null;
         await db
-          .from("support_tickets")
-          .update({ source_email_thread_id: result.threadId })
-          .eq("id", input.ticketId);
+          .from("email_messages")
+          .update({ ticket_id: input.ticketId })
+          .eq("id", result.messageId);
+        await db
+          .from("email_threads")
+          .update({ ticket_id: input.ticketId })
+          .eq("id", result.threadId);
+        if (!ticket["source_email_thread_id"]) {
+          await db
+            .from("support_tickets")
+            .update({ source_email_thread_id: result.threadId })
+            .eq("id", input.ticketId);
+        }
       }
+    } catch {
+      emailSent = false;
     }
   }
 
