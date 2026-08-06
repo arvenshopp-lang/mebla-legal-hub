@@ -195,6 +195,7 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
+    track("signup_started", { auth_method: "email", action_source: "onboarding" });
 
     // تحقق نهائي على الخادم (لا يُسجَّل ولا يُخزَّن أي شيء من كلمة المرور)
     try {
