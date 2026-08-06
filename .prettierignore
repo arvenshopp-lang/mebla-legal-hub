@@ -6,3 +6,7 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# ملفات مولّدة آلياً — تُعاد كتابتها بعد كل تهجير قاعدة بيانات،
+# فتنسيقها يدوياً يُنتج فروقاً لا نهائية.
+src/integrations/supabase/types.ts
