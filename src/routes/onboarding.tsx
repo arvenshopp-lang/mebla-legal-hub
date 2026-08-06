@@ -85,6 +85,7 @@ function OnboardingPage() {
       });
     }
     toast.success(data[0].already_exists ? "تم العثور على مكتبك" : "تم إنشاء مكتبك بنجاح");
+    if (!data[0].already_exists) track("onboarding_completed", { action_source: "onboarding" });
     navigate({ to: "/dashboard", replace: true });
   };
 
