@@ -3,7 +3,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Inbox, PenSquare, PlugZap, Search, Star, Settings2, Tag, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Inbox,
+  PenSquare,
+  PlugZap,
+  Search,
+  Star,
+  Settings2,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import {
   Badge,
@@ -312,6 +322,19 @@ function MailWorkspacePage() {
 
   const folderCounts = useMemo(() => threads.data?.total ?? 0, [threads.data]);
 
+  /**
+   * الجوال (أقل من lg): رحلة متدرجة بثلاث شاشات مستقلة — الصناديق ثم المحادثات ثم
+   * التفاصيل. لا تُعرض الأعمدة الثلاثة معاً، والتنقّل بزر رجوع صريح.
+   */
+  const [boxesOpen, setBoxesOpen] = useState(false);
+  const compactStep: "boxes" | "list" | "detail" = boxesOpen
+    ? "boxes"
+    : threadId
+      ? "detail"
+      : "list";
+  const paneCls = (pane: "boxes" | "list" | "detail") =>
+    compactStep === pane ? "" : "hidden lg:flex";
+
   return (
     <AdminShell
       title="مركز البريد"
@@ -347,9 +370,32 @@ function MailWorkspacePage() {
       ) : mailboxes.length === 0 ? (
         <EmptyState title="لا توجد صناديق بريد" hint="أضف صناديق المنصة الرسمية أولاً." />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,340px)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,340px)_minmax(0,1fr)]">
+          {/* شريط تنقّل الجوال */}
+          <div className="flex items-center gap-2 lg:hidden">
+            {compactStep === "boxes" ? (
+              <Btn size="sm" variant="outline" onClick={() => setBoxesOpen(false)}>
+                <ChevronRight className="h-4 w-4" aria-hidden /> رجوع إلى المحادثات
+              </Btn>
+            ) : compactStep === "detail" ? (
+              <Btn size="sm" variant="outline" onClick={() => setThreadId(null)}>
+                <ChevronRight className="h-4 w-4" aria-hidden /> رجوع إلى القائمة
+              </Btn>
+            ) : (
+              <Btn size="sm" variant="outline" onClick={() => setBoxesOpen(true)}>
+                <Inbox className="h-4 w-4" aria-hidden /> الصناديق والمجلدات
+              </Btn>
+            )}
+            <span className="min-w-0 flex-1 truncate text-body-sm text-muted-foreground">
+              {activeMailbox?.display_name ?? ""}
+            </span>
+          </div>
+
           {/* الصناديق والمجلدات */}
-          <nav aria-label="صناديق البريد" className="surface-card h-fit p-3">
+          <nav
+            aria-label="صناديق البريد"
+            className={`surface-card h-fit min-w-0 p-3 ${paneCls("boxes")} lg:block`}
+          >
             <p className="text-caption px-2 pb-2">الصناديق</p>
             <ul className="space-y-1">
               {mailboxes.map((m) => (
@@ -359,15 +405,16 @@ function MailWorkspacePage() {
                     onClick={() => {
                       setMailboxId(m.id);
                       setThreadId(null);
+                      setBoxesOpen(false);
                     }}
                     aria-current={m.id === activeMailboxId}
-                    className={`flex w-full items-center justify-between gap-2 rounded-[var(--radius-s)] px-2.5 py-2 text-right text-body-sm transition-colors ${
+                    className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[var(--radius-s)] px-2.5 py-2 text-right text-body-sm transition-colors ${
                       m.id === activeMailboxId
                         ? "bg-primary/10 text-primary"
                         : "hover:bg-surface-muted"
                     }`}
                   >
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{m.display_name}</span>
                       <span className="text-caption block truncate" dir="ltr">
                         {m.address}
@@ -392,9 +439,10 @@ function MailWorkspacePage() {
                     onClick={() => {
                       setFolder(f.id);
                       setThreadId(null);
+                      setBoxesOpen(false);
                     }}
                     aria-current={folder === f.id}
-                    className={`flex w-full items-center gap-2 rounded-[var(--radius-s)] px-2.5 py-2 text-right text-body-sm transition-colors ${
+                    className={`flex min-h-[44px] w-full items-center gap-2 rounded-[var(--radius-s)] px-2.5 py-2 text-right text-body-sm transition-colors ${
                       folder === f.id ? "bg-primary/10 text-primary" : "hover:bg-surface-muted"
                     }`}
                   >
@@ -407,7 +455,10 @@ function MailWorkspacePage() {
           </nav>
 
           {/* قائمة المحادثات */}
-          <section aria-label="المحادثات" className="surface-card flex min-h-[520px] flex-col">
+          <section
+            aria-label="المحادثات"
+            className={`surface-card flex min-w-0 flex-col lg:min-h-[520px] ${paneCls("list")}`}
+          >
             <div className="space-y-2 border-b border-border p-3">
               <label className="relative block">
                 <span className="sr-only">بحث في المواضيع</span>
@@ -523,7 +574,7 @@ function MailWorkspacePage() {
           {/* المحادثة */}
           <section
             aria-label="تفاصيل المحادثة"
-            className="surface-card flex min-h-[520px] flex-col"
+            className={`surface-card flex min-w-0 flex-col [overflow-wrap:anywhere] lg:min-h-[520px] ${paneCls("detail")}`}
           >
             {!threadId ? (
               <EmptyState

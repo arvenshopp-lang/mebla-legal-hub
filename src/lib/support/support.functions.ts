@@ -136,24 +136,31 @@ export const createSupportTicket = createServerFn({ method: "POST" })
         description: `إنشاء تذكرة ${created.ticketNumber}`,
         after: { subject: data.subject, category: data.category, channel: data.channel },
       });
-      const { notifyOffice } = await import("./notify.server");
-      const { data: row } = await ctx.db
-        .from("support_tickets")
-        .select("organization_id, user_id")
-        .eq("id", created.id)
-        .maybeSingle();
-      await notifyOffice(
-        ctx.db,
-        {
-          id: created.id,
-          ticket_number: created.ticketNumber,
-          organization_id:
-            (row as { organization_id: string | null } | null)?.organization_id ?? null,
-          user_id: (row as { user_id: string | null } | null)?.user_id ?? null,
-        },
-        "ticket_created",
-      );
-      return created;
+      // التذكرة أصبحت مصدر الحقيقة؛ الإشعار لاحق واختياري ولا يُفشل الإنشاء.
+      let notified = false;
+      try {
+        const { notifyOffice } = await import("./notify.server");
+        const { data: row } = await ctx.db
+          .from("support_tickets")
+          .select("organization_id, user_id")
+          .eq("id", created.id)
+          .maybeSingle();
+        const result = await notifyOffice(
+          ctx.db,
+          {
+            id: created.id,
+            ticket_number: created.ticketNumber,
+            organization_id:
+              (row as { organization_id: string | null } | null)?.organization_id ?? null,
+            user_id: (row as { user_id: string | null } | null)?.user_id ?? null,
+          },
+          "ticket_created",
+        );
+        notified = result.sent || result.duplicate;
+      } catch {
+        notified = false;
+      }
+      return { ...created, notified };
     } catch (error) {
       throw new Error(safeMessage(error, "تعذّر إنشاء التذكرة."));
     }
@@ -191,26 +198,31 @@ export const replySupportTicket = createServerFn({ method: "POST" })
           next_status: data.nextStatus ?? null,
         },
       });
-      const { notifyOffice } = await import("./notify.server");
-      const { data: row } = await ctx.db
-        .from("support_tickets")
-        .select("id, ticket_number, reference, organization_id, user_id, status")
-        .eq("id", data.ticketId)
-        .maybeSingle();
-      const ticket = row as Record<string, unknown> | null;
-      if (ticket) {
-        await notifyOffice(
-          ctx.db,
-          {
-            id: data.ticketId,
-            ticket_number: (ticket["ticket_number"] as string | null) ?? null,
-            reference: (ticket["reference"] as string | null) ?? null,
-            organization_id: (ticket["organization_id"] as string | null) ?? null,
-            user_id: (ticket["user_id"] as string | null) ?? null,
-          },
-          ticket["status"] === "awaiting_reply" ? "awaiting_customer" : "new_reply",
-          new Date().toISOString().slice(0, 16),
-        );
+      // الرد محفوظ؛ الإشعار داخل المنصة لا يُفشل العملية.
+      try {
+        const { notifyOffice } = await import("./notify.server");
+        const { data: row } = await ctx.db
+          .from("support_tickets")
+          .select("id, ticket_number, reference, organization_id, user_id, status")
+          .eq("id", data.ticketId)
+          .maybeSingle();
+        const ticket = row as Record<string, unknown> | null;
+        if (ticket) {
+          await notifyOffice(
+            ctx.db,
+            {
+              id: data.ticketId,
+              ticket_number: (ticket["ticket_number"] as string | null) ?? null,
+              reference: (ticket["reference"] as string | null) ?? null,
+              organization_id: (ticket["organization_id"] as string | null) ?? null,
+              user_id: (ticket["user_id"] as string | null) ?? null,
+            },
+            ticket["status"] === "awaiting_reply" ? "awaiting_customer" : "new_reply",
+            new Date().toISOString().slice(0, 16),
+          );
+        }
+      } catch {
+        /* الإشعار اختياري — الرد محفوظ داخل التذكرة. */
       }
       return { ...result, duplicate: false as const };
     } catch (error) {

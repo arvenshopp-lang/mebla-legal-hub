@@ -382,14 +382,21 @@ export function AdminShell({
               </>
             )}
           </nav>
-          <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
+          {/* الجوال: العنوان والوصف في صف كامل، والإجراءات في صف مستقل يلتف. */}
+          <div className="mb-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="min-w-0">
-              <h1 className="text-h3 truncate">{title}</h1>
+              <h1 className="text-h3 [overflow-wrap:anywhere] sm:truncate">{title}</h1>
               {description && (
-                <p className="mt-1 text-body-sm text-muted-foreground">{description}</p>
+                <p className="mt-1 text-body-sm [overflow-wrap:anywhere] text-muted-foreground">
+                  {description}
+                </p>
               )}
             </div>
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            {actions && (
+              <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
+                {actions}
+              </div>
+            )}
           </div>
           {children}
         </main>

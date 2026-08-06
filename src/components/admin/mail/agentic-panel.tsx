@@ -91,6 +91,11 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
     toast.success(message);
     invalidate();
   };
+  /** نتيجة صفرية ليست نجاحاً: تُعرض كتحذير صريح دون ادّعاء تنفيذ. */
+  const notifyNoop = (message: string) => {
+    toast.warning(message);
+    invalidate();
+  };
   const fail = (error: Error) => toast.error(error.message);
 
   const connFn = useServerFn(testAgenticMailConnection);
@@ -109,19 +114,26 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
   const discoverFn = useServerFn(discoverAgenticMailTools);
   const discover = useMutation({
     mutationFn: () => discoverFn({ data: undefined }),
-    onSuccess: (result) => notify(`اكتُشفت ${result.tools.length} أداة عند المزوّد.`),
+    onSuccess: (result) =>
+      result.tools.length === 0
+        ? notifyNoop("لم تُكتشف أي أداة عند المزوّد؛ راجع المفتاح وصلاحياته.")
+        : notify(`اكتُشفت ${result.tools.length} أداة عند المزوّد.`),
     onError: fail,
   });
 
   const linkFn = useServerFn(linkAgenticMailboxes);
   const link = useMutation({
     mutationFn: () => linkFn({ data: undefined }),
-    onSuccess: (result) =>
-      notify(
-        `ربط ${result.linked} حساب حقيقي${result.aliased ? ` — ${result.aliased} اسم مستعار` : ""}${
-          result.missing ? ` — ${result.missing} غير موجود عند المزوّد` : ""
-        }`,
-      ),
+    onSuccess: (result) => {
+      const detail = `${result.aliased ? ` — ${result.aliased} اسم مستعار` : ""}${
+        result.missing ? ` — ${result.missing} غير موجود عند المزوّد` : ""
+      }`;
+      if (result.linked === 0) {
+        notifyNoop(`لم يُربط أي حساب نقل حقيقي${detail}`);
+        return;
+      }
+      notify(`ربط ${result.linked} حساب حقيقي${detail}`);
+    },
     onError: fail,
   });
 
@@ -203,17 +215,40 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
   const syncAllFn = useServerFn(syncAllAgenticMailboxesNow);
   const syncAll = useMutation({
     mutationFn: () => syncAllFn({ data: undefined }),
-    onSuccess: (result) =>
+    onSuccess: (result) => {
+      if (result.mailboxes === 0) {
+        notifyNoop("لا حساب نقل مُفعّل للمزامنة؛ اربط الحساب الحقيقي أولاً.");
+        return;
+      }
+      const summary = `${result.mailboxes} حساب: ${result.ingested} رسالة جديدة`;
+      if (result.failed > 0) {
+        notifyNoop(`${summary}، و${result.failed} فشل — راجع السجل.`);
+        return;
+      }
       notify(
-        `مزامنة ${result.mailboxes} صندوق: ${result.ingested} رسالة جديدة، ${result.failed} فشل.`,
-      ),
+        result.ingested > 0
+          ? `مزامنة ${summary}.`
+          : `اكتملت المزامنة (${summary}) بلا رسائل جديدة.`,
+      );
+    },
     onError: fail,
   });
 
   const retryFn = useServerFn(retryAgenticMailFailures);
   const retry = useMutation({
     mutationFn: () => retryFn({ data: undefined }),
-    onSuccess: (result) => notify(`إعادة محاولة ${result.retried} صندوق، نجح ${result.recovered}.`),
+    onSuccess: (result) => {
+      if (result.retried === 0) {
+        notifyNoop("لا حالات متعطّلة تستوجب إعادة المحاولة.");
+        return;
+      }
+      if (result.recovered === 0) {
+        toast.error(`أُعيدت المحاولة على ${result.retried} حالة ولم تنجح أي منها — راجع السجل.`);
+        invalidate();
+        return;
+      }
+      notify(`أُعيدت المحاولة على ${result.retried} حالة، ونجح ${result.recovered}.`);
+    },
     onError: fail,
   });
 

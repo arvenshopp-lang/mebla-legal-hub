@@ -197,10 +197,12 @@ function RootComponent() {
           duration={4000}
           visibleToasts={3}
           gap={8}
+          offset="calc(env(safe-area-inset-top, 0px) + 12px)"
+          style={{ maxWidth: "calc(100vw - 24px)" }}
           toastOptions={{
             classNames: {
               toast:
-                "!rounded-[var(--radius-m)] !border !border-border !bg-surface !text-foreground !shadow-[var(--elevation-l)] !font-sans !text-[13.5px]",
+                "!w-auto !max-w-[calc(100vw-24px)] !rounded-[var(--radius-m)] !border !border-border !bg-surface !text-foreground !shadow-[var(--elevation-l)] !font-sans !text-[13.5px] [overflow-wrap:anywhere]",
               description: "!text-muted-foreground",
               actionButton: "!bg-primary !text-primary-foreground",
               cancelButton: "!bg-surface-muted !text-foreground",
