@@ -27,6 +27,8 @@ jobs:
         run: bun run security:check
       - name: مصفوفة صلاحيات لوحة الإدارة
         run: bun run rbac:matrix
+      - name: اتساق بوابة العرض مع سجل التنقل
+        run: bun run rbac:nav
 
   dependency-audit:
     name: فحص سلسلة التوريد
