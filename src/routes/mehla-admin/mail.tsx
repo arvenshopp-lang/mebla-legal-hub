@@ -40,12 +40,14 @@ import { EMAIL_FOLDERS, type EmailFolder } from "@/lib/email/email.shared";
 import type { AttachmentMeta } from "@/lib/email/attachments.shared";
 import {
   addMailNote,
+  checkMailRecipients,
   deleteMailAttachment,
   deleteMailLabel,
   discardMailDraft,
   getMailAttachmentUrl,
   getMailThread,
   getMailWorkspace,
+  liftMailRecipientBlock,
   listMailThreads,
   retryMailMessage,
   saveMailDraft,
@@ -281,6 +283,56 @@ function MailWorkspacePage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  /* حالة حجب المستلمين لدى خدمة البريد المُدارة: تُفحص قبل الإرسال وعند فتح
+     محادثة فيها رسالة فاشلة، فيظهر السبب الحقيقي بدل فشل متكرر في السجل. */
+  const [blockedRecipients, setBlockedRecipients] = useState<string[]>([]);
+  const checkRecipientsFn = useServerFn(checkMailRecipients);
+  const checkRecipients = useMutation({
+    mutationFn: (input: { mailboxId: string; addresses: string[] }) =>
+      checkRecipientsFn({ data: input }),
+    onSuccess: (result, variables) => {
+      setBlockedRecipients((prev) => {
+        const cleared = prev.filter(
+          (address) => !variables.addresses.map((a) => a.toLowerCase()).includes(address),
+        );
+        return [...new Set([...cleared, ...result.blocked])];
+      });
+    },
+  });
+
+  const liftBlockFn = useServerFn(liftMailRecipientBlock);
+  const [liftingAddress, setLiftingAddress] = useState<string | null>(null);
+  const liftBlock = useMutation({
+    mutationFn: (input: { address: string; reason: string }) => liftBlockFn({ data: input }),
+    onSuccess: (result, variables) => {
+      if (result.lifted) {
+        setBlockedRecipients((prev) =>
+          prev.filter((address) => address !== variables.address.toLowerCase()),
+        );
+        toast.success(result.message);
+      } else toast.error(result.message);
+      setLiftingAddress(null);
+    },
+    onError: (e: Error) => {
+      setLiftingAddress(null);
+      toast.error(e.message);
+    },
+  });
+
+  /* فحص مستلمي الرسائل الفاشلة في المحادثة المفتوحة. */
+  const failedRecipientsKey = (thread.data?.messages ?? [])
+    .filter((m) => m.status === "failed" || m.status === "bounced")
+    .flatMap((m) => m.to_addresses)
+    .map((a) => a.toLowerCase())
+    .join(",");
+  useEffect(() => {
+    const addresses = failedRecipientsKey ? failedRecipientsKey.split(",") : [];
+    const mailboxId = thread.data?.thread.mailbox_id;
+    if (!mailboxId || addresses.length === 0) return;
+    checkRecipients.mutate({ mailboxId, addresses });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [failedRecipientsKey, thread.data?.thread.mailbox_id]);
 
   const mailboxFn = useServerFn(updateMailbox);
   const saveMailbox = useMutation({
@@ -598,6 +650,7 @@ function MailWorkspacePage() {
                   onAddNote={(body) => addNote.mutate(body)}
                   onRetry={(messageId) => retry.mutate(messageId)}
                   onDownloadAttachment={(id) => void downloadAttachment(id)}
+                  blockedRecipients={blockedRecipients}
                   savingNote={addNote.isPending}
                   retrying={retry.isPending}
                   downloadingAttachmentId={downloadingAttachmentId}
