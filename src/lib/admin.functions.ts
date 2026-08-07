@@ -112,12 +112,19 @@ export const activateSubscription = createServerFn({ method: "POST" })
       .eq("code", data.planCode)
       .maybeSingle();
 
-    // أي اشتراك نشط سابق يُعتبر مستبدلاً بالاشتراك الجديد.
-    await supabaseAdmin
+    // أي اشتراك حيّ سابق يُعتبر مستبدلاً بالاشتراك الجديد.
+    // النطاق هو المكتب عند توفره (القيد `subscriptions_one_live_per_org` مبني عليه)،
+    // ويُستخدم المستخدم كنطاق احتياطي للاشتراكات غير المرتبطة بمكتب.
+    const cancelledAt = new Date().toISOString();
+    const supersede = supabaseAdmin
       .from("subscriptions")
-      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-      .eq("user_id", profile.id)
-      .eq("status", "active");
+      .update({ status: "cancelled", cancelled_at: cancelledAt })
+      .in("status", [...LIVE_SUBSCRIPTION_STATUSES])
+      .is("cancelled_at", null);
+    const { error: supersedeError } = org?.organization_id
+      ? await supersede.eq("organization_id", org.organization_id)
+      : await supersede.eq("user_id", profile.id).is("organization_id", null);
+    if (supersedeError) throw new Error("تعذّر إلغاء الاشتراك السابق قبل إنشاء الاشتراك الجديد.");
 
     const { data: created, error } = await supabaseAdmin
       .from("subscriptions")
@@ -138,7 +145,9 @@ export const activateSubscription = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error("تعذّر إنشاء الاشتراك.");
+    if (error || !created) {
+      throw new Error(translateSubscriptionError(error, "تعذّر إنشاء الاشتراك."));
+    }
 
     await (
       await guard()
