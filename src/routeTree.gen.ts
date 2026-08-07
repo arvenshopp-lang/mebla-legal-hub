@@ -96,6 +96,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
 import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
@@ -543,6 +544,11 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWhSlugRoute = ApiPublicWhSlugRouteImport.update({
+  id: '/api/public/wh/$slug',
+  path: '/api/public/wh/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksSlugRoute = ApiPublicWebhooksSlugRouteImport.update({
   id: '/api/public/webhooks/$slug',
   path: '/api/public/webhooks/$slug',
@@ -675,6 +681,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
+  '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -769,6 +776,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
+  '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -866,6 +874,7 @@ export interface FileRoutesById {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
+  '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -963,6 +972,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
+    | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -1057,6 +1067,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
+    | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   id:
@@ -1153,6 +1164,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
+    | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesById: FileRoutesById
@@ -1199,6 +1211,7 @@ export interface RootRouteChildren {
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   ApiPublicWebhooksSlugRoute: typeof ApiPublicWebhooksSlugRoute
+  ApiPublicWhSlugRoute: typeof ApiPublicWhSlugRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
@@ -1814,6 +1827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/wh/$slug': {
+      id: '/api/public/wh/$slug'
+      path: '/api/public/wh/$slug'
+      fullPath: '/api/public/wh/$slug'
+      preLoaderRoute: typeof ApiPublicWhSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/$slug': {
       id: '/api/public/webhooks/$slug'
       path: '/api/public/webhooks/$slug'
@@ -2040,6 +2060,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   ApiPublicWebhooksSlugRoute: ApiPublicWebhooksSlugRoute,
+  ApiPublicWhSlugRoute: ApiPublicWhSlugRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
