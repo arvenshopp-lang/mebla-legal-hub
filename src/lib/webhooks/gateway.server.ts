@@ -305,7 +305,12 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
   } else if (endpoint.verification_mode === "url_token") {
     // المزوّد لا يرسل ترويسات، فالمفتاح داخل الرابط هو بيانات الاعتماد.
     // لا يُسجَّل المفتاح ولا الرابط الكامل في أي سجل.
-    const token = (new URL(request.url).searchParams.get(WEBHOOK_URL_TOKEN_PARAM) ?? "").trim();
+    const search = new URL(request.url).searchParams;
+    const token = (
+      search.get(WEBHOOK_URL_TOKEN_PARAM) ??
+      search.get(WEBHOOK_URL_TOKEN_PARAM_LEGACY) ??
+      ""
+    ).trim();
     if (!token || !safeEqual(token, secret)) {
       await logEvent(client, {
         endpointId: endpoint.id,
