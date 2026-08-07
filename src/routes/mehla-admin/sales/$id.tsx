@@ -206,6 +206,7 @@ function SalesDocumentPage() {
     <AdminShell
       title={`${KIND_LABELS[doc.kind]} ${doc.number ?? "(مسودة)"}`}
       description={doc.title}
+      breadcrumb={`${KIND_LABELS[doc.kind]} ${doc.number ?? "(مسودة)"}`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Btn variant="outline" size="sm" onClick={downloadPdf}>
