@@ -351,7 +351,9 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
   } catch {
     // بعض المزوّدين يفحصون الاتصال بطلب بلا جسم JSON — يُسجَّل كفحص ويُرَد بنجاح
     // بعد نجاح التحقق، حتى لا يظهر الرابط لديهم كغير قابل للوصول.
-    if (raw.trim().length === 0) {
+    const trimmed = raw.trim();
+    const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+    if (!looksLikeJson) {
       await logEvent(client, {
         endpointId: endpoint.id,
         slug,
