@@ -19,6 +19,7 @@ import { IntegrationSecretVault } from "@/lib/integrations/vault.server";
 import {
   WEBHOOK_SECRET_FIELD,
   WEBHOOK_URL_TOKEN_PARAM,
+  WEBHOOK_URL_TOKEN_PARAM_LEGACY,
   type WebhookEventStatus,
 } from "./webhooks.shared";
 
