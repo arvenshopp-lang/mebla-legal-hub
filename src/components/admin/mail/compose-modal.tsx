@@ -268,6 +268,51 @@ export function ComposeModal({
           />
         </FormField>
 
+        {blocked.length > 0 && (
+          <section
+            aria-label="مستلمون محجوبون"
+            className="rounded-[var(--radius-m)] border border-danger/30 bg-danger/5 p-3"
+          >
+            <p className="flex items-start gap-2 text-body-sm text-danger">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <span>
+                لا يمكن الإرسال إلى {blocked.join("، ")} — العنوان محجوب عن استقبال رسائل المنصة
+                (إلغاء اشتراك أو ارتداد أو شكوى سابقة). أزل العنوان من الحقول أو ارفع الحجب بعد
+                تجديد موافقة صاحبه.
+              </span>
+            </p>
+            {canManageSuppression && (
+              <div className="mt-3 space-y-2">
+                <FormField
+                  label="سبب رفع الحجب"
+                  hint="يُسجَّل في سجل تدقيق البريد. يجب أن يكون المستلم قد جدّد موافقته فعلاً."
+                >
+                  <input
+                    className={inputCls}
+                    value={liftReason}
+                    onChange={(e) => setLiftReason(e.target.value)}
+                    maxLength={300}
+                  />
+                </FormField>
+                <div className="flex flex-wrap gap-2">
+                  {blocked.map((address) => (
+                    <Btn
+                      key={address}
+                      size="sm"
+                      variant="outline"
+                      loading={liftingAddress === address}
+                      disabled={liftReason.trim().length < 10}
+                      onClick={() => onLiftBlock(address, liftReason.trim())}
+                    >
+                      رفع الحجب عن {address}
+                    </Btn>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         <FormField
           label="نص الرسالة"
           required
@@ -346,7 +391,7 @@ export function ComposeModal({
           >
             حفظ كمسوّدة
           </Btn>
-          <Btn type="submit" loading={sending}>
+          <Btn type="submit" loading={sending} disabled={blocked.length > 0 || checkingRecipients}>
             {schedule ? "جدولة الإرسال" : "إرسال"}
           </Btn>
         </div>
