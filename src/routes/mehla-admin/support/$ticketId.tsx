@@ -318,6 +318,7 @@ function TicketDetailPage() {
     <AdminShell
       title={`${ref} — ${t.subject}`}
       description={`قناة الوصول: ${channelLabel(t.channel)}`}
+      breadcrumb={ref}
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Link to="/mehla-admin/support">
