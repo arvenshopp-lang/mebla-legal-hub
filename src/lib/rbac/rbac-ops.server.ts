@@ -292,6 +292,9 @@ export async function cloneRole(
   userId: string,
   input: { sourceId: string; code: string; name_ar: string },
 ) {
+  // التحقق أولاً: قراءة الدور المصدر بصلاحيات إدارية قبل التحقق تكشف وجود الدور
+  // لأي مستخدم مصادق. `saveRole` يتحقق لاحقاً أيضاً — وهذا لا يُغني عنه.
+  await authorize(supabase, userId, "roles.manage", { mutating: false });
   const db = await adminDb();
   const { data: source } = await db
     .from("platform_roles")

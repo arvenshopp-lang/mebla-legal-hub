@@ -25,6 +25,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: حرّاس الأمان — الكود
         run: bun run security:check
+      - name: مصفوفة صلاحيات لوحة الإدارة
+        run: bun run rbac:matrix
 
   dependency-audit:
     name: فحص سلسلة التوريد

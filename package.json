@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "security:check": "bun scripts/security-guardrails.ts",
     "security:db": "bun scripts/security-guardrails-db.ts",
-    "security:all": "bun run security:check && bun run security:db"
+    "rbac:matrix": "bun scripts/rbac-matrix.ts",
+    "security:all": "bun run security:check && bun run security:db && bun run rbac:matrix"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
