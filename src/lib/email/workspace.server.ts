@@ -641,6 +641,18 @@ const PERMANENT_SEND_CODES = new Set([
   "domain_not_verified",
 ]);
 
+/**
+ * أخطاء تعني أن "التشغيل" السابق لنفس مفتاح التفرّد فشل عند المزوّد، والإعادة
+ * تتطلب مفتاحاً جديداً فقط. تُعامل كأخطاء مؤقتة لأن `attemptIdempotencyKey`
+ * يولّد مفتاحاً مختلفاً لكل محاولة.
+ */
+const RETRYABLE_SEND_CODES = new Set(["run_failed", "idempotency_conflict"]);
+
+/** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
+function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
+  return `${baseKey}:a${attemptNumber}`;
+}
+
 function classifySendFailure(result: { code: string; status: number | null }): {
   permanent: boolean;
   reason: string | null;
@@ -653,6 +665,9 @@ function classifySendFailure(result: { code: string; status: number | null }): {
           ? "خدمة البريد غير مهيأة على الخادم."
           : "عنوان البريد غير مقبول من خدمة الإرسال.";
     return { permanent: true, reason };
+  }
+  if (RETRYABLE_SEND_CODES.has(result.code) || result.status === 409) {
+    return { permanent: false, reason: null };
   }
   // أخطاء العميل (٤xx) نهائية، ما عدا المهلة وتجاوز الحد فهما قابلان للإعادة.
   if (result.status !== null && result.status >= 400 && result.status < 500) {
@@ -749,7 +764,7 @@ export async function dispatchOne(
       subject: message.subject,
       html: `${baseHtml}${section.html}`,
       text: `${baseText}${section.text}`,
-      idempotencyKey: job.idempotency_key,
+      idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
     });
   }
 
