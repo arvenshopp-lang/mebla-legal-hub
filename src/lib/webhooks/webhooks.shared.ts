@@ -112,3 +112,6 @@ export function maskWebhookSecret(value: string): string {
 }
 
 export const WEBHOOK_SECRET_FIELD = "webhook_signing_secret";
+
+/** أصل الروابط العامة التي تُعطى للمزوّدين الخارجيين. */
+export const WEBHOOK_PUBLIC_ORIGIN = "https://mehlalex.com";
