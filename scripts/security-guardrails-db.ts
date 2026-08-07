@@ -45,9 +45,7 @@ const args = [
 const result = spawnSync("psql", args, { encoding: "utf8" });
 
 if (result.error) {
-  console.error(
-    `❌ حرّاس الأمان (قاعدة البيانات): تعذّر تشغيل psql — ${result.error.message}`,
-  );
+  console.error(`❌ حرّاس الأمان (قاعدة البيانات): تعذّر تشغيل psql — ${result.error.message}`);
   process.exit(1);
 }
 
@@ -75,7 +73,5 @@ console.error(`❌ حرّاس الأمان (قاعدة البيانات): ${rows
 for (const row of rows) {
   console.error(`  [${row.checkId}] ${row.objectName} — ${row.detail}`);
 }
-console.error(
-  "\nراجع docs/security-guardrails.md لتفصيل كل معرّف فحص وطريقة الإصلاح المعتمدة.",
-);
+console.error("\nراجع docs/security-guardrails.md لتفصيل كل معرّف فحص وطريقة الإصلاح المعتمدة.");
 process.exit(1);
