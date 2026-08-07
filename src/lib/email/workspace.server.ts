@@ -678,6 +678,31 @@ function classifySendFailure(result: { code: string; status: number | null }): {
 }
 
 /** إرسال رسالة واحدة من قائمة الإرسال. */
+/**
+ * تهيئة إعادة محاولة يدوية: تُعيد الرسالة إلى قائمة الإرسال وتضمن توفّر محاولة
+ * واحدة إضافية على الأقل حتى لو استُنفدت المحاولات سابقاً، مع تنظيف آخر خطأ.
+ */
+export async function prepareManualRetry(db: Db, messageId: string): Promise<void> {
+  const { data } = await db
+    .from("email_outbox")
+    .select("id, attempts, max_attempts")
+    .eq("message_id", messageId)
+    .maybeSingle();
+  const job = data as { id: string; attempts: number; max_attempts: number } | null;
+  if (!job) return;
+  await db
+    .from("email_outbox")
+    .update({
+      status: "queued",
+      next_attempt_at: new Date().toISOString(),
+      max_attempts: Math.max(job.max_attempts, job.attempts + 1),
+      last_error: null,
+      last_error_code: null,
+      locked_at: null,
+    })
+    .eq("id", job.id);
+}
+
 export async function dispatchOne(
   db: Db,
   messageId: string,
