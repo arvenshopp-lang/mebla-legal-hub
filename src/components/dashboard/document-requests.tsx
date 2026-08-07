@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Copy, Link2, Plus, Share2, Ban, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit } from "@/hooks/use-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import { fmtDateTime } from "@/lib/enums";
 import {
   Badge,
