@@ -104,7 +104,10 @@ function AboutRoute() {
               {email}
             </a>{" "}
             أو عبر{" "}
-            <Link to="/contact" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link
+              to="/contact"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
               صفحة التواصل
             </Link>
             .
