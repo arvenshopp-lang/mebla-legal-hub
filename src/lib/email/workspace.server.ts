@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * محرك مركز البريد — خادمي فقط. كل الجداول مغلقة أمام العميل، والوصول يمر
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
@@ -20,8 +21,7 @@ import {
   type ThreadSummary,
 } from "@/lib/email/email.shared";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";

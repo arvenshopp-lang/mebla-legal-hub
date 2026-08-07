@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * محرك مرفقات البريد — خادمي فقط.
  *
@@ -21,8 +22,7 @@ import {
   safeFileName,
 } from "@/lib/email/attachments.shared";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 export const ATTACHMENT_BUCKET = "email-attachments";
 

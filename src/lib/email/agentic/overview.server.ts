@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * تجميع حالة تكامل Hostinger Agentic Mail لعرضها في مركز التكاملات — خادمي فقط.
  *
@@ -16,8 +17,7 @@ import {
 import { readAgenticState } from "./state.server";
 import { readScheduler, type SchedulerState } from "./scheduler.server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 const PROVIDER = "agentic_mail";
 

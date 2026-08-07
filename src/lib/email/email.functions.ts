@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * دوال خادم مركز البريد — غلاف رقيق: فحص صلاحية الموظف ثم استدعاء المحرك.
  */
@@ -33,8 +34,7 @@ function scopeOf(staff: import("@/lib/admin-guard.server").StaffRow) {
 }
 
 type Scope = ReturnType<typeof scopeOf>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 /** صندوق النظام (noreply) لا يُرسل منه بشرياً، والصندوق غير المصرّح مرفوض. */
 async function assertSendableMailbox(

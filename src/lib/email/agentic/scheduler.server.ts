@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * جدولة مزامنة Hostinger Agentic Mail — خادمية فقط.
  *
@@ -9,8 +10,7 @@
 import { readAgenticState, patchAgenticState } from "./state.server";
 import { redactAgentic } from "./mcp-client.server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 export const SCHEDULER_KEY = "email_agentic_mail_scheduler";
 export const SYNC_INTERVAL_MS = 5 * 60_000;

@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * طبقة تصريح وتدقيق تكامل Hostinger Agentic Mail — خادمية فقط.
  *
@@ -9,8 +10,7 @@
 import type { AdminPermission } from "@/lib/admin-permissions";
 import { redactAgentic } from "./mcp-client.server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;
 

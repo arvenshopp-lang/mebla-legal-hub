@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * حالة تكامل Hostinger Agentic Mail — تُخزَّن في `platform_settings` القائم.
  *
@@ -14,8 +15,7 @@ import {
 } from "./agentic.shared";
 import { agenticMcpUrl, agenticSecretPresent, redactAgentic } from "./mcp-client.server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 export const SETTINGS_KEY = "email_agentic_mail";
 
