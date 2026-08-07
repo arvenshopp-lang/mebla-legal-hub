@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { AgenticMailPanel } from "@/components/admin/mail/agentic-panel";
+import { WebhookGatewayPanel } from "@/components/admin/webhooks/webhooks-panel";
 import { Badge, Btn, LoadingBlock, Modal, inputCls } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import {
@@ -293,6 +294,8 @@ function IntegrationsHubPage() {
         </header>
 
         <AgenticMailPanel />
+
+        <WebhookGatewayPanel />
 
         {hub.isLoading ? (
           <LoadingBlock rows={4} cols={3} />
