@@ -772,6 +772,7 @@ export async function dispatchOne(
   const useSmtp = transportConfigured(message.from_address);
 
   let result: Awaited<ReturnType<typeof providerSend>>;
+  let smtpFallbackCode: string | null = null;
   if (useSmtp) {
     const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
     const smtp = await sendViaHostinger(db, {
@@ -791,6 +792,22 @@ export async function dispatchOne(
     result = smtp.ok
       ? { ok: true, ref: smtp.ref }
       : { ok: false, code: smtp.code, message: smtp.message, status: null };
+    // عطل إعداد في مسار SMTP: لا تُحتجز الرسالة — أكمل عبر خدمة البريد المُدارة.
+    if (!smtp.ok && SMTP_CONFIG_ERROR_CODES.has(smtp.code)) {
+      smtpFallbackCode = smtp.code;
+      const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
+      result = await providerSend({
+        from: message.from_address,
+        fromName: message.from_name ?? "MEHLA",
+        to: message.to_addresses,
+        cc: message.cc_addresses,
+        bcc: message.bcc_addresses,
+        subject: message.subject,
+        html: `${baseHtml}${section.html}`,
+        text: `${baseText}${section.text}`,
+        idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
+      });
+    }
   } else {
     const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
     result = await providerSend({
@@ -808,6 +825,17 @@ export async function dispatchOne(
 
   if (result.ok) {
     const now = new Date().toISOString();
+    if (smtpFallbackCode) {
+      const { logFailure } = await import("@/lib/observability/failure-log.server");
+      await logFailure({
+        surface: "email",
+        action: "email_smtp_transport_unavailable",
+        error: "تعذّر استخدام مسار SMTP لصندوق المكتب، فأُرسلت الرسالة عبر خدمة البريد المُدارة.",
+        errorCode: smtpFallbackCode,
+        organizationId: message.organization_id ?? null,
+        metadata: { message_id: messageId, mailbox: message.from_address },
+      });
+    }
     await db
       .from("email_messages")
       .update({ status: "sent", sent_at: now, provider_ref: result.ref, failure_ref: null })
