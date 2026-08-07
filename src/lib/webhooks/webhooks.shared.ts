@@ -3,12 +3,16 @@
  * لا يحتوي هذا الملف أي سرّ ولا أي منطق تحقق؛ التحقق على الخادم فقط.
  */
 
-export type WebhookVerificationMode = "hmac_sha256" | "shared_secret";
+export type WebhookVerificationMode = "hmac_sha256" | "shared_secret" | "url_token";
 
 export const VERIFICATION_MODE_LABELS: Record<WebhookVerificationMode, string> = {
   hmac_sha256: "توقيع HMAC-SHA256 على الجسم الخام",
   shared_secret: "رمز سرّي في ترويسة الطلب",
+  url_token: "سرّ داخل الرابط (لمزوّد لا يرسل ترويسات)",
 };
+
+/** اسم معامل السرّ في الرابط لوضع `url_token`. */
+export const WEBHOOK_URL_TOKEN_PARAM = "key";
 
 export type WebhookEventStatus =
   | "received"
