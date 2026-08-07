@@ -16,12 +16,17 @@ import {
 } from "@/lib/admin-nav";
 import { SectionTabs } from "@/components/admin/section-tabs";
 
-const COLLAPSED_STORAGE_KEY = "mehla-admin-nav-collapsed";
+const COLLAPSED_STORAGE_PREFIX = "mehla-admin-nav-collapsed";
 
-function readCollapsed(): string[] {
+/** مفتاح تخزين خاص بكل موظف: لا تنتقل تفضيلات الطيّ بين المستخدمين على جهاز واحد. */
+function collapsedKey(staffId?: string | null): string {
+  return staffId ? `${COLLAPSED_STORAGE_PREFIX}:${staffId}` : COLLAPSED_STORAGE_PREFIX;
+}
+
+function readCollapsed(key: string): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
   } catch {
@@ -53,7 +58,8 @@ export function AdminShell({
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mobilePanelRef = useRef<HTMLElement>(null);
 
-  useEffect(() => setCollapsed(readCollapsed()), []);
+  const storageKey = collapsedKey(staff?.id);
+  useEffect(() => setCollapsed(readCollapsed(storageKey)), [storageKey]);
 
   const match = useMemo(() => resolveNavMatch(pathname), [pathname]);
   const tabLabel = useMemo(() => resolveTabLabel(pathname), [pathname]);
@@ -78,17 +84,20 @@ export function AdminShell({
     [can],
   );
 
-  const toggleGroup = useCallback((id: string) => {
-    setCollapsed((prev) => {
-      const next = prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id];
-      try {
-        window.localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* التخزين المحلي قد يكون معطلاً — الطيّ يبقى فعّالاً في الجلسة الحالية. */
-      }
-      return next;
-    });
-  }, []);
+  const toggleGroup = useCallback(
+    (id: string) => {
+      setCollapsed((prev) => {
+        const next = prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id];
+        try {
+          window.localStorage.setItem(storageKey, JSON.stringify(next));
+        } catch {
+          /* التخزين المحلي قد يكون معطلاً — الطيّ يبقى فعّالاً في الجلسة الحالية. */
+        }
+        return next;
+      });
+    },
+    [storageKey],
+  );
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false);
@@ -186,9 +195,14 @@ export function AdminShell({
                     <Link
                       to={to}
                       onClick={() => setMobileOpen(false)}
+                      aria-current={
+                        (match ? match.item.to === to : isNavPathActive(pathname, to))
+                          ? "page"
+                          : undefined
+                      }
                       className={cn(
                         "flex min-h-11 items-center gap-2.5 rounded-[var(--radius-m)] px-3 py-2.5 text-[13px] font-medium transition",
-                        isNavPathActive(pathname, to) || match?.item.to === to
+                        (match ? match.item.to === to : isNavPathActive(pathname, to))
                           ? "bg-primary text-primary-foreground"
                           : "text-foreground hover:bg-surface-muted",
                       )}
