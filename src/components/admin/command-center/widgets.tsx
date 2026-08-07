@@ -129,8 +129,16 @@ export function Kpi({
 /* ----------------------------------------------------------------- التنبيهات */
 
 const SEVERITY_STYLE = {
-  critical: { wrap: "border-danger/35 bg-danger-soft/40", badge: "red" as const, Icon: AlertTriangle },
-  warning: { wrap: "border-warning/35 bg-warning-soft/40", badge: "warn" as const, Icon: AlertTriangle },
+  critical: {
+    wrap: "border-danger/35 bg-danger-soft/40",
+    badge: "red" as const,
+    Icon: AlertTriangle,
+  },
+  warning: {
+    wrap: "border-warning/35 bg-warning-soft/40",
+    badge: "warn" as const,
+    Icon: AlertTriangle,
+  },
   info: { wrap: "border-border bg-surface", badge: "muted" as const, Icon: Info },
 };
 

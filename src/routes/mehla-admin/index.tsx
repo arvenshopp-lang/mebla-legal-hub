@@ -143,7 +143,9 @@ function AdminDashboard() {
   const series = growthQ.data?.series ?? [];
 
   const alertsLoading =
-    metricsQ.isLoading || activityQ.isLoading || (canMonitor && (serviceQ.isLoading || jobsQ.isLoading));
+    metricsQ.isLoading ||
+    activityQ.isLoading ||
+    (canMonitor && (serviceQ.isLoading || jobsQ.isLoading));
   const alertsError = metricsQ.isError || activityQ.isError || serviceQ.isError || jobsQ.isError;
 
   return (
@@ -438,7 +440,11 @@ function AdminDashboard() {
                     to="/mehla-admin/integrations"
                     cta="فتح مركز التكاملات"
                     rows={[
-                      { label: "مهيأة وتعمل", value: fmtNumber(integrations.healthy), tone: "success" },
+                      {
+                        label: "مهيأة وتعمل",
+                        value: fmtNumber(integrations.healthy),
+                        tone: "success",
+                      },
                       {
                         label: "تحتاج انتباهاً",
                         value: fmtNumber(integrations.attention),
