@@ -8593,6 +8593,140 @@ export type Database = {
           },
         ]
       }
+      webhook_endpoints: {
+        Row: {
+          adapter_type: string
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          last_error: string | null
+          last_event_at: string | null
+          notes: string | null
+          rate_limit_per_minute: number
+          signature_header: string
+          signing_secret: string | null
+          slug: string
+          test_mode: boolean
+          timestamp_header: string | null
+          updated_at: string
+          verification_mode: string
+        }
+        Insert: {
+          adapter_type: string
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          last_error?: string | null
+          last_event_at?: string | null
+          notes?: string | null
+          rate_limit_per_minute?: number
+          signature_header?: string
+          signing_secret?: string | null
+          slug: string
+          test_mode?: boolean
+          timestamp_header?: string | null
+          updated_at?: string
+          verification_mode?: string
+        }
+        Update: {
+          adapter_type?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          last_error?: string | null
+          last_event_at?: string | null
+          notes?: string | null
+          rate_limit_per_minute?: number
+          signature_header?: string
+          signing_secret?: string | null
+          slug?: string
+          test_mode?: boolean
+          timestamp_header?: string | null
+          updated_at?: string
+          verification_mode?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          adapter_type: string | null
+          attempts: number
+          correlation_id: string
+          created_at: string
+          endpoint_id: string | null
+          event_type: string | null
+          id: string
+          last_error: string | null
+          payload_hash: string
+          processed_at: string | null
+          provider_event_id: string | null
+          received_at: string
+          redacted_payload: Json
+          reject_reason: string | null
+          replay_detected: boolean
+          request_ip: string | null
+          signature_valid: boolean
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          adapter_type?: string | null
+          attempts?: number
+          correlation_id?: string
+          created_at?: string
+          endpoint_id?: string | null
+          event_type?: string | null
+          id?: string
+          last_error?: string | null
+          payload_hash: string
+          processed_at?: string | null
+          provider_event_id?: string | null
+          received_at?: string
+          redacted_payload?: Json
+          reject_reason?: string | null
+          replay_detected?: boolean
+          request_ip?: string | null
+          signature_valid?: boolean
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          adapter_type?: string | null
+          attempts?: number
+          correlation_id?: string
+          created_at?: string
+          endpoint_id?: string | null
+          event_type?: string | null
+          id?: string
+          last_error?: string | null
+          payload_hash?: string
+          processed_at?: string | null
+          provider_event_id?: string | null
+          received_at?: string
+          redacted_payload?: Json
+          reject_reason?: string | null
+          replay_detected?: boolean
+          request_ip?: string | null
+          signature_valid?: boolean
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_devices: {
         Row: {
           created_at: string

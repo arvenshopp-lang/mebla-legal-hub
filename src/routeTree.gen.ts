@@ -67,6 +67,7 @@ import { Route as MehlaAdminActivityRouteImport } from './routes/mehla-admin/act
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
@@ -87,6 +88,7 @@ import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authentic
 import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
 import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sales/$id'
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
+import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
@@ -94,6 +96,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
@@ -390,6 +393,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhookRoute = ApiWebhookRouteImport.update({
+  id: '/api/webhook',
+  path: '/api/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -494,6 +502,11 @@ const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
   path: '/billing/$id',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
+const ApiPublicWebhookRoute = ApiPublicWebhookRouteImport.update({
+  id: '/api/public/webhook',
+  path: '/api/public/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
   id: '/api/public/theme.css',
   path: '/api/public/theme.css',
@@ -528,6 +541,11 @@ const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   id: '/lovable/email/auth/preview',
   path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWebhooksSlugRoute = ApiPublicWebhooksSlugRouteImport.update({
+  id: '/api/public/webhooks/$slug',
+  path: '/api/public/webhooks/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPaymentsProviderRoute =
@@ -599,6 +617,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -642,6 +661,7 @@ export interface FileRoutesByFullPath {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
@@ -654,6 +674,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
+  '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -690,6 +711,7 @@ export interface FileRoutesByTo {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -733,6 +755,7 @@ export interface FileRoutesByTo {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
@@ -745,6 +768,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
+  '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -784,6 +808,7 @@ export interface FileRoutesById {
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -827,6 +852,7 @@ export interface FileRoutesById {
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
+  '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
   '/mehla-admin/sales/$id': typeof MehlaAdminSalesIdRoute
   '/mehla-admin/support/$ticketId': typeof MehlaAdminSupportTicketIdRoute
@@ -839,6 +865,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
+  '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -878,6 +905,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/tasks'
     | '/team'
+    | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
@@ -921,6 +949,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
     | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
@@ -933,6 +962,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
+    | '/api/public/webhooks/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -969,6 +999,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/tasks'
     | '/team'
+    | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
@@ -1012,6 +1043,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
     | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
@@ -1024,6 +1056,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
+    | '/api/public/webhooks/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   id:
@@ -1062,6 +1095,7 @@ export interface FileRouteTypes {
     | '/_authenticated/support'
     | '/_authenticated/tasks'
     | '/_authenticated/team'
+    | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
     | '/invite/$token'
@@ -1105,6 +1139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/$id'
     | '/api/public/health'
     | '/api/public/theme.css'
+    | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
     | '/mehla-admin/sales/$id'
     | '/mehla-admin/support/$ticketId'
@@ -1117,6 +1152,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/payments/$provider'
+    | '/api/public/webhooks/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesById: FileRoutesById
@@ -1144,6 +1180,7 @@ export interface RootRouteChildren {
   TrackRoute: typeof TrackRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiWebhookRoute: typeof ApiWebhookRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifiedRoute: typeof AuthVerifiedRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -1154,12 +1191,14 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
+  ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
+  ApiPublicWebhooksSlugRoute: typeof ApiPublicWebhooksSlugRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
@@ -1572,6 +1611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhook': {
+      id: '/api/webhook'
+      path: '/api/webhook'
+      fullPath: '/api/webhook'
+      preLoaderRoute: typeof ApiWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/team': {
       id: '/_authenticated/team'
       path: '/team'
@@ -1712,6 +1758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminBillingIdRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
+    '/api/public/webhook': {
+      id: '/api/public/webhook'
+      path: '/api/public/webhook'
+      fullPath: '/api/public/webhook'
+      preLoaderRoute: typeof ApiPublicWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/theme.css': {
       id: '/api/public/theme.css'
       path: '/api/public/theme.css'
@@ -1759,6 +1812,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/auth/preview'
       fullPath: '/lovable/email/auth/preview'
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/$slug': {
+      id: '/api/public/webhooks/$slug'
+      path: '/api/public/webhooks/$slug'
+      fullPath: '/api/public/webhooks/$slug'
+      preLoaderRoute: typeof ApiPublicWebhooksSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/payments/$provider': {
@@ -1960,6 +2020,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiWebhookRoute: ApiWebhookRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifiedRoute: AuthVerifiedRoute,
   InviteTokenRoute: InviteTokenRoute,
@@ -1970,6 +2031,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
+  ApiPublicWebhookRoute: ApiPublicWebhookRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
@@ -1977,6 +2039,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
+  ApiPublicWebhooksSlugRoute: ApiPublicWebhooksSlugRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
