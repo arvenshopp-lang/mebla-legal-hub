@@ -1,0 +1,1 @@
+ALTER TABLE public.support_tickets ALTER COLUMN channel SET DEFAULT 'portal';

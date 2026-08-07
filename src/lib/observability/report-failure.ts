@@ -6,6 +6,26 @@ import { reportFailure } from "./failure-log.functions";
 
 type Surface = "secure_view" | "support_ticket" | "support_message" | "support_rating" | "print";
 
+/** يستخرج رسالة مفهومة من أي شكل خطأ (Error أو خطأ قاعدة بيانات أو نص). */
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const e = error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    const parts = [e.code, e.message, e.details, e.hint]
+      .filter((part): part is string | number => typeof part === "string" || typeof part === "number")
+      .map(String)
+      .filter((part) => part.trim().length > 0);
+    if (parts.length) return parts.join(" · ");
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
 export async function trackFailure(input: {
   surface: Surface;
   action: string;
@@ -14,12 +34,7 @@ export async function trackFailure(input: {
   ticketId?: string | null;
   documentId?: string | null;
 }): Promise<string | null> {
-  const message =
-    input.error instanceof Error
-      ? input.error.message
-      : typeof input.error === "string"
-        ? input.error
-        : "";
+  const message = describeError(input.error);
   try {
     const res = await reportFailure({
       data: {

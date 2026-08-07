@@ -214,11 +214,11 @@ function NewTicketModal({
         .insert({
           user_id: userId,
           organization_id: organizationId,
-          reference: "",
           subject: subject.trim(),
           category,
           priority: priority as "low" | "medium" | "high" | "urgent",
           description: description.trim(),
+          channel: "portal",
         })
         .select("id")
         .single();

@@ -628,6 +628,40 @@ type OutboxRow = {
   max_attempts: number;
 };
 
+/**
+ * أخطاء نهائية لا تُصلحها إعادة المحاولة: مستلم موقوف أو عنوان غير صالح أو
+ * خدمة غير مهيأة. تُعلَّم الرسالة فوراً كفاشلة برسالة عربية واضحة بدل تكرار
+ * الإرسال حتى استنفاد المحاولات وتضخيم سجل الأعطال.
+ */
+const PERMANENT_SEND_CODES = new Set([
+  "recipient_suppressed",
+  "invalid_recipient",
+  "invalid_sender",
+  "email_not_configured",
+  "domain_not_verified",
+]);
+
+function classifySendFailure(result: { code: string; status: number | null }): {
+  permanent: boolean;
+  reason: string | null;
+} {
+  if (PERMANENT_SEND_CODES.has(result.code)) {
+    const reason =
+      result.code === "recipient_suppressed"
+        ? "عنوان المستلم موقوف عن الاستقبال (ارتداد أو شكوى أو إلغاء اشتراك سابق)، فلن تُعاد المحاولة."
+        : result.code === "email_not_configured"
+          ? "خدمة البريد غير مهيأة على الخادم."
+          : "عنوان البريد غير مقبول من خدمة الإرسال.";
+    return { permanent: true, reason };
+  }
+  // أخطاء العميل (٤xx) نهائية، ما عدا المهلة وتجاوز الحد فهما قابلان للإعادة.
+  if (result.status !== null && result.status >= 400 && result.status < 500) {
+    if (result.status === 408 || result.status === 429) return { permanent: false, reason: null };
+    return { permanent: true, reason: "رفضت خدمة البريد الرسالة نهائياً." };
+  }
+  return { permanent: false, reason: null };
+}
+
 /** إرسال رسالة واحدة من قائمة الإرسال. */
 export async function dispatchOne(
   db: Db,
@@ -737,16 +771,23 @@ export async function dispatchOne(
   }
 
   const attempts = job.attempts + 1;
-  const exhausted = attempts >= job.max_attempts;
+  const classification = classifySendFailure(result);
+  const exhausted = classification.permanent || attempts >= job.max_attempts;
   const { logFailure } = await import("@/lib/observability/failure-log.server");
   const failureRef = await logFailure({
     surface: "email",
     action: "email_workspace_send",
-    error: result.message,
+    error: classification.reason ?? result.message,
     errorCode: result.code,
     httpStatus: result.status,
     organizationId: message.organization_id ?? null,
-    metadata: { message_id: messageId, attempts, recipients: message.to_addresses.length },
+    metadata: {
+      message_id: messageId,
+      attempts,
+      recipients: message.to_addresses.length,
+      permanent: classification.permanent,
+      provider_message: result.message.slice(0, 300),
+    },
   });
   const backoffMinutes = Math.min(2 ** attempts, 60);
   await db
@@ -754,11 +795,13 @@ export async function dispatchOne(
     .update({
       status: exhausted ? "failed" : "queued",
       attempts,
-      last_error: result.message.slice(0, 900),
+      last_error: (classification.reason ?? result.message).slice(0, 900),
       last_error_code: result.code,
       failure_ref: failureRef,
       locked_at: null,
-      next_attempt_at: new Date(Date.now() + backoffMinutes * 60_000).toISOString(),
+      next_attempt_at: classification.permanent
+        ? new Date().toISOString()
+        : new Date(Date.now() + backoffMinutes * 60_000).toISOString(),
     })
     .eq("id", job.id);
   await db
