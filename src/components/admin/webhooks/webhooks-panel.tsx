@@ -167,9 +167,7 @@ export function WebhookGatewayPanel() {
   const reprocess = useMutation({
     mutationFn: (id: string) => reprocessFn({ data: { id } }),
     onSuccess: (result) => {
-      toast.success(
-        `نتيجة إعادة المعالجة: ${EVENT_STATUS_LABELS[result.status] ?? result.status}`,
-      );
+      toast.success(`نتيجة إعادة المعالجة: ${EVENT_STATUS_LABELS[result.status] ?? result.status}`);
       invalidate();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -200,8 +198,8 @@ export function WebhookGatewayPanel() {
           <div>
             <h2 className="text-h5">بوابة الويب هوك</h2>
             <p className="text-body-sm text-muted-foreground">
-              رابط استقبال واحد لكل مزوّد. لا يُقبل أي طلب دون توقيع أو رمز سرّي مطابق، وكل
-              استدعاء يُسجَّل بحمولة منقّحة.
+              رابط استقبال واحد لكل مزوّد. لا يُقبل أي طلب دون توقيع أو رمز سرّي مطابق، وكل استدعاء
+              يُسجَّل بحمولة منقّحة.
             </p>
           </div>
         </div>
@@ -516,7 +514,10 @@ export function WebhookGatewayPanel() {
       >
         {revealed && (
           <div className="space-y-4">
-            <p className="rounded-[var(--radius-m)] bg-surface-muted p-3 text-[12px] leading-6" dir="ltr">
+            <p
+              className="rounded-[var(--radius-m)] bg-surface-muted p-3 text-[12px] leading-6"
+              dir="ltr"
+            >
               {revealed.secret}
             </p>
             <div className="flex justify-end gap-2">
@@ -546,7 +547,10 @@ export function WebhookGatewayPanel() {
             <dl className="grid gap-3 sm:grid-cols-2">
               {[
                 ["المزوّد", detail.slug],
-                ["المُحوِّل", ADAPTER_LABELS[detail.adapterType ?? ""] ?? (detail.adapterType ?? "—")],
+                [
+                  "المُحوِّل",
+                  ADAPTER_LABELS[detail.adapterType ?? ""] ?? detail.adapterType ?? "—",
+                ],
                 ["نوع الحدث", detail.eventType ?? "—"],
                 ["معرّف الحدث", detail.providerEventId ?? "—"],
                 ["الحالة", EVENT_STATUS_LABELS[detail.status] ?? detail.status],
@@ -699,7 +703,11 @@ function EndpointCard({
           <KeyRound className="h-4 w-4" aria-hidden />
           {endpoint.hasSecret ? "تدوير السرّ" : "توليد السرّ"}
         </Btn>
-        <Btn variant={endpoint.isEnabled ? "outline" : "primary"} loading={busy} onClick={onToggleEnabled}>
+        <Btn
+          variant={endpoint.isEnabled ? "outline" : "primary"}
+          loading={busy}
+          onClick={onToggleEnabled}
+        >
           {endpoint.isEnabled ? "تعطيل الاستقبال" : "تفعيل الاستقبال"}
         </Btn>
         <Btn variant="ghost" loading={busy} onClick={onToggleTestMode}>

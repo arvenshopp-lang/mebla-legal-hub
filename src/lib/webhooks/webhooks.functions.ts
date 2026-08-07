@@ -52,7 +52,10 @@ export const createWebhookEndpoint = createServerFn({ method: "POST" })
         slug: z
           .string()
           .trim()
-          .regex(/^[a-z0-9][a-z0-9_-]{1,40}$/, "المُعرّف يقبل حروفاً لاتينية صغيرة وأرقاماً و - _ فقط."),
+          .regex(
+            /^[a-z0-9][a-z0-9_-]{1,40}$/,
+            "المُعرّف يقبل حروفاً لاتينية صغيرة وأرقاماً و - _ فقط.",
+          ),
         displayName: z.string().trim().min(2).max(120),
         adapterType: z.enum(["whatsline", "generic_json"]),
         verificationMode: z.enum(["hmac_sha256", "shared_secret"]),

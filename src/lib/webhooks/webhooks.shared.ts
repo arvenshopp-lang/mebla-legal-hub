@@ -78,7 +78,13 @@ export type WebhookEndpointView = {
 };
 
 /** قيمة قابلة للتسلسل — الحمولة المنقّحة تُعاد للمتصفح بهذا الشكل فقط. */
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 export type WebhookEventView = {
   id: string;

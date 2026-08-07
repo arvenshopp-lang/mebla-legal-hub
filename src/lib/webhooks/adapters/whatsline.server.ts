@@ -25,8 +25,7 @@ export class WhatsLineWebhookAdapter implements WebhookAdapter {
   readonly adapterType = "whatsline";
 
   normalize(payload: unknown): NormalizedWebhookEvent[] {
-    const rawType =
-      readString(payload, "event", "event_type", "type", "eventType") ?? "unknown";
+    const rawType = readString(payload, "event", "event_type", "type", "eventType") ?? "unknown";
     const type = TYPE_MAP[rawType] ?? rawType;
     const body = readObject(payload, "data") ?? readObject(payload, "payload") ?? payload;
 
