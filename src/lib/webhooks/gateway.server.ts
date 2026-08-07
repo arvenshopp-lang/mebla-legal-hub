@@ -331,6 +331,30 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
     return json({ error: "unauthorized" }, 401);
   }
 
+  // Whats Line يفحص الرابط بطلب POST فارغ أو form-encoded. لا نحاول تحويله
+  // إلى حدث أعمال، لكن لا نقبله إلا بعد اجتياز التحقق أعلاه.
+  const contentType = (request.headers.get("content-type") ?? "").toLowerCase();
+  const isConnectionProbe = raw.trim() === "" || contentType.includes("application/x-www-form-urlencoded");
+  if (isConnectionProbe) {
+    const testedAt = new Date().toISOString();
+    await logEvent(client, {
+      endpointId: endpoint.id,
+      slug,
+      adapterType: endpoint.adapter_type,
+      status: "ignored",
+      payloadHash,
+      requestIp: ip,
+      signatureValid: true,
+      eventType: "connection.test",
+      processedAt: testedAt,
+    });
+    await client
+      .from("webhook_endpoints")
+      .update({ last_event_at: testedAt, last_error: null })
+      .eq("id", endpoint.id);
+    return json({ ok: true, test: true });
+  }
+
   /* 4) إعادة إرسال نفس الحمولة الحرفية خلال نافذة قصيرة */
   const duplicateWindow = new Date(Date.now() - DUPLICATE_BODY_WINDOW_MS).toISOString();
   const { data: replayRows } = await client
@@ -338,6 +362,7 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
     .select("id")
     .eq("slug", slug)
     .eq("payload_hash", payloadHash)
+    .eq("signature_valid", true)
     .gte("received_at", duplicateWindow)
     .limit(1);
   if ((replayRows ?? []).length > 0) {

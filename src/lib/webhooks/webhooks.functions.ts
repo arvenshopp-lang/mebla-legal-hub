@@ -8,6 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   WEBHOOK_PUBLIC_ORIGIN,
   type WebhookEndpointView,
+  type WebhookConnectionTestResult,
   type WebhookEventStatus,
   type WebhookEventView,
 } from "@/lib/webhooks/webhooks.shared";
@@ -160,6 +161,24 @@ export const setWebhookEndpointState = createServerFn({ method: "POST" })
       after: data,
     });
     return { ok: true };
+  });
+
+export const testWebhookEndpointConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<WebhookConnectionTestResult> => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "integrations.manage");
+    const db = await g.admin();
+    const result = await (await engine()).testEndpointConnection(db, data.id);
+    await g.writeAudit(db, staff, {
+      action: "webhook.connection_tested",
+      entity_type: "webhook_endpoint",
+      entity_id: data.id,
+      description: result.ok ? "نجح فحص اتصال الويب هوك" : "فشل فحص اتصال الويب هوك",
+      metadata: { ok: result.ok, http_status: result.status },
+    });
+    return result;
   });
 
 export const reprocessWebhookEvent = createServerFn({ method: "POST" })
