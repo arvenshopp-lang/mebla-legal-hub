@@ -9,7 +9,11 @@ WITH
 -- (1) قائمة الدوال المسموح استدعاؤها من authenticated (موثّقة في docs/security-guardrails.md)
 allowed_authenticated_rpc(proname) AS (
   VALUES
+    ('admin_activity_overview'),
+    ('admin_growth_series'),
+    ('admin_jobs_overview'),
     ('admin_platform_metrics'),
+    ('admin_service_health'),
     ('billing_match_reconciliation'),
     ('billing_reopen_period'),
     ('billing_reports'),
@@ -19,12 +23,13 @@ allowed_authenticated_rpc(proname) AS (
     ('my_case_party_permissions'),
     ('my_subscription_overview'),
     ('print_copy_number'),
+    ('recalc_invoice'),
     ('record_metered_usage')
 ),
 
 -- (2) جداول مسموح بقاء وصول anon إليها للقراءة العامة فقط
 public_read_tables(relname) AS (
-  VALUES ('platform_plans'), ('platform_settings')
+  VALUES ('platform_plans'), ('platform_settings'), ('platform_content_pages')
 ),
 
 -- ---------------------------------------------------------------------------
