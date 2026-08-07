@@ -3487,6 +3487,453 @@ export type Database = {
           },
         ]
       }
+      notification_attempts: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          http_status: number | null
+          id: string
+          latency_ms: number | null
+          organization_id: string
+          provider: string
+          queue_id: string
+          request_metadata: Json
+          response_metadata: Json
+          status: string
+        }
+        Insert: {
+          attempt_number?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          organization_id: string
+          provider: string
+          queue_id: string
+          request_metadata?: Json
+          response_metadata?: Json
+          status: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          organization_id?: string
+          provider?: string
+          queue_id?: string
+          request_metadata?: Json
+          response_metadata?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_attempts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_attempts_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "notification_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_client_preferences: {
+        Row: {
+          client_id: string
+          created_at: string
+          email_enabled: boolean
+          id: string
+          marketing_opt_in: boolean
+          organization_id: string
+          sms_enabled: boolean
+          updated_at: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          marketing_opt_in?: boolean
+          organization_id: string
+          sms_enabled?: boolean
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          marketing_opt_in?: boolean
+          organization_id?: string
+          sms_enabled?: boolean
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_client_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_client_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          organization_id: string
+          payload: Json
+          processed_at: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          organization_id: string
+          payload?: Json
+          processed_at?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          organization_id?: string
+          payload?: Json
+          processed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_link_tokens: {
+        Row: {
+          case_id: string | null
+          client_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          organization_id: string
+          purpose: string
+          revoked_at: string | null
+          token_hash: string
+          use_count: number
+        }
+        Insert: {
+          case_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          organization_id: string
+          purpose?: string
+          revoked_at?: string | null
+          token_hash: string
+          use_count?: number
+        }
+        Update: {
+          case_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          organization_id?: string
+          purpose?: string
+          revoked_at?: string | null
+          token_hash?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_link_tokens_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_link_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_link_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_queue: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          cancelled_at: string | null
+          channel: string
+          created_at: string
+          event_id: string | null
+          event_type: string
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          is_test: boolean
+          last_error_code: string | null
+          last_error_message: string | null
+          latency_ms: number | null
+          max_attempts: number
+          organization_id: string
+          payload: Json
+          processing_at: string | null
+          provider: string
+          provider_device_id: string | null
+          provider_template_id: string | null
+          recipient_id: string | null
+          recipient_phone: string | null
+          recipient_type: string
+          scheduled_at: string
+          status: string
+          template_mapping_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          cancelled_at?: string | null
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          event_type: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key: string
+          is_test?: boolean
+          last_error_code?: string | null
+          last_error_message?: string | null
+          latency_ms?: number | null
+          max_attempts?: number
+          organization_id: string
+          payload?: Json
+          processing_at?: string | null
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id?: string | null
+          recipient_id?: string | null
+          recipient_phone?: string | null
+          recipient_type?: string
+          scheduled_at?: string
+          status?: string
+          template_mapping_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          cancelled_at?: string | null
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          event_type?: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string
+          is_test?: boolean
+          last_error_code?: string | null
+          last_error_message?: string | null
+          latency_ms?: number | null
+          max_attempts?: number
+          organization_id?: string
+          payload?: Json
+          processing_at?: string | null
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id?: string | null
+          recipient_id?: string | null
+          recipient_phone?: string | null
+          recipient_type?: string
+          scheduled_at?: string
+          status?: string
+          template_mapping_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_queue_template_mapping_id_fkey"
+            columns: ["template_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "notification_template_mappings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_rules: {
+        Row: {
+          channel: string
+          cooldown_seconds: number
+          created_at: string
+          delay_seconds: number
+          event_type: string
+          id: string
+          is_enabled: boolean
+          organization_id: string
+          template_mapping_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          cooldown_seconds?: number
+          created_at?: string
+          delay_seconds?: number
+          event_type: string
+          id?: string
+          is_enabled?: boolean
+          organization_id: string
+          template_mapping_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          cooldown_seconds?: number
+          created_at?: string
+          delay_seconds?: number
+          event_type?: string
+          id?: string
+          is_enabled?: boolean
+          organization_id?: string
+          template_mapping_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_rules_template_mapping_id_fkey"
+            columns: ["template_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "notification_template_mappings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_template_mappings: {
+        Row: {
+          body_variable_mapping: Json
+          button_variable_mapping: Json
+          channel: string
+          created_at: string
+          event_type: string
+          id: string
+          internal_template_key: string
+          is_enabled: boolean
+          organization_id: string | null
+          provider: string
+          provider_device_id: string | null
+          provider_template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_variable_mapping?: Json
+          button_variable_mapping?: Json
+          channel?: string
+          created_at?: string
+          event_type: string
+          id?: string
+          internal_template_key: string
+          is_enabled?: boolean
+          organization_id?: string | null
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_variable_mapping?: Json
+          button_variable_mapping?: Json
+          channel?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          internal_template_key?: string
+          is_enabled?: boolean
+          organization_id?: string | null
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_template_mappings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -8146,6 +8593,162 @@ export type Database = {
           },
         ]
       }
+      whatsapp_devices: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_synced_at: string
+          phone_number: string | null
+          provider: string
+          provider_device_id: string
+          raw_metadata: Json
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string
+          phone_number?: string | null
+          provider?: string
+          provider_device_id: string
+          raw_metadata?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string
+          phone_number?: string | null
+          provider?: string
+          provider_device_id?: string
+          raw_metadata?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_provider_state: {
+        Row: {
+          created_at: string
+          default_device_id: string | null
+          devices_count: number
+          is_enabled: boolean
+          last_checked_at: string | null
+          last_error_code: string | null
+          last_error_detail: string | null
+          last_synced_at: string | null
+          per_org_hourly_limit: number
+          per_recipient_hourly_limit: number
+          provider: string
+          provider_hourly_limit: number
+          status: string
+          templates_count: number
+          test_mode: boolean
+          test_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_device_id?: string | null
+          devices_count?: number
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          last_error_detail?: string | null
+          last_synced_at?: string | null
+          per_org_hourly_limit?: number
+          per_recipient_hourly_limit?: number
+          provider: string
+          provider_hourly_limit?: number
+          status?: string
+          templates_count?: number
+          test_mode?: boolean
+          test_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_device_id?: string | null
+          devices_count?: number
+          is_enabled?: boolean
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          last_error_detail?: string | null
+          last_synced_at?: string | null
+          per_org_hourly_limit?: number
+          per_recipient_hourly_limit?: number
+          provider?: string
+          provider_hourly_limit?: number
+          status?: string
+          templates_count?: number
+          test_mode?: boolean
+          test_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          body: string | null
+          body_variable_count: number
+          button_variable_count: number
+          category: string | null
+          components: Json
+          created_at: string
+          id: string
+          language: string | null
+          last_synced_at: string
+          name: string
+          provider: string
+          provider_device_id: string | null
+          provider_template_id: string
+          raw_metadata: Json
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          body_variable_count?: number
+          button_variable_count?: number
+          category?: string | null
+          components?: Json
+          created_at?: string
+          id?: string
+          language?: string | null
+          last_synced_at?: string
+          name: string
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id: string
+          raw_metadata?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          body_variable_count?: number
+          button_variable_count?: number
+          category?: string | null
+          components?: Json
+          created_at?: string
+          id?: string
+          language?: string | null
+          last_synced_at?: string
+          name?: string
+          provider?: string
+          provider_device_id?: string | null
+          provider_template_id?: string
+          raw_metadata?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -8231,6 +8834,45 @@ export type Database = {
       }
       billing_reports: { Args: { _from: string; _to: string }; Returns: Json }
       billing_save_draft: { Args: { _payload: Json }; Returns: string }
+      claim_notification_batch: {
+        Args: { _limit?: number }
+        Returns: {
+          accepted_at: string | null
+          attempts: number
+          cancelled_at: string | null
+          channel: string
+          created_at: string
+          event_id: string | null
+          event_type: string
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          is_test: boolean
+          last_error_code: string | null
+          last_error_message: string | null
+          latency_ms: number | null
+          max_attempts: number
+          organization_id: string
+          payload: Json
+          processing_at: string | null
+          provider: string
+          provider_device_id: string | null
+          provider_template_id: string | null
+          recipient_id: string | null
+          recipient_phone: string | null
+          recipient_type: string
+          scheduled_at: string
+          status: string
+          template_mapping_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       consume_ocr_pages: {
         Args: { _organization_id: string; _pages: number }
         Returns: {
