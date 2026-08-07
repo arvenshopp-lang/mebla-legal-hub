@@ -96,18 +96,18 @@ export const rotateWebhookSecret = createServerFn({ method: "POST" })
       data,
       context,
     }): Promise<{ secret: string; hint: string; slug: string; url: string }> => {
-    const g = await guard();
-    const staff = await g.requireStaff(context.supabase, context.userId, "integrations.manage");
-    const db = await g.admin();
-    const result = await (await engine()).rotateEndpointSecret(db, data.id, context.userId);
-    await g.writeAudit(db, staff, {
-      action: "webhook.secret_rotated",
-      entity_type: "webhook_endpoint",
-      entity_id: data.id,
-      description: `تدوير سرّ التحقق للمزوّد ${result.slug}`,
-      metadata: { hint: result.hint },
-    });
-    return result;
+      const g = await guard();
+      const staff = await g.requireStaff(context.supabase, context.userId, "integrations.manage");
+      const db = await g.admin();
+      const result = await (await engine()).rotateEndpointSecret(db, data.id, context.userId);
+      await g.writeAudit(db, staff, {
+        action: "webhook.secret_rotated",
+        entity_type: "webhook_endpoint",
+        entity_id: data.id,
+        description: `تدوير سرّ التحقق للمزوّد ${result.slug}`,
+        metadata: { hint: result.hint },
+      });
+      return result;
     },
   );
 
