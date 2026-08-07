@@ -8,15 +8,56 @@
   2) بوابة العرض المركزية تمنع المسارات الممنوعة برسالة عربية واضحة تحمل اسم الصلاحية.
   3) لا تمرير أفقي على 320px و390px، وقائمة الجوال تفتح وتُغلق بـ Esc.
 
-التشغيل: python3 scripts/e2e/rbac_nav_e2e.py   (بعد توفر جلسة مالك منصة في المعاينة)
+وضعان للتشغيل:
+  1) جلسة معاينة حقيقية محقونة (LOVABLE_BROWSER_AUTH_STATUS=injected) — الوضع المفضّل.
+  2) وضع جلسة اختبار محلية (RBAC_E2E_STUB=1): تُحقن جلسة اصطناعية في المتصفح
+     ويُعترض ردّ `/auth/v1/user` وصف `platform_staff` بالكامل. لا يلامس بيانات
+     الإنتاج ولا يمنح أي وصول خادمي حقيقي؛ يختبر فقط بوابة العرض والقائمة
+     (وهي منطق عميل صرف)، والحماية الخادمية تبقى مثبتة بمسار آخر.
+
+التشغيل: python3 scripts/e2e/rbac_nav_e2e.py
 """
 
-import asyncio, json, os, subprocess, sys
+import asyncio, json, os, re, subprocess, sys, time
 from playwright.async_api import async_playwright
 
 BASE = "http://localhost:8080"
 OUT = "/tmp/browser/rbac"
 STAFF_URL_PART = "/rest/v1/platform_staff"
+STUB = os.environ.get("RBAC_E2E_STUB") == "1"
+STUB_USER_ID = "00000000-0000-4000-8000-00000000qa01".replace("qa", "aa")
+
+
+def env_file_value(name: str) -> str:
+    with open(".env", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(rf"\s*{name}\s*=\s*(.+?)\s*$", line)
+            if m:
+                return m.group(1).strip().strip('"').strip("'")
+    raise RuntimeError(f"{name} غير موجود في .env")
+
+
+def stub_session_json(project_id: str) -> tuple[str, str]:
+    """(مفتاح التخزين، جسم الجلسة) — توكن اصطناعي غير صالح خادمياً بشكل مقصود."""
+    key = f"sb-{project_id}-auth-token"
+    expires_at = int(time.time()) + 3600
+    session = {
+        "access_token": "rbac-e2e-stub-token",
+        "token_type": "bearer",
+        "expires_in": 3600,
+        "expires_at": expires_at,
+        "refresh_token": "rbac-e2e-stub-refresh",
+        "user": {
+            "id": STUB_USER_ID,
+            "aud": "authenticated",
+            "role": "authenticated",
+            "email": "rbac.e2e@local.test",
+            "app_metadata": {},
+            "user_metadata": {},
+            "created_at": "2026-01-01T00:00:00Z",
+        },
+    }
+    return key, json.dumps(session)
 
 
 def expectations():
@@ -27,6 +68,20 @@ def expectations():
 
 
 async def restore_session(context, page):
+    if STUB:
+        project_id = env_file_value("VITE_SUPABASE_PROJECT_ID")
+        key, session = stub_session_json(project_id)
+
+        async def stub_user(route):
+            body = json.loads(session)["user"]
+            await route.fulfill(
+                status=200, content_type="application/json", body=json.dumps(body)
+            )
+
+        await page.route("**/auth/v1/user**", stub_user)
+        await page.goto(BASE, wait_until="domcontentloaded")
+        await page.evaluate("([k, v]) => localStorage.setItem(k, v)", [key, session])
+        return
     cj = os.environ.get("LOVABLE_BROWSER_SUPABASE_COOKIES_JSON")
     if cj:
         await context.add_cookies([{**c, "url": BASE} for c in json.loads(cj)])
@@ -44,6 +99,25 @@ async def run_role(context, role, total_items, failures):
     await restore_session(context, page)
 
     async def handle(route):
+        if STUB:
+            row = {
+                "id": "00000000-0000-4000-8000-0000000000ff",
+                "user_id": STUB_USER_ID,
+                "full_name": "حساب اختبار الصلاحيات",
+                "email": "rbac.e2e@local.test",
+                "job_title": None,
+                "status": "active",
+                "role": "super_admin" if role["isSuperAdmin"] else "staff",
+                "permissions": [],
+                "role_id": None,
+                "platform_roles": None
+                if role["isSuperAdmin"]
+                else {"name_ar": role["name_ar"], "permissions": role["permissions"]},
+            }
+            await route.fulfill(
+                status=200, content_type="application/json", body=json.dumps(row)
+            )
+            return
         response = await route.fetch()
         try:
             body = await response.json()
@@ -128,8 +202,11 @@ async def run_role(context, role, total_items, failures):
 
 
 async def main():
-    if os.environ.get("LOVABLE_BROWSER_AUTH_STATUS") != "injected":
-        print("لا توجد جلسة مُحقنة في المعاينة — سجّل الدخول بحساب QA ثم أعد التشغيل.")
+    if not STUB and os.environ.get("LOVABLE_BROWSER_AUTH_STATUS") != "injected":
+        print(
+            "لا توجد جلسة مُحقنة في المعاينة — سجّل الدخول داخل نافذة المعاينة، "
+            "أو شغّل بوضع الجلسة المحلية: RBAC_E2E_STUB=1"
+        )
         return 2
     os.makedirs(OUT, exist_ok=True)
     data = expectations()
