@@ -51,3 +51,21 @@
 3. الجداول الخادمية البحتة (`case_code_registry`, `case_lookup_attempts`, `otp_verifications`,
    `integration_secrets`, `design_*`) مغلقة بلا سياسات ومحصورة بـ `service_role` — «مغلق افتراضاً».
 4. لا صلاحية لموظف المنصة على بيانات المكاتب؛ الاستثناء الوحيد `support_access_grants` بموافقة المكتب ومدة محددة.
+
+## تشغيل الحرّاس في CI
+
+يعمل سير العمل `.github/workflows/security.yml` على كل Pull Request وعلى الدفع إلى `main`،
+ويمنع الدمج عند ظهور أي مخالفة، بثلاث وظائف:
+
+| الوظيفة            | الأمر                    | ما يفشل عليه                                                    |
+| ------------------ | ------------------------ | --------------------------------------------------------------- |
+| `code-guardrails`  | `bun run security:check` | سرّ في الكود، تسجيل سرّ، تعريض سرّ للمتصفح، نقص توثيق دالة RPC. |
+| `dependency-audit` | `bun audit`              | ثغرة عالية أو حرجة في الحزم.                                    |
+| `db-guardrails`    | `bun run security:db`    | أي صف يرجع من `scripts/security-guardrails.sql`.                |
+
+`security:db` ينفّذ ملف SQL نفسه عبر `psql` كقراءة فقط، ويحتاج سرّ المستودع
+`SECURITY_CHECK_DATABASE_URL` (اتصال قراءة فقط بقاعدة البيانات). محلياً يكفي
+`DATABASE_URL` أو متغيّرات `PG*` القياسية، ثم `bun run security:all` لتشغيل الطبقتين معاً.
+
+لجعل المنع فعّالاً على الدمج: Settings ← Branches ← قاعدة حماية `main` ←
+اجعل الفحوص `code-guardrails` و`dependency-audit` و`db-guardrails` مطلوبة.
