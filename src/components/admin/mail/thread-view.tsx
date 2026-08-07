@@ -282,23 +282,37 @@ export function ThreadView({
                 </div>
               )}
 
-              {(m.status === "failed" || m.status === "bounced") && (
-                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[var(--radius-s)] border border-danger/30 bg-danger/5 p-3">
-                  <p className="text-body-sm text-danger">
-                    تعذّر إرسال هذه الرسالة{m.failure_ref ? ` — مرجع العطل ${m.failure_ref}` : ""}.
-                  </p>
-                  {canSend && (
-                    <Btn
-                      size="sm"
-                      variant="outline"
-                      loading={retrying}
-                      onClick={() => onRetry(m.id)}
-                    >
-                      <RefreshCw className="h-4 w-4" aria-hidden /> إعادة المحاولة
-                    </Btn>
-                  )}
-                </div>
-              )}
+              {(m.status === "failed" || m.status === "bounced") &&
+                (() => {
+                  const blocked = m.to_addresses.filter((address) =>
+                    blockedRecipients.includes(address.toLowerCase()),
+                  );
+                  return (
+                    <div className="mt-3 space-y-2 rounded-[var(--radius-s)] border border-danger/30 bg-danger/5 p-3">
+                      <p className="text-body-sm text-danger">
+                        تعذّر إرسال هذه الرسالة
+                        {m.failure_ref ? ` — مرجع العطل ${m.failure_ref}` : ""}.
+                      </p>
+                      {blocked.length > 0 && (
+                        <p className="text-body-sm text-danger">
+                          السبب: {blocked.join("، ")} محجوب عن استقبال رسائل المنصة (إلغاء اشتراك أو
+                          ارتداد أو شكوى). إعادة المحاولة لن تنجح قبل رفع الحجب بعد موافقة صاحب
+                          العنوان.
+                        </p>
+                      )}
+                      {canSend && blocked.length === 0 && (
+                        <Btn
+                          size="sm"
+                          variant="outline"
+                          loading={retrying}
+                          onClick={() => onRetry(m.id)}
+                        >
+                          <RefreshCw className="h-4 w-4" aria-hidden /> إعادة المحاولة
+                        </Btn>
+                      )}
+                    </div>
+                  );
+                })()}
             </li>
           ))}
         </ul>
