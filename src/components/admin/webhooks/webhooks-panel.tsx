@@ -33,6 +33,7 @@ import {
   listWebhookEvents,
   reprocessWebhookEvent,
   rotateWebhookSecret,
+  setWebhookVerificationMode,
   setWebhookEndpointState,
 } from "@/lib/webhooks/webhooks.functions";
 import {
