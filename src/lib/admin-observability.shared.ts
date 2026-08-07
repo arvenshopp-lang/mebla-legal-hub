@@ -104,11 +104,6 @@ const FAILURE_CODES: Record<string, { label: string; advice: string; kind: Failu
     advice: "أضف بيانات دخول الصندوق حتى تخرج المراسلات من صندوق المكتب نفسه.",
     kind: "permanent",
   },
-  _invalid_recipient_dup: {
-    label: "عنوان المستلم غير صالح",
-    advice: "راجع صحة كتابة البريد في بيانات المكتب أو التذكرة ثم أعد الإرسال.",
-    kind: "permanent",
-  },
   invalid_sender: {
     label: "عنوان المُرسِل غير مقبول",
     advice: "تأكد من أن صندوق الإرسال مربوط بنطاق موثّق في مركز التكاملات.",
