@@ -14,7 +14,11 @@ import type {
   SearchGroup,
   SearchGroupKey,
 } from "@/lib/admin-observability.shared";
-import { SEARCH_GROUP_LABELS } from "@/lib/admin-observability.shared";
+import {
+  SEARCH_GROUP_LABELS,
+  classifyFailure,
+  HIDDEN_METADATA_KEYS,
+} from "@/lib/admin-observability.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;
