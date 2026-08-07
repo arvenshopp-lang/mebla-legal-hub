@@ -741,9 +741,9 @@ function EndpointCard({
         </div>
         {urlToken ? (
           <p className="text-caption mt-1.5">
-            هذا المزوّد لا يرسل ترويسات، فالسرّ يُضاف داخل الرابط كمعامل{" "}
-            <span dir="ltr">?k=</span> — استخدم الرابط الكامل القصير الظاهر عند توليد السرّ، ولا تستخدم
-            نطاق <span dir="ltr">www</span>.
+            هذا المزوّد لا يرسل ترويسات، فالسرّ يُضاف داخل الرابط كمعامل <span dir="ltr">?k=</span>{" "}
+            — استخدم الرابط الكامل القصير الظاهر عند توليد السرّ، ولا تستخدم نطاق{" "}
+            <span dir="ltr">www</span>.
           </p>
         ) : (
           <p className="text-caption mt-1.5">
