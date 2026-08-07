@@ -340,9 +340,7 @@ function ActivityPage() {
                 <dd className="mt-1 space-y-1">
                   {Object.entries(detail.metadata).map(([key, value]) => (
                     <p key={key} className="text-[12.5px]">
-                      <span className="text-muted-foreground">
-                        {METADATA_LABELS[key] ?? key}:
-                      </span>{" "}
+                      <span className="text-muted-foreground">{METADATA_LABELS[key] ?? key}:</span>{" "}
                       {typeof value === "boolean" ? (value ? "نعم" : "لا") : String(value ?? "—")}
                     </p>
                   ))}

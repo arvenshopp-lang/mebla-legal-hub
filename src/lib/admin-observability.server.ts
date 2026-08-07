@@ -361,7 +361,8 @@ export async function readActivityFeed(
     total += count ?? 0;
     for (const r of (data ?? []) as AnyClient[]) {
       const meta = (r.metadata ?? {}) as Record<string, unknown>;
-      const permanentHint = typeof meta["permanent"] === "boolean" ? (meta["permanent"] as boolean) : null;
+      const permanentHint =
+        typeof meta["permanent"] === "boolean" ? (meta["permanent"] as boolean) : null;
       const failure = classifyFailure(
         r.error_code ?? null,
         typeof r.http_status === "number" ? r.http_status : null,
@@ -374,8 +375,7 @@ export async function readActivityFeed(
         actor: String(r.ref ?? "—"),
         entityType: String(r.surface ?? "—"),
         entityId: null,
-        description:
-          failure.code === "—" ? String(r.error_message ?? "") : failure.codeLabel,
+        description: failure.code === "—" ? String(r.error_message ?? "") : failure.codeLabel,
         ip: r.ip ?? null,
         device: r.device ?? null,
         createdAt: String(r.created_at),

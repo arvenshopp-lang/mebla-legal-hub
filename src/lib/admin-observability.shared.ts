@@ -68,7 +68,8 @@ export const FAILURE_KIND_LABELS: Record<FailureKind, string> = {
 const FAILURE_CODES: Record<string, { label: string; advice: string; kind: FailureKind }> = {
   recipient_suppressed: {
     label: "عنوان المستلم موقوف عن الاستقبال",
-    advice: "أُوقف العنوان بسبب ارتداد أو شكوى أو إلغاء اشتراك سابق. اطلب من المستلم تأكيد رغبته في الاستقبال أو استخدم عنواناً بديلاً.",
+    advice:
+      "أُوقف العنوان بسبب ارتداد أو شكوى أو إلغاء اشتراك سابق. اطلب من المستلم تأكيد رغبته في الاستقبال أو استخدم عنواناً بديلاً.",
     kind: "permanent",
   },
   invalid_recipient: {
