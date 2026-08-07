@@ -125,3 +125,9 @@ export const WEBHOOK_SECRET_FIELD = "webhook_signing_secret";
 
 /** أصل الروابط العامة التي تُعطى للمزوّدين الخارجيين. */
 export const WEBHOOK_PUBLIC_ORIGIN = "https://mehlalex.com";
+
+/** رابط الاستقبال كما يُلصق في لوحة المزوّد. مع المفتاح في وضع `url_token` فقط. */
+export function buildWebhookUrl(slug: string, secret?: string | null): string {
+  const base = `${WEBHOOK_PUBLIC_ORIGIN}/api/public/webhooks/${slug}`;
+  return secret ? `${base}?${WEBHOOK_URL_TOKEN_PARAM}=${encodeURIComponent(secret)}` : base;
+}
