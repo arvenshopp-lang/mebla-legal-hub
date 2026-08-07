@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Paperclip, X } from "lucide-react";
+import { Paperclip, ShieldAlert, X } from "lucide-react";
 import { Btn, FormField, Modal, inputCls } from "@/lib/list-utils";
 import { isValidAddress, parseAddressList, type Mailbox } from "@/lib/email/email.shared";
 import {
@@ -37,6 +37,16 @@ export type ComposePayload = {
   inReplyTo: string | null;
 };
 
+export type RecipientBlockProps = {
+  /** عناوين محجوبة عن الاستقبال لدى خدمة البريد المُدارة. */
+  blockedRecipients: string[];
+  checkingRecipients: boolean;
+  onCheckRecipients: (mailboxId: string, addresses: string[]) => void;
+  canManageSuppression: boolean;
+  onLiftBlock: (address: string, reason: string) => void;
+  liftingAddress: string | null;
+};
+
 /** نافذة إنشاء/رد/تحويل — تتحقق من العناوين قبل أي استدعاء خادمي. */
 export function ComposeModal({
   seed,
@@ -50,6 +60,12 @@ export function ComposeModal({
   uploading,
   sending,
   savingDraft,
+  blockedRecipients,
+  checkingRecipients,
+  onCheckRecipients,
+  canManageSuppression,
+  onLiftBlock,
+  liftingAddress,
 }: {
   seed: ComposeSeed | null;
   mailboxes: Mailbox[];
@@ -62,7 +78,7 @@ export function ComposeModal({
   uploading: boolean;
   sending: boolean;
   savingDraft: boolean;
-}) {
+} & RecipientBlockProps) {
   const sendable = useMemo(
     () => mailboxes.filter((m) => m.type === "human" && m.is_active),
     [mailboxes],
@@ -75,6 +91,7 @@ export function ComposeModal({
   const [body, setBody] = useState("");
   const [schedule, setSchedule] = useState("");
   const [showCc, setShowCc] = useState(false);
+  const [liftReason, setLiftReason] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,7 +104,32 @@ export function ComposeModal({
     setBody(seed.html ?? "");
     setSchedule("");
     setShowCc(Boolean(seed.cc));
+    setLiftReason("");
   }, [seed]);
+
+  /** كل العناوين الصحيحة في الحقول — تُفحص حالة استقبالها قبل الإرسال. */
+  const recipientList = useMemo(() => {
+    const parts = [to, cc, bcc]
+      .join(",")
+      .split(/[,;\n]/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0 && isValidAddress(p))
+      .map((p) => p.toLowerCase());
+    return [...new Set(parts)];
+  }, [to, cc, bcc]);
+  const recipientKey = recipientList.join(",");
+
+  useEffect(() => {
+    if (!seed || !mailboxId || recipientList.length === 0) return;
+    const timer = setTimeout(() => onCheckRecipients(mailboxId, recipientKey.split(",")), 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, mailboxId, recipientKey]);
+
+  const blocked = useMemo(
+    () => blockedRecipients.filter((address) => recipientList.includes(address.toLowerCase())),
+    [blockedRecipients, recipientList],
+  );
 
   function build(): ComposePayload | null {
     try {
