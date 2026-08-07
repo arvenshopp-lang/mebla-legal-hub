@@ -63,8 +63,9 @@ export function AdminShell({
   );
   const activeTab = useMemo(
     () =>
-      [...tabs].sort((a, b) => b.to.length - a.to.length).find((t) => isNavPathActive(pathname, t.to))
-        ?.to ?? "",
+      [...tabs]
+        .sort((a, b) => b.to.length - a.to.length)
+        .find((t) => isNavPathActive(pathname, t.to))?.to ?? "",
     [tabs, pathname],
   );
 
@@ -316,7 +317,9 @@ export function AdminShell({
               </>
             )}
           </nav>
-          {tabs.length > 1 && <SectionTabs tabs={tabs} activeTo={activeTab} label={match?.item.label} />}
+          {tabs.length > 1 && (
+            <SectionTabs tabs={tabs} activeTo={activeTab} label={match?.item.label} />
+          )}
           {/* الجوال: العنوان والوصف في صف كامل، والإجراءات في صف مستقل يلتف. */}
           <div className="mb-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="min-w-0">
