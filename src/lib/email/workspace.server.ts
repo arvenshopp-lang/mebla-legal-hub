@@ -1,4 +1,5 @@
 import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
+import type { Database, Json } from "@/integrations/supabase/types";
 /**
  * محرك مركز البريد — خادمي فقط. كل الجداول مغلقة أمام العميل، والوصول يمر
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
