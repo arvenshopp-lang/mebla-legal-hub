@@ -255,7 +255,7 @@ function ActivityPage() {
                         </span>
                         {event.failure && (
                           <Badge
-                            tone={event.failure.kind === "retryable" ? "amber" : "red"}
+                            tone={event.failure.kind === "retryable" ? "warn" : "red"}
                             className="mt-1"
                           >
                             {event.failure.kindLabel}
@@ -320,11 +320,11 @@ function ActivityPage() {
                 <dd className="mt-1 space-y-1.5">
                   <p className="font-semibold">{detail.failure.codeLabel}</p>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={detail.failure.kind === "retryable" ? "amber" : "red"}>
+                    <Badge tone={detail.failure.kind === "retryable" ? "warn" : "red"}>
                       {detail.failure.kindLabel}
                     </Badge>
-                    <Badge tone="slate">{detail.failure.statusLabel}</Badge>
-                    <Badge tone="slate">رمز: {detail.failure.code}</Badge>
+                    <Badge tone="muted">{detail.failure.statusLabel}</Badge>
+                    <Badge tone="muted">رمز: {detail.failure.code}</Badge>
                   </div>
                   <p className="text-[12.5px] text-muted-foreground">{detail.failure.advice}</p>
                   <p className="text-[12.5px] text-muted-foreground">
