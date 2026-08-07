@@ -58,7 +58,7 @@ export const createWebhookEndpoint = createServerFn({ method: "POST" })
           ),
         displayName: z.string().trim().min(2).max(120),
         adapterType: z.enum(["whatsline", "generic_json"]),
-        verificationMode: z.enum(["hmac_sha256", "shared_secret"]),
+        verificationMode: z.enum(["hmac_sha256", "shared_secret", "url_token"]),
         signatureHeader: z
           .string()
           .trim()
@@ -91,7 +91,11 @@ export const createWebhookEndpoint = createServerFn({ method: "POST" })
 export const rotateWebhookSecret = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }): Promise<{ secret: string; hint: string; slug: string }> => {
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ secret: string; hint: string; slug: string; url: string }> => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "integrations.manage");
     const db = await g.admin();
@@ -104,6 +108,32 @@ export const rotateWebhookSecret = createServerFn({ method: "POST" })
       metadata: { hint: result.hint },
     });
     return result;
+    },
+  );
+
+export const setWebhookVerificationMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        verificationMode: z.enum(["hmac_sha256", "shared_secret", "url_token"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "integrations.manage");
+    const db = await g.admin();
+    await (await engine()).setEndpointVerificationMode(db, data);
+    await g.writeAudit(db, staff, {
+      action: "webhook.verification_mode_changed",
+      entity_type: "webhook_endpoint",
+      entity_id: data.id,
+      description: "تغيير وضع تحقق مزوّد ويب هوك",
+      after: data,
+    });
+    return { ok: true };
   });
 
 export const setWebhookEndpointState = createServerFn({ method: "POST" })
