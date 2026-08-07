@@ -132,16 +132,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         ],
       },
       {
-        to: "/mehla-admin/email",
-        label: "البريد والقوالب",
-        Icon: Mail,
-        permission: "email.manage",
-        tabs: [
-          { to: "/mehla-admin/mail", label: "صناديق البريد", permission: "email.view" },
-          { to: "/mehla-admin/email", label: "القوالب والإعدادات", permission: "email.manage" },
-        ],
-      },
-      {
         to: "/mehla-admin/notifications",
         label: "الإشعارات",
         Icon: BellRing,
