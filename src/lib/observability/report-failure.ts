@@ -13,7 +13,9 @@ function describeError(error: unknown): string {
   if (error && typeof error === "object") {
     const e = error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
     const parts = [e.code, e.message, e.details, e.hint]
-      .filter((part): part is string | number => typeof part === "string" || typeof part === "number")
+      .filter(
+        (part): part is string | number => typeof part === "string" || typeof part === "number",
+      )
       .map(String)
       .filter((part) => part.trim().length > 0);
     if (parts.length) return parts.join(" · ");
