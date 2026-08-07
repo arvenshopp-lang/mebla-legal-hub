@@ -526,7 +526,10 @@ export function WebhookGatewayPanel() {
 
       <Modal
         open={Boolean(revealed)}
-        onClose={() => setRevealed(null)}
+        onClose={() => {
+          setRevealed(null);
+          setRevealedUrl(null);
+        }}
         title="سرّ التحقق الجديد"
         description="انسخ القيمة الآن والصقها في لوحة المزوّد — لن تُعرض مرة أخرى."
       >
@@ -538,6 +541,23 @@ export function WebhookGatewayPanel() {
             >
               {revealed.secret}
             </p>
+            {revealedUrl?.includes("?key=") && (
+              <div className="space-y-2">
+                <p className="text-label">الرابط الكامل الجاهز للّصق في لوحة المزوّد</p>
+                <p
+                  className="rounded-[var(--radius-m)] bg-surface-muted p-3 text-[12px] leading-6 break-all"
+                  dir="ltr"
+                >
+                  {revealedUrl}
+                </p>
+                <Btn
+                  variant="outline"
+                  onClick={() => copyToClipboard(revealedUrl, "تم نسخ الرابط الكامل.")}
+                >
+                  <Copy className="h-4 w-4" aria-hidden /> نسخ الرابط الكامل
+                </Btn>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Btn
                 variant="outline"
@@ -545,7 +565,13 @@ export function WebhookGatewayPanel() {
               >
                 <Copy className="h-4 w-4" aria-hidden /> نسخ
               </Btn>
-              <Btn variant="primary" onClick={() => setRevealed(null)}>
+              <Btn
+                variant="primary"
+                onClick={() => {
+                  setRevealed(null);
+                  setRevealedUrl(null);
+                }}
+              >
                 حفظت السرّ
               </Btn>
             </div>
