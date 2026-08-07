@@ -97,6 +97,7 @@ export function WebhookGatewayPanel() {
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState<NewEndpointDraft | null>(null);
   const [revealed, setRevealed] = useState<{ slug: string; secret: string } | null>(null);
+  const [revealedUrl, setRevealedUrl] = useState<string | null>(null);
   const [detail, setDetail] = useState<WebhookEventView | null>(null);
   const [deadLetter, setDeadLetter] = useState<WebhookEventView | null>(null);
   const [reason, setReason] = useState("");
@@ -105,6 +106,7 @@ export function WebhookGatewayPanel() {
   const eventsFn = useServerFn(listWebhookEvents);
   const createFn = useServerFn(createWebhookEndpoint);
   const rotateFn = useServerFn(rotateWebhookSecret);
+  const modeFn = useServerFn(setWebhookVerificationMode);
   const stateFn = useServerFn(setWebhookEndpointState);
   const reprocessFn = useServerFn(reprocessWebhookEvent);
   const deadLetterFn = useServerFn(deadLetterWebhookEvent);
@@ -150,6 +152,17 @@ export function WebhookGatewayPanel() {
     mutationFn: (id: string) => rotateFn({ data: { id } }),
     onSuccess: (result) => {
       setRevealed({ slug: result.slug, secret: result.secret });
+      setRevealedUrl(result.url);
+      invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const changeMode = useMutation({
+    mutationFn: (input: { id: string; verificationMode: WebhookVerificationMode }) =>
+      modeFn({ data: input }),
+    onSuccess: () => {
+      toast.success("تم تحديث وضع التحقق. ولّد السرّ من جديد لتحصل على رابط مطابق.");
       invalidate();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -232,9 +245,13 @@ export function WebhookGatewayPanel() {
               endpoint={endpoint}
               busy={
                 (rotate.isPending && rotate.variables === endpoint.id) ||
-                (setState.isPending && setState.variables?.id === endpoint.id)
+                (setState.isPending && setState.variables?.id === endpoint.id) ||
+                (changeMode.isPending && changeMode.variables?.id === endpoint.id)
               }
               onRotate={() => rotate.mutate(endpoint.id)}
+              onChangeMode={(verificationMode) =>
+                changeMode.mutate({ id: endpoint.id, verificationMode })
+              }
               onToggleEnabled={() =>
                 setState.mutate({ id: endpoint.id, isEnabled: !endpoint.isEnabled })
               }
