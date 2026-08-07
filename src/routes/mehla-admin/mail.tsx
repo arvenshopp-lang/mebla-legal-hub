@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -687,6 +687,17 @@ function MailWorkspacePage() {
         uploading={uploading}
         sending={send.isPending}
         savingDraft={saveDraft.isPending}
+        blockedRecipients={blockedRecipients}
+        checkingRecipients={checkRecipients.isPending}
+        onCheckRecipients={(mailboxId, addresses) =>
+          checkRecipients.mutate({ mailboxId, addresses })
+        }
+        canManageSuppression={canManage}
+        onLiftBlock={(address, reason) => {
+          setLiftingAddress(address);
+          liftBlock.mutate({ address, reason });
+        }}
+        liftingAddress={liftingAddress}
       />
 
       <Modal
