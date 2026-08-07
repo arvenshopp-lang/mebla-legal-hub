@@ -334,7 +334,8 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
   // Whats Line يفحص الرابط بطلب POST فارغ أو form-encoded. لا نحاول تحويله
   // إلى حدث أعمال، لكن لا نقبله إلا بعد اجتياز التحقق أعلاه.
   const contentType = (request.headers.get("content-type") ?? "").toLowerCase();
-  const isConnectionProbe = raw.trim() === "" || contentType.includes("application/x-www-form-urlencoded");
+  const isConnectionProbe =
+    raw.trim() === "" || contentType.includes("application/x-www-form-urlencoded");
   if (isConnectionProbe) {
     const testedAt = new Date().toISOString();
     await logEvent(client, {
