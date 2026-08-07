@@ -189,7 +189,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       {
         to: "/mehla-admin/flags",
         label: "مفاتيح التشغيل",
-        Icon: BarChart3,
+        Icon: ToggleLeft,
         permission: "feature_flags.read",
       },
       {
@@ -244,14 +244,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         Icon: Activity,
         permission: "audit.read",
       },
-      {
-        to: "/mehla-admin/failures",
-        label: "سجل الأعطال",
-        Icon: AlertTriangle,
-        permission: "audit.read",
-      },
-      { to: "/mehla-admin/jobs", label: "مهام النظام", Icon: ListChecks, permission: "audit.read" },
-      { to: "/mehla-admin/services", label: "حالة الخدمات", Icon: Server, permission: "audit.read" },
     ],
   },
 ];
@@ -267,14 +259,32 @@ export function resolveNavMatch(
   pathname: string,
 ): { group: AdminNavGroup; item: AdminNavItem } | null {
   let best: { group: AdminNavGroup; item: AdminNavItem } | null = null;
+  const consider = (group: AdminNavGroup, item: AdminNavItem, to: string) => {
+    if (to === "/mehla-admin") return;
+    if (!isNavPathActive(pathname, to)) return;
+    if (!best || to.length > bestLength) {
+      best = { group, item };
+      bestLength = to.length;
+    }
+  };
+  let bestLength = 0;
   for (const group of ADMIN_NAV) {
     for (const item of group.items) {
-      if (item.to === "/mehla-admin") continue;
-      if (!isNavPathActive(pathname, item.to)) continue;
-      if (!best || item.to.length > best.item.to.length) best = { group, item };
+      consider(group, item, item.to);
+      for (const tab of item.tabs ?? []) consider(group, item, tab.to);
     }
   }
   return best;
+}
+
+/** عنوان التبويب المطابق للمسار الحالي داخل محور، إن وُجد. */
+export function resolveTabLabel(pathname: string): string | null {
+  const match = resolveNavMatch(pathname);
+  if (!match?.item.tabs) return null;
+  const tab = [...match.item.tabs]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find((t) => isNavPathActive(pathname, t.to));
+  return tab && tab.to !== match.item.to ? tab.label : null;
 }
 
 /** تبويبات المحور الخاصة بالمسار الحالي، إن وُجدت. */
