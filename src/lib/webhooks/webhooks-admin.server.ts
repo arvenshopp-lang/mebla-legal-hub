@@ -12,6 +12,7 @@ import {
   buildWebhookUrl,
   type JsonValue,
   type WebhookEndpointView,
+  type WebhookConnectionTestResult,
   type WebhookEventStatus,
   type WebhookEventView,
   type WebhookVerificationMode,
@@ -102,14 +103,24 @@ export async function readEndpoints(db: Db, origin: string): Promise<WebhookEndp
 
   const views: WebhookEndpointView[] = [];
   for (const row of rows) {
-    const [{ count: total }, { count: failed }] = await Promise.all([
+    const [{ count: total }, { count: failed }, { data: latestRows }] = await Promise.all([
       db.from("webhook_events").select("id", { count: "exact", head: true }).eq("slug", row.slug),
       db
         .from("webhook_events")
         .select("id", { count: "exact", head: true })
         .eq("slug", row.slug)
         .in("status", ["failed", "dead_letter", "unauthorized"]),
+      db
+        .from("webhook_events")
+        .select("status, received_at")
+        .eq("slug", row.slug)
+        .order("received_at", { ascending: false })
+        .limit(1),
     ]);
+    const latest = ((latestRows ?? [])[0] ?? null) as {
+      status: WebhookEventStatus;
+      received_at: string;
+    } | null;
 
     let secretHint: string | null = null;
     let secretRotatedAt: string | null = null;
@@ -143,9 +154,69 @@ export async function readEndpoints(db: Db, origin: string): Promise<WebhookEndp
       url: publicWebhookUrl(origin, row.slug),
       eventsTotal: total ?? 0,
       eventsFailed: failed ?? 0,
+      latestEventStatus: latest?.status ?? null,
+      latestEventAt: latest?.received_at ?? null,
     });
   }
   return views;
+}
+
+/** يفحص المسار المنشور بنفس عقد Whats Line، دون إعادة السر أو الرابط للمتصفح. */
+export async function testEndpointConnection(
+  db: Db,
+  endpointId: string,
+): Promise<WebhookConnectionTestResult> {
+  const { data } = await db
+    .from("webhook_endpoints")
+    .select("id, slug, signing_secret, verification_mode, signature_header, is_enabled")
+    .eq("id", endpointId)
+    .maybeSingle();
+  const row = data as {
+    id: string;
+    slug: string;
+    signing_secret: string | null;
+    verification_mode: WebhookVerificationMode;
+    signature_header: string;
+    is_enabled: boolean;
+  } | null;
+  if (!row) throw new Error("المزوّد غير موجود.");
+  if (!row.is_enabled) throw new Error("فعّل استقبال الأحداث قبل فحص الاتصال.");
+  if (!row.signing_secret) throw new Error("ولّد سرّ التحقق قبل فحص الاتصال.");
+
+  const secret = await IntegrationSecretVault.getSecretServerSide(
+    row.signing_secret,
+    WEBHOOK_SECRET_FIELD,
+  );
+  if (!secret) throw new Error("تعذّر قراءة سرّ التحقق من الخزنة الآمنة.");
+
+  const url = buildWebhookUrl(row.slug, row.verification_mode === "url_token" ? secret : null);
+  const headers: Record<string, string> = {
+    "content-type": "application/x-www-form-urlencoded",
+    "user-agent": "Mehla-Webhook-Connection-Test/1.0",
+  };
+  if (row.verification_mode === "shared_secret") headers[row.signature_header] = secret;
+
+  const testedAt = new Date().toISOString();
+  let status = 0;
+  let ok = false;
+  try {
+    const response = await fetch(url, { method: "POST", headers, body: "" });
+    status = response.status;
+    ok = response.status === 200;
+  } catch {
+    ok = false;
+  }
+
+  const message = ok
+    ? "تم الوصول إلى المسار المنشور والتحقق من المفتاح بنجاح."
+    : status > 0
+      ? `رفض المسار المنشور الفحص برمز HTTP ${status}. أعد توليد الرابط الكامل وانشر آخر نسخة.`
+      : "تعذّر الوصول إلى المسار المنشور. تحقق من النطاق والنشر.";
+  await db
+    .from("webhook_endpoints")
+    .update({ last_error: ok ? null : message })
+    .eq("id", row.id);
+  return { ok, status, testedAt, message };
 }
 
 export async function readEvents(

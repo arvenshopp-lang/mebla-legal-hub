@@ -79,6 +79,15 @@ export type WebhookEndpointView = {
   url: string;
   eventsTotal: number;
   eventsFailed: number;
+  latestEventStatus: WebhookEventStatus | null;
+  latestEventAt: string | null;
+};
+
+export type WebhookConnectionTestResult = {
+  ok: boolean;
+  status: number;
+  testedAt: string;
+  message: string;
 };
 
 /** قيمة قابلة للتسلسل — الحمولة المنقّحة تُعاد للمتصفح بهذا الشكل فقط. */

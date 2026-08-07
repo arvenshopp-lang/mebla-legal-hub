@@ -10,6 +10,7 @@ import {
   ShieldOff,
   Webhook as WebhookIcon,
   Eye,
+  Wifi,
 } from "lucide-react";
 import {
   Badge,
@@ -35,6 +36,7 @@ import {
   rotateWebhookSecret,
   setWebhookVerificationMode,
   setWebhookEndpointState,
+  testWebhookEndpointConnection,
 } from "@/lib/webhooks/webhooks.functions";
 import {
   ADAPTER_LABELS,
@@ -108,6 +110,7 @@ export function WebhookGatewayPanel() {
   const rotateFn = useServerFn(rotateWebhookSecret);
   const modeFn = useServerFn(setWebhookVerificationMode);
   const stateFn = useServerFn(setWebhookEndpointState);
+  const testConnectionFn = useServerFn(testWebhookEndpointConnection);
   const reprocessFn = useServerFn(reprocessWebhookEvent);
   const deadLetterFn = useServerFn(deadLetterWebhookEvent);
 
@@ -173,6 +176,16 @@ export function WebhookGatewayPanel() {
       stateFn({ data: input }),
     onSuccess: () => {
       toast.success("تم تحديث حالة المزوّد.");
+      invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const testConnection = useMutation({
+    mutationFn: (id: string) => testConnectionFn({ data: { id } }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success(result.message);
+      else toast.error(result.message);
       invalidate();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -246,7 +259,8 @@ export function WebhookGatewayPanel() {
               busy={
                 (rotate.isPending && rotate.variables === endpoint.id) ||
                 (setState.isPending && setState.variables?.id === endpoint.id) ||
-                (changeMode.isPending && changeMode.variables?.id === endpoint.id)
+                (changeMode.isPending && changeMode.variables?.id === endpoint.id) ||
+                (testConnection.isPending && testConnection.variables === endpoint.id)
               }
               onRotate={() => rotate.mutate(endpoint.id)}
               onChangeMode={(verificationMode) =>
@@ -258,6 +272,7 @@ export function WebhookGatewayPanel() {
               onToggleTestMode={() =>
                 setState.mutate({ id: endpoint.id, testMode: !endpoint.testMode })
               }
+              onTestConnection={() => testConnection.mutate(endpoint.id)}
               onFilter={() => {
                 setSlugFilter(endpoint.slug);
                 setPage(1);
@@ -668,6 +683,7 @@ function EndpointCard({
   onChangeMode,
   onToggleEnabled,
   onToggleTestMode,
+  onTestConnection,
   onFilter,
 }: {
   endpoint: WebhookEndpointView;
@@ -676,6 +692,7 @@ function EndpointCard({
   onChangeMode: (mode: WebhookVerificationMode) => void;
   onToggleEnabled: () => void;
   onToggleTestMode: () => void;
+  onTestConnection: () => void;
   onFilter: () => void;
 }) {
   const urlToken = endpoint.verificationMode === "url_token";
@@ -707,14 +724,16 @@ function EndpointCard({
           >
             {endpoint.url}
           </code>
-          <Btn
-            variant="ghost"
-            size="icon"
-            aria-label="نسخ رابط الاستقبال"
-            onClick={() => copyToClipboard(endpoint.url, "تم نسخ الرابط.")}
-          >
-            <Copy className="h-4 w-4" aria-hidden />
-          </Btn>
+          {!urlToken && (
+            <Btn
+              variant="ghost"
+              size="icon"
+              aria-label="نسخ رابط الاستقبال"
+              onClick={() => copyToClipboard(endpoint.url, "تم نسخ الرابط.")}
+            >
+              <Copy className="h-4 w-4" aria-hidden />
+            </Btn>
+          )}
         </div>
         {urlToken ? (
           <p className="text-caption mt-1.5">
@@ -760,12 +779,36 @@ function EndpointCard({
           <dd>{endpoint.lastEventAt ? fmtDateTime(endpoint.lastEventAt) : "—"}</dd>
         </div>
         <div>
-          <dt className="text-caption">أحداث / فاشلة</dt>
+          <dt className="text-caption">السجل التاريخي: الكل / المرفوض</dt>
           <dd className="tabular-nums">
             {endpoint.eventsTotal} / {endpoint.eventsFailed}
           </dd>
         </div>
       </dl>
+
+      <div className="mt-3 rounded-[var(--radius-m)] border border-border bg-surface p-3">
+        <p className="text-label">حالة الاتصال الحالية</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <Badge
+            tone={
+              endpoint.latestEventStatus === "processed" || endpoint.latestEventStatus === "ignored"
+                ? "green"
+                : endpoint.latestEventStatus
+                  ? "red"
+                  : "muted"
+            }
+          >
+            {endpoint.latestEventStatus === "ignored"
+              ? "فحص اتصال ناجح"
+              : endpoint.latestEventStatus
+                ? (EVENT_STATUS_LABELS[endpoint.latestEventStatus] ?? endpoint.latestEventStatus)
+                : "لم تُفحص"}
+          </Badge>
+          {endpoint.latestEventAt && (
+            <span className="text-caption">{fmtDateTime(endpoint.latestEventAt)}</span>
+          )}
+        </div>
+      </div>
 
       {endpoint.lastError && (
         <p className="mt-3 rounded-[var(--radius-m)] bg-danger/10 p-2.5 text-[12px] text-danger">
@@ -777,6 +820,14 @@ function EndpointCard({
         <Btn variant="outline" loading={busy} onClick={onRotate}>
           <KeyRound className="h-4 w-4" aria-hidden />
           {endpoint.hasSecret ? "تدوير السرّ" : "توليد السرّ"}
+        </Btn>
+        <Btn
+          variant="outline"
+          loading={busy}
+          disabled={!endpoint.isEnabled || !endpoint.hasSecret}
+          onClick={onTestConnection}
+        >
+          <Wifi className="h-4 w-4" aria-hidden /> فحص الاتصال المنشور
         </Btn>
         <Btn
           variant={endpoint.isEnabled ? "outline" : "primary"}
