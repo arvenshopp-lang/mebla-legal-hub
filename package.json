@@ -13,7 +13,10 @@
     "security:check": "bun scripts/security-guardrails.ts",
     "security:db": "bun scripts/security-guardrails-db.ts",
     "rbac:matrix": "bun scripts/rbac-matrix.ts",
-    "security:all": "bun run security:check && bun run security:db && bun run rbac:matrix"
+    "rbac:nav": "bun scripts/rbac-nav-check.ts",
+    "rbac:nav:expect": "bun scripts/rbac-nav-expect.ts --pretty",
+    "rbac:nav:e2e": "python3 scripts/e2e/rbac_nav_e2e.py",
+    "security:all": "bun run security:check && bun run security:db && bun run rbac:matrix && bun run rbac:nav"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
