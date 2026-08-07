@@ -65,7 +65,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     id: "ops",
     label: "التشغيل",
     items: [
-      { to: "/mehla-admin", label: "لوحة المؤشرات", Icon: Gauge },
+      { to: "/mehla-admin", label: "مركز القيادة", Icon: Gauge },
       { to: "/mehla-admin/users", label: "المستخدمون", Icon: Users, permission: "users.read" },
       {
         to: "/mehla-admin/organizations",
@@ -115,8 +115,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   },
   {
     id: "comms",
-    label: "المراسلات",
+    label: "المراسلات والدعم",
     items: [
+      {
+        to: "/mehla-admin/support",
+        label: "مركز الدعم",
+        Icon: LifeBuoy,
+        permission: "tickets.view",
+      },
       {
         to: "/mehla-admin/mail",
         label: "مركز البريد",
@@ -144,18 +150,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: "مركز التكاملات",
         Icon: Plug,
         permission: "integrations.read",
-      },
-    ],
-  },
-  {
-    id: "support",
-    label: "الدعم",
-    items: [
-      {
-        to: "/mehla-admin/support",
-        label: "مركز الدعم",
-        Icon: LifeBuoy,
-        permission: "tickets.view",
       },
     ],
   },

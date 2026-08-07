@@ -1,54 +1,54 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
-  Users,
-  CreditCard,
+  Activity,
   AlertTriangle,
-  Clock,
-  Wallet,
-  LifeBuoy,
-  CheckCircle2,
   Building2,
-  TrendingUp,
-  Percent,
-  FileText,
-  HardDrive,
-  MessageSquare,
-  ShieldAlert,
-  Database,
-  Mail,
-  Repeat,
-  UserCheck,
-  Gauge,
-  Ban,
+  CreditCard,
+  Inbox,
+  LifeBuoy,
+  Plug,
   Receipt,
+  TrendingUp,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
-import { getPlatformMetrics, getPlatformOverview } from "@/lib/admin.functions";
+import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { getPlatformMetrics } from "@/lib/admin.functions";
 import { getSystemHealth } from "@/lib/admin-ops.functions";
-import { getActivityOverview } from "@/lib/admin-console.functions";
-import { fmtBytes, fmtNumber } from "@/lib/admin-console.shared";
 import {
-  Badge,
-  Btn,
-  ErrorBlock,
-  FormField,
-  inputCls,
-  SectionCard,
-  StatsSkeleton,
-} from "@/lib/list-utils";
-import { fmtDateTime } from "@/lib/enums";
+  getActivityOverview,
+  getGrowthSeries,
+  getJobsOverview,
+  getServiceHealth,
+} from "@/lib/admin-console.functions";
+import { fmtMoney, fmtNumber } from "@/lib/admin-console.shared";
+import { Btn, FormField, inputCls, SectionCard, StatsSkeleton } from "@/lib/list-utils";
+import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { METRIC_RANGES, resolveRange, type MetricRangeId } from "@/lib/admin-metrics.shared";
+import {
+  deriveAlerts,
+  deriveHealthRows,
+  summarizeIntegrations,
+} from "@/lib/admin-command-center.shared";
+import {
+  AlertsList,
+  HealthList,
+  Kpi,
+  Sparkline,
+  SummaryRows,
+  Widget,
+} from "@/components/admin/command-center/widgets";
 
 export const Route = createFileRoute("/mehla-admin/")({
   head: () => ({
     meta: [
-      { title: "لوحة إدارة منصة مِهلة" },
+      { title: "مركز قيادة منصة مِهلة" },
       {
         name: "description",
-        content: "مؤشرات تشغيل منصة مِهلة القانونية: المكاتب والاشتراكات والإيرادات وحالة الخدمات.",
+        content:
+          "مركز قيادة تشغيل منصة مِهلة: ما يحتاج انتباهك، مؤشرات النمو والإيراد، وصحة الخدمات.",
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -56,108 +56,122 @@ export const Route = createFileRoute("/mehla-admin/")({
   component: AdminDashboard,
 });
 
-const num = (v: number) => new Intl.NumberFormat("ar-SA").format(Number(v ?? 0));
-const money = (v: number) =>
-  `${new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(Number(v ?? 0))} ر.س`;
-const pct = (v: number) =>
-  `${new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 1 }).format(Number(v ?? 0))}٪`;
-const gb = (bytes: number) => {
-  const mb = Number(bytes ?? 0) / 1024 / 1024;
-  return mb >= 1024 ? `${(mb / 1024).toFixed(2)} ج.ب` : `${mb.toFixed(1)} م.ب`;
-};
-
-type Tone = "default" | "success" | "warning" | "danger";
-
-function Stat({
-  label,
-  value,
-  Icon,
-  tone = "default",
-  hint,
-}: {
-  label: string;
-  value: string;
-  Icon: typeof Users;
-  tone?: Tone;
-  hint?: string;
-}) {
-  const toneCls = {
-    default: "text-primary bg-primary/10",
-    success: "text-success bg-success-soft",
-    warning: "text-warning bg-warning-soft",
-    danger: "text-danger bg-danger-soft",
-  }[tone];
-  return (
-    <div className="surface-card p-4">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-        <span
-          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-m)] ${toneCls}`}
-        >
-          <Icon className="h-4 w-4" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] text-muted-foreground">{label}</p>
-          <p className="truncate text-[18px] font-bold tabular-nums">{value}</p>
-          {hint && <p className="truncate text-[11px] text-muted-foreground">{hint}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
+const GROWTH_RANGES = [
+  { days: 7, label: "٧ أيام" },
+  { days: 30, label: "٣٠ يوماً" },
+] as const;
 
 function AdminDashboard() {
+  const { can } = usePlatformAdmin();
+  const canMonitor = can("monitoring.read");
+
   const [range, setRange] = useState<MetricRangeId>("30d");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [growthDays, setGrowthDays] = useState<number>(30);
 
-  const window = useMemo(() => resolveRange(range, { from, to }), [range, from, to]);
+  const period = useMemo(() => resolveRange(range, { from, to }), [range, from, to]);
   const ready = range !== "custom" || (!!from && !!to);
 
   const fetchMetrics = useServerFn(getPlatformMetrics);
-  const fetchOverview = useServerFn(getPlatformOverview);
-  const fetchHealth = useServerFn(getSystemHealth);
   const fetchActivity = useServerFn(getActivityOverview);
+  const fetchHealth = useServerFn(getSystemHealth);
+  const fetchServiceHealth = useServerFn(getServiceHealth);
+  const fetchJobs = useServerFn(getJobsOverview);
+  const fetchGrowth = useServerFn(getGrowthSeries);
 
   const metricsQ = useQuery({
-    queryKey: ["platform-metrics", window.from, window.to],
-    queryFn: () => fetchMetrics({ data: { from: window.from, to: window.to } }),
+    queryKey: ["platform-metrics", period.from, period.to],
+    queryFn: () => fetchMetrics({ data: { from: period.from, to: period.to } }),
     enabled: ready,
     staleTime: 30_000,
   });
-  const overviewQ = useQuery({
-    queryKey: ["platform-overview"],
-    queryFn: () => fetchOverview(),
+  const activityQ = useQuery({
+    queryKey: ["admin-activity-overview"],
+    queryFn: () => fetchActivity({ data: undefined }),
     staleTime: 60_000,
+    refetchInterval: 120_000,
   });
   const healthQ = useQuery({
     queryKey: ["admin-health"],
     queryFn: () => fetchHealth({ data: undefined }),
     refetchInterval: 120_000,
   });
-  const activityQ = useQuery({
-    queryKey: ["admin-activity-overview"],
-    queryFn: () => fetchActivity({ data: undefined }),
+  const serviceQ = useQuery({
+    queryKey: ["admin-service-health"],
+    queryFn: () => fetchServiceHealth({ data: undefined }),
+    enabled: canMonitor,
     refetchInterval: 120_000,
   });
-  const act = activityQ.data;
+  const jobsQ = useQuery({
+    queryKey: ["admin-jobs-overview"],
+    queryFn: () => fetchJobs({ data: undefined }),
+    enabled: canMonitor,
+    refetchInterval: 120_000,
+  });
+  const growthQ = useQuery({
+    queryKey: ["admin-growth", growthDays],
+    queryFn: () => fetchGrowth({ data: { days: growthDays } }),
+    enabled: canMonitor,
+    staleTime: 120_000,
+  });
 
   const m = metricsQ.data;
+  const act = activityQ.data;
+  const svc = serviceQ.data;
+  const jobs = jobsQ.data;
+
+  const alerts = useMemo(
+    () => deriveAlerts({ metrics: m, activity: act, health: svc, jobs }),
+    [m, act, svc, jobs],
+  );
+  const healthRows = useMemo(
+    () =>
+      deriveHealthRows({
+        health: svc,
+        jobs,
+        database: healthQ.data?.database ?? null,
+        storage: healthQ.data?.storage ?? null,
+      }),
+    [svc, jobs, healthQ.data],
+  );
+  const integrations = useMemo(() => summarizeIntegrations(svc), [svc]);
+
+  const deadJobs = (jobs?.queues ?? []).reduce((acc, q) => acc + Number(q.dead ?? 0), 0);
+  const failedMail = Number(svc?.email_transport.outbox_failed ?? 0);
+  const openFailures = Number(svc?.reliability.failures_open ?? 0);
+  const series = growthQ.data?.series ?? [];
+
+  const alertsLoading =
+    metricsQ.isLoading ||
+    activityQ.isLoading ||
+    (canMonitor && (serviceQ.isLoading || jobsQ.isLoading));
+  const alertsError = metricsQ.isError || activityQ.isError || serviceQ.isError || jobsQ.isError;
 
   return (
     <AdminShell
-      title="لوحة المؤشرات"
-      description="كل رقم في هذه الصفحة محسوب من قاعدة البيانات مباشرة خلال النطاق الزمني المحدد."
+      title="مركز القيادة"
+      description="ما يحتاج انتباهك أولاً، ثم المؤشرات والاتجاهات وصحة الخدمات — كل رقم محسوب من قاعدة البيانات."
       actions={
         <Btn
           variant="outline"
           size="sm"
-          loading={metricsQ.isFetching}
-          onClick={() => metricsQ.refetch()}
+          loading={metricsQ.isFetching || serviceQ.isFetching}
+          onClick={() => {
+            void metricsQ.refetch();
+            void activityQ.refetch();
+            void healthQ.refetch();
+            if (canMonitor) {
+              void serviceQ.refetch();
+              void jobsQ.refetch();
+            }
+          }}
         >
           تحديث
         </Btn>
       }
     >
+      {/* ------------------------------------------------------ النطاق الزمني */}
       <div className="surface-card mb-5 p-4">
         <div className="flex flex-wrap gap-2" role="group" aria-label="النطاق الزمني">
           {METRIC_RANGES.map((r) => (
@@ -166,7 +180,7 @@ function AdminDashboard() {
               type="button"
               onClick={() => setRange(r.id)}
               aria-pressed={range === r.id}
-              className={`h-9 rounded-[var(--radius-m)] px-3 text-[13px] font-medium transition-colors ${
+              className={`min-h-11 rounded-[var(--radius-m)] px-3 text-[13px] font-medium transition-colors ${
                 range === r.id
                   ? "bg-primary text-primary-foreground"
                   : "border border-border bg-surface text-foreground hover:bg-surface-muted"
@@ -206,433 +220,385 @@ function AdminDashboard() {
         )}
       </div>
 
-      {act && (
-        <SectionCard
-          title="النشاط الفعلي"
-          description={`آخر قراءة: ${fmtDateTime(act.generated_at)} — بتوقيت الرياض`}
-          className="mb-6"
-        >
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat
-              label="مستخدمون نشطون اليوم"
-              value={fmtNumber(act.active_users.today)}
-              Icon={UserCheck}
-              tone="success"
-              hint={`${fmtNumber(act.active_users.events_today)} حركة اليوم`}
-            />
-            <Stat
-              label="نشطون أسبوعياً / شهرياً"
-              value={`${fmtNumber(act.active_users.week)} / ${fmtNumber(act.active_users.month)}`}
-              Icon={Users}
-            />
-            <Stat
-              label="مكاتب نشطة اليوم"
-              value={fmtNumber(act.active_organizations.today)}
-              Icon={Building2}
-              hint={`${fmtNumber(act.active_organizations.month)} خلال الشهر`}
-            />
-            <Stat
-              label="تذاكر دعم مفتوحة"
-              value={fmtNumber(act.tickets.open)}
-              Icon={LifeBuoy}
-              tone={act.tickets.breached > 0 ? "danger" : "default"}
-              hint={`${fmtNumber(act.tickets.breached)} تجاوزت المهلة`}
-            />
-            <Stat
-              label="جلسات فريق التشغيل الآن"
-              value={fmtNumber(act.sessions.staff_online)}
-              Icon={Gauge}
-              tone={act.sessions.staff_online > 0 ? "success" : "default"}
-              hint={`${fmtNumber(act.sessions.staff_active_24h)} خلال ٢٤ ساعة · ${fmtNumber(act.sessions.staff_devices)} جهازاً موثوقاً`}
-            />
-            <Stat
-              label="آخر ظهور لموظف تشغيل"
-              value={
-                act.sessions.last_staff_seen_at ? fmtDateTime(act.sessions.last_staff_seen_at) : "—"
-              }
-              Icon={UserCheck}
-            />
-            <Stat
-              label="رسائل البريد اليوم"
-              value={fmtNumber(act.email.today)}
-              Icon={Mail}
-              hint={`${fmtNumber(act.email.inbound)} وارد · ${fmtNumber(act.email.outbound)} صادر`}
-            />
-            <Stat
-              label="صناديق البريد"
-              value={fmtNumber(act.email.mailboxes)}
-              Icon={Repeat}
-              hint={
-                act.email.last_sync_at
-                  ? `آخر مزامنة: ${fmtDateTime(act.email.last_sync_at)}`
-                  : "لم تُزامن بعد"
-              }
-            />
-            <Stat
-              label="حجم المستندات"
-              value={fmtBytes(act.storage.documents_bytes + act.storage.attachments_bytes)}
-              Icon={HardDrive}
-              hint={`${fmtNumber(act.storage.documents_count)} مستنداً · ${fmtNumber(act.storage.pages_indexed)} صفحة مفهرسة`}
-            />
-            <Stat
-              label="حجم قاعدة البيانات"
-              value={fmtBytes(act.database.size_bytes)}
-              Icon={Database}
-              hint={`${fmtNumber(act.database.tables)} جدولاً`}
-            />
-          </div>
-        </SectionCard>
-      )}
-
       {!ready ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">
           حدّد تاريخ البداية والنهاية لعرض المؤشرات.
         </p>
-      ) : metricsQ.isError ? (
-        <ErrorBlock message={(metricsQ.error as Error).message} />
-      ) : !m ? (
-        <StatsSkeleton count={12} />
       ) : (
         <div className="space-y-6">
-          <SectionCard
-            title="المكاتب"
-            description={`${num(m.organizations.new_in_range)} مكتب جديد خلال النطاق`}
-          >
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Stat label="إجمالي المكاتب" value={num(m.organizations.total)} Icon={Building2} />
-              <Stat
-                label="مكاتب نشطة"
-                value={num(m.organizations.active)}
-                Icon={CheckCircle2}
-                tone="success"
-              />
-              <Stat
-                label="مكاتب موقوفة"
-                value={num(m.organizations.suspended)}
-                Icon={Ban}
-                tone="danger"
-              />
-              <Stat
-                label="مكاتب تجريبية"
-                value={num(m.organizations.trial)}
-                Icon={Clock}
-                tone="warning"
-              />
-              <Stat
-                label="بلا اشتراك نشط"
-                value={num(m.organizations.no_subscription)}
-                Icon={AlertTriangle}
-                tone="warning"
-              />
-              <Stat
-                label="مكاتب جديدة"
-                value={num(m.organizations.new_in_range)}
-                Icon={TrendingUp}
-              />
-              <Stat label="إجمالي المستخدمين" value={num(m.users.total)} Icon={Users} />
-              <Stat label="تسجيلات جديدة" value={num(m.users.new_in_range)} Icon={UserCheck} />
-            </div>
-          </SectionCard>
-
-          <SectionCard title="المستخدمون والأمان">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Stat
-                label="مستخدمون نشطون"
-                value={num(m.users.active)}
-                Icon={CheckCircle2}
-                tone="success"
-              />
-              <Stat
-                label="مستخدمون موقوفون"
-                value={num(m.users.suspended)}
-                Icon={Ban}
-                tone="danger"
-              />
-              <Stat label="جوال موثّق" value={num(m.users.phone_verified)} Icon={MessageSquare} />
-              <Stat
-                label="التحقق بخطوتين مُفعّل"
-                value={num(m.users.mfa_enabled)}
-                Icon={ShieldAlert}
-              />
-              <Stat
-                label="بدون مكتب"
-                value={num(m.users.without_org)}
-                Icon={Users}
-                tone="warning"
-              />
-              <Stat
-                label="أعطال تقنية"
-                value={num(m.reliability.failures_in_range)}
-                Icon={AlertTriangle}
-                tone={m.reliability.failures_in_range > 0 ? "danger" : "success"}
-              />
-              <Stat
-                label="أعطال المصادقة"
-                value={num(m.reliability.auth_failures_in_range)}
-                Icon={ShieldAlert}
-                tone={m.reliability.auth_failures_in_range > 0 ? "warning" : "success"}
-              />
-              <Stat
-                label="عمليات إدارية مُدقّقة"
-                value={num(m.reliability.audit_events_in_range)}
-                Icon={FileText}
-              />
-            </div>
-            {m.reliability.failures_by_surface.length > 0 && (
-              <ul className="mt-4 flex flex-wrap gap-2">
-                {m.reliability.failures_by_surface.map((s) => (
-                  <li key={s.label}>
-                    <Badge tone="red">
-                      {s.label}: {num(s.count)}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-
-          <SectionCard title="الاشتراكات">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Stat
-                label="اشتراكات نشطة"
-                value={num(m.subscriptions.active)}
-                Icon={CheckCircle2}
-                tone="success"
-              />
-              <Stat
-                label="تجريبية سارية"
-                value={num(m.subscriptions.trial)}
-                Icon={Clock}
-                tone="warning"
-              />
-              <Stat
-                label="تنتهي خلال ١٤ يوماً"
-                value={num(m.subscriptions.expiring_14d)}
-                Icon={Clock}
-                tone="warning"
-              />
-              <Stat
-                label="منتهية"
-                value={num(m.subscriptions.expired)}
-                Icon={AlertTriangle}
-                tone="danger"
-              />
-              <Stat label="ملغاة" value={num(m.subscriptions.cancelled)} Icon={Ban} />
-              <Stat
-                label="موقوفة"
-                value={num(m.subscriptions.suspended)}
-                Icon={Ban}
-                tone="danger"
-              />
-              <Stat label="تجديد تلقائي" value={num(m.subscriptions.auto_renew)} Icon={Repeat} />
-              <Stat
-                label="اشتراكات جديدة"
-                value={num(m.subscriptions.new_in_range)}
-                Icon={CreditCard}
-              />
-            </div>
-          </SectionCard>
-
-          {m.revenue ? (
-            <SectionCard
-              title="الإيرادات ومؤشرات النمو"
-              description="محسوبة من الاشتراكات والفواتير المسجّلة"
+          {/* ------------------------------------------------ المؤشرات الثمانية */}
+          {metricsQ.isLoading ? (
+            <StatsSkeleton count={8} />
+          ) : metricsQ.isError || !m ? (
+            <Widget
+              title="المؤشرات الرئيسية"
+              isError
+              errorMessage={(metricsQ.error as Error | null)?.message}
+              onRetry={() => void metricsQ.refetch()}
             >
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <Stat label="إيراد النطاق" value={money(m.revenue.in_range)} Icon={Wallet} />
-                <Stat label="إيراد اليوم" value={money(m.revenue.today)} Icon={Wallet} />
-                <Stat label="إيراد الشهر" value={money(m.revenue.month)} Icon={Wallet} />
-                <Stat label="إيراد السنة" value={money(m.revenue.year)} Icon={CreditCard} />
-                <Stat
-                  label="MRR"
-                  value={money(m.revenue.mrr)}
-                  Icon={TrendingUp}
-                  tone="success"
-                  hint={`${num(m.revenue.paying_organizations)} مكتب مدفوع`}
-                />
-                <Stat label="ARR" value={money(m.revenue.arr)} Icon={TrendingUp} tone="success" />
-                <Stat label="ARPU" value={money(m.revenue.arpu)} Icon={Gauge} />
-                <Stat
-                  label="معدل التسرب"
-                  value={pct(m.revenue.churn_rate)}
-                  Icon={Percent}
-                  tone={m.revenue.churn_rate > 5 ? "danger" : "success"}
-                  hint={`${num(m.revenue.churned_in_range)} اشتراك مفقود`}
-                />
-                <Stat
-                  label="تحويل التجربة"
-                  value={pct(m.revenue.trial_conversion_rate)}
-                  Icon={Percent}
-                  hint={`${num(m.revenue.trials_in_range)} تجربة جديدة`}
-                />
-                <Stat
-                  label="فواتير مدفوعة"
-                  value={num(m.revenue.invoices.paid)}
-                  Icon={Receipt}
-                  tone="success"
-                  hint={money(m.revenue.invoices.paid_amount)}
-                />
-                <Stat
-                  label="فواتير معلّقة"
-                  value={num(m.revenue.invoices.pending)}
-                  Icon={Receipt}
-                  tone="warning"
-                  hint={money(m.revenue.invoices.outstanding_amount)}
-                />
-                <Stat
-                  label="فواتير متأخرة"
-                  value={num(m.revenue.invoices.overdue)}
-                  Icon={AlertTriangle}
-                  tone={m.revenue.invoices.overdue > 0 ? "danger" : "success"}
-                />
-              </div>
-            </SectionCard>
+              <span />
+            </Widget>
           ) : (
-            <SectionCard title="الإيرادات">
-              <p className="py-4 text-center text-xs text-muted-foreground">
-                مؤشرات الإيرادات محجوبة عنك — تتطلب صلاحية «التقارير المالية».
-              </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Kpi
+                label="مكاتب نشطة"
+                value={fmtNumber(m.organizations.active)}
+                hint={`${fmtNumber(m.organizations.new_in_range)} مكتب جديد خلال النطاق`}
+                Icon={Building2}
+                tone="success"
+                to="/mehla-admin/organizations"
+              />
+              <Kpi
+                label="اشتراكات نشطة"
+                value={fmtNumber(m.subscriptions.active)}
+                hint={`${fmtNumber(m.subscriptions.expiring_14d)} ينتهي خلال ١٤ يوماً`}
+                Icon={CreditCard}
+                tone={m.subscriptions.expiring_14d > 0 ? "warning" : "default"}
+                to="/mehla-admin/subscriptions"
+              />
+              {m.revenue && (
+                <>
+                  <Kpi
+                    label="الإيراد الشهري المتكرر MRR"
+                    value={fmtMoney(m.revenue.mrr)}
+                    hint={`${fmtNumber(m.revenue.paying_organizations)} مكتب مدفوع`}
+                    Icon={TrendingUp}
+                    tone="success"
+                    to="/mehla-admin/revenue"
+                  />
+                  <Kpi
+                    label="الإيراد السنوي المتوقع ARR"
+                    value={fmtMoney(m.revenue.arr)}
+                    hint={`إيراد النطاق: ${fmtMoney(m.revenue.in_range)}`}
+                    Icon={TrendingUp}
+                    tone="success"
+                    to="/mehla-admin/revenue"
+                  />
+                  <Kpi
+                    label="فواتير متأخرة"
+                    value={fmtNumber(m.revenue.invoices.overdue)}
+                    hint={`مستحق غير مسدّد: ${fmtMoney(m.revenue.invoices.outstanding_amount)}`}
+                    Icon={Receipt}
+                    tone={m.revenue.invoices.overdue > 0 ? "danger" : "success"}
+                    to="/mehla-admin/billing"
+                  />
+                </>
+              )}
+              <Kpi
+                label="تذاكر خارج المهلة"
+                value={fmtNumber(act?.tickets.breached ?? m.support.open)}
+                hint={`${fmtNumber(m.support.open)} مفتوحة · ${fmtNumber(m.support.unassigned)} بلا مسؤول`}
+                Icon={LifeBuoy}
+                tone={(act?.tickets.breached ?? 0) > 0 ? "danger" : "success"}
+                to="/mehla-admin/support"
+              />
+              {canMonitor && (
+                <>
+                  <Kpi
+                    label="رسائل بريد فاشلة"
+                    value={fmtNumber(failedMail)}
+                    hint={`${fmtNumber(svc?.email_transport.outbox_queued ?? 0)} في الانتظار · ${fmtNumber(deadJobs)} مهمة مهملة`}
+                    Icon={Inbox}
+                    tone={failedMail > 0 || deadJobs > 0 ? "danger" : "success"}
+                    to="/mehla-admin/mail"
+                  />
+                  <Kpi
+                    label="أعطال تقنية مفتوحة"
+                    value={fmtNumber(openFailures)}
+                    hint={`${fmtNumber(m.reliability.failures_in_range)} عطل خلال النطاق`}
+                    Icon={AlertTriangle}
+                    tone={openFailures > 0 ? "danger" : "success"}
+                    to="/mehla-admin/failures"
+                  />
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ----------------------------------------------- تحتاج انتباهك */}
+          <Widget
+            title="تحتاج انتباهك"
+            description="تنبيهات مشتقة من الحالة الفعلية فقط، مرتّبة حسب الخطورة، ولكل تنبيه إجراء."
+            isLoading={alertsLoading}
+            isError={alertsError && alerts.length === 0}
+            errorMessage="تعذّر احتساب التنبيهات. حدّث الصفحة أو راجع مركز المراقبة."
+            onRetry={() => {
+              void metricsQ.refetch();
+              void activityQ.refetch();
+              if (canMonitor) {
+                void serviceQ.refetch();
+                void jobsQ.refetch();
+              }
+            }}
+          >
+            <AlertsList alerts={alerts} />
+          </Widget>
+
+          {/* -------------------------------------------------------- الاتجاهات */}
+          {canMonitor && (
+            <SectionCard
+              title="الاتجاهات"
+              description="سلاسل يومية فعلية من قاعدة البيانات."
+              actions={
+                <div className="flex flex-wrap gap-2" role="group" aria-label="مدى الاتجاهات">
+                  {GROWTH_RANGES.map((r) => (
+                    <Btn
+                      key={r.days}
+                      size="sm"
+                      variant={growthDays === r.days ? "primary" : "outline"}
+                      onClick={() => setGrowthDays(r.days)}
+                    >
+                      {r.label}
+                    </Btn>
+                  ))}
+                </div>
+              }
+            >
+              {growthQ.isLoading ? (
+                <div className="h-32 animate-pulse rounded-[var(--radius-m)] bg-surface-muted motion-reduce:animate-none" />
+              ) : growthQ.isError || !growthQ.data ? (
+                <div className="grid gap-3 p-2 text-center">
+                  <p className="text-[13px] text-muted-foreground">تعذّر قراءة سلاسل النمو.</p>
+                  <div className="flex justify-center">
+                    <Btn size="sm" variant="outline" onClick={() => void growthQ.refetch()}>
+                      إعادة المحاولة
+                    </Btn>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="min-w-0">
+                    <p className="mb-2 text-[12.5px] font-semibold">مكاتب واشتراكات جديدة</p>
+                    <Sparkline
+                      label="المكاتب الجديدة"
+                      points={series.map((p) => ({ day: fmtDate(p.day), value: p.organizations }))}
+                      format={fmtNumber}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-2 text-[12.5px] font-semibold">الإيراد اليومي</p>
+                    <Sparkline
+                      label="الإيراد"
+                      points={series.map((p) => ({ day: fmtDate(p.day), value: p.revenue }))}
+                      format={fmtMoney}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-2 text-[12.5px] font-semibold">تذاكر الدعم</p>
+                    <Sparkline
+                      label="تذاكر الدعم"
+                      points={series.map((p) => ({ day: fmtDate(p.day), value: p.tickets }))}
+                      format={fmtNumber}
+                    />
+                  </div>
+                </div>
+              )}
             </SectionCard>
           )}
 
-          <SectionCard
-            title="الاستخدام التشغيلي"
-            description="أحجام البيانات الفعلية داخل المكاتب (عدّادات فقط، بلا أي محتوى)"
-          >
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Stat
-                label="إجمالي القضايا"
-                value={num(m.usage.cases)}
-                Icon={FileText}
-                hint={`${num(m.usage.cases_in_range)} خلال النطاق`}
-              />
-              <Stat label="إجمالي العملاء" value={num(m.usage.clients)} Icon={Users} />
-              <Stat
-                label="إجمالي المستندات"
-                value={num(m.usage.documents)}
-                Icon={FileText}
-                hint={`${num(m.usage.documents_in_range)} خلال النطاق`}
-              />
-              <Stat label="حجم التخزين" value={gb(m.usage.storage_bytes)} Icon={HardDrive} />
-              <Stat label="صفحات OCR" value={num(m.usage.ocr_pages_in_range)} Icon={FileText} />
-              <Stat label="جلسات مُسجّلة" value={num(m.usage.hearings_in_range)} Icon={Clock} />
-              <Stat
-                label="رسائل SMS ناجحة"
-                value={num(m.messaging.sms_sent_in_range)}
-                Icon={MessageSquare}
-                tone="success"
-              />
-              <Stat
-                label="رسائل SMS فاشلة"
-                value={num(m.messaging.sms_failed_in_range)}
-                Icon={MessageSquare}
-                tone={m.messaging.sms_failed_in_range > 0 ? "danger" : "success"}
-              />
-              <Stat
-                label="إشعارات داخلية"
-                value={num(m.messaging.notifications_in_range)}
-                Icon={Mail}
-              />
-              <Stat
-                label="تعميمات مُرسلة"
-                value={num(m.messaging.broadcasts_in_range)}
-                Icon={Mail}
-              />
-              <Stat
-                label="تذاكر مفتوحة"
-                value={num(m.support.open)}
-                Icon={LifeBuoy}
-                tone={m.support.open > 0 ? "warning" : "success"}
-                hint={`${num(m.support.unassigned)} بلا مسؤول`}
-              />
-              <Stat
-                label="متوسط أول رد"
-                value={`${num(m.support.avg_first_reply_hours)} ساعة`}
-                Icon={Clock}
-                hint={`${num(m.support.new_in_range)} تذكرة جديدة`}
-              />
-            </div>
-          </SectionCard>
-
+          {/* --------------------------------------- الصحة التشغيلية والتكاملات */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <SectionCard title="آخر عمليات التسجيل">
-              {overviewQ.isLoading ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">جاري التحميل…</p>
-              ) : (overviewQ.data?.recentSignups ?? []).length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">
-                  لا توجد تسجيلات بعد.
+            <Widget
+              title="الصحة التشغيلية"
+              description="فحص حقيقي بزمن استجابة مقيس — التفاصيل في مركز المراقبة."
+              isLoading={healthQ.isLoading || (canMonitor && serviceQ.isLoading)}
+              isError={healthQ.isError && !healthQ.data}
+              errorMessage="تعذّر فحص حالة الخدمات."
+              onRetry={() => void healthQ.refetch()}
+            >
+              <div className="space-y-3">
+                <HealthList rows={healthRows} />
+                <p className="text-[11px] text-muted-foreground">
+                  {healthQ.data
+                    ? `آخر فحص: ${fmtDateTime(healthQ.data.checkedAt)}`
+                    : "لم يُكتمل الفحص بعد."}
+                </p>
+                <Link
+                  to="/mehla-admin/monitoring"
+                  className="inline-flex min-h-11 items-center rounded-[var(--radius-m)] border border-border px-3 text-[12.5px] font-semibold transition hover:bg-surface-muted"
+                >
+                  عرض مركز المراقبة
+                </Link>
+              </div>
+            </Widget>
+
+            <Widget
+              title="جاهزية التكاملات"
+              description="«غير مهيأ» حالة انتظار ربط، ولا تُحسب عطلاً."
+              isLoading={canMonitor && serviceQ.isLoading}
+              isError={canMonitor && serviceQ.isError}
+              errorMessage="تعذّر قراءة حالة التكاملات."
+              onRetry={() => void serviceQ.refetch()}
+            >
+              {!canMonitor ? (
+                <p className="py-4 text-center text-[12.5px] text-muted-foreground">
+                  حالة التكاملات محجوبة عنك — تتطلب صلاحية «مراقبة النظام».
                 </p>
               ) : (
-                <ul className="divide-y divide-border">
-                  {overviewQ.data!.recentSignups.map(
-                    (u: {
-                      id: string;
-                      full_name: string;
-                      email: string | null;
-                      created_at: string;
-                    }) => (
-                      <li
-                        key={u.id}
-                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] font-medium">{u.full_name}</p>
-                          <p className="truncate text-[11px] text-muted-foreground">
-                            {u.email ?? "—"}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">
-                          {fmtDateTime(u.created_at)}
-                        </span>
-                      </li>
-                    ),
+                <div className="space-y-3">
+                  <SummaryRows
+                    to="/mehla-admin/integrations"
+                    cta="فتح مركز التكاملات"
+                    rows={[
+                      {
+                        label: "مهيأة وتعمل",
+                        value: fmtNumber(integrations.healthy),
+                        tone: "success",
+                      },
+                      {
+                        label: "تحتاج انتباهاً",
+                        value: fmtNumber(integrations.attention),
+                        tone: integrations.attention > 0 ? "danger" : "default",
+                      },
+                      { label: "غير مهيأة", value: fmtNumber(integrations.unconfigured) },
+                    ]}
+                  />
+                  {integrations.pending.length > 0 && (
+                    <ul className="flex flex-wrap gap-2">
+                      {integrations.pending.map((i) => (
+                        <li
+                          key={i.key}
+                          className="flex min-h-8 items-center gap-1.5 rounded-full border border-dashed border-border px-2.5 text-[11.5px] text-muted-foreground"
+                        >
+                          <Plug className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{i.label}</span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </ul>
+                </div>
               )}
-            </SectionCard>
-
-            <SectionCard title="حالة الخدمات" description="فحص حقيقي بزمن استجابة مقيس">
-              {healthQ.isLoading ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">جاري الفحص…</p>
-              ) : healthQ.isError || !healthQ.data ? (
-                <ErrorBlock message="تعذّر فحص حالة الخدمات." />
-              ) : (
-                <ul className="space-y-2">
-                  {[
-                    {
-                      label: "قاعدة البيانات",
-                      ok: healthQ.data.database.ok,
-                      hint: `${healthQ.data.database.latencyMs} م.ث`,
-                      Icon: Database,
-                    },
-                    {
-                      label: "التخزين",
-                      ok: healthQ.data.storage.ok,
-                      hint: `${healthQ.data.storage.latencyMs} م.ث`,
-                      Icon: HardDrive,
-                    },
-                  ].map((s) => (
-                    <li
-                      key={s.label}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-m)] border border-border px-3 py-2.5"
-                    >
-                      <span className="flex min-w-0 items-center gap-2 text-[13px]">
-                        <s.Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                        <span className="truncate">{s.label}</span>
-                      </span>
-                      <Badge tone={s.ok ? "green" : "red"}>
-                        {s.ok ? `تعمل · ${s.hint}` : "متعطلة"}
-                      </Badge>
-                    </li>
-                  ))}
-                  <li className="pt-1 text-[11px] text-muted-foreground">
-                    آخر فحص: {fmtDateTime(healthQ.data.checkedAt)} · تفاصيل أوسع في صفحة مراقبة
-                    النظام.
-                  </li>
-                </ul>
-              )}
-            </SectionCard>
+            </Widget>
           </div>
+
+          {/* --------------------------------------------------------- الملخصات */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Widget
+              title="ملخص المالية"
+              isLoading={metricsQ.isLoading}
+              isError={metricsQ.isError}
+              onRetry={() => void metricsQ.refetch()}
+            >
+              {m?.revenue ? (
+                <SummaryRows
+                  to="/mehla-admin/billing"
+                  cta="فتح المركز المالي"
+                  rows={[
+                    { label: "MRR", value: fmtMoney(m.revenue.mrr), tone: "success" },
+                    { label: "ARR", value: fmtMoney(m.revenue.arr) },
+                    { label: "إيراد النطاق", value: fmtMoney(m.revenue.in_range) },
+                    {
+                      label: "مستحق غير مسدّد",
+                      value: fmtMoney(m.revenue.invoices.outstanding_amount),
+                      tone: m.revenue.invoices.outstanding_amount > 0 ? "warning" : "default",
+                    },
+                    {
+                      label: "فواتير متأخرة",
+                      value: fmtNumber(m.revenue.invoices.overdue),
+                      tone: m.revenue.invoices.overdue > 0 ? "danger" : "success",
+                    },
+                  ]}
+                />
+              ) : (
+                <p className="py-4 text-center text-[12.5px] text-muted-foreground">
+                  المؤشرات المالية محجوبة عنك — تتطلب صلاحية «التقارير المالية».
+                </p>
+              )}
+            </Widget>
+
+            <Widget
+              title="ملخص الدعم"
+              isLoading={metricsQ.isLoading || activityQ.isLoading}
+              isError={metricsQ.isError}
+              onRetry={() => void metricsQ.refetch()}
+            >
+              {m ? (
+                <SummaryRows
+                  to="/mehla-admin/support"
+                  cta="فتح مركز الدعم"
+                  rows={[
+                    { label: "تذاكر مفتوحة", value: fmtNumber(m.support.open) },
+                    {
+                      label: "بلا مسؤول",
+                      value: fmtNumber(m.support.unassigned),
+                      tone: m.support.unassigned > 0 ? "warning" : "default",
+                    },
+                    {
+                      label: "خارج المهلة",
+                      value: fmtNumber(act?.tickets.breached ?? 0),
+                      tone: (act?.tickets.breached ?? 0) > 0 ? "danger" : "success",
+                    },
+                    {
+                      label: "متوسط أول رد",
+                      value: `${fmtNumber(m.support.avg_first_reply_hours)} ساعة`,
+                    },
+                    { label: "تذاكر جديدة خلال النطاق", value: fmtNumber(m.support.new_in_range) },
+                  ]}
+                />
+              ) : (
+                <span />
+              )}
+            </Widget>
+
+            <Widget
+              title="ملخص البريد"
+              isLoading={activityQ.isLoading || (canMonitor && serviceQ.isLoading)}
+              isError={activityQ.isError}
+              onRetry={() => void activityQ.refetch()}
+            >
+              {act ? (
+                <SummaryRows
+                  to="/mehla-admin/mail"
+                  cta="فتح مركز البريد"
+                  rows={[
+                    { label: "رسائل اليوم", value: fmtNumber(act.email.today) },
+                    { label: "صناديق البريد", value: fmtNumber(act.email.mailboxes) },
+                    {
+                      label: "في انتظار الإرسال",
+                      value: fmtNumber(svc?.email_transport.outbox_queued ?? 0),
+                    },
+                    {
+                      label: "فاشلة",
+                      value: fmtNumber(failedMail),
+                      tone: failedMail > 0 ? "danger" : "success",
+                    },
+                    {
+                      label: "آخر مزامنة",
+                      value: act.email.last_sync_at ? fmtDateTime(act.email.last_sync_at) : "—",
+                    },
+                  ]}
+                />
+              ) : (
+                <span />
+              )}
+            </Widget>
+          </div>
+
+          {/* --------------------------------------------- روابط التفاصيل الكاملة */}
+          <SectionCard
+            title="تفاصيل أوسع"
+            description="الأرقام التشغيلية التفصيلية (الاستخدام، التخزين، قاعدة البيانات، المستخدمون) في صفحاتها المخصّصة."
+          >
+            <ul className="flex flex-wrap gap-2">
+              {[
+                { to: "/mehla-admin/analytics", label: "التحليلات والنمو" },
+                { to: "/mehla-admin/monitoring", label: "مراقبة النظام" },
+                { to: "/mehla-admin/users", label: "المستخدمون" },
+                { to: "/mehla-admin/organizations", label: "المكاتب" },
+                { to: "/mehla-admin/activity", label: "سجل النشاط الموحّد" },
+              ].map((l) => (
+                <li key={l.to}>
+                  <Link
+                    to={l.to}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-m)] border border-border px-3 text-[12.5px] font-medium transition hover:bg-surface-muted"
+                  >
+                    <Activity className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
         </div>
       )}
     </AdminShell>
