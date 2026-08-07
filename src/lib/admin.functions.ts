@@ -12,6 +12,24 @@ const LIVE_SUBSCRIPTION_STATUSES = ["active", "trial"] as const;
 const DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE =
   "يوجد اشتراك نشط لهذا المكتب. ألغِ الاشتراك الحالي أو عدّله بدل إنشاء اشتراك مواز.";
 
+/** هل يوجد اشتراك حيّ آخر لنفس المكتب غير الاشتراك الحالي؟ */
+async function hasOtherLiveSubscription(
+  db: Awaited<ReturnType<Guard["admin"]>>,
+  subscription: { id: string; organization_id: string | null },
+): Promise<boolean> {
+  if (!subscription.organization_id) return false;
+  const { data } = await db
+    .from("subscriptions")
+    .select("id")
+    .eq("organization_id", subscription.organization_id)
+    .neq("id", subscription.id)
+    .in("status", [...LIVE_SUBSCRIPTION_STATUSES])
+    .is("cancelled_at", null)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 /** يحوّل خطأ تفرد الاشتراك الحيّ (23505) إلى رسالة عربية واضحة. */
 function translateSubscriptionError(
   error: { code?: string | null; message?: string | null } | null,
