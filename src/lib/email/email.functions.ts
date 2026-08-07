@@ -249,10 +249,7 @@ export const retryMailMessage = createServerFn({ method: "POST" })
     const e = await engine();
     const db = await g.admin();
     await assertMessageAccess(db, e, data.messageId, scopeOf(staff));
-    await db
-      .from("email_outbox")
-      .update({ status: "queued", next_attempt_at: new Date().toISOString() })
-      .eq("message_id", data.messageId);
+    await e.prepareManualRetry(db, data.messageId);
     const result = await e.dispatchOne(db, data.messageId);
     await e.writeEmailAudit(
       db,
