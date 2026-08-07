@@ -5,10 +5,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type {
-  WebhookEndpointView,
-  WebhookEventStatus,
-  WebhookEventView,
+import {
+  WEBHOOK_PUBLIC_ORIGIN,
+  type WebhookEndpointView,
+  type WebhookEventStatus,
+  type WebhookEventView,
 } from "@/lib/webhooks/webhooks.shared";
 
 const guard = () => import("@/lib/admin-guard.server");
@@ -21,7 +22,7 @@ export const listWebhookEndpoints = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "integrations.read");
     const db = await g.admin();
     // الروابط تُعرض دائماً على النطاق العام لأن المزوّد الخارجي لا يصل إلى نطاق التطبيق.
-    return (await engine()).readEndpoints(db, PUBLIC_ORIGIN);
+    return (await engine()).readEndpoints(db, WEBHOOK_PUBLIC_ORIGIN);
   });
 
 export const listWebhookEvents = createServerFn({ method: "POST" })
