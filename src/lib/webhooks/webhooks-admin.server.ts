@@ -3,7 +3,7 @@
  * لا تُعاد أسرار التحقق للمتصفح إلا مرة واحدة عند توليدها، لأنها سرّ مشترك
  * يجب على الموظف لصقه في لوحة المزوّد.
  */
-import { IntegrationSecretVault } from "@/lib/integrations/vault.server";
+import { IntegrationSecretVault, newSecretReference } from "@/lib/integrations/vault.server";
 import { getWebhookAdapter } from "./adapters/registry.server";
 import { dispatchNormalizedEvents } from "./dispatch.server";
 import {
@@ -180,7 +180,7 @@ export async function rotateEndpointSecret(
   const row = data as { id: string; slug: string; signing_secret: string | null } | null;
   if (!row) throw new Error("المزوّد غير موجود.");
 
-  const reference = row.signing_secret ?? IntegrationSecretVault.newReference();
+  const reference = row.signing_secret ?? newSecretReference();
   const secret = generateWebhookSecret();
   await IntegrationSecretVault.updateSecret(reference, WEBHOOK_SECRET_FIELD, secret, actorId);
   const { error } = await db
@@ -245,8 +245,9 @@ export async function createEndpoint(
     .select("id")
     .maybeSingle();
   if (error) {
+    const message = String(error.message ?? "");
     throw new Error(
-      error.code === "23505" || String(error.message ?? "").includes("duplicate")
+      error.code === "23505" || message.includes("duplicate")
         ? "المُعرّف مستخدم بالفعل — اختر مُعرّفاً آخر."
         : "تعذّر إضافة المزوّد.",
     );

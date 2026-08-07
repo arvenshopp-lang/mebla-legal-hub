@@ -20,7 +20,8 @@ export const listWebhookEndpoints = createServerFn({ method: "POST" })
     const g = await guard();
     await g.requireStaff(context.supabase, context.userId, "integrations.read");
     const db = await g.admin();
-    return (await engine()).readEndpoints(db, g.siteOrigin());
+    // الروابط تُعرض دائماً على النطاق العام لأن المزوّد الخارجي لا يصل إلى نطاق التطبيق.
+    return (await engine()).readEndpoints(db, PUBLIC_ORIGIN);
   });
 
 export const listWebhookEvents = createServerFn({ method: "POST" })
