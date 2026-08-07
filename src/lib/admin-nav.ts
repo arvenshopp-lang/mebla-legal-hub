@@ -7,8 +7,6 @@
  */
 import {
   Activity,
-  AlertTriangle,
-  BarChart3,
   BellRing,
   Building2,
   CreditCard,
@@ -34,6 +32,7 @@ import {
   Server,
   Settings,
   ShieldCheck,
+  ToggleLeft,
   TrendingUp,
   UserCog,
   Users,
