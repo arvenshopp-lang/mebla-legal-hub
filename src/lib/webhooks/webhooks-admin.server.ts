@@ -10,6 +10,7 @@ import {
   WEBHOOK_SECRET_FIELD,
   maskWebhookSecret,
   buildWebhookUrl,
+  WEBHOOK_PATH_PREFIX,
   type JsonValue,
   type WebhookEndpointView,
   type WebhookConnectionTestResult,
