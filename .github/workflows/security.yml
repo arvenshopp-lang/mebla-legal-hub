@@ -1,0 +1,67 @@
+name: حرّاس الأمان
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  code-guardrails:
+    name: فحص طبقة الكود (security:check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: تثبيت الحزم
+        run: bun install --frozen-lockfile
+      - name: حرّاس الأمان — الكود
+        run: bun run security:check
+
+  dependency-audit:
+    name: فحص سلسلة التوريد
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: تثبيت الحزم
+        run: bun install --frozen-lockfile
+      - name: ثغرات عالية/حرجة في الحزم
+        run: bun audit --audit-level=high
+
+  db-guardrails:
+    name: فحص طبقة قاعدة البيانات (security-guardrails.sql)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: تثبيت الحزم
+        run: bun install --frozen-lockfile
+      - name: تثبيت عميل psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: التحقّق من توفّر سرّ الاتصال
+        env:
+          DATABASE_URL: ${{ secrets.SECURITY_CHECK_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::السرّ SECURITY_CHECK_DATABASE_URL غير مضبوط في إعدادات المستودع؛ لا يمكن تنفيذ فحوص قاعدة البيانات."
+            exit 1
+          fi
+      - name: حرّاس الأمان — قاعدة البيانات
+        env:
+          DATABASE_URL: ${{ secrets.SECURITY_CHECK_DATABASE_URL }}
+        run: bun run security:db
