@@ -562,7 +562,7 @@ export function WebhookGatewayPanel() {
               ))}
             </dl>
             {(detail.rejectReason ?? detail.lastError) && (
-              <p className="rounded-[var(--radius-m)] bg-danger-soft p-3 text-[12px] text-danger">
+              <p className="rounded-[var(--radius-m)] bg-danger/10 p-3 text-[12px] text-danger">
                 {detail.rejectReason ?? detail.lastError}
               </p>
             )}
@@ -689,7 +689,7 @@ function EndpointCard({
       </dl>
 
       {endpoint.lastError && (
-        <p className="mt-3 rounded-[var(--radius-m)] bg-danger-soft p-2.5 text-[12px] text-danger">
+        <p className="mt-3 rounded-[var(--radius-m)] bg-danger/10 p-2.5 text-[12px] text-danger">
           {endpoint.lastError}
         </p>
       )}
