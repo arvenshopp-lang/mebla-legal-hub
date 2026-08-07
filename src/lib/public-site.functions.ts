@@ -16,7 +16,11 @@ export const savePublicSiteInfo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => publicSiteSchema.parse(input))
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
-    const staff = await g.requireStaff(context.supabase, context.userId, "platform_settings.manage");
+    const staff = await g.requireStaff(
+      context.supabase,
+      context.userId,
+      "platform_settings.manage",
+    );
     const db = await g.admin();
 
     const { data: beforeRow } = await db

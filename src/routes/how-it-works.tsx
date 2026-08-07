@@ -114,7 +114,10 @@ function HowItWorksRoute() {
           <h2 className="text-h4">جاهز للبدء؟</h2>
           <p className="mt-2 text-body-sm leading-7 text-muted-foreground">
             أنشئ حساب مكتبك الآن، أو راجع{" "}
-            <Link to="/faq" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link
+              to="/faq"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
               الأسئلة الشائعة
             </Link>{" "}
             و

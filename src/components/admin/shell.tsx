@@ -11,10 +11,12 @@ import {
   ADMIN_NAV,
   isNavPathActive,
   resolveNavMatch,
+  resolveRequiredPermission,
   resolveTabLabel,
   type AdminNavGroup,
 } from "@/lib/admin-nav";
 import { SectionTabs } from "@/components/admin/section-tabs";
+import { PERMISSION_LABELS } from "@/lib/admin-permissions";
 
 const COLLAPSED_STORAGE_PREFIX = "mehla-admin-nav-collapsed";
 
@@ -49,7 +51,7 @@ export function AdminShell({
   breadcrumb?: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { staff, can } = usePlatformAdmin();
+  const { staff, loading, can } = usePlatformAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -83,6 +85,14 @@ export function AdminShell({
       })).filter((group) => group.items.length > 0),
     [can],
   );
+
+  /**
+   * بوابة عرض مركزية: المسار المسجّل في سجل التنقل لا يُعرض محتواه لموظف
+   * لا يملك صلاحيته — فيرى رسالة عربية واضحة بدل شاشة فارغة أو خطأ خادمي خام.
+   * لا تُغني عن الحماية الخادمية (`requireStaff` / `authorize`) وسياسات RLS.
+   */
+  const requiredPermission = useMemo(() => resolveRequiredPermission(pathname), [pathname]);
+  const accessDenied = !loading && requiredPermission !== null && !can(requiredPermission);
 
   const toggleGroup = useCallback(
     (id: string) => {
@@ -350,7 +360,25 @@ export function AdminShell({
               </div>
             )}
           </div>
-          {children}
+          {accessDenied ? (
+            <section
+              role="alert"
+              className="rounded-[var(--radius-l)] border border-border bg-surface p-6 text-center"
+            >
+              <h2 className="text-body font-semibold">لا تملك صلاحية الوصول إلى هذه الصفحة</h2>
+              <p className="mx-auto mt-2 max-w-md text-body-sm text-muted-foreground">
+                {`الوصول يتطلب صلاحية «${PERMISSION_LABELS[requiredPermission!] ?? requiredPermission}». تواصل مع مالك المنصة أو مدير الصلاحيات لمنحك الصلاحية.`}
+              </p>
+              <Link
+                to="/mehla-admin"
+                className="mt-4 inline-flex min-h-11 items-center rounded-[var(--radius-m)] border border-border px-4 text-[13px] font-medium transition hover:bg-surface-muted"
+              >
+                العودة إلى مركز القيادة
+              </Link>
+            </section>
+          ) : (
+            children
+          )}
         </main>
       </div>
       <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />

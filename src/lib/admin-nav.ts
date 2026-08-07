@@ -226,7 +226,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         Icon: KeyRound,
         permission: "staff.view",
       },
-      { to: "/mehla-admin/security", label: "مركز الأمان", Icon: Lock },
+      {
+        to: "/mehla-admin/security",
+        label: "مركز الأمان",
+        Icon: Lock,
+        permission: "security.read",
+      },
       { to: "/mehla-admin/logs", label: "سجل التدقيق", Icon: ScrollText, permission: "audit.read" },
       {
         to: "/mehla-admin/activity",
@@ -282,4 +287,18 @@ export function resolveNavTabs(pathname: string): AdminNavTab[] | null {
   const match = resolveNavMatch(pathname);
   if (!match?.item.tabs) return null;
   return match.item.tabs;
+}
+
+/**
+ * الصلاحية اللازمة لعرض المسار الحالي — أعمق مطابقة (تبويب ثم عنصر).
+ * تُستخدم لبوابة عرض واحدة في `AdminShell` بدل تكرار الفحص في كل صفحة.
+ * الحماية الفعلية تبقى خادمية؛ هذه البوابة تمنع شاشة فارغة أو رسالة خطأ خام.
+ */
+export function resolveRequiredPermission(pathname: string): AdminPermission | null {
+  const match = resolveNavMatch(pathname);
+  if (!match) return null;
+  const tab = [...(match.item.tabs ?? [])]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find((t) => isNavPathActive(pathname, t.to));
+  return tab?.permission ?? match.item.permission ?? null;
 }
