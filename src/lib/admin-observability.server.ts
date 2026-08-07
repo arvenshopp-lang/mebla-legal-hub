@@ -406,6 +406,8 @@ function flatMeta(input: unknown): Record<string, string | number | boolean | nu
   if (input === null || typeof input !== "object") return {};
   const out: Record<string, string | number | boolean | null> = {};
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    // لا تُنقل نصوص المزوّد أو الأثر التقني إلى المتصفح.
+    if (HIDDEN_METADATA_KEYS.has(key)) continue;
     if (value === null || value === undefined) out[key] = null;
     else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
       out[key] = value;
