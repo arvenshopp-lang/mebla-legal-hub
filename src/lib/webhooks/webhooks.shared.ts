@@ -3,12 +3,16 @@
  * لا يحتوي هذا الملف أي سرّ ولا أي منطق تحقق؛ التحقق على الخادم فقط.
  */
 
-export type WebhookVerificationMode = "hmac_sha256" | "shared_secret";
+export type WebhookVerificationMode = "hmac_sha256" | "shared_secret" | "url_token";
 
 export const VERIFICATION_MODE_LABELS: Record<WebhookVerificationMode, string> = {
   hmac_sha256: "توقيع HMAC-SHA256 على الجسم الخام",
   shared_secret: "رمز سرّي في ترويسة الطلب",
+  url_token: "سرّ داخل الرابط (لمزوّد لا يرسل ترويسات)",
 };
+
+/** اسم معامل السرّ في الرابط لوضع `url_token`. */
+export const WEBHOOK_URL_TOKEN_PARAM = "key";
 
 export type WebhookEventStatus =
   | "received"
@@ -121,3 +125,9 @@ export const WEBHOOK_SECRET_FIELD = "webhook_signing_secret";
 
 /** أصل الروابط العامة التي تُعطى للمزوّدين الخارجيين. */
 export const WEBHOOK_PUBLIC_ORIGIN = "https://mehlalex.com";
+
+/** رابط الاستقبال كما يُلصق في لوحة المزوّد. مع المفتاح في وضع `url_token` فقط. */
+export function buildWebhookUrl(slug: string, secret?: string | null): string {
+  const base = `${WEBHOOK_PUBLIC_ORIGIN}/api/public/webhooks/${slug}`;
+  return secret ? `${base}?${WEBHOOK_URL_TOKEN_PARAM}=${encodeURIComponent(secret)}` : base;
+}

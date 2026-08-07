@@ -16,7 +16,11 @@
 import { getWebhookAdapter } from "./adapters/registry.server";
 import { dispatchNormalizedEvents } from "./dispatch.server";
 import { IntegrationSecretVault } from "@/lib/integrations/vault.server";
-import { WEBHOOK_SECRET_FIELD, type WebhookEventStatus } from "./webhooks.shared";
+import {
+  WEBHOOK_SECRET_FIELD,
+  WEBHOOK_URL_TOKEN_PARAM,
+  type WebhookEventStatus,
+} from "./webhooks.shared";
 
 const MAX_BODY_BYTES = 512 * 1024;
 const REPLAY_WINDOW_SECONDS = 300;
@@ -30,7 +34,7 @@ export type EndpointRow = {
   slug: string;
   display_name: string;
   adapter_type: string;
-  verification_mode: "hmac_sha256" | "shared_secret";
+  verification_mode: "hmac_sha256" | "shared_secret" | "url_token";
   signature_header: string;
   timestamp_header: string | null;
   signing_secret: string | null;
@@ -298,6 +302,22 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
       });
       return json({ error: "unauthorized" }, 401);
     }
+  } else if (endpoint.verification_mode === "url_token") {
+    // المزوّد لا يرسل ترويسات، فالمفتاح داخل الرابط هو بيانات الاعتماد.
+    // لا يُسجَّل المفتاح ولا الرابط الكامل في أي سجل.
+    const token = (new URL(request.url).searchParams.get(WEBHOOK_URL_TOKEN_PARAM) ?? "").trim();
+    if (!token || !safeEqual(token, secret)) {
+      await logEvent(client, {
+        endpointId: endpoint.id,
+        slug,
+        adapterType: endpoint.adapter_type,
+        status: "unauthorized",
+        payloadHash,
+        requestIp: ip,
+        rejectReason: "مفتاح الرابط غير مطابق أو مفقود",
+      });
+      return json({ error: "unauthorized" }, 401);
+    }
   } else if (!provided || !safeEqual(provided, secret)) {
     await logEvent(client, {
       endpointId: endpoint.id,
@@ -329,6 +349,24 @@ export async function handleIncomingWebhook(slug: string, request: Request): Pro
   try {
     payload = raw ? JSON.parse(raw) : {};
   } catch {
+    // بعض المزوّدين يفحصون الاتصال بطلب بلا جسم JSON — يُسجَّل كفحص ويُرَد بنجاح
+    // بعد نجاح التحقق، حتى لا يظهر الرابط لديهم كغير قابل للوصول.
+    const trimmed = raw.trim();
+    const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+    if (!looksLikeJson) {
+      await logEvent(client, {
+        endpointId: endpoint.id,
+        slug,
+        adapterType: endpoint.adapter_type,
+        status: "ignored",
+        payloadHash,
+        requestIp: ip,
+        signatureValid: true,
+        eventType: "connection.test",
+        processedAt: null,
+      });
+      return json({ ok: true, test: true });
+    }
     await logEvent(client, {
       endpointId: endpoint.id,
       slug,

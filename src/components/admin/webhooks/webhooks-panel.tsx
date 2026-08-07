@@ -33,6 +33,7 @@ import {
   listWebhookEvents,
   reprocessWebhookEvent,
   rotateWebhookSecret,
+  setWebhookVerificationMode,
   setWebhookEndpointState,
 } from "@/lib/webhooks/webhooks.functions";
 import {
@@ -96,6 +97,7 @@ export function WebhookGatewayPanel() {
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState<NewEndpointDraft | null>(null);
   const [revealed, setRevealed] = useState<{ slug: string; secret: string } | null>(null);
+  const [revealedUrl, setRevealedUrl] = useState<string | null>(null);
   const [detail, setDetail] = useState<WebhookEventView | null>(null);
   const [deadLetter, setDeadLetter] = useState<WebhookEventView | null>(null);
   const [reason, setReason] = useState("");
@@ -104,6 +106,7 @@ export function WebhookGatewayPanel() {
   const eventsFn = useServerFn(listWebhookEvents);
   const createFn = useServerFn(createWebhookEndpoint);
   const rotateFn = useServerFn(rotateWebhookSecret);
+  const modeFn = useServerFn(setWebhookVerificationMode);
   const stateFn = useServerFn(setWebhookEndpointState);
   const reprocessFn = useServerFn(reprocessWebhookEvent);
   const deadLetterFn = useServerFn(deadLetterWebhookEvent);
@@ -149,6 +152,17 @@ export function WebhookGatewayPanel() {
     mutationFn: (id: string) => rotateFn({ data: { id } }),
     onSuccess: (result) => {
       setRevealed({ slug: result.slug, secret: result.secret });
+      setRevealedUrl(result.url);
+      invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const changeMode = useMutation({
+    mutationFn: (input: { id: string; verificationMode: WebhookVerificationMode }) =>
+      modeFn({ data: input }),
+    onSuccess: () => {
+      toast.success("تم تحديث وضع التحقق. ولّد السرّ من جديد لتحصل على رابط مطابق.");
       invalidate();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -231,9 +245,13 @@ export function WebhookGatewayPanel() {
               endpoint={endpoint}
               busy={
                 (rotate.isPending && rotate.variables === endpoint.id) ||
-                (setState.isPending && setState.variables?.id === endpoint.id)
+                (setState.isPending && setState.variables?.id === endpoint.id) ||
+                (changeMode.isPending && changeMode.variables?.id === endpoint.id)
               }
               onRotate={() => rotate.mutate(endpoint.id)}
+              onChangeMode={(verificationMode) =>
+                changeMode.mutate({ id: endpoint.id, verificationMode })
+              }
               onToggleEnabled={() =>
                 setState.mutate({ id: endpoint.id, isEnabled: !endpoint.isEnabled })
               }
@@ -508,7 +526,10 @@ export function WebhookGatewayPanel() {
 
       <Modal
         open={Boolean(revealed)}
-        onClose={() => setRevealed(null)}
+        onClose={() => {
+          setRevealed(null);
+          setRevealedUrl(null);
+        }}
         title="سرّ التحقق الجديد"
         description="انسخ القيمة الآن والصقها في لوحة المزوّد — لن تُعرض مرة أخرى."
       >
@@ -520,6 +541,23 @@ export function WebhookGatewayPanel() {
             >
               {revealed.secret}
             </p>
+            {revealedUrl?.includes("?key=") && (
+              <div className="space-y-2">
+                <p className="text-label">الرابط الكامل الجاهز للّصق في لوحة المزوّد</p>
+                <p
+                  className="rounded-[var(--radius-m)] bg-surface-muted p-3 text-[12px] leading-6 break-all"
+                  dir="ltr"
+                >
+                  {revealedUrl}
+                </p>
+                <Btn
+                  variant="outline"
+                  onClick={() => copyToClipboard(revealedUrl, "تم نسخ الرابط الكامل.")}
+                >
+                  <Copy className="h-4 w-4" aria-hidden /> نسخ الرابط الكامل
+                </Btn>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Btn
                 variant="outline"
@@ -527,7 +565,13 @@ export function WebhookGatewayPanel() {
               >
                 <Copy className="h-4 w-4" aria-hidden /> نسخ
               </Btn>
-              <Btn variant="primary" onClick={() => setRevealed(null)}>
+              <Btn
+                variant="primary"
+                onClick={() => {
+                  setRevealed(null);
+                  setRevealedUrl(null);
+                }}
+              >
                 حفظت السرّ
               </Btn>
             </div>
@@ -621,6 +665,7 @@ function EndpointCard({
   endpoint,
   busy,
   onRotate,
+  onChangeMode,
   onToggleEnabled,
   onToggleTestMode,
   onFilter,
@@ -628,10 +673,12 @@ function EndpointCard({
   endpoint: WebhookEndpointView;
   busy: boolean;
   onRotate: () => void;
+  onChangeMode: (mode: WebhookVerificationMode) => void;
   onToggleEnabled: () => void;
   onToggleTestMode: () => void;
   onFilter: () => void;
 }) {
+  const urlToken = endpoint.verificationMode === "url_token";
   return (
     <article className="rounded-[var(--radius-l)] border border-border bg-surface-muted/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -643,6 +690,7 @@ function EndpointCard({
         <Badge tone={endpoint.hasSecret ? "green" : "red"}>
           {endpoint.hasSecret ? "سرّ التحقق مهيأ" : "بلا سرّ تحقق"}
         </Badge>
+        {urlToken && <Badge tone="gold">سرّية الرابط هي الحماية</Badge>}
       </div>
 
       <p className="text-caption mt-2">
@@ -668,15 +716,42 @@ function EndpointCard({
             <Copy className="h-4 w-4" aria-hidden />
           </Btn>
         </div>
-        <p className="text-caption mt-1.5">
-          الترويسة المطلوبة: <span dir="ltr">{endpoint.signatureHeader}</span>
-          {endpoint.timestampHeader ? (
-            <>
-              {" + "}
-              <span dir="ltr">{endpoint.timestampHeader}</span>
-            </>
-          ) : null}
-        </p>
+        {urlToken ? (
+          <p className="text-caption mt-1.5">
+            هذا المزوّد لا يرسل ترويسات، فالسرّ يُضاف داخل الرابط كمعامل{" "}
+            <span dir="ltr">?key=</span> — استخدم الرابط الكامل الظاهر عند توليد السرّ، ولا تستخدم
+            نطاق <span dir="ltr">www</span>.
+          </p>
+        ) : (
+          <p className="text-caption mt-1.5">
+            الترويسة المطلوبة: <span dir="ltr">{endpoint.signatureHeader}</span>
+            {endpoint.timestampHeader ? (
+              <>
+                {" + "}
+                <span dir="ltr">{endpoint.timestampHeader}</span>
+              </>
+            ) : null}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <label className="text-label mb-1 block" htmlFor={`webhook-mode-${endpoint.id}`}>
+          وضع التحقق
+        </label>
+        <select
+          id={`webhook-mode-${endpoint.id}`}
+          className={`${inputCls} h-11`}
+          value={endpoint.verificationMode}
+          disabled={busy}
+          onChange={(event) => onChangeMode(event.target.value as WebhookVerificationMode)}
+        >
+          {Object.entries(VERIFICATION_MODE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-body-sm">
