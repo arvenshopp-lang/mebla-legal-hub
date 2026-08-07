@@ -670,10 +670,13 @@ export const extendSubscription = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: before } = await db
       .from("subscriptions")
-      .select("id, email, plan_label, ends_at, status")
+      .select("id, email, plan_label, ends_at, status, organization_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!before) throw new Error("الاشتراك غير موجود.");
+    if (await hasOtherLiveSubscription(db, before)) {
+      throw new Error(DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE);
+    }
     const base = new Date(before.ends_at);
     const from = base.getTime() > Date.now() ? base : new Date();
     const ends = new Date(from.getTime() + data.days * 86400_000).toISOString();
@@ -681,7 +684,7 @@ export const extendSubscription = createServerFn({ method: "POST" })
       .from("subscriptions")
       .update({ ends_at: ends, status: "active", cancelled_at: null })
       .eq("id", data.id);
-    if (error) throw new Error("تعذّر تمديد الاشتراك.");
+    if (error) throw new Error(translateSubscriptionError(error, "تعذّر تمديد الاشتراك."));
     await g.writeAudit(db, staff, {
       action: "subscription.extend",
       entity_type: "subscription",
@@ -710,10 +713,16 @@ export const setSubscriptionStatus = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: before } = await db
       .from("subscriptions")
-      .select("id, email, status")
+      .select("id, email, status, organization_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!before) throw new Error("الاشتراك غير موجود.");
+    const becomesLive = LIVE_SUBSCRIPTION_STATUSES.includes(
+      data.status as (typeof LIVE_SUBSCRIPTION_STATUSES)[number],
+    );
+    if (becomesLive && (await hasOtherLiveSubscription(db, before))) {
+      throw new Error(DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE);
+    }
     const { error } = await db
       .from("subscriptions")
       .update({
@@ -722,7 +731,7 @@ export const setSubscriptionStatus = createServerFn({ method: "POST" })
         billing_note: data.note ?? undefined,
       })
       .eq("id", data.id);
-    if (error) throw new Error("تعذّر تحديث حالة الاشتراك.");
+    if (error) throw new Error(translateSubscriptionError(error, "تعذّر تحديث حالة الاشتراك."));
     await g.writeAudit(db, staff, {
       action: "subscription.status",
       entity_type: "subscription",
