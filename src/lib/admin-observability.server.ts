@@ -356,6 +356,13 @@ export async function readActivityFeed(
     const { data, count } = await q.order("created_at", { ascending: false }).limit(window);
     total += count ?? 0;
     for (const r of (data ?? []) as AnyClient[]) {
+      const meta = (r.metadata ?? {}) as Record<string, unknown>;
+      const permanentHint = typeof meta["permanent"] === "boolean" ? (meta["permanent"] as boolean) : null;
+      const failure = classifyFailure(
+        r.error_code ?? null,
+        typeof r.http_status === "number" ? r.http_status : null,
+        permanentHint,
+      );
       collected.push({
         id: `failure:${r.id}`,
         source: "failure",
@@ -363,11 +370,18 @@ export async function readActivityFeed(
         actor: String(r.ref ?? "—"),
         entityType: String(r.surface ?? "—"),
         entityId: null,
-        description: String(r.error_message ?? r.error_code ?? ""),
+        description:
+          failure.code === "—" ? String(r.error_message ?? "") : failure.codeLabel,
         ip: r.ip ?? null,
         device: r.device ?? null,
         createdAt: String(r.created_at),
-        metadata: flatMeta({ path: r.path, http_status: r.http_status, error_code: r.error_code }),
+        failure,
+        metadata: flatMeta({
+          ...meta,
+          path: r.path,
+          http_status: r.http_status,
+          error_code: r.error_code,
+        }),
       });
     }
   }
