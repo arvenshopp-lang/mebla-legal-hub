@@ -9,6 +9,7 @@ import { dispatchNormalizedEvents } from "./dispatch.server";
 import {
   WEBHOOK_SECRET_FIELD,
   maskWebhookSecret,
+  buildWebhookUrl,
   type JsonValue,
   type WebhookEndpointView,
   type WebhookEventStatus,
@@ -171,13 +172,18 @@ export async function rotateEndpointSecret(
   db: Db,
   endpointId: string,
   actorId: string | null,
-): Promise<{ secret: string; hint: string; slug: string }> {
+): Promise<{ secret: string; hint: string; slug: string; url: string }> {
   const { data } = await db
     .from("webhook_endpoints")
-    .select("id, slug, signing_secret")
+    .select("id, slug, signing_secret, verification_mode")
     .eq("id", endpointId)
     .maybeSingle();
-  const row = data as { id: string; slug: string; signing_secret: string | null } | null;
+  const row = data as {
+    id: string;
+    slug: string;
+    signing_secret: string | null;
+    verification_mode: WebhookVerificationMode;
+  } | null;
   if (!row) throw new Error("المزوّد غير موجود.");
 
   const reference = row.signing_secret ?? newSecretReference();
@@ -188,7 +194,25 @@ export async function rotateEndpointSecret(
     .update({ signing_secret: reference })
     .eq("id", row.id);
   if (error) throw new Error("تعذّر ربط السرّ بالمزوّد.");
-  return { secret, hint: maskWebhookSecret(secret), slug: row.slug };
+  return {
+    secret,
+    hint: maskWebhookSecret(secret),
+    slug: row.slug,
+    // في وضع «سرّ داخل الرابط» يحتاج الموظف الرابط الكامل جاهزاً للّصق لدى المزوّد.
+    url: buildWebhookUrl(row.slug, row.verification_mode === "url_token" ? secret : null),
+  };
+}
+
+/** تغيير وضع التحقق لمزوّد قائم — يُستخدم عندما تكون واجهة المزوّد غير قادرة على إرسال ترويسات. */
+export async function setEndpointVerificationMode(
+  db: Db,
+  input: { id: string; verificationMode: WebhookVerificationMode },
+): Promise<void> {
+  const { error } = await db
+    .from("webhook_endpoints")
+    .update({ verification_mode: input.verificationMode })
+    .eq("id", input.id);
+  if (error) throw new Error("تعذّر تحديث وضع التحقق.");
 }
 
 export async function setEndpointState(
