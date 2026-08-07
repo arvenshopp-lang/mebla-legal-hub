@@ -286,6 +286,86 @@ export const discardMailDraft = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/* ------------------------------------------------- حالة استقبال المستلمين */
+
+/**
+ * فحص ما قبل الإرسال: هل أحد المستلمين محجوب لدى خدمة البريد المُدارة؟
+ * عند توفّر أسرار SMTP للصندوق يخرج البريد من صندوق المكتب نفسه، فلا تنطبق
+ * قوائم الحجب ويُعاد `transport: "smtp"` دون أي استعلام خارجي.
+ */
+export const checkMailRecipients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ mailboxId: z.string().uuid(), addresses: addressList }).parse(input),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      transport: "smtp" | "managed";
+      blocked: string[];
+      unknown: string[];
+    }> => {
+      const g = await guard();
+      const staff = await g.requireStaff(context.supabase, context.userId, "email.send");
+      const e = await engine();
+      const db = await g.admin();
+      await e.assertMailboxAccess(db, data.mailboxId, scopeOf(staff));
+      const { data: box } = await db
+        .from("email_mailboxes")
+        .select("address")
+        .eq("id", data.mailboxId)
+        .maybeSingle();
+      const address = (box as { address: string } | null)?.address;
+      if (!address) throw new Error("صندوق البريد غير موجود.");
+
+      const { transportConfigured } = await import("@/lib/email/transport/config.server");
+      if (transportConfigured(address)) return { transport: "smtp", blocked: [], unknown: [] };
+
+      const { recipientStates } = await import("@/lib/email/suppression.server");
+      const states = await recipientStates(data.addresses);
+      return {
+        transport: "managed",
+        blocked: states.filter((s) => s.blocked).map((s) => s.address),
+        unknown: states.filter((s) => s.unknown).map((s) => s.address),
+      };
+    },
+  );
+
+/**
+ * رفع حجب عنوان واحد بعد موافقة موثقة من صاحبه. يتطلب صلاحية إدارة البريد
+ * وسبباً نصياً إلزامياً، ويُسجَّل في سجل تدقيق البريد نجاحاً أو فشلاً.
+ */
+export const liftMailRecipientBlock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        address: z.string().email(),
+        reason: z.string().trim().min(10, "اذكر سبباً واضحاً لا يقل عن 10 أحرف.").max(300),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ lifted: boolean; message: string }> => {
+    const g = await guard();
+    const staff = await g.requireStaff(context.supabase, context.userId, "email.manage");
+    const db = await g.admin();
+    const { liftRecipientBlock } = await import("@/lib/email/suppression.server");
+    const result = await liftRecipientBlock(data.address);
+    const e = await engine();
+    await e.writeEmailAudit(
+      db,
+      { userId: staff.user_id, email: staff.email },
+      {
+        action: "email.suppression.lift",
+        description: `${result.lifted ? "رفع حجب" : "محاولة رفع حجب"} العنوان ${data.address}`,
+        metadata: { recipient: data.address, reason: data.reason, lifted: result.lifted },
+      },
+    );
+    return result;
+  });
+
 /* ------------------------------------------------------------- تنظيم */
 
 export const updateMailThread = createServerFn({ method: "POST" })
