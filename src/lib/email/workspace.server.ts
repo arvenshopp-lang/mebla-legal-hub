@@ -653,6 +653,19 @@ function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
   return `${baseKey}:a${attemptNumber}`;
 }
 
+/**
+ * أعطال نقل SMTP سببها الإعداد لا الرسالة (بيانات دخول خاطئة أو تعذّر الاتصال).
+ * في هذه الحالة لا يُترك بريد المكاتب معلّقاً: تُعاد المحاولة فوراً عبر خدمة
+ * البريد المُدارة في نفس الدورة، ويُسجَّل عطل الإعداد لفريق المنصة.
+ */
+const SMTP_CONFIG_ERROR_CODES = new Set([
+  "smtp_not_configured",
+  "smtp_auth_failed",
+  "smtp_connect_failed",
+  "smtp_timeout",
+  "attachment_unavailable",
+]);
+
 function classifySendFailure(result: { code: string; status: number | null }): {
   permanent: boolean;
   reason: string | null;
