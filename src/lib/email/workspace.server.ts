@@ -1,3 +1,5 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
+import type { Database, Json } from "@/integrations/supabase/types";
 /**
  * محرك مركز البريد — خادمي فقط. كل الجداول مغلقة أمام العميل، والوصول يمر
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
@@ -20,8 +22,7 @@ import {
   type ThreadSummary,
 } from "@/lib/email/email.shared";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";
@@ -119,7 +120,7 @@ export async function updateMailbox(
     imap_folders?: string[];
   },
 ): Promise<void> {
-  const patch: Record<string, unknown> = {};
+  const patch: Database["public"]["Tables"]["email_mailboxes"]["Update"] = {};
   if (input.display_name !== undefined) patch["display_name"] = input.display_name;
   if (input.signature_html !== undefined) patch["signature_html"] = input.signature_html;
   if (input.is_active !== undefined) patch["is_active"] = input.is_active;
@@ -326,7 +327,7 @@ export async function setThreadFlags(
   db: Db,
   input: { threadId: string; is_unread?: boolean; is_starred?: boolean },
 ): Promise<void> {
-  const patch: Record<string, unknown> = {};
+  const patch: Database["public"]["Tables"]["email_threads"]["Update"] = {};
   if (input.is_unread !== undefined) patch["is_unread"] = input.is_unread;
   if (input.is_starred !== undefined) patch["is_starred"] = input.is_starred;
   if (Object.keys(patch).length === 0) return;
@@ -1153,7 +1154,7 @@ export async function writeEmailAudit(
     threadId?: string | null;
     messageId?: string | null;
     description?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Json;
   },
 ): Promise<void> {
   const { ip, userAgent } = requestMeta();

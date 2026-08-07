@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * مزوّد Hostinger Agentic Mail داخل مركز البريد القائم — خادمي فقط.
  *
@@ -25,8 +26,7 @@ import {
 import { readAgenticState } from "./state.server";
 import { AGENTIC_OPERATIONS, type AgenticOperation } from "./agentic.shared";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 const PROVIDER = "agentic_mail";
 const SYNC_PAGE_LIMIT = 15;

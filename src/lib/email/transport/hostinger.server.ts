@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * تكامل بريد Hostinger مع مركز البريد القائم — خادمي فقط.
  *
@@ -17,8 +18,7 @@ import {
 } from "./config.server";
 import { inboundAliasAddresses, routeInboundAddress } from "@/lib/email/routing.server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 /** حد أقصى للرسائل في دورة واحدة — يحمي زمن تنفيذ الطلب الخادمي. */
 const FETCH_LIMIT = 15;

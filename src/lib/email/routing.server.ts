@@ -1,3 +1,4 @@
+import type { Db as SupabaseDb } from "@/lib/supabase-db.shared";
 /**
  * توجيه البريد الوارد على «الأسماء المستعارة» (Aliases) — خادمي فقط.
  *
@@ -10,8 +11,7 @@
  * ليُمرَّر إلى `ingestInbound` و`linkInboundToTicket` القائمين.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Db = any;
+type Db = SupabaseDb;
 
 export type AliasRoutingResult = {
   /** عنوان الصندوق المنطقي الذي ستُستوعب الرسالة تحته. */

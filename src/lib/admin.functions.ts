@@ -7,6 +7,42 @@ import { z } from "zod";
 type Guard = typeof import("@/lib/admin-guard.server");
 const guard = (): Promise<Guard> => import("@/lib/admin-guard.server");
 
+/** حالات الاشتراك التي يعتبرها القيد `subscriptions_one_live_per_org` اشتراكاً حياً. */
+const LIVE_SUBSCRIPTION_STATUSES = ["active", "trial"] as const;
+const DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE =
+  "يوجد اشتراك نشط لهذا المكتب. ألغِ الاشتراك الحالي أو عدّله بدل إنشاء اشتراك مواز.";
+
+/** هل يوجد اشتراك حيّ آخر لنفس المكتب غير الاشتراك الحالي؟ */
+async function hasOtherLiveSubscription(
+  db: Awaited<ReturnType<Guard["admin"]>>,
+  subscription: { id: string; organization_id: string | null },
+): Promise<boolean> {
+  if (!subscription.organization_id) return false;
+  const { data } = await db
+    .from("subscriptions")
+    .select("id")
+    .eq("organization_id", subscription.organization_id)
+    .neq("id", subscription.id)
+    .in("status", [...LIVE_SUBSCRIPTION_STATUSES])
+    .is("cancelled_at", null)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** يحوّل خطأ تفرد الاشتراك الحيّ (23505) إلى رسالة عربية واضحة. */
+function translateSubscriptionError(
+  error: { code?: string | null; message?: string | null } | null,
+  fallback: string,
+): string {
+  const code = error?.code ?? "";
+  const message = error?.message ?? "";
+  if (code === "23505" || message.includes("subscriptions_one_live_per_org")) {
+    return DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE;
+  }
+  return fallback;
+}
+
 /* ------------------------------------------------------- subscriber lookup */
 
 const emailSchema = z.object({
@@ -94,12 +130,19 @@ export const activateSubscription = createServerFn({ method: "POST" })
       .eq("code", data.planCode)
       .maybeSingle();
 
-    // أي اشتراك نشط سابق يُعتبر مستبدلاً بالاشتراك الجديد.
-    await supabaseAdmin
+    // أي اشتراك حيّ سابق يُعتبر مستبدلاً بالاشتراك الجديد.
+    // النطاق هو المكتب عند توفره (القيد `subscriptions_one_live_per_org` مبني عليه)،
+    // ويُستخدم المستخدم كنطاق احتياطي للاشتراكات غير المرتبطة بمكتب.
+    const cancelledAt = new Date().toISOString();
+    const supersede = supabaseAdmin
       .from("subscriptions")
-      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-      .eq("user_id", profile.id)
-      .eq("status", "active");
+      .update({ status: "cancelled", cancelled_at: cancelledAt })
+      .in("status", [...LIVE_SUBSCRIPTION_STATUSES])
+      .is("cancelled_at", null);
+    const { error: supersedeError } = org?.organization_id
+      ? await supersede.eq("organization_id", org.organization_id)
+      : await supersede.eq("user_id", profile.id).is("organization_id", null);
+    if (supersedeError) throw new Error("تعذّر إلغاء الاشتراك السابق قبل إنشاء الاشتراك الجديد.");
 
     const { data: created, error } = await supabaseAdmin
       .from("subscriptions")
@@ -120,7 +163,9 @@ export const activateSubscription = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error("تعذّر إنشاء الاشتراك.");
+    if (error || !created) {
+      throw new Error(translateSubscriptionError(error, "تعذّر إنشاء الاشتراك."));
+    }
 
     await (
       await guard()
@@ -625,10 +670,13 @@ export const extendSubscription = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: before } = await db
       .from("subscriptions")
-      .select("id, email, plan_label, ends_at, status")
+      .select("id, email, plan_label, ends_at, status, organization_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!before) throw new Error("الاشتراك غير موجود.");
+    if (await hasOtherLiveSubscription(db, before)) {
+      throw new Error(DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE);
+    }
     const base = new Date(before.ends_at);
     const from = base.getTime() > Date.now() ? base : new Date();
     const ends = new Date(from.getTime() + data.days * 86400_000).toISOString();
@@ -636,7 +684,7 @@ export const extendSubscription = createServerFn({ method: "POST" })
       .from("subscriptions")
       .update({ ends_at: ends, status: "active", cancelled_at: null })
       .eq("id", data.id);
-    if (error) throw new Error("تعذّر تمديد الاشتراك.");
+    if (error) throw new Error(translateSubscriptionError(error, "تعذّر تمديد الاشتراك."));
     await g.writeAudit(db, staff, {
       action: "subscription.extend",
       entity_type: "subscription",
@@ -665,10 +713,16 @@ export const setSubscriptionStatus = createServerFn({ method: "POST" })
     const db = await g.admin();
     const { data: before } = await db
       .from("subscriptions")
-      .select("id, email, status")
+      .select("id, email, status, organization_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!before) throw new Error("الاشتراك غير موجود.");
+    const becomesLive = LIVE_SUBSCRIPTION_STATUSES.includes(
+      data.status as (typeof LIVE_SUBSCRIPTION_STATUSES)[number],
+    );
+    if (becomesLive && (await hasOtherLiveSubscription(db, before))) {
+      throw new Error(DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE);
+    }
     const { error } = await db
       .from("subscriptions")
       .update({
@@ -677,7 +731,7 @@ export const setSubscriptionStatus = createServerFn({ method: "POST" })
         billing_note: data.note ?? undefined,
       })
       .eq("id", data.id);
-    if (error) throw new Error("تعذّر تحديث حالة الاشتراك.");
+    if (error) throw new Error(translateSubscriptionError(error, "تعذّر تحديث حالة الاشتراك."));
     await g.writeAudit(db, staff, {
       action: "subscription.status",
       entity_type: "subscription",

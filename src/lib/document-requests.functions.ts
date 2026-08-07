@@ -41,6 +41,13 @@ export const createDocumentRequest = createServerFn({ method: "POST" })
       .maybeSingle();
     if (caseErr || !kase) throw new Error("القضية غير موجودة أو لا تملك صلاحية الوصول إليها.");
 
+    // بوابة استحقاق خادمية: رفع مستندات العملاء ميزة مرتبطة بالباقة ولا يجوز الاعتماد على الواجهة.
+    const { assertEntitlement } = await import("./subscription.server");
+    await assertEntitlement(supabase, kase.organization_id, {
+      feature: "client_upload_enabled",
+      requireLive: true,
+    });
+
     const { generateToken, hashText } = await import("./client-portal.server");
     const token = generateToken();
     const tokenHash = await hashText(token);

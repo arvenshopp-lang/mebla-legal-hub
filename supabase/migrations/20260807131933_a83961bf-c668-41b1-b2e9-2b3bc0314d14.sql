@@ -1,0 +1,83 @@
+-- (1) سحب منح anon الزائدة عن كل جداول public، وإعادة القراءة العامة للجداول الثلاثة فقط.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+
+GRANT SELECT ON public.platform_plans TO anon;
+GRANT SELECT ON public.platform_settings TO anon;
+GRANT SELECT ON public.platform_content_pages TO anon;
+
+-- (2) جداول خادمية بحتة: RLS مفعّلة بصفر سياسات، والوصول الفعلي عبر service_role فقط.
+REVOKE ALL ON
+  public.case_code_registry,
+  public.case_lookup_attempts,
+  public.design_audit_logs,
+  public.design_drafts,
+  public.design_publish_state,
+  public.design_themes,
+  public.design_versions,
+  public.email_attachments,
+  public.email_audit_logs,
+  public.email_inbound_events,
+  public.email_labels,
+  public.email_mailboxes,
+  public.email_messages,
+  public.email_notes,
+  public.email_outbox,
+  public.email_sync_runs,
+  public.email_sync_state,
+  public.email_thread_labels,
+  public.email_threads,
+  public.integration_secrets,
+  public.otp_verifications,
+  public.support_business_calendars,
+  public.support_categories,
+  public.support_csat_invitations,
+  public.support_escalation_rules,
+  public.support_holidays,
+  public.support_internal_notes,
+  public.support_sla_events,
+  public.support_sla_policies,
+  public.support_tags,
+  public.support_team_members,
+  public.support_teams,
+  public.support_ticket_events,
+  public.support_ticket_ingest,
+  public.support_ticket_tags
+FROM anon, authenticated;
+
+GRANT ALL ON
+  public.case_code_registry,
+  public.case_lookup_attempts,
+  public.design_audit_logs,
+  public.design_drafts,
+  public.design_publish_state,
+  public.design_themes,
+  public.design_versions,
+  public.email_attachments,
+  public.email_audit_logs,
+  public.email_inbound_events,
+  public.email_labels,
+  public.email_mailboxes,
+  public.email_messages,
+  public.email_notes,
+  public.email_outbox,
+  public.email_sync_runs,
+  public.email_sync_state,
+  public.email_thread_labels,
+  public.email_threads,
+  public.integration_secrets,
+  public.otp_verifications,
+  public.support_business_calendars,
+  public.support_categories,
+  public.support_csat_invitations,
+  public.support_escalation_rules,
+  public.support_holidays,
+  public.support_internal_notes,
+  public.support_sla_events,
+  public.support_sla_policies,
+  public.support_tags,
+  public.support_team_members,
+  public.support_teams,
+  public.support_ticket_events,
+  public.support_ticket_ingest,
+  public.support_ticket_tags
+TO service_role;

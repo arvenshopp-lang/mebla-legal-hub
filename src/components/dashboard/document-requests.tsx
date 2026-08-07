@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Copy, Link2, Plus, Share2, Ban, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, canEdit } from "@/hooks/use-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import { fmtDateTime } from "@/lib/enums";
 import {
   Badge,
@@ -39,6 +40,8 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
   const [revoking, setRevoking] = useState<DocRequestRow | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const revokeFn = useServerFn(revokeDocumentRequest);
+  const { can: canUse, isLoading: planLoading } = useSubscription();
+  const uploadAllowed = canUse("client_upload_enabled");
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["doc-requests", caseId],
@@ -68,9 +71,23 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-bold">طلبات المستندات</h3>
         {canEdit(activeRole) && (
-          <Btn size="sm" onClick={() => setOpen(true)}>
-            <Plus className="ms-1 inline h-4 w-4" /> إنشاء طلب مستندات
-          </Btn>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {!planLoading && !uploadAllowed && (
+              <span className="text-[11.5px] text-text-muted" id="doc-request-gate-reason">
+                رفع مستندات العملاء غير متاح في باقتك الحالية
+              </span>
+            )}
+            <Btn
+              size="sm"
+              onClick={() => setOpen(true)}
+              disabled={planLoading || !uploadAllowed}
+              aria-describedby={
+                !planLoading && !uploadAllowed ? "doc-request-gate-reason" : undefined
+              }
+            >
+              <Plus className="ms-1 inline h-4 w-4" /> إنشاء طلب مستندات
+            </Btn>
+          </div>
         )}
       </div>
 
