@@ -556,7 +556,7 @@ export function WebhookGatewayPanel() {
             >
               {revealed.secret}
             </p>
-            {revealedUrl?.includes("?key=") && (
+            {revealedUrl?.includes("?k=") && (
               <div className="space-y-2">
                 <p className="text-label">الرابط الكامل الجاهز للّصق في لوحة المزوّد</p>
                 <p
@@ -564,6 +564,10 @@ export function WebhookGatewayPanel() {
                   dir="ltr"
                 >
                   {revealedUrl}
+                </p>
+                <p className="text-caption">
+                  طول الرابط {revealedUrl.length} حرفاً — مناسب للمزوّدين الذين يحدّون طول حقل
+                  الرابط.
                 </p>
                 <Btn
                   variant="outline"
