@@ -10,6 +10,7 @@ import {
   WEBHOOK_SECRET_FIELD,
   maskWebhookSecret,
   buildWebhookUrl,
+  WEBHOOK_PATH_PREFIX,
   type JsonValue,
   type WebhookEndpointView,
   type WebhookConnectionTestResult,
@@ -58,12 +59,16 @@ type EventRecord = {
 };
 
 export function publicWebhookUrl(origin: string, slug: string): string {
-  return `${origin.replace(/\/$/, "")}/api/public/webhooks/${slug}`;
+  return `${origin.replace(/\/$/, "")}${WEBHOOK_PATH_PREFIX}/${slug}`;
 }
 
-/** سرّ مشترك قوي: 32 بايت عشوائية بترميز سداسي عشري. */
-export function generateWebhookSecret(): string {
-  const bytes = new Uint8Array(32);
+/**
+ * سرّ مشترك قوي بترميز سداسي عشري.
+ * 32 بايت للتوقيع والترويسة، و16 بايت (128 بت) لوضع «سرّ داخل الرابط»
+ * لأن بعض المزوّدين يحدّون طول عمود الرابط لديهم.
+ */
+export function generateWebhookSecret(mode?: WebhookVerificationMode): string {
+  const bytes = new Uint8Array(mode === "url_token" ? 16 : 32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -258,7 +263,7 @@ export async function rotateEndpointSecret(
   if (!row) throw new Error("المزوّد غير موجود.");
 
   const reference = row.signing_secret ?? newSecretReference();
-  const secret = generateWebhookSecret();
+  const secret = generateWebhookSecret(row.verification_mode);
   await IntegrationSecretVault.updateSecret(reference, WEBHOOK_SECRET_FIELD, secret, actorId);
   const { error } = await db
     .from("webhook_endpoints")

@@ -11,8 +11,11 @@ export const VERIFICATION_MODE_LABELS: Record<WebhookVerificationMode, string> =
   url_token: "سرّ داخل الرابط (لمزوّد لا يرسل ترويسات)",
 };
 
-/** اسم معامل السرّ في الرابط لوضع `url_token`. */
-export const WEBHOOK_URL_TOKEN_PARAM = "key";
+/** اسم معامل السرّ في الرابط لوضع `url_token` (المسار القصير). */
+export const WEBHOOK_URL_TOKEN_PARAM = "k";
+
+/** الاسم القديم للمعامل — يبقى مقبولاً لأي مزوّد مرتبط سابقاً. */
+export const WEBHOOK_URL_TOKEN_PARAM_LEGACY = "key";
 
 export type WebhookEventStatus =
   | "received"
@@ -135,8 +138,14 @@ export const WEBHOOK_SECRET_FIELD = "webhook_signing_secret";
 /** أصل الروابط العامة التي تُعطى للمزوّدين الخارجيين. */
 export const WEBHOOK_PUBLIC_ORIGIN = "https://mehlalex.com";
 
+/** المسار القصير — بعض المزوّدين يحدّون طول عمود الرابط لديهم. */
+export const WEBHOOK_PATH_PREFIX = "/api/public/wh";
+
+/** المسار الطويل الأصلي — يبقى يعمل للتوافق مع أي ربط قائم. */
+export const WEBHOOK_LEGACY_PATH_PREFIX = "/api/public/webhooks";
+
 /** رابط الاستقبال كما يُلصق في لوحة المزوّد. مع المفتاح في وضع `url_token` فقط. */
 export function buildWebhookUrl(slug: string, secret?: string | null): string {
-  const base = `${WEBHOOK_PUBLIC_ORIGIN}/api/public/webhooks/${slug}`;
+  const base = `${WEBHOOK_PUBLIC_ORIGIN}${WEBHOOK_PATH_PREFIX}/${slug}`;
   return secret ? `${base}?${WEBHOOK_URL_TOKEN_PARAM}=${encodeURIComponent(secret)}` : base;
 }
