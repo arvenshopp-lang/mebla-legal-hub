@@ -639,6 +639,7 @@ function EndpointCard({
   endpoint,
   busy,
   onRotate,
+  onChangeMode,
   onToggleEnabled,
   onToggleTestMode,
   onFilter,
@@ -646,10 +647,12 @@ function EndpointCard({
   endpoint: WebhookEndpointView;
   busy: boolean;
   onRotate: () => void;
+  onChangeMode: (mode: WebhookVerificationMode) => void;
   onToggleEnabled: () => void;
   onToggleTestMode: () => void;
   onFilter: () => void;
 }) {
+  const urlToken = endpoint.verificationMode === "url_token";
   return (
     <article className="rounded-[var(--radius-l)] border border-border bg-surface-muted/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -661,6 +664,7 @@ function EndpointCard({
         <Badge tone={endpoint.hasSecret ? "green" : "red"}>
           {endpoint.hasSecret ? "سرّ التحقق مهيأ" : "بلا سرّ تحقق"}
         </Badge>
+        {urlToken && <Badge tone="gold">سرّية الرابط هي الحماية</Badge>}
       </div>
 
       <p className="text-caption mt-2">
@@ -686,15 +690,42 @@ function EndpointCard({
             <Copy className="h-4 w-4" aria-hidden />
           </Btn>
         </div>
-        <p className="text-caption mt-1.5">
-          الترويسة المطلوبة: <span dir="ltr">{endpoint.signatureHeader}</span>
-          {endpoint.timestampHeader ? (
-            <>
-              {" + "}
-              <span dir="ltr">{endpoint.timestampHeader}</span>
-            </>
-          ) : null}
-        </p>
+        {urlToken ? (
+          <p className="text-caption mt-1.5">
+            هذا المزوّد لا يرسل ترويسات، فالسرّ يُضاف داخل الرابط كمعامل{" "}
+            <span dir="ltr">?key=</span> — استخدم الرابط الكامل الظاهر عند توليد السرّ، ولا تستخدم
+            نطاق <span dir="ltr">www</span>.
+          </p>
+        ) : (
+          <p className="text-caption mt-1.5">
+            الترويسة المطلوبة: <span dir="ltr">{endpoint.signatureHeader}</span>
+            {endpoint.timestampHeader ? (
+              <>
+                {" + "}
+                <span dir="ltr">{endpoint.timestampHeader}</span>
+              </>
+            ) : null}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <label className="text-label mb-1 block" htmlFor={`webhook-mode-${endpoint.id}`}>
+          وضع التحقق
+        </label>
+        <select
+          id={`webhook-mode-${endpoint.id}`}
+          className={`${inputCls} h-11`}
+          value={endpoint.verificationMode}
+          disabled={busy}
+          onChange={(event) => onChangeMode(event.target.value as WebhookVerificationMode)}
+        >
+          {Object.entries(VERIFICATION_MODE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-body-sm">
