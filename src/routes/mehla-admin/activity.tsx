@@ -26,6 +26,7 @@ import { buildCsv } from "@/lib/csv";
 import { getActivityFeed } from "@/lib/admin-observability.functions";
 import {
   ACTIVITY_SOURCE_LABELS,
+  METADATA_LABELS,
   type ActivityEvent,
   type ActivitySource,
 } from "@/lib/admin-observability.shared";
@@ -252,6 +253,14 @@ function ActivityPage() {
                         <span className="block max-w-[320px] truncate">
                           {event.description || "—"}
                         </span>
+                        {event.failure && (
+                          <Badge
+                            tone={event.failure.kind === "retryable" ? "amber" : "red"}
+                            className="mt-1"
+                          >
+                            {event.failure.kindLabel}
+                          </Badge>
+                        )}
                       </Td>
                       <Td>
                         <Btn size="sm" variant="outline" onClick={() => setDetail(event)}>
@@ -305,6 +314,25 @@ function ActivityPage() {
               value={`${detail.entityType}${detail.entityId ? ` · ${detail.entityId}` : ""}`}
             />
             <Detail label="الوصف" value={detail.description || "—"} />
+            {detail.failure && (
+              <div className="rounded-xl border border-border bg-surface-muted p-3">
+                <dt className="text-caption">سبب الفشل</dt>
+                <dd className="mt-1 space-y-1.5">
+                  <p className="font-semibold">{detail.failure.codeLabel}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={detail.failure.kind === "retryable" ? "amber" : "red"}>
+                      {detail.failure.kindLabel}
+                    </Badge>
+                    <Badge tone="slate">{detail.failure.statusLabel}</Badge>
+                    <Badge tone="slate">رمز: {detail.failure.code}</Badge>
+                  </div>
+                  <p className="text-[12.5px] text-muted-foreground">{detail.failure.advice}</p>
+                  <p className="text-[12.5px] text-muted-foreground">
+                    مرجع العطل للتصعيد: <span className="font-medium">{detail.actor}</span>
+                  </p>
+                </dd>
+              </div>
+            )}
             <Detail label="عنوان الشبكة" value={detail.ip ?? "—"} />
             <Detail label="الجهاز" value={detail.device ?? "—"} />
             {Object.entries(detail.metadata).length > 0 && (
@@ -313,7 +341,10 @@ function ActivityPage() {
                 <dd className="mt-1 space-y-1">
                   {Object.entries(detail.metadata).map(([key, value]) => (
                     <p key={key} className="text-[12.5px]">
-                      <span className="text-muted-foreground">{key}:</span> {String(value ?? "—")}
+                      <span className="text-muted-foreground">
+                        {METADATA_LABELS[key] ?? key}:
+                      </span>{" "}
+                      {typeof value === "boolean" ? (value ? "نعم" : "لا") : String(value ?? "—")}
                     </p>
                   ))}
                 </dd>
