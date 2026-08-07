@@ -254,12 +254,11 @@ function ActivityPage() {
                           {event.description || "—"}
                         </span>
                         {event.failure && (
-                          <Badge
-                            tone={event.failure.kind === "retryable" ? "warn" : "red"}
-                            className="mt-1"
-                          >
-                            {event.failure.kindLabel}
-                          </Badge>
+                          <span className="mt-1 inline-block">
+                            <Badge tone={event.failure.kind === "retryable" ? "warn" : "red"}>
+                              {event.failure.kindLabel}
+                            </Badge>
+                          </span>
                         )}
                       </Td>
                       <Td>
