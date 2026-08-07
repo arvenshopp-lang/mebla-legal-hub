@@ -124,6 +124,7 @@ function InvoiceDetailPage() {
     <AdminShell
       title={invoice ? `فاتورة ${invoice.number}` : "تفاصيل الفاتورة"}
       description={invoice ? invoice.customer_name : undefined}
+      breadcrumb={invoice ? `فاتورة ${invoice.number}` : "تفاصيل الفاتورة"}
       actions={
         <div className="flex flex-wrap gap-2">
           <Link to="/mehla-admin/billing" search={{ tab: "invoices" }} className="inline-flex">
