@@ -42,6 +42,7 @@ export function ThreadView({
   savingNote,
   retrying,
   downloadingAttachmentId,
+  blockedRecipients,
 }: {
   detail: ThreadDetail;
   staff: StaffOption[];
@@ -63,6 +64,8 @@ export function ThreadView({
   savingNote: boolean;
   retrying: boolean;
   downloadingAttachmentId: string | null;
+  /** عناوين محجوبة عن الاستقبال — تُبرَّر بها الرسائل الفاشلة بدل «فشل» مجرّد. */
+  blockedRecipients: string[];
 }) {
   const { thread, messages, notes } = detail;
   const [note, setNote] = useState("");
