@@ -7,6 +7,24 @@ import { z } from "zod";
 type Guard = typeof import("@/lib/admin-guard.server");
 const guard = (): Promise<Guard> => import("@/lib/admin-guard.server");
 
+/** حالات الاشتراك التي يعتبرها القيد `subscriptions_one_live_per_org` اشتراكاً حياً. */
+const LIVE_SUBSCRIPTION_STATUSES = ["active", "trial"] as const;
+const DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE =
+  "يوجد اشتراك نشط لهذا المكتب. ألغِ الاشتراك الحالي أو عدّله بدل إنشاء اشتراك مواز.";
+
+/** يحوّل خطأ تفرد الاشتراك الحيّ (23505) إلى رسالة عربية واضحة. */
+function translateSubscriptionError(
+  error: { code?: string | null; message?: string | null } | null,
+  fallback: string,
+): string {
+  const code = error?.code ?? "";
+  const message = error?.message ?? "";
+  if (code === "23505" || message.includes("subscriptions_one_live_per_org")) {
+    return DUPLICATE_LIVE_SUBSCRIPTION_MESSAGE;
+  }
+  return fallback;
+}
+
 /* ------------------------------------------------------- subscriber lookup */
 
 const emailSchema = z.object({
