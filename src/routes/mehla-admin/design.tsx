@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -19,7 +19,8 @@ import { Badge, Btn, LoadingBlock, SectionCard, inputCls } from "@/lib/list-util
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { cn } from "@/lib/utils";
 import { DesignPreview } from "@/components/admin/design-preview";
-import { DESIGN_PAGES, designPage } from "@/lib/design/pages";
+import { DESIGN_PAGES, designPage, previewPathFor } from "@/lib/design/pages";
+import { starterTemplate, type HarvestedSelector } from "@/lib/design/selectors";
 import {
   APPROVED_FONTS,
   TOKEN_GROUPS,
@@ -35,9 +36,13 @@ import {
   getDesignStudio,
   publishDesign,
   resetDesignPage,
+  restoreDesignVersion,
   rollbackDesign,
   saveDesignDraft,
 } from "@/lib/design/theme.functions";
+
+/** محرر CSS احترافي — يُحمّل عند فتح تبويب CSS فقط لتقليل حجم الحزمة. */
+const CodeMirrorEditor = lazy(() => import("@/components/admin/css-code-editor"));
 
 export const Route = createFileRoute("/mehla-admin/design")({
   head: () => ({
@@ -155,12 +160,8 @@ function CssEditor({
   onChange: (next: string) => void;
   pageKey: string;
 }) {
-  const [find, setFind] = useState("");
-  const [replace, setReplace] = useState("");
   const history = useRef<string[]>([]);
   const future = useRef<string[]>([]);
-  const areaRef = useRef<HTMLTextAreaElement>(null);
-  const lines = value.split("\n").length;
 
   const push = (next: string) => {
     history.current = [...history.current.slice(-40), value];
@@ -182,30 +183,6 @@ function CssEditor({
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={find}
-          onChange={(e) => setFind(e.target.value)}
-          placeholder="بحث"
-          aria-label="بحث في CSS"
-          className={cn(inputCls, "max-w-[160px]")}
-        />
-        <input
-          value={replace}
-          onChange={(e) => setReplace(e.target.value)}
-          placeholder="استبدال"
-          aria-label="استبدال في CSS"
-          className={cn(inputCls, "max-w-[160px]")}
-        />
-        <Btn
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            if (!find) return;
-            push(value.split(find).join(replace));
-          }}
-        >
-          استبدال الكل
-        </Btn>
         <Btn variant="secondary" size="sm" onClick={format}>
           تنسيق الكود
         </Btn>
@@ -236,34 +213,27 @@ function CssEditor({
         <Btn variant="danger" size="sm" onClick={() => push("")}>
           إعادة تعيين
         </Btn>
+        <span className="text-[11.5px] text-muted-foreground">
+          البحث والاستبدال داخل المحرر عبر Ctrl+F
+        </span>
       </div>
 
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] overflow-hidden rounded-[var(--radius-m)] border border-border bg-surface font-mono">
-        <pre
-          aria-hidden
-          className="m-0 select-none border-e border-border bg-surface-muted px-2 py-3 text-end text-[11.5px] leading-[1.6] text-text-muted"
-        >
-          {Array.from({ length: lines }, (_, i) => i + 1).join("\n")}
-        </pre>
-        <textarea
-          ref={areaRef}
-          dir="ltr"
-          spellCheck={false}
+      <Suspense
+        fallback={
+          <div className="min-h-[320px] rounded-[var(--radius-m)] border border-border bg-surface p-3 text-[12.5px] text-muted-foreground">
+            جارٍ تحميل المحرر…
+          </div>
+        }
+      >
+        <CodeMirrorEditor
           value={value}
-          onChange={(e) => {
+          onChange={(next) => {
             history.current = [...history.current.slice(-40), value];
-            onChange(e.target.value);
+            onChange(next);
           }}
-          rows={18}
-          aria-label={`CSS المخصص لنطاق ${pageKey}`}
-          placeholder={
-            pageKey === "global"
-              ? "/* CSS عام يطبق على كامل المنصة */\n.mehla-badge { letter-spacing: .2px; }"
-              : `/* يُحصر تلقائياً داخل [data-page="${pageKey}"] */\n.hero h1 { letter-spacing: -0.5px; }`
-          }
-          className="min-h-[320px] w-full resize-y bg-surface p-3 text-[12.5px] leading-[1.6] text-foreground outline-none"
+          ariaLabel={`CSS المخصص لنطاق ${pageKey}`}
         />
-      </div>
+      </Suspense>
     </div>
   );
 }
