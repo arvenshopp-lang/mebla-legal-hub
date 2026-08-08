@@ -179,6 +179,8 @@ export async function saveDraft(args: {
   customCss: string;
   meta?: unknown;
   userId: string;
+  /** قفل تفاؤلي: رقم المراجعة التي بُني عليها التعديل */
+  expectedRevision?: number;
 }) {
   if (!isDesignPageKey(args.pageKey)) throw new Error("مفتاح الصفحة غير معروف.");
   const client = await db();
@@ -194,6 +196,13 @@ export async function saveDraft(args: {
     .eq("page_key", args.pageKey)
     .maybeSingle();
 
+  const currentRevision = existing?.revision_number ?? 0;
+  if (typeof args.expectedRevision === "number" && args.expectedRevision !== currentRevision) {
+    throw new Error(
+      "عُدِّلت هذه الصفحة من جلسة أخرى بعد فتحك للمحرر. أعد تحميل المحرر ثم أعد تطبيق تعديلك حتى لا يُفقد أي عمل.",
+    );
+  }
+
   const row = {
     theme_id: themeId,
     page_key: args.pageKey,
@@ -201,12 +210,23 @@ export async function saveDraft(args: {
     custom_css: String(args.customCss ?? "").slice(0, MAX_DRAFT_CSS),
     updated_by: args.userId,
     updated_at: new Date().toISOString(),
-    revision_number: (existing?.revision_number ?? 0) + 1,
+    revision_number: currentRevision + 1,
   };
 
   if (existing?.id) {
-    const { error } = await client.from("design_drafts").update(row).eq("id", existing.id);
+    // شرط رقم المراجعة يجعل القفل ذرياً على مستوى قاعدة البيانات
+    const { data: updated, error } = await client
+      .from("design_drafts")
+      .update(row)
+      .eq("id", existing.id)
+      .eq("revision_number", currentRevision)
+      .select("id");
     if (error) throw new Error("تعذّر حفظ المسودة.");
+    if (!updated || updated.length === 0) {
+      throw new Error(
+        "عُدِّلت هذه الصفحة من جلسة أخرى في نفس اللحظة. أعد تحميل المحرر ثم أعد تطبيق تعديلك.",
+      );
+    }
   } else {
     const { error } = await client.from("design_drafts").insert(row);
     if (error) throw new Error("تعذّر حفظ المسودة.");
@@ -406,6 +426,96 @@ export async function rollbackTheme(userId: string) {
     after: { active_version_id: state.previous_version_id, cache_version: cacheVersion },
   });
   return { activeVersionId: state.previous_version_id, cacheVersion };
+}
+
+/**
+ * استعادة إصدار محدد من السجل: يُنشأ إصدار جديد منسوخ من الإصدار المطلوب
+ * (لا يُعدّل التاريخ ولا يُحذف شيء) ثم يصبح هو النشط.
+ */
+export async function restoreVersion(versionId: string, userId: string) {
+  const client = await db();
+  const themeId = await activeThemeId();
+  const { data: source } = await client
+    .from("design_versions")
+    .select("*")
+    .eq("id", versionId)
+    .eq("theme_id", themeId)
+    .maybeSingle();
+  if (!source) throw new Error("الإصدار المطلوب غير موجود.");
+  const version = source as VersionSnapshot;
+
+  const state = await getPublishState(false);
+  if (state.active_version_id === version.id) {
+    throw new Error("هذا الإصدار نشط بالفعل.");
+  }
+
+  const { data: last } = await client
+    .from("design_versions")
+    .select("version_number")
+    .eq("theme_id", themeId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const versionNumber = (last?.version_number ?? 0) + 1;
+
+  const { data: created, error } = await client
+    .from("design_versions")
+    .insert({
+      theme_id: themeId,
+      version_number: versionNumber,
+      scope: "mixed",
+      page_key: "global",
+      design_tokens_json: version.design_tokens_json,
+      page_tokens_json: version.page_tokens_json,
+      custom_css: version.custom_css,
+      sanitized_css: version.sanitized_css,
+      page_css_json: version.page_css_json,
+      status: "published",
+      change_summary: `استعادة الإصدار #${version.version_number}`,
+      published_at: new Date().toISOString(),
+      published_by: userId,
+      created_by: userId,
+    })
+    .select("id, version_number")
+    .single();
+  if (error || !created) throw new Error("تعذّرت استعادة الإصدار.");
+
+  const cacheVersion = (state.cache_version ?? 1) + 1;
+  const { error: stateError } = await client
+    .from("design_publish_state")
+    .update({
+      theme_id: themeId,
+      active_version_id: created.id,
+      previous_version_id: state.active_version_id,
+      rollback_available: Boolean(state.active_version_id),
+      rollback_used_at: null,
+      rollback_used_by: null,
+      cache_version: cacheVersion,
+      last_published_at: new Date().toISOString(),
+      last_published_by: userId,
+    })
+    .eq("id", state.id);
+  if (stateError) throw new Error("تعذّر تحديث حالة النشر بعد الاستعادة.");
+
+  invalidateThemeCache();
+  await writeDesignAudit({
+    userId,
+    action: "restore_version",
+    pageKey: null,
+    versionId: created.id,
+    before: { active_version_id: state.active_version_id, cache_version: state.cache_version },
+    after: {
+      restored_from: version.version_number,
+      version_number: created.version_number,
+      cache_version: cacheVersion,
+    },
+  });
+
+  return {
+    versionNumber: created.version_number,
+    cacheVersion,
+    restoredFrom: version.version_number,
+  };
 }
 
 /* ---------------------------- حزمة CSS ---------------------------- */

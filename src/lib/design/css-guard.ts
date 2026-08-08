@@ -175,6 +175,15 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
     }
   }
 
+  // 3b) url() الخارجي محجوب — المسموح: data:image أو مسار داخلي يبدأ بـ /
+  for (const m of css.matchAll(/url\(\s*['"]?([^'")]+)/gi)) {
+    const href = (m[1] ?? "").trim();
+    if (!href) continue;
+    if (/^data:/i.test(href)) continue; // فُحص نوعه في الخطوة 2
+    if (/^\/(?!\/)/.test(href)) continue; // مسار داخلي
+    blocked.push(`مورد خارجي غير مسموح داخل url(): ${href.slice(0, 60)}`);
+  }
+
   // 4) CSS يستهدف إطارات مدمجة أو صفحات خارجية
   if (/\biframe\b/i.test(css)) blocked.push("لا يُسمح بقواعد تستهدف iframe.");
 
@@ -184,6 +193,20 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
     const sel = rule.selector;
     const body = rule.body;
     const decl = `${sel}{${body.trim().slice(0, 120)}}`;
+
+    // 4b) هروب النطاق: عند صفحة محددة يُسمح بـ html/body/:root في بداية الـ selector فقط
+    //     (يُعاد كتابتها إلى نطاق الصفحة)، وأي ظهور آخر يعني تجاوز حدود الصفحة.
+    if (pageKey !== "global" && !sel.startsWith("@")) {
+      for (const part of sel.split(",")) {
+        const one = part.trim();
+        if (!one) continue;
+        const rest = one.replace(/^(html|:root|body)\b/i, "");
+        if (/(:root|\bhtml\b|\bbody\b)/i.test(rest)) {
+          blocked.push(`محاولة تجاوز نطاق الصفحة إلى html/body: ${one.slice(0, 80)}`);
+          break;
+        }
+      }
+    }
 
     // 5) إخفاء عناصر الأمان أو الرسائل الحرجة
     if (PROTECTED_PATTERNS.some((p) => p.test(sel)) && HIDING_DECL.test(body)) {

@@ -15,6 +15,7 @@ const draftSchema = z.object({
   pageKey: pageKeySchema,
   tokens: z.record(z.string().max(80), z.string().max(240)),
   customCss: z.string().max(120_000),
+  expectedRevision: z.number().int().min(0).optional(),
   meta: z
     .object({ direction: z.enum(["rtl", "ltr"]), mode: z.enum(["light", "dark", "auto"]) })
     .partial()
@@ -75,6 +76,7 @@ export const saveDesignDraft = createServerFn({ method: "POST" })
       customCss: data.customCss,
       meta: data.meta,
       userId: context.userId,
+      expectedRevision: data.expectedRevision,
     });
     await svc.writeDesignAudit({
       userId: context.userId,
@@ -143,9 +145,20 @@ export const publishDesign = createServerFn({ method: "POST" })
         customCss: data.draft.customCss,
         meta: data.draft.meta,
         userId: context.userId,
+        expectedRevision: data.draft.expectedRevision,
       });
     }
     return svc.publishTheme({ userId: context.userId, summary: data.summary });
+  });
+
+/** استعادة إصدار محدد من السجل — تُنشئ إصداراً جديداً ولا تحذف التاريخ. */
+export const restoreDesignVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ versionId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await requireOwner(context.supabase, context.userId);
+    const svc = await import("./theme.server");
+    return svc.restoreVersion(data.versionId, context.userId);
   });
 
 export const rollbackDesign = createServerFn({ method: "POST" })

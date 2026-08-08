@@ -24,6 +24,8 @@ import {
 } from "../lib/product-analytics";
 import { getThemeCacheVersion } from "../lib/design/theme.functions";
 import { pageKeyForPath } from "../lib/design/pages";
+import { installDesignPreviewBridge, isDesignPreviewRequest } from "../lib/design/preview-bridge";
+import { startThemeVersionSync } from "../lib/design/theme-version-sync";
 import "../lib/zod-ar";
 import { Toaster } from "sonner";
 
@@ -182,8 +184,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const themeState = Route.useLoaderData();
   useSurfaceGuard();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.searchStr });
+
+  // وضع معاينة التصميم: الصفحة الحقيقية داخل إطار لوحة الإدارة، بنفس الجلسة والصلاحيات
+  useEffect(() => {
+    if (!isDesignPreviewRequest(search)) return;
+    return installDesignPreviewBridge();
+  }, [search]);
+
+  // إصدار التصميم المنشور: استبدال حزمة CSS عند تغيّرها بدون إعادة تحميل
+  useEffect(() => {
+    if (!themeState?.hasTheme) return;
+    return startThemeVersionSync(themeState.cacheVersion, () => getThemeCacheVersion());
+  }, [themeState?.hasTheme, themeState?.cacheVersion]);
 
   useEffect(() => {
     initAnalytics();
