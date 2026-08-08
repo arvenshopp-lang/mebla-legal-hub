@@ -39,7 +39,8 @@ function Page() {
 
   return (
     <DashboardShell title="الإعدادات">
-      <div className="mb-5 flex gap-2 border-b border-border">
+      <div className="mb-5 -mx-4 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+        <div className="flex w-max gap-2">
         {[
           { k: "profile", l: "حسابي" },
           { k: "organization", l: "المكتب" },
@@ -52,11 +53,12 @@ function Page() {
             onClick={() =>
               setTab(t.k as "profile" | "organization" | "notifications" | "security" | "privacy")
             }
-            className={`px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+            className={`shrink-0 px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
           >
             {t.l}
           </button>
         ))}
+        </div>
       </div>
       {tab === "profile" && <ProfileTab userId={user?.id} />}
       {tab === "organization" && <OrgTab orgId={activeOrgId} canManage={canManage(activeRole)} />}
