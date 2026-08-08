@@ -27,7 +27,15 @@ const rpc = async <T>(
   args?: Record<string, unknown>,
 ): Promise<T> => {
   const { data, error } = await (supabase as AnyClient).rpc(name, args ?? {});
-  if (error) throw new Error("تعذّر قراءة بيانات التشغيل. حاول التحديث بعد لحظات.");
+  if (error) {
+    // تفاصيل الخطأ تبقى في سجل الخادم فقط، والرسالة للمستخدم عربية عامة.
+    console.error(`[admin-console] rpc ${name} failed`, {
+      code: (error as { code?: string }).code,
+      message: (error as { message?: string }).message,
+      details: (error as { details?: string }).details,
+    });
+    throw new Error("تعذّر قراءة بيانات التشغيل. حاول التحديث بعد لحظات.");
+  }
   return data as T;
 };
 
