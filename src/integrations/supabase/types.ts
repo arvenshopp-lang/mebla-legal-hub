@@ -8009,7 +8009,10 @@ export type Database = {
           dedupe_key: string
           email_message_id: string | null
           id: string
+          match_reason: string | null
           outcome: string
+          provider_message_id: string | null
+          source: string | null
           thread_id: string | null
           ticket_id: string | null
         }
@@ -8018,7 +8021,10 @@ export type Database = {
           dedupe_key: string
           email_message_id?: string | null
           id?: string
+          match_reason?: string | null
           outcome: string
+          provider_message_id?: string | null
+          source?: string | null
           thread_id?: string | null
           ticket_id?: string | null
         }
@@ -8027,7 +8033,10 @@ export type Database = {
           dedupe_key?: string
           email_message_id?: string | null
           id?: string
+          match_reason?: string | null
           outcome?: string
+          provider_message_id?: string | null
+          source?: string | null
           thread_id?: string | null
           ticket_id?: string | null
         }
@@ -8062,6 +8071,7 @@ export type Database = {
           author_name: string
           body: string
           created_at: string
+          email_message_id: string | null
           id: string
           is_staff: boolean
           ticket_id: string
@@ -8072,6 +8082,7 @@ export type Database = {
           author_name: string
           body: string
           created_at?: string
+          email_message_id?: string | null
           id?: string
           is_staff?: boolean
           ticket_id: string
@@ -8082,11 +8093,19 @@ export type Database = {
           author_name?: string
           body?: string
           created_at?: string
+          email_message_id?: string | null
           id?: string
           is_staff?: boolean
           ticket_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_ticket_messages_ticket_id_fkey"
             columns: ["ticket_id"]
