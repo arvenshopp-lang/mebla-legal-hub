@@ -62,6 +62,19 @@ const inviteSchema = z.object({
 /** رابط الدعوة الرسمي: صفحة عامة تعالج الرمز وتُنفّذ الانضمام. */
 const inviteUrl = (token: string) => `${window.location.origin}/invite/${token}`;
 
+/**
+ * سبب عدم وصول رسالة الدعوة بصيغة عربية عملية. الحجب لدى خدمة البريد
+ * (ارتداد أو إلغاء اشتراك أو شكوى) لا يمكن رفعه من داخل المكتب، لذلك نوجّه
+ * المستخدم إلى الرابط اليدوي ثم إلى دعم مِهلة.
+ */
+const describeEmailReason = (reason?: string, ref?: string): string => {
+  if (reason === "recipient_suppressed")
+    return "هذا البريد محجوب لدى مزوّد البريد (ارتداد سابق أو إلغاء اشتراك)، فلا تصله رسائل المنصة. الدعوة أُنشئت — شارك الرابط مباشرة مع العضو، أو راسل دعم مِهلة لرفع الحجب.";
+  if (reason === "email_not_configured")
+    return "خدمة البريد غير مهيأة حالياً. الدعوة أُنشئت — شارك الرابط مباشرة مع العضو.";
+  return `تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».${ref ? ` (مرجع العطل: ${ref})` : ""}`;
+};
+
 /** الحالة الفعلية للدعوة: "pending" منتهية الصلاحية تُعرض كمنتهية. */
 const effectiveInviteStatus = (inv: { status: string; expires_at: string | null }) =>
   inv.status === "pending" && inv.expires_at && new Date(inv.expires_at).getTime() <= Date.now()
@@ -178,7 +191,7 @@ function Page() {
         {
           description: result.emailSent
             ? "أُصدر رابط جديد وأُبطل الرابط السابق."
-            : `تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
+            : describeEmailReason(result.emailReason, result.emailRef),
         },
       );
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
@@ -428,6 +441,7 @@ function InviteDialog({
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [emailDelivered, setEmailDelivered] = useState(false);
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
 
   const reset = () => {
     setEmail("");
@@ -435,6 +449,7 @@ function InviteDialog({
     setErrors({});
     setLink(null);
     setEmailDelivered(false);
+    setEmailNotice(null);
   };
 
   const save = async () => {
@@ -460,12 +475,15 @@ function InviteDialog({
       });
       setLink(result.inviteUrl);
       setEmailDelivered(result.emailSent);
+      setEmailNotice(
+        result.emailSent ? null : describeEmailReason(result.emailReason, result.emailRef),
+      );
       track("team_member_invited", { action_source: "dashboard" });
       if (result.emailSent) {
         toast.success("تم إرسال الدعوة بالبريد الإلكتروني");
       } else {
         toast.warning("تم إنشاء الدعوة", {
-          description: `تعذّر إرسال البريد حالياً، شارك الرابط أدناه مع العضو.${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
+          description: describeEmailReason(result.emailReason, result.emailRef),
         });
       }
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
@@ -493,6 +511,14 @@ function InviteDialog({
     >
       {link ? (
         <div className="space-y-4">
+          {emailNotice && (
+            <p
+              role="status"
+              className="rounded-[var(--radius-m)] border border-warning/30 bg-warning/10 p-3 text-sm leading-6 text-foreground"
+            >
+              {emailNotice}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {emailDelivered
               ? "أرسلنا رسالة الدعوة إلى بريد العضو. يمكنك أيضاً مشاركة الرابط مباشرة:"
