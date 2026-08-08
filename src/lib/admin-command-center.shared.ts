@@ -203,15 +203,15 @@ export function deriveAlerts(input: CommandCenterInput): CommandAlert[] {
   }
 
   /* -------------------------------------------------------- الأعطال والأمان */
-  const openFailures = n(health?.reliability.failures_open);
-  if (openFailures > 0) {
+  const recentFailures = n(health?.reliability.failures_24h);
+  if (recentFailures > 0) {
     push({
-      id: "failures-open",
+      id: "failures-recent",
       severity: "critical",
-      title: `${ar(openFailures)} عطل تقني مفتوح`,
+      title: `${ar(recentFailures)} عطل تقني خلال 24 ساعة`,
       detail: health?.reliability.last_failure_ref
         ? `آخر مرجع عطل: ${health.reliability.last_failure_ref}`
-        : "أعطال مسجّلة لم تُغلق بعد.",
+        : "أعطال مسجّلة خلال آخر 24 ساعة.",
       to: "/mehla-admin/failures",
       cta: "فتح سجل الأعطال",
       at: health?.reliability.last_failure_at ?? null,
