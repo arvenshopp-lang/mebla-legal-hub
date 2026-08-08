@@ -191,7 +191,7 @@ function Page() {
         {
           description: result.emailSent
             ? "أُصدر رابط جديد وأُبطل الرابط السابق."
-            : `تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
+            : describeEmailReason(result.emailReason, result.emailRef),
         },
       );
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
