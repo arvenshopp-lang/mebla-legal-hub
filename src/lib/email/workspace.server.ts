@@ -649,6 +649,13 @@ const PERMANENT_SEND_CODES = new Set([
  */
 const RETRYABLE_SEND_CODES = new Set(["run_failed", "idempotency_conflict"]);
 
+/**
+ * رفض على مستوى المستلم لا على مستوى المنصة: عنوان موقوف أو غير صالح. الحالة
+ * تُحفظ على الرسالة وتظهر للمستخدم، لكنها **ليست** عطل نظام فلا تُسجَّل في سجل
+ * الأعطال حتى لا يُشوَّش على فريق التشغيل بأعطال ليست من مسؤوليته.
+ */
+const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
+
 /** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
 function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
   return `${baseKey}:a${attemptNumber}`;
