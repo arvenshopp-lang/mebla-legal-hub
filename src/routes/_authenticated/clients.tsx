@@ -118,7 +118,9 @@ function Page() {
       if (piiIds?.length) {
         query = query.in("id", piiIds);
       } else if (q) {
-        query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,company_name.ilike.%${q}%`);
+        query = query.or(
+          `full_name.ilike.%${q}%,phone.ilike.%${q}%,company_name.ilike.%${q}%,email.ilike.%${q}%,city.ilike.%${q}%`,
+        );
       }
       if (type !== "all") query = query.eq("client_type", type as Enums<"client_type">);
       const { data, error, count } = await query;
