@@ -61,7 +61,12 @@ async function recordAttempt(
   db: Db,
   row: QueueRow,
   outcome:
-    | { status: "accepted"; httpStatus: number; latencyMs: number; providerMessageId: string | null }
+    | {
+        status: "accepted";
+        httpStatus: number;
+        latencyMs: number;
+        providerMessageId: string | null;
+      }
     | { status: "failed"; httpStatus: number | null; code: string; message: string },
 ): Promise<void> {
   await db.from("notification_attempts").insert({
@@ -231,7 +236,8 @@ export async function processQueueBatch(db: Db, limit = 20): Promise<DispatchRep
       const result = await sendTemplateMessage({
         deviceId: row.provider_device_id,
         templateId: row.provider_template_id,
-        templateName: typeof payload["template_name"] === "string" ? payload["template_name"] : null,
+        templateName:
+          typeof payload["template_name"] === "string" ? payload["template_name"] : null,
         language: typeof payload["language"] === "string" ? payload["language"] : null,
         phoneE164: row.recipient_phone,
         bodyVariables: stringList(payload["body_variables"] ?? null),

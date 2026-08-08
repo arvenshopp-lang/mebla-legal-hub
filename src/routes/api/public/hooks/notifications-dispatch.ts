@@ -33,14 +33,14 @@ export const Route = createFileRoute("/api/public/hooks/notifications-dispatch")
           request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
           ""
         ).trim();
-        if (!expected || !safeEqual(provided, expected)) return json({ error: "unauthorized" }, 401);
+        if (!expected || !safeEqual(provided, expected))
+          return json({ error: "unauthorized" }, 401);
 
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { materializeDueEvents } = await import("@/lib/notifications/engine.server");
-          const { processQueueBatch, reapStuckRows } = await import(
-            "@/lib/notifications/queue.server"
-          );
+          const { processQueueBatch, reapStuckRows } =
+            await import("@/lib/notifications/queue.server");
 
           const reaped = await reapStuckRows(supabaseAdmin);
           const materialized = await materializeDueEvents(supabaseAdmin, 50);
