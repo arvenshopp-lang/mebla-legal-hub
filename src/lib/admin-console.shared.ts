@@ -77,7 +77,7 @@ export type ServiceHealth = {
   };
   reliability: {
     failures_24h: number;
-    failures_open: number;
+    failures_7d: number;
     last_failure_at: string | null;
     last_failure_ref: string | null;
   };

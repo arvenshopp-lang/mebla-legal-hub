@@ -1262,11 +1262,12 @@ export async function testProvider(
 
   const missing = provider.requiredCredentialKeys.filter((key) => !creds[key]);
   if (missing.length) {
+    // غياب المفاتيح ليس فشل اتصال؛ المزوّد ببساطة غير مهيّأ بعد.
     const message = "بعض المفاتيح المطلوبة غير محفوظة بعد.";
     await client
       .from("platform_payment_provider_configs")
       .update({
-        connection_status: "failed",
+        connection_status: "not_configured",
         last_test_error: message,
         last_tested_at: new Date().toISOString(),
       })
