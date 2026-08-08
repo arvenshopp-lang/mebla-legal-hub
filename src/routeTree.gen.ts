@@ -100,6 +100,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
 import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
+import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
@@ -566,6 +567,12 @@ const ApiPublicPaymentsProviderRoute =
     path: '/api/public/payments/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksNotificationsDispatchRoute =
+  ApiPublicHooksNotificationsDispatchRouteImport.update({
+    id: '/api/public/hooks/notifications-dispatch',
+    path: '/api/public/hooks/notifications-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMailSyncRoute = ApiPublicHooksMailSyncRouteImport.update({
   id: '/api/public/hooks/mail-sync',
   path: '/api/public/hooks/mail-sync',
@@ -686,6 +693,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
@@ -782,6 +790,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
@@ -881,6 +890,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
@@ -980,6 +990,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notifications-dispatch'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
@@ -1076,6 +1087,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notifications-dispatch'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
@@ -1174,6 +1186,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notifications-dispatch'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
@@ -1222,6 +1235,7 @@ export interface RootRouteChildren {
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
+  ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   ApiPublicWebhooksSlugRoute: typeof ApiPublicWebhooksSlugRoute
   ApiPublicWhSlugRoute: typeof ApiPublicWhSlugRoute
@@ -1868,6 +1882,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/notifications-dispatch': {
+      id: '/api/public/hooks/notifications-dispatch'
+      path: '/api/public/hooks/notifications-dispatch'
+      fullPath: '/api/public/hooks/notifications-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksNotificationsDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/mail-sync': {
       id: '/api/public/hooks/mail-sync'
       path: '/api/public/hooks/mail-sync'
@@ -2079,6 +2100,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEmailDispatchRoute: ApiPublicHooksEmailDispatchRoute,
   ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
+  ApiPublicHooksNotificationsDispatchRoute:
+    ApiPublicHooksNotificationsDispatchRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   ApiPublicWebhooksSlugRoute: ApiPublicWebhooksSlugRoute,
   ApiPublicWhSlugRoute: ApiPublicWhSlugRoute,

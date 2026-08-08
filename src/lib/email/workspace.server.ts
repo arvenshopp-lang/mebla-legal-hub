@@ -649,6 +649,13 @@ const PERMANENT_SEND_CODES = new Set([
  */
 const RETRYABLE_SEND_CODES = new Set(["run_failed", "idempotency_conflict"]);
 
+/**
+ * رفض على مستوى المستلم لا على مستوى المنصة: عنوان موقوف أو غير صالح. الحالة
+ * تُحفظ على الرسالة وتظهر للمستخدم، لكنها **ليست** عطل نظام فلا تُسجَّل في سجل
+ * الأعطال حتى لا يُشوَّش على فريق التشغيل بأعطال ليست من مسؤوليته.
+ */
+const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
+
 /** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
 function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
   return `${baseKey}:a${attemptNumber}`;
@@ -855,22 +862,25 @@ export async function dispatchOne(
   const attempts = job.attempts + 1;
   const classification = classifySendFailure(result);
   const exhausted = classification.permanent || attempts >= job.max_attempts;
-  const { logFailure } = await import("@/lib/observability/failure-log.server");
-  const failureRef = await logFailure({
-    surface: "email",
-    action: "email_workspace_send",
-    error: classification.reason ?? result.message,
-    errorCode: result.code,
-    httpStatus: result.status,
-    organizationId: message.organization_id ?? null,
-    metadata: {
-      message_id: messageId,
-      attempts,
-      recipients: message.to_addresses.length,
-      permanent: classification.permanent,
-      provider_message: result.message.slice(0, 300),
-    },
-  });
+  let failureRef: string | null = null;
+  if (!RECIPIENT_DENY_CODES.has(result.code)) {
+    const { logFailure } = await import("@/lib/observability/failure-log.server");
+    failureRef = await logFailure({
+      surface: "email",
+      action: "email_workspace_send",
+      error: classification.reason ?? result.message,
+      errorCode: result.code,
+      httpStatus: result.status,
+      organizationId: message.organization_id ?? null,
+      metadata: {
+        message_id: messageId,
+        attempts,
+        recipients: message.to_addresses.length,
+        permanent: classification.permanent,
+        provider_message: result.message.slice(0, 300),
+      },
+    });
+  }
   const backoffMinutes = Math.min(2 ** attempts, 60);
   await db
     .from("email_outbox")
@@ -890,7 +900,7 @@ export async function dispatchOne(
     .from("email_messages")
     .update({ status: exhausted ? "failed" : "queued", failure_ref: failureRef })
     .eq("id", messageId);
-  return { sent: false, failureRef };
+  return { sent: false, ...(failureRef ? { failureRef } : {}) };
 }
 
 /** معالجة الرسائل المستحقة (يستدعيها المسار الدوري). */

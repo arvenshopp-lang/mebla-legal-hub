@@ -16,6 +16,12 @@ export type AppEmailResult = { sent: boolean; reason?: string; ref?: string };
 
 const PROVIDER = "lovable-managed-email";
 
+/**
+ * رفض على مستوى المستلم (عنوان موقوف أو غير صالح) — سبب مشروع يُعاد للمستخدم
+ * برسالة عربية واضحة، وليس عطل نظام، فلا يُسجَّل في سجل الأعطال.
+ */
+const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
+
 export async function sendAppEmail(options: {
   to: string;
   subject: string;
@@ -88,6 +94,7 @@ export async function sendAppEmail(options: {
   } catch (error) {
     const apiError = error instanceof EmailAPIError ? error : null;
     const reason = apiError ? (apiError.code ?? `http_${apiError.status}`) : "send_failed";
+    if (RECIPIENT_DENY_CODES.has(reason)) return { sent: false, reason };
     const { logFailure } = await import("@/lib/observability/failure-log.server");
     const ref = await logFailure({
       surface: "email",
