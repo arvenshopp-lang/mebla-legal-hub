@@ -236,7 +236,7 @@ const PROBES: Probe[] = [
     name: "دليل المستخدمين (users.read)",
     file: "admin-users.functions.ts",
     fn: "listPlatformUsers",
-    data: { search: "", status: "all", sort: "recent", limit: 5, offset: 0 },
+    data: { search: "", status: "all", sort: "created_desc", limit: 5, offset: 0 },
     allow: ["owner", "support", "finance", "operations", "readonly"],
   },
   {
@@ -278,6 +278,10 @@ type Row = { probe: string; role: string; expected: string; actual: string; pass
 async function main() {
   console.log("تهيئة حسابات QA بأدوار حقيقية…");
   const actors = await setup();
+  // تسخين وحدات dev قبل القياس حتى لا يُحسب أول تصريف كرفض.
+  for (const probe of PROBES) {
+    await callServerFn(probe.file, probe.fn, actors[0]!.token, probe.data).catch(() => undefined);
+  }
   const rows: Row[] = [];
   try {
     for (const probe of PROBES) {
