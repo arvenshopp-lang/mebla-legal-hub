@@ -118,7 +118,7 @@ async def main():
         await page.wait_for_timeout(1500)
         await page.get_by_role("button", name="مهلة جديدة").first.click()
         await fill_by_label(page, "العنوان", deadline_title)
-        await page.get_by_label("تاريخ الاستحقاق").first.fill("2026-09-20")
+        await page.get_by_label("تاريخ الاستحقاق").first.fill("2026-09-20T09:00")
         await page.get_by_role("button", name="حفظ").first.click()
         await page.wait_for_timeout(2500)
         await page.reload(wait_until="load")
