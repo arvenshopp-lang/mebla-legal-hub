@@ -7,7 +7,7 @@
  */
 import { createTicket, resolveIdentity, writeTicketEvent } from "./tickets.server";
 import { notifyOffice, notifyStaff } from "./notify.server";
-import type { TicketChannel } from "./support.shared";
+import type { IngestMatchReason, IngestSource, TicketChannel } from "./support.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -20,6 +20,7 @@ export type IngestTicketResult = {
   ticketId: string | null;
   ticketNumber: string | null;
   reason?: string;
+  matchReason?: IngestMatchReason;
 };
 
 /**
@@ -31,17 +32,19 @@ export type IngestTicketResult = {
  * بمحادثته السابقة حتى إذا كانت الرسالة الصادرة الأصلية أُرسلت من مسار آخر
  * لا يمرّ بمركز الدعم.
  */
+type TicketMatch = { ticketId: string; reason: IngestMatchReason };
+
 async function resolveExistingTicketId(
   db: Db,
   input: { threadId: string; references: string[] },
-): Promise<string | null> {
+): Promise<TicketMatch | null> {
   const { data: threadRow } = await db
     .from("email_threads")
     .select("ticket_id")
     .eq("id", input.threadId)
     .maybeSingle();
   const direct = (threadRow as { ticket_id: string | null } | null)?.ticket_id ?? null;
-  if (direct) return direct;
+  if (direct) return { ticketId: direct, reason: "thread_ticket" };
 
   const { data: messageRows } = await db
     .from("email_messages")
@@ -51,7 +54,7 @@ async function resolveExistingTicketId(
     .order("created_at", { ascending: false })
     .limit(1);
   const fromMessage = ((messageRows ?? []) as { ticket_id: string | null }[])[0]?.ticket_id ?? null;
-  if (fromMessage) return fromMessage;
+  if (fromMessage) return { ticketId: fromMessage, reason: "message_ticket" };
 
   const { data: sourceRows } = await db
     .from("support_tickets")
@@ -60,7 +63,7 @@ async function resolveExistingTicketId(
     .order("created_at", { ascending: false })
     .limit(1);
   const fromSource = ((sourceRows ?? []) as { id: string }[])[0]?.id ?? null;
-  if (fromSource) return fromSource;
+  if (fromSource) return { ticketId: fromSource, reason: "thread_source" };
 
   const references = Array.from(new Set(input.references.filter(Boolean))).slice(0, 20);
   if (references.length === 0) return null;
@@ -73,7 +76,7 @@ async function resolveExistingTicketId(
     .limit(20);
   const rows = (referenced ?? []) as { ticket_id: string | null; thread_id: string | null }[];
   const referencedTicket = rows.find((row) => row.ticket_id)?.ticket_id ?? null;
-  if (referencedTicket) return referencedTicket;
+  if (referencedTicket) return { ticketId: referencedTicket, reason: "header_reference" };
 
   const threadIds = Array.from(
     new Set(rows.map((row) => row.thread_id).filter((id): id is string => Boolean(id))),
@@ -88,7 +91,7 @@ async function resolveExistingTicketId(
     .limit(1);
   const fromReferencedThread =
     ((linkedThreads ?? []) as { ticket_id: string | null }[])[0]?.ticket_id ?? null;
-  if (fromReferencedThread) return fromReferencedThread;
+  if (fromReferencedThread) return { ticketId: fromReferencedThread, reason: "header_reference" };
 
   const { data: referencedSource } = await db
     .from("support_tickets")
@@ -96,7 +99,10 @@ async function resolveExistingTicketId(
     .in("source_email_thread_id", threadIds)
     .order("created_at", { ascending: false })
     .limit(1);
-  return ((referencedSource ?? []) as { id: string }[])[0]?.id ?? null;
+  const fromReferencedSource = ((referencedSource ?? []) as { id: string }[])[0]?.id ?? null;
+  return fromReferencedSource
+    ? { ticketId: fromReferencedSource, reason: "header_reference" }
+    : null;
 }
 
 export async function linkInboundToTicket(
@@ -114,6 +120,7 @@ export async function linkInboundToTicket(
     duplicate: boolean;
     inReplyTo?: string | null;
     references?: string[];
+    source: IngestSource;
   },
 ): Promise<IngestTicketResult> {
   if (input.duplicate)
@@ -133,33 +140,39 @@ export async function linkInboundToTicket(
     email_message_id: input.emailMessageId,
     thread_id: input.threadId,
     outcome: "skipped",
+    source: input.source,
+    provider_message_id: input.providerMessageId ?? null,
   });
   if (claimError && String(claimError.code) === "23505") {
     return { outcome: "skipped", ticketId: null, ticketNumber: null, reason: "already_processed" };
   }
 
-  const finish = async (outcome: "created" | "appended", ticketId: string) => {
+  const finish = async (
+    outcome: "created" | "appended",
+    ticketId: string,
+    matchReason: IngestMatchReason,
+  ) => {
     await db
       .from("support_ticket_ingest")
-      .update({ outcome, ticket_id: ticketId })
+      .update({ outcome, ticket_id: ticketId, match_reason: matchReason })
       .eq("dedupe_key", dedupeKey);
     await db.from("email_messages").update({ ticket_id: ticketId }).eq("id", input.emailMessageId);
     await db.from("email_threads").update({ ticket_id: ticketId }).eq("id", input.threadId);
   };
 
   // 1) تذكرة قائمة على نفس المحادثة أو على المحادثة المرجعية → ردّ المكتب يُضاف إليها.
-  const linkedTicketId = await resolveExistingTicketId(db, {
+  const matched = await resolveExistingTicketId(db, {
     threadId: input.threadId,
     references: [input.inReplyTo ?? "", ...(input.references ?? [])].filter(Boolean),
   });
 
-  if (linkedTicketId) {
+  if (matched) {
     const { data: ticketRow } = await db
       .from("support_tickets")
       .select(
         "id, ticket_number, reference, subject, status, organization_id, user_id, assigned_to, team_id, merged_into_id",
       )
-      .eq("id", linkedTicketId)
+      .eq("id", matched.ticketId)
       .maybeSingle();
     const ticket = ticketRow as Record<string, unknown> | null;
     const targetId =
@@ -169,8 +182,10 @@ export async function linkInboundToTicket(
         authorName: input.fromName ?? input.from,
         body: input.body,
         emailMessageId: input.emailMessageId,
+        source: input.source,
+        matchReason: matched.reason,
       });
-      await finish("appended", targetId);
+      await finish("appended", targetId, matched.reason);
       await notifyStaff(
         db,
         {
@@ -187,6 +202,7 @@ export async function linkInboundToTicket(
         outcome: "appended",
         ticketId: targetId,
         ticketNumber: (ticket["ticket_number"] as string | null) ?? null,
+        matchReason: matched.reason,
       };
     }
   }
@@ -204,7 +220,13 @@ export async function linkInboundToTicket(
     organizationId: identity.organizationId,
     sourceEmailThreadId: input.threadId,
   });
-  await finish("created", created.id);
+  await finish("created", created.id, "new_ticket");
+  await db
+    .from("support_ticket_messages")
+    .update({ email_message_id: input.emailMessageId })
+    .eq("ticket_id", created.id)
+    .is("email_message_id", null)
+    .eq("is_staff", false);
   await notifyOffice(
     db,
     {
@@ -215,14 +237,25 @@ export async function linkInboundToTicket(
     },
     "ticket_created",
   );
-  return { outcome: "created", ticketId: created.id, ticketNumber: created.ticketNumber };
+  return {
+    outcome: "created",
+    ticketId: created.id,
+    ticketNumber: created.ticketNumber,
+    matchReason: "new_ticket",
+  };
 }
 
 /** رد المكتب عبر البريد: رسالة في التذكرة + استئناف عدّاد المهلة. */
 export async function appendCustomerReply(
   db: Db,
   ticketId: string,
-  input: { authorName: string; body: string; emailMessageId?: string | null },
+  input: {
+    authorName: string;
+    body: string;
+    emailMessageId?: string | null;
+    source?: IngestSource;
+    matchReason?: IngestMatchReason;
+  },
 ): Promise<void> {
   const body = input.body.trim() || "—";
   await db.from("support_ticket_messages").insert({
@@ -230,6 +263,7 @@ export async function appendCustomerReply(
     author_name: input.authorName.slice(0, 160),
     is_staff: false,
     body,
+    email_message_id: input.emailMessageId ?? null,
   });
 
   const nowIso = new Date().toISOString();
@@ -273,6 +307,10 @@ export async function appendCustomerReply(
     actorName: input.authorName.slice(0, 160),
     emailMessageId: input.emailMessageId ?? null,
     after: { length: body.length },
+    metadata: {
+      ...(input.source ? { ingest_source: input.source } : {}),
+      ...(input.matchReason ? { match_reason: input.matchReason } : {}),
+    },
   });
   if (patch["status"] === "in_progress" && ticket?.status === "closed") {
     await writeTicketEvent(db, {
