@@ -6,7 +6,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { CASE_STATUS_LABELS } from "@/lib/enums";
+import { CASE_STATUS } from "@/lib/enums";
 import {
   NOTIFICATION_CHANNEL,
   WHATSAPP_PROVIDER,
@@ -57,7 +57,7 @@ function resolveVariable(
     case "case.safe_reference":
       return context.caseNumber ?? context.publicCode ?? "";
     case "case.status_label":
-      return context.status ? (CASE_STATUS_LABELS[context.status] ?? context.status) : "";
+      return context.status ? (CASE_STATUS[context.status] ?? context.status) : "";
     case "case.court_name":
       return context.courtName ?? "";
     case "organization.name":
