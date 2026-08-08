@@ -166,6 +166,7 @@ export async function smtpSend(
 ): Promise<SmtpResult> {
   const started = Date.now();
   const config = transportConfig(mailboxAddress ?? message.from);
+  const identity = senderIdentity(mailboxAddress ?? message.from);
   if (!config.user || !config.password) {
     return {
       ok: false,
@@ -189,7 +190,8 @@ export async function smtpSend(
     const session = await openSession(config, mailboxAddress ?? null);
     socket = session.socket;
 
-    const envelopeFrom = config.from || message.from;
+    // المظروف بالحساب المُصادق عليه؛ ترويسة From تبقى بالاسم المستعار.
+    const envelopeFrom = identity.envelopeFrom || message.from;
     const mailFrom = await command(socket, `MAIL FROM:<${envelopeFrom}>`);
     if (mailFrom.code !== 250) {
       await command(socket, "QUIT");
@@ -198,6 +200,9 @@ export async function smtpSend(
         code: "smtp_rejected_sender",
         message: "رفض الخادم عنوان المُرسل.",
         latencyMs: Date.now() - started,
+        smtpCode: mailFrom.code,
+        envelopeFrom,
+        headerFrom: message.from,
       };
     }
     for (const recipient of recipients) {
@@ -240,12 +245,19 @@ export async function smtpSend(
         code: "smtp_rejected_data",
         message: "لم يقبل الخادم محتوى الرسالة.",
         latencyMs: Date.now() - started,
+        smtpCode: accepted.code,
+        envelopeFrom,
+        headerFrom: message.from,
       };
     }
     return {
       ok: true,
       response: accepted.text.slice(0, 200),
       latencyMs: Date.now() - started,
+      smtpCode: accepted.code,
+      envelopeFrom,
+      headerFrom: message.from,
+      replyTo: message.replyTo ?? null,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
