@@ -862,22 +862,25 @@ export async function dispatchOne(
   const attempts = job.attempts + 1;
   const classification = classifySendFailure(result);
   const exhausted = classification.permanent || attempts >= job.max_attempts;
-  const { logFailure } = await import("@/lib/observability/failure-log.server");
-  const failureRef = await logFailure({
-    surface: "email",
-    action: "email_workspace_send",
-    error: classification.reason ?? result.message,
-    errorCode: result.code,
-    httpStatus: result.status,
-    organizationId: message.organization_id ?? null,
-    metadata: {
-      message_id: messageId,
-      attempts,
-      recipients: message.to_addresses.length,
-      permanent: classification.permanent,
-      provider_message: result.message.slice(0, 300),
-    },
-  });
+  let failureRef: string | null = null;
+  if (!RECIPIENT_DENY_CODES.has(result.code)) {
+    const { logFailure } = await import("@/lib/observability/failure-log.server");
+    failureRef = await logFailure({
+      surface: "email",
+      action: "email_workspace_send",
+      error: classification.reason ?? result.message,
+      errorCode: result.code,
+      httpStatus: result.status,
+      organizationId: message.organization_id ?? null,
+      metadata: {
+        message_id: messageId,
+        attempts,
+        recipients: message.to_addresses.length,
+        permanent: classification.permanent,
+        provider_message: result.message.slice(0, 300),
+      },
+    });
+  }
   const backoffMinutes = Math.min(2 ** attempts, 60);
   await db
     .from("email_outbox")
