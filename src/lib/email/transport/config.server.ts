@@ -22,6 +22,26 @@ export type SecretsStatus = {
   complete: boolean;
 };
 
+/**
+ * هوية المُرسل لرسالة واحدة: المصادقة دائماً بالحساب الحقيقي، والهوية الظاهرة
+ * هي الاسم المستعار. فصل المظروف عن الترويسة يمنع رفض المزوّد لعنوان مُرسل
+ * غير مُصادَق عليه (Envelope From) مع الحفاظ على ظهور القسم للمستلم (Header From).
+ */
+export type SenderIdentity = {
+  /** اسم مستخدم SMTP/IMAP — الحساب الحقيقي الوحيد. */
+  authUser: string;
+  /** MAIL FROM / Return-Path — الحساب الحقيقي المُصادق عليه. */
+  envelopeFrom: string;
+  /** ترويسة From الظاهرة للمستلم — الاسم المستعار. */
+  headerFrom: string;
+  /** عنوان الرد المناسب: الاسم المستعار، وقناة بشرية بديلة لصندوق النظام. */
+  replyTo: string;
+  /** هل الهوية الظاهرة اسم مستعار لا يملك بيانات دخول خاصة؟ */
+  isAlias: boolean;
+  /** هل الهوية الظاهرة صندوق النظام (noreply) الذي لا يُتابع ردوده؟ */
+  isSystem: boolean;
+};
+
 function env(name: string): string {
   return (process.env[name] ?? "").trim();
 }
@@ -72,6 +92,34 @@ export function secretsStatus(mailboxAddress?: string | null): SecretsStatus {
 
 export function transportConfigured(mailboxAddress?: string | null): boolean {
   return secretsStatus(mailboxAddress).complete;
+}
+
+/** هل العنوان صندوق النظام الآلي (noreply@…)؟ */
+function isSystemAddress(address: string): boolean {
+  return /^no-?reply@/i.test(address.trim());
+}
+
+/**
+ * حساب هوية المُرسل: مصادقة واحدة بالحساب الحقيقي، وترويسة From بالاسم
+ * المستعار. لا تُنشأ بيانات دخول لأي اسم مستعار.
+ */
+export function senderIdentity(mailboxAddress?: string | null): SenderIdentity {
+  const config = transportConfig(mailboxAddress ?? null);
+  const displayed = (mailboxAddress ?? "").trim().toLowerCase() || config.user;
+  const ownCredentials = displayed ? mailboxHasOwnCredentials(displayed) : false;
+  const system = isSystemAddress(displayed);
+  const domain = displayed.split("@")[1] ?? config.user.split("@")[1] ?? "";
+  const systemReplyTo =
+    env("MAIL_SYSTEM_REPLY_TO") || (domain ? `support@${domain}` : config.user);
+  return {
+    authUser: config.user,
+    // المظروف بالحساب المُصادق عليه دائماً؛ هذا ما يقبله المزوّد ويطابق SPF.
+    envelopeFrom: config.user || displayed,
+    headerFrom: displayed || config.user,
+    replyTo: system ? systemReplyTo : displayed || config.user,
+    isAlias: !ownCredentials,
+    isSystem: system,
+  };
 }
 
 /** عنوان الحساب الحقيقي الوحيد الذي يملك بيانات الدخول. */
