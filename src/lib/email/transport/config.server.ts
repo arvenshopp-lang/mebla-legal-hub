@@ -109,8 +109,7 @@ export function senderIdentity(mailboxAddress?: string | null): SenderIdentity {
   const ownCredentials = displayed ? mailboxHasOwnCredentials(displayed) : false;
   const system = isSystemAddress(displayed);
   const domain = displayed.split("@")[1] ?? config.user.split("@")[1] ?? "";
-  const systemReplyTo =
-    env("MAIL_SYSTEM_REPLY_TO") || (domain ? `support@${domain}` : config.user);
+  const systemReplyTo = env("MAIL_SYSTEM_REPLY_TO") || (domain ? `support@${domain}` : config.user);
   return {
     authUser: config.user,
     // المظروف بالحساب المُصادق عليه دائماً؛ هذا ما يقبله المزوّد ويطابق SPF.

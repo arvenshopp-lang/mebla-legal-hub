@@ -100,8 +100,8 @@ export function MailIntegrationPanel({ canManage }: { canManage: boolean }) {
           </p>
           {domainMismatch && (
             <p className="text-body-sm rounded-[var(--radius-s)] border border-danger/40 bg-danger/10 p-2">
-              حساب النقل الحالي ليس على نطاق <span dir="ltr">mehlalex.com</span>، ولذلك ستفشل
-              مصادقة خادم Hostinger ويُرسل البريد عبر الخدمة المُدارة. حدّث سرّي{" "}
+              حساب النقل الحالي ليس على نطاق <span dir="ltr">mehlalex.com</span>، ولذلك ستفشل مصادقة
+              خادم Hostinger ويُرسل البريد عبر الخدمة المُدارة. حدّث سرّي{" "}
               <span dir="ltr">MAIL_USER</span> و<span dir="ltr">MAIL_PASSWORD</span> ببيانات صندوق
               البريد الحقيقي.
             </p>
