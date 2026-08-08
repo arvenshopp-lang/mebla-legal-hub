@@ -189,8 +189,10 @@ async function cleanup(quiet = false) {
   const orgs = await rest(
     `organizations?name=like.${encodeURIComponent(PREFIX + "%")}&select=id,name`,
   );
-  for (const o of orgs)
+  for (const o of orgs) {
+    await purgeQaFinancials(o["id"] as string);
     await rest(`organizations?id=eq.${o["id"]}`, { method: "DELETE", headers: adminHeaders });
+  }
   await rest(`platform_feature_flags?key=like.qa_destruct%25`, {
     method: "DELETE",
     headers: adminHeaders,
@@ -276,9 +278,23 @@ async function orgDeleteGuardAndDelete(c: Ctx) {
 
 async function orgFinalDelete(c: Ctx) {
   assertQa("اسم المكتب", c.org.name);
-  const clientsBefore = await rest(
-    `clients?organization_id=eq.${c.org.id}&select=id&limit=5`,
+  const clientsBefore = await rest(`clients?organization_id=eq.${c.org.id}&select=id`);
+
+  // مع وجود مستندات مالية، الحذف يجب أن يُرفض (حماية السجل المالي).
+  const blocked = await call("orgs", "deleteOrganization", c.staffA.token, {
+    organizationId: c.org.id,
+    confirmName: c.org.name,
+  });
+  const stillThere = (await rest(`organizations?id=eq.${c.org.id}&select=id`)).length === 1;
+  rec(
+    "رفض حذف مكتب مرتبط بسجلات مالية (حماية السجل المالي)",
+    blocked.denied && stillThere ? "PASS" : "FAIL",
+    blocked.message,
   );
+
+  // إزالة سجلات QA المالية فقط (بيانات تجريبية) للسماح بإتمام اختبار الحذف.
+  await purgeQaFinancials(c.org.id);
+
   const del = await call("orgs", "deleteOrganization", c.staffA.token, {
     organizationId: c.org.id,
     confirmName: c.org.name,
@@ -288,12 +304,54 @@ async function orgFinalDelete(c: Ctx) {
   rec(
     "حذف مكتب QA نهائياً + اختفاء البيانات التابعة",
     del.ok && gone && childGone ? "PASS" : "FAIL",
-    `عملاء قبل الحذف=${clientsBefore.length} / بعد=${childGone ? 0 : "باقي"} ${del.message}`,
+    `عملاء قبل الحذف=${clientsBefore.length} / بعد=${childGone ? 0 : "باقٍ"} ${del.message}`,
   );
   rec(
     "بقاء سجل تدقيق الحذف بعد اختفاء المكتب",
     (await auditExists("organization.delete", c.org.id)) ? "PASS" : "FAIL",
   );
+}
+
+/** يحذف السجلات المالية التجريبية لمكتب QA فقط (تُستخدم في التنظيف لا في الإنتاج). */
+async function purgeQaFinancials(orgId: string) {
+  const invoices = await rest(`platform_invoices?organization_id=eq.${orgId}&select=id`);
+  for (const inv of invoices) {
+    const payments = await rest(`platform_payments?invoice_id=eq.${inv["id"]}&select=id`);
+    for (const pay of payments) {
+      await rest(`platform_refunds?payment_id=eq.${pay["id"]}`, {
+        method: "DELETE",
+        headers: adminHeaders,
+      });
+      await rest(`platform_payment_attempts?payment_id=eq.${pay["id"]}`, {
+        method: "DELETE",
+        headers: adminHeaders,
+      });
+      await rest(`platform_bank_reconciliations?payment_id=eq.${pay["id"]}`, {
+        method: "DELETE",
+        headers: adminHeaders,
+      });
+      await rest(`platform_payments?id=eq.${pay["id"]}`, {
+        method: "DELETE",
+        headers: adminHeaders,
+      });
+    }
+    await rest(`platform_credit_notes?invoice_id=eq.${inv["id"]}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+    await rest(`platform_invoice_items?invoice_id=eq.${inv["id"]}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+    await rest(`platform_invoices?id=eq.${inv["id"]}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+  }
+  await rest(`subscriptions?organization_id=eq.${orgId}`, {
+    method: "DELETE",
+    headers: adminHeaders,
+  });
 }
 
 async function userSuspendAndDelete(c: Ctx) {
@@ -628,42 +686,84 @@ async function designPublishRollback(c: Ctx) {
   rec("سجل إصدارات التصميم محفوظ ولم يُحذف", versions.length > 0 ? "PASS" : "FAIL");
 }
 
-async function documentRequestRevoke(c: Ctx) {
-  const clientRow = (
-    await rest(`clients?organization_id=eq.${c.org.id}&select=id&limit=1`)
-  )[0];
-  let clientId = clientRow?.["id"] as string | undefined;
-  if (!clientId) {
-    const created = await rest("clients", {
-      method: "POST",
-      headers: { ...adminHeaders, Prefer: "return=representation" },
-      body: JSON.stringify({
-        organization_id: c.org.id,
-        client_type: "individual",
-        full_name: `${PREFIX}عميل رابط`,
-        phone: "0500000001",
-        created_by: c.org.ownerId,
-      }),
-    });
-    clientId = created[0]?.["id"] as string;
-  }
-  const create = await call("docreq", "createDocumentRequest", c.org.ownerToken, {
-    clientId,
-    caseId: null,
-    title: `${PREFIX}طلب مستندات`,
-    instructions: "ارفع صورة الهوية",
-    expiresInHours: 24,
-    maxFiles: 3,
+async function ensureQaSubscription(c: Ctx) {
+  const existing = await rest(
+    `subscriptions?organization_id=eq.${c.org.id}&status=eq.active&select=id&limit=1`,
+  );
+  if (existing.length) return;
+  const now = new Date();
+  await rest("subscriptions", {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=minimal" },
+    body: JSON.stringify({
+      user_id: c.org.ownerId,
+      email: c.org.ownerEmail,
+      organization_id: c.org.id,
+      plan_id: "a3baaeb0-32f1-4939-8fed-f2b5d7571904",
+      plan_code: "professional",
+      plan_label: "الباقة الاحترافية",
+      amount: 0,
+      currency: "SAR",
+      starts_at: now.toISOString(),
+      ends_at: new Date(now.getTime() + 30 * 864e5).toISOString(),
+      status: "active",
+      activation_method: "manual",
+      auto_renew: false,
+    }),
   });
-  const token = /"token"[\s\S]{0,40}?"([A-Za-z0-9_-]{8,})"/.exec(create.raw)?.[1];
+}
+
+async function documentRequestRevoke(c: Ctx) {
+  await ensureQaSubscription(c);
+  const created = await rest("clients", {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: c.org.id,
+      client_type: "individual",
+      full_name: `${PREFIX}عميل رابط`,
+      phone: "0500000001",
+      created_by: c.org.ownerId,
+    }),
+  });
+  const clientId = created[0]?.["id"] as string;
+  const caseRows = await rest("cases", {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: c.org.id,
+      client_id: clientId,
+      case_title: `${PREFIX}قضية رابط الرفع`,
+      case_number: `${PREFIX}CASE-1`,
+      status: "open",
+      priority: "medium",
+      created_by: c.org.ownerId,
+    }),
+  });
+  const caseId = caseRows[0]?.["id"] as string;
+
+  const create = await call("docreq", "createDocumentRequest", c.org.ownerToken, {
+    caseId,
+    title: `${PREFIX}طلب مستندات`,
+    message: "ارفع صورة الهوية",
+    items: ["صورة الهوية"],
+    expiresAt: new Date(Date.now() + 864e5).toISOString(),
+  });
+  const token = /"token"[\s\S]{0,40}?"([A-Za-z0-9_-]{16,})"/.exec(create.raw)?.[1];
   const reqRow = await one(
     `document_requests?organization_id=eq.${c.org.id}&select=id,status&order=created_at.desc&limit=1`,
   );
-  rec("إنشاء رابط رفع للعميل", create.ok && reqRow ? "PASS" : "FAIL", create.message);
+  rec(
+    "إنشاء رابط رفع للعميل",
+    create.ok && reqRow ? "PASS" : "FAIL",
+    create.message || create.raw.slice(0, 140),
+  );
   if (!reqRow) return;
   if (token) {
     const before = await call("portal", "getUploadRequest", "", { token });
     rec("الرابط يعمل قبل الإبطال", before.ok ? "PASS" : "FAIL", before.message);
+  } else {
+    rec("الرابط يعمل قبل الإبطال", "BLOCKED", "لم يُستخرج الرمز من استجابة الإنشاء.");
   }
   const rev = await call("docreq", "revokeDocumentRequest", c.org.ownerToken, {
     id: reqRow["id"],
@@ -678,8 +778,8 @@ async function documentRequestRevoke(c: Ctx) {
     const post = await call("portal", "getUploadRequest", "", { token });
     rec(
       "فشل الرابط بعد الإبطال (خادمياً)",
-      post.denied || /revoked|ملغ|منته/.test(post.raw) ? "PASS" : "FAIL",
-      post.message || post.raw.slice(0, 80),
+      post.denied || /revoked|ملغ|منته|غير صالح/.test(post.raw) ? "PASS" : "FAIL",
+      post.message || post.raw.slice(0, 100),
     );
   }
 }
