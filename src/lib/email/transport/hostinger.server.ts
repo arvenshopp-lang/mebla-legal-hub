@@ -287,6 +287,8 @@ export async function syncMailboxFolder(
             body: (parsed.text ?? parsed.html ?? "").slice(0, 20_000),
             providerMessageId: parsed.messageId,
             duplicate: false,
+            inReplyTo: parsed.inReplyTo,
+            references: parsed.references,
           });
           if (linked.outcome === "created") ticketsCreated += 1;
         }
