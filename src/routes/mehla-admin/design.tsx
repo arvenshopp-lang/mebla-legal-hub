@@ -248,6 +248,7 @@ function DesignStudioPage() {
   const publish = useServerFn(publishDesign);
   const rollback = useServerFn(rollbackDesign);
   const resetPage = useServerFn(resetDesignPage);
+  const restoreVersion = useServerFn(restoreDesignVersion);
 
   const studio = useQuery({
     queryKey: ["design-studio"],
@@ -319,6 +320,14 @@ function DesignStudioPage() {
     return parts.join("\n");
   }, [pageKey, current, globalState, validation]);
 
+  const publishedPageCss = useMemo(() => {
+    const active = studio.data?.active;
+    if (!active) return "";
+    return pageKey === "global"
+      ? (active.sanitized_css ?? "")
+      : ((active.page_css_json as Record<string, string> | null)?.[pageKey] ?? "");
+  }, [studio.data, pageKey]);
+
   /* ------------------------- الحفظ التلقائي ------------------------- */
   const doSave = useCallback(
     async (silent = true) => {
@@ -379,6 +388,18 @@ function DesignStudioPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "تعذّر الاسترجاع."),
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: async (versionId: string) => restoreVersion({ data: { versionId } }),
+    onSuccess: async (result) => {
+      toast.success(
+        `تمت استعادة الإصدار #${result.restoredFrom} كإصدار جديد #${result.versionNumber} وأصبح نشطاً.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["design-studio"] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "تعذّرت استعادة الإصدار."),
+  });
+
   const resetMutation = useMutation({
     mutationFn: async () => resetPage({ data: { pageKey } }),
     onSuccess: async () => {
@@ -424,7 +445,7 @@ function DesignStudioPage() {
             {status === "error" && "فشل الحفظ — أعد المحاولة"}
           </span>
           <Btn variant="secondary" size="sm" onClick={() => void doSave(false)}>
-            <Save className="h-4 w-4" aria-hidden /> حفظ كمسودة
+            <Save className="h-4 w-4" aria-hidden /> حفظ مسودة فقط
           </Btn>
           <Btn
             size="sm"
@@ -432,7 +453,7 @@ function DesignStudioPage() {
             disabled={!validation.valid}
             onClick={() => publishMutation.mutate()}
           >
-            <Upload className="h-4 w-4" aria-hidden /> تطبيق ونشر
+            <Upload className="h-4 w-4" aria-hidden /> حفظ ونشر الآن
           </Btn>
         </div>
       }
@@ -665,6 +686,83 @@ function DesignStudioPage() {
                 الحجم: {(validation.size_bytes / 1024).toFixed(1)} كيلوبايت
               </p>
 
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
+                  <p className="text-[12.5px] font-semibold">1) رموز التصميم الفعلية (للمرجع فقط)</p>
+                  <p className="mt-1 text-[11.5px] text-muted-foreground">
+                    مصدرها <code className="font-mono">src/styles.css</code> — تُعدَّل من تبويبات
+                    الرموز أعلاه، لا من هنا.
+                  </p>
+                  <pre
+                    dir="ltr"
+                    className="mt-2 max-h-40 overflow-auto rounded-[var(--radius-s)] bg-surface p-2 text-[11px] leading-[1.6]"
+                  >
+                    {tokensToCss(current.tokens, pageKey === "global" ? ":root" : `[data-page="${pageKey}"]`) ||
+                      "/* لا توجد رموز مخصصة لهذا النطاق بعد */"}
+                  </pre>
+                </div>
+
+                <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
+                  <p className="text-[12.5px] font-semibold">2) CSS المخصص المنشور حالياً لهذا النطاق</p>
+                  <pre
+                    dir="ltr"
+                    className="mt-2 max-h-40 overflow-auto rounded-[var(--radius-s)] bg-surface p-2 text-[11px] leading-[1.6]"
+                  >
+                    {publishedPageCss || "/* لا يوجد CSS منشور لهذا النطاق */"}
+                  </pre>
+                </div>
+
+                <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3 lg:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[12.5px] font-semibold">
+                      3) عناصر الصفحة الحقيقية القابلة للاستهداف
+                    </p>
+                    <Btn
+                      variant="secondary"
+                      size="sm"
+                      disabled={selectors.length === 0}
+                      onClick={() =>
+                        update({
+                          css: `${current.css ? `${current.css.trimEnd()}\n\n` : ""}${starterTemplate(pageKey, selectors)}`,
+                        })
+                      }
+                    >
+                      إدراج قالب بداية لهذه الصفحة
+                    </Btn>
+                  </div>
+                  <p className="mt-1 text-[11.5px] text-muted-foreground">
+                    مقروءة من صفحة المعاينة الحقيقية (<code className="font-mono" dir="ltr">{previewPathFor(pageKey)}</code>).
+                    الأنماط الأساسية مكتوبة بـ Tailwind داخل مكوّنات React، فلا يمكن تحريرها كملف
+                    CSS — تُعدَّل بطبقة CSS مخصصة فوقها.
+                  </p>
+                  {selectors.length === 0 ? (
+                    <p className="mt-2 text-[11.5px] text-muted-foreground">
+                      افتح تبويب المعاينة مرة واحدة لقراءة عناصر الصفحة.
+                    </p>
+                  ) : (
+                    <ul className="mt-2 flex flex-wrap gap-1.5">
+                      {selectors.map((s) => (
+                        <li key={s.selector}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              update({
+                                css: `${current.css ? `${current.css.trimEnd()}\n\n` : ""}${s.selector} {\n  \n}`,
+                              })
+                            }
+                            className="rounded-[var(--radius-s)] border border-border bg-surface px-2 py-1 font-mono text-[11px] hover:border-primary"
+                            dir="ltr"
+                            title={`${s.label} · ${s.count}`}
+                          >
+                            {s.selector}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
               {validation.blocked_rules.length > 0 && (
                 <div className="mt-3 rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3">
                   <p className="text-[12.5px] font-semibold text-danger">
@@ -727,6 +825,7 @@ function DesignStudioPage() {
                         <th className="p-2.5 text-start">النطاق</th>
                         <th className="p-2.5 text-start">الملخص</th>
                         <th className="p-2.5 text-start">تاريخ النشر</th>
+                        <th className="p-2.5 text-start">إجراء</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -745,12 +844,33 @@ function DesignStudioPage() {
                                 ? new Date(String(v.published_at)).toLocaleString("ar-SA")
                                 : "—"}
                             </td>
+                            <td className="p-2.5">
+                              <Btn
+                                variant="secondary"
+                                size="sm"
+                                disabled={
+                                  restoreMutation.isPending ||
+                                  String(v.id) === String(studio.data?.active?.id ?? "")
+                                }
+                                onClick={() => {
+                                  if (
+                                    !window.confirm(
+                                      `استعادة الإصدار #${String(v.version_number)} كإصدار جديد نشط؟ لن يُحذف أي إصدار من السجل.`,
+                                    )
+                                  )
+                                    return;
+                                  restoreMutation.mutate(String(v.id));
+                                }}
+                              >
+                                استعادة
+                              </Btn>
+                            </td>
                           </tr>
                         ),
                       )}
                       {(studio.data?.versions ?? []).length === 0 && (
                         <tr>
-                          <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                          <td colSpan={5} className="p-4 text-center text-muted-foreground">
                             لا توجد إصدارات منشورة بعد.
                           </td>
                         </tr>
