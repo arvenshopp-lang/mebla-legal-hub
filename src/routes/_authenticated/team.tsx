@@ -441,6 +441,7 @@ function InviteDialog({
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [emailDelivered, setEmailDelivered] = useState(false);
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
 
   const reset = () => {
     setEmail("");
@@ -448,6 +449,7 @@ function InviteDialog({
     setErrors({});
     setLink(null);
     setEmailDelivered(false);
+    setEmailNotice(null);
   };
 
   const save = async () => {
@@ -473,12 +475,15 @@ function InviteDialog({
       });
       setLink(result.inviteUrl);
       setEmailDelivered(result.emailSent);
+      setEmailNotice(
+        result.emailSent ? null : describeEmailReason(result.emailReason, result.emailRef),
+      );
       track("team_member_invited", { action_source: "dashboard" });
       if (result.emailSent) {
         toast.success("تم إرسال الدعوة بالبريد الإلكتروني");
       } else {
         toast.warning("تم إنشاء الدعوة", {
-          description: `تعذّر إرسال البريد حالياً، شارك الرابط أدناه مع العضو.${result.emailRef ? ` (مرجع العطل: ${result.emailRef})` : ""}`,
+          description: describeEmailReason(result.emailReason, result.emailRef),
         });
       }
       qc.invalidateQueries({ queryKey: ["team-invitations"] });
@@ -506,6 +511,14 @@ function InviteDialog({
     >
       {link ? (
         <div className="space-y-4">
+          {emailNotice && (
+            <p
+              role="status"
+              className="rounded-[var(--radius-m)] border border-warning/30 bg-warning/10 p-3 text-sm leading-6 text-foreground"
+            >
+              {emailNotice}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {emailDelivered
               ? "أرسلنا رسالة الدعوة إلى بريد العضو. يمكنك أيضاً مشاركة الرابط مباشرة:"
