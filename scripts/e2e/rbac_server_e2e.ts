@@ -85,13 +85,55 @@ type RoleCase = {
 };
 
 const ROLE_CASES: RoleCase[] = [
-  { key: "owner", label: "مالك المنصة", roleCode: null, platformRole: "super_admin", permissions: null },
-  { key: "support", label: "الدعم", roleCode: "support_agent", platformRole: "staff", permissions: null },
-  { key: "finance", label: "المالية", roleCode: "billing_manager", platformRole: "staff", permissions: null },
-  { key: "operations", label: "التشغيل", roleCode: "operations", platformRole: "staff", permissions: null },
-  { key: "readonly", label: "قراءة فقط", roleCode: null, platformRole: "staff", permissions: ["users.read", "organizations.read"] },
-  { key: "suspended", label: "موظف موقوف", roleCode: "support_agent", platformRole: "staff", permissions: null },
-  { key: "outsider", label: "مستخدم عادي بلا صفة موظف", roleCode: null, platformRole: "staff", permissions: null },
+  {
+    key: "owner",
+    label: "مالك المنصة",
+    roleCode: null,
+    platformRole: "super_admin",
+    permissions: null,
+  },
+  {
+    key: "support",
+    label: "الدعم",
+    roleCode: "support_agent",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "finance",
+    label: "المالية",
+    roleCode: "billing_manager",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "operations",
+    label: "التشغيل",
+    roleCode: "operations",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "readonly",
+    label: "قراءة فقط",
+    roleCode: null,
+    platformRole: "staff",
+    permissions: ["users.read", "organizations.read"],
+  },
+  {
+    key: "suspended",
+    label: "موظف موقوف",
+    roleCode: "support_agent",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "outsider",
+    label: "مستخدم عادي بلا صفة موظف",
+    roleCode: null,
+    platformRole: "staff",
+    permissions: null,
+  },
 ];
 
 type Actor = RoleCase & { userId: string; email: string; token: string };
@@ -264,7 +306,14 @@ const DIRECT_TABLES = [
 
 /* --------------------------------------------------------------- التشغيل */
 
-type Row = { probe: string; role: string; expected: string; actual: string; pass: boolean; detail?: string };
+type Row = {
+  probe: string;
+  role: string;
+  expected: string;
+  actual: string;
+  pass: boolean;
+  detail?: string;
+};
 
 async function main() {
   console.log("تهيئة حسابات QA بأدوار حقيقية…");
@@ -317,7 +366,9 @@ async function main() {
     );
     if (r.detail) console.log(`      ↳ ${r.detail}`);
   }
-  console.log(`\nالمجموع: ${rows.length} — ناجح: ${rows.length - failed.length} — فاشل: ${failed.length}`);
+  console.log(
+    `\nالمجموع: ${rows.length} — ناجح: ${rows.length - failed.length} — فاشل: ${failed.length}`,
+  );
   if (failed.length) process.exit(1);
 }
 

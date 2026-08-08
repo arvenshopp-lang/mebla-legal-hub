@@ -87,6 +87,22 @@ async function signIn(): Promise<unknown> {
   return res.json();
 }
 
+async function cleanup() {
+  const id = await findUserId();
+  if (!id) return console.log("لا يوجد حساب QA للتنظيف.");
+  await fetch(`${SUPABASE_URL}/rest/v1/platform_staff?user_id=eq.${id}`, {
+    method: "DELETE",
+    headers: admin,
+  });
+  await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, { method: "DELETE", headers: admin });
+  console.log("تم حذف حساب QA وصلاحياته.");
+}
+
+if (process.argv.includes("--cleanup")) {
+  await cleanup();
+  process.exit(0);
+}
+
 const userId = await ensureUser();
 await ensureStaff(userId);
 const session = await signIn();
@@ -95,3 +111,5 @@ await Bun.write(
   JSON.stringify({ storageKey: `sb-${PROJECT_REF}-auth-token`, session }, null, 2),
 );
 console.log(`جلسة QA جاهزة: ${OUT}`);
+
+/** تنظيف: bun scripts/e2e/mint-qa-session.ts --cleanup */
