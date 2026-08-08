@@ -124,6 +124,21 @@ export async function createTeamInvitation(input: {
     .maybeSingle();
 
   const inviteUrl = `${safeOrigin(input.origin)}/invite/${created.token}`;
+
+  // العنوان المحجوب لدى خدمة البريد المُدارة يفشل دائماً بـ403، فنكشف الحجب
+  // قبل الإرسال ونُعيد سبباً صريحاً بدل عطل صامت في السجل. الدعوة نفسها تبقى
+  // صالحة لأنها لا تعتمد على البريد.
+  const { recipientStates } = await import("@/lib/email/suppression.server");
+  const [state] = await recipientStates([email]);
+  if (state?.blocked) {
+    return {
+      token: created.token,
+      inviteUrl,
+      emailSent: false,
+      emailReason: "recipient_suppressed",
+    };
+  }
+
   const result = await sendAppEmail({
     to: email,
     subject: `دعوة للانضمام إلى ${org?.name ?? "مكتب المحاماة"} — مِهلة`,
