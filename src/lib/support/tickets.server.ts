@@ -358,7 +358,7 @@ export async function getTicket(
       first_source: firstIngest?.source ?? null,
       first_match_reason: firstIngest?.match_reason ?? null,
       first_thread_id:
-        firstIngest?.thread_id ?? ((ticket["source_email_thread_id"] as string | null) ?? null),
+        firstIngest?.thread_id ?? (ticket["source_email_thread_id"] as string | null) ?? null,
     },
     allowedTransitions: ticket["merged_into_id"]
       ? []
