@@ -62,6 +62,19 @@ const inviteSchema = z.object({
 /** رابط الدعوة الرسمي: صفحة عامة تعالج الرمز وتُنفّذ الانضمام. */
 const inviteUrl = (token: string) => `${window.location.origin}/invite/${token}`;
 
+/**
+ * سبب عدم وصول رسالة الدعوة بصيغة عربية عملية. الحجب لدى خدمة البريد
+ * (ارتداد أو إلغاء اشتراك أو شكوى) لا يمكن رفعه من داخل المكتب، لذلك نوجّه
+ * المستخدم إلى الرابط اليدوي ثم إلى دعم مِهلة.
+ */
+const describeEmailReason = (reason?: string, ref?: string): string => {
+  if (reason === "recipient_suppressed")
+    return "هذا البريد محجوب لدى مزوّد البريد (ارتداد سابق أو إلغاء اشتراك)، فلا تصله رسائل المنصة. الدعوة أُنشئت — شارك الرابط مباشرة مع العضو، أو راسل دعم مِهلة لرفع الحجب.";
+  if (reason === "email_not_configured")
+    return "خدمة البريد غير مهيأة حالياً. الدعوة أُنشئت — شارك الرابط مباشرة مع العضو.";
+  return `تعذّر إرسال البريد حالياً، شارك الرابط يدوياً من زر «نسخ».${ref ? ` (مرجع العطل: ${ref})` : ""}`;
+};
+
 /** الحالة الفعلية للدعوة: "pending" منتهية الصلاحية تُعرض كمنتهية. */
 const effectiveInviteStatus = (inv: { status: string; expires_at: string | null }) =>
   inv.status === "pending" && inv.expires_at && new Date(inv.expires_at).getTime() <= Date.now()
