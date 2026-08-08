@@ -47,8 +47,12 @@ async def main():
             lambda m: console_errors.append(m.text) if m.type == "error" else None,
         )
 
-        # 1) تسجيل الدخول عبر النموذج الفعلي
-        await page.goto(f"{APP}/login", wait_until="domcontentloaded")
+        page_errors = []
+        page.on("pageerror", lambda e: page_errors.append(str(e)[:300]))
+
+        # 1) تسجيل الدخول عبر النموذج الفعلي (بعد اكتمال Hydration)
+        await page.goto(f"{APP}/login", wait_until="load")
+        await page.wait_for_timeout(2000)
         await page.locator('input[type="email"]').fill(owner["email"])
         await page.locator('input[type="password"]').fill(qa["password"])
         await page.locator('button[type="submit"]').first.click()
@@ -57,7 +61,11 @@ async def main():
             record("تسجيل الدخول بحساب مالك المكتب", True)
         except Exception as exc:
             await page.screenshot(path=str(SHOTS / "login_failed.png"))
-            record("تسجيل الدخول بحساب مالك المكتب", False, f"{page.url} {exc}")
+            record(
+                "تسجيل الدخول بحساب مالك المكتب",
+                False,
+                f"{page.url} {exc} | console={console_errors[:3]} | pageerror={page_errors[:2]}",
+            )
             await browser.close()
             return finish()
         await page.screenshot(path=str(SHOTS / "01_dashboard.png"))
