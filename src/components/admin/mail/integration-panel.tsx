@@ -68,6 +68,10 @@ export function MailIntegrationPanel({ canManage }: { canManage: boolean }) {
   }
 
   const { secrets, mailboxes, states, runs } = status.data;
+  const transport = status.data.transport;
+  const domainMismatch =
+    transport.authAccount.includes("@") &&
+    !transport.authAccount.toLowerCase().endsWith("@mehlalex.com");
 
   return (
     <div className="space-y-6">
@@ -81,6 +85,28 @@ export function MailIntegrationPanel({ canManage }: { canManage: boolean }) {
           <Row label="اسم المستخدم" ok={secrets.user} />
           <Row label="كلمة المرور" ok={secrets.password} />
         </dl>
+        <div className="mt-4 space-y-2 rounded-[var(--radius-m)] border border-border bg-surface-2 p-3">
+          <p className="text-body-sm">
+            حساب النقل الحقيقي (المصادقة):{" "}
+            <span dir="ltr" className="font-semibold">
+              {transport.authAccount || "غير مُعرّف"}
+            </span>
+          </p>
+          <p className="text-caption">
+            كل الأسماء المستعارة تُرسل بنفس مصادقة هذا الحساب: المظروف{" "}
+            <span dir="ltr">Envelope From</span> بالحساب الحقيقي، وترويسة{" "}
+            <span dir="ltr">From</span> بعنوان القسم، و<span dir="ltr">Reply-To</span> للقسم نفسه.
+            لا تُنشأ بيانات دخول لأي اسم مستعار.
+          </p>
+          {domainMismatch && (
+            <p className="text-body-sm rounded-[var(--radius-s)] border border-danger/40 bg-danger/10 p-2">
+              حساب النقل الحالي ليس على نطاق <span dir="ltr">mehlalex.com</span>، ولذلك ستفشل
+              مصادقة خادم Hostinger ويُرسل البريد عبر الخدمة المُدارة. حدّث سرّي{" "}
+              <span dir="ltr">MAIL_USER</span> و<span dir="ltr">MAIL_PASSWORD</span> ببيانات صندوق
+              البريد الحقيقي.
+            </p>
+          )}
+        </div>
         {!secrets.complete && (
           <p className="text-body-sm mt-4 rounded-[var(--radius-m)] border border-warning/40 bg-warning/10 p-3">
             التكامل غير مُفعّل: أضف أسرار الخادم (<span dir="ltr">MAIL_USER</span> و
@@ -92,7 +118,7 @@ export function MailIntegrationPanel({ canManage }: { canManage: boolean }) {
 
       <SectionCard
         title="حالة الصناديق"
-        description="لكل صندوق بيانات اعتماد مستقلة ومجلدات مزامنة خاصة."
+        description="الصناديق البشرية أسماء مستعارة تُرسل وتُستقبل عبر حساب النقل الحقيقي الواحد."
       >
         {mailboxes.length === 0 ? (
           <EmptyState title="لا توجد صناديق قابلة للمزامنة" />
@@ -118,6 +144,9 @@ export function MailIntegrationPanel({ canManage }: { canManage: boolean }) {
                       </Badge>
                       <Badge tone={mailbox.credentials.complete ? "green" : "warn"}>
                         {mailbox.credentials.complete ? "بيانات الاعتماد مكتملة" : "بيانات ناقصة"}
+                      </Badge>
+                      <Badge tone={mailbox.identity.isAlias ? "muted" : "green"}>
+                        {mailbox.identity.isAlias ? "اسم مستعار" : "حساب حقيقي"}
                       </Badge>
                       <Btn
                         size="sm"
