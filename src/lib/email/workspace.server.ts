@@ -900,7 +900,7 @@ export async function dispatchOne(
     .from("email_messages")
     .update({ status: exhausted ? "failed" : "queued", failure_ref: failureRef })
     .eq("id", messageId);
-  return { sent: false, failureRef };
+  return { sent: false, ...(failureRef ? { failureRef } : {}) };
 }
 
 /** معالجة الرسائل المستحقة (يستدعيها المسار الدوري). */
