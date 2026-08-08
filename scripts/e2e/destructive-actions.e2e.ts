@@ -34,6 +34,16 @@ async function rest(path: string, init: RequestInit = {}): Promise<Row[]> {
 }
 const one = async (path: string) => (await rest(path))[0];
 
+/** حذف متسامح: السجلات المالية محميّة بمُشغِّل عدم الحذف، فنتجاوزها بدل إسقاط الاختبار. */
+async function tryDelete(path: string) {
+  try {
+    await rest(path, { method: "DELETE", headers: adminHeaders });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** حاجز أمان: لا كتابة إلا على كيان QA. */
 function assertQa(label: string, value: unknown) {
   if (typeof value !== "string" || !value.includes(PREFIX))
@@ -102,6 +112,7 @@ type Ctx = {
   staffC: { id: string; email: string };
   org: { id: string; name: string; ownerId: string; ownerToken: string; ownerEmail: string };
   extraUser: { id: string; email: string };
+  delOrg: { id: string; name: string };
 };
 
 async function setup(): Promise<Ctx> {
@@ -176,7 +187,45 @@ async function setup(): Promise<Ctx> {
   const orgId = Array.isArray(body) ? body[0]?.organization_id : undefined;
   if (!orgId) throw new Error(`تعذّر إنشاء مكتب QA: ${JSON.stringify(body)}`);
 
+  const delOwnerEmail = "qa.destruct.delowner@mehlaqa.test";
+  const delOwnerId = await ensureUser(delOwnerEmail, `${PREFIX}مالك مكتب للحذف`);
+  const delOwnerToken = await signIn(delOwnerEmail, PASSWORD);
+  const delOrgName = `${PREFIX}مكتب للحذف النهائي`;
+  const rpc2 = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_organization_with_owner`, {
+    method: "POST",
+    headers: {
+      apikey: PUBLISHABLE,
+      Authorization: `Bearer ${delOwnerToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      _name: delOrgName,
+      _city: "جدة",
+      _legal_name: delOrgName,
+      _commercial_registration: "1010999112",
+      _tax_number: "310999111900004",
+      _phone: "0122000000",
+      _email: "delete@mehlaqa.test",
+      _address: "بيانات QA",
+    }),
+  });
+  const body2 = (await rpc2.json()) as { organization_id?: string }[];
+  const delOrgId = Array.isArray(body2) ? body2[0]?.organization_id : undefined;
+  if (!delOrgId) throw new Error(`تعذّر إنشاء مكتب الحذف: ${JSON.stringify(body2)}`);
+  await rest("clients", {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=minimal" },
+    body: JSON.stringify({
+      organization_id: delOrgId,
+      client_type: "individual",
+      full_name: `${PREFIX}عميل مكتب الحذف`,
+      phone: "0500000009",
+      created_by: delOwnerId,
+    }),
+  });
+
   return {
+    delOrg: { id: delOrgId, name: delOrgName },
     staffA: { id: staffAId, email: staffAEmail, token: await signIn(staffAEmail, PASSWORD) },
     staffB: { id: staffBId, email: staffBEmail, token: await signIn(staffBEmail, PASSWORD) },
     staffC: { id: staffCId, email: staffCEmail },
@@ -191,35 +240,21 @@ async function cleanup(quiet = false) {
   );
   for (const o of orgs) {
     await purgeQaFinancials(o["id"] as string);
-    await rest(`organizations?id=eq.${o["id"]}`, { method: "DELETE", headers: adminHeaders });
+    await tryDelete(`organizations?id=eq.${o["id"]}`);
   }
-  await rest(`platform_feature_flags?key=like.qa_destruct%25`, {
-    method: "DELETE",
-    headers: adminHeaders,
-  });
-  await rest(`platform_email_templates?code=like.qa-destruct%25`, {
-    method: "DELETE",
-    headers: adminHeaders,
-  });
-  await rest(`platform_roles?code=like.qa_destruct%25`, {
-    method: "DELETE",
-    headers: adminHeaders,
-  });
-  await rest(`platform_backup_restore_requests?reason=like.${encodeURIComponent(PREFIX + "%")}`, {
-    method: "DELETE",
-    headers: adminHeaders,
-  });
+  await tryDelete(`platform_feature_flags?key=like.qa_destruct%25`);
+  await tryDelete(`platform_email_templates?code=like.qa-destruct%25`);
+  await tryDelete(`platform_roles?code=like.qa_destruct%25`);
+  await tryDelete(`platform_backup_restore_requests?reason=like.${encodeURIComponent(PREFIX + "%")}`);
   for (const email of [
     "qa.destruct.staff.a@mehlaqa.test",
     "qa.destruct.staff.b@mehlaqa.test",
     "qa.destruct.staff.c@mehlaqa.test",
     "qa.destruct.owner@mehlaqa.test",
     "qa.destruct.throwaway@mehlaqa.test",
+    "qa.destruct.delowner@mehlaqa.test",
   ]) {
-    await rest(`platform_staff?email=eq.${encodeURIComponent(email)}`, {
-      method: "DELETE",
-      headers: adminHeaders,
-    });
+    await tryDelete(`platform_staff?email=eq.${encodeURIComponent(email)}`);
     const list = await adminFetch(
       `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
     );
@@ -266,7 +301,7 @@ async function orgSuspendResume(c: Ctx) {
 
 async function orgDeleteGuardAndDelete(c: Ctx) {
   const wrong = await call("orgs", "deleteOrganization", c.staffA.token, {
-    organizationId: c.org.id,
+    organizationId: c.delOrg.id,
     confirmName: "اسم غير مطابق",
   });
   rec(
@@ -277,10 +312,10 @@ async function orgDeleteGuardAndDelete(c: Ctx) {
 }
 
 async function orgFinalDelete(c: Ctx) {
-  assertQa("اسم المكتب", c.org.name);
-  const clientsBefore = await rest(`clients?organization_id=eq.${c.org.id}&select=id`);
+  assertQa("اسم المكتب المالي", c.org.name);
+  assertQa("اسم مكتب الحذف", c.delOrg.name);
 
-  // مع وجود مستندات مالية، الحذف يجب أن يُرفض (حماية السجل المالي).
+  // (1) مكتب لديه سجلات مالية: الحذف يجب أن يُرفض — السجل المالي غير قابل للحذف.
   const blocked = await call("orgs", "deleteOrganization", c.staffA.token, {
     organizationId: c.org.id,
     confirmName: c.org.name,
@@ -292,15 +327,15 @@ async function orgFinalDelete(c: Ctx) {
     blocked.message,
   );
 
-  // إزالة سجلات QA المالية فقط (بيانات تجريبية) للسماح بإتمام اختبار الحذف.
-  await purgeQaFinancials(c.org.id);
-
+  // (2) مكتب تجريبي بلا سجلات مالية: الحذف يُنفَّذ فعلياً ويشمل البيانات التابعة.
+  const clientsBefore = await rest(`clients?organization_id=eq.${c.delOrg.id}&select=id`);
   const del = await call("orgs", "deleteOrganization", c.staffA.token, {
-    organizationId: c.org.id,
-    confirmName: c.org.name,
+    organizationId: c.delOrg.id,
+    confirmName: c.delOrg.name,
   });
-  const gone = (await rest(`organizations?id=eq.${c.org.id}&select=id`)).length === 0;
-  const childGone = (await rest(`clients?organization_id=eq.${c.org.id}&select=id`)).length === 0;
+  const gone = (await rest(`organizations?id=eq.${c.delOrg.id}&select=id`)).length === 0;
+  const childGone =
+    (await rest(`clients?organization_id=eq.${c.delOrg.id}&select=id`)).length === 0;
   rec(
     "حذف مكتب QA نهائياً + اختفاء البيانات التابعة",
     del.ok && gone && childGone ? "PASS" : "FAIL",
@@ -308,7 +343,7 @@ async function orgFinalDelete(c: Ctx) {
   );
   rec(
     "بقاء سجل تدقيق الحذف بعد اختفاء المكتب",
-    (await auditExists("organization.delete", c.org.id)) ? "PASS" : "FAIL",
+    (await auditExists("organization.delete", c.delOrg.id)) ? "PASS" : "FAIL",
   );
 }
 
@@ -318,40 +353,16 @@ async function purgeQaFinancials(orgId: string) {
   for (const inv of invoices) {
     const payments = await rest(`platform_payments?invoice_id=eq.${inv["id"]}&select=id`);
     for (const pay of payments) {
-      await rest(`platform_refunds?payment_id=eq.${pay["id"]}`, {
-        method: "DELETE",
-        headers: adminHeaders,
-      });
-      await rest(`platform_payment_attempts?payment_id=eq.${pay["id"]}`, {
-        method: "DELETE",
-        headers: adminHeaders,
-      });
-      await rest(`platform_bank_reconciliations?payment_id=eq.${pay["id"]}`, {
-        method: "DELETE",
-        headers: adminHeaders,
-      });
-      await rest(`platform_payments?id=eq.${pay["id"]}`, {
-        method: "DELETE",
-        headers: adminHeaders,
-      });
+      await tryDelete(`platform_refunds?payment_id=eq.${pay["id"]}`);
+      await tryDelete(`platform_payment_attempts?payment_id=eq.${pay["id"]}`);
+      await tryDelete(`platform_bank_reconciliations?payment_id=eq.${pay["id"]}`);
+      await tryDelete(`platform_payments?id=eq.${pay["id"]}`);
     }
-    await rest(`platform_credit_notes?invoice_id=eq.${inv["id"]}`, {
-      method: "DELETE",
-      headers: adminHeaders,
-    });
-    await rest(`platform_invoice_items?invoice_id=eq.${inv["id"]}`, {
-      method: "DELETE",
-      headers: adminHeaders,
-    });
-    await rest(`platform_invoices?id=eq.${inv["id"]}`, {
-      method: "DELETE",
-      headers: adminHeaders,
-    });
+    await tryDelete(`platform_credit_notes?invoice_id=eq.${inv["id"]}`);
+    await tryDelete(`platform_invoice_items?invoice_id=eq.${inv["id"]}`);
+    await tryDelete(`platform_invoices?id=eq.${inv["id"]}`);
   }
-  await rest(`subscriptions?organization_id=eq.${orgId}`, {
-    method: "DELETE",
-    headers: adminHeaders,
-  });
+  await tryDelete(`subscriptions?organization_id=eq.${orgId}`);
 }
 
 async function userSuspendAndDelete(c: Ctx) {
