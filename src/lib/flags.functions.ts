@@ -49,8 +49,8 @@ const flagSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(
-      /^[a-z0-9][a-z0-9_.-]{1,80}$/,
-      "المفتاح يقبل الحروف اللاتينية الصغيرة والأرقام والشرطة فقط",
+      /^[a-z0-9][a-z0-9_.]{2,59}$/,
+      "المفتاح يقبل الحروف اللاتينية الصغيرة والأرقام والنقطة والشرطة السفلية فقط (٣-٦٠ حرفاً)",
     ),
   label: z.string().trim().min(2).max(160),
   description: z.string().trim().max(500).optional().nullable(),
