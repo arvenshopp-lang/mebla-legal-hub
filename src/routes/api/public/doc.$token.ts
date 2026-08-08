@@ -28,6 +28,7 @@ async function failure(
     documentId?: string | null;
     organizationId?: string | null;
     path: string;
+    metadata?: Record<string, unknown>;
   },
 ) {
   const { logFailure } = await import("@/lib/observability/failure-log.server");
@@ -39,6 +40,7 @@ async function failure(
     documentId: detail.documentId ?? null,
     organizationId: detail.organizationId ?? null,
     path: detail.path,
+    metadata: detail.metadata,
   });
   return Response.json(
     { error: "document_unavailable", message: publicMessage, ref },
@@ -53,17 +55,44 @@ async function failure(
   );
 }
 
+/**
+ * عملاء البريد وتطبيقات المحادثة يُلحقون أحرف ترقيم أو قوساً أو نقاطاً بنهاية
+ * الرابط عند اكتشافه تلقائياً. الرمز نفسه محدود بالحروف والأرقام و`-_`، لذلك
+ * نُنظّف اللواحق غير المطابقة قبل الحكم على الرابط بأنه غير صالح — بدل رفض
+ * رابط صحيح بسبب حرف أضافه بريد المستخدم.
+ */
+const TOKEN_CHARS = /^[A-Za-z0-9_-]+$/;
+function normalizeToken(raw: string): string {
+  let token = raw.trim();
+  try {
+    token = decodeURIComponent(token).trim();
+  } catch {
+    /* الرمز غير مُرمَّز — يُستخدم كما هو */
+  }
+  // إزالة اللواحق الشائعة: نقطة، فاصلة، قوس، علامة تعجّب، حرف حذف عربي/لاتيني.
+  token = token.replace(/[\s.,;:!?)"'»<>\u2026\u060C\u061B\u061F]+$/u, "");
+  return token;
+}
+
 export const Route = createFileRoute("/api/public/doc/$token")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const token = String(params.token ?? "");
+        const rawToken = String(params.token ?? "");
+        const token = normalizeToken(rawToken);
         const path = new URL(request.url).pathname;
-        if (token.length < 20)
+        if (token.length < 20 || !TOKEN_CHARS.test(token))
           return failure(PUBLIC_LOAD_ERROR, 400, {
             action: "token.malformed",
-            error: "رمز قصير",
+            error: token.length < 20 ? "رمز قصير" : "رمز يحتوي أحرفاً غير مسموحة",
             path,
+            // لا يُحفظ الرمز نفسه أبداً؛ فقط ما يكفي لتشخيص سبب التلف.
+            metadata: {
+              raw_length: rawToken.length,
+              normalized_length: token.length,
+              trimmed_suffix: rawToken.length !== token.length,
+              referer: request.headers.get("referer") ? "present" : "none",
+            },
           });
 
         const [secure, shared, stamp] = await Promise.all([
