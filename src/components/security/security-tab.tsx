@@ -316,7 +316,7 @@ function MfaCard() {
           <img
             src={qrImageSrc(enroll.qrSvg)}
             alt="رمز تفعيل التحقق بخطوتين"
-            className="w-44 rounded-[var(--radius-m)] border border-border bg-white p-2"
+            className="w-44 rounded-[var(--radius-m)] border border-border bg-surface p-2"
           />
           <p className="text-xs text-text-muted">
             أو أدخل المفتاح يدوياً:{" "}
