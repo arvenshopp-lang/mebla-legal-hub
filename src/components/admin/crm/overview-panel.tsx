@@ -91,7 +91,7 @@ export function OverviewPanel() {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-[var(--brand-green)]"
+                    className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.round((stage.total_amount / maxAmount) * 100)}%` }}
                   />
                 </div>

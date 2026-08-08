@@ -169,7 +169,7 @@ export function ActivitiesPanel() {
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 text-body-sm">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-[var(--brand-green)]"
+                className="h-4 w-4 accent-primary"
                 checked={onlyOpen}
                 onChange={(event) => {
                   setOnlyOpen(event.target.checked);

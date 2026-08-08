@@ -115,7 +115,7 @@ export function NotificationBell() {
         <Bell className="h-[18px] w-[18px]" aria-hidden />
         {unread.length > 0 && (
           <span
-            className="absolute -top-1 -left-1 min-w-[18px] rounded-full bg-danger px-1 text-[10px] font-bold leading-[18px] text-white tabular-nums"
+            className="absolute -top-1 -left-1 min-w-[18px] rounded-full bg-danger px-1 text-[10px] font-bold leading-[18px] text-primary-foreground tabular-nums"
             aria-hidden
           >
             {unread.length > 9 ? "9+" : unread.length}

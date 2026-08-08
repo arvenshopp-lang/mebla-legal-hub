@@ -51,7 +51,7 @@ function CrmPage() {
         <div
           role="tablist"
           aria-label="أقسام CRM"
-          className="flex w-max gap-1 rounded-xl border border-border bg-surface-2 p-1"
+          className="flex w-max gap-1 rounded-xl border border-border bg-surface-muted p-1"
         >
           {TABS.map((item) => (
             <button
@@ -62,7 +62,7 @@ function CrmPage() {
               onClick={() => setTab(item.id)}
               className={`rounded-lg px-3.5 py-2 text-body-sm font-semibold transition-colors ${
                 tab === item.id
-                  ? "bg-[var(--brand-green)] text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >

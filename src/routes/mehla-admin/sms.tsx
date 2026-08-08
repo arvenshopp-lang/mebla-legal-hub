@@ -113,7 +113,7 @@ function Toggle({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]"
+        className="mt-1 h-4 w-4 accent-primary"
       />
       <span>
         <span className="block text-[13px] font-semibold text-foreground">{label}</span>
