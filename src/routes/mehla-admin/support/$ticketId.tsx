@@ -34,6 +34,8 @@ import {
   TICKET_STATUS_LABELS_AR,
   dueLabel,
   humanDuration,
+  ingestMatchReasonLabel,
+  ingestSourceLabel,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/support/support.shared";
@@ -360,6 +362,34 @@ function TicketDetailPage() {
                     <span className="font-semibold text-foreground">{m.author_name}</span>
                     <span>{fmtDateTime(m.created_at)}</span>
                   </header>
+                  {(ingestSourceLabel(m.ingest_source) ??
+                    ingestMatchReasonLabel(m.ingest_match_reason) ??
+                    m.email_thread_id) && (
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                      {ingestSourceLabel(m.ingest_source) && (
+                        <Badge tone="muted">المصدر: {ingestSourceLabel(m.ingest_source)}</Badge>
+                      )}
+                      {ingestMatchReasonLabel(m.ingest_match_reason) && (
+                        <Badge tone="muted">{ingestMatchReasonLabel(m.ingest_match_reason)}</Badge>
+                      )}
+                      {m.email_thread_id && perms.viewMail ? (
+                        <Link
+                          to="/mehla-admin/mail"
+                          search={{ thread: m.email_thread_id }}
+                          className="text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline"
+                        >
+                          فتح خيط الرسائل
+                        </Link>
+                      ) : m.email_thread_id ? (
+                        <span
+                          className="text-[11.5px] text-muted-foreground"
+                          title="لا تملك صلاحية عرض مركز البريد."
+                        >
+                          فتح خيط الرسائل — يتطلب صلاحية عرض البريد
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{m.body}</p>
                   {m.attachments.length > 0 && (
                     <ul className="mt-2 space-y-1">
