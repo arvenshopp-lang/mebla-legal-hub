@@ -304,6 +304,7 @@ async function handle(request: Request) {
         duplicate: result.duplicate,
         inReplyTo: parsed.inReplyTo ?? null,
         references: parsed.references ?? [],
+        source: "inbound_webhook",
       });
       ticket = { outcome: linked.outcome, ticket_number: linked.ticketNumber };
     } catch (error) {
