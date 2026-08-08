@@ -41,23 +41,23 @@ function Page() {
     <DashboardShell title="الإعدادات">
       <div className="mb-5 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex w-max gap-2">
-        {[
-          { k: "profile", l: "حسابي" },
-          { k: "organization", l: "المكتب" },
-          { k: "notifications", l: "التنبيهات" },
-          { k: "security", l: "الأمان" },
-          { k: "privacy", l: "الخصوصية" },
-        ].map((t) => (
-          <button
-            key={t.k}
-            onClick={() =>
-              setTab(t.k as "profile" | "organization" | "notifications" | "security" | "privacy")
-            }
-            className={`shrink-0 px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
-          >
-            {t.l}
-          </button>
-        ))}
+          {[
+            { k: "profile", l: "حسابي" },
+            { k: "organization", l: "المكتب" },
+            { k: "notifications", l: "التنبيهات" },
+            { k: "security", l: "الأمان" },
+            { k: "privacy", l: "الخصوصية" },
+          ].map((t) => (
+            <button
+              key={t.k}
+              onClick={() =>
+                setTab(t.k as "profile" | "organization" | "notifications" | "security" | "privacy")
+              }
+              className={`shrink-0 px-4 py-2 text-sm font-medium ${tab === t.k ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+            >
+              {t.l}
+            </button>
+          ))}
         </div>
       </div>
       {tab === "profile" && <ProfileTab userId={user?.id} />}

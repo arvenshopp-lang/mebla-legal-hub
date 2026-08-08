@@ -15,7 +15,8 @@ export const Route = createFileRoute("/api/public/qa-modcheck")({
             await load();
             results[key] = "ok";
           } catch (error) {
-            results[key] = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+            results[key] =
+              error instanceof Error ? `${error.name}: ${error.message}` : String(error);
           }
         }
         return Response.json(results);

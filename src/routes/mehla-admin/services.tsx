@@ -97,7 +97,13 @@ function ServicesPage() {
               Icon={AlertTriangle}
               label="الأعطال (7 أيام)"
               value={fmtNumber(data.reliability.failures_7d)}
-              tone={data.reliability.failures_24h > 0 ? "red" : data.reliability.failures_7d > 0 ? "warn" : "green"}
+              tone={
+                data.reliability.failures_24h > 0
+                  ? "red"
+                  : data.reliability.failures_7d > 0
+                    ? "warn"
+                    : "green"
+              }
               hint={
                 data.reliability.last_failure_ref
                   ? `آخر مرجع: ${data.reliability.last_failure_ref}`
