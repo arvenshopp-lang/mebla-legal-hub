@@ -751,6 +751,7 @@ export async function syncAgenticFolder(
             body: (message.text ?? message.html ?? "").slice(0, 20_000),
             providerMessageId: message.messageId ?? message.providerId ?? null,
             duplicate: false,
+            source: "agentic",
           });
           if (linked.outcome === "created") ticketsCreated += 1;
         }

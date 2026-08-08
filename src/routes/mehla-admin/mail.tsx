@@ -59,6 +59,9 @@ import {
 } from "@/lib/email/email.functions";
 
 export const Route = createFileRoute("/mehla-admin/mail")({
+  validateSearch: (search: Record<string, unknown>): { thread?: string } => ({
+    thread: typeof search["thread"] === "string" ? search["thread"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "مركز البريد · إدارة مِهلة" },
@@ -71,6 +74,7 @@ export const Route = createFileRoute("/mehla-admin/mail")({
 function MailWorkspacePage() {
   const qc = useQueryClient();
   const { can } = usePlatformAdmin();
+  const { thread: threadFromLink } = Route.useSearch();
 
   const workspaceFn = useServerFn(getMailWorkspace);
   const workspace = useQuery({
@@ -83,7 +87,7 @@ function MailWorkspacePage() {
   const [search, setSearch] = useState("");
   const [starredOnly, setStarredOnly] = useState(false);
   const [labelId, setLabelId] = useState<string | null>(null);
-  const [threadId, setThreadId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(threadFromLink ?? null);
   const [compose, setCompose] = useState<ComposeSeed | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [labelsOpen, setLabelsOpen] = useState(false);

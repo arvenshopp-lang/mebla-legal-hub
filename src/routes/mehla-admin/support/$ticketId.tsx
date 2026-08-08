@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowRight, Paperclip, Star } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import {
   addSupportNote,
   assignSupportTicket,
@@ -34,6 +35,8 @@ import {
   TICKET_STATUS_LABELS_AR,
   dueLabel,
   humanDuration,
+  ingestMatchReasonLabel,
+  ingestSourceLabel,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/support/support.shared";
@@ -72,6 +75,7 @@ function TicketDetailPage() {
   const { ticketId } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { can } = usePlatformAdmin();
 
   const ticketFn = useServerFn(getSupportTicket);
   const workspaceFn = useServerFn(getSupportWorkspace);
@@ -312,6 +316,7 @@ function TicketDetailPage() {
 
   const t = data.ticket;
   const perms = workspace.permissions;
+  const canViewMail = can("email.view");
   const ref = t.ticket_number ?? t.reference;
 
   return (
@@ -360,6 +365,34 @@ function TicketDetailPage() {
                     <span className="font-semibold text-foreground">{m.author_name}</span>
                     <span>{fmtDateTime(m.created_at)}</span>
                   </header>
+                  {(ingestSourceLabel(m.ingest_source) ??
+                    ingestMatchReasonLabel(m.ingest_match_reason) ??
+                    m.email_thread_id) && (
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                      {ingestSourceLabel(m.ingest_source) && (
+                        <Badge tone="muted">المصدر: {ingestSourceLabel(m.ingest_source)}</Badge>
+                      )}
+                      {ingestMatchReasonLabel(m.ingest_match_reason) && (
+                        <Badge tone="muted">{ingestMatchReasonLabel(m.ingest_match_reason)}</Badge>
+                      )}
+                      {m.email_thread_id && canViewMail ? (
+                        <Link
+                          to="/mehla-admin/mail"
+                          search={{ thread: m.email_thread_id }}
+                          className="text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline"
+                        >
+                          فتح خيط الرسائل
+                        </Link>
+                      ) : m.email_thread_id ? (
+                        <span
+                          className="text-[11.5px] text-muted-foreground"
+                          title="لا تملك صلاحية عرض مركز البريد."
+                        >
+                          فتح خيط الرسائل — يتطلب صلاحية عرض البريد
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{m.body}</p>
                   {m.attachments.length > 0 && (
                     <ul className="mt-2 space-y-1">
@@ -551,6 +584,45 @@ function TicketDetailPage() {
               </div>
             )}
           </SectionCard>
+
+          {data.ingest.inbound_count > 0 && (
+            <SectionCard title="مصدر التذكرة">
+              <dl className="space-y-2.5 text-[13px]">
+                <Row
+                  label="الرسائل الواردة المستوعبة"
+                  value={<span className="tabular-nums">{data.ingest.inbound_count}</span>}
+                />
+                <Row
+                  label="مصدر الاستيعاب"
+                  value={ingestSourceLabel(data.ingest.first_source) ?? "—"}
+                />
+                <Row
+                  label="سبب الارتباط الأول"
+                  value={ingestMatchReasonLabel(data.ingest.first_match_reason) ?? "—"}
+                />
+                <Row
+                  label="خيط الرسائل"
+                  value={
+                    data.ingest.first_thread_id ? (
+                      canViewMail ? (
+                        <Link
+                          to="/mehla-admin/mail"
+                          search={{ thread: data.ingest.first_thread_id }}
+                          className="font-semibold text-primary underline-offset-2 hover:underline"
+                        >
+                          فتح في مركز البريد
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">يتطلب صلاحية عرض البريد</span>
+                      )
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
+              </dl>
+            </SectionCard>
+          )}
 
           <SectionCard title="المهل (SLA)">
             <dl className="space-y-2.5 text-[13px]">

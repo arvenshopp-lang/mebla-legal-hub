@@ -49,6 +49,48 @@ export const TERMINAL_STATUSES: TicketStatus[] = ["resolved", "closed"];
 export const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 
+/* ------------------------------------------------------------ مصدر الاستيعاب */
+
+/** مصادر استيعاب البريد الوارد في مركز الدعم. */
+export const INGEST_SOURCES = ["imap_sync", "inbound_webhook", "agentic"] as const;
+export type IngestSource = (typeof INGEST_SOURCES)[number];
+
+export const INGEST_SOURCE_LABELS_AR: Record<IngestSource, string> = {
+  imap_sync: "مزامنة IMAP",
+  inbound_webhook: "ويبهوك بريد وارد",
+  agentic: "مزوّد البريد الذكي",
+};
+
+/** سبب ارتباط الرسالة الواردة بالتذكرة. */
+export const INGEST_MATCH_REASONS = [
+  "thread_ticket",
+  "message_ticket",
+  "thread_source",
+  "header_reference",
+  "new_ticket",
+] as const;
+export type IngestMatchReason = (typeof INGEST_MATCH_REASONS)[number];
+
+export const INGEST_MATCH_REASON_LABELS_AR: Record<IngestMatchReason, string> = {
+  thread_ticket: "ارتباط بنفس المحادثة",
+  message_ticket: "مطابقة رسالة سابقة في المحادثة",
+  thread_source: "تذكرة أُنشئت من هذه المحادثة",
+  header_reference: "مطابقة ترويسات الرد",
+  new_ticket: "تذكرة جديدة من هذه المحادثة",
+};
+
+export function ingestSourceLabel(value: string | null): string | null {
+  return value && value in INGEST_SOURCE_LABELS_AR
+    ? INGEST_SOURCE_LABELS_AR[value as IngestSource]
+    : null;
+}
+
+export function ingestMatchReasonLabel(value: string | null): string | null {
+  return value && value in INGEST_MATCH_REASON_LABELS_AR
+    ? INGEST_MATCH_REASON_LABELS_AR[value as IngestMatchReason]
+    : null;
+}
+
 export const TICKET_PRIORITY_LABELS_AR: Record<TicketPriority, string> = {
   low: "منخفضة",
   medium: "متوسطة",
@@ -214,6 +256,10 @@ export type TicketDetail = {
     body: string;
     created_at: string;
     attachments: { id: string; file_name: string; size_bytes: number }[];
+    email_message_id: string | null;
+    email_thread_id: string | null;
+    ingest_source: string | null;
+    ingest_match_reason: string | null;
   }[];
   notes: { id: string; author_name: string; body: string; created_at: string }[];
   events: TicketTimelineEvent[];
@@ -226,6 +272,12 @@ export type TicketDetail = {
     reason: string;
   }[];
   tags: { id: string; name_ar: string; color: string }[];
+  ingest: {
+    inbound_count: number;
+    first_source: string | null;
+    first_match_reason: string | null;
+    first_thread_id: string | null;
+  };
   allowedTransitions: TicketStatus[];
 };
 

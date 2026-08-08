@@ -289,6 +289,7 @@ export async function syncMailboxFolder(
             duplicate: false,
             inReplyTo: parsed.inReplyTo,
             references: parsed.references,
+            source: "imap_sync",
           });
           if (linked.outcome === "created") ticketsCreated += 1;
         }
