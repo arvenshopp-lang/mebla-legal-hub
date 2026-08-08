@@ -102,7 +102,7 @@ type RoleCase = {
   label: string;
   roleCode: string | null; // null = super_admin بلا دور
   platformRole: "super_admin" | "staff";
-  permissions: string[] | null; // صلاحيات مباشرة إضافية
+  permissions: string[] | null;
 };
 
 const ROLE_CASES: RoleCase[] = [
@@ -165,7 +165,7 @@ async function setup(): Promise<Actor[]> {
           email,
           role: rc.platformRole,
           status: rc.key === "suspended" ? "suspended" : "active",
-          permissions: rc.permissions,
+          permissions: rc.permissions ?? [],
           role_id: rc.roleCode ? roles[rc.roleCode] : null,
         }),
       });
