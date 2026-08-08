@@ -114,23 +114,22 @@ async function setup() {
   const plan = ((await planRes.json()) as { id: string; code: string; name_ar: string }[])[0];
   if (!plan) throw new Error("الباقة الاحترافية غير متاحة لتهيئة QA");
   const endsAt = new Date(Date.now() + 30 * 86_400_000).toISOString();
-  const sub = await adminFetch(`${SUPABASE_URL}/rest/v1/subscriptions`, {
-    method: "POST",
-    headers: { ...adminHeaders, Prefer: "return=minimal" },
-    body: JSON.stringify({
-      user_id: owner.userId,
-      email: owner.email,
-      organization_id: organizationId,
-      plan_id: plan.id,
-      plan_code: plan.code,
-      plan_label: plan.name_ar,
-      amount: 0,
-      ends_at: endsAt,
-      status: "active",
-      activation_method: "manual",
-      billing_note: "QA E2E fixture",
-    }),
-  });
+  // إنشاء المكتب يُنشئ اشتراكاً تلقائياً، فنرفعه إلى الباقة الاحترافية بدل إضافة اشتراك ثانٍ.
+  const sub = await adminFetch(
+    `${SUPABASE_URL}/rest/v1/subscriptions?organization_id=eq.${organizationId}`,
+    {
+      method: "PATCH",
+      headers: { ...adminHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({
+        plan_id: plan.id,
+        plan_code: plan.code,
+        plan_label: plan.name_ar,
+        ends_at: endsAt,
+        status: "active",
+        billing_note: "QA E2E fixture",
+      }),
+    },
+  );
   if (!sub.ok) throw new Error(`تعذّر تهيئة اشتراك QA (${sub.status}) ${await sub.text()}`);
 
   // بقية الأدوار: صفوف عضوية تجهيزية. `outsider` يبقى بلا عضوية لإثبات عزل المستأجرين.
