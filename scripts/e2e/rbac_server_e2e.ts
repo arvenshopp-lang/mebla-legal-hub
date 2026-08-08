@@ -224,6 +224,18 @@ const PROBES: Probe[] = [
     allow: ["owner"],
   },
   {
+    name: "نظرة RBAC (staff.view)",
+    file: "rbac/rbac.functions.ts",
+    fn: "getRbacOverview",
+    allow: ["owner"],
+  },
+  {
+    name: "مركز الأمان (security.read)",
+    file: "admin-security.functions.ts",
+    fn: "securityCenterOverview",
+    allow: ["owner", "operations"],
+  },
+  {
     name: "إنشاء موظف منصة (staff.manage) — تصعيد صلاحية",
     file: "admin.functions.ts",
     fn: "createStaffMember",
