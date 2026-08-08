@@ -39,7 +39,7 @@ function Page() {
 
   return (
     <DashboardShell title="الإعدادات">
-      <div className="mb-5 -mx-4 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+      <div className="mb-5 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex w-max gap-2">
         {[
           { k: "profile", l: "حسابي" },
