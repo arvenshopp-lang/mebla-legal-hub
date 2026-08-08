@@ -151,7 +151,7 @@ async def main():
         )
         await page.goto(f"{APP}/documents", wait_until="load")
         await page.wait_for_timeout(1500)
-        await page.get_by_role("button", name="مستند جديد").first.click()
+        await page.get_by_role("button", name="رفع مستند").first.click()
         await page.locator('input[type="file"]').first.set_input_files(str(pdf))
         await page.get_by_role("button", name="حفظ").first.click()
         await page.wait_for_timeout(6000)
