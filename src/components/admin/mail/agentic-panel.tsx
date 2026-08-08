@@ -499,7 +499,7 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
               return (
                 <li
                   key={box.id}
-                  className="rounded-[var(--radius-m)] border border-border p-4 md:flex md:items-start md:justify-between md:gap-4"
+                  className="rounded-[var(--radius-m)] border border-border p-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-4"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -531,7 +531,7 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                       )}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0 min-w-0">
+                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:justify-end">
                     <Btn
                       variant="secondary"
                       onClick={() => dry.mutate(box.id)}
