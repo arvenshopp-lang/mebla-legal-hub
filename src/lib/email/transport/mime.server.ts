@@ -29,6 +29,8 @@ export type OutgoingMessage = {
   inReplyTo?: string | null;
   references?: string[];
   date?: Date;
+  /** ترويسة Auto-Submitted: لرسائل النظام الآلية فقط، لا لردود الفريق. */
+  autoSubmitted?: boolean;
   attachments?: OutgoingAttachment[];
 };
 
@@ -101,7 +103,7 @@ export function buildMimeMessage(message: OutgoingMessage): string {
     headers.push(`References: ${message.references.join(" ")}`);
   }
   headers.push("MIME-Version: 1.0");
-  headers.push("Auto-Submitted: auto-generated");
+  if (message.autoSubmitted) headers.push("Auto-Submitted: auto-generated");
 
   const alternative = [
     `--${altBoundary}`,

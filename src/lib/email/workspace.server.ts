@@ -781,6 +781,10 @@ export async function dispatchOne(
 
   let result: Awaited<ReturnType<typeof providerSend>>;
   let smtpFallbackCode: string | null = null;
+  let transportUsed: "smtp_hostinger" | "lovable_managed" = useSmtp
+    ? "smtp_hostinger"
+    : "lovable_managed";
+  let smtpDetail: { smtpCode: number; envelopeFrom: string; headerFrom: string } | null = null;
   if (useSmtp) {
     const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
     const smtp = await sendViaHostinger(db, {
@@ -797,12 +801,20 @@ export async function dispatchOne(
       inReplyTo: message.in_reply_to,
       references: message.reference_ids ?? [],
     });
-    result = smtp.ok
-      ? { ok: true, ref: smtp.ref }
-      : { ok: false, code: smtp.code, message: smtp.message, status: null };
+    if (smtp.ok) {
+      result = { ok: true, ref: smtp.ref };
+      smtpDetail = {
+        smtpCode: smtp.smtpCode,
+        envelopeFrom: smtp.envelopeFrom,
+        headerFrom: smtp.headerFrom,
+      };
+    } else {
+      result = { ok: false, code: smtp.code, message: smtp.message, status: null };
+    }
     // عطل إعداد في مسار SMTP: لا تُحتجز الرسالة — أكمل عبر خدمة البريد المُدارة.
     if (!smtp.ok && SMTP_CONFIG_ERROR_CODES.has(smtp.code)) {
       smtpFallbackCode = smtp.code;
+      transportUsed = "lovable_managed";
       const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
       result = await providerSend({
         from: message.from_address,
@@ -846,8 +858,23 @@ export async function dispatchOne(
     }
     await db
       .from("email_messages")
-      .update({ status: "sent", sent_at: now, provider_ref: result.ref, failure_ref: null })
+      .update({
+        status: "sent",
+        sent_at: now,
+        provider: transportUsed,
+        provider_ref: result.ref,
+        failure_ref: null,
+      })
       .eq("id", messageId);
+    if (smtpDetail) {
+      // إثبات مسار النقل: رمز استجابة SMTP والمظروف والترويسة — بلا أي سرّ.
+      console.info("[email-transport] smtp accepted", {
+        message_id: messageId,
+        smtp_code: smtpDetail.smtpCode,
+        envelope_from: smtpDetail.envelopeFrom,
+        header_from: smtpDetail.headerFrom,
+      });
+    }
     await db
       .from("email_outbox")
       .update({ status: "sent", attempts: job.attempts + 1, locked_at: null })
@@ -875,6 +902,7 @@ export async function dispatchOne(
       metadata: {
         message_id: messageId,
         attempts,
+        transport: transportUsed,
         recipients: message.to_addresses.length,
         permanent: classification.permanent,
         provider_message: result.message.slice(0, 300),

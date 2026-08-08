@@ -571,8 +571,17 @@ export const getMailIntegrationStatus = createServerFn({ method: "POST" })
     const g = await guard();
     await g.requireStaff(context.supabase, context.userId, "email.manage");
     const db = await g.admin();
-    const { integrationStatus, syncableMailboxes } =
-      (await import("@/lib/email/transport/hostinger.server")) as Hostinger;
+    const hostinger = (await import("@/lib/email/transport/hostinger.server")) as Hostinger & {
+      senderIdentitySummary: (address?: string | null) => {
+        authAccount: string;
+        envelopeFrom: string;
+        headerFrom: string;
+        replyTo: string;
+        isAlias: boolean;
+        isSystem: boolean;
+      };
+    };
+    const { integrationStatus, syncableMailboxes, senderIdentitySummary } = hostinger;
     const mailboxes = await syncableMailboxes(db);
     const { data: states } = await db
       .from("email_sync_state")
@@ -588,6 +597,8 @@ export const getMailIntegrationStatus = createServerFn({ method: "POST" })
       .limit(25);
     return {
       secrets: integrationStatus(null),
+      // الحساب الحقيقي الوحيد الذي تجري به المصادقة (عنوان فقط، لا كلمة مرور).
+      transport: senderIdentitySummary(null),
       mailboxes: mailboxes.map((m) => ({
         id: m.id,
         address: m.address,
@@ -596,6 +607,7 @@ export const getMailIntegrationStatus = createServerFn({ method: "POST" })
         inboundEnabled: m.inboundEnabled,
         isActive: m.isActive,
         credentials: integrationStatus(m.address),
+        identity: senderIdentitySummary(m.address),
       })),
       states: (states ?? []) as SyncStateRow[],
       runs: (runs ?? []) as SyncRunRow[],
