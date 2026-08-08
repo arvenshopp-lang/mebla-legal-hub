@@ -10,6 +10,8 @@
  * يتطلب: SUPABASE_URL، SUPABASE_SERVICE_ROLE_KEY، SUPABASE_PUBLISHABLE_KEY.
  */
 
+import { toJSONAsync } from "seroval";
+
 const APP = process.env["APP_ORIGIN"] ?? "http://localhost:8080";
 const SUPABASE_URL = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "";
 const SERVICE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
@@ -85,13 +87,12 @@ async function callServerFn(
       "content-type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(data === undefined ? {} : { data }),
+    // نفس ترميز TanStack Start (seroval) وإلا رفض الخادم الحمولة.
+    body: JSON.stringify(await toJSONAsync(data === undefined ? {} : { data })),
   });
   const text = await res.text();
-  // الرفض يظهر إما بحالة غير 2xx أو برسالة عربية صريحة من الحرس.
-  const denied =
-    !res.ok ||
-    /ليس لديك وصول|لا تملك الصلاحية|Unauthorized|Forbidden/.test(text);
+  // الرفض يظهر إما بحالة غير 2xx أو بخطأ مُسلسل داخل إطار الاستجابة.
+  const denied = !res.ok || text.includes("$TSR/Error");
   return { status: res.status, denied, message: text.slice(0, 160) };
 }
 
@@ -298,12 +299,14 @@ async function main() {
     const outsider = actors.find((a) => a.key === "outsider")!;
     for (const table of DIRECT_TABLES) {
       const res = await rest(`/rest/v1/${table}?select=id&limit=1`, { token: outsider.token });
+      // RLS تُعيد 200 بمصفوفة فارغة؛ التسريب الحقيقي هو صف فعلي.
+      const leaked = res.status === 200 && Array.isArray(res.body) && res.body.length > 0;
       rows.push({
         probe: `قراءة مباشرة من ${table}`,
         role: "مستخدم عادي",
-        expected: "ممنوع",
-        actual: res.status === 200 ? "مسموح" : `ممنوع (${res.status})`,
-        pass: res.status !== 200,
+        expected: "بلا أي صف",
+        actual: leaked ? "تسريب صفوف" : res.status === 200 ? "فارغ (RLS)" : `ممنوع (${res.status})`,
+        pass: !leaked,
       });
     }
   } finally {
