@@ -787,10 +787,11 @@ async function documentRequestRevoke(c: Ctx) {
   );
   if (token) {
     const post = await call("portal", "getUploadRequest", "", { token });
+    const revokedState = /"revoked"|"invalid"|"expired"/.test(post.raw) && !/"active"/.test(post.raw);
     rec(
-      "فشل الرابط بعد الإبطال (خادمياً)",
-      post.denied || /revoked|ملغ|منته|غير صالح/.test(post.raw) ? "PASS" : "FAIL",
-      post.message || post.raw.slice(0, 100),
+      "رفض الرابط بعد الإبطال خادمياً (state=revoked وليس active)",
+      post.denied || revokedState ? "PASS" : "FAIL",
+      post.message || post.raw.slice(0, 120),
     );
   }
 }
