@@ -94,6 +94,7 @@ export async function sendAppEmail(options: {
   } catch (error) {
     const apiError = error instanceof EmailAPIError ? error : null;
     const reason = apiError ? (apiError.code ?? `http_${apiError.status}`) : "send_failed";
+    if (RECIPIENT_DENY_CODES.has(reason)) return { sent: false, reason };
     const { logFailure } = await import("@/lib/observability/failure-log.server");
     const ref = await logFailure({
       surface: "email",
