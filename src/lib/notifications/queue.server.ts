@@ -70,7 +70,7 @@ async function recordAttempt(
     provider: row.provider,
     attempt_number: row.attempts,
     status: outcome.status,
-    http_status: outcome.status === "accepted" ? outcome.httpStatus : outcome.httpStatus,
+    http_status: outcome.httpStatus,
     latency_ms: outcome.status === "accepted" ? outcome.latencyMs : null,
     error_code: outcome.status === "failed" ? outcome.code : null,
     error_message: outcome.status === "failed" ? outcome.message.slice(0, 400) : null,
