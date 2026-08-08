@@ -22,6 +22,83 @@ export type IngestTicketResult = {
   reason?: string;
 };
 
+/**
+ * يستنتج التذكرة القائمة المرتبطة بالرد قبل إنشاء تذكرة جديدة.
+ *
+ * الترتيب من الأقوى إلى الأضعف: تذكرة المحادثة نفسها، ثم أي رسالة في نفس
+ * المحادثة سبق ربطها بتذكرة، ثم تذكرة أُنشئت من نفس المحادثة، ثم المحادثة
+ * المشتقة من ترويسات `In-Reply-To` / `References` — وبهذا يُلحق رد الدعم
+ * بمحادثته السابقة حتى إذا كانت الرسالة الصادرة الأصلية أُرسلت من مسار آخر
+ * لا يمرّ بمركز الدعم.
+ */
+async function resolveExistingTicketId(
+  db: Db,
+  input: { threadId: string; references: string[] },
+): Promise<string | null> {
+  const { data: threadRow } = await db
+    .from("email_threads")
+    .select("ticket_id")
+    .eq("id", input.threadId)
+    .maybeSingle();
+  const direct = (threadRow as { ticket_id: string | null } | null)?.ticket_id ?? null;
+  if (direct) return direct;
+
+  const { data: messageRows } = await db
+    .from("email_messages")
+    .select("ticket_id")
+    .eq("thread_id", input.threadId)
+    .not("ticket_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const fromMessage = ((messageRows ?? []) as { ticket_id: string | null }[])[0]?.ticket_id ?? null;
+  if (fromMessage) return fromMessage;
+
+  const { data: sourceRows } = await db
+    .from("support_tickets")
+    .select("id")
+    .eq("source_email_thread_id", input.threadId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const fromSource = ((sourceRows ?? []) as { id: string }[])[0]?.id ?? null;
+  if (fromSource) return fromSource;
+
+  const references = Array.from(new Set(input.references.filter(Boolean))).slice(0, 20);
+  if (references.length === 0) return null;
+
+  const { data: referenced } = await db
+    .from("email_messages")
+    .select("ticket_id, thread_id")
+    .in("message_id", references)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const rows = (referenced ?? []) as { ticket_id: string | null; thread_id: string | null }[];
+  const referencedTicket = rows.find((row) => row.ticket_id)?.ticket_id ?? null;
+  if (referencedTicket) return referencedTicket;
+
+  const threadIds = Array.from(
+    new Set(rows.map((row) => row.thread_id).filter((id): id is string => Boolean(id))),
+  );
+  if (threadIds.length === 0) return null;
+
+  const { data: linkedThreads } = await db
+    .from("email_threads")
+    .select("ticket_id")
+    .in("id", threadIds)
+    .not("ticket_id", "is", null)
+    .limit(1);
+  const fromReferencedThread =
+    ((linkedThreads ?? []) as { ticket_id: string | null }[])[0]?.ticket_id ?? null;
+  if (fromReferencedThread) return fromReferencedThread;
+
+  const { data: referencedSource } = await db
+    .from("support_tickets")
+    .select("id")
+    .in("source_email_thread_id", threadIds)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  return ((referencedSource ?? []) as { id: string }[])[0]?.id ?? null;
+}
+
 export async function linkInboundToTicket(
   db: Db,
   input: {
@@ -35,6 +112,8 @@ export async function linkInboundToTicket(
     body: string;
     providerMessageId?: string | null;
     duplicate: boolean;
+    inReplyTo?: string | null;
+    references?: string[];
   },
 ): Promise<IngestTicketResult> {
   if (input.duplicate)
@@ -68,13 +147,11 @@ export async function linkInboundToTicket(
     await db.from("email_threads").update({ ticket_id: ticketId }).eq("id", input.threadId);
   };
 
-  // 1) محادثة مرتبطة بتذكرة قائمة → ردّ المكتب يُضاف إليها.
-  const { data: threadRow } = await db
-    .from("email_threads")
-    .select("ticket_id")
-    .eq("id", input.threadId)
-    .maybeSingle();
-  const linkedTicketId = (threadRow as { ticket_id: string | null } | null)?.ticket_id ?? null;
+  // 1) تذكرة قائمة على نفس المحادثة أو على المحادثة المرجعية → ردّ المكتب يُضاف إليها.
+  const linkedTicketId = await resolveExistingTicketId(db, {
+    threadId: input.threadId,
+    references: [input.inReplyTo ?? "", ...(input.references ?? [])].filter(Boolean),
+  });
 
   if (linkedTicketId) {
     const { data: ticketRow } = await db
