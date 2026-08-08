@@ -6,11 +6,32 @@
  */
 import { connectMailSocket, type MailSocket } from "./socket.server";
 import { buildMimeMessage, type OutgoingMessage } from "./mime.server";
-import { redactTransportError, transportConfig, type MailTransportConfig } from "./config.server";
+import {
+  redactTransportError,
+  senderIdentity,
+  transportConfig,
+  type MailTransportConfig,
+} from "./config.server";
 
 export type SmtpResult =
-  | { ok: true; response: string; latencyMs: number }
-  | { ok: false; code: SmtpErrorCode; message: string; latencyMs: number };
+  | {
+      ok: true;
+      response: string;
+      latencyMs: number;
+      smtpCode: number;
+      envelopeFrom?: string;
+      headerFrom?: string;
+      replyTo?: string | null;
+    }
+  | {
+      ok: false;
+      code: SmtpErrorCode;
+      message: string;
+      latencyMs: number;
+      smtpCode?: number;
+      envelopeFrom?: string;
+      headerFrom?: string;
+    };
 
 export type SmtpErrorCode =
   | "smtp_not_configured"
@@ -103,7 +124,13 @@ export async function smtpVerify(mailboxAddress?: string | null): Promise<SmtpRe
     const { socket } = await openSession(config, mailboxAddress ?? null);
     await command(socket, "QUIT");
     await socket.close();
-    return { ok: true, response: "مصادقة SMTP ناجحة.", latencyMs: Date.now() - started };
+    return {
+      ok: true,
+      response: "مصادقة SMTP ناجحة.",
+      smtpCode: 235,
+      latencyMs: Date.now() - started,
+      envelopeFrom: senderIdentity(mailboxAddress ?? null).envelopeFrom,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.startsWith("smtp_auth_failed")) {
