@@ -95,9 +95,9 @@ function ServicesPage() {
             />
             <Tile
               Icon={AlertTriangle}
-              label="الأعطال المفتوحة"
-              value={fmtNumber(data.reliability.failures_open)}
-              tone={data.reliability.failures_open > 0 ? "red" : "green"}
+              label="الأعطال (7 أيام)"
+              value={fmtNumber(data.reliability.failures_7d)}
+              tone={data.reliability.failures_24h > 0 ? "red" : data.reliability.failures_7d > 0 ? "warn" : "green"}
               hint={
                 data.reliability.last_failure_ref
                   ? `آخر مرجع: ${data.reliability.last_failure_ref}`

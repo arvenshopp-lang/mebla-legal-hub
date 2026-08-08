@@ -139,7 +139,7 @@ function AdminDashboard() {
 
   const deadJobs = (jobs?.queues ?? []).reduce((acc, q) => acc + Number(q.dead ?? 0), 0);
   const failedMail = Number(svc?.email_transport.outbox_failed ?? 0);
-  const openFailures = Number(svc?.reliability.failures_open ?? 0);
+  const recentFailures = Number(svc?.reliability.failures_24h ?? 0);
   const series = growthQ.data?.series ?? [];
 
   const alertsLoading =
@@ -303,11 +303,11 @@ function AdminDashboard() {
                     to="/mehla-admin/mail"
                   />
                   <Kpi
-                    label="أعطال تقنية مفتوحة"
-                    value={fmtNumber(openFailures)}
+                    label="أعطال تقنية (24 ساعة)"
+                    value={fmtNumber(recentFailures)}
                     hint={`${fmtNumber(m.reliability.failures_in_range)} عطل خلال النطاق`}
                     Icon={AlertTriangle}
-                    tone={openFailures > 0 ? "danger" : "success"}
+                    tone={recentFailures > 0 ? "danger" : "success"}
                     to="/mehla-admin/failures"
                   />
                 </>
