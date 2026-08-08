@@ -585,14 +585,48 @@ function TicketDetailPage() {
             )}
           </SectionCard>
 
+          {data.ingest.inbound_count > 0 && (
+            <SectionCard title="مصدر التذكرة">
+              <dl className="space-y-2.5 text-[13px]">
+                <Row
+                  label="الرسائل الواردة المستوعبة"
+                  value={<span className="tabular-nums">{data.ingest.inbound_count}</span>}
+                />
+                <Row
+                  label="مصدر الاستيعاب"
+                  value={ingestSourceLabel(data.ingest.first_source) ?? "—"}
+                />
+                <Row
+                  label="سبب الارتباط الأول"
+                  value={ingestMatchReasonLabel(data.ingest.first_match_reason) ?? "—"}
+                />
+                <Row
+                  label="خيط الرسائل"
+                  value={
+                    data.ingest.first_thread_id ? (
+                      canViewMail ? (
+                        <Link
+                          to="/mehla-admin/mail"
+                          search={{ thread: data.ingest.first_thread_id }}
+                          className="font-semibold text-primary underline-offset-2 hover:underline"
+                        >
+                          فتح في مركز البريد
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">يتطلب صلاحية عرض البريد</span>
+                      )
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
+              </dl>
+            </SectionCard>
+          )}
+
           <SectionCard title="المهل (SLA)">
             <dl className="space-y-2.5 text-[13px]">
               <Row label="السياسة" value={t.sla_policy_name ?? "—"} />
-            </dl>
-          </SectionCard>
-
-          <SectionCard title="المهل (SLA) — تفاصيل">
-            <dl className="space-y-2.5 text-[13px]">
               <Row
                 label="أول رد"
                 value={
