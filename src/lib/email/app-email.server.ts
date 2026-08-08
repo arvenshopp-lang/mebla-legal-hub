@@ -16,6 +16,12 @@ export type AppEmailResult = { sent: boolean; reason?: string; ref?: string };
 
 const PROVIDER = "lovable-managed-email";
 
+/**
+ * رفض على مستوى المستلم (عنوان موقوف أو غير صالح) — سبب مشروع يُعاد للمستخدم
+ * برسالة عربية واضحة، وليس عطل نظام، فلا يُسجَّل في سجل الأعطال.
+ */
+const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
+
 export async function sendAppEmail(options: {
   to: string;
   subject: string;
