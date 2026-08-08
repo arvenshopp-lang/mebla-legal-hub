@@ -13,7 +13,7 @@ const cu=await (await fetch(`${SUPABASE_URL}/auth/v1/admin/users`,{method:"POST"
 await fetch(`${SUPABASE_URL}/rest/v1/platform_staff`,{method:"POST",headers:h,body:JSON.stringify({user_id:cu.id,full_name:"QA PROBE",email,role:"super_admin",status:"active",permissions:[]})});
 const tk=await (await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{apikey:PK,"content-type":"application/json"},body:JSON.stringify({email,password})})).json() as any;
 const e=map["getActivityOverview"]!;
-const headers:Record<string,string>={"x-tsr-serverFn":"true",accept:"application/x-tss-framed;v=1, application/x-ndjson, application/json",Authorization:`Bearer ${tk.access_token}`};
+const headers:Record<string,string>={"x-tsr-serverFn":"true",accept:"application/x-tss-framed;v=1, application/x-ndjson, application/json",Authorization:`Bearer ${tk.access_token}`,Origin:APP};
 let body:string|undefined;
 if(e.method==="POST"){ body=JSON.stringify(await toJSONAsync({})); }
 const r=await fetch(`${APP}/_serverFn/${e.id}`,{method:e.method,headers,body});
