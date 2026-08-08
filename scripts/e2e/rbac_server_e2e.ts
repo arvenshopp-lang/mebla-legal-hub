@@ -118,6 +118,20 @@ const ROLE_CASES: RoleCase[] = [
 type Actor = RoleCase & { userId: string; email: string; token: string };
 
 async function createUser(email: string): Promise<string> {
+  // إزالة أي بقايا من تشغيل سابق لنفس بريد الاختبار.
+  const lookup = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
+    { headers: adminHeaders },
+  );
+  const existing = (await lookup.json()) as { users?: { id: string; email: string }[] };
+  for (const user of existing.users ?? []) {
+    if (user.email !== email) continue;
+    await rest(`/rest/v1/platform_staff?user_id=eq.${user.id}`, { method: "DELETE" });
+    await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+  }
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: "POST",
     headers: adminHeaders,
