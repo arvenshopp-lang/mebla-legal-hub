@@ -10,7 +10,7 @@
  * يتطلب: SUPABASE_URL، SUPABASE_SERVICE_ROLE_KEY، SUPABASE_PUBLISHABLE_KEY.
  */
 
-import { toJSONAsync } from "seroval";
+import { resolveServerFns, callServerFn as callRpc } from "./serverfn-rpc";
 
 const APP = process.env["APP_ORIGIN"] ?? "http://localhost:8080";
 const SUPABASE_URL = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "";
@@ -58,42 +58,20 @@ async function rest(
   return { status: res.status, body };
 }
 
-/** معرّف دالة الخادم كما يبنيه مُحوّل TanStack Start. */
-function fnId(file: string, exportName: string): string {
-  const payload = JSON.stringify({
-    file: `/src/lib/${file}?tss-serverfn-split`,
-    export: `${exportName}_createServerFn_handler`,
-  });
-  return Buffer.from(payload, "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
 type CallResult = { status: number; denied: boolean; message: string };
 
+/** استدعاء حقيقي لدالة خادم بمعرّفها المستخرج من الوحدة المحوّلة نفسها. */
 async function callServerFn(
   file: string,
   exportName: string,
   token: string,
   data?: unknown,
 ): Promise<CallResult> {
-  const res = await fetch(`${APP}/_serverFn/${fnId(file, exportName)}`, {
-    method: "POST",
-    headers: {
-      "x-tsr-serverFn": "true",
-      Origin: APP,
-      "content-type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    // نفس ترميز TanStack Start (seroval) وإلا رفض الخادم الحمولة.
-    body: JSON.stringify(await toJSONAsync(data === undefined ? {} : { data })),
-  });
-  const text = await res.text();
-  // الرفض يظهر إما بحالة غير 2xx أو بخطأ مُسلسل داخل إطار الاستجابة.
-  const denied = !res.ok || text.includes("$TSR/Error");
-  return { status: res.status, denied, message: text.slice(0, 160) };
+  const map = await resolveServerFns(APP, `src/lib/${file}`);
+  const ref = map[exportName];
+  if (!ref) throw new Error(`دالة الخادم غير موجودة: ${file}#${exportName}`);
+  const res = await callRpc({ appOrigin: APP, ref, token, data });
+  return { status: res.status, denied: res.denied, message: res.message };
 }
 
 /* ------------------------------------------------------- تهيئة حسابات QA */
@@ -107,13 +85,55 @@ type RoleCase = {
 };
 
 const ROLE_CASES: RoleCase[] = [
-  { key: "owner", label: "مالك المنصة", roleCode: null, platformRole: "super_admin", permissions: null },
-  { key: "support", label: "الدعم", roleCode: "support_agent", platformRole: "staff", permissions: null },
-  { key: "finance", label: "المالية", roleCode: "billing_manager", platformRole: "staff", permissions: null },
-  { key: "operations", label: "التشغيل", roleCode: "operations", platformRole: "staff", permissions: null },
-  { key: "readonly", label: "قراءة فقط", roleCode: null, platformRole: "staff", permissions: ["users.read", "organizations.read"] },
-  { key: "suspended", label: "موظف موقوف", roleCode: "support_agent", platformRole: "staff", permissions: null },
-  { key: "outsider", label: "مستخدم عادي بلا صفة موظف", roleCode: null, platformRole: "staff", permissions: null },
+  {
+    key: "owner",
+    label: "مالك المنصة",
+    roleCode: null,
+    platformRole: "super_admin",
+    permissions: null,
+  },
+  {
+    key: "support",
+    label: "الدعم",
+    roleCode: "support_agent",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "finance",
+    label: "المالية",
+    roleCode: "billing_manager",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "operations",
+    label: "التشغيل",
+    roleCode: "operations",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "readonly",
+    label: "قراءة فقط",
+    roleCode: null,
+    platformRole: "staff",
+    permissions: ["users.read", "organizations.read"],
+  },
+  {
+    key: "suspended",
+    label: "موظف موقوف",
+    roleCode: "support_agent",
+    platformRole: "staff",
+    permissions: null,
+  },
+  {
+    key: "outsider",
+    label: "مستخدم عادي بلا صفة موظف",
+    roleCode: null,
+    platformRole: "staff",
+    permissions: null,
+  },
 ];
 
 type Actor = RoleCase & { userId: string; email: string; token: string };
@@ -246,16 +266,29 @@ const PROBES: Probe[] = [
     allow: ["owner"],
   },
   {
+    name: "نظرة RBAC (staff.view)",
+    file: "rbac/rbac.functions.ts",
+    fn: "getRbacOverview",
+    allow: ["owner"],
+  },
+  {
+    name: "مركز الأمان (security.read)",
+    file: "admin-security.functions.ts",
+    fn: "securityCenterOverview",
+    allow: ["owner", "operations"],
+  },
+  {
     name: "إنشاء موظف منصة (staff.manage) — تصعيد صلاحية",
     file: "admin.functions.ts",
     fn: "createStaffMember",
     data: {
-      full_name: `${PREFIX} تصعيد`,
+      // بريد غير مسجّل: المسار المسموح يعود بـ not_registered دون أي كتابة،
+      // فيثبت المرور بلا تعديل بيانات، والممنوع يُرفض قبل الوصول إليه.
       email: `${PREFIX.toLowerCase()}.escalation@mehlaqa.test`,
+      fullName: `${PREFIX} تصعيد`,
+      jobTitle: null,
       role: "super_admin",
       permissions: [],
-      role_id: null,
-      department_id: null,
     },
     allow: ["owner"],
   },
@@ -273,7 +306,14 @@ const DIRECT_TABLES = [
 
 /* --------------------------------------------------------------- التشغيل */
 
-type Row = { probe: string; role: string; expected: string; actual: string; pass: boolean; detail?: string };
+type Row = {
+  probe: string;
+  role: string;
+  expected: string;
+  actual: string;
+  pass: boolean;
+  detail?: string;
+};
 
 async function main() {
   console.log("تهيئة حسابات QA بأدوار حقيقية…");
@@ -326,7 +366,9 @@ async function main() {
     );
     if (r.detail) console.log(`      ↳ ${r.detail}`);
   }
-  console.log(`\nالمجموع: ${rows.length} — ناجح: ${rows.length - failed.length} — فاشل: ${failed.length}`);
+  console.log(
+    `\nالمجموع: ${rows.length} — ناجح: ${rows.length - failed.length} — فاشل: ${failed.length}`,
+  );
   if (failed.length) process.exit(1);
 }
 
