@@ -14,6 +14,7 @@ import {
   mailboxHasOwnCredentials,
   primaryMailboxAddress,
   secretsStatus,
+  senderIdentity,
   transportConfigured,
 } from "./config.server";
 import { inboundAliasAddresses, routeInboundAddress } from "@/lib/email/routing.server";
@@ -373,8 +374,16 @@ export async function syncAllMailboxes(
 /* ------------------------------------------------------------- الإرسال */
 
 export type SmtpOutboundResult =
-  | { ok: true; ref: string }
-  | { ok: false; code: string; message: string };
+  | {
+      ok: true;
+      ref: string;
+      smtpCode: number;
+      envelopeFrom: string;
+      headerFrom: string;
+      replyTo: string | null;
+      response: string;
+    }
+  | { ok: false; code: string; message: string; smtpCode?: number };
 
 /**
  * إرسال رسالة من قائمة الإرسال عبر SMTP بمرفقاتها الفعلية.
@@ -417,6 +426,7 @@ export async function sendViaHostinger(
     });
   }
 
+  const identity = senderIdentity(input.mailboxAddress);
   const result = await smtpSend(
     {
       from: input.mailboxAddress,
@@ -424,7 +434,9 @@ export async function sendViaHostinger(
       to: input.to,
       cc: input.cc,
       bcc: input.bcc,
-      replyTo: input.replyTo ?? null,
+      // الرد يذهب إلى القسم نفسه؛ ولصندوق النظام إلى قناة بشرية بديلة.
+      replyTo: input.replyTo ?? identity.replyTo,
+      autoSubmitted: identity.isSystem,
       subject: input.subject,
       html: input.html,
       text: input.text,
@@ -436,11 +448,42 @@ export async function sendViaHostinger(
     input.mailboxAddress,
   );
 
-  if (result.ok) return { ok: true, ref: input.providerMessageId };
-  return { ok: false, code: result.code, message: result.message };
+  if (result.ok) {
+    return {
+      ok: true,
+      ref: input.providerMessageId,
+      smtpCode: result.smtpCode,
+      envelopeFrom: result.envelopeFrom ?? identity.envelopeFrom,
+      headerFrom: result.headerFrom ?? identity.headerFrom,
+      replyTo: result.replyTo ?? identity.replyTo,
+      response: result.response,
+    };
+  }
+  return {
+    ok: false,
+    code: result.code,
+    message: result.message,
+    ...(result.smtpCode ? { smtpCode: result.smtpCode } : {}),
+  };
 }
 
 /** حالة التكامل للواجهة: توفر الأسرار فقط، دون أي قيمة سر. */
 export function integrationStatus(mailboxAddress?: string | null) {
   return secretsStatus(mailboxAddress ?? null);
+}
+
+/**
+ * ملخّص هوية الإرسال لعنوان واحد — للعرض في مركز البريد.
+ * لا يُعاد أي سرّ: العناوين ليست أسراراً، وكلمة المرور لا تُقرأ هنا إطلاقاً.
+ */
+export function senderIdentitySummary(mailboxAddress?: string | null) {
+  const identity = senderIdentity(mailboxAddress ?? null);
+  return {
+    authAccount: identity.authUser,
+    envelopeFrom: identity.envelopeFrom,
+    headerFrom: identity.headerFrom,
+    replyTo: identity.replyTo,
+    isAlias: identity.isAlias,
+    isSystem: identity.isSystem,
+  };
 }
