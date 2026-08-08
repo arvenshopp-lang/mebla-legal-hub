@@ -179,6 +179,8 @@ export async function saveDraft(args: {
   customCss: string;
   meta?: unknown;
   userId: string;
+  /** قفل تفاؤلي: رقم المراجعة التي بُني عليها التعديل */
+  expectedRevision?: number;
 }) {
   if (!isDesignPageKey(args.pageKey)) throw new Error("مفتاح الصفحة غير معروف.");
   const client = await db();
@@ -194,6 +196,16 @@ export async function saveDraft(args: {
     .eq("page_key", args.pageKey)
     .maybeSingle();
 
+  const currentRevision = existing?.revision_number ?? 0;
+  if (
+    typeof args.expectedRevision === "number" &&
+    args.expectedRevision !== currentRevision
+  ) {
+    throw new Error(
+      "عُدِّلت هذه الصفحة من جلسة أخرى بعد فتحك للمحرر. أعد تحميل المحرر ثم أعد تطبيق تعديلك حتى لا يُفقد أي عمل.",
+    );
+  }
+
   const row = {
     theme_id: themeId,
     page_key: args.pageKey,
@@ -201,12 +213,23 @@ export async function saveDraft(args: {
     custom_css: String(args.customCss ?? "").slice(0, MAX_DRAFT_CSS),
     updated_by: args.userId,
     updated_at: new Date().toISOString(),
-    revision_number: (existing?.revision_number ?? 0) + 1,
+    revision_number: currentRevision + 1,
   };
 
   if (existing?.id) {
-    const { error } = await client.from("design_drafts").update(row).eq("id", existing.id);
+    // شرط رقم المراجعة يجعل القفل ذرياً على مستوى قاعدة البيانات
+    const { data: updated, error } = await client
+      .from("design_drafts")
+      .update(row)
+      .eq("id", existing.id)
+      .eq("revision_number", currentRevision)
+      .select("id");
     if (error) throw new Error("تعذّر حفظ المسودة.");
+    if (!updated || updated.length === 0) {
+      throw new Error(
+        "عُدِّلت هذه الصفحة من جلسة أخرى في نفس اللحظة. أعد تحميل المحرر ثم أعد تطبيق تعديلك.",
+      );
+    }
   } else {
     const { error } = await client.from("design_drafts").insert(row);
     if (error) throw new Error("تعذّر حفظ المسودة.");
