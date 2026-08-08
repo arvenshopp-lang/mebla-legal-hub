@@ -193,15 +193,26 @@ const { data: qaMessages } = await db
 const qaIds = ((qaMessages ?? []) as { id: string }[]).map((m) => m.id);
 if (qaIds.length) {
   await db.from("email_inbound_events").delete().eq("thread_id", outboundThreadId);
-  await db.from("support_ticket_messages").update({ email_message_id: null }).in("email_message_id", qaIds);
-  await db.from("support_ticket_events").update({ email_message_id: null }).in("email_message_id", qaIds);
-  await db.from("support_ticket_ingest").update({ email_message_id: null }).in("email_message_id", qaIds);
+  await db
+    .from("support_ticket_messages")
+    .update({ email_message_id: null })
+    .in("email_message_id", qaIds);
+  await db
+    .from("support_ticket_events")
+    .update({ email_message_id: null })
+    .in("email_message_id", qaIds);
+  await db
+    .from("support_ticket_ingest")
+    .update({ email_message_id: null })
+    .in("email_message_id", qaIds);
   await db.from("email_messages").delete().eq("thread_id", outboundThreadId);
 }
 await db.from("email_threads").update({ ticket_id: null }).eq("id", outboundThreadId);
 await db.from("email_threads").delete().eq("id", outboundThreadId);
 
 const passed = results.filter((r) => r.ok).length;
-console.log(`\n=== النتيجة: ${passed}/${results.length} ناجح — التذكرة ${ticketId || "—"} تبقى كسجل تدقيق ===`);
+console.log(
+  `\n=== النتيجة: ${passed}/${results.length} ناجح — التذكرة ${ticketId || "—"} تبقى كسجل تدقيق ===`,
+);
 for (const r of results.filter((r) => !r.ok)) console.log(`FAIL ${r.id} ${r.name}: ${r.detail}`);
 process.exit(results.some((r) => !r.ok) ? 1 : 0);
