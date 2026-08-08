@@ -688,7 +688,9 @@ function DesignStudioPage() {
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
-                  <p className="text-[12.5px] font-semibold">1) رموز التصميم الفعلية (للمرجع فقط)</p>
+                  <p className="text-[12.5px] font-semibold">
+                    1) رموز التصميم الفعلية (للمرجع فقط)
+                  </p>
                   <p className="mt-1 text-[11.5px] text-muted-foreground">
                     مصدرها <code className="font-mono">src/styles.css</code> — تُعدَّل من تبويبات
                     الرموز أعلاه، لا من هنا.
@@ -697,13 +699,17 @@ function DesignStudioPage() {
                     dir="ltr"
                     className="mt-2 max-h-40 overflow-auto rounded-[var(--radius-s)] bg-surface p-2 text-[11px] leading-[1.6]"
                   >
-                    {tokensToCss(current.tokens, pageKey === "global" ? ":root" : `[data-page="${pageKey}"]`) ||
-                      "/* لا توجد رموز مخصصة لهذا النطاق بعد */"}
+                    {tokensToCss(
+                      current.tokens,
+                      pageKey === "global" ? ":root" : `[data-page="${pageKey}"]`,
+                    ) || "/* لا توجد رموز مخصصة لهذا النطاق بعد */"}
                   </pre>
                 </div>
 
                 <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
-                  <p className="text-[12.5px] font-semibold">2) CSS المخصص المنشور حالياً لهذا النطاق</p>
+                  <p className="text-[12.5px] font-semibold">
+                    2) CSS المخصص المنشور حالياً لهذا النطاق
+                  </p>
                   <pre
                     dir="ltr"
                     className="mt-2 max-h-40 overflow-auto rounded-[var(--radius-s)] bg-surface p-2 text-[11px] leading-[1.6]"
@@ -731,8 +737,11 @@ function DesignStudioPage() {
                     </Btn>
                   </div>
                   <p className="mt-1 text-[11.5px] text-muted-foreground">
-                    مقروءة من صفحة المعاينة الحقيقية (<code className="font-mono" dir="ltr">{previewPathFor(pageKey)}</code>).
-                    الأنماط الأساسية مكتوبة بـ Tailwind داخل مكوّنات React، فلا يمكن تحريرها كملف
+                    مقروءة من صفحة المعاينة الحقيقية (
+                    <code className="font-mono" dir="ltr">
+                      {previewPathFor(pageKey)}
+                    </code>
+                    ). الأنماط الأساسية مكتوبة بـ Tailwind داخل مكوّنات React، فلا يمكن تحريرها كملف
                     CSS — تُعدَّل بطبقة CSS مخصصة فوقها.
                   </p>
                   {selectors.length === 0 ? (
@@ -792,11 +801,7 @@ function DesignStudioPage() {
 
               <div className="mt-5">
                 <p className="mb-2 text-[12.5px] font-semibold">معاينة فورية</p>
-                <DesignPreview
-                  pageKey={pageKey}
-                  themeCss={previewCss}
-                  onSelectors={setSelectors}
-                />
+                <DesignPreview pageKey={pageKey} themeCss={previewCss} onSelectors={setSelectors} />
               </div>
             </SectionCard>
           )}
@@ -806,11 +811,7 @@ function DesignStudioPage() {
               title="المعاينة الآمنة"
               description="إطار معزول ببيانات تجريبية — لا يؤثر على الموقع قبل النشر."
             >
-              <DesignPreview
-                pageKey={pageKey}
-                themeCss={previewCss}
-                onSelectors={setSelectors}
-              />
+              <DesignPreview pageKey={pageKey} themeCss={previewCss} onSelectors={setSelectors} />
             </SectionCard>
           )}
 

@@ -197,10 +197,7 @@ export async function saveDraft(args: {
     .maybeSingle();
 
   const currentRevision = existing?.revision_number ?? 0;
-  if (
-    typeof args.expectedRevision === "number" &&
-    args.expectedRevision !== currentRevision
-  ) {
+  if (typeof args.expectedRevision === "number" && args.expectedRevision !== currentRevision) {
     throw new Error(
       "عُدِّلت هذه الصفحة من جلسة أخرى بعد فتحك للمحرر. أعد تحميل المحرر ثم أعد تطبيق تعديلك حتى لا يُفقد أي عمل.",
     );
@@ -514,7 +511,11 @@ export async function restoreVersion(versionId: string, userId: string) {
     },
   });
 
-  return { versionNumber: created.version_number, cacheVersion, restoredFrom: version.version_number };
+  return {
+    versionNumber: created.version_number,
+    cacheVersion,
+    restoredFrom: version.version_number,
+  };
 }
 
 /* ---------------------------- حزمة CSS ---------------------------- */

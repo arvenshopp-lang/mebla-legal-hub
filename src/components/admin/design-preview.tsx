@@ -171,8 +171,12 @@ export function DesignPreview({
 
       <div className="overflow-auto p-4">
         <p className="mb-3 text-[11.5px] text-muted-foreground">
-          المسار المعروض: <code className="font-mono" dir="ltr">{path}</code>
-          {isFallbackSurface && " — هذا النطاق لا يملك صفحة مستقلة، فتُعرض عليه صفحة حقيقية تحتوي عناصره."}
+          المسار المعروض:{" "}
+          <code className="font-mono" dir="ltr">
+            {path}
+          </code>
+          {isFallbackSurface &&
+            " — هذا النطاق لا يملك صفحة مستقلة، فتُعرض عليه صفحة حقيقية تحتوي عناصره."}
           {!ready && " · جارٍ تحميل الصفحة الحقيقية…"}
         </p>
 
