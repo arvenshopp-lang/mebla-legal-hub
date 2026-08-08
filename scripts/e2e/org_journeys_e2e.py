@@ -96,17 +96,70 @@ async def main():
         ok = await page.get_by_text(case_title).count() > 0
         record("إنشاء قضية يظهر في القائمة بعد إعادة التحميل", ok, page.url)
 
-        for slug, label, shot in (
-            ("hearings", "الجلسات", "04_hearings"),
-            ("deadlines", "المهل", "05_deadlines"),
-            ("tasks", "المهام", "06_tasks"),
-            ("documents", "المستندات", "07_documents"),
-        ):
-            await page.goto(f"{APP}/{slug}", wait_until="domcontentloaded")
-            await page.wait_for_timeout(2000)
-            await page.screenshot(path=str(SHOTS / f"{shot}.png"))
-            heading = await page.get_by_role("heading", name=label).count()
-            record(f"تحميل صفحة {label}", heading > 0, page.url)
+        # 4) جلسة مرتبطة بالقضية
+        hearing_title = f"{STAMP} جلسة الرحلة"
+        await page.goto(f"{APP}/hearings", wait_until="load")
+        await page.wait_for_timeout(1500)
+        await page.get_by_role("button", name="جلسة جديدة").first.click()
+        await page.get_by_label("القضية").first.select_option(label=case_title)
+        await fill_by_label(page, "عنوان الجلسة", hearing_title)
+        await page.get_by_label("التاريخ والوقت").first.fill("2026-09-10T10:00")
+        await page.get_by_role("button", name="حفظ").first.click()
+        await page.wait_for_timeout(2500)
+        await page.reload(wait_until="load")
+        await page.wait_for_timeout(2500)
+        await page.screenshot(path=str(SHOTS / "04_hearing_saved.png"))
+        ok = await page.get_by_text(hearing_title).count() > 0
+        record("إنشاء جلسة تظهر بعد إعادة التحميل", ok, page.url)
+
+        # 5) مهلة
+        deadline_title = f"{STAMP} مهلة الرحلة"
+        await page.goto(f"{APP}/deadlines", wait_until="load")
+        await page.wait_for_timeout(1500)
+        await page.get_by_role("button", name="مهلة جديدة").first.click()
+        await fill_by_label(page, "العنوان", deadline_title)
+        await page.get_by_label("تاريخ الاستحقاق").first.fill("2026-09-20")
+        await page.get_by_role("button", name="حفظ").first.click()
+        await page.wait_for_timeout(2500)
+        await page.reload(wait_until="load")
+        await page.wait_for_timeout(2500)
+        await page.screenshot(path=str(SHOTS / "05_deadline_saved.png"))
+        ok = await page.get_by_text(deadline_title).count() > 0
+        record("إنشاء مهلة تظهر بعد إعادة التحميل", ok, page.url)
+
+        # 6) مهمة
+        task_title = f"{STAMP} مهمة الرحلة"
+        await page.goto(f"{APP}/tasks", wait_until="load")
+        await page.wait_for_timeout(1500)
+        await page.get_by_role("button", name="مهمة جديدة").first.click()
+        await fill_by_label(page, "العنوان", task_title)
+        await page.get_by_role("button", name="حفظ").first.click()
+        await page.wait_for_timeout(2500)
+        await page.reload(wait_until="load")
+        await page.wait_for_timeout(2500)
+        await page.screenshot(path=str(SHOTS / "06_task_saved.png"))
+        ok = await page.get_by_text(task_title).count() > 0
+        record("إنشاء مهمة تظهر بعد إعادة التحميل", ok, page.url)
+
+        # 7) رفع مستند فعلي (PDF صغير)
+        pdf = SHOTS / f"{STAMP}-doc.pdf"
+        pdf.write_bytes(
+            b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+            b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\n"
+            b"trailer<</Root 1 0 R>>\n%%EOF\n"
+        )
+        await page.goto(f"{APP}/documents", wait_until="load")
+        await page.wait_for_timeout(1500)
+        await page.get_by_role("button", name="مستند جديد").first.click()
+        await page.locator('input[type="file"]').first.set_input_files(str(pdf))
+        await page.get_by_role("button", name="حفظ").first.click()
+        await page.wait_for_timeout(6000)
+        await page.reload(wait_until="load")
+        await page.wait_for_timeout(3000)
+        await page.screenshot(path=str(SHOTS / "07_document_saved.png"))
+        ok = await page.get_by_text(pdf.name).count() > 0
+        record("رفع مستند يظهر في القائمة بعد إعادة التحميل", ok, page.url)
 
         blocking = [e for e in console_errors if "favicon" not in e]
         record("لا أخطاء Console خلال الرحلة", not blocking, "; ".join(blocking[:3]))
