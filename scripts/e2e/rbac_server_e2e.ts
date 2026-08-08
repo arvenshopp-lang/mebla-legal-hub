@@ -273,7 +273,7 @@ const DIRECT_TABLES = [
 
 /* --------------------------------------------------------------- التشغيل */
 
-type Row = { probe: string; role: string; expected: string; actual: string; pass: boolean };
+type Row = { probe: string; role: string; expected: string; actual: string; pass: boolean; detail?: string };
 
 async function main() {
   console.log("تهيئة حسابات QA بأدوار حقيقية…");
@@ -291,6 +291,7 @@ async function main() {
           expected: expectAllow ? "مسموح" : "ممنوع",
           actual: actualAllow ? "مسموح" : `ممنوع (${res.status})`,
           pass: expectAllow === actualAllow,
+          detail: expectAllow === actualAllow ? undefined : res.message,
         });
       }
     }
@@ -319,6 +320,7 @@ async function main() {
     console.log(
       `${r.pass ? "PASS" : "FAIL"} | ${r.probe} | ${r.role} | متوقع: ${r.expected} | فعلي: ${r.actual}`,
     );
+    if (r.detail) console.log(`      ↳ ${r.detail}`);
   }
   console.log(`\nالمجموع: ${rows.length} — ناجح: ${rows.length - failed.length} — فاشل: ${failed.length}`);
   if (failed.length) process.exit(1);
