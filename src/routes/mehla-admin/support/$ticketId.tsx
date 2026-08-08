@@ -75,6 +75,7 @@ function TicketDetailPage() {
   const { ticketId } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { can } = usePlatformAdmin();
 
   const ticketFn = useServerFn(getSupportTicket);
   const workspaceFn = useServerFn(getSupportWorkspace);
