@@ -81,7 +81,7 @@ function BackupsPage() {
   const [recordErrors, setRecordErrors] = useState<Record<string, string>>({});
 
   const [requestOpen, setRequestOpen] = useState(false);
-  const [requestScope, setRequestScope] = useState("");
+  const [requestScope, setRequestScope] = useState<"full" | "table" | "point_in_time">("full");
   const [requestReason, setRequestReason] = useState("");
   const [requestSnapshot, setRequestSnapshot] = useState<string>("");
   const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
@@ -158,7 +158,7 @@ function BackupsPage() {
     onSuccess: () => {
       toast.success("تم إرسال طلب الاستعادة للاعتماد.");
       setRequestOpen(false);
-      setRequestScope("");
+      setRequestScope("full");
       setRequestReason("");
       setRequestSnapshot("");
       invalidateAll();
@@ -529,14 +529,23 @@ function BackupsPage() {
             </select>
           </FormField>
           <FormField label="نطاق الاستعادة" required>
-            <input
+            <select
               className={inputCls}
               value={requestScope}
-              onChange={(e) => setRequestScope(e.target.value)}
-              placeholder="مثال: جدول الفواتير فقط — منظمة كذا"
-            />
+              onChange={(e) =>
+                setRequestScope(e.target.value as "full" | "table" | "point_in_time")
+              }
+            >
+              <option value="full">استعادة كاملة</option>
+              <option value="table">جدول محدد</option>
+              <option value="point_in_time">نقطة زمنية</option>
+            </select>
           </FormField>
-          <FormField label="السبب" required hint="لا يقل عن ١٠ أحرف">
+          <FormField
+            label="السبب وتفصيل النطاق"
+            required
+            hint="لا يقل عن ١٠ أحرف — اذكر الجدول أو النقطة الزمنية المطلوبة"
+          >
             <textarea
               className={`${inputCls} min-h-24`}
               value={requestReason}
@@ -550,7 +559,7 @@ function BackupsPage() {
             </Btn>
             <Btn
               loading={requestMutation.isPending}
-              disabled={requestScope.trim().length < 2 || requestReason.trim().length < 10}
+              disabled={requestReason.trim().length < 10}
               onClick={() => requestMutation.mutate()}
             >
               إرسال الطلب

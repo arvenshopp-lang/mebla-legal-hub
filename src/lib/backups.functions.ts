@@ -154,7 +154,9 @@ export const listRestoreRequests = createServerFn({ method: "POST" })
 
 const requestSchema = z.object({
   snapshotId: z.string().uuid().optional().nullable(),
-  scope: z.string().trim().min(2, "نطاق الاستعادة مطلوب").max(200),
+  scope: z.enum(["full", "table", "point_in_time"], {
+    message: "نطاق الاستعادة يجب أن يكون: كامل، أو جدول محدد، أو نقطة زمنية.",
+  }),
   reason: z.string().trim().min(10, "السبب يجب ألا يقل عن ١٠ أحرف").max(2000),
 });
 
