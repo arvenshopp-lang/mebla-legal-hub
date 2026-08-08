@@ -90,6 +90,7 @@ import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sale
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
+import { Route as ApiPublicQaModcheckRouteImport } from './routes/api/public/qa-modcheck'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -513,6 +514,11 @@ const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
   path: '/api/public/theme.css',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicQaModcheckRoute = ApiPublicQaModcheckRouteImport.update({
+  id: '/api/public/qa-modcheck',
+  path: '/api/public/qa-modcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -666,6 +672,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -761,6 +768,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -859,6 +867,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -957,6 +966,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1052,6 +1062,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/api/public/health'
+    | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1149,6 +1160,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cases/$id'
     | '/api/public/health'
+    | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1202,6 +1214,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicQaModcheckRoute: typeof ApiPublicQaModcheckRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
@@ -1785,6 +1798,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/qa-modcheck': {
+      id: '/api/public/qa-modcheck'
+      path: '/api/public/qa-modcheck'
+      fullPath: '/api/public/qa-modcheck'
+      preLoaderRoute: typeof ApiPublicQaModcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -2050,6 +2070,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicQaModcheckRoute: ApiPublicQaModcheckRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
