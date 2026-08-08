@@ -302,6 +302,8 @@ async function handle(request: Request) {
         body: (parsed.text ?? parsed.html ?? "").slice(0, 20_000),
         providerMessageId: parsed.messageId ?? null,
         duplicate: result.duplicate,
+        inReplyTo: parsed.inReplyTo ?? null,
+        references: parsed.references ?? [],
       });
       ticket = { outcome: linked.outcome, ticket_number: linked.ticketNumber };
     } catch (error) {
