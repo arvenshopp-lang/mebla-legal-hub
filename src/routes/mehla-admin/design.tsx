@@ -227,7 +227,7 @@ function CssEditor({
       >
         <CodeMirrorEditor
           value={value}
-          onChange={(next) => {
+          onChange={(next: string) => {
             history.current = [...history.current.slice(-40), value];
             onChange(next);
           }}
@@ -259,6 +259,7 @@ function DesignStudioPage() {
   const [tab, setTab] = useState("identity");
   const [pages, setPages] = useState<Record<string, PageState>>({});
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [selectors, setSelectors] = useState<HarvestedSelector[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const hydrated = useRef(false);
   const dirty = useRef(false);
@@ -696,7 +697,7 @@ function DesignStudioPage() {
                 <DesignPreview
                   pageKey={pageKey}
                   themeCss={previewCss}
-                  direction={globalState.meta.direction}
+                  onSelectors={setSelectors}
                 />
               </div>
             </SectionCard>
@@ -710,7 +711,7 @@ function DesignStudioPage() {
               <DesignPreview
                 pageKey={pageKey}
                 themeCss={previewCss}
-                direction={globalState.meta.direction}
+                onSelectors={setSelectors}
               />
             </SectionCard>
           )}
