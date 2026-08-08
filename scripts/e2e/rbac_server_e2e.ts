@@ -10,7 +10,7 @@
  * يتطلب: SUPABASE_URL، SUPABASE_SERVICE_ROLE_KEY، SUPABASE_PUBLISHABLE_KEY.
  */
 
-import { toJSONAsync } from "seroval";
+import { resolveServerFns, callServerFn as callRpc } from "./serverfn-rpc";
 
 const APP = process.env["APP_ORIGIN"] ?? "http://localhost:8080";
 const SUPABASE_URL = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "";
@@ -58,42 +58,20 @@ async function rest(
   return { status: res.status, body };
 }
 
-/** معرّف دالة الخادم كما يبنيه مُحوّل TanStack Start. */
-function fnId(file: string, exportName: string): string {
-  const payload = JSON.stringify({
-    file: `/src/lib/${file}?tss-serverfn-split`,
-    export: `${exportName}_createServerFn_handler`,
-  });
-  return Buffer.from(payload, "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
 type CallResult = { status: number; denied: boolean; message: string };
 
+/** استدعاء حقيقي لدالة خادم بمعرّفها المستخرج من الوحدة المحوّلة نفسها. */
 async function callServerFn(
   file: string,
   exportName: string,
   token: string,
   data?: unknown,
 ): Promise<CallResult> {
-  const res = await fetch(`${APP}/_serverFn/${fnId(file, exportName)}`, {
-    method: "POST",
-    headers: {
-      "x-tsr-serverFn": "true",
-      Origin: APP,
-      "content-type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    // نفس ترميز TanStack Start (seroval) وإلا رفض الخادم الحمولة.
-    body: JSON.stringify(await toJSONAsync(data === undefined ? {} : { data })),
-  });
-  const text = await res.text();
-  // الرفض يظهر إما بحالة غير 2xx أو بخطأ مُسلسل داخل إطار الاستجابة.
-  const denied = !res.ok || text.includes("$TSR/Error");
-  return { status: res.status, denied, message: text.slice(0, 160) };
+  const map = await resolveServerFns(APP, `src/lib/${file}`);
+  const ref = map[exportName];
+  if (!ref) throw new Error(`دالة الخادم غير موجودة: ${file}#${exportName}`);
+  const res = await callRpc({ appOrigin: APP, ref, token, data });
+  return { status: res.status, denied: res.denied, message: res.message };
 }
 
 /* ------------------------------------------------------- تهيئة حسابات QA */
