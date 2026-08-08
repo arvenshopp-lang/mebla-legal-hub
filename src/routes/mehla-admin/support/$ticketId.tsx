@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowRight, Paperclip, Star } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import {
   addSupportNote,
   assignSupportTicket,
@@ -314,6 +315,7 @@ function TicketDetailPage() {
 
   const t = data.ticket;
   const perms = workspace.permissions;
+  const canViewMail = can("email.view");
   const ref = t.ticket_number ?? t.reference;
 
   return (
@@ -372,7 +374,7 @@ function TicketDetailPage() {
                       {ingestMatchReasonLabel(m.ingest_match_reason) && (
                         <Badge tone="muted">{ingestMatchReasonLabel(m.ingest_match_reason)}</Badge>
                       )}
-                      {m.email_thread_id && perms.viewMail ? (
+                      {m.email_thread_id && canViewMail ? (
                         <Link
                           to="/mehla-admin/mail"
                           search={{ thread: m.email_thread_id }}
