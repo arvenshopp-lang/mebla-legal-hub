@@ -588,6 +588,11 @@ function TicketDetailPage() {
           <SectionCard title="المهل (SLA)">
             <dl className="space-y-2.5 text-[13px]">
               <Row label="السياسة" value={t.sla_policy_name ?? "—"} />
+            </dl>
+          </SectionCard>
+
+          <SectionCard title="المهل (SLA) — تفاصيل">
+            <dl className="space-y-2.5 text-[13px]">
               <Row
                 label="أول رد"
                 value={
