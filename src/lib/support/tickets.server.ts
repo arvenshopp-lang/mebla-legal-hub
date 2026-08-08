@@ -292,6 +292,25 @@ export async function getTicket(
       : Promise.resolve({ data: null }),
   ]);
 
+  // سجل الاستيعاب: مصدر كل رسالة واردة وسبب ارتباطها بهذه التذكرة.
+  const { data: ingestData } = await db
+    .from("support_ticket_ingest")
+    .select("email_message_id, thread_id, source, match_reason, outcome, created_at")
+    .eq("ticket_id", ticketId)
+    .order("created_at");
+  const ingestRows = (ingestData ?? []) as {
+    email_message_id: string | null;
+    thread_id: string | null;
+    source: string | null;
+    match_reason: string | null;
+  }[];
+  const ingestByMessage = new Map(
+    ingestRows
+      .filter((r) => r.email_message_id)
+      .map((r) => [r.email_message_id as string, r] as const),
+  );
+  const firstIngest = ingestRows[0] ?? null;
+
   const [decorated] = await decorate(db, [ticket]);
   const status = ticket["status"] as TicketStatus;
 
@@ -313,6 +332,13 @@ export async function getTicket(
         file_name: string;
         size_bytes: number;
       }[],
+      email_message_id: (m["email_message_id"] as string | null) ?? null,
+      email_thread_id:
+        ingestByMessage.get((m["email_message_id"] as string | null) ?? "")?.thread_id ?? null,
+      ingest_source:
+        ingestByMessage.get((m["email_message_id"] as string | null) ?? "")?.source ?? null,
+      ingest_match_reason:
+        ingestByMessage.get((m["email_message_id"] as string | null) ?? "")?.match_reason ?? null,
     })),
     notes: ((notes.data ?? []) as Record<string, unknown>[]).map((n) => ({
       id: n["id"] as string,
@@ -327,6 +353,13 @@ export async function getTicket(
     )
       .map((t) => t.support_tags)
       .filter((t): t is { id: string; name_ar: string; color: string } => !!t),
+    ingest: {
+      inbound_count: ingestRows.length,
+      first_source: firstIngest?.source ?? null,
+      first_match_reason: firstIngest?.match_reason ?? null,
+      first_thread_id:
+        firstIngest?.thread_id ?? ((ticket["source_email_thread_id"] as string | null) ?? null),
+    },
     allowedTransitions: ticket["merged_into_id"]
       ? []
       : (
