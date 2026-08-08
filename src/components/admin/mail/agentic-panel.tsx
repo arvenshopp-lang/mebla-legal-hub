@@ -531,7 +531,7 @@ export function AgenticMailPanel({ canManage = true }: { canManage?: boolean }) 
                       )}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
+                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0 min-w-0">
                     <Btn
                       variant="secondary"
                       onClick={() => dry.mutate(box.id)}
