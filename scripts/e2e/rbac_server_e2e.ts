@@ -228,12 +228,13 @@ const PROBES: Probe[] = [
     file: "admin.functions.ts",
     fn: "createStaffMember",
     data: {
-      full_name: `${PREFIX} تصعيد`,
+      // بريد غير مسجّل: المسار المسموح يعود بـ not_registered دون أي كتابة،
+      // فيثبت المرور بلا تعديل بيانات، والممنوع يُرفض قبل الوصول إليه.
       email: `${PREFIX.toLowerCase()}.escalation@mehlaqa.test`,
+      fullName: `${PREFIX} تصعيد`,
+      jobTitle: null,
       role: "super_admin",
       permissions: [],
-      role_id: null,
-      department_id: null,
     },
     allow: ["owner"],
   },
