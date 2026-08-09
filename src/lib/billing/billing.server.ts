@@ -509,7 +509,19 @@ export async function recordPayment(
     })
     .select("id")
     .maybeSingle();
-  if (error || !created) fail(error, "تعذّر تسجيل الدفعة.");
+  if (error || !created) {
+    // منع التكرار على مستوى القاعدة: نداءان متزامنان بنفس مفتاح التفرّد
+    // يفوز أحدهما فقط، والثاني يعيد الدفعة نفسها بدل إنشاء صف مكرر.
+    if (error?.code === "23505") {
+      const { data: winner } = await client
+        .from("platform_payments")
+        .select("id")
+        .eq("correlation_id", input.idempotencyKey)
+        .maybeSingle();
+      if (winner) return { paymentId: winner.id as string, duplicate: true };
+    }
+    fail(error, "تعذّر تسجيل الدفعة.");
+  }
 
   await logAttempt({
     paymentId: created.id as string,
