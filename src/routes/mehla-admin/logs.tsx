@@ -169,9 +169,22 @@ function LogsPage() {
               className={`${inputCls} h-11 w-auto min-w-[150px]`}
             >
               <option value="all">كل الأنواع</option>
-              {Object.entries(ENTITY_LABELS).map(([v, l]) => (
+              {(facets?.entities ?? Object.keys(ENTITY_LABELS)).map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {ENTITY_LABELS[v] ?? v}
+                </option>
+              ))}
+            </select>
+            <select
+              value={action}
+              onChange={(e) => resetPage(setAction)(e.target.value)}
+              aria-label="نوع العملية"
+              className={`${inputCls} h-11 w-auto min-w-[170px]`}
+            >
+              <option value="all">كل العمليات</option>
+              {(facets?.actions ?? Object.keys(ACTION_LABELS)).map((v) => (
+                <option key={v} value={v}>
+                  {ACTION_LABELS[v] ?? v}
                 </option>
               ))}
             </select>
