@@ -25,6 +25,7 @@ import {
   noteSchema,
   paginationSchema,
   providerConfigSchema,
+  createProviderPaymentSchema,
   providerEnabledSchema,
   providerCodeSchema,
   providerSecretsSchema,
@@ -546,6 +547,22 @@ export const billingTestProvider = createServerFn({ method: "POST" })
       return await engine.testProvider(ctx, data);
     } catch (error) {
       return { ok: false, message: ctxMod.safeMessage(error, "تعذّر إجراء اختبار الاتصال.") };
+    }
+  });
+
+export const billingCreateProviderPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => createProviderPaymentSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const [engine, ctxMod] = await Promise.all([
+      import("./billing.server"),
+      import("./ctx.server"),
+    ]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.record_payment");
+    try {
+      return await engine.createProviderPayment(ctx, data);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر بدء عملية الدفع الإلكتروني."));
     }
   });
 

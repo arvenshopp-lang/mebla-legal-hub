@@ -173,6 +173,11 @@ export const providerSecretsSchema = z.object({
   code: z.enum(["moyasar"]),
   secrets: z.record(z.string().min(1).max(60), z.string().trim().min(6).max(500)),
 });
+export const createProviderPaymentSchema = providerCodeSchema.extend({
+  invoiceId: z.string().uuid(),
+  idempotencyKey: z.string().trim().min(8).max(80),
+});
+
 export const providerEnabledSchema = providerCodeSchema.extend({ enabled: z.boolean() });
 
 export const sequenceSchema = z.object({
