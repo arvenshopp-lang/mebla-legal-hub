@@ -43,7 +43,15 @@ export const Route = createFileRoute("/mehla-admin/providers")({
 
 const DOMAIN_ORDER: ProviderDomain[] = ["payment", "otp", "whatsapp"];
 
-function FieldRow({ label, present, hint }: { label: string; present: boolean; hint: string | null }) {
+function FieldRow({
+  label,
+  present,
+  hint,
+}: {
+  label: string;
+  present: boolean;
+  hint: string | null;
+}) {
   return (
     <li className="flex items-start justify-between gap-3 py-1.5">
       <span className="flex min-w-0 items-start gap-2">
@@ -205,14 +213,14 @@ function ProvidersReadinessPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {(
-              ["connected", "not_verified", "incomplete", "not_linked", "failed"] as const
-            ).map((status) => (
-              <div key={status} className="surface-card p-4">
-                <p className="text-caption">{READINESS_LABELS[status]}</p>
-                <p className="text-h3 mt-1">{summary[status]}</p>
-              </div>
-            ))}
+            {(["connected", "not_verified", "incomplete", "not_linked", "failed"] as const).map(
+              (status) => (
+                <div key={status} className="surface-card p-4">
+                  <p className="text-caption">{READINESS_LABELS[status]}</p>
+                  <p className="text-h3 mt-1">{summary[status]}</p>
+                </div>
+              ),
+            )}
           </div>
 
           {query.data?.restrictedDomains.length ? (
@@ -234,9 +242,7 @@ function ProvidersReadinessPage() {
                       key={`${provider.domain}:${provider.key}`}
                       provider={provider}
                       verifying={pending === `${provider.domain}:${provider.key}`}
-                      onVerify={() =>
-                        verify.mutate({ domain: provider.domain, key: provider.key })
-                      }
+                      onVerify={() => verify.mutate({ domain: provider.domain, key: provider.key })}
                     />
                   ))}
                 </div>

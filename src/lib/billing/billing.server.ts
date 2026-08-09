@@ -1674,7 +1674,8 @@ export async function createProviderPayment(
       creds,
     );
   } catch (providerError) {
-    const message = providerError instanceof Error ? providerError.message : "تعذّر الاتصال بالمزوّد.";
+    const message =
+      providerError instanceof Error ? providerError.message : "تعذّر الاتصال بالمزوّد.";
     await client
       .from("platform_payments")
       .update({
@@ -1790,7 +1791,10 @@ export async function applyProviderPaymentState(input: {
         `AMOUNT_MISMATCH: مبلغ المزوّد ${round2(input.amount)} لا يطابق مبلغ الدفعة ${expected}.`,
       );
   }
-  if (input.currency && String(input.currency).toUpperCase() !== String(payment.currency).toUpperCase())
+  if (
+    input.currency &&
+    String(input.currency).toUpperCase() !== String(payment.currency).toUpperCase()
+  )
     throw new Error(
       `CURRENCY_MISMATCH: عملة المزوّد ${input.currency} لا تطابق عملة الدفعة ${payment.currency}.`,
     );
