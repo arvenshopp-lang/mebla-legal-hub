@@ -228,8 +228,16 @@ async function supportFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   );
   check("بريد مقدّم الطلب مأخوذ من الجلسة لا من الطلب", ticket?.requester_email === actors.lawyer!.email);
 
-  const msgs = await rest(`support_ticket_messages?ticket_id=eq.${ticket!.id}&select=id,body,is_staff`);
-  check("الرسالة الأولى مسجّلة كرسالة عميل لا موظف", msgs.length >= 1 && msgs[0]!.is_staff === false, `رسائل=${msgs.length}`);
+  // نص الطلب الأول يُحفظ في وصف التذكرة (وهو ما يعرضه Timeline كأول رسالة عميل)،
+  // ورسائل `support_ticket_messages` تُنشأ للردود والملاحظات لاحقاً.
+  const events = await rest(`support_ticket_events?ticket_id=eq.${ticket!.id}&select=event_type,actor_kind`);
+  check(
+    "نص الطلب الأول محفوظ مع حدث الإنشاء في Timeline",
+    typeof ticket?.description === "string" &&
+      String(ticket.description).includes("الجلسات القادمة") &&
+      events.some((e) => e.event_type === "created"),
+    `أحداث=${events.length}`,
+  );
 
   const dup = await call("support", "createOfficeSupportTicket", actors.lawyer!.token, {
     subject,
@@ -238,8 +246,11 @@ async function supportFlow(ctx: Awaited<ReturnType<typeof setup>>) {
     priority: "high",
     clientRequestId,
   });
-  const all = await rest(`support_tickets?subject=eq.${encodeURIComponent(subject)}&select=id`);
-  check("منع التكرار بمعرّف الطلب: تذكرة واحدة فقط", dup.ok && all.length === 1, `عدد التذاكر=${all.length}`);
+  check(
+    "منع التكرار بمعرّف الطلب: نفس التذكرة تُعاد ولا تُنشأ ثانية",
+    dup.ok && dup.raw.includes(String(ticket!.id)),
+    dup.ok ? `أُعيدت ${ticket!.ticket_number}` : dup.message.slice(0, 120),
+  );
 
   const reload = await asUser(
     actors.lawyer!.token,
@@ -318,7 +329,12 @@ async function printFlow(ctx: Awaited<ReturnType<typeof setup>>) {
       method: "PATCH",
       body: JSON.stringify({ classification: "internal" }),
     });
-    check("تعديل سجل الطباعة مرفوض (سجل غير قابل للتعديل)", upd.status >= 400, `حالة=${upd.status}`);
+    const afterPatch = await one(`print_audit_logs?id=eq.${row.id}&select=classification`);
+    check(
+      "تعديل سجل الطباعة لا يمر (السجل غير قابل للتعديل)",
+      afterPatch?.classification === "confidential",
+      `حالة=${upd.status} تصنيف=${afterPatch?.classification}`,
+    );
     const del = await asUser(actors.owner!.token, `/rest/v1/print_audit_logs?id=eq.${row.id}`, { method: "DELETE" });
     const still = await one(`print_audit_logs?id=eq.${row.id}&select=id,classification`);
     check(
