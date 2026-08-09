@@ -6,6 +6,7 @@ import { failureHint, trackFailure } from "@/lib/observability/report-failure";
 import { ArrowRight, LifeBuoy, Plus, Send, Star } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { createOfficeSupportTicket } from "@/lib/support/support.functions";
 import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -196,6 +197,8 @@ function NewTicketModal({
   const [category, setCategory] = useState("general");
   const [priority, setPriority] = useState("medium");
   const [description, setDescription] = useState("");
+  /** معرّف ثابت لكل محاولة إرسال: يمنع إنشاء تذكرتين عند إعادة المحاولة. */
+  const requestIdRef = useRef<string>("");
 
   useEffect(() => {
     if (open) {
@@ -203,27 +206,24 @@ function NewTicketModal({
       setCategory("general");
       setPriority("medium");
       setDescription("");
+      requestIdRef.current = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     }
   }, [open]);
 
   const create = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("جلستك منتهية، أعد تسجيل الدخول.");
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .insert({
-          user_id: userId,
-          organization_id: organizationId,
+      // المحرك الخادمي هو من يحدد الفريق والتصنيف ومهل SLA ويكتب أحداث Timeline.
+      const created = await createOfficeSupportTicket({
+        data: {
           subject: subject.trim(),
+          description: description.trim(),
           category,
           priority: priority as "low" | "medium" | "high" | "urgent",
-          description: description.trim(),
-          channel: "portal",
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      return data.id as string;
+          clientRequestId: requestIdRef.current,
+        },
+      });
+      return created.id;
     },
     onSuccess: (id) => {
       track("support_ticket_created", { action_source: "dashboard" });
