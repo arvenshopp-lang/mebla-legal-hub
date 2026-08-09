@@ -1,6 +1,7 @@
 import { office, rest, one } from "./lib";
 import { setupEnv } from "./setup";
-import { snapshotA, SLUG_A } from "./content";
+import { snapshotA } from "./content";
+import { SLUG_A } from "./setup";
 const env = await setupEnv();
 await office("changeOfficePageSlug", env.ownerA.token, { organizationId: env.orgA, slug: SLUG_A });
 await office("saveOfficePageDraft", env.ownerA.token, { organizationId: env.orgA, draft: snapshotA() });
