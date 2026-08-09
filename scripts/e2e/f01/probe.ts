@@ -1,7 +1,6 @@
-import { office, rest } from "./lib";
-import { setupEnv } from "./setup";
-const env = await setupEnv();
-console.log("orgA", env.orgA, "orgB", env.orgB);
-console.log(await rest(`organization_members?select=organization_id,user_id,role,status&user_id=eq.${env.ownerB.id}`));
-const r = await office("getOfficePageState", env.ownerB.token, { organizationId: env.orgA });
-console.log(r.status, r.ok, r.denied, r.message, r.raw.slice(0,200));
+import { one, rest } from "./lib";
+const row = (await rest(`office_public_pages?select=organization_id,slug,version,published,draft&slug=eq.qa-f01-alpha`))[0];
+const pub = row?.["published"] as Record<string, unknown> | null;
+console.log(row?.["version"], pub?.["logo_path"], pub?.["cover_path"], (pub?.["team"] as any[])?.map(t=>t.photo_path));
+const d = row?.["draft"] as Record<string, unknown>;
+console.log("draft:", d?.["logo_path"], d?.["cover_path"], (d?.["team"] as any[])?.map(t=>t.photo_path));
