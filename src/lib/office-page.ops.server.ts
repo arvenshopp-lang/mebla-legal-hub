@@ -163,7 +163,7 @@ export async function saveDraft(
     "office_page.draft.save",
     "حفظ مسودة الصفحة العامة",
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function changeSlug(
@@ -174,7 +174,7 @@ export async function changeSlug(
 ) {
   await requireManager(supabase, userId, organizationId);
   const row = await readRow(supabase, organizationId);
-  if (row.slug === slug) return await readState(supabase, organizationId);
+  if (row.slug === slug) return await readState(supabase, userId, organizationId);
 
   const { data: taken } = await supabaseAdmin
     .from("office_public_pages")
@@ -202,7 +202,7 @@ export async function changeSlug(
     `تغيير رابط الصفحة العامة إلى ${slug}`,
     { from: row.slug, to: slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function publish(supabase: Client, userId: string, organizationId: string) {
@@ -252,7 +252,7 @@ export async function publish(supabase: Client, userId: string, organizationId: 
     `نشر الصفحة العامة (النسخة ${version})`,
     { version, slug: row.slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function unpublish(supabase: Client, userId: string, organizationId: string) {
@@ -271,7 +271,7 @@ export async function unpublish(supabase: Client, userId: string, organizationId
     "إيقاف نشر الصفحة العامة",
     { slug: row.slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function uploadMedia(
