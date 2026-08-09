@@ -344,7 +344,7 @@ function Page() {
                           <Link
                             to="/cases/$id"
                             params={{ id: c.id }}
-                            className="rounded-lg p-1.5 hover:bg-surface-muted"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Link>
@@ -356,7 +356,7 @@ function Page() {
                               }}
                               aria-label="تعديل"
                               title="تعديل"
-                              className="rounded-lg p-1.5 hover:bg-surface-muted"
+                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -364,7 +364,7 @@ function Page() {
                           {canManage(activeRole) && c.status !== "archived" && (
                             <button
                               onClick={() => setArchiving(c)}
-                              className="rounded-lg p-1.5 text-warning hover:bg-warning-soft"
+                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-warning hover:bg-warning-soft md:min-h-0 md:min-w-0"
                             >
                               <Archive className="h-4 w-4" />
                             </button>

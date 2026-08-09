@@ -272,7 +272,7 @@ function Page() {
                             {canEdit(activeRole) && t.status !== "completed" && (
                               <button
                                 onClick={() => complete.mutate(t.id)}
-                                className="rounded-lg p-1.5 hover:bg-primary-soft"
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-primary-soft md:min-h-0 md:min-w-0"
                                 aria-label="إنجاز"
                                 title="إنجاز"
                               >
@@ -287,7 +287,7 @@ function Page() {
                                 }}
                                 aria-label="تعديل"
                                 title="تعديل"
-                                className="rounded-lg p-1.5 hover:bg-surface-muted"
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
                               >
                                 <Pencil className="h-4 w-4" />
                               </button>

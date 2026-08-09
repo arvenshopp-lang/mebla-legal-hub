@@ -110,7 +110,7 @@ export function NotificationBell() {
         aria-haspopup="true"
         aria-expanded={open}
         aria-label={unread.length > 0 ? `التنبيهات، ${unread.length} غير مقروء` : "التنبيهات"}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface text-muted-foreground transition hover:border-border-strong hover:text-foreground"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface text-muted-foreground transition hover:border-border-strong hover:text-foreground md:h-10 md:w-10"
       >
         <Bell className="h-[18px] w-[18px]" aria-hidden />
         {unread.length > 0 && (
