@@ -204,7 +204,7 @@ function SubscriptionsPage() {
                         onClick={() =>
                           toggleRenew.mutate({ id: String(s.id), autoRenew: !s.auto_renew })
                         }
-                        className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
+                        className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] sm:min-h-0 text-muted-foreground hover:bg-surface-muted"
                       >
                         <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
                         {s.auto_renew ? "مفعّل" : "غير مفعّل"}
@@ -214,14 +214,14 @@ function SubscriptionsPage() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => setDetailId(String(s.id))}
-                          className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-muted-foreground hover:bg-surface-muted"
+                          className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] sm:min-h-0 text-muted-foreground hover:bg-surface-muted"
                         >
                           <Eye className="h-3.5 w-3.5" aria-hidden /> تفاصيل
                         </button>
                         {suspended ? (
                           <button
                             onClick={() => resume.mutate(String(s.id))}
-                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-success hover:bg-success-soft"
+                            className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] sm:min-h-0 text-success hover:bg-success-soft"
                           >
                             <PlayCircle className="h-3.5 w-3.5" aria-hidden /> إعادة تفعيل
                           </button>
@@ -231,7 +231,7 @@ function SubscriptionsPage() {
                               onClick={() =>
                                 setSuspending({ id: String(s.id), email: String(s.email) })
                               }
-                              className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-warning hover:bg-warning-soft"
+                              className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] sm:min-h-0 text-warning hover:bg-warning-soft"
                             >
                               <PauseCircle className="h-3.5 w-3.5" aria-hidden /> إيقاف
                             </button>
@@ -242,7 +242,7 @@ function SubscriptionsPage() {
                             onClick={() =>
                               setCancelling({ id: String(s.id), email: String(s.email) })
                             }
-                            className="inline-flex items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] text-danger hover:bg-danger-soft"
+                            className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-s)] px-2 py-1 text-[12px] sm:min-h-0 text-danger hover:bg-danger-soft"
                           >
                             <Ban className="h-3.5 w-3.5" aria-hidden /> إلغاء
                           </button>

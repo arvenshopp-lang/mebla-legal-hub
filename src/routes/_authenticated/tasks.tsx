@@ -172,9 +172,10 @@ function Page() {
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex min-h-[44px] items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
+                className="h-5 w-5"
                 checked={mine}
                 onChange={(e) => {
                   setMine(e.target.checked);

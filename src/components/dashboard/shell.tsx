@@ -112,7 +112,10 @@ export function DashboardShell({
   const SidebarInner = ({ mini }: { mini: boolean }) => (
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
-        <Link to="/dashboard" className="min-w-0 truncate text-[15px] font-bold tracking-tight">
+        <Link
+          to="/dashboard"
+          className="inline-flex min-h-[44px] min-w-0 items-center truncate text-[15px] font-bold tracking-tight"
+        >
           {mini ? "مِهلة" : "مِهلة · MEHLA"}
         </Link>
         <button

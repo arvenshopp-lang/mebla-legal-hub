@@ -21,7 +21,7 @@ function PublicHeader() {
   return (
     <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border bg-surface/90 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link to="/" className="text-[17px] font-bold tracking-tight">
+        <Link to="/" className="inline-flex min-h-[44px] items-center text-[17px] font-bold tracking-tight">
           مِهلة <span className="text-text-muted">·</span>{" "}
           <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </Link>

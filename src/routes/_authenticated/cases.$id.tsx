@@ -235,7 +235,7 @@ function Page() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link
           to="/cases"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="flex min-h-[44px] items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowRight className="h-4 w-4" /> عودة للقضايا
         </Link>
@@ -288,7 +288,7 @@ function Page() {
                   navigator.clipboard?.writeText(data.public_code!);
                   toast.success("تم نسخ رمز القضية");
                 }}
-                className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning hover:brightness-95"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-full bg-warning-soft px-3 py-1 text-[11px] font-medium text-warning hover:brightness-95 sm:min-h-0 sm:py-1"
                 title="رمز متابعة القضية للعميل"
               >
                 <Copy className="h-3 w-3" /> رمز المتابعة: {data.public_code}
@@ -370,7 +370,7 @@ function Page() {
                             }}
                             aria-label="تعديل الطرف"
                             title="تعديل"
-                            className="rounded p-1 hover:bg-surface"
+                            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-surface sm:min-h-[32px] sm:min-w-[32px]"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
@@ -489,7 +489,7 @@ function Page() {
                   {canEdit(activeRole) && (
                     <button
                       onClick={() => toggleVisibility.mutate(u)}
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                      className="inline-flex min-h-[44px] items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground sm:min-h-0"
                     >
                       {u.is_client_visible ? (
                         <EyeOff className="h-3 w-3" />
