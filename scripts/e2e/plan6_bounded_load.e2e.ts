@@ -238,18 +238,13 @@ await t("load/tickets", "10 تذاكر دعم بالتوازي: أرقام فر�
     "تذاكر لها مواعيد SLA محسوبة",
   );
   const ids = rows.map((r) => r.id);
-  // القراءة بعد موجة الحِمل قد تصادف إعادة تدوير اتصال في PostgREST؛ نعيد المحاولة مرة واحدة.
-  let events: { ticket_id: string }[] = [];
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      events = await rest<{ ticket_id: string }>(
-        `support_ticket_events?ticket_id=in.(${ids.join(",")})&event_type=eq.created&select=ticket_id`,
-      );
-      break;
-    } catch (error) {
-      if (attempt === 3) throw error;
-      await new Promise((r) => setTimeout(r, 1200));
-    }
+  // نقرأ حدث الإنشاء لكل تذكرة على حدة: أدق في التشخيص وأخف على Data API بعد موجة الحِمل.
+  const events: { ticket_id: string }[] = [];
+  for (const id of ids) {
+    const found = await rest<{ ticket_id: string }>(
+      `support_ticket_events?ticket_id=eq.${id}&event_type=eq.created&select=ticket_id`,
+    );
+    events.push(...found);
   }
   eq(events.length, 10, "أحداث الإنشاء");
   for (const table of ["support_sla_events", "support_ticket_events"]) {
