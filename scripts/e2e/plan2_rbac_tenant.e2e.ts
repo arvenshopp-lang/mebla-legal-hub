@@ -336,13 +336,16 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   });
   record("INVITES", "إنشاء دعوة بدور محامٍ", res.ok, "Server Guard", `${res.status} ${res.message}`);
 
-  const rowRes = await adminFetch(
-    `${SUPABASE_URL}/rest/v1/organization_invitations?email=eq.${encodeURIComponent(inviteEmail)}&select=id,token,role,status,expires_at`,
-  );
-  const invite = ((await rowRes.json()) as { id: string; token: string; role: string; status: string }[])[0];
+  const readInvite = async () => {
+    const r = await adminFetch(
+      `${SUPABASE_URL}/rest/v1/organization_invitations?email=eq.${encodeURIComponent(inviteEmail)}&status=eq.pending&select=id,token,role,status,expires_at`,
+    );
+    return ((await r.json()) as { id: string; token: string; role: string; status: string }[])[0];
+  };
+  const firstInvite = await readInvite();
   record("INVITES", "الدعوة محفوظة في القاعدة بحالة pending",
-    !!invite && invite.status === "pending" && invite.role === "lawyer", "Other",
-    JSON.stringify(invite ?? {}));
+    !!firstInvite && firstInvite.status === "pending" && firstInvite.role === "lawyer", "Other",
+    JSON.stringify(firstInvite ?? {}));
 
   const dup = await call(invFns["inviteTeamMember"]!, tok("A", "admin"), {
     organizationId: A.organizationId, email: inviteEmail, role: "lawyer", origin: APP,
@@ -353,6 +356,10 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   const dupCount = ((await dupRows.json()) as unknown[]).length;
   record("INVITES", "إعادة الدعوة لا تُنشئ دعوة مكررة", dupCount === 1, "Server Guard",
     `count=${dupCount} status=${dup.status}`);
+
+  // الدعوة السارية بعد إعادة الإرسال هي المرجع (الأولى تُبطَل).
+  const invite = await readInvite();
+  const staleJoinToken = firstInvite!.token;
 
   // معاينة عامة لا تكشف البريد كاملاً.
   const preview = await call(invFns["getInvitation"]!, undefined, { token: invite!.token });
@@ -367,9 +374,15 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   });
   const newUser = (await createUser.json()) as { id: string };
   const newToken = await signIn(inviteEmail, password);
+  const stale = await call(invFns["joinOrganization"]!, newToken, { token: staleJoinToken });
+  record("INVITES", "توكن الدعوة المُبطَلة بعد إعادة الإرسال مرفوض",
+    stale.denied || stateOf(stale.raw) !== "joined", "Token",
+    `${stale.status} state=${stateOf(stale.raw)}`);
+
   const join = await call(invFns["joinOrganization"]!, newToken, { token: invite!.token });
-  record("INVITES", "قبول الدعوة ينشئ عضوية فعلية", join.ok, "Server Guard",
-    `${join.status} ${join.message}`);
+  record("INVITES", "قبول الدعوة ينشئ عضوية فعلية",
+    join.ok && stateOf(join.raw) === "joined", "Server Guard",
+    `${join.status} state=${stateOf(join.raw)} ${join.message}`);
   const memRes = await adminFetch(
     `${SUPABASE_URL}/rest/v1/organization_members?user_id=eq.${newUser.id}&select=role,status,organization_id`,
   );
@@ -379,9 +392,9 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     "Other", JSON.stringify(mem ?? {}));
 
   const reuse = await call(invFns["joinOrganization"]!, newToken, { token: invite!.token });
-  record("INVITES", "إعادة استخدام توكن الدعوة مرفوضة",
-    reuse.denied || /مستخدم|منتهية|غير صالح/.test(reuse.raw), "Token",
-    `${reuse.status} ${reuse.message}`);
+  record("INVITES", "إعادة استخدام توكن الدعوة لا تمنح عضوية جديدة",
+    reuse.denied || stateOf(reuse.raw) !== "joined", "Token",
+    `${reuse.status} state=${stateOf(reuse.raw)}`);
 
   // توكن منتهٍ + توكن غير صالح.
   const expEmail = `qa.plan2.exp.${Date.now()}@mehlaqa.test`;
@@ -394,8 +407,9 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     }),
   });
   const expJoin = await call(invFns["joinOrganization"]!, newToken, { token: expToken });
-  record("INVITES", "الدعوة المنتهية مرفوضة", expJoin.denied || /منتهية/.test(expJoin.raw), "Token",
-    `${expJoin.status} ${expJoin.message}`);
+  record("INVITES", "الدعوة المنتهية مرفوضة",
+    expJoin.denied || stateOf(expJoin.raw) !== "joined", "Token",
+    `${expJoin.status} state=${stateOf(expJoin.raw)}`);
   const badJoin = await call(invFns["joinOrganization"]!, newToken, {
     token: crypto.randomUUID().replace(/-/g, ""),
   });
