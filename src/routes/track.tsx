@@ -107,7 +107,7 @@ function TrackPage() {
     <div dir="rtl" className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a href="/" className="text-[16px] font-bold tracking-tight">
+          <a href="/" className="inline-flex min-h-[44px] items-center text-[16px] font-bold tracking-tight">
             مِهلة <span className="text-text-muted">·</span>{" "}
             <span className="text-[12px] tracking-[0.18em]">MEHLA</span>
           </a>

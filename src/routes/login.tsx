@@ -276,7 +276,7 @@ function LoginPage() {
           type="button"
           onClick={requestMagicLink}
           disabled={actionBusy === "magic"}
-          className="w-full text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
+          className="flex min-h-[44px] w-full items-center justify-center text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
         >
           {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
         </button>
@@ -325,7 +325,7 @@ export function AuthShell({
       <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center">
         <Link
           to="/"
-          className="mb-8 block text-center text-[17px] font-bold tracking-tight text-foreground"
+          className="mb-8 flex min-h-[44px] items-center justify-center text-center text-[17px] font-bold tracking-tight text-foreground"
         >
           مِهلة <span className="text-text-muted">·</span>{" "}
           <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
