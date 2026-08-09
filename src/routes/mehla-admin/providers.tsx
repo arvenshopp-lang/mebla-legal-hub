@@ -148,9 +148,12 @@ function ProviderCard({
           <PlugZap className="h-4 w-4" aria-hidden />
           فحص الاتصال
         </Btn>
-        <Btn size="sm" variant="ghost" asChild={false}>
-          <Link to={provider.manageTo}>{provider.manageLabel}</Link>
-        </Btn>
+        <Link
+          to={provider.manageTo}
+          className="text-[13px] font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {provider.manageLabel}
+        </Link>
       </footer>
       {!provider.canVerify && provider.verifyBlockedReason && (
         <p className="text-caption">{provider.verifyBlockedReason}</p>
