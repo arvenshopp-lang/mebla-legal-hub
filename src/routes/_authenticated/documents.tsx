@@ -109,6 +109,8 @@ function Page() {
         )
         .eq("organization_id", activeOrgId!)
         .order("created_at", { ascending: false })
+        // مفتاح فرز ثانوي ثابت يمنع تكرار الصفوف بين صفحات الترقيم
+        .order("id", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q) query = query.or(`file_name.ilike.%${q}%,description.ilike.%${q}%`);
       const { data, error, count } = await query;

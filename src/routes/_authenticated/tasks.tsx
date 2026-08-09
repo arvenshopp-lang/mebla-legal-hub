@@ -100,6 +100,8 @@ function Page() {
         .eq("organization_id", activeOrgId!)
         .order("due_date", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
+        // مفتاح فرز ثانوي ثابت يمنع تكرار الصفوف بين صفحات الترقيم
+        .order("id", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q) query = query.ilike("title", `%${q}%`);
       if (status !== "all") query = query.eq("status", status as Enums<"task_status">);

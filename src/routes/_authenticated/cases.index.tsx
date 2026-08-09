@@ -156,6 +156,8 @@ function Page() {
         )
         .eq("organization_id", activeOrgId!)
         .order("last_activity_at", { ascending: false })
+        // مفتاح فرز ثانوي ثابت يضمن ترقيماً غير متكرر عند تساوي آخر نشاط
+        .order("id", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (q)
         query = query.or(
