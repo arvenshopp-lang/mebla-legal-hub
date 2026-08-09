@@ -24,7 +24,10 @@ import {
 
 export const UNAVAILABLE = "هذه الصفحة غير متاحة حالياً.";
 
-/** روابط الصفحات المنشورة فقط — لخريطة الموقع. لا يُرجع أي بيانات مكتب. */
+/**
+ * روابط الصفحات القابلة للعرض العام فقط — لخريطة الموقع. لا يُرجع أي بيانات مكتب.
+ * كل رابط يمر ببوابة العرض العام نفسها، فلا تُنشر صفحة مكتب موقوف أو منتهي الاستحقاق.
+ */
 export async function listPublishedOfficeSlugs(): Promise<string[]> {
   const { data, error } = await supabaseAdmin
     .from("office_public_pages")
@@ -32,9 +35,21 @@ export async function listPublishedOfficeSlugs(): Promise<string[]> {
     .eq("status", "published")
     .eq("suspended_by_platform", false)
     .order("published_at", { ascending: false })
-    .limit(5000);
+    .limit(1000);
   if (error || !data) return [];
-  return data.map((row) => row.slug).filter((slug): slug is string => Boolean(slug));
+  const candidates = data
+    .map((row) => row.slug)
+    .filter((slug): slug is string => Boolean(slug));
+
+  const allowed: string[] = [];
+  for (let i = 0; i < candidates.length; i += 20) {
+    const batch = candidates.slice(i, i + 20);
+    const gated = await Promise.all(
+      batch.map(async (slug) => (("reason" in (await loadPublishedOfficePage(slug))) ? null : slug)),
+    );
+    for (const slug of gated) if (slug) allowed.push(slug);
+  }
+  return allowed;
 }
 
 /** عرض عام جاهز للصفحة المنشورة فقط — يُرجع null لأي حالة غير متاحة. */
