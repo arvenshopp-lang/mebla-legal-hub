@@ -247,17 +247,19 @@ await t("load/tickets", "10 تذاكر دعم بالتوازي: أرقام فر�
     events.push(...found);
   }
   eq(events.length, 10, "أحداث الإنشاء");
-  for (const table of ["support_sla_events", "support_ticket_events"]) {
-    await rest(`${table}?ticket_id=in.(${ids.join(",")})`, {
-      method: "DELETE",
+  // سجلات أحداث التذاكر وSLA محفوظة كسجل تدقيق ولا تُحذف — نُغلق تذاكر الاختبار فقط.
+  for (const id of ids) {
+    await rest(`support_tickets?id=eq.${id}`, {
+      method: "PATCH",
       headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "closed", closed_at: new Date().toISOString() }),
     });
   }
-  await rest(`support_tickets?id=in.(${ids.join(",")})`, {
-    method: "DELETE",
-    headers: { Prefer: "return=minimal" },
-  });
-  return `تذاكر=${rows.length} أحداث=${events.length} SLA محسوب لكل تذكرة (نُظّفت)`;
+  const closed = await rest<{ id: string }>(
+    `support_tickets?id=in.(${ids.join(",")})&status=eq.closed&select=id`,
+  );
+  eq(closed.length, 10, "تذاكر الاختبار المُغلقة");
+  return `تذاكر=${rows.length} أحداث إنشاء=${events.length} SLA محسوب — أُغلقت وسجل التدقيق محفوظ`;
 });
 
 /* ------------------------------------------------------------------- الاتساق والتنظيف */
