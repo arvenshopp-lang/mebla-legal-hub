@@ -489,7 +489,11 @@ export async function convertLead(
 
   if (!claimed || claimed.length === 0) {
     // سبقنا تحويل آخر: نتراجع عن العميل المُنشأ ونعيد العميل المعتمد.
-    await supabase.from("clients").delete().eq("id", client.id).eq("organization_id", organizationId);
+    await supabase
+      .from("clients")
+      .delete()
+      .eq("id", client.id)
+      .eq("organization_id", organizationId);
     const { data: winner } = await supabase
       .from("office_leads")
       .select("converted_client_id")
