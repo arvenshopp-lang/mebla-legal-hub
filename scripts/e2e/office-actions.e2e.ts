@@ -281,7 +281,7 @@ async function printFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   };
 
   const first = await call("print", "openPrintEvent", actors.lawyer!.token, base);
-  const printRef = /PR-\d{8}-[A-Z0-9]{6}/.exec(first.raw)?.[1] ?? null;
+  const printRef = /PR-\d{8}-[A-Z0-9]{6}/.exec(first.raw)?.[0] ?? null;
   check("المحامي طبع مستنداً سرّياً (فتح حدث طباعة موثّق)", first.ok && !!printRef, first.ok ? String(printRef) : first.message.slice(0, 120));
 
   const row = printRef
@@ -294,7 +294,7 @@ async function printFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   );
 
   const second = await call("print", "openPrintEvent", actors.owner!.token, { ...base, sessionId: `b4-${crypto.randomUUID().slice(0, 8)}` });
-  const ref2 = /PR-\d{8}-[A-Z0-9]{6}/.exec(second.raw)?.[1] ?? null;
+  const ref2 = /PR-\d{8}-[A-Z0-9]{6}/.exec(second.raw)?.[0] ?? null;
   const row2 = ref2 ? await one(`print_audit_logs?print_ref=eq.${ref2}&select=copy_number`) : undefined;
   check(
     "رقم النسخة يتصاعد لكل طباعة لنفس المستند",
