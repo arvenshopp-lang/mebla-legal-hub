@@ -446,14 +446,17 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
 
 /* ═══════════════ 7) بوابة العميل والروابط العامة ═══════════════ */
 {
+  await resetPublicAttempts();
   const lookup = await call(portalFns["lookupCaseStatus"]!, undefined, { code: A.publicCode });
   record("PORTAL", "متابعة القضية برمز صحيح تعمل بلا جلسة",
-    lookup.ok && lookup.raw.includes("found"), "Token", `status=${lookup.status}`);
+    lookup.ok && stateOf(lookup.raw) === "found", "Token",
+    `status=${lookup.status} state=${stateOf(lookup.raw)}`);
   const leak = /internal|ملاحظة داخلية|is_client_visible|file_path|national_id/.test(lookup.raw);
   record("PORTAL", "نتيجة المتابعة لا تكشف ملاحظات داخلية أو مسارات ملفات", !leak, "Server Guard", "");
   const bad = await call(portalFns["lookupCaseStatus"]!, undefined, { code: "0000000000" });
   record("PORTAL", "رمز غير موجود يعيد not_found بلا تسريب",
-    bad.ok && bad.raw.includes("not_found"), "Token", `status=${bad.status}`);
+    bad.ok && stateOf(bad.raw) === "not_found", "Token",
+    `status=${bad.status} state=${stateOf(bad.raw)}`);
   const malformed = await call(portalFns["lookupCaseStatus"]!, undefined, { code: "abc" });
   record("PORTAL", "رمز بصيغة خاطئة مرفوض بالتحقق", malformed.denied, "Server Guard",
     `status=${malformed.status}`);
@@ -466,15 +469,15 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   record("PORTAL", "إنشاء رابط رفع للعميل", mk.ok && token.length > 20, "Server Guard",
     `status=${mk.status}`);
   const open = await call(portalFns["getUploadRequest"]!, undefined, { token });
-  record("PORTAL", "الرابط الصالح يفتح بحالة active", open.ok && open.raw.includes("active"),
-    "Token", `status=${open.status}`);
+  record("PORTAL", "الرابط الصالح يفتح بحالة active", open.ok && stateOf(open.raw) === "active",
+    "Token", `status=${open.status} state=${stateOf(open.raw)}`);
   const openLeak = /file_path|organization_id|case_id|token_hash/.test(open.raw);
   record("PORTAL", "صفحة الرفع لا تكشف معرفات داخلية", !openLeak, "Server Guard", "");
   const invalid = await call(portalFns["getUploadRequest"]!, undefined, {
     token: "Zm9vYmFyLWludmFsaWQtdG9rZW4tMTIzNDU2Nzg5",
   });
   record("PORTAL", "توكن غير صالح يعيد invalid", invalid.ok && invalid.raw.includes("invalid"),
-    "Token", `status=${invalid.status}`);
+    "Token", `status=${invalid.status} state=${stateOf(invalid.raw)}`);
 
   const reqIdRes = await adminFetch(
     `${SUPABASE_URL}/rest/v1/document_requests?organization_id=eq.${A.organizationId}&title=eq.${encodeURIComponent("QA-PLAN2 رابط العميل")}&select=id`,
@@ -483,7 +486,8 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   const revoke = await call(docReqFns["revokeDocumentRequest"]!, tok("A", "owner"), { id: reqId });
   const afterRevoke = await call(portalFns["getUploadRequest"]!, undefined, { token });
   record("PORTAL", "الرابط الملغى لا يُستخدم",
-    revoke.ok && afterRevoke.raw.includes("revoked"), "Token", `status=${afterRevoke.status}`);
+    revoke.ok && stateOf(afterRevoke.raw) === "revoked", "Token",
+    `status=${afterRevoke.status} state=${stateOf(afterRevoke.raw)}`);
   const submitRevoked = await call(portalFns["createUploadSlots"]!, undefined, {
     token, files: [{ name: "a.pdf", size: 1000, type: "application/pdf" }],
   });
@@ -505,8 +509,8 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     body: JSON.stringify({ expires_at: new Date(Date.now() - 60_000).toISOString() }),
   });
   const expired = await call(portalFns["getUploadRequest"]!, undefined, { token: token2 });
-  record("PORTAL", "الرابط المنتهي يعيد expired", expired.raw.includes("expired"), "Token",
-    `status=${expired.status}`);
+  record("PORTAL", "الرابط المنتهي يعيد expired", stateOf(expired.raw) === "expired", "Token",
+    `status=${expired.status} state=${stateOf(expired.raw)}`);
 
   // محاولات خاطئة متتابعة: يجب أن تُسجَّل ويُفعَّل حد المحاولات.
   let limited = false;
@@ -514,10 +518,11 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     const r = await call(portalFns["getUploadRequest"]!, undefined, {
       token: `bruteforce${i}${"x".repeat(20)}`,
     });
-    if (r.raw.includes("rate_limited")) { limited = true; break; }
+    if (stateOf(r.raw) === "rate_limited") { limited = true; break; }
   }
   record("PORTAL", "حد المحاولات يوقف تخمين التوكن", limited, "Server Guard",
     limited ? "" : "لم يُفعَّل الحد خلال 40 محاولة");
+  await resetPublicAttempts();
 }
 
 /* ═══════════════ 8) أمن المستندات والتخزين ═══════════════ */
