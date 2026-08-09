@@ -111,10 +111,20 @@ function Page() {
       if (status !== "all") query = query.eq("status", status as Enums<"hearing_status">);
       const now = new Date().toISOString();
       if (when === "upcoming")
-        query = query.gte("hearing_date", now).order("hearing_date", { ascending: true });
+        query = query
+          .gte("hearing_date", now)
+          .order("hearing_date", { ascending: true })
+          .order("id", { ascending: true });
       else if (when === "past")
-        query = query.lt("hearing_date", now).order("hearing_date", { ascending: false });
-      else query = query.order("hearing_date", { ascending: false });
+        query = query
+          .lt("hearing_date", now)
+          .order("hearing_date", { ascending: false })
+          .order("id", { ascending: false });
+      // مفتاح فرز ثانوي ثابت يمنع تكرار الصفوف بين صفحات الترقيم
+      else
+        query = query
+          .order("hearing_date", { ascending: false })
+          .order("id", { ascending: false });
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };

@@ -114,6 +114,8 @@ function Page() {
         .select("*", { count: "exact" })
         .eq("organization_id", activeOrgId!)
         .order("created_at", { ascending: false })
+        // مفتاح فرز ثانوي ثابت: يمنع تكرار/تخطي الصفوف بين الصفحات عند تساوي التواريخ
+        .order("id", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       if (piiIds?.length) {
         query = query.in("id", piiIds);

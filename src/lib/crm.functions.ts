@@ -220,7 +220,10 @@ export const listLeads = createServerFn({ method: "POST" })
       data: rows,
       count,
       error,
-    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    } = await q
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة العملاء المحتملين.");
     const staffMap = await staffOptionsMap(db);
     const list: CrmLeadRow[] = (rows ?? []).map((r: AnyClient) => ({
@@ -609,7 +612,10 @@ export const listCompanies = createServerFn({ method: "POST" })
       data: rows,
       count,
       error,
-    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    } = await q
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الشركات.");
     const staffMap = await staffOptionsMap(db);
     const list: CrmCompanyRow[] = (rows ?? []).map((r: AnyClient) => ({
@@ -872,7 +878,10 @@ export const listContacts = createServerFn({ method: "POST" })
       data: rows,
       count,
       error,
-    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    } = await q
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة جهات الاتصال.");
     const staffMap = await staffOptionsMap(db);
     const companyIds = [
@@ -1042,7 +1051,10 @@ export const listDeals = createServerFn({ method: "POST" })
       data: rows,
       count,
       error,
-    } = await q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
+    } = await q
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error("تعذّر جلب قائمة الصفقات.");
     const staffMap = await staffOptionsMap(db);
     const [{ data: stages }, { data: companies }, { data: contacts }] = await Promise.all([
