@@ -31,11 +31,15 @@ async function ensureMember(organizationId: string, userId: string, role: string
   });
 }
 
-async function ensureProfile(userId: string, email: string, fullName: string, organizationId: string) {
+/**
+ * الملف الشخصي في مِهلة لا يحمل معرّف المكتب — العضوية مصدرها organization_members،
+ * فلا نضيف أي عمود للمخطط من أجل الاختبار.
+ */
+async function ensureProfile(userId: string, email: string, fullName: string) {
   await rest(`profiles?on_conflict=id`, {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ id: userId, email, full_name: fullName, organization_id: organizationId }),
+    body: JSON.stringify({ id: userId, email, full_name: fullName, is_active: true }),
   });
 }
 
@@ -89,9 +93,10 @@ export async function setupEnv(): Promise<Env> {
   const ownerBId = await ensureUser("qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B");
   const staffId = await ensureUser("qa.f01.platform@mehlaqa.test", "QA F01 Platform");
 
-  await ensureProfile(ownerAId, "qa.f01.owner.a@mehlaqa.test", "QA F01 Owner A", orgA);
-  await ensureProfile(viewerAId, "qa.f01.viewer.a@mehlaqa.test", "QA F01 Viewer A", orgA);
-  await ensureProfile(ownerBId, "qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B", orgB);
+  await ensureProfile(ownerAId, "qa.f01.owner.a@mehlaqa.test", "QA F01 Owner A");
+  await ensureProfile(viewerAId, "qa.f01.viewer.a@mehlaqa.test", "QA F01 Viewer A");
+  await ensureProfile(ownerBId, "qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B");
+  await ensureProfile(staffId, "qa.f01.platform@mehlaqa.test", "QA F01 Platform");
   await ensureMember(orgA, ownerAId, "owner");
   await ensureMember(orgA, viewerAId, "viewer");
   await ensureMember(orgB, ownerBId, "owner");
