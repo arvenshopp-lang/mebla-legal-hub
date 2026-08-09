@@ -303,6 +303,7 @@ function Page() {
                               <button
                                 onClick={() => complete.mutate(d.id)}
                                 className="rounded-lg p-1.5 text-foreground hover:bg-primary-soft"
+                                aria-label="إنجاز"
                                 title="إنجاز"
                               >
                                 <Check className="h-4 w-4" />
