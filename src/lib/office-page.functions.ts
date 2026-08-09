@@ -19,7 +19,7 @@ export const getOfficePageState = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orgInput.parse(d))
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.readState(context.supabase, data.organizationId);
+    return await ops.readState(context.supabase, context.userId, data.organizationId);
   });
 
 export const saveOfficePageDraft = createServerFn({ method: "POST" })
@@ -81,7 +81,7 @@ export const previewOfficePage = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orgInput.parse(d))
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.previewView(context.supabase, data.organizationId);
+    return await ops.previewView(context.supabase, context.userId, data.organizationId);
   });
 
 export const listOfficeLeads = createServerFn({ method: "POST" })
@@ -98,7 +98,7 @@ export const listOfficeLeads = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.listLeads(context.supabase, data);
+    return await ops.listLeads(context.supabase, context.userId, data);
   });
 
 export const updateOfficeLead = createServerFn({ method: "POST" })
@@ -138,5 +138,5 @@ export const getOfficePageAnalytics = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.analytics(context.supabase, data.organizationId, data.days);
+    return await ops.analytics(context.supabase, context.userId, data.organizationId, data.days);
   });
