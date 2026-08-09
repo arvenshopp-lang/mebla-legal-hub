@@ -1,3 +1,14 @@
-import { rest } from "./lib";
-const rows = await rest(`office_public_pages?select=organization_id,slug,version,status`);
-console.log(rows);
+import { office, rest, one } from "./lib";
+import { setupEnv } from "./setup";
+import { snapshotA, SLUG_A } from "./content";
+const env = await setupEnv();
+await office("changeOfficePageSlug", env.ownerA.token, { organizationId: env.orgA, slug: SLUG_A });
+await office("saveOfficePageDraft", env.ownerA.token, { organizationId: env.orgA, draft: snapshotA() });
+console.log("pub1", (await office("publishOfficePage", env.ownerA.token, { organizationId: env.orgA })).message || "ok");
+const row = await one(`office_public_pages?select=version,published,draft&organization_id=eq.${env.orgA}`);
+const p = row!["published"] as any;
+console.log("v", row!["version"], "logo", p.logo_path, "cover", p.cover_path, "team", p.team.map((t:any)=>t.photo_path));
+const save = await office("saveOfficePageDraft", env.ownerA.token, { organizationId: env.orgA, draft: snapshotA({ logo_path: p.logo_path, cover_path: p.cover_path }) });
+console.log("save", save.ok, save.message);
+const rp = await office("publishOfficePage", env.ownerA.token, { organizationId: env.orgA });
+console.log("pub2", rp.ok, rp.message);
