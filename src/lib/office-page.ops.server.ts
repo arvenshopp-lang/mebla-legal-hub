@@ -198,10 +198,8 @@ export async function publish(supabase: Client, userId: string, organizationId: 
   const version = row.version + 1;
   const { readPublicSiteInfo } = await import("@/lib/public-site.server");
   const info = await readPublicSiteInfo();
-  const policyVersion =
-    (info as { privacy_version?: string; privacy_updated_at?: string } | null)?.privacy_version ||
-    (info as { privacy_updated_at?: string } | null)?.privacy_updated_at ||
-    "current";
+  // نسخة السياسة = تاريخ نفاذ سياسات المنصة، وهي المرجع الرسمي المعروض للزائر.
+  const policyVersion = info.policies_effective_date || "unversioned";
 
   const stamped = officeSnapshotSchema.parse({ ...draft, consent_policy_version: policyVersion });
   const published = await buildPublishedSnapshot(organizationId, stamped, version);
