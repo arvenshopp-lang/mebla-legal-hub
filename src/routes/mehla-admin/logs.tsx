@@ -23,6 +23,11 @@ import {
 import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import {
+  AUDIT_EXPORT_COLUMNS,
+  AUDIT_EXPORT_DEFAULT_KEYS,
+  AUDIT_TIMEZONE_LABEL,
+} from "@/lib/admin-audit.shared";
+import {
   exportAuditLogs,
   listAuditFacets,
   listAuditLogs,
@@ -79,6 +84,10 @@ function LogsPage() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<AuditLogRow | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [columns, setColumns] = useState<string[]>(AUDIT_EXPORT_DEFAULT_KEYS);
+  const [includeCount, setIncludeCount] = useState(true);
+  const [showTimezone, setShowTimezone] = useState(true);
 
   const debounced = useDebounced(search);
   const debouncedActor = useDebounced(actor);
@@ -109,7 +118,7 @@ function LogsPage() {
 
   const exportFn = useServerFn(exportAuditLogs);
   const exportCsv = useMutation({
-    mutationFn: () => exportFn({ data: filters }),
+    mutationFn: () => exportFn({ data: { ...filters, columns, includeCount, showTimezone } }),
     onSuccess: (res) => {
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -118,10 +127,14 @@ function LogsPage() {
       a.download = `mehla-audit-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      setExportOpen(false);
       toast.success("تم تصدير سجل التدقيق.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const toggleColumn = (key: string) =>
+    setColumns((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   const resetPage =
     <T,>(setter: (v: T) => void) =>
@@ -136,12 +149,7 @@ function LogsPage() {
       description="سجل غير قابل للتعديل لكل عملية إدارية، يوثّق المنفّذ والقيم قبل/بعد وعنوان الشبكة والجهاز."
       actions={
         canExport ? (
-          <Btn
-            size="sm"
-            variant="outline"
-            loading={exportCsv.isPending}
-            onClick={() => exportCsv.mutate()}
-          >
+          <Btn size="sm" variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="h-4 w-4" aria-hidden /> تصدير CSV
           </Btn>
         ) : undefined
@@ -262,6 +270,72 @@ function LogsPage() {
           <Pagination page={page} setPage={setPage} total={data?.total ?? 0} pageSize={PAGE_SIZE} />
         </>
       )}
+
+      <Modal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="خيارات تصدير CSV"
+        size="lg"
+      >
+        <div className="space-y-5 text-body-sm">
+          <p className="text-muted-foreground">
+            يتبع الملف عوامل التصفية الحالية. اختر الأعمدة المطلوبة وخيارات الملف.
+          </p>
+
+          <fieldset className="space-y-3">
+            <legend className="text-caption mb-2">أعمدة الملف</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {AUDIT_EXPORT_COLUMNS.map((c) => (
+                <label
+                  key={c.key}
+                  className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--color-primary)]"
+                    checked={c.required || columns.includes(c.key)}
+                    disabled={c.required}
+                    onChange={() => toggleColumn(c.key)}
+                  />
+                  <span className="font-medium">{c.label}</span>
+                  {c.required && <span className="text-caption text-muted-foreground">إلزامي</span>}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-2">
+            <legend className="text-caption mb-2">خيارات إضافية</legend>
+            <label className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--color-primary)]"
+                checked={includeCount}
+                onChange={(e) => setIncludeCount(e.target.checked)}
+              />
+              <span className="font-medium">تضمين عدد النتائج في أعلى الملف</span>
+            </label>
+            <label className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--color-primary)]"
+                checked={showTimezone}
+                onChange={(e) => setShowTimezone(e.target.checked)}
+              />
+              <span className="font-medium">إظهار المنطقة الزمنية — {AUDIT_TIMEZONE_LABEL}</span>
+            </label>
+          </fieldset>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Btn variant="outline" onClick={() => setExportOpen(false)}>
+              إلغاء
+            </Btn>
+            <Btn loading={exportCsv.isPending} onClick={() => exportCsv.mutate()}>
+              <Download className="h-4 w-4" aria-hidden /> تنزيل الملف
+            </Btn>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={Boolean(detail)}
