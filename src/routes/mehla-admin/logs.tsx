@@ -88,6 +88,9 @@ function LogsPage() {
   const [columns, setColumns] = useState<string[]>(AUDIT_EXPORT_DEFAULT_KEYS);
   const [includeCount, setIncludeCount] = useState(true);
   const [showTimezone, setShowTimezone] = useState(true);
+  const [exportScope, setExportScope] = useState<"all" | "range" | "page">("all");
+  const [rangeFrom, setRangeFrom] = useState("1");
+  const [rangeTo, setRangeTo] = useState("500");
 
   const debounced = useDebounced(search);
   const debouncedActor = useDebounced(actor);
@@ -118,7 +121,20 @@ function LogsPage() {
 
   const exportFn = useServerFn(exportAuditLogs);
   const exportCsv = useMutation({
-    mutationFn: () => exportFn({ data: { ...filters, columns, includeCount, showTimezone } }),
+    mutationFn: () =>
+      exportFn({
+        data: {
+          ...filters,
+          columns,
+          includeCount,
+          showTimezone,
+          scope: exportScope,
+          rangeFrom: Math.max(1, Number(rangeFrom) || 1),
+          rangeTo: Math.max(1, Number(rangeTo) || 1),
+          page,
+          pageSize: PAGE_SIZE,
+        },
+      }),
     onSuccess: (res) => {
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -128,7 +144,7 @@ function LogsPage() {
       a.click();
       URL.revokeObjectURL(url);
       setExportOpen(false);
-      toast.success("تم تصدير سجل التدقيق.");
+      toast.success(`تم تصدير ${res.rows} سجلاً من سجل التدقيق.`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -281,6 +297,69 @@ function LogsPage() {
           <p className="text-muted-foreground">
             يتبع الملف عوامل التصفية الحالية. اختر الأعمدة المطلوبة وخيارات الملف.
           </p>
+
+          <fieldset className="space-y-2">
+            <legend className="text-caption mb-2">نطاق التصدير</legend>
+            <div className="grid gap-2">
+              {(
+                [
+                  { key: "all", label: "كل النتائج المطابقة للتصفية (حتى 5000 سجل)" },
+                  { key: "page", label: `الصفحة الحالية فقط (صفحة ${page} — ${PAGE_SIZE} سجلاً)` },
+                  { key: "range", label: "نطاق محدد من النتائج (من / إلى)" },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.key}
+                  className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3"
+                >
+                  <input
+                    type="radio"
+                    name="audit-export-scope"
+                    className="h-4 w-4 accent-[var(--color-primary)]"
+                    checked={exportScope === opt.key}
+                    onChange={() => setExportScope(opt.key)}
+                  />
+                  <span className="font-medium">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            {exportScope === "range" && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-caption block" htmlFor="audit-range-from">
+                    من السجل رقم
+                  </label>
+                  <input
+                    id="audit-range-from"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={rangeFrom}
+                    onChange={(e) => setRangeFrom(e.target.value)}
+                    className="h-11 w-full rounded-[var(--radius-m)] border border-border bg-background px-3"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-caption block" htmlFor="audit-range-to">
+                    إلى السجل رقم
+                  </label>
+                  <input
+                    id="audit-range-to"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={rangeTo}
+                    onChange={(e) => setRangeTo(e.target.value)}
+                    className="h-11 w-full rounded-[var(--radius-m)] border border-border bg-background px-3"
+                  />
+                </div>
+                <p className="text-caption text-muted-foreground sm:col-span-2">
+                  الترقيم يتبع الترتيب الحالي (الأحدث أولاً)، وإجمالي النتائج المطابقة{" "}
+                  {data?.total ?? 0}.
+                </p>
+              </div>
+            )}
+          </fieldset>
 
           <fieldset className="space-y-3">
             <legend className="text-caption mb-2">أعمدة الملف</legend>
