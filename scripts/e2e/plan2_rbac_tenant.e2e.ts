@@ -29,6 +29,20 @@ const uid = (org: OrgKey, role: P2Role) =>
 const WRITERS: P2Role[] = ["owner", "admin", "lawyer", "legal_assistant"];
 const ADMINS: P2Role[] = ["owner", "admin"];
 const rowsOf = (b: unknown) => (Array.isArray(b) ? (b as unknown[]).length : -1);
+/** رفض فعلي على مستوى القاعدة: إما 401/403 أو صفر صفوف مُعادة. */
+const deniedRest = (r: { status: number; body: unknown }) =>
+  r.status === 401 || r.status === 403 || rowsOf(r.body) === 0;
+/** استخراج قيمة state من إطار seroval الذي تعيده دوال الخادم. */
+const stateOf = (raw: string) =>
+  raw.match(/"state"\][\s\S]{0,40}?"s":"([a-z_]+)"/)?.[1] ??
+  raw.match(/"state":"([a-z_]+)"/)?.[1] ??
+  "";
+/** تصفير سجل محاولات الروابط العامة بين المراحل (عزل بيئة الاختبار فقط). */
+async function resetPublicAttempts() {
+  await adminFetch(`${SUPABASE_URL}/rest/v1/case_lookup_attempts?id=not.is.null`, {
+    method: "DELETE",
+  });
+}
 
 async function fns(modulePath: string): Promise<Record<string, ServerFnRef>> {
   return resolveServerFns(APP, modulePath);
@@ -73,15 +87,21 @@ for (const role of WRITERS) {
   record("ROLES/DENY", "viewer ممنوع من إنشاء عميل", r.status === 401 || r.status === 403, "RLS",
     `status=${r.status}`);
 }
-for (const t of ["cases", "hearings", "deadlines", "tasks", "documents"]) {
+const viewerDenyPayloads: [string, Record<string, unknown>][] = [
+  ["cases", { organization_id: A.organizationId, client_id: A.clientIds[0], case_title: "QA-PLAN2 منع" }],
+  ["hearings", { organization_id: A.organizationId, case_id: A.caseIds[0], hearing_date: new Date().toISOString() }],
+  ["deadlines", { organization_id: A.organizationId, case_id: A.caseIds[0], title: "QA-PLAN2 منع", due_date: "2030-01-01" }],
+  ["tasks", { organization_id: A.organizationId, case_id: A.caseIds[0], title: "QA-PLAN2 منع" }],
+  ["documents", { organization_id: A.organizationId, case_id: A.caseIds[0], file_name: "x.pdf", file_path: `${A.organizationId}/x.pdf` }],
+];
+for (const [t, payload] of viewerDenyPayloads) {
   const r = await asUser(tok("A", "viewer"), `/rest/v1/${t}`, {
     method: "POST",
-    body: JSON.stringify({ organization_id: A.organizationId, case_id: A.caseIds[0], title: "x",
-      case_title: "x", full_name: "x", hearing_date: new Date().toISOString(),
-      due_date: "2030-01-01", file_name: "x.pdf", file_path: "x/x.pdf" }),
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(payload),
   });
   record("ROLES/DENY", `viewer ممنوع من إنشاء ${t}`, r.status === 401 || r.status === 403, "RLS",
-    `status=${r.status}`);
+    `status=${r.status} ${JSON.stringify(r.body).slice(0, 160)}`);
 }
 {
   const r = await asUser(tok("A", "lawyer"), `/rest/v1/cases?id=eq.${A.caseIds[0]}`, {
@@ -301,7 +321,7 @@ for (const [table, id] of crossReads) {
 }
 for (const t of ["support_ticket_messages", "support_ticket_events", "support_internal_notes"]) {
   const r = await asUser(tok("A", "owner"), `/rest/v1/${t}?ticket_id=eq.${B.ticketId}&select=id`);
-  record("SUPPORT/TENANT", `A لا يقرأ ${t} لتذكرة B`, rowsOf(r.body) === 0, "RLS",
+  record("SUPPORT/TENANT", `A لا يقرأ ${t} لتذكرة B`, deniedRest(r), "RLS",
     `status=${r.status} rows=${rowsOf(r.body)}`);
 }
 
@@ -497,9 +517,11 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     `${SUPABASE_URL}/rest/v1/documents?select=file_path&limit=1`,
     { headers: { apikey: PUBLISHABLE } },
   );
-  const anonRows = rowsOf(await anonRest.json());
-  record("DOCSEC", "زائر بلا جلسة لا يقرأ جدول المستندات", anonRows === 0, "RLS",
-    `rows=${anonRows}`);
+  const anonBody = await anonRest.json();
+  const anonRows = rowsOf(anonBody);
+  record("DOCSEC", "زائر بلا جلسة لا يقرأ جدول المستندات",
+    anonRest.status === 401 || anonRest.status === 403 || anonRows === 0, "RLS",
+    `status=${anonRest.status} rows=${anonRows}`);
   const badDoc = await fetch(`${APP}/api/public/doc/notarealtoken123456`);
   record("DOCSEC", "رمز مستند غير صالح لا يُقدّم ملفاً",
     badDoc.status >= 400 && !(badDoc.headers.get("content-type") ?? "").includes("application/pdf"),
