@@ -19,6 +19,7 @@ import {
   inputCls,
 } from "@/lib/list-utils";
 import {
+  OFFICE_PAGE_STATUSES,
   OFFICE_PAGE_STATUS_LABELS,
   OFFICE_SERVICES,
   WEEK_DAYS,
@@ -41,7 +42,7 @@ import { errMsg } from "@/lib/errors";
 
 export type OfficePageStateView = {
   slug: string;
-  status: OfficePageStatus;
+  status: string;
   version: number;
   suspended: boolean;
   suspensionReason: string | null;
@@ -52,8 +53,15 @@ export type OfficePageStateView = {
   dirty: boolean;
   blockers: string[];
   publicUrl: string;
-  mediaUrls: Record<string, string>;
+  mediaUrls: { logo: string; cover: string; team: string[] };
 };
+
+/** الحالة القادمة من الخادم نصية؛ نطبّعها لعرض تسمية عربية صحيحة دائماً. */
+function normalizeStatus(status: string): OfficePageStatus {
+  return (OFFICE_PAGE_STATUSES as readonly string[]).includes(status)
+    ? (status as OfficePageStatus)
+    : "draft";
+}
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
@@ -276,7 +284,7 @@ export function OfficePageEditor({
           <div className="grid gap-4 sm:grid-cols-2">
             <MediaField
               label="الشعار"
-              url={media[draft.logo_path] ?? ""}
+              url={media.logo}
               disabled={!canEdit || upload.isPending}
               onPick={(file) => upload.mutate({ kind: "logo", file })}
               onClear={() => set("logo_path", "")}
@@ -284,7 +292,7 @@ export function OfficePageEditor({
             />
             <MediaField
               label="صورة الغلاف"
-              url={media[draft.cover_path] ?? ""}
+              url={media.cover}
               disabled={!canEdit || upload.isPending}
               onPick={(file) => upload.mutate({ kind: "cover", file })}
               onClear={() => set("cover_path", "")}
@@ -604,7 +612,7 @@ export function OfficePageEditor({
               <div className="grid gap-3 sm:grid-cols-2">
                 <MediaField
                   label="صورة العضو"
-                  url={media[member.photo_path] ?? ""}
+                  url={media.team[index] ?? ""}
                   disabled={!canEdit || upload.isPending}
                   onPick={(file) => upload.mutate({ kind: "team", file, index })}
                   onClear={() =>
@@ -776,6 +784,7 @@ function StatusBar({
   onSlug: () => void;
 }) {
   const [qr, setQr] = useState("");
+  const status = normalizeStatus(state.status);
 
   const buildQr = async () => {
     const QRCode = await import("qrcode");
@@ -790,14 +799,14 @@ function StatusBar({
           tone={
             state.suspended
               ? "red"
-              : state.status === "published"
+              : status === "published"
                 ? "green"
-                : state.status === "draft"
+                : status === "draft"
                   ? "muted"
                   : "warn"
           }
         >
-          {state.suspended ? "موقوفة من المنصة" : OFFICE_PAGE_STATUS_LABELS[state.status]}
+          {state.suspended ? "موقوفة من المنصة" : OFFICE_PAGE_STATUS_LABELS[status]}
         </Badge>
         {(localDirty || state.dirty) && state.hasPublished && (
           <Badge tone="gold">تغييرات غير منشورة</Badge>
@@ -864,7 +873,7 @@ function StatusBar({
         >
           {state.hasPublished ? "نشر التحديثات" : "نشر الصفحة"}
         </Btn>
-        {state.status === "published" && (
+        {status === "published" && (
           <Btn variant="danger" onClick={onUnpublish} disabled={!canEdit || busy}>
             إيقاف النشر
           </Btn>
