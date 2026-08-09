@@ -148,7 +148,15 @@ export const deletePlatformUser = createServerFn({ method: "POST" })
     if (staffRow?.role === "super_admin") throw new Error("لا يمكن حذف مالك المنصة.");
 
     const { error } = await db.auth.admin.deleteUser(data.userId);
-    if (error) throw new Error("تعذّر حذف الحساب.");
+    if (error) {
+      const detail = `${error.message} ${JSON.stringify((error as { status?: number }).status ?? "")}`;
+      if (/23503|foreign key|violates/i.test(detail)) {
+        throw new Error(
+          "تعذّر حذف الحساب لوجود سجلات مرتبطة به لا يمكن فصلها تلقائياً. أوقف الحساب بدلاً من حذفه، أو أعد إسناد سجلاته أولاً.",
+        );
+      }
+      throw new Error("تعذّر حذف الحساب.");
+    }
 
     await g.writeAudit(db, staff, {
       action: "user.delete",
