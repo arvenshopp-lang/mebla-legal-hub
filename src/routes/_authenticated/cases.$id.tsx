@@ -307,7 +307,7 @@ function Page() {
             <Info label="الفرع" value={data.court_branch} />
             <Info label="الدائرة" value={data.judicial_circuit} />
             <Info label="القاضي" value={data.judge_name} />
-            <Info label="المحامي المسؤول" value={data.lawyer?.full_name} />
+            <Info label="المحامي المسؤول" value={data.lawyer?.full_name ?? "غير مُسند"} />
             <Info label="تاريخ الفتح" value={fmtDate(data.opened_at)} />
           </dl>
           {data.description && (

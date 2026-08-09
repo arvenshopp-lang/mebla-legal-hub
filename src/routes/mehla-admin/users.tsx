@@ -29,9 +29,11 @@ import {
   deletePlatformUser,
   listPlatformUsers,
   listUserNotes,
+  listUserOwnershipBlockers,
   resendUserVerification,
   sendUserPasswordReset,
   setUserActive,
+  transferOrganizationOwnership,
   type AdminUserRow,
 } from "@/lib/admin-users.functions";
 
@@ -68,6 +70,7 @@ function UsersPage() {
   const [detail, setDetail] = useState<AdminUserRow | null>(null);
   const [toDelete, setToDelete] = useState<AdminUserRow | null>(null);
   const [noteBody, setNoteBody] = useState("");
+  const [newOwner, setNewOwner] = useState<Record<string, string>>({});
 
   const listFn = useServerFn(listPlatformUsers);
   const query = useQuery({
@@ -120,6 +123,25 @@ function UsersPage() {
     queryKey: ["admin-user-notes", detail?.id],
     enabled: Boolean(detail),
     queryFn: () => notesFn({ data: { userId: detail!.id } }),
+  });
+
+  const blockersFn = useServerFn(listUserOwnershipBlockers);
+  const blockers = useQuery({
+    queryKey: ["admin-user-ownership", detail?.id],
+    enabled: Boolean(detail),
+    queryFn: () => blockersFn({ data: { userId: detail!.id } }),
+  });
+
+  const transferFn = useServerFn(transferOrganizationOwnership);
+  const transfer = useMutation({
+    mutationFn: (v: { organizationId: string; fromUserId: string; toUserId: string }) =>
+      transferFn({ data: v }),
+    onSuccess: () => {
+      toast.success("تم نقل ملكية المكتب.");
+      qc.invalidateQueries({ queryKey: ["admin-user-ownership"] });
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const addNoteFn = useServerFn(addUserNote);
@@ -301,6 +323,59 @@ function UsersPage() {
 
             {canUpdate && (
               <div className="flex flex-wrap gap-2 border-t border-border pt-5">
+                {(blockers.data?.blockers.length ?? 0) > 0 && (
+                  <div className="w-full space-y-3 rounded-[var(--radius-m)] border border-border bg-surface-muted p-3">
+                    <p className="text-body-sm font-semibold">
+                      لا يمكن حذف هذا الحساب قبل نقل ملكية المكاتب التالية:
+                    </p>
+                    {blockers.data!.blockers.map((b) => (
+                      <div key={b.organizationId} className="flex flex-wrap items-end gap-2">
+                        <span className="text-body-sm">{b.organizationName}</span>
+                        {b.eligibleMembers.length === 0 ? (
+                          <span className="text-caption">
+                            لا يوجد عضو نشط مؤهّل — أضف عضواً للمكتب أولاً.
+                          </span>
+                        ) : (
+                          <>
+                            <select
+                              aria-label={`المالك الجديد لمكتب ${b.organizationName}`}
+                              className={`${inputCls} h-11 w-auto`}
+                              value={newOwner[b.organizationId] ?? ""}
+                              onChange={(e) =>
+                                setNewOwner((s) => ({
+                                  ...s,
+                                  [b.organizationId]: e.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">اختر المالك الجديد…</option>
+                              {b.eligibleMembers.map((m) => (
+                                <option key={m.userId} value={m.userId}>
+                                  {m.fullName}
+                                </option>
+                              ))}
+                            </select>
+                            <Btn
+                              size="sm"
+                              variant="outline"
+                              loading={transfer.isPending}
+                              disabled={!newOwner[b.organizationId]}
+                              onClick={() =>
+                                transfer.mutate({
+                                  organizationId: b.organizationId,
+                                  fromUserId: detail.id,
+                                  toUserId: newOwner[b.organizationId]!,
+                                })
+                              }
+                            >
+                              نقل الملكية
+                            </Btn>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <Btn
                   variant={detail.is_active ? "outline" : "primary"}
                   loading={toggle.isPending}
@@ -327,7 +402,11 @@ function UsersPage() {
                   </Btn>
                 )}
                 {canDelete && !detail.is_platform_staff && (
-                  <Btn variant="danger" onClick={() => setToDelete(detail)}>
+                  <Btn
+                    variant="danger"
+                    disabled={(blockers.data?.blockers.length ?? 0) > 0}
+                    onClick={() => setToDelete(detail)}
+                  >
                     حذف الحساب
                   </Btn>
                 )}

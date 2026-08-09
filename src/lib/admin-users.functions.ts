@@ -147,10 +147,37 @@ export const deletePlatformUser = createServerFn({ method: "POST" })
       .maybeSingle();
     if (staffRow?.role === "super_admin") throw new Error("لا يمكن حذف مالك المنصة.");
 
+    const lifecycle = await import("@/lib/admin-users.server");
+    const blockers = await lifecycle.ownershipBlockers(db, data.userId);
+    if (blockers.length > 0) {
+      const names = blockers.map((b) => b.organizationName).join("، ");
+      await g.writeAudit(db, staff, {
+        action: "user.delete_blocked",
+        entity_type: "user",
+        entity_id: data.userId,
+        description: `منع حذف حساب ${before.email ?? data.userId} لارتباطه بملكية مكتب: ${names}`,
+        before,
+        metadata: { blockers },
+      });
+      throw new Error(
+        `لا يمكن حذف الحساب لأنه المالك المسؤول عن: ${names}. انقل ملكية المكتب إلى عضو نشط آخر ثم أعد المحاولة.`,
+      );
+    }
+
+    const inventory = await lifecycle.referenceInventory(db, data.userId);
+
     const { error } = await db.auth.admin.deleteUser(data.userId);
     if (error) {
       const detail = `${error.message} ${JSON.stringify((error as { status?: number }).status ?? "")}`;
       if (/23503|foreign key|violates/i.test(detail)) {
+        await g.writeAudit(db, staff, {
+          action: "user.delete_blocked",
+          entity_type: "user",
+          entity_id: data.userId,
+          description: `منع حذف حساب ${before.email ?? data.userId} لوجود سجلات مرتبطة`,
+          before,
+          metadata: { inventory },
+        });
         throw new Error(
           "تعذّر حذف الحساب لوجود سجلات مرتبطة به لا يمكن فصلها تلقائياً. أوقف الحساب بدلاً من حذفه، أو أعد إسناد سجلاته أولاً.",
         );
@@ -163,8 +190,52 @@ export const deletePlatformUser = createServerFn({ method: "POST" })
       entity_type: "user",
       entity_id: data.userId,
       description: `حذف حساب ${before.email ?? data.userId}`,
-      before,
+      before: { ...before, reference_inventory: inventory },
       after: null,
+      metadata: { reference_inventory: inventory },
+    });
+    return { ok: true as const };
+  });
+
+/* ------------------------------------------------- ملكية المكتب قبل الحذف */
+
+export const listUserOwnershipBlockers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const g = await import("@/lib/admin-guard.server");
+    await g.requireStaff(context.supabase, context.userId, "users.read");
+    const db = await g.admin();
+    const lifecycle = await import("@/lib/admin-users.server");
+    return { blockers: await lifecycle.ownershipBlockers(db, data.userId) };
+  });
+
+export const transferOrganizationOwnership = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        fromUserId: z.string().uuid(),
+        toUserId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await import("@/lib/admin-guard.server");
+    const staff = await g.requireStaff(context.supabase, context.userId, "organizations.update");
+    if (data.fromUserId === data.toUserId)
+      throw new Error("اختر عضواً مختلفاً عن المالك الحالي.");
+    const db = await g.admin();
+    const lifecycle = await import("@/lib/admin-users.server");
+    const result = await lifecycle.transferOwnership(db, data);
+    await g.writeAudit(db, staff, {
+      action: "organization.ownership_transfer",
+      entity_type: "organization",
+      entity_id: data.organizationId,
+      description: `نقل ملكية المكتب من ${data.fromUserId} إلى ${data.toUserId}`,
+      before: { owner_user_id: data.fromUserId, new_owner_previous_role: result.previousRole },
+      after: { owner_user_id: data.toUserId },
     });
     return { ok: true as const };
   });

@@ -337,7 +337,11 @@ function Page() {
                           {CASE_PRIORITY[c.priority] ?? c.priority}
                         </Badge>
                       </Td>
-                      <Td>{c.lawyer?.full_name ?? "—"}</Td>
+                      <Td>
+                        {c.lawyer?.full_name ?? (
+                          <span className="text-muted-foreground">غير مُسند</span>
+                        )}
+                      </Td>
                       <Td>{fmtDate(c.last_activity_at)}</Td>
                       <Td>
                         <div className="flex justify-end gap-1">
