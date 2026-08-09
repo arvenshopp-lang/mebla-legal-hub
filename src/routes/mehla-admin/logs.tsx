@@ -23,6 +23,11 @@ import {
 import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import {
+  AUDIT_EXPORT_COLUMNS,
+  AUDIT_EXPORT_DEFAULT_KEYS,
+  AUDIT_TIMEZONE_LABEL,
+} from "@/lib/admin-audit.shared";
+import {
   exportAuditLogs,
   listAuditFacets,
   listAuditLogs,
@@ -79,6 +84,10 @@ function LogsPage() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<AuditLogRow | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [columns, setColumns] = useState<string[]>(AUDIT_EXPORT_DEFAULT_KEYS);
+  const [includeCount, setIncludeCount] = useState(true);
+  const [showTimezone, setShowTimezone] = useState(true);
 
   const debounced = useDebounced(search);
   const debouncedActor = useDebounced(actor);
@@ -109,7 +118,7 @@ function LogsPage() {
 
   const exportFn = useServerFn(exportAuditLogs);
   const exportCsv = useMutation({
-    mutationFn: () => exportFn({ data: filters }),
+    mutationFn: () => exportFn({ data: { ...filters, columns, includeCount, showTimezone } }),
     onSuccess: (res) => {
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -118,10 +127,14 @@ function LogsPage() {
       a.download = `mehla-audit-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      setExportOpen(false);
       toast.success("تم تصدير سجل التدقيق.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const toggleColumn = (key: string) =>
+    setColumns((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   const resetPage =
     <T,>(setter: (v: T) => void) =>
@@ -139,8 +152,7 @@ function LogsPage() {
           <Btn
             size="sm"
             variant="outline"
-            loading={exportCsv.isPending}
-            onClick={() => exportCsv.mutate()}
+            onClick={() => setExportOpen(true)}
           >
             <Download className="h-4 w-4" aria-hidden /> تصدير CSV
           </Btn>
