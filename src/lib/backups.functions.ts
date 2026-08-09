@@ -43,15 +43,15 @@ export const listBackupSnapshots = createServerFn({ method: "POST" })
   });
 
 const recordSchema = z.object({
-  kind: z.enum(["full", "incremental", "manual", "export"]),
-  source: z.string().trim().min(2, "المصدر مطلوب").max(120),
+  kind: z.enum(["daily", "weekly", "pre_release", "manual"]),
+  source: z.enum(["managed_platform", "manual_export", "external"]),
   externalId: z.string().trim().max(160).optional().nullable(),
   sizeBytes: z.coerce.number().int().min(0).optional().nullable(),
   startedAt: z.string().datetime().optional().nullable(),
   finishedAt: z.string().datetime().optional().nullable(),
   retentionUntil: z.string().datetime().optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
-  status: z.enum(["recorded", "verified", "failed"]).default("recorded"),
+  status: z.enum(["unknown", "in_progress", "completed", "failed"]).default("completed"),
 });
 
 export const recordBackupSnapshot = createServerFn({ method: "POST" })
@@ -112,7 +112,6 @@ export const verifyBackupSnapshot = createServerFn({ method: "POST" })
     if (!existing) throw new Error("هذه النسخة غير موجودة.");
 
     const payload = {
-      status: "verified" as const,
       verified_at: new Date().toISOString(),
       verified_by: staff.id,
       checksum: data.checksum?.trim() || existing.checksum,

@@ -67,7 +67,7 @@ type RuleForm = {
   id?: string;
   topic: string;
   label: string;
-  channel: "email" | "sms" | "internal" | "webhook";
+  channel: "email" | "sms" | "in_app";
   target: string;
   templateKey: string;
   isEnabled: boolean;
@@ -75,7 +75,7 @@ type RuleForm = {
 const EMPTY_RULE: RuleForm = {
   topic: "",
   label: "",
-  channel: "internal",
+  channel: "in_app",
   target: "",
   templateKey: "",
   isEnabled: true,
@@ -84,8 +84,7 @@ const EMPTY_RULE: RuleForm = {
 const CHANNEL_LABELS: Record<RuleForm["channel"], string> = {
   email: "بريد إلكتروني",
   sms: "رسالة نصية",
-  internal: "إشعار داخلي",
-  webhook: "Webhook",
+  in_app: "إشعار داخلي",
 };
 
 function FlagsPage() {
