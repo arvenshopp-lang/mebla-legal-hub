@@ -24,12 +24,15 @@ export const getOfficePageState = createServerFn({ method: "POST" })
 
 export const saveOfficePageDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    orgInput.extend({ draft: officeSnapshotSchema }).parse(d),
-  )
+  .inputValidator((d: unknown) => orgInput.extend({ draft: officeSnapshotSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.saveDraft(context.supabase, context.userId, data.organizationId, data.draft as OfficeSnapshot);
+    return await ops.saveDraft(
+      context.supabase,
+      context.userId,
+      data.organizationId,
+      data.draft as OfficeSnapshot,
+    );
   });
 
 export const changeOfficePageSlug = createServerFn({ method: "POST" })
@@ -120,7 +123,12 @@ export const convertOfficeLead = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orgInput.extend({ leadId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const ops = await import("@/lib/office-page.ops.server");
-    return await ops.convertLead(context.supabase, context.userId, data.organizationId, data.leadId);
+    return await ops.convertLead(
+      context.supabase,
+      context.userId,
+      data.organizationId,
+      data.leadId,
+    );
   });
 
 export const getOfficePageAnalytics = createServerFn({ method: "POST" })

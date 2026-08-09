@@ -154,7 +154,18 @@ function stripJpegMetadata(bytes: Uint8Array): Uint8Array {
 
 /** إبقاء المقاطع الحرجة فقط في PNG وإسقاط النصية و eXIf. */
 function stripPngMetadata(bytes: Uint8Array): Uint8Array {
-  const keep = new Set(["IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "sRGB", "acTL", "fcTL", "fdAT"]);
+  const keep = new Set([
+    "IHDR",
+    "PLTE",
+    "IDAT",
+    "IEND",
+    "tRNS",
+    "gAMA",
+    "sRGB",
+    "acTL",
+    "fcTL",
+    "fdAT",
+  ]);
   const out: number[] = [];
   for (let k = 0; k < 8; k++) out.push(bytes[k]);
   let i = 8;
@@ -216,8 +227,7 @@ export function validateAndSanitizeImage(bytes: Uint8Array, declaredType: string
     return { bytes: stripJpegMetadata(bytes), contentType: "image/jpeg", extension: "jpg" };
   }
   if (isPng) {
-    if (declaredType && declaredType !== "image/png")
-      throw new Error("نوع الملف لا يطابق محتواه.");
+    if (declaredType && declaredType !== "image/png") throw new Error("نوع الملف لا يطابق محتواه.");
     return { bytes: stripPngMetadata(bytes), contentType: "image/png", extension: "png" };
   }
   if (isWebp) {
@@ -249,9 +259,11 @@ export async function storeDraftMedia(
 }
 
 function snapshotMediaPaths(snapshot: OfficeSnapshot): string[] {
-  return [snapshot.logo_path, snapshot.cover_path, ...snapshot.team.map((m) => m.photo_path)].filter(
-    Boolean,
-  );
+  return [
+    snapshot.logo_path,
+    snapshot.cover_path,
+    ...snapshot.team.map((m) => m.photo_path),
+  ].filter(Boolean);
 }
 
 /**
@@ -300,9 +312,7 @@ export async function pruneUnreferencedPublishedMedia(
   for (const folder of folders ?? []) {
     const prefix = `${organizationId}/${folder.name}`;
     const { data: files } = await supabaseAdmin.storage.from(PUBLIC_BUCKET).list(prefix);
-    const stale = (files ?? [])
-      .map((f) => `${prefix}/${f.name}`)
-      .filter((p) => !keepSet.has(p));
+    const stale = (files ?? []).map((f) => `${prefix}/${f.name}`).filter((p) => !keepSet.has(p));
     if (stale.length) await supabaseAdmin.storage.from(PUBLIC_BUCKET).remove(stale);
   }
 }

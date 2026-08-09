@@ -141,7 +141,13 @@ export async function saveDraft(
     .update({ draft: draft as never, updated_at: new Date().toISOString() })
     .eq("organization_id", organizationId);
   if (error) throw new Error("تعذّر حفظ المسودة، حاول مرة أخرى.");
-  await audit(supabase, organizationId, userId, "office_page.draft.save", "حفظ مسودة الصفحة العامة");
+  await audit(
+    supabase,
+    organizationId,
+    userId,
+    "office_page.draft.save",
+    "حفظ مسودة الصفحة العامة",
+  );
   return await readState(supabase, organizationId);
 }
 
@@ -182,8 +188,7 @@ export async function changeSlug(
 export async function publish(supabase: Client, userId: string, organizationId: string) {
   await requireManager(supabase, userId, organizationId);
   const row = await readRow(supabase, organizationId);
-  if (row.suspended_by_platform)
-    throw new Error("الصفحة موقوفة من إدارة المنصة، تواصل مع الدعم.");
+  if (row.suspended_by_platform) throw new Error("الصفحة موقوفة من إدارة المنصة، تواصل مع الدعم.");
 
   const { assertEntitlement } = await import("@/lib/subscription.server");
   await assertEntitlement(supabase, organizationId, {
@@ -342,7 +347,9 @@ export async function listLeads(
   const { data, error, count } = await q.range(from, from + input.pageSize - 1);
   if (error) throw new Error("تعذّر جلب قائمة الطلبات.");
 
-  const assignees = [...new Set((data ?? []).map((r) => r.assigned_to).filter(Boolean))] as string[];
+  const assignees = [
+    ...new Set((data ?? []).map((r) => r.assigned_to).filter(Boolean)),
+  ] as string[];
   const names = new Map<string, string>();
   if (assignees.length) {
     const { data: people } = await supabase
