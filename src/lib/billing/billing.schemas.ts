@@ -235,3 +235,15 @@ export const statementSchema = z.object({
   from: isoDateTime,
   to: isoDateTime,
 });
+
+/**
+ * تحويل أخطاء التحقق إلى رسالة عربية واحدة واضحة، بدل تسريب JSON خام من Zod
+ * إلى واجهة المستخدم أو سجلات الأخطاء.
+ */
+export function parseBillingInput<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data as z.infer<T>;
+  const first = result.error.issues[0];
+  const field = first?.path?.length ? ` (${first.path.join(".")})` : "";
+  throw new Error(`البيانات المُدخلة غير صحيحة${field}. تحقّق من الحقول المطلوبة وأعد المحاولة.`);
+}
