@@ -16,10 +16,21 @@ export function csvCell(value: unknown): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-/** يبني ملف CSV كاملاً من رؤوس وصفوف مع علامة BOM لدعم العربية. */
-export function buildCsv(headers: string[], rows: unknown[][]): string {
-  const body = [headers.map(csvCell).join(","), ...rows.map((r) => r.map(csvCell).join(","))].join(
-    "\r\n",
-  );
-  return `\uFEFF${body}`;
+/**
+ * يبني ملف CSV كاملاً من رؤوس وصفوف مع علامة BOM لدعم العربية.
+ * يمكن تمرير أسطر تعريفية (preamble) تُكتب قبل صف الرؤوس، مثل المنطقة الزمنية وعدد النتائج.
+ */
+export function buildCsv(
+  headers: string[],
+  rows: unknown[][],
+  preamble?: readonly unknown[][],
+): string {
+  const lines: string[] = [];
+  if (preamble?.length) {
+    for (const line of preamble) lines.push(line.map(csvCell).join(","));
+    lines.push("");
+  }
+  lines.push(headers.map(csvCell).join(","));
+  for (const r of rows) lines.push(r.map(csvCell).join(","));
+  return `\uFEFF${lines.join("\r\n")}`;
 }
