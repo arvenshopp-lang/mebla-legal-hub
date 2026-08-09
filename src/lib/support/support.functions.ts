@@ -946,6 +946,30 @@ export const createOfficeSupportTicket = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as never;
 
+    // منع التكرار: نفس الضغطة (أو إعادة المحاولة عند ضعف الشبكة) لا تُنشئ تذكرتين.
+    // نحجز المفتاح قبل الإنشاء، فإن كان محجوزاً نُعيد التذكرة السابقة نفسها.
+    const dedupeKey = data.clientRequestId
+      ? `office_ticket:${context.userId}:${data.clientRequestId}`.slice(0, 200)
+      : null;
+    if (dedupeKey) {
+      const { error: claimError } = await supabaseAdmin
+        .from("support_ticket_ingest")
+        .insert({ dedupe_key: dedupeKey, outcome: "created" });
+      if (claimError) {
+        if (String(claimError.code) !== "23505") throw new Error("تعذّر إنشاء التذكرة.");
+        const { data: previous } = await supabaseAdmin
+          .from("support_ticket_ingest")
+          .select("ticket_id, support_tickets(id, ticket_number)")
+          .eq("dedupe_key", dedupeKey)
+          .maybeSingle();
+        const ticket = (
+          previous as { support_tickets: { id: string; ticket_number: string } | null } | null
+        )?.support_tickets;
+        if (ticket) return { id: ticket.id, ticketNumber: ticket.ticket_number };
+        throw new Error("طلب فتح التذكرة قيد المعالجة، انتظر لحظة ثم حدّث الصفحة.");
+      }
+    }
+
     const { createTicket } = await import("./tickets.server");
     const created = await createTicket(db as never, {
       subject: data.subject,
@@ -958,5 +982,11 @@ export const createOfficeSupportTicket = createServerFn({ method: "POST" })
       userId: context.userId,
       organizationId: (membership as { organization_id: string } | null)?.organization_id ?? null,
     });
+    if (dedupeKey) {
+      await supabaseAdmin
+        .from("support_ticket_ingest")
+        .update({ ticket_id: created.id })
+        .eq("dedupe_key", dedupeKey);
+    }
     return created;
   });
