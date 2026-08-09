@@ -6,6 +6,7 @@
  * تبقى في دوال الخادم (`requireStaff`) وسياسات RLS.
  */
 import {
+  PlugZap,
   Activity,
   BellRing,
   Building2,
