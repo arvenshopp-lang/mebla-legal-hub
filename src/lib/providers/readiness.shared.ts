@@ -18,6 +18,7 @@ export const DOMAIN_LABELS: Record<ProviderDomain, string> = {
 export type ReadinessStatus =
   | "not_linked"
   | "incomplete"
+  | "not_verified"
   | "connected"
   | "failed"
   | "disabled"
@@ -26,6 +27,7 @@ export type ReadinessStatus =
 export const READINESS_LABELS: Record<ReadinessStatus, string> = {
   not_linked: "غير مربوط",
   incomplete: "بيانات ناقصة",
+  not_verified: "بانتظار فحص الاتصال",
   connected: "متصل",
   failed: "فشل الاتصال",
   disabled: "مزوّد معطّل",
@@ -38,6 +40,7 @@ export const READINESS_TONES: Record<
 > = {
   not_linked: "muted",
   incomplete: "warn",
+  not_verified: "info",
   connected: "green",
   failed: "red",
   disabled: "muted",
@@ -84,6 +87,7 @@ export function readinessSummary(providers: ProviderReadiness[]): Record<Readine
   const base: Record<ReadinessStatus, number> = {
     not_linked: 0,
     incomplete: 0,
+    not_verified: 0,
     connected: 0,
     failed: 0,
     disabled: 0,
