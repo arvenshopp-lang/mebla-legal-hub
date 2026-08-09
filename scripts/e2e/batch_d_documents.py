@@ -1,5 +1,5 @@
 """تحقق نهائي محدود لعارض المستندات: عرض فعلي للنسخة المائية + VIEW/DOWNLOAD/PRINT + مشاركة + منع الوصول."""
-import asyncio, json, hashlib, os, re, urllib.request
+import asyncio, json
 from pathlib import Path
 from playwright.async_api import async_playwright
 
