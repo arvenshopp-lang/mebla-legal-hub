@@ -259,6 +259,7 @@ type ProcessInput = {
     providerPaymentId: string | null;
     status: string | null;
     amount: number | null;
+    currency?: string | null;
   } | null;
   attempts: number;
 };
@@ -503,6 +504,7 @@ export async function retryWebhookEvent(
     providerPaymentId: string | null;
     status: string | null;
     amount: number | null;
+    currency?: string | null;
   };
   let parsed: ParsedEvent | null = null;
   try {
