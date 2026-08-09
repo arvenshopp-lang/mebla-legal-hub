@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "published office media is readable" ON storage.objects;
