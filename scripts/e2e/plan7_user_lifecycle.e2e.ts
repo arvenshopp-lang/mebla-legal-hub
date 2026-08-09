@@ -105,6 +105,14 @@ const rpc = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_organization_with_ow
 const orgId = ((await rpc.json()) as { organization_id?: string }[])[0]?.organization_id as string;
 if (!orgId) throw new Error("تعذّر إنشاء مكتب دورة الحياة");
 
+// ترقية باقة مكتب QA لتسمح بعدة أعضاء (حد الباقة المجانية عضو واحد)
+const proPlan = await rest("platform_plans?code=eq.professional&select=id");
+await rest(`subscriptions?organization_id=eq.${orgId}`, {
+  method: "PATCH",
+  headers: { ...adminHeaders, Prefer: "return=minimal" },
+  body: JSON.stringify({ plan_id: proPlan[0]?.["id"], status: "active" }),
+});
+
 const lawyerEmail = `qa.lifecycle.lawyer.${Date.now()}@mehlaqa.test`;
 const lawyerId = await mkUser(lawyerEmail, `${PREFIX}محامٍ`);
 await rest("organization_members", {
