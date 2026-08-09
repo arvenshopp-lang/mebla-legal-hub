@@ -32,7 +32,7 @@ await t("integrity", "قضية بعميل غير موجود تُرفض من ال
     body: JSON.stringify({
       organization_id: ORG,
       client_id: "00000000-0000-0000-0000-000000000000",
-      title: `QA-P4-FK-${stamp}`,
+      case_title: `QA-P4-FK-${stamp}`,
       status: "open",
     }),
   });
@@ -161,7 +161,7 @@ await t("concurrency", "ضغط متكرر على إنشاء العميل لا ي
 });
 
 await t("concurrency", "إصدار الفاتورة مرتين بالتوازي يعطي رقماً واحداً فقط", async () => {
-  const billing = await mod("src/lib/billing.functions.ts");
+  const billing = await mod("src/lib/billing/billing.functions.ts");
   const draft = await call(billing, "saveBillingDraft", ctx.superAdmin.token, {
     kind: "invoice",
     organizationId: ORG,
@@ -223,7 +223,7 @@ await t("concurrency", "تحديثان متزامنان لمهمة واحدة ي
 /* ---------------------------------------------------------------- مسارات الخطأ */
 
 await t("errors", "مدخلات غير صالحة تُرفض برسالة عربية بلا تفاصيل داخلية", async () => {
-  const billing = await mod("src/lib/billing.functions.ts");
+  const billing = await mod("src/lib/billing/billing.functions.ts");
   const r = await call(billing, "saveBillingDraft", ctx.superAdmin.token, {
     kind: "invoice",
     organizationId: ORG,
@@ -248,8 +248,9 @@ await t("errors", "طلب دالة إدارية بلا توكن يُرفض ول�
 
 await t("errors", "قراءة مكتب غير موجود ترجع رسالة عربية واضحة", async () => {
   const orgs = await mod("src/lib/admin-orgs.functions.ts");
-  const r = await call(orgs, "getOrganizationDetail", ctx.superAdmin.token, {
+  const r = await call(orgs, "updateOrganization", ctx.superAdmin.token, {
     organizationId: "00000000-0000-0000-0000-000000000000",
+    name: "QA-P4-MISSING",
   });
   expect(!r.ok, "قُبل معرّف مكتب غير موجود.");
   assertSafeArabic(r.message, "رسالة مكتب غير موجود");
