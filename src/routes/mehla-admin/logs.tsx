@@ -276,6 +276,72 @@ function LogsPage() {
       )}
 
       <Modal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="خيارات تصدير CSV"
+        size="lg"
+      >
+        <div className="space-y-5 text-body-sm">
+          <p className="text-muted-foreground">
+            يتبع الملف عوامل التصفية الحالية. اختر الأعمدة المطلوبة وخيارات الملف.
+          </p>
+
+          <fieldset className="space-y-3">
+            <legend className="text-caption mb-2">أعمدة الملف</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {AUDIT_EXPORT_COLUMNS.map((c) => (
+                <label
+                  key={c.key}
+                  className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--color-primary)]"
+                    checked={c.required || columns.includes(c.key)}
+                    disabled={c.required}
+                    onChange={() => toggleColumn(c.key)}
+                  />
+                  <span className="font-medium">{c.label}</span>
+                  {c.required && <span className="text-caption text-muted-foreground">إلزامي</span>}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-2">
+            <legend className="text-caption mb-2">خيارات إضافية</legend>
+            <label className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--color-primary)]"
+                checked={includeCount}
+                onChange={(e) => setIncludeCount(e.target.checked)}
+              />
+              <span className="font-medium">تضمين عدد النتائج في أعلى الملف</span>
+            </label>
+            <label className="flex min-h-[44px] items-center gap-2 rounded-[var(--radius-m)] border border-border px-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--color-primary)]"
+                checked={showTimezone}
+                onChange={(e) => setShowTimezone(e.target.checked)}
+              />
+              <span className="font-medium">إظهار المنطقة الزمنية — {AUDIT_TIMEZONE_LABEL}</span>
+            </label>
+          </fieldset>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Btn variant="outline" onClick={() => setExportOpen(false)}>
+              إلغاء
+            </Btn>
+            <Btn loading={exportCsv.isPending} onClick={() => exportCsv.mutate()}>
+              <Download className="h-4 w-4" aria-hidden /> تنزيل الملف
+            </Btn>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
         open={Boolean(detail)}
         onClose={() => setDetail(null)}
         title="تفاصيل العملية"
