@@ -287,7 +287,10 @@ export async function buildPublishedSnapshot(
       continue;
     }
     const { data: file, error } = await supabaseAdmin.storage.from(sourceBucket).download(path);
-    if (error || !file) throw new Error("تعذّر نشر إحدى الصور، أعد رفعها ثم انشر.");
+    if (error || !file) {
+      console.error("[office-media] download failed", sourceBucket, path, error);
+      throw new Error("تعذّر نشر إحدى الصور، أعد رفعها ثم انشر.");
+    }
     const buffer = new Uint8Array(await file.arrayBuffer());
     const safe = validateAndSanitizeImage(buffer, file.type ?? "");
     const { error: upErr } = await supabaseAdmin.storage
