@@ -440,6 +440,11 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
         columns: z.array(z.string().trim().max(40)).max(20).default(AUDIT_EXPORT_DEFAULT_KEYS),
         includeCount: z.boolean().default(true),
         showTimezone: z.boolean().default(true),
+        scope: z.enum(["all", "range", "page"]).default("all"),
+        rangeFrom: z.number().int().min(1).max(100000).default(1),
+        rangeTo: z.number().int().min(1).max(100000).default(5000),
+        page: z.number().int().min(1).max(100000).default(1),
+        pageSize: z.number().int().min(1).max(200).default(25),
       })
       .parse(input ?? {}),
   )
@@ -448,13 +453,25 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     const staff = await g.requireStaff(context.supabase, context.userId, "audit.export");
     const db = await g.admin();
     const columns = normalizeAuditColumns(data.columns);
+    const MAX_ROWS = 5000;
+    let offset = 0;
+    let limit = MAX_ROWS;
+    if (data.scope === "page") {
+      offset = (data.page - 1) * data.pageSize;
+      limit = data.pageSize;
+    } else if (data.scope === "range") {
+      const start = Math.min(data.rangeFrom, data.rangeTo);
+      const end = Math.max(data.rangeFrom, data.rangeTo);
+      offset = start - 1;
+      limit = Math.min(end - start + 1, MAX_ROWS);
+    }
     let q = db
       .from("admin_audit_logs")
       .select(
         "created_at, actor_email, action, entity_type, entity_id, description, ip, device, browser",
       )
       .order("created_at", { ascending: false })
-      .limit(5000);
+      .range(offset, offset + limit - 1);
     if (data.search)
       q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
     if (data.action) q = q.eq("action", data.action);
@@ -474,6 +491,14 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     const preamble: unknown[][] = [];
     if (data.showTimezone) preamble.push(["المنطقة الزمنية", `${AUDIT_TIMEZONE} (UTC+03:00)`]);
     if (data.includeCount) preamble.push(["عدد النتائج", list.length]);
+    preamble.push([
+      "نطاق التصدير",
+      data.scope === "page"
+        ? `الصفحة الحالية (${data.page}) — ${offset + 1} إلى ${offset + list.length}`
+        : data.scope === "range"
+          ? `من ${offset + 1} إلى ${offset + list.length}`
+          : `كل النتائج المطابقة (حتى ${MAX_ROWS})`,
+    ]);
     const csv = buildCsv(
       headers,
       list.map((r) =>
@@ -488,15 +513,18 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     await g.writeAudit(db, staff, {
       action: "audit.export",
       entity_type: "audit",
-      description: `تصدير ${list.length} سجلاً من سجل التدقيق (${columns.length} عموداً)`,
+      description: `تصدير ${list.length} سجلاً من سجل التدقيق (${columns.length} عموداً، نطاق: ${data.scope})`,
       after: {
         columns,
         include_count: data.includeCount,
         show_timezone: data.showTimezone,
+        scope: data.scope,
+        offset,
+        limit,
         rows: list.length,
       },
     });
-    return { csv };
+    return { csv, rows: list.length, offset };
   });
 
 export const listAuditFacets = createServerFn({ method: "POST" })
