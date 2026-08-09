@@ -5,6 +5,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { buildCsv } from "@/lib/csv";
+import {
+  AUDIT_EXPORT_COLUMNS,
+  AUDIT_EXPORT_DEFAULT_KEYS,
+  AUDIT_TIMEZONE,
+  AUDIT_TIMEZONE_LABEL,
+  formatAuditTimestamp,
+  normalizeAuditColumns,
+} from "@/lib/admin-audit.shared";
 import { z } from "zod";
 
 type Guard = typeof import("@/lib/admin-guard.server");
@@ -479,7 +487,7 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
       action: "audit.export",
       entity_type: "audit",
       description: `تصدير ${list.length} سجلاً من سجل التدقيق (${columns.length} عموداً)`,
-      after_data: {
+      after: {
         columns,
         include_count: data.includeCount,
         show_timezone: data.showTimezone,
