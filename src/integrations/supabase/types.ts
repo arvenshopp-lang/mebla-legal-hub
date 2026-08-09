@@ -4037,6 +4037,219 @@ export type Database = {
           },
         ]
       }
+      office_leads: {
+        Row: {
+          assigned_to: string | null
+          channel: string
+          city: string | null
+          consent_at: string | null
+          consent_document_key: string | null
+          consent_policy_version: string | null
+          consent_text_hash: string | null
+          converted_client_id: string | null
+          created_at: string
+          dedupe_hash: string
+          dedupe_window: string
+          email: string | null
+          full_name: string
+          id: string
+          internal_note: string | null
+          ip_hash: string | null
+          message: string | null
+          organization_id: string
+          page_version: number | null
+          phone: string | null
+          preferred_contact: string | null
+          referrer_host: string | null
+          service_key: string | null
+          source: string
+          status: string
+          updated_at: string
+          utm: Json
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel?: string
+          city?: string | null
+          consent_at?: string | null
+          consent_document_key?: string | null
+          consent_policy_version?: string | null
+          consent_text_hash?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          dedupe_hash: string
+          dedupe_window?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          internal_note?: string | null
+          ip_hash?: string | null
+          message?: string | null
+          organization_id: string
+          page_version?: number | null
+          phone?: string | null
+          preferred_contact?: string | null
+          referrer_host?: string | null
+          service_key?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          utm?: Json
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string
+          city?: string | null
+          consent_at?: string | null
+          consent_document_key?: string | null
+          consent_policy_version?: string | null
+          consent_text_hash?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          dedupe_hash?: string
+          dedupe_window?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          internal_note?: string | null
+          ip_hash?: string | null
+          message?: string | null
+          organization_id?: string
+          page_version?: number | null
+          phone?: string | null
+          preferred_contact?: string | null
+          referrer_host?: string | null
+          service_key?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          utm?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_leads_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_leads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      office_page_events: {
+        Row: {
+          channel: string
+          count: number
+          created_at: string
+          day: string
+          id: string
+          kind: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          count?: number
+          created_at?: string
+          day: string
+          id?: string
+          kind: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          count?: number
+          created_at?: string
+          day?: string
+          id?: string
+          kind?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_page_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      office_public_pages: {
+        Row: {
+          created_at: string
+          draft: Json
+          organization_id: string
+          published: Json | null
+          published_at: string | null
+          published_by: string | null
+          slug: string
+          status: string
+          suspended_by_platform: boolean
+          suspension_reason: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          draft?: Json
+          organization_id: string
+          published?: Json | null
+          published_at?: string | null
+          published_by?: string | null
+          slug: string
+          status?: string
+          suspended_by_platform?: boolean
+          suspension_reason?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          draft?: Json
+          organization_id?: string
+          published?: Json | null
+          published_at?: string | null
+          published_by?: string | null
+          slug?: string
+          status?: string
+          suspended_by_platform?: boolean
+          suspension_reason?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_public_pages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_public_pages_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           created_at: string
@@ -6139,6 +6352,7 @@ export type Database = {
           pdf_search_enabled: boolean
           price_monthly: number
           price_yearly: number
+          public_office_page: boolean
           sla_hours: number
           sort_order: number
           storage_gb: number | null
@@ -6172,6 +6386,7 @@ export type Database = {
           pdf_search_enabled?: boolean
           price_monthly?: number
           price_yearly?: number
+          public_office_page?: boolean
           sla_hours?: number
           sort_order?: number
           storage_gb?: number | null
@@ -6205,6 +6420,7 @@ export type Database = {
           pdf_search_enabled?: boolean
           price_monthly?: number
           price_yearly?: number
+          public_office_page?: boolean
           sla_hours?: number
           sort_order?: number
           storage_gb?: number | null
@@ -8993,6 +9209,15 @@ export type Database = {
       }
       billing_reports: { Args: { _from: string; _to: string }; Returns: Json }
       billing_save_draft: { Args: { _payload: Json }; Returns: string }
+      bump_office_page_event: {
+        Args: {
+          _amount?: number
+          _channel?: string
+          _kind: string
+          _organization_id: string
+        }
+        Returns: undefined
+      }
       claim_notification_batch: {
         Args: { _limit?: number }
         Returns: {
