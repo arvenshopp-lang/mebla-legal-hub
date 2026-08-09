@@ -98,6 +98,7 @@ export type UpgradePlanOption = {
   voice_enabled: boolean;
   api_enabled: boolean;
   ai_enabled: boolean;
+  public_office_page: boolean;
 };
 
 export type SubscriptionOverview = {
