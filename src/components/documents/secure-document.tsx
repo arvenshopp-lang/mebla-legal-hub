@@ -180,26 +180,21 @@ export function SecureDocumentViewer({
           {doc.is_confidential && <Badge tone="red">سرّي</Badge>}
           <span>تُنتهي صلاحية هذه النسخة تلقائياً، ولا تحتوي رابط الملف الأصلي.</span>
         </div>
-        <object
-          aria-label={`عرض ${doc.file_name}`}
-          data={url}
-          type="application/pdf"
+        {/* إطار معزول: سياسة CSP تسمح بـ blob: في frame-src فقط، بينما object-src
+            محصورة بالأصل، لذا الإطار هو المسار الصحيح لعرض النسخة المائية. */}
+        <iframe
+          title={`عرض ${doc.file_name}`}
+          src={url}
           className="h-[70vh] w-full rounded-lg border border-border bg-surface-muted"
+        />
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary underline"
         >
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              لا يدعم عارض جهازك العرض المضمّن لهذا المستند.
-            </p>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary underline"
-            >
-              <ExternalLink className="h-4 w-4" /> فتح النسخة المائية في عارض الجهاز
-            </a>
-          </div>
-        </object>
+          <ExternalLink className="h-4 w-4" /> فتح النسخة المائية في عارض الجهاز
+        </a>
       </div>
     </Modal>
   );
