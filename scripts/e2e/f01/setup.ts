@@ -17,10 +17,18 @@ export type Env = {
   staff: { id: string; token: string; email: string };
 };
 
-async function orgIdByNameLike(like: string): Promise<string> {
-  const row = await one(`organizations?select=id,name&name=like.*${encodeURIComponent(like)}*&limit=1`);
-  if (!row) throw new Error(`لم يُعثر على مكتب QA يطابق: ${like}`);
-  return row["id"] as string;
+/** تعيين ثابت للمكتبين حسب ترتيب الإنشاء، حتى لا تتبدّل الهويات بين الجولات. */
+async function qaOrgPair(like: string): Promise<{ orgA: string; orgB: string }> {
+  const rows = await rest(
+    `organizations?select=id,name&name=like.*${encodeURIComponent(like)}*&order=created_at.asc,id.asc&limit=10`,
+  );
+  if (rows.length < 2) throw new Error("مطلوب مكتبان QA على الأقل لاختبار العزل.");
+  return { orgA: rows[0]!["id"] as string, orgB: rows[1]!["id"] as string };
+}
+
+/** إزالة أي عضوية سابقة لمستخدم QA في مكتب غير المكتب المقصود. */
+async function pruneForeignMemberships(userId: string, keepOrg: string) {
+  await del(`organization_members?user_id=eq.${userId}&organization_id=neq.${keepOrg}`);
 }
 
 async function ensureMember(organizationId: string, userId: string, role: string) {
@@ -31,11 +39,15 @@ async function ensureMember(organizationId: string, userId: string, role: string
   });
 }
 
-async function ensureProfile(userId: string, email: string, fullName: string, organizationId: string) {
+/**
+ * الملف الشخصي في مِهلة لا يحمل معرّف المكتب — العضوية مصدرها organization_members،
+ * فلا نضيف أي عمود للمخطط من أجل الاختبار.
+ */
+async function ensureProfile(userId: string, email: string, fullName: string) {
   await rest(`profiles?on_conflict=id`, {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ id: userId, email, full_name: fullName, organization_id: organizationId }),
+    body: JSON.stringify({ id: userId, email, full_name: fullName, is_active: true }),
   });
 }
 
@@ -77,24 +89,24 @@ export async function resetFeatureData(orgA: string, orgB: string) {
 }
 
 export async function setupEnv(): Promise<Env> {
-  const orgA = await orgIdByNameLike("QA-PLAN2");
-  const orgs = await rest(
-    `organizations?select=id,name&name=like.*QA-PLAN2*&order=created_at.asc&limit=5`,
-  );
-  if (orgs.length < 2) throw new Error("مطلوب مكتبان QA على الأقل لاختبار العزل.");
-  const orgB = (orgs.find((o) => (o["id"] as string) !== orgA)?.["id"] as string) ?? orgs[1]!["id"] as string;
+  const { orgA, orgB } = await qaOrgPair("QA-PLAN2");
 
   const ownerAId = await ensureUser("qa.f01.owner.a@mehlaqa.test", "QA F01 Owner A");
   const viewerAId = await ensureUser("qa.f01.viewer.a@mehlaqa.test", "QA F01 Viewer A");
   const ownerBId = await ensureUser("qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B");
   const staffId = await ensureUser("qa.f01.platform@mehlaqa.test", "QA F01 Platform");
 
-  await ensureProfile(ownerAId, "qa.f01.owner.a@mehlaqa.test", "QA F01 Owner A", orgA);
-  await ensureProfile(viewerAId, "qa.f01.viewer.a@mehlaqa.test", "QA F01 Viewer A", orgA);
-  await ensureProfile(ownerBId, "qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B", orgB);
+  await ensureProfile(ownerAId, "qa.f01.owner.a@mehlaqa.test", "QA F01 Owner A");
+  await ensureProfile(viewerAId, "qa.f01.viewer.a@mehlaqa.test", "QA F01 Viewer A");
+  await ensureProfile(ownerBId, "qa.f01.owner.b@mehlaqa.test", "QA F01 Owner B");
+  await ensureProfile(staffId, "qa.f01.platform@mehlaqa.test", "QA F01 Platform");
   await ensureMember(orgA, ownerAId, "owner");
   await ensureMember(orgA, viewerAId, "viewer");
   await ensureMember(orgB, ownerBId, "owner");
+  await pruneForeignMemberships(ownerAId, orgA);
+  await pruneForeignMemberships(viewerAId, orgA);
+  await pruneForeignMemberships(ownerBId, orgB);
+  await pruneForeignMemberships(staffId, orgB);
 
   await rest(`platform_staff?on_conflict=user_id`, {
     method: "POST",

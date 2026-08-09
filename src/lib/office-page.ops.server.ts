@@ -32,6 +32,19 @@ type Client = SupabaseClient<Database>;
 
 type PageRow = Database["public"]["Tables"]["office_public_pages"]["Row"];
 
+/** بوابة عضوية صريحة للقراءة: عضو نشط في المكتب المطلوب فقط (دفاع مضاعف مع RLS). */
+async function requireMember(supabase: Client, userId: string, organizationId: string) {
+  const { data } = await supabase
+    .from("organization_members")
+    .select("status")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data || data.status !== "active") {
+    throw new Error("لا تملك صلاحية الوصول إلى بيانات هذا المكتب.");
+  }
+}
+
 async function requireManager(supabase: Client, userId: string, organizationId: string) {
   const { data } = await supabase
     .from("organization_members")
@@ -105,8 +118,10 @@ export type OfficePageState = {
 
 export async function readState(
   supabase: Client,
+  userId: string,
   organizationId: string,
 ): Promise<OfficePageState> {
+  await requireMember(supabase, userId, organizationId);
   const row = await readRow(supabase, organizationId);
   const draft = parseSnapshot(row.draft);
   const published = row.published ? parseSnapshot(row.published) : null;
@@ -148,7 +163,7 @@ export async function saveDraft(
     "office_page.draft.save",
     "حفظ مسودة الصفحة العامة",
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function changeSlug(
@@ -159,7 +174,7 @@ export async function changeSlug(
 ) {
   await requireManager(supabase, userId, organizationId);
   const row = await readRow(supabase, organizationId);
-  if (row.slug === slug) return await readState(supabase, organizationId);
+  if (row.slug === slug) return await readState(supabase, userId, organizationId);
 
   const { data: taken } = await supabaseAdmin
     .from("office_public_pages")
@@ -187,7 +202,7 @@ export async function changeSlug(
     `تغيير رابط الصفحة العامة إلى ${slug}`,
     { from: row.slug, to: slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function publish(supabase: Client, userId: string, organizationId: string) {
@@ -212,14 +227,23 @@ export async function publish(supabase: Client, userId: string, organizationId: 
   const policyVersion = info.policies_effective_date || "unversioned";
 
   const stamped = officeSnapshotSchema.parse({ ...draft, consent_policy_version: policyVersion });
-  const published = await buildPublishedSnapshot(organizationId, stamped, version);
+  const { published, mapping } = await buildPublishedSnapshot(organizationId, stamped, version);
+  // وسائط المسودة القادمة من نسخة منشورة سابقة تُحدّث إلى مسار النسخة الجديدة،
+  // لأن النسخ القديمة تُحذف بعد النشر فلا تبقى المسودة مرتبطة بملف زائل.
+  const repoint = (path: string) => (/\/v\d+\//.test(path) ? (mapping.get(path) ?? path) : path);
+  const draftAfter = officeSnapshotSchema.parse({
+    ...stamped,
+    logo_path: repoint(stamped.logo_path),
+    cover_path: repoint(stamped.cover_path),
+    team: stamped.team.map((m) => ({ ...m, photo_path: repoint(m.photo_path) })),
+  });
 
   const { error } = await supabase
     .from("office_public_pages")
     .update({
       status: "published",
       version,
-      draft: stamped as never,
+      draft: draftAfter as never,
       published: published as never,
       published_at: new Date().toISOString(),
       published_by: userId,
@@ -237,7 +261,7 @@ export async function publish(supabase: Client, userId: string, organizationId: 
     `نشر الصفحة العامة (النسخة ${version})`,
     { version, slug: row.slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function unpublish(supabase: Client, userId: string, organizationId: string) {
@@ -256,7 +280,7 @@ export async function unpublish(supabase: Client, userId: string, organizationId
     "إيقاف نشر الصفحة العامة",
     { slug: row.slug },
   );
-  return await readState(supabase, organizationId);
+  return await readState(supabase, userId, organizationId);
 }
 
 export async function uploadMedia(
@@ -289,8 +313,10 @@ export async function uploadMedia(
 /** معاينة المسودة كما ستظهر للزائر — بروابط موقّعة قصيرة، بلا أي رمز في الرابط. */
 export async function previewView(
   supabase: Client,
+  userId: string,
   organizationId: string,
 ): Promise<OfficePageView> {
+  await requireMember(supabase, userId, organizationId);
   const row = await readRow(supabase, organizationId);
   const draft = parseSnapshot(row.draft);
   return await toOfficePageView(
@@ -325,6 +351,7 @@ export type OfficeLeadRow = {
 
 export async function listLeads(
   supabase: Client,
+  userId: string,
   input: {
     organizationId: string;
     search: string;
@@ -333,6 +360,7 @@ export async function listLeads(
     pageSize: number;
   },
 ) {
+  await requireMember(supabase, userId, input.organizationId);
   let q = supabase
     .from("office_leads")
     .select(
@@ -389,12 +417,17 @@ export async function updateLead(
   if (input.internalNote !== undefined) patch.internal_note = input.internalNote || null;
   if (input.assignedTo !== undefined) patch.assigned_to = input.assignedTo;
 
-  const { error } = await supabase
+  await requireMember(supabase, userId, input.organizationId);
+  const { data: updated, error } = await supabase
     .from("office_leads")
     .update(patch as never)
     .eq("id", input.leadId)
-    .eq("organization_id", input.organizationId);
+    .eq("organization_id", input.organizationId)
+    .select("id");
   if (error) throw new Error("تعذّر تحديث الطلب، تحقّق من صلاحيتك ثم حاول مجدداً.");
+  // صفر صفوف = الطلب غير موجود أو خارج نطاق المكتب: لا يُعلن نجاح بلا تغيير فعلي.
+  if (!updated || updated.length === 0)
+    throw new Error("الطلب غير موجود أو لا تملك صلاحية الوصول إليه.");
 
   await audit(
     supabase,
@@ -414,6 +447,7 @@ export async function convertLead(
   organizationId: string,
   leadId: string,
 ) {
+  await requireMember(supabase, userId, organizationId);
   const { data: lead, error } = await supabase
     .from("office_leads")
     .select("id, full_name, phone, email, city, message, converted_client_id")
@@ -455,7 +489,11 @@ export async function convertLead(
 
   if (!claimed || claimed.length === 0) {
     // سبقنا تحويل آخر: نتراجع عن العميل المُنشأ ونعيد العميل المعتمد.
-    await supabase.from("clients").delete().eq("id", client.id).eq("organization_id", organizationId);
+    await supabase
+      .from("clients")
+      .delete()
+      .eq("id", client.id)
+      .eq("organization_id", organizationId);
     const { data: winner } = await supabase
       .from("office_leads")
       .select("converted_client_id")
@@ -492,9 +530,11 @@ export type OfficePageAnalytics = {
 
 export async function analytics(
   supabase: Client,
+  userId: string,
   organizationId: string,
   days: number,
 ): Promise<OfficePageAnalytics> {
+  await requireMember(supabase, userId, organizationId);
   const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from("office_page_events")

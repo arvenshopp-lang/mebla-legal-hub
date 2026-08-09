@@ -277,7 +277,7 @@ async function phaseLeads() {
   check(
     C.lead,
     "رفض الحقول التي تحتوي وسوم أو سكربت",
-    html.status === 400 && /رموز غير مسموحة/.test(html.json.message ?? ""),
+    html.status === 400 && /رموز(اً)? غير مسموحة/.test(html.json.message ?? ""),
     html.json.message,
   );
 
@@ -325,7 +325,12 @@ async function phaseLeads() {
   check(
     C.lead,
     "حفظ UTM المسموح فقط",
-    JSON.stringify(stored?.["utm"] ?? {}) === JSON.stringify({ utm_source: "google", utm_medium: "cpc" }),
+    (() => {
+      const utm = (stored?.["utm"] ?? {}) as Record<string, string>;
+      return (
+        Object.keys(utm).length === 2 && utm["utm_source"] === "google" && utm["utm_medium"] === "cpc"
+      );
+    })(),
     JSON.stringify(stored?.["utm"]),
   );
   check(C.lead, "عدم تخزين عنوان IP صريح", !("ip" in (stored ?? {})) && typeof stored?.["ip_hash"] === "string");
@@ -698,7 +703,7 @@ async function phaseSeo() {
 
 async function phaseStats() {
   await del(`office_page_events?organization_id=eq.${env.orgA}`);
-  for (const kind of ["view", "call", "whatsapp", "email", "directions", "share"]) {
+  for (const kind of ["view", "call", "whatsapp", "email", "map", "lead"]) {
     await sendEvent({ slug: SLUG_A, kind, channel: "web" });
   }
   const analytics = await office("getOfficePageAnalytics", env.ownerA.token, {

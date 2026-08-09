@@ -274,14 +274,23 @@ export async function buildPublishedSnapshot(
   organizationId: string,
   draft: OfficeSnapshot,
   version: number,
-): Promise<OfficeSnapshot> {
+): Promise<{ published: OfficeSnapshot; mapping: Map<string, string> }> {
   const mapping = new Map<string, string>();
   for (const path of snapshotMediaPaths(draft)) {
     if (mapping.has(path)) continue;
     const fileName = path.split("/").pop()!;
     const target = `${organizationId}/v${version}/${fileName}`;
-    const { data: file, error } = await supabaseAdmin.storage.from(DRAFT_BUCKET).download(path);
-    if (error || !file) throw new Error("تعذّر نشر إحدى الصور، أعد رفعها ثم انشر.");
+    // المصدر يُحدَّد من شكل المسار: مسودة خاصة، أو نسخة منشورة سابقة (إعادة نشر/استعادة).
+    const sourceBucket = /\/v\d+\//.test(path) ? PUBLIC_BUCKET : DRAFT_BUCKET;
+    if (sourceBucket === PUBLIC_BUCKET && path === target) {
+      mapping.set(path, target);
+      continue;
+    }
+    const { data: file, error } = await supabaseAdmin.storage.from(sourceBucket).download(path);
+    if (error || !file) {
+      console.error("[office-media] download failed", sourceBucket, path, error);
+      throw new Error("تعذّر نشر إحدى الصور، أعد رفعها ثم انشر.");
+    }
     const buffer = new Uint8Array(await file.arrayBuffer());
     const safe = validateAndSanitizeImage(buffer, file.type ?? "");
     const { error: upErr } = await supabaseAdmin.storage
@@ -294,12 +303,13 @@ export async function buildPublishedSnapshot(
     mapping.set(path, target);
   }
 
-  return officeSnapshotSchema.parse({
+  const published = officeSnapshotSchema.parse({
     ...draft,
     logo_path: mapping.get(draft.logo_path) ?? "",
     cover_path: mapping.get(draft.cover_path) ?? "",
     team: draft.team.map((m) => ({ ...m, photo_path: mapping.get(m.photo_path) ?? "" })),
   });
+  return { published, mapping };
 }
 
 /** حذف نسخ الوسائط المنشورة التي لم تعد مرجعية (بعد إعادة النشر أو الإلغاء). */

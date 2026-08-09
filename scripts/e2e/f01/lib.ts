@@ -78,28 +78,89 @@ export async function call(modulePath: string, name: string, token: string | und
 export const office = (name: string, token: string | undefined, data?: unknown) =>
   call(OFFICE_FNS, name, token, data);
 
-/** استخراج JSON الفعلي من إطار seroval الذي تعيده دوال الخادم. */
-export function payload<T = unknown>(raw: string): T | null {
-  const objects: unknown[] = [];
-  for (let i = 0; i < raw.length; i++) {
-    if (raw[i] !== "{") continue;
-    let depth = 0;
-    for (let j = i; j < raw.length; j++) {
-      if (raw[j] === "{") depth++;
-      else if (raw[j] === "}") {
-        depth--;
-        if (depth === 0) {
-          try {
-            objects.push(JSON.parse(raw.slice(i, j + 1)));
-          } catch {
-            /* ليس JSON صالحاً */
-          }
-          break;
-        }
-      }
+/**
+ * فك إطار seroval الذي تعيده دوال الخادم إلى قيمة JavaScript حقيقية.
+ * الإطار شجرة عُقد: (0 رقم، 1 نص، 2 ثابت، 4 مرجع مُفهرس، 9 مصفوفة، 10/11 كائن).
+ */
+type SerovalNode = {
+  t: number;
+  i?: number;
+  s?: unknown;
+  l?: number;
+  a?: (SerovalNode | null)[];
+  p?: { k: string[]; v: SerovalNode[] };
+};
+
+const SEROVAL_CONSTANTS: Record<number, unknown> = {
+  0: null,
+  1: undefined,
+  2: true,
+  3: false,
+  4: -0,
+  5: Infinity,
+  6: -Infinity,
+  7: NaN,
+};
+
+function decodeSeroval(node: SerovalNode | null, refs: Map<number, unknown>): unknown {
+  if (!node) return undefined;
+  const remember = (value: unknown) => {
+    if (typeof node.i === "number") refs.set(node.i, value);
+    return value;
+  };
+  switch (node.t) {
+    case 0:
+      return typeof node.s === "string" ? Number(node.s) : (node.s as number);
+    case 1:
+      return node.s as string;
+    case 2:
+      return SEROVAL_CONSTANTS[node.s as number];
+    case 3:
+      return String(node.s);
+    case 4:
+      return refs.get(node.s as number);
+    case 9: {
+      const arr: unknown[] = [];
+      remember(arr);
+      for (const item of node.a ?? []) arr.push(decodeSeroval(item, refs));
+      return arr;
     }
+    case 10:
+    case 11: {
+      const obj: Record<string, unknown> = {};
+      remember(obj);
+      const keys = node.p?.k ?? [];
+      const values = node.p?.v ?? [];
+      keys.forEach((key, index) => {
+        obj[key] = decodeSeroval(values[index] ?? null, refs);
+      });
+      return obj;
+    }
+    default:
+      if (node.p) {
+        const obj: Record<string, unknown> = {};
+        remember(obj);
+        (node.p.k ?? []).forEach((key, index) => {
+          obj[key] = decodeSeroval(node.p!.v[index] ?? null, refs);
+        });
+        return obj;
+      }
+      return node.s;
   }
-  return (objects.pop() as T) ?? null;
+}
+
+/** استخراج قيمة `result` الفعلية من إطار seroval الذي تعيده دوال الخادم. */
+export function payload<T = unknown>(raw: string): T | null {
+  let root: SerovalNode;
+  try {
+    root = JSON.parse(raw) as SerovalNode;
+  } catch {
+    return null;
+  }
+  const decoded = decodeSeroval(root, new Map()) as Record<string, unknown> | null;
+  if (!decoded || typeof decoded !== "object") return null;
+  if ("result" in decoded) return (decoded["result"] as T) ?? null;
+  return decoded as T;
 }
 
 /* ------------------------------------------------------------- المستخدمون */
