@@ -37,7 +37,11 @@ async function asOwner(path: string, init: RequestInit = {}): Promise<Timing> {
     return { status: res.status, ms: performance.now() - started, body: body.slice(0, 200) };
   } catch (error) {
     const msg = error instanceof Error ? error.name : String(error);
-    return { status: msg === "TimeoutError" ? 408 : 599, ms: performance.now() - started, body: msg };
+    return {
+      status: msg === "TimeoutError" ? 408 : 599,
+      ms: performance.now() - started,
+      body: msg,
+    };
   }
 }
 
@@ -67,81 +71,93 @@ const READ_PATHS = [
 
 let readStats = { total: 0, errors: 0, timeouts: 0, p50: 0, p95: 0, max: 0 };
 
-await t("load/reads", `قراءات متزامنة (${CONCURRENCY} عامل × ${READ_DURATION_MS / 1000}ث)`, async () => {
-  const deadline = Date.now() + READ_DURATION_MS;
-  const results: Timing[] = [];
-  await Promise.all(
-    Array.from({ length: CONCURRENCY }, async (_, worker) => {
-      let i = worker;
-      while (Date.now() < deadline) {
-        results.push(await asOwner(READ_PATHS[i % READ_PATHS.length]!));
-        i += 1;
-      }
-    }),
-  );
-  readStats = stats(results);
-  eq(readStats.errors, 0, "أخطاء القراءة");
-  eq(readStats.timeouts, 0, "مهل القراءة");
-  const rps = Math.round((readStats.total / READ_DURATION_MS) * 1000);
-  return `طلبات=${readStats.total} (~${rps}/ث) p50=${readStats.p50}ms p95=${readStats.p95}ms أقصى=${readStats.max}ms`;
-});
+await t(
+  "load/reads",
+  `قراءات متزامنة (${CONCURRENCY} عامل × ${READ_DURATION_MS / 1000}ث)`,
+  async () => {
+    const deadline = Date.now() + READ_DURATION_MS;
+    const results: Timing[] = [];
+    await Promise.all(
+      Array.from({ length: CONCURRENCY }, async (_, worker) => {
+        let i = worker;
+        while (Date.now() < deadline) {
+          results.push(await asOwner(READ_PATHS[i % READ_PATHS.length]!));
+          i += 1;
+        }
+      }),
+    );
+    readStats = stats(results);
+    eq(readStats.errors, 0, "أخطاء القراءة");
+    eq(readStats.timeouts, 0, "مهل القراءة");
+    const rps = Math.round((readStats.total / READ_DURATION_MS) * 1000);
+    return `طلبات=${readStats.total} (~${rps}/ث) p50=${readStats.p50}ms p95=${readStats.p95}ms أقصى=${readStats.max}ms`;
+  },
+);
 
 /* --------------------------------------------------------------- الإنشاء المتزامن */
 
 const createdClientIds: string[] = [];
 
-await t("load/create", `إنشاء ${CONCURRENCY} عميلاً بالتوازي بلا سجلات مكررة أو شبحية`, async () => {
-  const tag = `QA-LOAD-${stamp}`;
-  const results = await Promise.all(
-    Array.from({ length: CONCURRENCY }, (_, i) =>
-      asOwner("clients", {
-        method: "POST",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify({
-          organization_id: ORG,
-          full_name: `${tag}-${String(i).padStart(2, "0")}`,
-          client_type: "individual",
+await t(
+  "load/create",
+  `إنشاء ${CONCURRENCY} عميلاً بالتوازي بلا سجلات مكررة أو شبحية`,
+  async () => {
+    const tag = `QA-LOAD-${stamp}`;
+    const results = await Promise.all(
+      Array.from({ length: CONCURRENCY }, (_, i) =>
+        asOwner("clients", {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({
+            organization_id: ORG,
+            full_name: `${tag}-${String(i).padStart(2, "0")}`,
+            client_type: "individual",
+          }),
         }),
-      }),
-    ),
-  );
-  const s = stats(results);
-  eq(s.errors, 0, "أخطاء الإنشاء");
-  eq(s.timeouts, 0, "مهل الإنشاء");
-  const rows = await rest<{ id: string; full_name: string }>(
-    `clients?organization_id=eq.${ORG}&full_name=like.${tag}*&select=id,full_name`,
-  );
-  rows.forEach((r) => createdClientIds.push(r.id));
-  eq(rows.length, CONCURRENCY, "عدد الصفوف المُنشأة");
-  eq(new Set(rows.map((r) => r.full_name)).size, CONCURRENCY, "الأسماء الفريدة");
-  return `صفوف=${rows.length} p95=${s.p95}ms`;
-});
+      ),
+    );
+    const s = stats(results);
+    eq(s.errors, 0, "أخطاء الإنشاء");
+    eq(s.timeouts, 0, "مهل الإنشاء");
+    const rows = await rest<{ id: string; full_name: string }>(
+      `clients?organization_id=eq.${ORG}&full_name=like.${tag}*&select=id,full_name`,
+    );
+    rows.forEach((r) => createdClientIds.push(r.id));
+    eq(rows.length, CONCURRENCY, "عدد الصفوف المُنشأة");
+    eq(new Set(rows.map((r) => r.full_name)).size, CONCURRENCY, "الأسماء الفريدة");
+    return `صفوف=${rows.length} p95=${s.p95}ms`;
+  },
+);
 
 /* ------------------------------------------------------- التحديثات وفقدان التحديث */
 
-await t("load/update", `${CONCURRENCY} تحديثاً متزامناً على سجلات مختلفة بلا فقدان تحديث`, async () => {
-  expect(createdClientIds.length === CONCURRENCY, "لم تُنشأ صفوف الاختبار.");
-  const targets = createdClientIds.map((id, i) => ({ id, notes: `LOAD-NOTE-${stamp}-${i}` }));
-  const results = await Promise.all(
-    targets.map((t2) =>
-      asOwner(`clients?id=eq.${t2.id}`, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ notes: t2.notes }),
-      }),
-    ),
-  );
-  const s = stats(results);
-  eq(s.errors, 0, "أخطاء التحديث");
-  eq(s.timeouts, 0, "مهل التحديث");
-  const rows = await rest<{ id: string; notes: string | null }>(
-    `clients?id=in.(${createdClientIds.join(",")})&select=id,notes`,
-  );
-  const byId = new Map(rows.map((r) => [r.id, r.notes]));
-  const lost = targets.filter((t2) => byId.get(t2.id) !== t2.notes);
-  eq(lost.length, 0, "تحديثات مفقودة");
-  return `محدّثة=${rows.length} p95=${s.p95}ms`;
-});
+await t(
+  "load/update",
+  `${CONCURRENCY} تحديثاً متزامناً على سجلات مختلفة بلا فقدان تحديث`,
+  async () => {
+    expect(createdClientIds.length === CONCURRENCY, "لم تُنشأ صفوف الاختبار.");
+    const targets = createdClientIds.map((id, i) => ({ id, notes: `LOAD-NOTE-${stamp}-${i}` }));
+    const results = await Promise.all(
+      targets.map((t2) =>
+        asOwner(`clients?id=eq.${t2.id}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ notes: t2.notes }),
+        }),
+      ),
+    );
+    const s = stats(results);
+    eq(s.errors, 0, "أخطاء التحديث");
+    eq(s.timeouts, 0, "مهل التحديث");
+    const rows = await rest<{ id: string; notes: string | null }>(
+      `clients?id=in.(${createdClientIds.join(",")})&select=id,notes`,
+    );
+    const byId = new Map(rows.map((r) => [r.id, r.notes]));
+    const lost = targets.filter((t2) => byId.get(t2.id) !== t2.notes);
+    eq(lost.length, 0, "تحديثات مفقودة");
+    return `محدّثة=${rows.length} p95=${s.p95}ms`;
+  },
+);
 
 await t("load/update", "10 تحديثات متزامنة على سجل واحد تنتهي بحالة واحدة متسقة", async () => {
   const target = createdClientIds[0]!;
@@ -186,9 +202,7 @@ await t("load/idempotency", "5 فواتير × إصدار متزامن مزدو�
     );
     const okCount = attempts.filter((a) => a.ok).length;
     expect(okCount <= 1, `الفاتورة ${i}: نجح الإصدار ${okCount} مرات.`);
-    const row = await restOne<{ number: string }>(
-      `platform_invoices?id=eq.${id}&select=number`,
-    );
+    const row = await restOne<{ number: string }>(`platform_invoices?id=eq.${id}&select=number`);
     expect(!!row?.number, `الفاتورة ${i}: لا رقم مُسجَّل.`);
     numbers.push(row!.number);
   }
