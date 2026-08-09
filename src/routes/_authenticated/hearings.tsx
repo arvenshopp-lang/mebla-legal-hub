@@ -122,9 +122,7 @@ function Page() {
           .order("id", { ascending: false });
       // مفتاح فرز ثانوي ثابت يمنع تكرار الصفوف بين صفحات الترقيم
       else
-        query = query
-          .order("hearing_date", { ascending: false })
-          .order("id", { ascending: false });
+        query = query.order("hearing_date", { ascending: false }).order("id", { ascending: false });
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
