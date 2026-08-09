@@ -127,7 +127,11 @@ await rest("organization_members", {
 });
 
 const rBlocked = await del(p3.superAdmin.token, ownerId);
-check("منع حذف مالك المكتب", rBlocked.denied && /انقل ملكية/.test(rBlocked.message), rBlocked.message);
+check(
+  "منع حذف مالك المكتب",
+  rBlocked.denied && /انقل ملكية/.test(rBlocked.message),
+  rBlocked.message,
+);
 check("سجل تدقيق لمنع الحذف", await auditHas("user.delete_blocked", ownerId));
 const bl = await blockersOf(p3.superAdmin.token, ownerId);
 check("قائمة موانع الملكية تُعرض للمشرف", bl.ok && bl.raw.includes(orgId));
@@ -286,7 +290,9 @@ await rest(`documents?id=eq.${docId}`, { method: "DELETE" }).catch(() => []);
 await rest(`tasks?id=eq.${taskId}`, { method: "DELETE" }).catch(() => []);
 await rest(`cases?id=eq.${caseId}`, { method: "DELETE" }).catch(() => []);
 await rest(`clients?id=eq.${clientId}`, { method: "DELETE" }).catch(() => []);
-await rest(`organization_members?organization_id=eq.${orgId}`, { method: "DELETE" }).catch(() => []);
+await rest(`organization_members?organization_id=eq.${orgId}`, { method: "DELETE" }).catch(
+  () => [],
+);
 await rest(`subscriptions?organization_id=eq.${orgId}`, { method: "DELETE" }).catch(() => []);
 await rest(`organizations?id=eq.${orgId}`, { method: "DELETE" }).catch(() => []);
 await del(p3.superAdmin.token, newOwnerId);
