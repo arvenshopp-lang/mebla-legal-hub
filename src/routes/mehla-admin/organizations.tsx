@@ -25,11 +25,13 @@ import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import {
   deleteOrganization,
+  getOfficePagePlatformState,
   listOrganizationMembers,
   listOrganizations,
   listSupportAccessGrants,
   requestSupportAccess,
   revokeSupportAccess,
+  setOfficePageSuspension,
   setOrganizationActive,
   updateOrganization,
   type AdminOrgRow,
@@ -80,6 +82,7 @@ function OrganizationsPage() {
   const [detail, setDetail] = useState<AdminOrgRow | null>(null);
   const [editForm, setEditForm] = useState<AdminOrgRow | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
+  const [pageSuspendReason, setPageSuspendReason] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [grantForm, setGrantForm] = useState<{
     reason: string;
@@ -186,6 +189,33 @@ function OrganizationsPage() {
     onSuccess: () => {
       toast.success("تم إلغاء المنحة.");
       qc.invalidateQueries({ queryKey: ["admin-support-grants"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const officePageFn = useServerFn(getOfficePagePlatformState);
+  const officePage = useQuery({
+    queryKey: ["admin-org-office-page", detail?.id],
+    enabled: Boolean(detail) && can("organizations.read"),
+    queryFn: () => officePageFn({ data: { organizationId: detail!.id } }),
+  });
+
+  const officeSuspendFn = useServerFn(setOfficePageSuspension);
+  const officeSuspend = useMutation({
+    mutationFn: (v: { suspended: boolean }) =>
+      officeSuspendFn({
+        data: {
+          organizationId: detail!.id,
+          suspended: v.suspended,
+          ...(v.suspended ? { reason: pageSuspendReason.trim() } : {}),
+        },
+      }),
+    onSuccess: (_r, v) => {
+      toast.success(
+        v.suspended ? "تم إيقاف الصفحة العامة للمكتب." : "تم إعادة عرض الصفحة العامة للمكتب.",
+      );
+      setPageSuspendReason("");
+      qc.invalidateQueries({ queryKey: ["admin-org-office-page"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -425,6 +455,63 @@ function OrganizationsPage() {
 
             {canUpdate && (
               <div className="space-y-3 border-t border-border pt-5">
+                {officePage.data?.page && (
+                  <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-body-sm font-semibold">
+                        الصفحة العامة: /office/{officePage.data.page.slug}
+                      </p>
+                      <Badge tone={officePage.data.page.suspended ? "red" : "green"}>
+                        {officePage.data.page.suspended
+                          ? "موقوفة من المنصة"
+                          : officePage.data.page.status === "published"
+                            ? "منشورة"
+                            : "غير منشورة"}
+                      </Badge>
+                    </div>
+                    <p className="text-caption mt-1">
+                      الإيقاف يحجب العرض العام فوراً ولا يمسّ محتوى المكتب ولا طلباته.
+                    </p>
+                    {officePage.data.page.suspended ? (
+                      <>
+                        {officePage.data.page.reason && (
+                          <p className="text-caption mt-1">
+                            سبب الإيقاف: {officePage.data.page.reason}
+                          </p>
+                        )}
+                        <Btn
+                          size="sm"
+                          className="mt-2"
+                          loading={officeSuspend.isPending}
+                          onClick={() => officeSuspend.mutate({ suspended: false })}
+                        >
+                          إعادة عرض الصفحة العامة
+                        </Btn>
+                      </>
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        <FormField label="سبب إيقاف الصفحة العامة (يُسجَّل في سجل التدقيق)" required>
+                          <input
+                            className={inputCls}
+                            value={pageSuspendReason}
+                            onChange={(e) => setPageSuspendReason(e.target.value)}
+                            placeholder="مثال: محتوى مخالف لسياسة المنصة"
+                            maxLength={300}
+                          />
+                        </FormField>
+                        <Btn
+                          variant="danger"
+                          size="sm"
+                          loading={officeSuspend.isPending}
+                          disabled={!pageSuspendReason.trim()}
+                          onClick={() => officeSuspend.mutate({ suspended: true })}
+                        >
+                          إيقاف الصفحة العامة
+                        </Btn>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   <Btn variant="outline" onClick={() => setEditForm(detail)}>
                     تعديل بيانات المكتب

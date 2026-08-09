@@ -306,3 +306,80 @@ export const revokeSupportAccess = createServerFn({ method: "POST" })
     });
     return { ok: true as const };
   });
+
+/* --------------------------------- إيقاف الصفحة العامة للمكتب على مستوى المنصة */
+
+/** حالة الصفحة العامة للمكتب — بيانات حالة فقط، بلا أي محتوى مسودة أو طلبات. */
+export const getOfficePagePlatformState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ organizationId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const g = await import("@/lib/admin-guard.server");
+    await g.requireStaff(context.supabase, context.userId, "organizations.read");
+    const db = await g.admin();
+    const { data: row } = await db
+      .from("office_public_pages")
+      .select("slug, status, suspended_by_platform, suspension_reason, published_at")
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    return {
+      page: row
+        ? {
+            slug: row.slug,
+            status: row.status,
+            suspended: row.suspended_by_platform,
+            reason: row.suspension_reason ?? "",
+            published_at: row.published_at,
+          }
+        : null,
+    };
+  });
+
+/**
+ * إيقاف/إعادة الصفحة العامة للمكتب من المنصة. الإيقاف يحجب العرض العام فوراً
+ * ولا يمسّ مسودة المكتب ولا طلباته، وكل تغيير يُسجَّل في سجل تدقيق الإدارة.
+ */
+export const setOfficePageSuspension = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        suspended: z.boolean(),
+        reason: z.string().trim().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const g = await import("@/lib/admin-guard.server");
+    const staff = await g.requireStaff(context.supabase, context.userId, "organizations.update");
+    if (data.suspended && !(data.reason ?? "").trim())
+      throw new Error("سبب الإيقاف مطلوب ويُسجَّل في سجل التدقيق.");
+    const db = await g.admin();
+    const { data: before } = await db
+      .from("office_public_pages")
+      .select("slug, status, suspended_by_platform")
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (!before) throw new Error("لا توجد صفحة عامة لهذا المكتب.");
+
+    const { error } = await db
+      .from("office_public_pages")
+      .update({
+        suspended_by_platform: data.suspended,
+        suspension_reason: data.suspended ? (data.reason ?? null) : null,
+      })
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error("تعذّر تحديث حالة الصفحة العامة.");
+
+    await g.writeAudit(db, staff, {
+      action: data.suspended ? "office_page.platform_suspend" : "office_page.platform_restore",
+      entity_type: "office_public_page",
+      entity_id: data.organizationId,
+      description: `${data.suspended ? "إيقاف" : "إعادة"} الصفحة العامة /office/${before.slug}`,
+      before: { suspended_by_platform: before.suspended_by_platform },
+      after: { suspended_by_platform: data.suspended, reason: data.reason ?? null },
+      metadata: { organization_id: data.organizationId, slug: before.slug },
+    });
+    return { ok: true as const, suspended: data.suspended };
+  });

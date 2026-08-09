@@ -172,7 +172,12 @@ export async function changeSlug(
     .from("office_public_pages")
     .update({ slug, updated_at: new Date().toISOString() })
     .eq("organization_id", organizationId);
-  if (error) throw new Error("تعذّر تحديث الرابط، حاول مرة أخرى.");
+  if (error) {
+    // الفهرس الفريد هو الفاصل الحقيقي عند التزامن؛ الفحص السابق لا يمنع التسابق.
+    if (String(error.code) === "23505")
+      throw new Error("هذا الرابط مستخدم من مكتب آخر، اختر رابطاً غيره.");
+    throw new Error("تعذّر تحديث الرابط، حاول مرة أخرى.");
+  }
 
   await audit(
     supabase,
@@ -435,7 +440,8 @@ export async function convertLead(
     .single();
   if (clientErr || !client) throw new Error("تعذّر إنشاء العميل من الطلب، حاول مرة أخرى.");
 
-  await supabase
+  // مطالبة ذرّية بالطلب: أول تحويل فقط يربط العميل، فلا ينشأ عميلان عند التزامن.
+  const { data: claimed } = await supabase
     .from("office_leads")
     .update({
       status: "converted",
@@ -443,7 +449,24 @@ export async function convertLead(
       updated_at: new Date().toISOString(),
     })
     .eq("id", leadId)
-    .eq("organization_id", organizationId);
+    .eq("organization_id", organizationId)
+    .is("converted_client_id", null)
+    .select("id, converted_client_id");
+
+  if (!claimed || claimed.length === 0) {
+    // سبقنا تحويل آخر: نتراجع عن العميل المُنشأ ونعيد العميل المعتمد.
+    await supabase.from("clients").delete().eq("id", client.id).eq("organization_id", organizationId);
+    const { data: winner } = await supabase
+      .from("office_leads")
+      .select("converted_client_id")
+      .eq("id", leadId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    return {
+      clientId: (winner?.converted_client_id as string | null) ?? client.id,
+      alreadyConverted: true as const,
+    };
+  }
 
   await audit(
     supabase,
