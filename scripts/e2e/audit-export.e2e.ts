@@ -77,15 +77,35 @@ async function fn(name: string): Promise<ServerFnRef> {
 const call = (name: string, token: string | undefined, data?: unknown) =>
   fn(name).then((ref) => callServerFn({ appOrigin: APP, ref, token, data }));
 
-/** استخراج نتيجة seroval للتصدير: نص CSV + عدد الصفوف. */
+/** استخراج نتيجة seroval للتصدير: نص CSV + عدد الصفوف (تفكيك بنيوي لا نصي). */
 function parseExportPayload(raw: string): { csv: string; rows: number } {
-  const jsonStart = raw.indexOf("[");
-  const flat = raw.slice(jsonStart);
-  // seroval يسلسل النص كسلسلة JSON صالحة داخل المصفوفة؛ نستخرجها بمطابقة الحقول.
-  const rowsMatch = flat.match(/"rows":(\d+)/);
-  const csvMatch = flat.match(/"csv":"((?:[^"\\]|\\.)*)"/);
-  if (!csvMatch || !rowsMatch) throw new Error(`استجابة تصدير غير مفهومة: ${raw.slice(0, 300)}`);
-  return { csv: JSON.parse(`"${csvMatch[1]}"`) as string, rows: Number(rowsMatch[1]) };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tree = JSON.parse(raw) as any;
+  const unwrap = (n: unknown): unknown =>
+    n && typeof n === "object" && "s" in (n as Record<string, unknown>)
+      ? (n as Record<string, unknown>).s
+      : n && typeof n === "object" && "n" in (n as Record<string, unknown>)
+        ? (n as Record<string, unknown>).n
+        : n;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const walk = (node: any): { csv: string; rows: number } | null => {
+    if (!node || typeof node !== "object") return null;
+    const keys: string[] | undefined = node.p?.k;
+    if (Array.isArray(keys) && keys.includes("csv") && keys.includes("rows")) {
+      const values: unknown[] = node.p.v;
+      const csv = unwrap(values[keys.indexOf("csv")]);
+      const rows = unwrap(values[keys.indexOf("rows")]);
+      if (typeof csv === "string") return { csv, rows: Number(rows) };
+    }
+    for (const child of Array.isArray(node) ? node : Object.values(node)) {
+      const found = walk(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  const found = walk(tree);
+  if (!found) throw new Error(`استجابة تصدير غير مفهومة: ${raw.slice(0, 300)}`);
+  return found;
 }
 
 /* --------------------------------------------------------- محلّل CSV دقيق */
