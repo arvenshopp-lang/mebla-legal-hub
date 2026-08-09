@@ -524,6 +524,7 @@ export async function retryWebhookEvent(
         providerPaymentId: parsed.providerPaymentId,
         status: parsed.status as never,
         amount: parsed.amount,
+        currency: parsed.currency ?? null,
         correlationId: ctx.correlationId,
       });
       processed = applied.applied;
