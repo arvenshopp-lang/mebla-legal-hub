@@ -34,9 +34,11 @@ const deniedRest = (r: { status: number; body: unknown }) =>
   r.status === 401 || r.status === 403 || rowsOf(r.body) === 0;
 /** استخراج قيمة state من إطار seroval الذي تعيده دوال الخادم. */
 const stateOf = (raw: string) =>
-  raw.match(/"state"\][\s\S]{0,40}?"s":"([a-z_]+)"/)?.[1] ??
+  raw.match(/"k":\["state"[\s\S]{0,600}?"v":\[\{"t":1,"s":"([a-z_]+)"/)?.[1] ??
   raw.match(/"state":"([a-z_]+)"/)?.[1] ??
   "";
+/** الرمز الخام (43 حرفاً) يُميَّز عن معرّف UUID (36 حرفاً بشرطات). */
+const tokenOf = (raw: string) => raw.match(/"s":"([A-Za-z0-9_-]{40,})"/)?.[1] ?? "";
 /** تصفير سجل محاولات الروابط العامة بين المراحل (عزل بيئة الاختبار فقط). */
 async function resetPublicAttempts() {
   await adminFetch(`${SUPABASE_URL}/rest/v1/case_lookup_attempts?id=not.is.null`, {
@@ -465,7 +467,7 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
   const mk = await call(docReqFns["createDocumentRequest"]!, tok("A", "lawyer"), {
     caseId: A.caseIds[0], title: "QA-PLAN2 رابط العميل", items: ["صورة الهوية"],
   });
-  const token = mk.raw.match(/"token"[\s\S]{0,30}?"([A-Za-z0-9_-]{20,})"/)?.[1] ?? "";
+  const token = tokenOf(mk.raw);
   record("PORTAL", "إنشاء رابط رفع للعميل", mk.ok && token.length > 20, "Server Guard",
     `status=${mk.status}`);
   const open = await call(portalFns["getUploadRequest"]!, undefined, { token });
@@ -499,7 +501,7 @@ for (const t of ["support_ticket_messages", "support_ticket_events", "support_in
     caseId: A.caseIds[0], title: "QA-PLAN2 رابط منتهٍ", items: [],
     expiresAt: new Date(Date.now() + 2000).toISOString(),
   });
-  const token2 = mk2.raw.match(/"token"[\s\S]{0,30}?"([A-Za-z0-9_-]{20,})"/)?.[1] ?? "";
+  const token2 = tokenOf(mk2.raw);
   const id2Res = await adminFetch(
     `${SUPABASE_URL}/rest/v1/document_requests?title=eq.${encodeURIComponent("QA-PLAN2 رابط منتهٍ")}&select=id`,
   );
