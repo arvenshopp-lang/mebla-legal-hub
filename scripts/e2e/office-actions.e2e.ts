@@ -201,7 +201,7 @@ async function inviteFlow(ctx: Awaited<ReturnType<typeof setup>>) {
 async function supportFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   const { orgId, actors, outsider } = ctx;
   const clientRequestId = `${B4}${crypto.randomUUID().slice(0, 8)}`;
-  const subject = `${B4}استفسار عن ربط تقويم الجلسات`;
+  const subject = `${B4}استفسار عن ربط تقويم الجلسات ${clientRequestId.slice(-8)}`;
 
   const created = await call("support", "createOfficeSupportTicket", actors.lawyer!.token, {
     subject,
@@ -386,7 +386,7 @@ async function portalFlow(ctx: Awaited<ReturnType<typeof setup>>) {
 
   const open = await call("portal", "getUploadRequest", undefined, { token });
   const leaksIds = open.raw.includes(reqId) || open.raw.includes(String(kase.id));
-  check("العميل يفتح الرابط العام بلا تسجيل دخول ويرى الطلب", open.ok && /"active"/.test(open.raw), open.message.slice(0, 90));
+  check("العميل يفتح الرابط العام بلا تسجيل دخول ويرى الطلب", open.ok && /"active"/.test(open.raw), open.raw.slice(0, 160));
   check("الاستجابة العامة لا تكشف معرّفات داخلية", open.ok && !leaksIds);
 
   const events = await rest(`document_request_events?request_id=eq.${reqId}&select=event`);
