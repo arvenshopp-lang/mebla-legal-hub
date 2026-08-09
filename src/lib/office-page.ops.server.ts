@@ -227,14 +227,23 @@ export async function publish(supabase: Client, userId: string, organizationId: 
   const policyVersion = info.policies_effective_date || "unversioned";
 
   const stamped = officeSnapshotSchema.parse({ ...draft, consent_policy_version: policyVersion });
-  const published = await buildPublishedSnapshot(organizationId, stamped, version);
+  const { published, mapping } = await buildPublishedSnapshot(organizationId, stamped, version);
+  // وسائط المسودة القادمة من نسخة منشورة سابقة تُحدّث إلى مسار النسخة الجديدة،
+  // لأن النسخ القديمة تُحذف بعد النشر فلا تبقى المسودة مرتبطة بملف زائل.
+  const repoint = (path: string) => (/\/v\d+\//.test(path) ? (mapping.get(path) ?? path) : path);
+  const draftAfter = officeSnapshotSchema.parse({
+    ...stamped,
+    logo_path: repoint(stamped.logo_path),
+    cover_path: repoint(stamped.cover_path),
+    team: stamped.team.map((m) => ({ ...m, photo_path: repoint(m.photo_path) })),
+  });
 
   const { error } = await supabase
     .from("office_public_pages")
     .update({
       status: "published",
       version,
-      draft: stamped as never,
+      draft: draftAfter as never,
       published: published as never,
       published_at: new Date().toISOString(),
       published_by: userId,

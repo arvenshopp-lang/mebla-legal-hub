@@ -274,7 +274,7 @@ export async function buildPublishedSnapshot(
   organizationId: string,
   draft: OfficeSnapshot,
   version: number,
-): Promise<OfficeSnapshot> {
+): Promise<{ published: OfficeSnapshot; mapping: Map<string, string> }> {
   const mapping = new Map<string, string>();
   for (const path of snapshotMediaPaths(draft)) {
     if (mapping.has(path)) continue;
@@ -303,12 +303,13 @@ export async function buildPublishedSnapshot(
     mapping.set(path, target);
   }
 
-  return officeSnapshotSchema.parse({
+  const published = officeSnapshotSchema.parse({
     ...draft,
     logo_path: mapping.get(draft.logo_path) ?? "",
     cover_path: mapping.get(draft.cover_path) ?? "",
     team: draft.team.map((m) => ({ ...m, photo_path: mapping.get(m.photo_path) ?? "" })),
   });
+  return { published, mapping };
 }
 
 /** حذف نسخ الوسائط المنشورة التي لم تعد مرجعية (بعد إعادة النشر أو الإلغاء). */
