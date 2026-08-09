@@ -50,7 +50,8 @@ function isSecureRequest() {
  */
 const BINARY_CSP = [
   "default-src 'none'",
-  "object-src 'self'",
+  // النسخة المائية تُعرض من blob: بعد تنزيلها في المتصفح
+  "object-src 'self' blob:",
   "img-src 'self' data: blob:",
   "style-src 'unsafe-inline'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
