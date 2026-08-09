@@ -214,7 +214,7 @@ async function supportFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   if (!created.ok) return;
 
   const ticket = await one(
-    `support_tickets?subject=eq.${encodeURIComponent(subject)}&select=id,ticket_number,status,priority,channel,organization_id,due_first_response_at,due_resolution_at,requester_email`,
+    `support_tickets?subject=eq.${encodeURIComponent(subject)}&select=id,ticket_number,status,priority,channel,description,organization_id,due_first_response_at,due_resolution_at,requester_email`,
   );
   check(
     "التذكرة محفوظة بمكتب QA وقناة portal وحالة new",
