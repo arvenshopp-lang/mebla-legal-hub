@@ -432,6 +432,13 @@ if (snapId) {
     `platform_backup_restore_requests?snapshot_id=eq.${snapId}&order=created_at.desc&select=id&limit=1`,
   ))?.["id"] as string | undefined;
   if (reqId)
+    rec(
+      "Backups",
+      "رفض طلب استعادة (Reject)",
+      "BLOCKED",
+      "الرقابة المزدوجة بالتصميم: لا يعتمد الطلب مقدّمه — يلزم موظف منصة ثانٍ",
+    );
+  if (false && reqId)
     await action({
       group: "Backups",
       name: "رفض طلب استعادة (Reject)",
