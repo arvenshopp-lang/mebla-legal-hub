@@ -15,22 +15,26 @@
 ## 2) قرارات معمارية أساسية
 - الرابط: `mehlalex.com/office/{slug}` ويُضاف `/office` إلى مسارات نطاق `www` في `surfaces.ts` (EXTEND). لا نطاق فرعي جديد.
 - Slug لاتيني فقط (a-z0-9-، 3–40 حرفاً)، مع اقتراح تلقائي من الاسم العربي عبر ترجمة صوتية + قائمة أسماء محجوزة (app, api, docs, admin, mehla-admin, office, login…). التحقق على الخادم فقط.
-- نموذج النشر: صف واحد لكل مكتب بحقلي محتوى: `draft` و`published` (JSONB) + `status: draft|published|unpublished` + `suspended_by_platform`. النشر = نسخ draft إلى published (Snapshot) — أبسط نموذج آمن يعطي معاينة حقيقية.
-- الحد الفاصل العام: الزائر لا يقرأ أي جدول تشغيلي. القراءة العامة تمر بـ **دالة خادمية واحدة** تعيد `published` فقط لصف منشور غير موقوف، بحقول من مخطط Zod للعرض العام.
+- نموذج النشر: صف واحد لكل مكتب بحقلي محتوى **شاملين**: `draft` و`published` (JSONB) + `status: draft|published|unpublished` + `suspended_by_platform`. النشر = نسخ draft إلى published (Snapshot).
+- **قاعدة اللقطة الكاملة (تصحيح 1)**: كل إعداد ظاهر للعامة يقع داخل اللقطة نفسها — الهوية والوسائط والخدمات والتواصل وساعات العمل والروابط و**ظهور الفريق** و**إعداد نموذج العملاء المحتملين** و**SEO** و`consent_policy_version`. لا توجد أعمدة إعدادات عامة منفصلة، فلا يمكن لأي تعديل غير منشور أن يغيّر الصفحة المنشورة. يبقى خارج اللقطة فقط: `slug`, `status`, `suspended_by_platform`, `version`, `published_at/by`, والطوابع الزمنية.
+- الحد الفاصل العام: الزائر لا يقرأ أي جدول تشغيلي. القراءة العامة تمر بـ **دالة خادمية واحدة** تعيد `published` فقط لصف منشور غير موقوف **ولمكتب نشط ومستحق**، بحقول من مخطط Zod للعرض العام.
 
 ## 3) تغييرات البيانات (NEW)
 جدول `office_public_pages` (صف واحد لكل `organization_id`، PK = organization_id):
 - `slug` (unique, lowercase)، `status`، `suspended_by_platform`، `suspension_reason`
-- `draft jsonb`, `published jsonb`, `published_at`, `published_by`, `version`
-- `lead_form jsonb` (الحقول المطلوبة، رسالة الشكر، تفعيل الإقرار)، `seo jsonb`، `created_at/updated_at`
+- `draft jsonb`, `published jsonb`, `published_at`, `published_by`, `version`, `created_at/updated_at`
+- **لا** أعمدة `lead_form`/`seo` مستقلة: كلاهما مفاتيح داخل `draft`/`published` (تصحيح 1).
 جدول `office_leads` (NEW — لا بديل قائم):
-- `organization_id`, `full_name`, `phone`, `email`, `city`, `service_key`, `message`, `preferred_contact`, `consent_at`
+- `organization_id`, `full_name`, `phone`, `email`, `city`, `service_key`, `message`, `preferred_contact`
+- إثبات الإقرار (تصحيح 7): `consent_at`, `consent_policy_version` (نسخة صفحة الخصوصية من `platform_content_pages`)، `consent_document_key`, `consent_text_hash` (SHA-256 لنص الإقرار المعروض)، `page_version` (نسخة اللقطة المنشورة وقت الإرسال). الإرسال بلا إقرار صالح يُرفض عند تفعيل الإقرار.
 - `status` (new|contacted|qualified|unqualified|converted|archived)، `assigned_to`, `internal_note`
 - `source` (office_page)، `channel` (instagram|tiktok|x|google|qr|direct|campaign)، `utm jsonb`، `referrer_host`
-- `converted_client_id` (FK → clients, ON DELETE SET NULL)، `dedupe_hash`، `ip_hash`، `created_at`
-جدول `office_page_events` (NEW، مجمَّع بلا هوية): `organization_id, day, kind (view|whatsapp|call|email|map|lead|service_click), channel, count` بمفتاح فريد مركّب + upsert. لا تخزين IP ولا user agent.
+- `converted_client_id` (FK → clients, ON DELETE SET NULL)، `dedupe_hash`، `dedupe_window` (عمود مُولَّد: نافذة 10 دقائق)، `ip_hash`، `created_at`
+- **منع التكرار الذرّي (تصحيح 4)**: فهرس **فريد** `unique(organization_id, dedupe_hash, dedupe_window)` حيث `dedupe_hash = sha256(slug|phone|email|message)` و`dedupe_window = to_timestamp(floor(extract(epoch from created_at)/600)*600)` كعمود مُولَّد ثابت. الخادم ينفّذ `INSERT ... ON CONFLICT DO NOTHING RETURNING id`؛ عند عدم الإرجاع يقرأ الصف القائم ويعيد نفس نتيجة النجاح (Idempotent). يغطي هذا النقر المزدوج والطلبات المتزامنة وإعادة المحاولة بدون أي اعتماد على حالة العميل، ويمنع تكرار حدث الإشعار بنفس المعرف.
+جدول `office_page_events` (NEW، مجمَّع بلا هوية): `organization_id, day, kind (view|whatsapp|call|email|map|lead|service_click), channel, count` بمفتاح فريد مركّب. لا تخزين IP ولا user agent.
+- **عدّادات ذرّية (تصحيح 5)**: كل حدث = عبارة SQL واحدة `INSERT ... ON CONFLICT (organization_id, day, kind, channel) DO UPDATE SET count = office_page_events.count + 1` عبر دالة `public.bump_office_page_event(...)` (SECURITY DEFINER, `search_path=public`, تُنفَّذ من الخادم فقط). لا قراءة-ثم-كتابة في كود التطبيق، فلا تُفقد أي زيادة تحت التزامن.
 - خدمات المكتب: **قائمة ثابتة مشتركة** في `src/lib/office-page.shared.ts` (لا يوجد Taxonomy قائم للتخصصات في المخطط) + خدمات مخصصة نصية داخل `draft`.
-- فهارس: `office_public_pages(slug) unique`, `office_leads(organization_id, created_at desc)`, `office_leads(organization_id, dedupe_hash)`, حدث تجميعي unique.
+- فهارس: `office_public_pages(slug) unique`, `office_leads(organization_id, created_at desc)`, **`office_leads(organization_id, dedupe_hash, dedupe_window) unique`**, حدث تجميعي unique.
 - GRANT: `authenticated` + `service_role` فقط على الجدولين الأولين والثالث (لا `anon` إطلاقاً؛ القراءة العامة عبر `supabaseAdmin` داخل دالة خادمية).
 
 ## 4) RLS وعزل المستأجرين
@@ -40,8 +44,11 @@
 
 ## 5) دوال الخادم (REUSE أنماط قائمة)
 `src/lib/office-page.functions.ts`: `getOfficePageAdmin`, `saveOfficePageDraft`, `checkSlug`, `publishOfficePage`, `unpublishOfficePage`, `listOfficeLeads`, `updateOfficeLead`, `convertLeadToClient`, `getOfficePageMetrics` — كلها بـ `requireSupabaseAuth` + تحقق دور.
-`src/lib/office-page.public.server.ts`: `readPublishedOfficePage(slug)` عبر `supabaseAdmin` بإرجاع Projection صريح.
-مسار عام للنموذج: `src/routes/api/public/office/lead.ts` (POST) — التحقق بـ Zod، حد حجم 8KB، حد معدل بالـ IP hash + slug (نمط `case_lookup_attempts`)، dedupe بـ hash(slug+phone+message) خلال 10 دقائق، تنظيف النص ومنع أي HTML، ثم إدراج + حدث إشعار.
+`src/lib/office-page.public.server.ts`: `readPublishedOfficePage(slug)` عبر `supabaseAdmin` بإرجاع Projection صريح من `published` فقط.
+- **بوابة حالة المكتب والاستحقاق (تصحيح 6)**: قبل أي إرجاع تتحقق الدالة خادمياً من: `status='published'` و`suspended_by_platform=false` و`organizations.is_active=true` و`suspended_at IS NULL` و**استحقاق الخطة الحالي** (`public_office_page` في خطة الاشتراك النشط) و`subscriptions.status` ضمن (active, trial). أي إخفاق ⇒ إرجاع `null` ⇒ المسار العام يرمي `notFound()` مع `noindex` ورسالة عربية «هذه الصفحة غير متاحة حالياً»، ويُستثنى المكتب من `sitemap.xml`. لا يوجد مسار جانبي يتجاوز هذه البوابة (الرابط المباشر أو الكاش القصير لا يُتيح الوصول؛ `Cache-Control` عام ≤60 ثانية + `must-revalidate`).
+- **معاينة المسودة بالجلسة (تصحيح 3)**: لا يوجد `?preview=<token>` ولا أي سر في سلسلة الاستعلام. المعاينة مسار مصادَق داخل `_authenticated` على نطاق `app`: `src/routes/_authenticated/settings.office-page.preview.tsx` يستدعي `getOfficePageDraftPreview` (`requireSupabaseAuth` + تحقق عضوية المكتب + دور قارئ على الأقل) ويعرض نفس مكونات الصفحة العامة ببيانات `draft`. يُحقن `X-Robots-Tag: noindex` و`Cache-Control: no-store`. زائر غير مصادَق أو عضو مكتب آخر ⇒ 401/403 ولا يحصل على أي جزء من المسودة. لا يُقدَّم أي محتوى مسودة عبر `/office/$slug` مطلقاً.
+مسار عام للنموذج: `src/routes/api/public/office/lead.ts` (POST) — التحقق بـ Zod، حد حجم 8KB، حد معدل بالـ IP hash + slug (نمط `case_lookup_attempts`)، **منع تكرار ذرّي بالفهرس الفريد أعلاه (لا فحص-ثم-إدراج)**، التحقق من نفس بوابة الحالة/الاستحقاق قبل القبول، تسجيل إثبات الإقرار، تنظيف النص ومنع أي HTML، ثم إدراج + حدث إشعار بمفتاح Idempotency = معرف العميل المحتمل.
+- **رفع الوسائط عبر الخادم (تصحيح 8)**: `uploadOfficeMedia` دالة خادمية مصادَقة هي المسار الوحيد للرفع (لا رفع مباشر من المتصفح إلى المستودع). تتحقق قبل التخزين من: الحجم ≤2MB، الامتداد ضمن (jpg/jpeg/png/webp)، MIME المعلن، **Magic bytes** الفعلية، وأبعاد معقولة، مع اسم ملف مُولَّد. تُجرَّد بيانات JPEG الوصفية (APP1/EXIF وGPS وباقي مقاطع APPn) بجافاسكربت خالص عند الاستقبال، وتُزال مقاطع PNG النصية/`eXIf`. لا تعتمد أي خطوة على مكتبات أصلية (بيئة Worker)، ولا يصبح أي ملف عاماً قبل اجتياز هذا التحقق.
 
 ## 6) الصلاحيات (REUSE)
 - `owner/admin` (`canManage`): تعديل، النشر/الإلغاء، تغيير slug، إعدادات النموذج وSEO، ظهور الفريق، عرض التحليلات.
@@ -49,7 +56,9 @@
 - ظهور عضو الفريق **Opt-in** بموافقة الإدارة + حقول عامة صريحة (اسم، مسمى، صورة، نبذة، تخصصات) مأخوذة يدوياً إلى `draft`، لا سحب تلقائي من `profiles`.
 
 ## 7) التخزين
-مستودع عام جديد `office-public-media` (NEW، public=true) للشعار/الغلاف/صور الفريق فقط، بمسار `{organization_id}/...`، سياسات كتابة/حذف على `storage.objects` لأعضاء المكتب فقط. تحقق: MIME + Magic bytes + ≤2MB + امتدادات (jpg/png/webp) + اسم ملف مولّد. مستودع `documents` يبقى خاصاً بلا أي تغيير.
+**دورة حياة وسائط بمرحلتين (تصحيح 2)** — مستودعان جديدان فقط، ولا مساس بمستودعي `documents` و`email-attachments`:
+1. `office-media-draft` (NEW، **private**): كل رفع جديد يهبط هنا بمسار `{organization_id}/draft/...`. لا وصول عام إطلاقاً؛ الإدارة والمعاينة تعرضه بروابط موقّعة قصيرة (≤5 دقائق) تُولَّد داخل دالة خادمية بعد تحقق العضوية. سياسات `storage.objects`: قراءة/كتابة/حذف لأعضاء المكتب فقط.
+2. `office-public-media` (NEW، public=true): **يكتب إليه الخادم وقت النشر فقط**. `publishOfficePage` ينسخ الملفات المرجعية من المسودة إلى `{organization_id}/v{version}/...` ويكتب المسارات النهائية داخل لقطة `published`. الإلغاء (`unpublishOfficePage`) وإعادة النشر يحذفان ملفات النسخ غير المرجعية. لا اعتماد على «رابط غير متوقع» كتصريح: الخصوصية مضمونة بخصوصية المستودع نفسه، والعام يحتوي فقط ما نُشر صراحةً.
 
 ## 8) الإشعارات والبريد والتدقيق
 - حدث `office_lead.created` يُدرج في `notification_events` (EXTEND للقائمة) → داخل التطبيق + بريد Hostinger عبر الطابور القائم مع Idempotency key = معرف العميل المحتمل. لا SMS/WhatsApp مبرمج هنا.
@@ -63,18 +72,32 @@
 
 ## 10) الواجهات
 - عام: `src/routes/office.$slug.tsx` (NEW) + مكونات `src/components/office-page/*` (Hero، خدمات، فريق، ساعات، أزرار CTA، نموذج، تذييل) — RTL أولاً، بنية Tokens الحالية فقط بلا هوية بصرية نهائية.
-- إدارة المكتب: تبويب جديد «الصفحة العامة» داخل `/settings` (EXTEND، بدون إعادة تصميم بقية التبويبات) بأقسام: عام، الهوية، التواصل، الخدمات، الفريق، الروابط، النموذج، SEO، التحليلات، النشر + معاينة داخل iframe بأحجام Desktop/Tablet/Mobile (نمط `design.tsx` المعاين REUSE) عبر `?preview=<token جلسة قصيرة>` يتحقق خادمياً.
+- إدارة المكتب: تبويب جديد «الصفحة العامة» داخل `/settings` (EXTEND، بدون إعادة تصميم بقية التبويبات) بأقسام: عام، الهوية، التواصل، الخدمات، الفريق، الروابط، النموذج، SEO، التحليلات، النشر + معاينة داخل iframe بأحجام Desktop/Tablet/Mobile (نمط `design.tsx` REUSE) تُحمّل **مسار المعاينة المصادَق** داخل `_authenticated` بجلسة مِهلة نفسها — بلا أي توكن في الرابط (تصحيح 3). شارة واضحة «مسودة غير منشورة» + مقارنة «المنشور مقابل المسودة» لكل من SEO والنموذج وظهور الفريق قبل النشر.
 - العملاء المحتملون: قسم داخل نفس التبويب مع تحويل صريح إلى `clients` (لا تحويل تلقائي).
 - لوحة مالك المنصة: بطاقة في `/mehla-admin/organizations` لعرض الحالة/الرابط/الاستخدام + إيقاف لإساءة الاستخدام (مُدقَّق، لا يحذف الإعداد).
 
 ## 11) الاستحقاق والأداء والفشل
-- مفتاح `public_office_page` يُضاف كعلم خطة (EXTEND `platform_plans` + `PlanFeatureKey`) مع تفعيله لكل الخطط في v1 (بلا تسعير) والتحقق خادمياً عند النشر.
+- مفتاح `public_office_page` يُضاف كعلم خطة (EXTEND `platform_plans` + `PlanFeatureKey`) مع تفعيله لكل الخطط في v1 (بلا تسعير)، والتحقق خادمياً **عند النشر وعند كل قراءة عامة وعند كل إرسال نموذج** (تصحيح 6). سقوط الاستحقاق أو إيقاف المكتب يُخفي الصفحة فوراً دون فقدان الإعداد، ويعاد الظهور تلقائياً عند استعادة الحالة.
 - الأداء: استعلام عام واحد بالـ slug على فهرس فريد، `Cache-Control` قصير للصفحة العامة، صور محسّنة و`loading=lazy`، كتابة تحليلات مجمّعة (upsert يومي) وحد معدل على النموذج.
 - رسائل عربية واضحة لكل فشل: slug محجوز/مستخدم، رابط اجتماعي غير صالح، جوال غير صالح، فشل الرفع، نقص حقول عند النشر، صفحة موقوفة/غير منشورة، تجاوز حد الإرسال، إرسال مكرر، تعذّر التحليلات — بلا أي خطأ خام.
 
 ## 12) الترحيل والمخاطر ومصفوفة القبول
-- ترحيل واحد: الجداول الثلاثة + GRANT + RLS + الفهارس + المستودع العام + توسيع أنواع أحداث الإشعارات. لا تعديل مدمّر على جداول قائمة.
+- ترحيل واحد: الجداول الثلاثة + GRANT + RLS + الفهارس (بما فيها الفهرس الفريد لمنع التكرار) + دالة `bump_office_page_event` + مستودعا الوسائط (خاص + عام) + توسيع أنواع أحداث الإشعارات. لا تعديل مدمّر على جداول قائمة ولا على مستودعات المستندات.
 - المخاطر: تسريب حقول غير منشورة (يُغطى بـ Projection صريح)، إساءة استخدام النموذج (حد معدل + dedupe)، الالتباس بين CRM المنصة وعملاء المكتب (جدول منفصل)، خلط ملكية الوسائط (مسار بـ organization_id).
 - مصفوفة قبول لاحقة تغطي: مسودة/معاينة/نشر/وصول عام/إلغاء/إعادة نشر، تفرد وأمن slug، أزرار التواصل، الخدمات، ظهور الفريق، الوسائط، SEO والمشاركة الاجتماعية، QR، إرسال العميل المحتمل وربطه وتحويله، الإشعارات والبريد، أحداث التحليلات وUTM، 320/390/768/1024/1440، RBAC وRLS وعزل المستأجرين، عزل الحقول العامة/الخاصة، حد المعدل، XSS، أمن الرفع، التدقيق، الاستحقاق، التزامن، والتراجع — مع اختبارات صريحة: ORG_A لا تعدّل/تقرأ ORG_B، الزائر لا يصل للمسودة ولا للعملاء/القضايا/المستندات، حمولة خبيثة مرفوضة، تكرار سريع مضبوط، صفحة موقوفة لا تُتجاوز بالرابط.
 - QR: يُولَّد في الواجهة من الرابط العام (`qrcode` كحزمة خفيفة) وتنزيل PNG/SVG — بلا أي بنية تحتية أو جدول.
 - تبعيات يدوية: لا شيء خارجي مطلوب لـ v1 (البريد والتحليلات مربوطان مسبقاً).
+
+## 13) التصحيحات المعتمدة وأثر كل تصحيح
+| # | التصحيح | Schema | Server fns | Storage | RLS | القراءة العامة | تدفق النشر | مصفوفة الاختبار |
+|---|---|---|---|---|---|---|---|---|
+| 1 | لقطة نشر شاملة لكل الإعدادات العامة | نعم (حذف أعمدة `lead_form`/`seo` المنفصلة من التصميم) | نعم | لا | لا | نعم | نعم | نعم |
+| 2 | خصوصية وسائط المسودة (مستودع خاص + نسخ عند النشر) | لا | نعم | نعم (مستودعان جديدان) | نعم (سياسات `storage.objects`) | نعم | نعم | نعم |
+| 3 | معاينة بالجلسة بلا توكن في الرابط | لا | نعم | لا | لا | لا (مسار منفصل مصادَق) | لا | نعم |
+| 4 | منع تكرار العملاء المحتملين ذرّياً | نعم (عمود مُولَّد + فهرس فريد) | نعم | لا | لا | لا | لا | نعم |
+| 5 | عدّادات تحليلات ذرّية في القاعدة | نعم (دالة + قيد فريد) | نعم | لا | لا | لا | لا | نعم |
+| 6 | بوابة حالة المكتب والاستحقاق | لا | نعم | لا | لا | نعم | نعم | نعم |
+| 7 | إثبات نسخة الإقرار | نعم (4 أعمدة) | نعم | لا | لا | نعم (نص الإقرار من اللقطة) | نعم | نعم |
+| 8 | تحقق الرفع خادمياً وتجريد EXIF | لا | نعم | نعم | لا | لا | نعم | نعم |
+
+إضافات مصفوفة القبول الناتجة: تعديل SEO/النموذج/ظهور الفريق دون نشر لا يغيّر الصفحة المنشورة؛ صورة مسودة غير قابلة للجلب عاماً قبل النشر؛ عضو مكتب آخر وزائر غير مصادَق لا يريان المعاينة؛ 20 إرسالاً متزامناً متطابقاً ⇒ عميل محتمل واحد وإشعار واحد؛ 200 حدث متزامن ⇒ العدّاد = 200 بلا فقدان؛ إيقاف المكتب/سقوط الاستحقاق ⇒ الصفحة غير متاحة فوراً واستثناؤها من sitemap؛ الإقرار يخزّن نسخة الخصوصية وبصمة النص؛ رفع ملف بامتداد مضلل أو ببايتات غير مطابقة مرفوض، وصورة منشورة بلا EXIF/GPS.
