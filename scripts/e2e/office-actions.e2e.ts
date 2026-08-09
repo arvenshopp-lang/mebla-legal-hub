@@ -377,7 +377,9 @@ async function portalFlow(ctx: Awaited<ReturnType<typeof setup>>) {
     items: ["صورة الهوية", "عقد الإيجار"],
   });
   const reqId = /"id"[\s\S]{0,30}?"([0-9a-f-]{36})"/.exec(created.raw)?.[1] ?? null;
-  const token = /"token"[\s\S]{0,40}?"([A-Za-z0-9_-]{16,})"/.exec(created.raw)?.[1] ?? null;
+  // استجابة دوال الخادم مُسلسَلة (المفاتيح والقيم منفصلة)، فنستخرج التوكن بطوله وصيغته.
+  const token =
+    (created.raw.match(/[A-Za-z0-9_-]{40,48}={0,2}/g) ?? []).find((v) => v.length >= 43) ?? null;
   check("المحامي أنشأ رابط رفع مستندات للعميل", created.ok && !!reqId && !!token, created.ok ? "" : created.message.slice(0, 140));
   if (!reqId || !token) return;
 
