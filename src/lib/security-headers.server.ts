@@ -9,7 +9,9 @@ const CSP = [
   "base-uri 'self'",
   // عارض PDF المدمج في المتصفح يُحمّل النسخة المائية كـ plugin document من نفس
   // الأصل؛ منع object-src كلياً يجعل المتصفح يعرض "تعذّر تحميل المستند".
-  "object-src 'self'",
+  // عارض PDF المدمج يحمّل النسخة المائية المؤقتة من blob: داخل إطار معزول،
+  // ومنع blob: هنا يجعل المتصفح يرفض رسم المستند.
+  "object-src 'self' blob:",
   "frame-src 'self' blob:",
   "form-action 'self'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
