@@ -88,6 +88,9 @@ function LogsPage() {
   const [columns, setColumns] = useState<string[]>(AUDIT_EXPORT_DEFAULT_KEYS);
   const [includeCount, setIncludeCount] = useState(true);
   const [showTimezone, setShowTimezone] = useState(true);
+  const [exportScope, setExportScope] = useState<"all" | "range" | "page">("all");
+  const [rangeFrom, setRangeFrom] = useState("1");
+  const [rangeTo, setRangeTo] = useState("500");
 
   const debounced = useDebounced(search);
   const debouncedActor = useDebounced(actor);
@@ -118,7 +121,20 @@ function LogsPage() {
 
   const exportFn = useServerFn(exportAuditLogs);
   const exportCsv = useMutation({
-    mutationFn: () => exportFn({ data: { ...filters, columns, includeCount, showTimezone } }),
+    mutationFn: () =>
+      exportFn({
+        data: {
+          ...filters,
+          columns,
+          includeCount,
+          showTimezone,
+          scope: exportScope,
+          rangeFrom: Math.max(1, Number(rangeFrom) || 1),
+          rangeTo: Math.max(1, Number(rangeTo) || 1),
+          page,
+          pageSize: PAGE_SIZE,
+        },
+      }),
     onSuccess: (res) => {
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -128,7 +144,7 @@ function LogsPage() {
       a.click();
       URL.revokeObjectURL(url);
       setExportOpen(false);
-      toast.success("تم تصدير سجل التدقيق.");
+      toast.success(`تم تصدير ${res.rows} سجلاً من سجل التدقيق.`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
