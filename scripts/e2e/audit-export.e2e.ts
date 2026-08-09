@@ -95,7 +95,16 @@ function parseExportPayload(raw: string): { csv: string; rows: number } {
       const values: unknown[] = node.p.v;
       const csv = unwrap(values[keys.indexOf("csv")]);
       const rows = unwrap(values[keys.indexOf("rows")]);
-      if (typeof csv === "string") return { csv, rows: Number(rows) };
+      if (typeof csv === "string") {
+        // seroval يعيد النص بصيغة سلسلة مُهرّبة (\" و \r\n)، فنُفكّها لنقرأ الملف كما ينزله المتصفح.
+        let text = csv;
+        try {
+          text = JSON.parse(`"${csv}"`) as string;
+        } catch {
+          /* نص خام بلا تهريب */
+        }
+        return { csv: text, rows: Number(rows) };
+      }
     }
     for (const child of Array.isArray(node) ? node : Object.values(node)) {
       const found = walk(child);
