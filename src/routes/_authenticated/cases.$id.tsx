@@ -335,7 +335,7 @@ function Page() {
                 }}
                 aria-label="إضافة طرف"
                 title="إضافة طرف"
-                className="rounded-lg p-1.5 hover:bg-surface-muted"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
               >
                 <Plus className="h-4 w-4" />
               </button>

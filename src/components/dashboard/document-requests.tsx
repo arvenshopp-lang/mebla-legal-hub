@@ -131,7 +131,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
                 <div className="flex gap-1">
                   <button
                     onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                    className="rounded-lg p-1.5 hover:bg-surface"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface md:min-h-0 md:min-w-0"
                     title="السجل"
                   >
                     {expanded === r.id ? (

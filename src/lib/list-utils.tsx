@@ -31,7 +31,9 @@ const BTN_VARIANTS: Record<BtnVariant, string> = {
 };
 
 const BTN_SIZES: Record<BtnSize, string> = {
-  sm: "h-9 px-3 text-[13px]",
+  // على الجوال يرتفع الزر الصغير إلى 44px لتحقيق الحد الأدنى لهدف اللمس،
+  // ويعود إلى مقاسه المضغوط على الشاشات الأكبر حيث المؤشر دقيق.
+  sm: "h-11 px-3 text-[13px] md:h-9",
   md: "h-11 px-4 text-sm",
   lg: "h-12 px-6 text-[15px]",
   icon: "h-11 w-11 p-0",
@@ -355,7 +357,10 @@ export function IconBtn({
       disabled={props.disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        "rounded-[var(--radius-s)] p-1.5 transition-colors duration-[var(--duration-fast)]",
+        "inline-flex items-center justify-center rounded-[var(--radius-s)] p-1.5",
+        // هدف لمس 44px على الجوال، ومقاس مضغوط داخل الجداول على سطح المكتب.
+        "min-h-11 min-w-11 md:min-h-0 md:min-w-0",
+        "transition-colors duration-[var(--duration-fast)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         "disabled:opacity-50",
         tone === "danger"

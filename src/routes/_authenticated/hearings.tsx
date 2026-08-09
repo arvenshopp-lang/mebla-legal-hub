@@ -122,9 +122,7 @@ function Page() {
           .order("id", { ascending: false });
       // مفتاح فرز ثانوي ثابت يمنع تكرار الصفوف بين صفحات الترقيم
       else
-        query = query
-          .order("hearing_date", { ascending: false })
-          .order("id", { ascending: false });
+        query = query.order("hearing_date", { ascending: false }).order("id", { ascending: false });
       const { data, error, count } = await query;
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
@@ -262,7 +260,7 @@ function Page() {
                               }}
                               aria-label="تعديل"
                               title="تعديل"
-                              className="rounded-lg p-1.5 hover:bg-surface-muted"
+                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>

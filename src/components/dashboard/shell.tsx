@@ -263,7 +263,7 @@ export function DashboardShell({
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:px-6">
             <div className="flex min-w-0 items-center gap-2">
               <button
-                className="-m-1 rounded-[var(--radius-s)] p-2 text-muted-foreground hover:bg-surface-muted lg:hidden"
+                className="-m-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-s)] p-2 text-muted-foreground hover:bg-surface-muted lg:hidden"
                 onClick={() => setMobileOpen(true)}
                 aria-label="فتح القائمة"
               >
