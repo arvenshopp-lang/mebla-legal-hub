@@ -7,11 +7,9 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
-  // عارض PDF المدمج في المتصفح يُحمّل النسخة المائية كـ plugin document من نفس
-  // الأصل؛ منع object-src كلياً يجعل المتصفح يعرض "تعذّر تحميل المستند".
-  // عارض PDF المدمج يحمّل النسخة المائية المؤقتة من blob: داخل إطار معزول،
-  // ومنع blob: هنا يجعل المتصفح يرفض رسم المستند.
-  "object-src 'self' blob:",
+  // لا يوجد في التطبيق أي <object>/<embed>؛ النسخة المائية تُعرض داخل <iframe>
+  // من blob: فقط، لذلك تبقى object-src محصورة بالأصل بلا توسعة blob:.
+  "object-src 'self'",
   "frame-src 'self' blob:",
   "form-action 'self'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
@@ -50,8 +48,9 @@ function isSecureRequest() {
  */
 const BINARY_CSP = [
   "default-src 'none'",
-  // النسخة المائية تُعرض من blob: بعد تنزيلها في المتصفح
-  "object-src 'self' blob:",
+  // مستند الـ PDF نفسه لا يُدرج أي مورد خارجي؛ العرض يتم في المتصفح من blob:
+  // داخل إطار من نفس الأصل، فلا حاجة لتوسعة object-src.
+  "object-src 'self'",
   "img-src 'self' data: blob:",
   "style-src 'unsafe-inline'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
