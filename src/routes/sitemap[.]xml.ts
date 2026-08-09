@@ -21,6 +21,16 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/register", changefreq: "yearly", priority: "0.5" },
         ];
 
+        // الصفحات العامة المنشورة للمكاتب (المنشور فقط، وبلا أي بيانات خاصة).
+        try {
+          const { listPublishedOfficeSlugs } = await import("@/lib/office-public.server");
+          for (const slug of await listPublishedOfficeSlugs()) {
+            entries.push({ path: `/office/${slug}`, changefreq: "weekly", priority: "0.8" });
+          }
+        } catch {
+          // خريطة الموقع الأساسية تبقى صالحة حتى لو تعذّر جلب الصفحات العامة.
+        }
+
         const urls = entries.map((e) =>
           [
             `  <url>`,
