@@ -22,7 +22,12 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
-import { exportAuditLogs, listAuditLogs, type AuditLogRow } from "@/lib/admin-ops.functions";
+import {
+  exportAuditLogs,
+  listAuditFacets,
+  listAuditLogs,
+  type AuditLogRow,
+} from "@/lib/admin-ops.functions";
 
 export const Route = createFileRoute("/mehla-admin/logs")({
   head: () => ({
@@ -69,6 +74,7 @@ function LogsPage() {
   const [search, setSearch] = useState("");
   const [actor, setActor] = useState("");
   const [entity, setEntity] = useState("all");
+  const [action, setAction] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
@@ -78,27 +84,32 @@ function LogsPage() {
   const debouncedActor = useDebounced(actor);
 
   const listFn = useServerFn(listAuditLogs);
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-logs", debounced, debouncedActor, entity, from, to, page],
-    queryFn: () =>
-      listFn({
-        data: {
-          search: entity === "all" ? debounced : `${debounced}`,
-          actor: debouncedActor,
-          action: "",
-          from,
-          to,
-          page,
-          pageSize: PAGE_SIZE,
-        },
-      }),
+  const facetsFn = useServerFn(listAuditFacets);
+  const { data: facets } = useQuery({
+    queryKey: ["admin-logs-facets"],
+    queryFn: () => facetsFn({ data: undefined }),
+    staleTime: 5 * 60_000,
   });
 
-  const rows = (data?.rows ?? []).filter((r) => entity === "all" || r.entity_type === entity);
+  const filters = {
+    search: debounced,
+    actor: debouncedActor,
+    action: action === "all" ? "" : action,
+    entity: entity === "all" ? "" : entity,
+    from,
+    to,
+  };
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["admin-logs", filters, page],
+    queryFn: () => listFn({ data: { ...filters, page, pageSize: PAGE_SIZE } }),
+  });
+
+  const rows = data?.rows ?? [];
 
   const exportFn = useServerFn(exportAuditLogs);
   const exportCsv = useMutation({
-    mutationFn: () => exportFn({ data: undefined }),
+    mutationFn: () => exportFn({ data: filters }),
     onSuccess: (res) => {
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -158,9 +169,22 @@ function LogsPage() {
               className={`${inputCls} h-11 w-auto min-w-[150px]`}
             >
               <option value="all">كل الأنواع</option>
-              {Object.entries(ENTITY_LABELS).map(([v, l]) => (
+              {(facets?.entities ?? Object.keys(ENTITY_LABELS)).map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {ENTITY_LABELS[v] ?? v}
+                </option>
+              ))}
+            </select>
+            <select
+              value={action}
+              onChange={(e) => resetPage(setAction)(e.target.value)}
+              aria-label="نوع العملية"
+              className={`${inputCls} h-11 w-auto min-w-[170px]`}
+            >
+              <option value="all">كل العمليات</option>
+              {(facets?.actions ?? Object.keys(ACTION_LABELS)).map((v) => (
+                <option key={v} value={v}>
+                  {ACTION_LABELS[v] ?? v}
                 </option>
               ))}
             </select>

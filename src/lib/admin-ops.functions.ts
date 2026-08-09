@@ -366,6 +366,7 @@ export const listAuditLogs = createServerFn({ method: "POST" })
       .object({
         search: z.string().trim().max(120).default(""),
         action: z.string().trim().max(60).default(""),
+        entity: z.string().trim().max(60).default(""),
         actor: z.string().trim().max(160).default(""),
         from: z.string().trim().max(40).default(""),
         to: z.string().trim().max(40).default(""),
@@ -389,6 +390,7 @@ export const listAuditLogs = createServerFn({ method: "POST" })
     if (data.search)
       q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
     if (data.action) q = q.eq("action", data.action);
+    if (data.entity) q = q.eq("entity_type", data.entity);
     if (data.actor) q = q.ilike("actor_email", `%${data.actor}%`);
     if (data.from) q = q.gte("created_at", new Date(data.from).toISOString());
     if (data.to) q = q.lte("created_at", new Date(`${data.to}T23:59:59`).toISOString());
@@ -418,17 +420,38 @@ export type AuditLogRow = {
 
 export const exportAuditLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        search: z.string().trim().max(120).default(""),
+        action: z.string().trim().max(60).default(""),
+        entity: z.string().trim().max(60).default(""),
+        actor: z.string().trim().max(160).default(""),
+        from: z.string().trim().max(40).default(""),
+        to: z.string().trim().max(40).default(""),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "audit.export");
     const db = await g.admin();
-    const { data: rows } = await db
+    let q = db
       .from("admin_audit_logs")
       .select(
         "created_at, actor_email, action, entity_type, entity_id, description, ip, device, browser",
       )
       .order("created_at", { ascending: false })
       .limit(5000);
+    if (data.search)
+      q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
+    if (data.action) q = q.eq("action", data.action);
+    if (data.entity) q = q.eq("entity_type", data.entity);
+    if (data.actor) q = q.ilike("actor_email", `%${data.actor}%`);
+    if (data.from) q = q.gte("created_at", new Date(data.from).toISOString());
+    if (data.to) q = q.lte("created_at", new Date(`${data.to}T23:59:59`).toISOString());
+    const { data: rows, error } = await q;
+    if (error) throw new Error("تعذّر تصدير سجل التدقيق.");
     const csv = buildCsv(
       ["التاريخ", "المنفّذ", "العملية", "النوع", "المعرّف", "الوصف", "IP", "الجهاز", "المتصفح"],
       ((rows ?? []) as Record<string, unknown>[]).map((r) => [
@@ -449,6 +472,30 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
       description: `تصدير ${(rows ?? []).length} سجلاً من سجل التدقيق`,
     });
     return { csv };
+  });
+
+export const listAuditFacets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const g = await guard();
+    await g.requireStaff(context.supabase, context.userId, "audit.read");
+    const db = await g.admin();
+    const { data: rows, error } = await db
+      .from("admin_audit_logs")
+      .select("action, entity_type")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error) throw new Error("تعذّر جلب عوامل تصفية سجل التدقيق.");
+    const actions = new Set<string>();
+    const entities = new Set<string>();
+    for (const r of (rows ?? []) as { action: string; entity_type: string }[]) {
+      if (r.action) actions.add(r.action);
+      if (r.entity_type) entities.add(r.entity_type);
+    }
+    return {
+      actions: [...actions].sort(),
+      entities: [...entities].sort(),
+    };
   });
 
 /* ---------------------------------------------------------- الأدوار المخصصة */
