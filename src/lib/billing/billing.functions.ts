@@ -24,7 +24,9 @@ import {
   matchEntrySchema,
   noteSchema,
   paginationSchema,
+  parseBillingInput,
   providerConfigSchema,
+  createProviderPaymentSchema,
   providerEnabledSchema,
   providerCodeSchema,
   providerSecretsSchema,
@@ -47,7 +49,7 @@ import {
 
 export const billingListInvoices = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => invoiceFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(invoiceFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -84,7 +86,7 @@ export const billingInvoiceDetail = createServerFn({ method: "POST" })
 
 export const billingOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => rangeSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(rangeSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -100,7 +102,7 @@ export const billingOverview = createServerFn({ method: "POST" })
 
 export const billingReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => rangeSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(rangeSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -116,7 +118,7 @@ export const billingReports = createServerFn({ method: "POST" })
 
 export const billingListPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(listFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -132,7 +134,7 @@ export const billingListPayments = createServerFn({ method: "POST" })
 
 export const billingListAttempts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(listFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -148,7 +150,7 @@ export const billingListAttempts = createServerFn({ method: "POST" })
 
 export const billingListRefunds = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(listFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -164,7 +166,7 @@ export const billingListRefunds = createServerFn({ method: "POST" })
 
 export const billingListCreditNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => paginationSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(paginationSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -180,7 +182,7 @@ export const billingListCreditNotes = createServerFn({ method: "POST" })
 
 export const billingListReconciliations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(listFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -231,7 +233,7 @@ export const billingListSettings = createServerFn({ method: "POST" })
 
 export const billingListWebhooks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => webhookFiltersSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(webhookFiltersSchema, data))
   .handler(async ({ data, context }) => {
     const [hooks, ctxMod] = await Promise.all([
       import("./webhooks.server"),
@@ -249,7 +251,7 @@ export const billingListWebhooks = createServerFn({ method: "POST" })
 
 export const billingSaveDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => draftSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(draftSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -270,7 +272,7 @@ export const billingSaveDraft = createServerFn({ method: "POST" })
 
 export const billingIssueInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => issueSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(issueSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -286,7 +288,7 @@ export const billingIssueInvoice = createServerFn({ method: "POST" })
 
 export const billingCancelInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => reasonSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(reasonSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -303,7 +305,7 @@ export const billingCancelInvoice = createServerFn({ method: "POST" })
 
 export const billingRecordPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => recordPaymentSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(recordPaymentSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -319,7 +321,7 @@ export const billingRecordPayment = createServerFn({ method: "POST" })
 
 export const billingDecidePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => decisionSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(decisionSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -341,7 +343,7 @@ export const billingDecidePayment = createServerFn({ method: "POST" })
 
 export const billingCreateRefund = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => refundCreateSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(refundCreateSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -358,7 +360,7 @@ export const billingCreateRefund = createServerFn({ method: "POST" })
 
 export const billingDecideRefund = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => refundDecisionSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(refundDecisionSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -375,7 +377,7 @@ export const billingDecideRefund = createServerFn({ method: "POST" })
 
 export const billingCreateCreditNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => creditNoteSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(creditNoteSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -391,7 +393,7 @@ export const billingCreateCreditNote = createServerFn({ method: "POST" })
 
 export const billingAddNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => noteSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(noteSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -408,7 +410,7 @@ export const billingAddNote = createServerFn({ method: "POST" })
 
 export const billingAddBankEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => bankEntrySchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(bankEntrySchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -425,7 +427,7 @@ export const billingAddBankEntry = createServerFn({ method: "POST" })
 
 export const billingMatchBankEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => matchEntrySchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(matchEntrySchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -442,7 +444,7 @@ export const billingMatchBankEntry = createServerFn({ method: "POST" })
 
 export const billingIgnoreBankEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => ignoreEntrySchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(ignoreEntrySchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -459,7 +461,7 @@ export const billingIgnoreBankEntry = createServerFn({ method: "POST" })
 
 export const billingClosePeriod = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => closePeriodSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(closePeriodSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -476,7 +478,7 @@ export const billingClosePeriod = createServerFn({ method: "POST" })
 
 export const billingRequestReopen = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => reopenRequestSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(reopenRequestSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -493,7 +495,7 @@ export const billingRequestReopen = createServerFn({ method: "POST" })
 
 export const billingApproveReopen = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => approveReopenSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(approveReopenSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -510,7 +512,7 @@ export const billingApproveReopen = createServerFn({ method: "POST" })
 
 export const billingSaveProviderSecrets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => providerSecretsSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(providerSecretsSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -531,7 +533,7 @@ export const billingSaveProviderSecrets = createServerFn({ method: "POST" })
 
 export const billingTestProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => providerCodeSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(providerCodeSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -549,9 +551,25 @@ export const billingTestProvider = createServerFn({ method: "POST" })
     }
   });
 
+export const billingCreateProviderPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => parseBillingInput(createProviderPaymentSchema, data))
+  .handler(async ({ data, context }) => {
+    const [engine, ctxMod] = await Promise.all([
+      import("./billing.server"),
+      import("./ctx.server"),
+    ]);
+    const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.record_payment");
+    try {
+      return await engine.createProviderPayment(ctx, data);
+    } catch (error) {
+      throw new Error(ctxMod.safeMessage(error, "تعذّر بدء عملية الدفع الإلكتروني."));
+    }
+  });
+
 export const billingSetProviderEnabled = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => providerEnabledSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(providerEnabledSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -572,7 +590,7 @@ export const billingSetProviderEnabled = createServerFn({ method: "POST" })
 
 export const billingUpdateSequence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => sequenceSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(sequenceSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -593,7 +611,7 @@ export const billingUpdateSequence = createServerFn({ method: "POST" })
 
 export const billingSaveTaxSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => taxSettingsSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(taxSettingsSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -680,7 +698,7 @@ export const billingProviderStats = createServerFn({ method: "POST" })
 
 export const billingUpdateProviderConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => providerConfigSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(providerConfigSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -701,7 +719,7 @@ export const billingUpdateProviderConfig = createServerFn({ method: "POST" })
 
 export const billingPreviewSequence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => sequencePreviewSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(sequencePreviewSchema, data))
   .handler(async ({ data, context }) => {
     const [engine, ctxMod] = await Promise.all([
       import("./billing.server"),
@@ -753,7 +771,7 @@ export const billingRetryWebhook = createServerFn({ method: "POST" })
 
 export const billingDeadLetterWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => webhookActionSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(webhookActionSchema, data))
   .handler(async ({ data, context }) => {
     const [hooks, ctxMod] = await Promise.all([
       import("./webhooks.server"),
@@ -774,7 +792,7 @@ export const billingDeadLetterWebhook = createServerFn({ method: "POST" })
 
 export const billingReopenWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => webhookActionSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(webhookActionSchema, data))
   .handler(async ({ data, context }) => {
     const [hooks, ctxMod] = await Promise.all([
       import("./webhooks.server"),
@@ -874,7 +892,7 @@ export const billingReceiptPdf = createServerFn({ method: "POST" })
 /** كشف حساب مكتب خلال فترة. */
 export const billingStatementPdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => statementSchema.parse(data))
+  .inputValidator((data: unknown) => parseBillingInput(statementSchema, data))
   .handler(async ({ data, context }) => {
     const { engine, ctxMod, pdfEngine, models } = await pdfDeps();
     const ctx = await ctxMod.billingCtx(context.supabase, context.userId, "billing.export");

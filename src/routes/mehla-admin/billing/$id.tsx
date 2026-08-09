@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowRight, Download, FileText, Mail, Receipt } from "lucide-react";
+import { ArrowRight, CreditCard, Download, FileText, Mail, Receipt } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import {
   Btn,
@@ -16,7 +16,9 @@ import {
 } from "@/lib/list-utils";
 import {
   billingAddNote,
+  billingCreateProviderPayment,
   billingInvoiceDetail,
+  billingListSettings,
   billingInvoicePdf,
   billingQuotePdf,
   billingReceiptPdf,
@@ -62,12 +64,60 @@ function InvoiceDetailPage() {
   const statementFn = useServerFn(billingStatementPdf);
   const emailFn = useServerFn(billingSendInvoiceEmail);
   const noteFn = useServerFn(billingAddNote);
+  const settingsFn = useServerFn(billingListSettings);
+  const providerPayFn = useServerFn(billingCreateProviderPayment);
 
   const query = useQuery({
     queryKey: ["billing-invoice", id],
     queryFn: () => detailFn({ data: { id } }),
   });
   const invoice = query.data as InvoiceDetail | undefined;
+
+  // المزوّد الإلكتروني يظهر فقط إذا كان مفعّلاً فعلياً بعد اختبار اتصال ناجح.
+  const providersQuery = useQuery({
+    queryKey: ["billing-settings-providers"],
+    queryFn: () => settingsFn(),
+    enabled: can("billing.record_payment"),
+    staleTime: 60_000,
+  });
+  const onlineProvider = (
+    (providersQuery.data as { providers?: { code: string; is_enabled: boolean; requires_credentials: boolean; connection_status: string }[] } | undefined)?.providers ?? []
+  ).find((p) => p.requires_credentials && p.is_enabled && p.connection_status === "verified");
+
+  const canStartOnlinePayment = Boolean(
+    onlineProvider &&
+      invoice &&
+      invoice.currency === "SAR" &&
+      invoice.status !== "draft" &&
+      invoice.status !== "cancelled" &&
+      Number(invoice.remaining) > 0,
+  );
+
+  const startOnlinePayment = useMutation({
+    mutationFn: () =>
+      providerPayFn({
+        data: {
+          invoiceId: id,
+          code: onlineProvider!.code as "moyasar",
+          idempotencyKey: `pay_${id}_${Date.now().toString(36)}`,
+        },
+      }),
+    onSuccess: (result) => {
+      const payload = result as { redirectUrl: string | null; duplicate: boolean };
+      void qc.invalidateQueries({ queryKey: ["billing-invoice", id] });
+      if (payload.redirectUrl) {
+        window.open(payload.redirectUrl, "_blank", "noopener,noreferrer");
+        toast.success("تم إنشاء رابط السداد وفتحه في نافذة جديدة.");
+        return;
+      }
+      toast.success(
+        payload.duplicate
+          ? "توجد عملية دفع قائمة لهذه الفاتورة."
+          : "تم بدء عملية الدفع، وسيتم تحديث الحالة عند وصول إشعار المزوّد.",
+      );
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const pdf = useMutation({
     mutationFn: () => pdfFn({ data: { id } }),
@@ -249,7 +299,20 @@ function InvoiceDetailPage() {
           </SectionCard>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <SectionCard title="الدفعات">
+            <SectionCard
+              title="الدفعات"
+              actions={
+                canStartOnlinePayment ? (
+                  <Btn
+                    size="sm"
+                    loading={startOnlinePayment.isPending}
+                    onClick={() => startOnlinePayment.mutate()}
+                  >
+                    <CreditCard className="h-4 w-4" aria-hidden /> بدء دفع إلكتروني
+                  </Btn>
+                ) : undefined
+              }
+            >
               {invoice.payments.length === 0 ? (
                 <p className="text-caption p-5">لا توجد دفعات مسجّلة.</p>
               ) : (

@@ -43,6 +43,7 @@ export type WebhookEvent = {
   providerPaymentId: string | null;
   status: ProviderPaymentState["status"] | null;
   amount: number | null;
+  currency: string | null;
   occurredAt: string | null;
   raw: unknown;
 };
@@ -143,6 +144,7 @@ type MoyasarPayment = {
   id?: string;
   status?: string;
   amount?: number;
+  currency?: string;
   invoice_id?: string;
   source?: { transaction_url?: string; message?: string };
   refunded?: number;
@@ -309,6 +311,7 @@ const moyasarProvider: PaymentProvider = {
       providerPaymentId: payment.id ?? null,
       status: mapMoyasarStatus(payment.status, payment.refunded, payment.amount),
       amount: payment.amount ? payment.amount / 100 : null,
+      currency: payment.currency ? String(payment.currency).toUpperCase() : null,
       occurredAt: body.created_at ?? null,
       raw: body,
     };

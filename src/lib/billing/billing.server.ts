@@ -356,7 +356,8 @@ export async function issueInvoice(
   if (!count) throw new Error("لا يمكن إصدار فاتورة بدون بنود.");
 
   const issuedAt = new Date().toISOString();
-  const { error } = await client
+  // انتقال حالة ذرّي: نداءان متزامنان لا ينجحان معاً على نفس الفاتورة.
+  const { data: claimed, error } = await client
     .from("platform_invoices")
     .update({
       status: "pending",
@@ -364,8 +365,11 @@ export async function issueInvoice(
       due_at: input.dueAt ?? invoice.due_at ?? new Date(Date.now() + 14 * 86400_000).toISOString(),
       updated_at: issuedAt,
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .eq("status", "draft")
+    .select("id");
   if (error) fail(error, "تعذّر إصدار الفاتورة.");
+  if (!claimed || claimed.length === 0) throw new Error("الفاتورة مُصدرة مسبقاً.");
   await client.rpc("recalc_invoice", { _invoice_id: input.id });
 
   let emailed = false;
@@ -1557,6 +1561,196 @@ export async function runDueReminders(): Promise<{ dueSoon: number; overdue: num
   return { dueSoon: (dueSoon ?? []).length, overdue: (overdue ?? []).length };
 }
 
+/* --------------------------------------- إنشاء عملية دفع عبر مزوّد خارجي */
+
+/**
+ * بدء عملية دفع عند مزوّد خارجي لفاتورة مُصدرة. لا يوجد أي منطق خاص بمزوّد هنا:
+ * كل التفاصيل داخل الموصل (Adapter). العملة الوحيدة المدعومة حالياً هي الريال
+ * السعودي، والمزوّد يجب أن يكون مفعّلاً بعد اختبار اتصال ناجح.
+ */
+export async function createProviderPayment(
+  ctx: BillingCtx,
+  input: { invoiceId: string; code: string; idempotencyKey: string },
+): Promise<{
+  paymentId: string;
+  duplicate: boolean;
+  status: string;
+  redirectUrl: string | null;
+  providerPaymentId: string | null;
+}> {
+  const client = await db();
+  const provider = getProvider(input.code);
+  if (!provider.requiresCredentials)
+    throw new Error("هذا المزوّد للتحصيل اليدوي ولا يبدأ عمليات دفع خارجية.");
+
+  const config = await providerConfig(input.code);
+  if (!config["is_enabled"]) throw new Error("مزوّد الدفع غير مفعّل.");
+  if (config["connection_status"] !== "verified")
+    throw new Error("لا يمكن بدء الدفع قبل نجاح اختبار اتصال المزوّد.");
+
+  const creds = await providerCredentials(input.code);
+  const missing = provider.requiredCredentialKeys.filter((key) => !creds[key]);
+  if (missing.length) throw new Error("بعض مفاتيح المزوّد المطلوبة غير محفوظة بعد.");
+
+  // منع التكرار: نفس مفتاح التفرّد يعيد نفس الدفعة بدل إنشاء عملية ثانية.
+  const { data: existing } = await client
+    .from("platform_payments")
+    .select("id, status, provider_payment_id, metadata")
+    .eq("correlation_id", input.idempotencyKey)
+    .maybeSingle();
+  if (existing)
+    return {
+      paymentId: existing.id as string,
+      duplicate: true,
+      status: existing.status as string,
+      redirectUrl:
+        ((existing.metadata as BillingRow | null)?.["redirect_url"] as string | null) ?? null,
+      providerPaymentId: (existing.provider_payment_id as string | null) ?? null,
+    };
+
+  const { data: invoice } = await client
+    .from("platform_invoices")
+    .select("id, number, status, currency, remaining, organization_id")
+    .eq("id", input.invoiceId)
+    .maybeSingle();
+  if (!invoice) throw new Error("الفاتورة غير موجودة.");
+  if (invoice.status === "draft") throw new Error("لا يمكن تحصيل فاتورة قبل إصدارها.");
+  if (invoice.status === "cancelled") throw new Error("الفاتورة ملغاة.");
+  if (String(invoice.currency).toUpperCase() !== "SAR")
+    throw new Error("الدفع الإلكتروني مدعوم بالريال السعودي فقط حالياً.");
+  const amount = round2(Number(invoice.remaining));
+  if (amount <= 0) throw new Error("لا يوجد مبلغ متبقٍ على الفاتورة.");
+
+  const { data: created, error } = await client
+    .from("platform_payments")
+    .insert({
+      invoice_id: invoice.id,
+      organization_id: invoice.organization_id,
+      amount,
+      currency: invoice.currency,
+      method: "provider",
+      provider: input.code,
+      status: "pending",
+      submitted_by: ctx.staff.user_id,
+      submitted_by_email: ctx.staff.email,
+      correlation_id: input.idempotencyKey,
+    })
+    .select("id")
+    .maybeSingle();
+  if (error?.code === "23505") {
+    const { data: winner } = await client
+      .from("platform_payments")
+      .select("id, status, provider_payment_id, metadata")
+      .eq("correlation_id", input.idempotencyKey)
+      .maybeSingle();
+    if (winner)
+      return {
+        paymentId: winner.id as string,
+        duplicate: true,
+        status: winner.status as string,
+        redirectUrl:
+          ((winner.metadata as BillingRow | null)?.["redirect_url"] as string | null) ?? null,
+        providerPaymentId: (winner.provider_payment_id as string | null) ?? null,
+      };
+  }
+  if (error || !created) fail(error, "تعذّر تهيئة عملية الدفع.");
+  const paymentId = created.id as string;
+
+  const started = Date.now();
+  let state: Awaited<ReturnType<typeof provider.createPayment>>;
+  try {
+    state = await provider.createPayment(
+      {
+        invoiceId: invoice.id as string,
+        invoiceNumber: invoice.number as string,
+        amount,
+        currency: String(invoice.currency).toUpperCase(),
+        description: `سداد الفاتورة ${invoice.number}`,
+        correlationId: input.idempotencyKey,
+        ...((config["webhook_path"] as string | null)
+          ? { callbackUrl: String(config["webhook_path"]) }
+          : {}),
+      },
+      creds,
+    );
+  } catch (providerError) {
+    const message = providerError instanceof Error ? providerError.message : "تعذّر الاتصال بالمزوّد.";
+    await client
+      .from("platform_payments")
+      .update({
+        status: "failed",
+        failure_code: "PROVIDER_UNREACHABLE",
+        failure_message: message.slice(0, 300),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", paymentId);
+    await logAttempt({
+      paymentId,
+      invoiceId: invoice.id as string,
+      provider: input.code,
+      operation: "create_payment",
+      status: "failed",
+      errorCode: "PROVIDER_UNREACHABLE",
+      errorMessage: message.slice(0, 300),
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      durationMs: Date.now() - started,
+    });
+    throw new Error("تعذّر بدء عملية الدفع عند المزوّد.");
+  }
+
+  await client
+    .from("platform_payments")
+    .update({
+      status: state.status,
+      provider_payment_id: state.providerPaymentId,
+      provider_reference: state.reference,
+      failure_code: state.failureCode ?? null,
+      failure_message: state.failureMessage ?? null,
+      metadata: { redirect_url: state.redirectUrl ?? null, mode: config["settings"] ?? {} },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", paymentId);
+
+  await logAttempt({
+    paymentId,
+    invoiceId: invoice.id as string,
+    provider: input.code,
+    operation: "create_payment",
+    status: state.status === "failed" ? "failed" : "success",
+    providerStatus: state.status,
+    errorCode: state.failureCode ?? null,
+    errorMessage: state.failureMessage ?? null,
+    correlationId: ctx.correlationId,
+    requestId: ctx.requestId,
+    durationMs: Date.now() - started,
+  });
+
+  await writeAudit(client, ctx.staff, {
+    action: "billing.payment.create_provider",
+    entity_type: "invoice",
+    entity_id: invoice.id as string,
+    description: `بدء عملية دفع إلكتروني للفاتورة ${invoice.number} عبر ${input.code}`,
+    metadata: {
+      correlationId: ctx.correlationId,
+      requestId: ctx.requestId,
+      paymentId,
+      amount,
+      provider: input.code,
+    },
+    before: null,
+    after: { status: state.status, providerPaymentId: state.providerPaymentId },
+  });
+
+  return {
+    paymentId,
+    duplicate: false,
+    status: state.status,
+    redirectUrl: state.redirectUrl ?? null,
+    providerPaymentId: state.providerPaymentId,
+  };
+}
+
 /* ----------------------------------------------- معالجة أحداث المزوّد (Webhook) */
 
 /**
@@ -1575,6 +1769,7 @@ export async function applyProviderPaymentState(input: {
     | "refunded"
     | "partially_refunded";
   amount: number | null;
+  currency?: string | null;
   correlationId: string;
 }): Promise<{ applied: boolean; paymentId: string | null; invoiceId: string | null }> {
   const client = await db();
@@ -1585,6 +1780,20 @@ export async function applyProviderPaymentState(input: {
     .eq("provider_payment_id", input.providerPaymentId)
     .maybeSingle();
   if (!payment) return { applied: false, paymentId: null, invoiceId: null };
+
+  // التحقق من المبلغ والعملة قبل أي تغيير حالة: عدم التطابق عطل يستحق الفشل
+  // والدخول في سجل المحاولات، لا سداداً صامتاً بقيمة خاطئة.
+  if (input.amount !== null && input.amount !== undefined) {
+    const expected = round2(Number(payment.amount));
+    if (Math.abs(round2(input.amount) - expected) > 0.01)
+      throw new Error(
+        `AMOUNT_MISMATCH: مبلغ المزوّد ${round2(input.amount)} لا يطابق مبلغ الدفعة ${expected}.`,
+      );
+  }
+  if (input.currency && String(input.currency).toUpperCase() !== String(payment.currency).toUpperCase())
+    throw new Error(
+      `CURRENCY_MISMATCH: عملة المزوّد ${input.currency} لا تطابق عملة الدفعة ${payment.currency}.`,
+    );
 
   if (payment.status === input.status) {
     return {

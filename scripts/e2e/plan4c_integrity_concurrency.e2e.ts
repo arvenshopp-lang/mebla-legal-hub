@@ -180,15 +180,15 @@ await t("concurrency", "إصدار الفاتورة مرتين بالتوازي 
   ]);
   const okCount = [a, b].filter((r) => r.ok).length;
   expect(okCount <= 1, "نجح الإصدار مرتين لنفس الفاتورة.");
-  const row = await restOne<{ invoice_number: string; status: string }>(
-    `platform_invoices?id=eq.${invoiceId}&select=invoice_number,status`,
+  const row = await restOne<{ number: string; status: string }>(
+    `platform_invoices?id=eq.${invoiceId}&select=number,status`,
   );
-  expect(!!row?.invoice_number, "لم يُسجَّل رقم فاتورة.");
+  expect(!!row?.number, "لم يُسجَّل رقم فاتورة.");
   const dupes = await rest(
-    `platform_invoices?invoice_number=eq.${row!.invoice_number}&select=id`,
+    `platform_invoices?number=eq.${row!.number}&select=id`,
   );
   eq(dupes.length, 1, "فواتير تحمل نفس الرقم");
-  return `رقم=${row!.invoice_number} نجاح=${okCount}`;
+  return `رقم=${row!.number} نجاح=${okCount}`;
 });
 
 await t("concurrency", "تحديثان متزامنان لمهمة واحدة ينتهيان بحالة واحدة متسقة", async () => {

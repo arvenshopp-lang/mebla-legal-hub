@@ -173,6 +173,11 @@ export const providerSecretsSchema = z.object({
   code: z.enum(["moyasar"]),
   secrets: z.record(z.string().min(1).max(60), z.string().trim().min(6).max(500)),
 });
+export const createProviderPaymentSchema = providerCodeSchema.extend({
+  invoiceId: z.string().uuid(),
+  idempotencyKey: z.string().trim().min(8).max(80),
+});
+
 export const providerEnabledSchema = providerCodeSchema.extend({ enabled: z.boolean() });
 
 export const sequenceSchema = z.object({
@@ -230,3 +235,15 @@ export const statementSchema = z.object({
   from: isoDateTime,
   to: isoDateTime,
 });
+
+/**
+ * تحويل أخطاء التحقق إلى رسالة عربية واحدة واضحة، بدل تسريب JSON خام من Zod
+ * إلى واجهة المستخدم أو سجلات الأخطاء.
+ */
+export function parseBillingInput<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data as z.infer<T>;
+  const first = result.error.issues[0];
+  const field = first?.path?.length ? ` (${first.path.join(".")})` : "";
+  throw new Error(`البيانات المُدخلة غير صحيحة${field}. تحقّق من الحقول المطلوبة وأعد المحاولة.`);
+}

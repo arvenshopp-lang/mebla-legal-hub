@@ -259,6 +259,7 @@ type ProcessInput = {
     providerPaymentId: string | null;
     status: string | null;
     amount: number | null;
+    currency?: string | null;
   } | null;
   attempts: number;
 };
@@ -287,6 +288,7 @@ async function processEvent(input: ProcessInput): Promise<Outcome> {
       providerPaymentId: input.event.providerPaymentId,
       status: input.event.status as never,
       amount: input.event.amount,
+      currency: input.event.currency ?? null,
       correlationId: input.correlationId,
     });
     await finish({
@@ -502,6 +504,7 @@ export async function retryWebhookEvent(
     providerPaymentId: string | null;
     status: string | null;
     amount: number | null;
+    currency?: string | null;
   };
   let parsed: ParsedEvent | null = null;
   try {
@@ -523,6 +526,7 @@ export async function retryWebhookEvent(
         providerPaymentId: parsed.providerPaymentId,
         status: parsed.status as never,
         amount: parsed.amount,
+        currency: parsed.currency ?? null,
         correlationId: ctx.correlationId,
       });
       processed = applied.applied;
