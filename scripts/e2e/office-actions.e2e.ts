@@ -356,6 +356,13 @@ async function printFlow(ctx: Awaited<ReturnType<typeof setup>>) {
 async function portalFlow(ctx: Awaited<ReturnType<typeof setup>>) {
   const { actors, kase } = ctx;
 
+  // تشغيل الاختبار مراراً من نفس عنوان IP يستنفد حدّ محاولات روابط الرفع،
+  // فنصفّر محاولات بيئة QA فقط قبل قياس الرحلة العامة.
+  await adminFetch(
+    `${SUPABASE_URL}/rest/v1/case_lookup_attempts?code_attempt=eq.upload-token`,
+    { method: "DELETE" },
+  );
+
   const denied = await call("docreq", "createDocumentRequest", actors.viewer!.token, {
     caseId: kase.id,
     title: `${B4}طلب مستندات`,
