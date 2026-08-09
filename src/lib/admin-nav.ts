@@ -6,6 +6,7 @@
  * تبقى في دوال الخادم (`requireStaff`) وسياسات RLS.
  */
 import {
+  PlugZap,
   Activity,
   BellRing,
   Building2,
@@ -149,6 +150,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         to: "/mehla-admin/integrations",
         label: "مركز التكاملات",
         Icon: Plug,
+        permission: "integrations.read",
+      },
+      {
+        to: "/mehla-admin/providers",
+        label: "جاهزية المزوّدين",
+        Icon: PlugZap,
         permission: "integrations.read",
       },
     ],
