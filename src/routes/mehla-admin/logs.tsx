@@ -149,11 +149,7 @@ function LogsPage() {
       description="سجل غير قابل للتعديل لكل عملية إدارية، يوثّق المنفّذ والقيم قبل/بعد وعنوان الشبكة والجهاز."
       actions={
         canExport ? (
-          <Btn
-            size="sm"
-            variant="outline"
-            onClick={() => setExportOpen(true)}
-          >
+          <Btn size="sm" variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="h-4 w-4" aria-hidden /> تصدير CSV
           </Btn>
         ) : undefined

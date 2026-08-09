@@ -467,7 +467,9 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     const list = (rows ?? []) as Record<string, unknown>[];
     const headers = columns.map((key) => {
       const label = AUDIT_EXPORT_COLUMNS.find((c) => c.key === key)?.label ?? key;
-      return key === "created_at" && data.showTimezone ? `${label} — ${AUDIT_TIMEZONE_LABEL}` : label;
+      return key === "created_at" && data.showTimezone
+        ? `${label} — ${AUDIT_TIMEZONE_LABEL}`
+        : label;
     });
     const preamble: unknown[][] = [];
     if (data.showTimezone) preamble.push(["المنطقة الزمنية", `${AUDIT_TIMEZONE} (UTC+03:00)`]);
