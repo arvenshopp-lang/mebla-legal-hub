@@ -330,6 +330,9 @@ async function main() {
   const pageSize = 25;
   const page = 2;
   const before2 = await latestExportAudit(exporterEmail);
+  // اللقطة المرجعية تُؤخذ قبل الاستدعاء: التصدير نفسه يكتب صفاً في سجل التدقيق فيُزحزح الترقيم.
+  const totalBefore2 = await dbCount({});
+  const snapshot2 = await dbRows({}, (page - 1) * pageSize, pageSize);
   const r2 = await call("exportAuditLogs", token, {
     columns: AUDIT_EXPORT_COLUMNS.map((c) => c.key),
     includeCount: true,
@@ -344,12 +347,8 @@ async function main() {
   const c2 = splitCsv(p2.csv);
   const list2 = await call("listAuditLogs", token, { page, pageSize });
   const listedIds = (list2.raw.match(/"id":/g) ?? []).length;
-  const expected2 = expectedCells(
-    await dbRows({}, (page - 1) * pageSize, pageSize),
-    AUDIT_EXPORT_COLUMNS.map((c) => c.key),
-    false,
-  );
-  const expectedPageRows = Math.max(0, Math.min(pageSize, totalCount - (page - 1) * pageSize));
+  const expected2 = expectedCells(snapshot2, AUDIT_EXPORT_COLUMNS.map((c) => c.key), false);
+  const expectedPageRows = Math.max(0, Math.min(pageSize, totalBefore2 - (page - 1) * pageSize));
   rec("الصفحة الحالية — عدد الصفوف يساوي حجم الصفحة", c2.body.length === expectedPageRows && p2.rows === expectedPageRows, `csv=${c2.body.length} متوقع=${expectedPageRows} (الجدول أعاد ${listedIds >= 1 ? "صفحة مطابقة" : "لا شيء"})`);
   rec("الصفحة الحالية — الصفوف نفس صفوف الصفحة في القاعدة", sameSet(c2.body, expected2));
   rec("الصفحة الحالية — كل الأعمدة التسعة موجودة", c2.headers.length === AUDIT_EXPORT_COLUMNS.length);
@@ -376,6 +375,8 @@ async function main() {
   const rangeFrom = 10;
   const rangeTo = 22;
   const before3 = await latestExportAudit(exporterEmail);
+  const totalBefore3 = await dbCount({});
+  const snapshot3 = await dbRows({}, rangeFrom - 1, rangeTo - rangeFrom + 1);
   const r3 = await call("exportAuditLogs", token, {
     columns: ["created_at", "action", "actor_email"],
     includeCount: true,
@@ -389,8 +390,8 @@ async function main() {
   await Bun.write(`${OUT_DIR}/scope-range.csv`, p3.csv);
   const c3 = splitCsv(p3.csv);
   const cols3 = normalizeAuditColumns(["created_at", "action", "actor_email"]);
-  const expectedRangeRows = Math.max(0, Math.min(rangeTo - rangeFrom + 1, totalCount - (rangeFrom - 1)));
-  const expected3 = expectedCells(await dbRows({}, rangeFrom - 1, rangeTo - rangeFrom + 1), cols3, true);
+  const expectedRangeRows = Math.max(0, Math.min(rangeTo - rangeFrom + 1, totalBefore3 - (rangeFrom - 1)));
+  const expected3 = expectedCells(snapshot3, cols3, true);
   rec("نطاق محدد — العدد يساوي مدى النطاق", c3.body.length === expectedRangeRows && p3.rows === expectedRangeRows, `csv=${c3.body.length} متوقع=${expectedRangeRows}`);
   rec("نطاق محدد — الصفوف تطابق الإزاحة نفسها في القاعدة", sameSet(c3.body, expected3));
   rec("نطاق محدد — الأعمدة الثلاثة المطلوبة فقط", c3.headers.length === cols3.length, c3.headers.join(" | "));
