@@ -429,6 +429,9 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
         actor: z.string().trim().max(160).default(""),
         from: z.string().trim().max(40).default(""),
         to: z.string().trim().max(40).default(""),
+        columns: z.array(z.string().trim().max(40)).max(20).default(AUDIT_EXPORT_DEFAULT_KEYS),
+        includeCount: z.boolean().default(true),
+        showTimezone: z.boolean().default(true),
       })
       .parse(input ?? {}),
   )
@@ -436,6 +439,7 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     const g = await guard();
     const staff = await g.requireStaff(context.supabase, context.userId, "audit.export");
     const db = await g.admin();
+    const columns = normalizeAuditColumns(data.columns);
     let q = db
       .from("admin_audit_logs")
       .select(
@@ -452,24 +456,35 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
     if (data.to) q = q.lte("created_at", new Date(`${data.to}T23:59:59`).toISOString());
     const { data: rows, error } = await q;
     if (error) throw new Error("تعذّر تصدير سجل التدقيق.");
+    const list = (rows ?? []) as Record<string, unknown>[];
+    const headers = columns.map((key) => {
+      const label = AUDIT_EXPORT_COLUMNS.find((c) => c.key === key)?.label ?? key;
+      return key === "created_at" && data.showTimezone ? `${label} — ${AUDIT_TIMEZONE_LABEL}` : label;
+    });
+    const preamble: unknown[][] = [];
+    if (data.showTimezone) preamble.push(["المنطقة الزمنية", `${AUDIT_TIMEZONE} (UTC+03:00)`]);
+    if (data.includeCount) preamble.push(["عدد النتائج", list.length]);
     const csv = buildCsv(
-      ["التاريخ", "المنفّذ", "العملية", "النوع", "المعرّف", "الوصف", "IP", "الجهاز", "المتصفح"],
-      ((rows ?? []) as Record<string, unknown>[]).map((r) => [
-        r.created_at,
-        r.actor_email,
-        r.action,
-        r.entity_type,
-        r.entity_id,
-        r.description,
-        r.ip,
-        r.device,
-        r.browser,
-      ]),
+      headers,
+      list.map((r) =>
+        columns.map((key) =>
+          key === "created_at"
+            ? formatAuditTimestamp(String(r.created_at ?? ""), data.showTimezone)
+            : (r[key] ?? ""),
+        ),
+      ),
+      preamble,
     );
     await g.writeAudit(db, staff, {
       action: "audit.export",
       entity_type: "audit",
-      description: `تصدير ${(rows ?? []).length} سجلاً من سجل التدقيق`,
+      description: `تصدير ${list.length} سجلاً من سجل التدقيق (${columns.length} عموداً)`,
+      after_data: {
+        columns,
+        include_count: data.includeCount,
+        show_timezone: data.showTimezone,
+        rows: list.length,
+      },
     });
     return { csv };
   });
