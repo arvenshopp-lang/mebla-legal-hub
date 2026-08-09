@@ -197,12 +197,7 @@ export function OfficeLeadsPanel({
             ))}
           </ul>
 
-          <Pagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            setPage={setPage}
-          />
+          <Pagination page={page} pageSize={pageSize} total={total} setPage={setPage} />
         </>
       )}
 

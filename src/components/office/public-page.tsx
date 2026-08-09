@@ -107,7 +107,9 @@ export function OfficePublicPage({ view }: { view: OfficePageView }) {
             </div>
           </div>
           {view.headline && (
-            <p className="max-w-3xl break-words text-lg font-semibold sm:text-xl">{view.headline}</p>
+            <p className="max-w-3xl break-words text-lg font-semibold sm:text-xl">
+              {view.headline}
+            </p>
           )}
           {view.tagline && (
             <p className="max-w-3xl break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -395,7 +397,10 @@ function LeadForm({ view, channel }: { view: OfficePageView; channel: string }) 
         </p>
 
         {result?.ok ? (
-          <p role="status" className="mt-4 rounded-[var(--radius-m,0.75rem)] bg-background p-4 text-sm">
+          <p
+            role="status"
+            className="mt-4 rounded-[var(--radius-m,0.75rem)] bg-background p-4 text-sm"
+          >
             {result.message}
           </p>
         ) : (
@@ -519,9 +524,7 @@ function LeadForm({ view, channel }: { view: OfficePageView; channel: string }) 
                 {busy ? "جارٍ الإرسال…" : "إرسال الطلب"}
               </button>
               {view.isPreview && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  الإرسال معطّل في المعاينة.
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">الإرسال معطّل في المعاينة.</p>
               )}
             </div>
           </form>

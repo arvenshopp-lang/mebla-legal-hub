@@ -9,15 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Copy, Download, ImagePlus, Plus, Trash2 } from "lucide-react";
-import {
-  Badge,
-  Btn,
-  ConfirmDialog,
-  FormField,
-  IconBtn,
-  Modal,
-  inputCls,
-} from "@/lib/list-utils";
+import { Badge, Btn, ConfirmDialog, FormField, IconBtn, Modal, inputCls } from "@/lib/list-utils";
 import {
   OFFICE_PAGE_STATUSES,
   OFFICE_PAGE_STATUS_LABELS,
@@ -574,7 +566,9 @@ export function OfficePageEditor({
                     onChange={(e) =>
                       set(
                         "team",
-                        draft.team.map((m, i) => (i === index ? { ...m, name: e.target.value } : m)),
+                        draft.team.map((m, i) =>
+                          i === index ? { ...m, name: e.target.value } : m,
+                        ),
                       )
                     }
                   />

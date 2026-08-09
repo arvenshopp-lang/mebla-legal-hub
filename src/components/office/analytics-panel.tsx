@@ -53,7 +53,9 @@ export function OfficeAnalyticsPanel({ organizationId }: { organizationId: strin
         {(Object.keys(OFFICE_EVENT_LABELS) as OfficeEventKind[]).map((kind) => (
           <div key={kind} className="surface-card p-4">
             <p className="text-caption text-muted-foreground">{OFFICE_EVENT_LABELS[kind]}</p>
-            <p className="mt-1 text-2xl font-bold">{(data.totals[kind] ?? 0).toLocaleString("ar-SA")}</p>
+            <p className="mt-1 text-2xl font-bold">
+              {(data.totals[kind] ?? 0).toLocaleString("ar-SA")}
+            </p>
           </div>
         ))}
         <div className="surface-card p-4">

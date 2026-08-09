@@ -15,7 +15,11 @@ export const Route = createFileRoute("/api/public/office/event")({
         try {
           const raw = await request.text();
           if (raw.length > 512) return noContent;
-          const body = JSON.parse(raw || "{}") as { slug?: string; kind?: string; channel?: string };
+          const body = JSON.parse(raw || "{}") as {
+            slug?: string;
+            kind?: string;
+            channel?: string;
+          };
           const slug = String(body.slug ?? "").slice(0, 40);
           if (!slug) return noContent;
           const { recordPublicEvent } = await import("@/lib/office-public.server");

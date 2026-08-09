@@ -50,7 +50,11 @@ export async function recordPublicEvent(slug: string, kind: string, channel: str
   if (!(OFFICE_EVENT_KINDS as readonly string[]).includes(kind)) return;
   const result = await loadPublishedOfficePage(slug);
   if ("reason" in result) return;
-  await bumpOfficeEvent(result.page.organizationId, kind as OfficeEventKind, normalizeChannel(channel));
+  await bumpOfficeEvent(
+    result.page.organizationId,
+    kind as OfficeEventKind,
+    normalizeChannel(channel),
+  );
 }
 
 /* -------------------------------------------------------------- الوسائط */
@@ -65,7 +69,11 @@ export async function readPublishedMedia(
   if ("reason" in result) return null;
   const { organizationId, snapshot } = result.page;
   const path = `${organizationId}/${rest}`;
-  const referenced = [snapshot.logo_path, snapshot.cover_path, ...snapshot.team.map((m) => m.photo_path)];
+  const referenced = [
+    snapshot.logo_path,
+    snapshot.cover_path,
+    ...snapshot.team.map((m) => m.photo_path),
+  ];
   if (!referenced.includes(path)) return null;
 
   const { data, error } = await supabaseAdmin.storage.from(PUBLIC_BUCKET).download(path);
@@ -120,7 +128,8 @@ export async function submitPublicLead(
   meta: { ip?: string | null; referer?: string | null },
 ): Promise<LeadOutcome> {
   const parsed = officeLeadInputSchema.safeParse(raw);
-  if (!parsed.success) throw new LeadError(parsed.error.issues[0]?.message ?? "تحقق من الحقول المدخلة.");
+  if (!parsed.success)
+    throw new LeadError(parsed.error.issues[0]?.message ?? "تحقق من الحقول المدخلة.");
   const input = parsed.data;
 
   assertSafeText([input.full_name, input.message, input.city, input.email]);
@@ -138,7 +147,8 @@ export async function submitPublicLead(
   if (form.require_email && !input.email) throw new LeadError("البريد الإلكتروني مطلوب.");
   if (form.require_city && !input.city) throw new LeadError("المدينة مطلوبة.");
   if (!phone && !input.email) throw new LeadError("أضف رقم جوال أو بريداً إلكترونياً للتواصل معك.");
-  if (form.consent_required && !input.consent) throw new LeadError("الموافقة على معالجة البيانات مطلوبة.");
+  if (form.consent_required && !input.consent)
+    throw new LeadError("الموافقة على معالجة البيانات مطلوبة.");
 
   const serviceKey =
     input.service_key && snapshot.services.some((s) => s.key === input.service_key)
@@ -166,7 +176,13 @@ export async function submitPublicLead(
   }
 
   const dedupeHash = hash(
-    [organizationId, input.full_name.trim().toLowerCase(), phone, input.email.toLowerCase(), input.message.trim().slice(0, 200)].join("|"),
+    [
+      organizationId,
+      input.full_name.trim().toLowerCase(),
+      phone,
+      input.email.toLowerCase(),
+      input.message.trim().slice(0, 200),
+    ].join("|"),
   );
 
   const { data: inserted, error } = await supabaseAdmin
@@ -219,7 +235,11 @@ export async function submitPublicLead(
     });
   }
 
-  return { ok: true, duplicate: false, message: form.thank_you || "تم استلام طلبك، وسنتواصل معك في أقرب وقت." };
+  return {
+    ok: true,
+    duplicate: false,
+    message: form.thank_you || "تم استلام طلبك، وسنتواصل معك في أقرب وقت.",
+  };
 }
 
 /**
@@ -229,7 +249,13 @@ export async function submitPublicLead(
 async function notifyOfficeOfLead(
   organizationId: string,
   leadId: string,
-  context: { officeName: string; leadName: string; channel: string; serviceKey: string; officeEmail: string },
+  context: {
+    officeName: string;
+    leadName: string;
+    channel: string;
+    serviceKey: string;
+    officeEmail: string;
+  },
 ) {
   try {
     const { data: managers } = await supabaseAdmin

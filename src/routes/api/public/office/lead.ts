@@ -15,10 +15,13 @@ export const Route = createFileRoute("/api/public/office/lead")({
       POST: async ({ request }) => {
         const raw = await request.text();
         if (raw.length > MAX_BODY) {
-          return new Response(JSON.stringify({ ok: false, message: "حجم الطلب أكبر من المسموح." }), {
-            status: 413,
-            headers: HEADERS,
-          });
+          return new Response(
+            JSON.stringify({ ok: false, message: "حجم الطلب أكبر من المسموح." }),
+            {
+              status: 413,
+              headers: HEADERS,
+            },
+          );
         }
         let payload: unknown;
         try {
@@ -47,7 +50,10 @@ export const Route = createFileRoute("/api/public/office/lead")({
         } catch (error) {
           const message =
             error instanceof LeadError ? error.message : "تعذّر إرسال الطلب حالياً، حاول مرة أخرى.";
-          return new Response(JSON.stringify({ ok: false, message }), { status: 400, headers: HEADERS });
+          return new Response(JSON.stringify({ ok: false, message }), {
+            status: 400,
+            headers: HEADERS,
+          });
         }
       },
     },
