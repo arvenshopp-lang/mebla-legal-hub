@@ -148,9 +148,15 @@ export const listNotificationRules = createServerFn({ method: "POST" })
 
 const ruleSchema = z.object({
   id: z.string().uuid().optional().nullable(),
-  topic: z.string().trim().min(2).max(120),
+  topic: z
+    .string()
+    .trim()
+    .regex(
+      /^[a-z0-9_.*]{3,80}$/,
+      "الموضوع يجب أن يكون بحروف لاتينية صغيرة وأرقاماً ونقاطاً فقط (3-80 حرفاً).",
+    ),
   label: z.string().trim().min(2).max(160),
-  channel: z.enum(["email", "sms", "internal", "webhook"]),
+  channel: z.enum(["email", "sms", "in_app"]),
   target: z.string().trim().min(2).max(200),
   templateKey: z.string().trim().max(120).optional().nullable(),
   isEnabled: z.boolean().default(true),

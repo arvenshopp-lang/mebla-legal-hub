@@ -33,9 +33,11 @@ import {
 import {
   BACKUP_KINDS,
   BACKUP_STATUSES,
+  BACKUP_SOURCES,
   RESTORE_STATUSES,
   fmtBytes,
   type BackupKind,
+  type BackupSource,
 } from "@/lib/backups.shared";
 
 export const Route = createFileRoute("/mehla-admin/backups")({
@@ -54,7 +56,7 @@ export const Route = createFileRoute("/mehla-admin/backups")({
 
 type RecordDraft = {
   kind: BackupKind;
-  source: string;
+  source: BackupSource;
   externalId: string;
   sizeBytes: string;
   retentionUntil: string;
@@ -63,7 +65,7 @@ type RecordDraft = {
 
 const emptyRecordDraft: RecordDraft = {
   kind: "manual",
-  source: "",
+  source: "managed_platform",
   externalId: "",
   sizeBytes: "",
   retentionUntil: "",
@@ -127,7 +129,7 @@ function BackupsPage() {
             ? new Date(recordDraft.retentionUntil).toISOString()
             : null,
           notes: recordDraft.notes || null,
-          status: "recorded",
+          status: "completed",
         },
       }),
     onSuccess: () => {
@@ -270,7 +272,7 @@ function BackupsPage() {
                     <tr key={s.id}>
                       <Td>{BACKUP_KINDS[s.kind] ?? s.kind}</Td>
                       <Td className="max-w-[180px] truncate">
-                        {s.source}
+                        {BACKUP_SOURCES[s.source] ?? s.source}
                         {s.external_id && (
                           <span className="text-caption block truncate">{s.external_id}</span>
                         )}
@@ -280,7 +282,7 @@ function BackupsPage() {
                         <div className="flex flex-col gap-1">
                           <Badge
                             tone={
-                              s.status === "verified"
+                              s.status === "completed"
                                 ? "green"
                                 : s.status === "failed"
                                   ? "red"
@@ -289,6 +291,7 @@ function BackupsPage() {
                           >
                             {BACKUP_STATUSES[s.status] ?? s.status}
                           </Badge>
+                          {s.verified_at && <Badge tone="green">تم التحقق منها</Badge>}
                           {expired && <Badge tone="warn">منتهية الاحتفاظ</Badge>}
                         </div>
                       </Td>
@@ -299,7 +302,7 @@ function BackupsPage() {
                         {fmtDateTime(s.created_at)}
                       </Td>
                       <Td>
-                        {s.status !== "verified" ? (
+                        {!s.verified_at ? (
                           <Btn
                             size="sm"
                             variant="outline"
@@ -450,16 +453,20 @@ function BackupsPage() {
               />
             </FormField>
           </div>
-          <FormField
-            label="المصدر"
-            required
-            hint="مثال: Supabase Daily Snapshot / نسخة يدوية عبر pg_dump"
-          >
-            <input
+          <FormField label="المصدر" required hint="مصدر النسخة كما هو معتمد في سياسة المنصة">
+            <select
               className={inputCls}
               value={recordDraft.source}
-              onChange={(e) => setRecordDraft({ ...recordDraft, source: e.target.value })}
-            />
+              onChange={(e) =>
+                setRecordDraft({ ...recordDraft, source: e.target.value as BackupSource })
+              }
+            >
+              {Object.entries(BACKUP_SOURCES).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
           </FormField>
           <FormField label="الرقم المرجعي" hint="اختياري — معرّف النسخة لدى المزوّد">
             <input
@@ -491,7 +498,7 @@ function BackupsPage() {
             </Btn>
             <Btn
               loading={recordMutation.isPending}
-              disabled={!recordDraft.source.trim()}
+              disabled={!recordDraft.source}
               onClick={() => recordMutation.mutate()}
             >
               <DatabaseBackup className="h-4 w-4" aria-hidden /> حفظ
@@ -523,7 +530,8 @@ function BackupsPage() {
               <option value="">بدون تحديد</option>
               {snapshots.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {BACKUP_KINDS[s.kind]} · {s.source} · {fmtDateTime(s.created_at)}
+                  {BACKUP_KINDS[s.kind]} · {BACKUP_SOURCES[s.source] ?? s.source} ·{" "}
+                  {fmtDateTime(s.created_at)}
                 </option>
               ))}
             </select>

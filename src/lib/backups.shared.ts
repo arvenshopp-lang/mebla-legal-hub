@@ -1,25 +1,32 @@
 /** أنواع مشتركة لمركز النسخ الاحتياطية — سجل ووثيقة اعتماد فقط، بلا تنفيذ فعلي للاستعادة. */
 
 export const BACKUP_KINDS = {
-  full: "نسخة كاملة",
-  incremental: "نسخة تفاضلية",
+  daily: "نسخة يومية",
+  weekly: "نسخة أسبوعية",
+  pre_release: "نسخة ما قبل الإصدار",
   manual: "نسخة يدوية",
-  export: "تصدير بيانات",
 } as const;
 export type BackupKind = keyof typeof BACKUP_KINDS;
 
+export const BACKUP_SOURCES = {
+  managed_platform: "منصة الاستضافة المُدارة",
+  manual_export: "تصدير يدوي",
+  external: "مزوّد خارجي",
+} as const;
+export type BackupSource = keyof typeof BACKUP_SOURCES;
+
 export const BACKUP_STATUSES = {
-  recorded: "مسجّلة",
-  verified: "تم التحقق منها",
+  unknown: "غير محددة",
+  in_progress: "قيد التنفيذ",
+  completed: "مكتملة",
   failed: "فشلت",
-  expired: "منتهية الاحتفاظ",
 } as const;
 export type BackupStatus = keyof typeof BACKUP_STATUSES;
 
 export type BackupSnapshot = {
   id: string;
   kind: BackupKind;
-  source: string;
+  source: BackupSource;
   external_id: string | null;
   status: BackupStatus;
   started_at: string | null;
