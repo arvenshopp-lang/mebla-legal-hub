@@ -19,6 +19,7 @@ import {
   FileSearch,
   Printer,
   LifeBuoy,
+  Globe,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
@@ -54,6 +55,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "المكتب",
     items: [
       { to: "/team", label: "الفريق", Icon: UsersRound },
+      { to: "/office-page", label: "الصفحة العامة", Icon: Globe },
       { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
       { to: "/support", label: "الدعم الفني", Icon: LifeBuoy },

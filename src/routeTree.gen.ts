@@ -33,6 +33,7 @@ import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as OfficeSlugRouteImport } from './routes/office.$slug'
 import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
 import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
@@ -76,6 +77,7 @@ import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authent
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
 import { Route as AuthenticatedPrintLogRouteImport } from './routes/_authenticated/print-log'
+import { Route as AuthenticatedOfficePageRouteImport } from './routes/_authenticated/office-page'
 import { Route as AuthenticatedHearingsRouteImport } from './routes/_authenticated/hearings'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
@@ -101,12 +103,15 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
 import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
+import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
+import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
+import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -225,6 +230,11 @@ const UploadTokenRoute = UploadTokenRouteImport.update({
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficeSlugRoute = OfficeSlugRouteImport.update({
+  id: '/office/$slug',
+  path: '/office/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MehlaAdminUsersRoute = MehlaAdminUsersRouteImport.update({
@@ -443,6 +453,11 @@ const AuthenticatedPrintLogRoute = AuthenticatedPrintLogRouteImport.update({
   path: '/print-log',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOfficePageRoute = AuthenticatedOfficePageRouteImport.update({
+  id: '/office-page',
+  path: '/office-page',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHearingsRoute = AuthenticatedHearingsRouteImport.update({
   id: '/hearings',
   path: '/hearings',
@@ -573,6 +588,16 @@ const ApiPublicPaymentsProviderRoute =
     path: '/api/public/payments/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOfficeLeadRoute = ApiPublicOfficeLeadRouteImport.update({
+  id: '/api/public/office/lead',
+  path: '/api/public/office/lead',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOfficeEventRoute = ApiPublicOfficeEventRouteImport.update({
+  id: '/api/public/office/event',
+  path: '/api/public/office/event',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksNotificationsDispatchRoute =
   ApiPublicHooksNotificationsDispatchRouteImport.update({
     id: '/api/public/hooks/notifications-dispatch',
@@ -607,6 +632,12 @@ const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
   path: '/api/public/doc/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOfficeMediaSplatRoute =
+  ApiPublicOfficeMediaSplatRouteImport.update({
+    id: '/api/public/office/media/$',
+    path: '/api/public/office/media/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -635,6 +666,7 @@ export interface FileRoutesByFullPath {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/hearings': typeof AuthenticatedHearingsRoute
+  '/office-page': typeof AuthenticatedOfficePageRoute
   '/print-log': typeof AuthenticatedPrintLogRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -678,6 +710,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/office/$slug': typeof OfficeSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
@@ -701,11 +734,14 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
+  '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -733,6 +769,7 @@ export interface FileRoutesByTo {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/hearings': typeof AuthenticatedHearingsRoute
+  '/office-page': typeof AuthenticatedOfficePageRoute
   '/print-log': typeof AuthenticatedPrintLogRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -776,6 +813,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/office/$slug': typeof OfficeSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
@@ -799,11 +837,14 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
+  '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -834,6 +875,7 @@ export interface FileRoutesById {
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
   '/_authenticated/hearings': typeof AuthenticatedHearingsRoute
+  '/_authenticated/office-page': typeof AuthenticatedOfficePageRoute
   '/_authenticated/print-log': typeof AuthenticatedPrintLogRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -877,6 +919,7 @@ export interface FileRoutesById {
   '/mehla-admin/subscriptions': typeof MehlaAdminSubscriptionsRoute
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
+  '/office/$slug': typeof OfficeSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
@@ -900,11 +943,14 @@ export interface FileRoutesById {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
+  '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -935,6 +981,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/documents'
     | '/hearings'
+    | '/office-page'
     | '/print-log'
     | '/search'
     | '/settings'
@@ -978,6 +1025,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/office/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
@@ -1001,11 +1049,14 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/office/event'
+    | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/office/media/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1033,6 +1084,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/documents'
     | '/hearings'
+    | '/office-page'
     | '/print-log'
     | '/search'
     | '/settings'
@@ -1076,6 +1128,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/office/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin'
@@ -1099,11 +1152,14 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/office/event'
+    | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/office/media/$'
   id:
     | '__root__'
     | '/'
@@ -1133,6 +1189,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deadlines'
     | '/_authenticated/documents'
     | '/_authenticated/hearings'
+    | '/_authenticated/office-page'
     | '/_authenticated/print-log'
     | '/_authenticated/search'
     | '/_authenticated/settings'
@@ -1176,6 +1233,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/subscriptions'
     | '/mehla-admin/support'
     | '/mehla-admin/users'
+    | '/office/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
@@ -1199,11 +1257,14 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/office/event'
+    | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/office/media/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1233,6 +1294,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifiedRoute: typeof AuthVerifiedRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  OfficeSlugRoute: typeof OfficeSlugRoute
   ShareTokenRoute: typeof ShareTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
@@ -1248,11 +1310,14 @@ export interface RootRouteChildren {
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
+  ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
+  ApiPublicOfficeLeadRoute: typeof ApiPublicOfficeLeadRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
   ApiPublicWebhooksSlugRoute: typeof ApiPublicWebhooksSlugRoute
   ApiPublicWhSlugRoute: typeof ApiPublicWhSlugRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
+  ApiPublicOfficeMediaSplatRoute: typeof ApiPublicOfficeMediaSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1423,6 +1488,13 @@ declare module '@tanstack/react-router' {
       path: '/share/$token'
       fullPath: '/share/$token'
       preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/office/$slug': {
+      id: '/office/$slug'
+      path: '/office/$slug'
+      fullPath: '/office/$slug'
+      preLoaderRoute: typeof OfficeSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mehla-admin/users': {
@@ -1726,6 +1798,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrintLogRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/office-page': {
+      id: '/_authenticated/office-page'
+      path: '/office-page'
+      fullPath: '/office-page'
+      preLoaderRoute: typeof AuthenticatedOfficePageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/hearings': {
       id: '/_authenticated/hearings'
       path: '/hearings'
@@ -1901,6 +1980,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/office/lead': {
+      id: '/api/public/office/lead'
+      path: '/api/public/office/lead'
+      fullPath: '/api/public/office/lead'
+      preLoaderRoute: typeof ApiPublicOfficeLeadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/office/event': {
+      id: '/api/public/office/event'
+      path: '/api/public/office/event'
+      fullPath: '/api/public/office/event'
+      preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/notifications-dispatch': {
       id: '/api/public/hooks/notifications-dispatch'
       path: '/api/public/hooks/notifications-dispatch'
@@ -1943,6 +2036,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDocTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/office/media/$': {
+      id: '/api/public/office/media/$'
+      path: '/api/public/office/media/$'
+      fullPath: '/api/public/office/media/$'
+      preLoaderRoute: typeof ApiPublicOfficeMediaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1952,6 +2052,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
   AuthenticatedHearingsRoute: typeof AuthenticatedHearingsRoute
+  AuthenticatedOfficePageRoute: typeof AuthenticatedOfficePageRoute
   AuthenticatedPrintLogRoute: typeof AuthenticatedPrintLogRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1969,6 +2070,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
   AuthenticatedHearingsRoute: AuthenticatedHearingsRoute,
+  AuthenticatedOfficePageRoute: AuthenticatedOfficePageRoute,
   AuthenticatedPrintLogRoute: AuthenticatedPrintLogRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -2106,6 +2208,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifiedRoute: AuthVerifiedRoute,
   InviteTokenRoute: InviteTokenRoute,
+  OfficeSlugRoute: OfficeSlugRoute,
   ShareTokenRoute: ShareTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
@@ -2123,11 +2226,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
   ApiPublicHooksNotificationsDispatchRoute:
     ApiPublicHooksNotificationsDispatchRoute,
+  ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
+  ApiPublicOfficeLeadRoute: ApiPublicOfficeLeadRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   ApiPublicWebhooksSlugRoute: ApiPublicWebhooksSlugRoute,
   ApiPublicWhSlugRoute: ApiPublicWhSlugRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
+  ApiPublicOfficeMediaSplatRoute: ApiPublicOfficeMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

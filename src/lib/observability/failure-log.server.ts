@@ -16,6 +16,7 @@ export type FailureSurface =
   | "support_rating"
   | "print"
   | "email"
+  | "office_page"
   | "other";
 
 export type FailureInput = {

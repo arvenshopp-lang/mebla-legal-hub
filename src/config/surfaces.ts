@@ -59,6 +59,7 @@ export const SURFACES: SurfaceDef[] = [
       "/documents",
       "/team",
       "/settings",
+      "/office-page",
       "/onboarding",
       "/pending-access",
       "/login",
@@ -123,7 +124,8 @@ export const SURFACES: SurfaceDef[] = [
     description: "الصفحة الرئيسية والمميزات والأسعار وتسجيل الدخول وإنشاء الحساب.",
     entry: "/",
     // تسجيل الدخول يتم على نطاق واحد فقط (app) لضمان جلسة موحدة وآمنة.
-    allow: ["/", "/privacy", "/terms"],
+    // الصفحة العامة لمكتب المحاماة تُخدم على النطاق التسويقي فقط.
+    allow: ["/", "/privacy", "/terms", "/office"],
     requiresLawyerAuth: false,
   },
   // ————— نطاقات محجوزة للتوسع المستقبلي (تُفعّل بإزالة planned) —————
