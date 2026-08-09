@@ -126,10 +126,20 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 /** يستخرج أول مصفوفة كائنات من الاستجابة أياً كان اسم مفتاح التغليف. */
 function extractList(payload: unknown): Record<string, unknown>[] {
-  if (Array.isArray(payload)) return payload.filter((row): row is Record<string, unknown> => Boolean(asRecord(row)));
+  if (Array.isArray(payload))
+    return payload.filter((row): row is Record<string, unknown> => Boolean(asRecord(row)));
   const record = asRecord(payload);
   if (!record) return [];
-  const candidates = ["data", "devices", "templates", "result", "results", "items", "records", "list"];
+  const candidates = [
+    "data",
+    "devices",
+    "templates",
+    "result",
+    "results",
+    "items",
+    "records",
+    "list",
+  ];
   for (const key of candidates) {
     const value = record[key];
     if (Array.isArray(value)) {
@@ -251,7 +261,15 @@ export async function getOfficialDevices(): Promise<OfficialDevice[]> {
   const { rows } = await firstWorkingList(DEVICE_PATHS);
   const devices: OfficialDevice[] = [];
   for (const row of rows) {
-    const id = pickString(row, "id", "device_id", "deviceId", "uuid", "sender_id", "phone_number_id");
+    const id = pickString(
+      row,
+      "id",
+      "device_id",
+      "deviceId",
+      "uuid",
+      "sender_id",
+      "phone_number_id",
+    );
     if (!id) continue;
     devices.push({
       providerDeviceId: id,

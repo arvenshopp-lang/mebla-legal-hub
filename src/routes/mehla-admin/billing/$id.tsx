@@ -81,16 +81,27 @@ function InvoiceDetailPage() {
     staleTime: 60_000,
   });
   const onlineProvider = (
-    (providersQuery.data as { providers?: { code: string; is_enabled: boolean; requires_credentials: boolean; connection_status: string }[] } | undefined)?.providers ?? []
+    (
+      providersQuery.data as
+        | {
+            providers?: {
+              code: string;
+              is_enabled: boolean;
+              requires_credentials: boolean;
+              connection_status: string;
+            }[];
+          }
+        | undefined
+    )?.providers ?? []
   ).find((p) => p.requires_credentials && p.is_enabled && p.connection_status === "verified");
 
   const canStartOnlinePayment = Boolean(
     onlineProvider &&
-      invoice &&
-      invoice.currency === "SAR" &&
-      invoice.status !== "draft" &&
-      invoice.status !== "cancelled" &&
-      Number(invoice.remaining) > 0,
+    invoice &&
+    invoice.currency === "SAR" &&
+    invoice.status !== "draft" &&
+    invoice.status !== "cancelled" &&
+    Number(invoice.remaining) > 0,
   );
 
   const startOnlinePayment = useMutation({

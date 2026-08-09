@@ -7,7 +7,6 @@ const TITLE = "الأسئلة الشائعة — مِهلة";
 const DESCRIPTION =
   "أسئلة مكاتب المحاماة عن منصة مِهلة: عزل البيانات، الصلاحيات، المهل والتنبيهات، المستندات، متابعة العميل، والاشتراك.";
 
-
 export const Route = createFileRoute("/faq")({
   loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({

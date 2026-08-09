@@ -350,8 +350,7 @@ export async function verifyProviderConnection(
       ok: result.ok,
       message: result.ok
         ? `تم الاتصال بالمزوّد بنجاح (${result.latencyMs} مللي ثانية).`
-        : ((result.code ? SAFE_ERROR_MESSAGES[result.code] : null) ??
-          "تعذّر الاتصال بالمزوّد."),
+        : ((result.code ? SAFE_ERROR_MESSAGES[result.code] : null) ?? "تعذّر الاتصال بالمزوّد."),
       missing,
     };
   }

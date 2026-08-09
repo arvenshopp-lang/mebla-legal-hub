@@ -44,14 +44,15 @@ export const QUEUE_STATUS_LABELS: Record<QueueStatus, string> = {
   cancelled: "ملغاة",
 };
 
-export const QUEUE_STATUS_TONES: Record<QueueStatus, "green" | "gold" | "red" | "muted" | "info"> = {
-  queued: "info",
-  scheduled: "info",
-  processing: "gold",
-  provider_accepted: "green",
-  failed: "red",
-  cancelled: "muted",
-};
+export const QUEUE_STATUS_TONES: Record<QueueStatus, "green" | "gold" | "red" | "muted" | "info"> =
+  {
+    queued: "info",
+    scheduled: "info",
+    processing: "gold",
+    provider_accepted: "green",
+    failed: "red",
+    cancelled: "muted",
+  };
 
 export const PROVIDER_STATUS_LABELS: Record<string, string> = {
   not_configured: "غير مهيأ",

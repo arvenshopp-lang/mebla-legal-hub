@@ -7,7 +7,6 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { oauth, type AuthorizationDetails } from "@/lib/oauth-consent";
 
-
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
