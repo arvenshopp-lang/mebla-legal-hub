@@ -144,6 +144,7 @@ type MoyasarPayment = {
   id?: string;
   status?: string;
   amount?: number;
+  currency?: string;
   invoice_id?: string;
   source?: { transaction_url?: string; message?: string };
   refunded?: number;

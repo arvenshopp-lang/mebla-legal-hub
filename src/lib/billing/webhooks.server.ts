@@ -287,6 +287,7 @@ async function processEvent(input: ProcessInput): Promise<Outcome> {
       providerPaymentId: input.event.providerPaymentId,
       status: input.event.status as never,
       amount: input.event.amount,
+      currency: input.event.currency ?? null,
       correlationId: input.correlationId,
     });
     await finish({
