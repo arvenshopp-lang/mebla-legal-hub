@@ -151,6 +151,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         Icon: Plug,
         permission: "integrations.read",
       },
+      {
+        to: "/mehla-admin/providers",
+        label: "جاهزية المزوّدين",
+        Icon: PlugZap,
+        permission: "integrations.read",
+      },
     ],
   },
   {
