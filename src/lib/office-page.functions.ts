@@ -8,7 +8,6 @@ import { z } from "zod";
 import {
   OFFICE_LEAD_STATUSES,
   officeSnapshotSchema,
-  publishBlockers,
   slugSchema,
   type OfficeSnapshot,
 } from "@/lib/office-page.shared";
