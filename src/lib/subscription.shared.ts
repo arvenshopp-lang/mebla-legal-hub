@@ -11,7 +11,8 @@ export type PlanFeatureKey =
   | "voice_enabled"
   | "api_enabled"
   | "pdf_search_enabled"
-  | "client_upload_enabled";
+  | "client_upload_enabled"
+  | "public_office_page";
 
 export type SubscriptionPlan = {
   code: string;
@@ -32,6 +33,7 @@ export type SubscriptionPlan = {
   api_enabled: boolean;
   pdf_search_enabled: boolean;
   client_upload_enabled: boolean;
+  public_office_page: boolean;
   support_level: string;
   sla_hours: number;
   features: string[];
@@ -224,11 +226,13 @@ export const FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   esignature_enabled: "التوقيع الإلكتروني",
   voice_enabled: "تسجيل الصوت وتحويله لنص",
   api_enabled: "الوصول عبر API",
+  public_office_page: "الصفحة العامة للمكتب",
 };
 
 export const FEATURE_ORDER: PlanFeatureKey[] = [
   "pdf_search_enabled",
   "client_upload_enabled",
+  "public_office_page",
   "ai_enabled",
   "esignature_enabled",
   "voice_enabled",
