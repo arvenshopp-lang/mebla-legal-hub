@@ -260,6 +260,8 @@ function Page() {
                                 setEditing(h);
                                 setOpen(true);
                               }}
+                              aria-label="تعديل"
+                              title="تعديل"
                               className="rounded-lg p-1.5 hover:bg-surface-muted"
                             >
                               <Pencil className="h-4 w-4" />
