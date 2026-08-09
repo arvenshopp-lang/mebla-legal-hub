@@ -162,19 +162,21 @@ await t("concurrency", "ضغط متكرر على إنشاء العميل لا ي
 
 await t("concurrency", "إصدار الفاتورة مرتين بالتوازي يعطي رقماً واحداً فقط", async () => {
   const billing = await mod("src/lib/billing/billing.functions.ts");
-  const draft = await call(billing, "saveBillingDraft", ctx.superAdmin.token, {
-    kind: "invoice",
+  const draft = await call(billing, "billingSaveDraft", ctx.superAdmin.token, {
     organizationId: ORG,
+    customerName: `QA-P4-RACE-${stamp}`,
     currency: "SAR",
-    issueDate: new Date().toISOString().slice(0, 10),
-    items: [{ description: `QA-P4-RACE-${stamp}`, quantity: 1, unitPrice: 100, taxRate: 15, discount: 0 }],
+    taxRate: 15,
+    taxExempt: false,
+    items: [{ description: "اختبار تزامن الإصدار", quantity: 1, unitPrice: 100, discountAmount: 0 }],
   });
   expect(draft.ok, `فشل إنشاء المسودة: ${draft.message}`);
-  const invoiceId = (draft.value as { invoiceId?: string; id?: string }).invoiceId ??
-    (draft.value as { id: string }).id;
+  const invoiceId = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(
+    draft.raw,
+  )![0];
   const [a, b] = await Promise.all([
-    call(billing, "issueInvoice", ctx.superAdmin.token, { invoiceId }),
-    call(billing, "issueInvoice", ctx.superAdmin.token, { invoiceId }),
+    call(billing, "billingIssueInvoice", ctx.superAdmin.token, { id: invoiceId, notify: false }),
+    call(billing, "billingIssueInvoice", ctx.superAdmin.token, { id: invoiceId, notify: false }),
   ]);
   const okCount = [a, b].filter((r) => r.ok).length;
   expect(okCount <= 1, "نجح الإصدار مرتين لنفس الفاتورة.");
@@ -224,14 +226,15 @@ await t("concurrency", "تحديثان متزامنان لمهمة واحدة ي
 
 await t("errors", "مدخلات غير صالحة تُرفض برسالة عربية بلا تفاصيل داخلية", async () => {
   const billing = await mod("src/lib/billing/billing.functions.ts");
-  const r = await call(billing, "saveBillingDraft", ctx.superAdmin.token, {
-    kind: "invoice",
+  const r = await call(billing, "billingSaveDraft", ctx.superAdmin.token, {
     organizationId: ORG,
+    customerName: "",
     currency: "SAR",
-    issueDate: "not-a-date",
+    taxRate: 15,
+    taxExempt: false,
     items: [],
   });
-  expect(!r.ok, "قُبلت مسودة بتاريخ غير صالح وبلا بنود.");
+  expect(!r.ok, "قُبلت مسودة بلا اسم عميل وبلا بنود.");
   expect(!/postgres|pg_|stack|at Object|\.ts:\d+/i.test(r.message), "الرسالة تكشف تفاصيل تقنية.");
   return r.message.slice(0, 100);
 });
