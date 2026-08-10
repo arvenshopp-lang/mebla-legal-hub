@@ -63,6 +63,11 @@ export type AdminPermission =
   | "content.rollback"
   | "design.read"
   | "design.manage"
+  | "design.draft.write"
+  | "design.preview"
+  | "design.history.read"
+  | "design.publish"
+  | "design.rollback"
   | "seo.read"
   | "seo.manage"
   | "sms.read"
@@ -464,6 +469,36 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
     label: "إدارة تصميم المنصة",
     group: "المحتوى والتصميم",
     description: "تعديل السمات والمسوّدات ونشرها والتراجع عنها.",
+  },
+  {
+    id: "design.draft.write",
+    label: "تعديل مسودة التصميم",
+    group: "المحتوى والتصميم",
+    description: "تحرير توكنات التصميم وCSS المخصص وحفظها كمسودة دون نشر.",
+  },
+  {
+    id: "design.preview",
+    label: "معاينة مسودة التصميم",
+    group: "المحتوى والتصميم",
+    description: "بناء حزمة معاينة للمسودة على صفحات المنصة الحقيقية.",
+  },
+  {
+    id: "design.history.read",
+    label: "سجل إصدارات التصميم",
+    group: "المحتوى والتصميم",
+    description: "الاطلاع على الإصدارات المنشورة والفروق وسجل التدقيق.",
+  },
+  {
+    id: "design.publish",
+    label: "نشر التصميم",
+    group: "المحتوى والتصميم",
+    description: "اعتماد المسودة ونشرها كإصدار فعلي لكل مستخدمي المنصة.",
+  },
+  {
+    id: "design.rollback",
+    label: "التراجع عن نشر التصميم",
+    group: "المحتوى والتصميم",
+    description: "الرجوع للإصدار السابق أو استعادة إصدار من السجل.",
   },
   {
     id: "seo.read",
@@ -922,7 +957,14 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "seo.manage": ["seo.read"],
   "content.manage": ["content.read"],
   "content.publish": ["content.read"],
-  "design.manage": ["design.read"],
+  // الصلاحية الواسعة تبقى مقبولة وتُترجم إلى الصلاحيات الدقيقة الحديثة،
+  // بلا نشر ولا تراجع: هاتان تُمنحان صراحة فقط.
+  "design.manage": [
+    "design.read",
+    "design.draft.write",
+    "design.preview",
+    "design.history.read",
+  ],
   "sms.manage": ["sms.read"],
   "security.manage": ["security.read"],
   "feature_flags.manage": ["feature_flags.read"],
