@@ -28,6 +28,7 @@ import { installDesignPreviewBridge, isDesignPreviewRequest } from "../lib/desig
 import { startThemeVersionSync } from "../lib/design/theme-version-sync";
 import "../lib/zod-ar";
 import { Toaster } from "sonner";
+import { installFontBudgetWatcher } from "../lib/perf/font-budget-watcher";
 
 function NotFoundComponent() {
   return (
@@ -203,6 +204,12 @@ function RootComponent() {
 
   useEffect(() => {
     initAnalytics();
+  }, []);
+
+  // ميزانية أداء الخطوط: تحذير في بيئة التطوير فقط عند تجاوز عدد الملفات أو حجم النقل
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    return installFontBudgetWatcher();
   }, []);
 
   // تحليلات المنتج: تهيئة واحدة، بعد الموافقة الصريحة فقط

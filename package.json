@@ -17,8 +17,9 @@
     "rbac:nav:expect": "bun scripts/rbac-nav-expect.ts --pretty",
     "rbac:nav:e2e": "python3 scripts/e2e/rbac_nav_e2e.py",
     "rbac:server:e2e": "bun scripts/e2e/rbac_server_e2e.ts",
-    "security:all": "bun run security:check && bun run security:db && bun run fonts:check && bun run rbac:matrix && bun run rbac:nav",
+    "security:all": "bun run security:check && bun run security:db && bun run fonts:check && bun run fonts:budget && bun run rbac:matrix && bun run rbac:nav",
     "fonts:check": "bun scripts/fonts-guardrails.ts",
+    "fonts:budget": "bun scripts/fonts-budget.ts",
     "fonts:e2e": "python3 scripts/e2e/fonts_network_e2e.py"
   },
   "dependencies": {
