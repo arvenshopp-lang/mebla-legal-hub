@@ -20,9 +20,10 @@ import {
   Printer,
   LifeBuoy,
   Globe,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
+import { useAuth, ROLE_LABELS, type AppRole } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -30,7 +31,13 @@ import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
 import { PrintGuard } from "@/components/print/print-guard";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
-type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard };
+type NavItem = {
+  to: string;
+  label: string;
+  Icon: typeof LayoutDashboard;
+  /** يظهر لهذه الأدوار فقط — الإخفاء تحسين تجربة، والفرض على الخادم. */
+  roles?: AppRole[];
+};
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
@@ -55,6 +62,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "المكتب",
     items: [
       { to: "/team", label: "الفريق", Icon: UsersRound },
+      {
+        to: "/team-performance",
+        label: "أداء الفريق",
+        Icon: BarChart3,
+        roles: ["owner", "admin"],
+      },
       { to: "/office-page", label: "الصفحة العامة", Icon: Globe },
       { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
@@ -184,34 +197,36 @@ export function DashboardShell({
               </p>
             )}
             <ul className="space-y-0.5">
-              {group.items.map(({ to, label, Icon }) => {
-                const activeItem = isActive(to);
-                return (
-                  <li key={to}>
-                    <Link
-                      to={to}
-                      title={mini ? label : undefined}
-                      aria-current={activeItem ? "page" : undefined}
-                      className={cn(
-                        "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
-                        mini && "justify-center px-0",
-                        activeItem
-                          ? "bg-primary-soft font-semibold text-primary"
-                          : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-                      )}
-                    >
-                      {activeItem && (
-                        <span
-                          className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary"
-                          aria-hidden
-                        />
-                      )}
-                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                      {!mini && <span className="truncate">{label}</span>}
-                    </Link>
-                  </li>
-                );
-              })}
+              {group.items
+                .filter((item) => !item.roles || (activeRole && item.roles.includes(activeRole)))
+                .map(({ to, label, Icon }) => {
+                  const activeItem = isActive(to);
+                  return (
+                    <li key={to}>
+                      <Link
+                        to={to}
+                        title={mini ? label : undefined}
+                        aria-current={activeItem ? "page" : undefined}
+                        className={cn(
+                          "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
+                          mini && "justify-center px-0",
+                          activeItem
+                            ? "bg-primary-soft font-semibold text-primary"
+                            : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+                        )}
+                      >
+                        {activeItem && (
+                          <span
+                            className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary"
+                            aria-hidden
+                          />
+                        )}
+                        <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                        {!mini && <span className="truncate">{label}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
             </ul>
           </div>
         ))}
