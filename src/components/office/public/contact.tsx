@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ContactRow, SurfaceCard } from "./primitives";
-import { displayHost, type TrackFn } from "./links";
+import { displayHost } from "./links";
 
 const SOCIAL_ICONS: Record<string, LucideIcon> = {
   instagram: Instagram,
@@ -31,7 +31,6 @@ export function OfficePublicContact({
   website,
   licenseNumber,
   socials,
-  track,
 }: {
   address: string;
   phone: string;
@@ -40,7 +39,6 @@ export function OfficePublicContact({
   website: string;
   licenseNumber: string;
   socials: Array<{ key: string; label: string; href: string }>;
-  track: TrackFn;
 }) {
   return (
     <SurfaceCard>
@@ -111,7 +109,6 @@ export function OfficePublicContact({
                   rel="noopener noreferrer nofollow"
                   aria-label={social.label}
                   title={social.label}
-                  onClick={() => track("service_click")}
                   className="grid size-11 place-items-center rounded-[var(--office-radius-sm)] border border-border bg-surface text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                 >
                   <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
