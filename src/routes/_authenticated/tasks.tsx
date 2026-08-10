@@ -31,6 +31,7 @@ import {
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import { WorkItemTimeline } from "@/components/work-items/work-item-timeline";
 
@@ -80,6 +81,7 @@ function errMsg(e: unknown): string {
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [mine, setMine] = useState(false);
@@ -351,6 +353,7 @@ function TaskDialog({
 }) {
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId ?? orgId);
   const [form, setForm] = useState<Partial<Form>>({});
   const draft = useDialogDraft<Form>({
     name: "tasks",
