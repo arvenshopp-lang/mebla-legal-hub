@@ -51,7 +51,7 @@ export type ListFilters = {
 };
 
 const LIST_COLUMNS =
-  "id, kind, status, number, title, organization_id, company_id, contact_id, currency, subtotal, discount_type, discount_value, discount_amount, tax_rate, tax_amount, total, requires_approval, locked, owner_staff_id, created_by, created_at, updated_at, sent_at, decided_at, valid_until, starts_on, ends_on, converted_invoice_id, converted_subscription_id, organizations(name), crm_companies(name)";
+  "id, kind, status, number, title, organization_id, company_id, contact_id, currency, subtotal, discount_type, discount_value, discount_amount, tax_rate, tax_amount, total, requires_approval, locked, owner_staff_id, created_by, created_at, updated_at, sent_at, decided_at, valid_until, starts_on, ends_on, converted_invoice_id, converted_subscription_id, recipient_name, recipient_company, recipient_phone, recipient_email, recipient_address, organizations(name), crm_companies(name)";
 
 function mapRow(row: AnyClient): SalesDocRow {
   return {
@@ -85,6 +85,11 @@ function mapRow(row: AnyClient): SalesDocRow {
     ends_on: row.ends_on,
     converted_invoice_id: row.converted_invoice_id,
     converted_subscription_id: row.converted_subscription_id,
+    recipient_name: row.recipient_name ?? null,
+    recipient_company: row.recipient_company ?? null,
+    recipient_phone: row.recipient_phone ?? null,
+    recipient_email: row.recipient_email ?? null,
+    recipient_address: row.recipient_address ?? null,
   };
 }
 
@@ -179,6 +184,11 @@ export type DraftInput = {
   validUntil?: string | null;
   startsOn?: string | null;
   endsOn?: string | null;
+  recipientName?: string | null;
+  recipientCompany?: string | null;
+  recipientPhone?: string | null;
+  recipientEmail?: string | null;
+  recipientAddress?: string | null;
   items: SalesDocItemInput[];
 };
 
@@ -247,6 +257,11 @@ export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<strin
     valid_until: input.validUntil ?? null,
     starts_on: input.startsOn ?? null,
     ends_on: input.endsOn ?? null,
+    recipient_name: input.recipientName ?? null,
+    recipient_company: input.recipientCompany ?? null,
+    recipient_phone: input.recipientPhone ?? null,
+    recipient_email: input.recipientEmail ?? null,
+    recipient_address: input.recipientAddress ?? null,
     status: "draft" as const,
     updated_by: ctx.staff.user_id,
   };
