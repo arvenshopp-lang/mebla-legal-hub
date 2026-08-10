@@ -70,6 +70,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
+import { Route as AuthenticatedTeamPerformanceRouteImport } from './routes/_authenticated/team-performance'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
@@ -417,6 +418,12 @@ const ApiWebhookRoute = ApiWebhookRouteImport.update({
   path: '/api/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTeamPerformanceRoute =
+  AuthenticatedTeamPerformanceRouteImport.update({
+    id: '/team-performance',
+    path: '/team-performance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -674,6 +681,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/team-performance': typeof AuthenticatedTeamPerformanceRoute
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -777,6 +785,7 @@ export interface FileRoutesByTo {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/team-performance': typeof AuthenticatedTeamPerformanceRoute
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -883,6 +892,7 @@ export interface FileRoutesById {
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/team-performance': typeof AuthenticatedTeamPerformanceRoute
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -989,6 +999,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/tasks'
     | '/team'
+    | '/team-performance'
     | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
@@ -1092,6 +1103,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/tasks'
     | '/team'
+    | '/team-performance'
     | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
@@ -1197,6 +1209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/support'
     | '/_authenticated/tasks'
     | '/_authenticated/team'
+    | '/_authenticated/team-performance'
     | '/api/webhook'
     | '/auth/callback'
     | '/auth/verified'
@@ -1749,6 +1762,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/team-performance': {
+      id: '/_authenticated/team-performance'
+      path: '/team-performance'
+      fullPath: '/team-performance'
+      preLoaderRoute: typeof AuthenticatedTeamPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/team': {
       id: '/_authenticated/team'
       path: '/team'
@@ -2060,6 +2080,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedTeamPerformanceRoute: typeof AuthenticatedTeamPerformanceRoute
   AuthenticatedCasesIdRoute: typeof AuthenticatedCasesIdRoute
   AuthenticatedCasesIndexRoute: typeof AuthenticatedCasesIndexRoute
 }
@@ -2078,6 +2099,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedTeamPerformanceRoute: AuthenticatedTeamPerformanceRoute,
   AuthenticatedCasesIdRoute: AuthenticatedCasesIdRoute,
   AuthenticatedCasesIndexRoute: AuthenticatedCasesIndexRoute,
 }
