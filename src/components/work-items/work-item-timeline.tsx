@@ -15,12 +15,14 @@ const TONES: Record<string, "green" | "red" | "warn" | "muted"> = {
   deleted: "red",
 };
 
+const dueLabel = (v: string | null) => (v ? fmtDate(v) : "بدون تاريخ");
+
 function detail(e: WorkItemTimelineEvent): string | null {
   switch (e.event) {
     case "assigned":
       return `من ${e.fromUserName ?? "بدون مسؤول"} إلى ${e.toUserName ?? "بدون مسؤول"}`;
     case "due_changed":
-      return `من ${fmtDate(e.fromDueDate) || "بدون تاريخ"} إلى ${fmtDate(e.toDueDate) || "بدون تاريخ"}`;
+      return `من ${dueLabel(e.fromDueDate)} إلى ${dueLabel(e.toDueDate)}`;
     case "created":
     case "baseline":
       return e.toUserName ? `المسؤول: ${e.toUserName}` : "بدون مسؤول";
