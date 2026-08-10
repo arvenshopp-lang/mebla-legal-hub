@@ -222,7 +222,7 @@ export function WorkItemTimeline({
               {isFetchingNextPage ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : null}
-              {isFetchingNextPage ? "جاري التحميل…" : "تحميل أحداث أقدم"}
+              {isFetchingNextPage ? "جاري التحميل…" : "تحميل المزيد من الأحداث"}
             </button>
           ) : null}
         </>
