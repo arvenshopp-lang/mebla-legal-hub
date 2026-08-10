@@ -280,9 +280,7 @@ for (const table of ["tasks", "deadlines"] as const) {
     createRes.status === 201,
     `status=${createRes.status} ${JSON.stringify(createRes.body)}`,
   );
-  const row = Array.isArray(createRes.body)
-    ? (createRes.body as { id: string }[])[0]
-    : undefined;
+  const row = Array.isArray(createRes.body) ? (createRes.body as { id: string }[])[0] : undefined;
   if (!row) {
     record(`استمرار اختبار حقن العطل — ${label}`, false, "تعذّر إنشاء الصف");
     continue;
