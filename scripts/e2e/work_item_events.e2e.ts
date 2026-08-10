@@ -612,6 +612,164 @@ for (const table of ["tasks", "deadlines"] as const) {
   }
 }
 
+// ── مستخدمان عاديان في نفس المنظمة: صحّة الفاعل وعدم رؤية السجلات ──────────
+{
+  const mkTask = async (
+    who: typeof lawyer,
+    title: string,
+    assignee: string,
+  ): Promise<string | undefined> => {
+    const r = await asUser(who.token, `/rest/v1/tasks`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: org,
+        case_id: kase.id,
+        title,
+        assigned_to: assignee,
+        due_date: iso(2 * day),
+        created_by: who.userId,
+      }),
+    });
+    record(`إنشاء «${title}» ينجح لمستخدم عادي`, r.status === 201, `status=${r.status}`);
+    return Array.isArray(r.body) ? (r.body as { id: string }[])[0]?.id : undefined;
+  };
+
+  const lawyerTask = await mkTask(lawyer, "QA مهمة المحامي المشتركة", lawyer.userId);
+  const assistantTask = await mkTask(assistant, "QA مهمة المساعد المشتركة", assistant.userId);
+
+  const actorsOf = async (itemId: string) =>
+    (await eventsOf(itemId)).map((e) => `${e.event}:${e.actor_id ?? "—"}`);
+
+  if (lawyerTask && assistantTask) {
+    record(
+      "حدث الإنشاء يحمل فاعله الحقيقي — المحامي",
+      (await actorsOf(lawyerTask)).join(",") === `created:${lawyer.userId}`,
+      `فعلي=[${(await actorsOf(lawyerTask)).join(",")}]`,
+    );
+    record(
+      "حدث الإنشاء يحمل فاعله الحقيقي — المساعد",
+      (await actorsOf(assistantTask)).join(",") === `created:${assistant.userId}`,
+      `فعلي=[${(await actorsOf(assistantTask)).join(",")}]`,
+    );
+
+    // تفاعل متبادل على نفس العنصر: كل حدث يُنسب لمن نفّذه فعلاً
+    const cross = await asUser(assistant.token, `/rest/v1/tasks?id=eq.${lawyerTask}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ due_date: iso(8 * day) }),
+    });
+    const crossOk = cross.status === 200 && Array.isArray(cross.body) && cross.body.length > 0;
+    record("المساعد يعدّل مهمة المحامي في نفس المنظمة", crossOk, `status=${cross.status}`);
+
+    if (crossOk) {
+      const back = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${lawyerTask}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ assigned_to: assistant.userId }),
+      });
+      record("المحامي يعيد إسناد المهمة للمساعد", back.status === 200, `status=${back.status}`);
+
+      const done = await asUser(assistant.token, `/rest/v1/tasks?id=eq.${lawyerTask}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      record("المساعد ينجز المهمة المسندة إليه", done.status === 200, `status=${done.status}`);
+
+      record(
+        "تسلسل الأحداث ينسب كل حدث لفاعله الصحيح بين المستخدمين",
+        (await actorsOf(lawyerTask)).join(",") ===
+          [
+            `created:${lawyer.userId}`,
+            `due_changed:${assistant.userId}`,
+            `assigned:${lawyer.userId}`,
+            `completed:${assistant.userId}`,
+          ].join(","),
+        `فعلي=[${(await actorsOf(lawyerTask)).join(",")}]`,
+      );
+    }
+
+    // لا يرى أي مستخدم عادي سجلات: لا سجلاته ولا سجلات غيره
+    for (const [label, who] of [
+      ["المحامي", lawyer],
+      ["المساعد", assistant],
+    ] as const) {
+      const own = await asUser(
+        who.token,
+        `/rest/v1/work_item_events?actor_id=eq.${who.userId}&select=id`,
+      );
+      record(
+        `${label} لا يرى سجلاته الخاصة في work_item_events`,
+        Array.isArray(own.body) && own.body.length === 0,
+        `status=${own.status} rows=${Array.isArray(own.body) ? own.body.length : -1}`,
+      );
+
+      const other = who === lawyer ? assistant : lawyer;
+      const foreign = await asUser(
+        who.token,
+        `/rest/v1/work_item_events?actor_id=eq.${other.userId}&select=id`,
+      );
+      record(
+        `${label} لا يرى سجلات مستخدم آخر في نفس المنظمة`,
+        Array.isArray(foreign.body) && foreign.body.length === 0,
+        `status=${foreign.status} rows=${Array.isArray(foreign.body) ? foreign.body.length : -1}`,
+      );
+
+      const byItem = await asUser(
+        who.token,
+        `/rest/v1/work_item_events?item_id=eq.${assistantTask}&select=id`,
+      );
+      record(
+        `${label} لا يرى سجل عنصر آخر بالمعرف المباشر`,
+        Array.isArray(byItem.body) && byItem.body.length === 0,
+        `rows=${Array.isArray(byItem.body) ? byItem.body.length : -1}`,
+      );
+    }
+
+    // عزل خارج المنظمة: لا عناصر ولا سجلات
+    const outsider = acc("outsider");
+    const outTasks = await asUser(
+      outsider.token,
+      `/rest/v1/tasks?organization_id=eq.${org}&select=id`,
+    );
+    record(
+      "مستخدم من خارج المنظمة لا يرى مهامها",
+      Array.isArray(outTasks.body) && outTasks.body.length === 0,
+      `rows=${Array.isArray(outTasks.body) ? outTasks.body.length : -1}`,
+    );
+    const outEvents = await asUser(
+      outsider.token,
+      `/rest/v1/work_item_events?organization_id=eq.${org}&select=id`,
+    );
+    record(
+      "مستخدم من خارج المنظمة لا يرى سجل أحداثها",
+      Array.isArray(outEvents.body) && outEvents.body.length === 0,
+      `rows=${Array.isArray(outEvents.body) ? outEvents.body.length : -1}`,
+    );
+
+    // المالك وحده يرى سجلات المستخدمين ومنفصلة لكل عنصر
+    const ownerLawyer = await eventsOf(lawyerTask);
+    const ownerAssistant = await eventsOf(assistantTask);
+    record(
+      "المالك يرى سجلات المستخدمين بفاعلين مختلفين",
+      new Set(ownerLawyer.map((e) => e.actor_id)).size >= 2 &&
+        ownerAssistant.every((e) => e.actor_id === assistant.userId),
+      `مهمة المحامي=${new Set(ownerLawyer.map((e) => e.actor_id)).size} فاعل`,
+    );
+    record(
+      "لا تسرّب أحداث بين العنصرين",
+      ownerLawyer.every((e) => e.item_id === lawyerTask) &&
+        ownerAssistant.every((e) => e.item_id === assistantTask),
+      `${ownerLawyer.length}/${ownerAssistant.length}`,
+    );
+
+    for (const id of [lawyerTask, assistantTask]) {
+      await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, { method: "DELETE" });
+    }
+  }
+}
+
 const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
