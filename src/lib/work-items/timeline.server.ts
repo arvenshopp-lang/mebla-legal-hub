@@ -6,8 +6,75 @@ type Client = SupabaseClient<Database>;
 
 const MAX_EVENTS = 200;
 
+/** أعطال التقاط الأحداث تُقيَّد بهذا الإجراء داخل سجل الأعطال. */
+const CAPTURE_ACTION = "work_item_events.capture";
+
 function isWorkEvent(value: string): value is WorkEventName {
   return (WORK_EVENTS as readonly string[]).includes(value);
+}
+
+/**
+ * تحقّق أن المستخدم يملك أصلاً حق رؤية هذا العمل: إمّا الصف نفسه مقروء له
+ * (RLS)، أو — إذا كان محذوفاً — أنه عضو فعلي في المكتب.
+ */
+async function assertCanSeeWorkItem(
+  userClient: Client,
+  organizationId: string,
+  itemType: "task" | "deadline",
+  itemId: string,
+): Promise<void> {
+  const table = itemType === "task" ? "tasks" : "deadlines";
+  const { data: item, error: itemError } = await userClient
+    .from(table)
+    .select("id")
+    .eq("id", itemId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (itemError) throw new Error("تعذّر التحقق من صلاحية عرض السجل");
+  if (item) return;
+
+  const { data: member, error: memberError } = await userClient
+    .from("organization_members")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (memberError) throw new Error("تعذّر التحقق من صلاحية عرض السجل");
+  if (!member) throw new Error("لا تملك صلاحية عرض سجل هذا العمل");
+}
+
+/**
+ * آخر عطل التقاط حدث لهذا العمل بعد لحظة الحفظ — يُستخدم لتنبيه غير معيق
+ * يربط المستخدم بمرجع التتبع WIE-XXXX دون كشف تفاصيل خادمية.
+ */
+export async function getWorkItemCaptureIssue(
+  userClient: Client,
+  organizationId: string,
+  itemType: "task" | "deadline",
+  itemId: string,
+  since: string,
+): Promise<{ ref: string; event: string | null; occurredAt: string } | null> {
+  await assertCanSeeWorkItem(userClient, organizationId, itemType, itemId);
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("system_failures")
+    .select("ref, metadata, created_at")
+    .eq("action", CAPTURE_ACTION)
+    .eq("organization_id", organizationId)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) throw new Error("تعذّر التحقق من حالة تسجيل الحدث");
+
+  const hit = (data ?? []).find(
+    (row) => (row.metadata as { item_id?: string } | null)?.item_id === itemId,
+  );
+  if (!hit) return null;
+  return {
+    ref: hit.ref,
+    event: (hit.metadata as { event?: string } | null)?.event ?? null,
+    occurredAt: hit.created_at,
+  };
 }
 
 /**

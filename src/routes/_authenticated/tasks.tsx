@@ -31,6 +31,7 @@ import {
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
+import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import { WorkItemTimeline } from "@/components/work-items/work-item-timeline";
 
@@ -80,6 +81,7 @@ function errMsg(e: unknown): string {
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [mine, setMine] = useState(false);
@@ -135,14 +137,17 @@ function Page() {
   });
   const complete = useMutation({
     mutationFn: async (id: string) => {
+      const since = new Date(Date.now() - 2_000).toISOString();
       const { error } = await supabase
         .from("tasks")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return { id, since };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, since }) => {
       toast.success("تم الإنجاز");
+      void captureNotice("task", id, since);
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
@@ -348,6 +353,7 @@ function TaskDialog({
 }) {
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId ?? orgId);
   const [form, setForm] = useState<Partial<Form>>({});
   const draft = useDialogDraft<Form>({
     name: "tasks",
@@ -415,21 +421,29 @@ function TaskDialog({
     Object.keys(payload).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
     });
+    const since = new Date(Date.now() - 2_000).toISOString();
     const q = editing
       ? supabase
           .from("tasks")
           .update(payload as Partial<TablesInsert<"tasks">>)
           .eq("id", editing.id)
-      : supabase.from("tasks").insert({
-          ...(payload as Partial<TablesInsert<"tasks">>),
-          organization_id: orgId,
-          created_by: userId,
-        } as TablesInsert<"tasks">);
-    const { error } = await q;
+          .select("id")
+          .maybeSingle()
+      : supabase
+          .from("tasks")
+          .insert({
+            ...(payload as Partial<TablesInsert<"tasks">>),
+            organization_id: orgId,
+            created_by: userId,
+          } as TablesInsert<"tasks">)
+          .select("id")
+          .maybeSingle();
+    const { data: saved, error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     if (!editing) track("task_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    void captureNotice("task", saved?.id ?? editing?.id, since);
     draft.clear();
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["case-tasks"] });

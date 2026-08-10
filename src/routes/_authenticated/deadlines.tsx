@@ -38,6 +38,7 @@ import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   component: Page,
@@ -94,6 +95,7 @@ function errMsg(e: unknown): string {
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [type, setType] = useState("all");
@@ -141,14 +143,17 @@ function Page() {
 
   const complete = useMutation({
     mutationFn: async (id: string) => {
+      const since = new Date(Date.now() - 2_000).toISOString();
       const { error } = await supabase
         .from("deadlines")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return { id, since };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, since }) => {
       toast.success("تم الإنجاز");
+      void captureNotice("deadline", id, since);
       qc.invalidateQueries({ queryKey: ["deadlines"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
@@ -381,6 +386,7 @@ function DeadlineDialog({
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
   const [form, setForm] = useState<Partial<Form>>({});
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId ?? orgId);
   const draft = useDialogDraft<Form>({
     name: "deadlines",
     open,
@@ -446,6 +452,7 @@ function DeadlineDialog({
       return;
     }
     setSaving(true);
+    const since = new Date(Date.now() - 2_000).toISOString();
     const payload: Record<string, unknown> = {
       ...res.data,
       due_date: new Date(res.data.due_date).toISOString(),
@@ -458,16 +465,23 @@ function DeadlineDialog({
           .from("deadlines")
           .update(payload as Partial<TablesInsert<"deadlines">>)
           .eq("id", editing.id)
-      : supabase.from("deadlines").insert({
-          ...(payload as Partial<TablesInsert<"deadlines">>),
-          organization_id: orgId,
-          created_by: userId,
-        } as TablesInsert<"deadlines">);
-    const { error } = await q;
+          .select("id")
+          .maybeSingle()
+      : supabase
+          .from("deadlines")
+          .insert({
+            ...(payload as Partial<TablesInsert<"deadlines">>),
+            organization_id: orgId,
+            created_by: userId,
+          } as TablesInsert<"deadlines">)
+          .select("id")
+          .maybeSingle();
+    const { data: saved, error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     if (!editing) track("deadline_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    void captureNotice("deadline", saved?.id ?? editing?.id, since);
     draft.clear();
     qc.invalidateQueries({ queryKey: ["deadlines"] });
     qc.invalidateQueries({ queryKey: ["case-deadlines"] });
