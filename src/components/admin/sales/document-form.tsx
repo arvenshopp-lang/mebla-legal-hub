@@ -38,6 +38,11 @@ export type DraftFormValue = {
   validUntil: string;
   startsOn: string;
   endsOn: string;
+  recipientName: string;
+  recipientCompany: string;
+  recipientPhone: string;
+  recipientEmail: string;
+  recipientAddress: string;
   items: DraftItem[];
 };
 
@@ -57,6 +62,11 @@ export const emptyDraft = (kind: SalesDocKind): DraftFormValue => ({
   validUntil: "",
   startsOn: "",
   endsOn: "",
+  recipientName: "",
+  recipientCompany: "",
+  recipientPhone: "",
+  recipientEmail: "",
+  recipientAddress: "",
   items: [{ description: "", quantity: 1, unitPrice: 0, discountAmount: 0 }],
 });
 
@@ -166,6 +176,11 @@ export function DocumentFormModal({
         validUntil: nullable(form.validUntil),
         startsOn: nullable(form.startsOn),
         endsOn: nullable(form.endsOn),
+        recipientName: nullable(form.recipientName),
+        recipientCompany: nullable(form.recipientCompany),
+        recipientPhone: nullable(form.recipientPhone),
+        recipientEmail: form.recipientEmail.trim(),
+        recipientAddress: nullable(form.recipientAddress),
         items: form.items.map((item) => ({
           description: item.description.trim(),
           quantity: Number(item.quantity) || 0,
@@ -194,6 +209,10 @@ export function DocumentFormModal({
       if (!(Number(item.quantity) > 0))
         nextErrors[`item-${index}`] = "الكمية يجب أن تكون أكبر من صفر.";
     });
+    const email = form.recipientEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      nextErrors.recipientEmail = "بريد إلكتروني غير صالح.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     save.mutate();
