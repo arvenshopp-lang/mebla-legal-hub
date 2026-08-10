@@ -386,6 +386,7 @@ function DeadlineDialog({
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
   const [form, setForm] = useState<Partial<Form>>({});
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId ?? orgId);
   const draft = useDialogDraft<Form>({
     name: "deadlines",
     open,
