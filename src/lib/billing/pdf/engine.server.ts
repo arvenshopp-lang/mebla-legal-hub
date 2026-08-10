@@ -376,6 +376,16 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   if (brand.taxNumber) {
     rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
   }
+  if (!brand.taxNumber && brand.commercialRegistration) {
+    rightText(
+      ctx,
+      `السجل التجاري: ${brand.commercialRegistration}`,
+      right,
+      A4.height - 78,
+      8.5,
+      MUTED,
+    );
+  }
 
   leftText(ctx, truncate(ctx, model.title, titleWidth, 14), MARGIN, A4.height - 46, 14);
   leftText(ctx, truncate(ctx, model.reference, titleWidth, 11), MARGIN, A4.height - 64, 11, MUTED);
@@ -401,6 +411,64 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
     rightText(ctx, model.notice, right - 8, ctx.y, 9, INK);
     ctx.y -= 30;
   }
+}
+
+/**
+ * بطاقة «موجّه إلى»: إطار مستقل أعلى المستند يُبرز اسم الجهة المستلمة
+ * وبيانات تواصلها، وهي أهم عنصر بصري في عرض السعر.
+ */
+function recipientCard(ctx: Ctx, recipient: { title: string; lines: string[] }): void {
+  const lines = recipient.lines.filter((line) => line.trim().length > 0).slice(0, 5);
+  if (lines.length === 0) return;
+  const right = A4.width - MARGIN;
+  const height = 30 + lines.length * 14;
+  ensureSpace(ctx, height + 12);
+  const top = ctx.y + 10;
+  ctx.page.drawRectangle({
+    x: MARGIN,
+    y: top - height,
+    width: USABLE,
+    height,
+    color: SURFACE,
+    borderColor: LINE,
+    borderWidth: 0.7,
+  });
+  ctx.page.drawRectangle({ x: right - 3, y: top - height, width: 3, height, color: GOLD });
+  rightText(ctx, recipient.title, right - 14, top - 20, 8, MUTED);
+  lines.forEach((line, index) => {
+    rightText(
+      ctx,
+      truncate(ctx, line, USABLE - 28, index === 0 ? 11.5 : 9),
+      right - 14,
+      top - 36 - index * 14,
+      index === 0 ? 11.5 : 9,
+      index === 0 ? INK : MUTED,
+    );
+  });
+  ctx.y = top - height - 20;
+}
+
+/** خطوط توقيع رسمية أسفل المستند. */
+function signatureBlock(ctx: Ctx, slots: { label: string; caption?: string | null }[]): void {
+  if (slots.length === 0) return;
+  ensureSpace(ctx, 74);
+  const right = A4.width - MARGIN;
+  const colWidth = (USABLE - 24) / slots.length;
+  const baseY = ctx.y - 6;
+  slots.forEach((slot, index) => {
+    const cellRight = right - index * (colWidth + 24 / Math.max(1, slots.length - 1 || 1));
+    rightText(ctx, slot.label, cellRight, baseY, 9, INK);
+    ctx.page.drawLine({
+      start: { x: cellRight - colWidth, y: baseY - 34 },
+      end: { x: cellRight, y: baseY - 34 },
+      thickness: 0.7,
+      color: LINE,
+    });
+    if (slot.caption) {
+      rightText(ctx, truncate(ctx, slot.caption, colWidth, 8), cellRight, baseY - 48, 8, MUTED);
+    }
+  });
+  ctx.y = baseY - 66;
 }
 
 function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
