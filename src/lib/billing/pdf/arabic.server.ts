@@ -6,7 +6,9 @@
  * Forms) ثم نعكس ترتيب المقطع، فيصبح المقطع جاهزاً للرسم من اليسار إلى اليمين
  * بنفس المظهر البصري العربي الصحيح.
  */
-import { ArabicShaper } from "arabic-persian-reshaper";
+import reshaper from "arabic-persian-reshaper";
+
+const { ArabicShaper } = reshaper;
 
 /** علامات التشكيل تُرسم فوق الحرف السابق، فتبقى ملتصقة به بعد العكس. */
 const COMBINING = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/;
