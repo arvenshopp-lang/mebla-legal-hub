@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
+import { useHashCreate } from "@/hooks/use-hash-create";
 import { CASE_STATUS, CASE_PRIORITY, CLIENT_ROLE, asOptions, fmtDate } from "@/lib/enums";
 import {
   PageToolbar,
@@ -127,6 +128,12 @@ function Page() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<CaseRow | null>(null);
   const [open, setOpen] = useState(false);
+
+  // زر «إنشاء» في الشريط العلوي يفتح نموذج هذه الصفحة عبر الهاش #new.
+  useHashCreate(canEdit(activeRole), () => {
+    setEditing(null);
+    setOpen(true);
+  });
   const [archiving, setArchiving] = useState<CaseRow | null>(null);
   const q = useDebounced(search);
 

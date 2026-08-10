@@ -41,6 +41,15 @@
   --info-soft: oklch(0.9487 0.0149 251.16);
   --gold: oklch(0.6558 0.096 79.6);
 
+  /* ---- قشرة مساحة العمل (Sidebar داكن) — مقصورة على واجهة المكتب ---- */
+  --nav: oklch(0.2803 0.0454 168.2);
+  --nav-elevated: oklch(0.3243 0.0468 168.9);
+  --nav-foreground: oklch(0.9741 0.006 160);
+  --nav-muted: oklch(0.7715 0.0208 162);
+  --nav-border: oklch(0.3742 0.0392 168.9);
+  --nav-active: oklch(0.3701 0.0503 169.4);
+  --nav-accent: var(--gold);
+
   /* shadcn semantic aliases */
   --foreground: var(--text-primary);
   --card: var(--surface);
@@ -145,6 +154,13 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-gold: var(--gold);
+  --color-nav: var(--nav);
+  --color-nav-elevated: var(--nav-elevated);
+  --color-nav-foreground: var(--nav-foreground);
+  --color-nav-muted: var(--nav-muted);
+  --color-nav-border: var(--nav-border);
+  --color-nav-active: var(--nav-active);
+  --color-nav-accent: var(--nav-accent);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -495,4 +511,37 @@
 
 @utility office-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ==========================================================================
+   قشرة مساحة عمل المكتب — مسافات وأسطح موحّدة
+   ========================================================================== */
+@utility workspace-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+/* حاوية محتوى الصفحة داخل مساحة العمل — إيقاع مسافات واحد لكل الصفحات */
+@utility workspace-page {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  padding-block: 1.25rem calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  @media (min-width: 768px) {
+    padding-inline: 1.5rem;
+    padding-block: 1.75rem;
+  }
+  @media (min-width: 1280px) {
+    padding-inline: 2rem;
+  }
+}
+
+/* فاصل رأسي موحّد بين أقسام الصفحة */
+@utility workspace-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  @media (min-width: 768px) {
+    gap: 1.5rem;
+  }
 }
