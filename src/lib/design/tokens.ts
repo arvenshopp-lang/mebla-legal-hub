@@ -111,20 +111,20 @@ export const TOKEN_GROUPS: TokenGroup[] = [
         key: "--font-arabic",
         label: "الخط العربي الأساسي",
         type: "font",
-        fallback: "IBM Plex Sans Arabic",
+        fallback: "Tajawal",
         applyTo: { selector: "html", prop: "font-family" },
       },
       {
         key: "--font-english",
         label: "الخط اللاتيني",
         type: "font",
-        fallback: "IBM Plex Sans Arabic",
+        fallback: "Tajawal",
       },
       {
         key: "--font-headings",
         label: "خط العناوين",
         type: "font",
-        fallback: "نفس الخط العربي",
+        fallback: "Cairo",
         applyTo: { selector: "h1, h2, h3, h4, h5, h6", prop: "font-family" },
       },
       {
