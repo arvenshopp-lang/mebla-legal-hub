@@ -7144,6 +7144,11 @@ export type Database = {
           number: string | null
           organization_id: string | null
           owner_staff_id: string | null
+          recipient_address: string | null
+          recipient_company: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
           requires_approval: boolean
           sent_at: string | null
           starts_on: string | null
@@ -7186,6 +7191,11 @@ export type Database = {
           number?: string | null
           organization_id?: string | null
           owner_staff_id?: string | null
+          recipient_address?: string | null
+          recipient_company?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
           requires_approval?: boolean
           sent_at?: string | null
           starts_on?: string | null
@@ -7228,6 +7238,11 @@ export type Database = {
           number?: string | null
           organization_id?: string | null
           owner_staff_id?: string | null
+          recipient_address?: string | null
+          recipient_company?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
           requires_approval?: boolean
           sent_at?: string | null
           starts_on?: string | null
