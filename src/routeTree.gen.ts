@@ -96,6 +96,7 @@ import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhoo
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicQaModcheckRouteImport } from './routes/api/public/qa-modcheck'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -553,6 +554,12 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTeamPerformanceMemberIdRoute =
+  AuthenticatedTeamPerformanceMemberIdRouteImport.update({
+    id: '/$memberId',
+    path: '/$memberId',
+    getParentRoute: () => AuthenticatedTeamPerformanceRoute,
+  } as any)
 const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
   id: '/cases/$id',
   path: '/cases/$id',
@@ -681,7 +688,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/team-performance': typeof AuthenticatedTeamPerformanceRoute
+  '/team-performance': typeof AuthenticatedTeamPerformanceRouteWithChildren
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -726,6 +733,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -785,7 +793,7 @@ export interface FileRoutesByTo {
   '/support': typeof AuthenticatedSupportRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/team-performance': typeof AuthenticatedTeamPerformanceRoute
+  '/team-performance': typeof AuthenticatedTeamPerformanceRouteWithChildren
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -830,6 +838,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -892,7 +901,7 @@ export interface FileRoutesById {
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
-  '/_authenticated/team-performance': typeof AuthenticatedTeamPerformanceRoute
+  '/_authenticated/team-performance': typeof AuthenticatedTeamPerformanceRouteWithChildren
   '/api/webhook': typeof ApiWebhookRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verified': typeof AuthVerifiedRoute
@@ -937,6 +946,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
+  '/_authenticated/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/qa-modcheck': typeof ApiPublicQaModcheckRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
@@ -1044,6 +1054,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
+    | '/team-performance/$memberId'
     | '/api/public/health'
     | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
@@ -1148,6 +1159,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
+    | '/team-performance/$memberId'
     | '/api/public/health'
     | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
@@ -1254,6 +1266,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cases/$id'
+    | '/_authenticated/team-performance/$memberId'
     | '/api/public/health'
     | '/api/public/qa-modcheck'
     | '/api/public/theme.css'
@@ -1944,6 +1957,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/team-performance/$memberId': {
+      id: '/_authenticated/team-performance/$memberId'
+      path: '/$memberId'
+      fullPath: '/team-performance/$memberId'
+      preLoaderRoute: typeof AuthenticatedTeamPerformanceMemberIdRouteImport
+      parentRoute: typeof AuthenticatedTeamPerformanceRoute
+    }
     '/_authenticated/cases/$id': {
       id: '/_authenticated/cases/$id'
       path: '/cases/$id'
@@ -2066,6 +2086,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedTeamPerformanceRouteChildren {
+  AuthenticatedTeamPerformanceMemberIdRoute: typeof AuthenticatedTeamPerformanceMemberIdRoute
+}
+
+const AuthenticatedTeamPerformanceRouteChildren: AuthenticatedTeamPerformanceRouteChildren =
+  {
+    AuthenticatedTeamPerformanceMemberIdRoute:
+      AuthenticatedTeamPerformanceMemberIdRoute,
+  }
+
+const AuthenticatedTeamPerformanceRouteWithChildren =
+  AuthenticatedTeamPerformanceRoute._addFileChildren(
+    AuthenticatedTeamPerformanceRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -2080,7 +2115,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
-  AuthenticatedTeamPerformanceRoute: typeof AuthenticatedTeamPerformanceRoute
+  AuthenticatedTeamPerformanceRoute: typeof AuthenticatedTeamPerformanceRouteWithChildren
   AuthenticatedCasesIdRoute: typeof AuthenticatedCasesIdRoute
   AuthenticatedCasesIndexRoute: typeof AuthenticatedCasesIndexRoute
 }
@@ -2099,7 +2134,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
-  AuthenticatedTeamPerformanceRoute: AuthenticatedTeamPerformanceRoute,
+  AuthenticatedTeamPerformanceRoute:
+    AuthenticatedTeamPerformanceRouteWithChildren,
   AuthenticatedCasesIdRoute: AuthenticatedCasesIdRoute,
   AuthenticatedCasesIndexRoute: AuthenticatedCasesIndexRoute,
 }

@@ -211,7 +211,9 @@ function Page() {
                           <Th className="w-28">التغيّر</Th>
                           <Th className="w-24">الأعمال</Th>
                           <Th className="w-32">متأخر</Th>
-                          <Th className="w-24" />
+                          <Th className="w-24">
+                            <span className="sr-only">إجراءات</span>
+                          </Th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
