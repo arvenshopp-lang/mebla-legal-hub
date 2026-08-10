@@ -1014,6 +1014,8 @@ export const HIGH_RISK_PERMISSIONS: AdminPermission[] = [
   "billing.manage_providers",
   "backups.restore",
   "integrations.manage",
+  "design.publish",
+  "design.rollback",
   "security.manage",
   "security.sessions.manage",
   "security.events.export",
