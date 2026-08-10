@@ -438,6 +438,62 @@ export function DocumentFormModal({
           </FormField>
         </div>
 
+        <div className="rounded-[var(--radius-m)] border border-border p-4">
+          <h4 className="text-label mb-1">بيانات المستلم (تظهر في ملف PDF)</h4>
+          <p className="text-caption mb-3">
+            اتركها فارغة ليعتمد المستند بيانات الشركة أو المكتب المرتبط. استخدمها لإصدار عرض سعر
+            لجهة خارجية غير مسجّلة في سجل العملاء.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="اسم الجهة / الشركة">
+              <input
+                className={inputCls}
+                value={form.recipientCompany}
+                onChange={(e) => set("recipientCompany", e.target.value)}
+                maxLength={180}
+              />
+            </FormField>
+            <FormField label="اسم المستلم (عناية)">
+              <input
+                className={inputCls}
+                value={form.recipientName}
+                onChange={(e) => set("recipientName", e.target.value)}
+                maxLength={150}
+              />
+            </FormField>
+            <FormField label="جوال المستلم">
+              <input
+                className={inputCls}
+                inputMode="tel"
+                dir="ltr"
+                value={form.recipientPhone}
+                onChange={(e) => set("recipientPhone", e.target.value)}
+                maxLength={30}
+              />
+            </FormField>
+            <FormField label="بريد المستلم" error={errors.recipientEmail}>
+              <input
+                className={inputCls}
+                type="email"
+                dir="ltr"
+                value={form.recipientEmail}
+                onChange={(e) => set("recipientEmail", e.target.value)}
+                maxLength={160}
+              />
+            </FormField>
+            <div className="sm:col-span-2">
+              <FormField label="عنوان المستلم">
+                <input
+                  className={inputCls}
+                  value={form.recipientAddress}
+                  onChange={(e) => set("recipientAddress", e.target.value)}
+                  maxLength={300}
+                />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField label="صالح حتى">
             <input
