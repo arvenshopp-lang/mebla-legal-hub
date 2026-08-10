@@ -138,9 +138,9 @@ export const previewDesignCss = createServerFn({ method: "POST" })
     await requireDesign(context.supabase, context.userId, "design.preview");
     const svc = await import("./theme.server");
     const { sanitizeTokens } = await import("./tokens");
-    const { validateCustomCss } = await import("./css-guard");
-    const page = validateCustomCss(data.customCss, data.pageKey);
-    const global = data.globalCss ? validateCustomCss(data.globalCss, "global") : null;
+    const { validateCustomCssServer } = await import("./css-guard.server");
+    const page = validateCustomCssServer(data.customCss, data.pageKey);
+    const global = data.globalCss ? validateCustomCssServer(data.globalCss, "global") : null;
     const css = svc.buildPreviewBundle({
       pageKey: data.pageKey,
       tokens: sanitizeTokens(data.tokens).tokens,
