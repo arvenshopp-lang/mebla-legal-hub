@@ -1400,6 +1400,14 @@ export type TaxSettings = {
   sellerAddress: string;
   paymentTermsDays: number;
   bankDetails: string;
+  /** بيانات هوية المستندات: تظهر في ترويسة وتذييل ملفات PDF. */
+  commercialRegistration: string;
+  contactPhone: string;
+  contactEmail: string;
+  website: string;
+  signatoryName: string;
+  signatoryTitle: string;
+  documentFooterNote: string;
 };
 
 const TAX_SETTINGS_KEY = "billing_tax";
@@ -1411,6 +1419,13 @@ const DEFAULT_TAX_SETTINGS: TaxSettings = {
   sellerAddress: "",
   paymentTermsDays: 14,
   bankDetails: "",
+  commercialRegistration: "",
+  contactPhone: "",
+  contactEmail: "",
+  website: "mehlalex.com",
+  signatoryName: "",
+  signatoryTitle: "",
+  documentFooterNote: "",
 };
 
 export async function getTaxSettings(): Promise<TaxSettings> {
