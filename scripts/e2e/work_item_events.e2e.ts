@@ -237,6 +237,143 @@ for (const role of ["lawyer", "legal_assistant", "viewer", "outsider"] as (
   record("سجل الأحداث غير قابل للحذف — owner", !deleted, `status=${del.status}`);
 }
 
+// ── 4.5) حقن عطل: رفض الكتابة في سجل الأحداث لا يُرجع العملية (No Rollback) ──
+// العلامة QA-WIE-FAULT تجعل مشغّل التقاط الأحداث يفشل بنفس رمز رفض الصلاحية
+// (42501)، فنتحقق أن تعديل المهمة/المهلة ينجح ويُحفظ فعلياً وأن العطل يُقيَّد.
+type FailureRow = { id: string; ref: string; error_code: string | null; metadata: unknown };
+
+async function failuresOf(itemId: string): Promise<FailureRow[]> {
+  const res = await adminFetch(
+    `${SUPABASE_URL}/rest/v1/system_failures?action=eq.work_item_events.capture&metadata->>item_id=eq.${itemId}&select=id,ref,error_code,metadata`,
+  );
+  const body = (await res.json()) as unknown;
+  return Array.isArray(body) ? (body as FailureRow[]) : [];
+}
+
+async function readRow(
+  table: "tasks" | "deadlines",
+  id: string,
+): Promise<Record<string, unknown> | undefined> {
+  const r = await asUser(acc("owner").token, `/rest/v1/${table}?id=eq.${id}&select=*`);
+  return Array.isArray(r.body) ? (r.body as Record<string, unknown>[])[0] : undefined;
+}
+
+const faultIds: { table: "tasks" | "deadlines"; id: string }[] = [];
+
+for (const table of ["tasks", "deadlines"] as const) {
+  const isTask = table === "tasks";
+  const label = isTask ? "المهمة" : "المهلة";
+  const createRes = await asUser(lawyer.token, `/rest/v1/${table}`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: `QA-WIE-FAULT ${label} حقن عطل`,
+      due_date: iso(2 * day),
+      created_by: lawyer.userId,
+      ...(isTask ? { assigned_to: lawyer.userId } : { responsible_user_id: lawyer.userId }),
+    }),
+  });
+  record(
+    `إنشاء ${label} ينجح رغم رفض الكتابة في سجل الأحداث`,
+    createRes.status === 201,
+    `status=${createRes.status} ${JSON.stringify(createRes.body)}`,
+  );
+  const row = Array.isArray(createRes.body)
+    ? (createRes.body as { id: string }[])[0]
+    : undefined;
+  if (!row) {
+    record(`استمرار اختبار حقن العطل — ${label}`, false, "تعذّر إنشاء الصف");
+    continue;
+  }
+  faultIds.push({ table, id: row.id });
+
+  record(
+    `${label} محفوظة فعلياً بعد الإنشاء (لا Rollback)`,
+    !!(await readRow(table, row.id)),
+    "الصف غير موجود بعد الإنشاء",
+  );
+  record(
+    `لا أحداث مسجَّلة لـ${label} عند رفض الكتابة`,
+    (await eventsOf(row.id)).length === 0,
+    `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+  );
+
+  const newDue = iso(21 * day);
+  const dueRes = await asUser(lawyer.token, `/rest/v1/${table}?id=eq.${row.id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ due_date: newDue }),
+  });
+  const afterDue = await readRow(table, row.id);
+  record(
+    `تغيير استحقاق ${label} ينجح مع فشل التقاط الحدث`,
+    dueRes.status === 200,
+    `status=${dueRes.status} ${JSON.stringify(dueRes.body)}`,
+  );
+  record(
+    `الاستحقاق الجديد لـ${label} مُثبَّت في القاعدة (المعاملة لم تُرجَع)`,
+    typeof afterDue?.["due_date"] === "string" &&
+      new Date(afterDue["due_date"] as string).getTime() === new Date(newDue).getTime(),
+    `due=${String(afterDue?.["due_date"])} expected=${newDue}`,
+  );
+
+  if (isTask) {
+    const asgRes = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${row.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ assigned_to: assistant.userId }),
+    });
+    const afterAsg = await readRow("tasks", row.id);
+    record(
+      "إعادة إسناد المهمة تنجح مع فشل التقاط الحدث",
+      asgRes.status === 200,
+      `status=${asgRes.status}`,
+    );
+    record(
+      "المسؤول الجديد للمهمة مُثبَّت في القاعدة",
+      afterAsg?.["assigned_to"] === assistant.userId,
+      `assigned_to=${String(afterAsg?.["assigned_to"])}`,
+    );
+  }
+
+  const doneRes = await asUser(lawyer.token, `/rest/v1/${table}?id=eq.${row.id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ status: "completed" }),
+  });
+  const afterDone = await readRow(table, row.id);
+  record(
+    `إنجاز ${label} ينجح مع فشل التقاط الحدث`,
+    doneRes.status === 200,
+    `status=${doneRes.status} ${JSON.stringify(doneRes.body)}`,
+  );
+  record(
+    `حالة ${label} أصبحت completed فعلياً`,
+    afterDone?.["status"] === "completed",
+    `status=${String(afterDone?.["status"])}`,
+  );
+  record(
+    `السجل يبقى فارغاً لـ${label} بعد كل التعديلات`,
+    (await eventsOf(row.id)).length === 0,
+    `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+  );
+
+  const failures = await failuresOf(row.id);
+  record(
+    `أعطال التقاط أحداث ${label} مُقيَّدة في system_failures`,
+    failures.length >= 3,
+    `count=${failures.length}`,
+  );
+  record(
+    `مرجع العطل يبدأ بـ WIE- ورمز الخطأ 42501 — ${label}`,
+    failures.every((f) => f.ref?.startsWith("WIE-")) &&
+      failures.every((f) => f.error_code === "42501"),
+    `refs=${failures.map((f) => `${f.ref}:${f.error_code}`).join(",")}`,
+  );
+}
+
 // ── 5) الحذف يُسجَّل أيضاً دون فشل العملية ──────────────────────────────────
 {
   const r = await asUser(acc("owner").token, `/rest/v1/tasks?id=eq.${task.id}`, {
@@ -253,6 +390,16 @@ for (const role of ["lawyer", "legal_assistant", "viewer", "outsider"] as (
 }
 
 const fail = results.filter((r) => !r.pass);
+
+// تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
+for (const { table, id } of faultIds) {
+  await adminFetch(
+    `${SUPABASE_URL}/rest/v1/system_failures?action=eq.work_item_events.capture&metadata->>item_id=eq.${id}`,
+    { method: "DELETE" },
+  );
+  await adminFetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, { method: "DELETE" });
+}
+
 console.log(`\nالنتيجة: ${results.length - fail.length} PASS / ${fail.length} FAIL`);
 if (fail.length) {
   for (const f of fail) console.log(`  FAIL — ${f.name} :: ${f.detail}`);
