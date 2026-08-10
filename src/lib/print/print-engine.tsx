@@ -80,7 +80,7 @@ function buildPrintDocument(html: string, stamp: PrintStamp): string {
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: "IBM Plex Sans Arabic", "Segoe UI", Arial, sans-serif;
+    font-family: "Tajawal", "Segoe UI", Arial, sans-serif;
     color: #16211D; background: #fff; font-size: 12.5px; line-height: 1.9;
   }
   .mehla-watermark, .mehla-classification, .mehla-footer { position: fixed; z-index: 9999; pointer-events: none; }

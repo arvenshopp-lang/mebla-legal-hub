@@ -34,7 +34,7 @@ export function watermarkTileDataUrl(stamp: PrintStamp, opacity = 0.1): string {
   const text = lines
     .map(
       (line, index) =>
-        `<text x="0" y="${index * lineHeight - blockHeight / 2 + lineHeight}" font-family="'IBM Plex Sans Arabic',Arial,sans-serif" font-size="11" fill="#123C32" text-anchor="middle">${escapeXml(line)}</text>`,
+        `<text x="0" y="${index * lineHeight - blockHeight / 2 + lineHeight}" font-family="'Tajawal',Arial,sans-serif" font-size="11" fill="#123C32" text-anchor="middle">${escapeXml(line)}</text>`,
     )
     .join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" viewBox="0 0 ${TILE} ${TILE}">
@@ -50,7 +50,7 @@ export function classificationStampDataUrl(stamp: PrintStamp, opacity = 0.14): s
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360">
   <g opacity="${opacity}" transform="translate(450 180) rotate(${ANGLE_DEG})">
     <rect x="-380" y="-70" width="760" height="140" rx="18" fill="none" stroke="#8A1F1F" stroke-width="8"/>
-    <text x="0" y="18" font-family="'IBM Plex Sans Arabic',Arial,sans-serif" font-size="68" font-weight="700" fill="#8A1F1F" letter-spacing="6" text-anchor="middle">${escapeXml(label)}</text>
+    <text x="0" y="18" font-family="'Tajawal',Arial,sans-serif" font-size="68" font-weight="700" fill="#8A1F1F" letter-spacing="6" text-anchor="middle">${escapeXml(label)}</text>
   </g>
 </svg>`;
   return toDataUrl(svg);
@@ -74,7 +74,7 @@ function createCanvas(
   return { canvas, ctx };
 }
 
-const FONT_STACK = '"IBM Plex Sans Arabic", "Segoe UI", Arial, sans-serif';
+const FONT_STACK = '"Tajawal", "Segoe UI", Arial, sans-serif';
 
 /**
  * علامة مائية نقطية بمقاس الصفحة، تُدمج داخل محتوى صفحة PDF.

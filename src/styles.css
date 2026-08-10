@@ -116,11 +116,11 @@
   /* خطوط المنصة — مستضافة محلياً (src/styles/fonts.css)
      Tajawal: خط الواجهة والنص والجداول والنماذج
      Cairo (--font-display): العناوين الكبرى والأرقام البارزة
-     IBM Plex Sans Arabic: خط احتياطي معتمد */
-  --font-sans: "Tajawal", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Cairo", "IBM Plex Sans Arabic", system-ui, sans-serif;
+     الاحتياطي: خطوط النظام فقط */
+  --font-sans: "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Cairo", system-ui, sans-serif;
   --font-serif: var(--font-display);
-  --font-mono: "Tajawal", "IBM Plex Sans Arabic", ui-monospace, monospace;
+  --font-mono: "Tajawal", ui-monospace, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
