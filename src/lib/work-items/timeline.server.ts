@@ -6,10 +6,17 @@ import {
   WORK_EVENTS,
   type WorkEventName,
   type WorkItemTimelineCursor,
+  type WorkItemTimelineEvent,
   type WorkItemTimelinePage,
 } from "./timeline.shared";
 
 type Client = SupabaseClient<Database>;
+
+/** أدوار المكتب المصرح لها بتصدير سجل الأحداث (القارئ فقط ممنوع). */
+const EXPORT_ROLES = ["owner", "admin", "lawyer", "legal_assistant"];
+
+/** أقصى عدد أحداث يُصدَّر في ملف واحد. */
+const EXPORT_MAX_EVENTS = 2000;
 
 /** أعطال التقاط الأحداث تُقيَّد بهذا الإجراء داخل سجل الأعطال. */
 const CAPTURE_ACTION = "work_item_events.capture";
