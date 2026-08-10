@@ -612,8 +612,13 @@ function textBlocks(ctx: Ctx, blocks: PdfTextBlock[]): void {
   });
 }
 
-function footer(ctx: Ctx): void {
-  const note = "مستند صادر إلكترونياً من منصة مِهلة";
+function footer(ctx: Ctx, brand: PdfBrand): void {
+  const contact = [brand.contactPhone, brand.contactEmail, brand.website]
+    .filter((value): value is string => !!value && value.trim().length > 0)
+    .join("  ·  ");
+  const note = brand.documentFooterNote?.trim()
+    ? brand.documentFooterNote.trim()
+    : "مستند صادر إلكترونياً من منصة مِهلة";
   ctx.doc.getPages().forEach((page, index, pages) => {
     const label = `صفحة ${index + 1} / ${pages.length}`;
     const labelWidth = splitDirectionalRuns(label).reduce(
@@ -632,6 +637,9 @@ function footer(ctx: Ctx): void {
     });
     drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
     drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
+    if (contact) {
+      drawLine(page, ctx.font, contact, MARGIN, MARGIN + 8, 8, MUTED);
+    }
   });
 }
 
@@ -651,6 +659,7 @@ export async function renderBillingPdf(
   const ctx: Ctx = { doc, font, page: doc.addPage([A4.width, A4.height]), y: A4.height - MARGIN };
 
   header(ctx, model, brand);
+  if (model.recipient) recipientCard(ctx, model.recipient);
   metaGrid(ctx, model.meta);
   model.tables.forEach((spec) => table(ctx, spec));
   totalsBlock(ctx, model.totals);
@@ -663,7 +672,10 @@ export async function renderBillingPdf(
     });
   }
   textBlocks(ctx, blocks);
-  footer(ctx);
+  if (model.signatureSlots && model.signatureSlots.length > 0) {
+    signatureBlock(ctx, model.signatureSlots);
+  }
+  footer(ctx, brand);
 
   return doc.save();
 }
