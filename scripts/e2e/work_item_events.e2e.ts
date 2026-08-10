@@ -7,7 +7,14 @@
  *
  * التشغيل: bun scripts/e2e/work_item_events.e2e.ts   (بعد bun scripts/e2e/org-qa-fixture.ts)
  */
-import { asUser, loadQaOrg, SUPABASE_URL, adminFetch, type OrgRole } from "./qa-support";
+import {
+  asUser,
+  loadQaOrg,
+  SUPABASE_URL,
+  adminFetch,
+  QA_ORG_PREFIX,
+  type OrgRole,
+} from "./qa-support";
 
 type Case = { name: string; pass: boolean; detail: string };
 const results: Case[] = [];
