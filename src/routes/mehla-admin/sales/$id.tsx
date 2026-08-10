@@ -58,6 +58,17 @@ export const Route = createFileRoute("/mehla-admin/sales/$id")({
 
 type DialogKind = "send" | "sign" | "decision" | "invoice" | "subscription" | "terminate" | null;
 
+/** تطبيع رقم الجوال السعودي إلى صيغة واتساب الدولية بدون رموز. */
+function waNumber(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("966")) return digits;
+  if (digits.startsWith("05")) return `966${digits.slice(1)}`;
+  if (digits.startsWith("5") && digits.length === 9) return `966${digits}`;
+  return digits;
+}
+
 function SalesDocumentPage() {
   const { id } = Route.useParams();
   const navigate = Route.useNavigate();
