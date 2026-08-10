@@ -20,9 +20,10 @@ import {
   Printer,
   LifeBuoy,
   Globe,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
+import { useAuth, ROLE_LABELS, type AppRole } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/use-subscription";
