@@ -451,6 +451,7 @@ function DeadlineDialog({
       return;
     }
     setSaving(true);
+    const since = new Date(Date.now() - 2_000).toISOString();
     const payload: Record<string, unknown> = {
       ...res.data,
       due_date: new Date(res.data.due_date).toISOString(),
@@ -463,16 +464,23 @@ function DeadlineDialog({
           .from("deadlines")
           .update(payload as Partial<TablesInsert<"deadlines">>)
           .eq("id", editing.id)
-      : supabase.from("deadlines").insert({
-          ...(payload as Partial<TablesInsert<"deadlines">>),
-          organization_id: orgId,
-          created_by: userId,
-        } as TablesInsert<"deadlines">);
-    const { error } = await q;
+          .select("id")
+          .maybeSingle()
+      : supabase
+          .from("deadlines")
+          .insert({
+            ...(payload as Partial<TablesInsert<"deadlines">>),
+            organization_id: orgId,
+            created_by: userId,
+          } as TablesInsert<"deadlines">)
+          .select("id")
+          .maybeSingle();
+    const { data: saved, error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     if (!editing) track("deadline_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    void captureNotice("deadline", saved?.id ?? editing?.id, since);
     draft.clear();
     qc.invalidateQueries({ queryKey: ["deadlines"] });
     qc.invalidateQueries({ queryKey: ["case-deadlines"] });
