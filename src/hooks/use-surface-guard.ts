@@ -7,6 +7,7 @@ import {
   resolveSurface,
   surfaceUrl,
 } from "@/config/surfaces";
+import { isDesignPreviewRequest } from "@/lib/design/preview-bridge";
 
 /**
  * نسخة العميل من حارس النطاقات: تمنع التنقل داخل التطبيق إلى مسار
@@ -18,6 +19,9 @@ export function useSurfaceGuard() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // معاينة التصميم تعمل داخل إطار من نفس الأصل: أي تحويل إلى نطاق فرعي آخر
+    // يقطع جسر الحقن ويعرض الموقع المنشور بدل المسودة، فيُعطَّل الحارس هنا فقط.
+    if (window.parent !== window && isDesignPreviewRequest(window.location.search)) return;
     const host = window.location.host;
     const surface = resolveSurface(host);
     if (!surface) return;

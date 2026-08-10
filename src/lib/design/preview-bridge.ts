@@ -12,17 +12,36 @@
 export const DESIGN_PREVIEW_PARAM = "__design";
 export const DRAFT_STYLE_ID = "mehla-design-draft";
 
+/**
+ * مفتاح ثبات وضع المعاينة داخل الإطار.
+ * سببه: أي تحويل داخلي (مثل «/» إلى «/onboarding») يُسقط وسيط الرابط،
+ * فيفقد الإطار الجسر ويتوقف حقن المسودة بلا أي رسالة للمستخدم.
+ * النطاق: sessionStorage الخاص بالإطار فقط، ولا يُفعَّل إلا داخل إطار له نافذة أم.
+ */
+const STICKY_KEY = "mehla:design-preview";
+
 const CSS_MESSAGE = "mehla:design-css";
 const READY_MESSAGE = "mehla:design-ready";
 
 type DraftMessage = { type: typeof CSS_MESSAGE; css: string };
 
-/** هل هذا الطلب معاينة تصميم؟ (يُقرأ من search الحالي) */
+/** هل هذا الطلب معاينة تصميم؟ (وسيط الرابط، أو ثبات الوضع داخل الإطار بعد تحويل) */
 export function isDesignPreviewRequest(search: string): boolean {
+  let fromParam = false;
   try {
-    return new URLSearchParams(search).get(DESIGN_PREVIEW_PARAM) === "1";
+    fromParam = new URLSearchParams(search).get(DESIGN_PREVIEW_PARAM) === "1";
   } catch {
-    return false;
+    fromParam = false;
+  }
+  if (typeof window === "undefined" || window.parent === window) return fromParam;
+  try {
+    if (fromParam) {
+      window.sessionStorage.setItem(STICKY_KEY, "1");
+      return true;
+    }
+    return window.sessionStorage.getItem(STICKY_KEY) === "1";
+  } catch {
+    return fromParam;
   }
 }
 
