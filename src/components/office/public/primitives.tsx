@@ -51,16 +51,8 @@ export function Section({
   );
 }
 
-export function SurfaceCard({
-  className,
-  children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className={cn("office-card p-5 shadow-xs sm:p-6", className)}>{children}</div>
-  );
+export function SurfaceCard({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cn("office-card p-5 shadow-xs sm:p-6", className)}>{children}</div>;
 }
 
 export function ContactRow({

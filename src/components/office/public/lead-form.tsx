@@ -11,13 +11,7 @@ import { PREFERRED_CONTACT_LABELS } from "@/lib/office-page.shared";
 const inputStyle =
   "min-h-11 w-full rounded-[var(--office-radius-sm)] border border-border bg-background px-3.5 text-body-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30";
 
-export function OfficePublicLeadForm({
-  view,
-  channel,
-}: {
-  view: OfficePageView;
-  channel: string;
-}) {
+export function OfficePublicLeadForm({ view, channel }: { view: OfficePageView; channel: string }) {
   const form = view.leadForm;
   const [values, setValues] = useState({
     full_name: "",
@@ -216,9 +210,7 @@ export function OfficePublicLeadForm({
                   <Send size={17} strokeWidth={1.9} aria-hidden="true" />
                   {busy ? "جارٍ الإرسال…" : "إرسال الطلب"}
                 </button>
-                {view.isPreview && (
-                  <p className="mt-2 text-caption">الإرسال معطّل في المعاينة.</p>
-                )}
+                {view.isPreview && <p className="mt-2 text-caption">الإرسال معطّل في المعاينة.</p>}
               </div>
             </form>
           )}

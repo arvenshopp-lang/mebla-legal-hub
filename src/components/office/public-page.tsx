@@ -94,7 +94,10 @@ export function OfficePublicPage({ view }: { view: OfficePageView }) {
         {view.team.length > 0 && <OfficePublicTeam team={view.team} />}
 
         {(hasContact || hasHours) && (
-          <section aria-labelledby={hasContact ? "contact-title" : "hours-title"} className="office-section">
+          <section
+            aria-labelledby={hasContact ? "contact-title" : "hours-title"}
+            className="office-section"
+          >
             <div className="office-container grid items-start gap-4 lg:grid-cols-2">
               {hasContact && (
                 <OfficePublicContact
