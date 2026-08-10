@@ -33,3 +33,15 @@ export type WorkItemTimelineEvent = {
   fromDueDate: string | null;
   toDueDate: string | null;
 };
+
+/** مؤشر ترقيم keyset: لحظة الحدث + تسلسله داخل نفس اللحظة. */
+export type WorkItemTimelineCursor = { occurredAt: string; seq: number };
+
+export type WorkItemTimelinePage = {
+  events: WorkItemTimelineEvent[];
+  nextCursor: WorkItemTimelineCursor | null;
+};
+
+/** حجم الصفحة الافتراضي للتحميل التدريجي. */
+export const TIMELINE_PAGE_SIZE = 25;
+export const TIMELINE_MAX_PAGE_SIZE = 100;
