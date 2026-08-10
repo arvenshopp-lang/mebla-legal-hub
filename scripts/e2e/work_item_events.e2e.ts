@@ -987,6 +987,14 @@ for (const table of ["tasks", "deadlines"] as const) {
   const ref = fns?.["getWorkItemTimelineFn"];
   record("دالة الخادم getWorkItemTimelineFn متاحة", !!ref, ref ? "" : "لم تُستخرج");
 
+  /** أسماء الأحداث من استجابة seroval (المفاتيح مفصولة عن القيم في هذا الترميز). */
+  const eventsFromRaw = (raw: string): string[] =>
+    Array.from(
+      raw.matchAll(
+        /"k":\["id","event"[\s\S]*?"v":\[\{"t":1,"s":"[0-9a-f-]+"\},\{"t":1,"s":"([a-z_]+)"\}/g,
+      ),
+becomes    ).map((m) => m[1] as string);
+
   if (ref) {
     // مهمة يملك المحامي قراءتها + مهلة، لتغطية النوعين
     const tRes = await asUser(lawyer.token, `/rest/v1/tasks`, {
@@ -1056,9 +1064,7 @@ for (const table of ["tasks", "deadlines"] as const) {
 
         // 2) نفس المستخدم يرى السجل عبر المسار المؤمّن
         const viaFn = await timeline(who.token, "task", taskId);
-        const rows = (viaFn.raw.match(/"event":"[a-z_]+"/g) ?? []).map(
-          (s) => s.split('"')[3] as string,
-        );
+        const rows = eventsFromRaw(viaFn.raw);
         record(
           `${label} يرى سجل المهمة عبر المسار المؤمّن`,
           viaFn.ok && rows.includes("created"),
@@ -1066,9 +1072,7 @@ for (const table of ["tasks", "deadlines"] as const) {
         );
 
         const viaFnDeadline = await timeline(who.token, "deadline", deadlineId);
-        const dEvents = (viaFnDeadline.raw.match(/"event":"[a-z_]+"/g) ?? []).map(
-          (s) => s.split('"')[3],
-        );
+        const dEvents = eventsFromRaw(viaFnDeadline.raw);
         record(
           `${label} يرى سجل المهلة عبر المسار المؤمّن`,
           viaFnDeadline.ok && dEvents.includes("created") && dEvents.includes("due_changed"),
@@ -1093,7 +1097,7 @@ for (const table of ["tasks", "deadlines"] as const) {
       const outFn = await timeline(outsider.token, "task", taskId);
       record(
         "المسار المؤمّن يرفض مستخدماً من خارج المنظمة",
-        outFn.denied && !/"event":/.test(outFn.raw),
+        outFn.denied && eventsFromRaw(outFn.raw).length === 0,
         `status=${outFn.status} msg=${outFn.message}`,
       );
       record(
@@ -1106,7 +1110,7 @@ for (const table of ["tasks", "deadlines"] as const) {
       const anonFn = await timeline(undefined, "task", taskId);
       record(
         "المسار المؤمّن يرفض الطلب بلا مصادقة",
-        anonFn.denied && !/"event":/.test(anonFn.raw),
+        anonFn.denied && eventsFromRaw(anonFn.raw).length === 0,
         `status=${anonFn.status}`,
       );
 
@@ -1123,7 +1127,7 @@ for (const table of ["tasks", "deadlines"] as const) {
       });
       record(
         "تبديل معرّف المنظمة في الطلب لا يمنح وصولاً",
-        spoof.denied && !/"event":/.test(spoof.raw),
+        spoof.denied && eventsFromRaw(spoof.raw).length === 0,
         `status=${spoof.status} msg=${spoof.message}`,
       );
 
