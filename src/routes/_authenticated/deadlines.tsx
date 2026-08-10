@@ -38,6 +38,7 @@ import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   component: Page,
@@ -94,6 +95,7 @@ function errMsg(e: unknown): string {
 function Page() {
   const { activeOrgId, activeRole, user } = useAuth();
   const qc = useQueryClient();
+  const captureNotice = useWorkItemCaptureNotice(activeOrgId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [type, setType] = useState("all");
@@ -141,16 +143,17 @@ function Page() {
 
   const complete = useMutation({
     mutationFn: async (id: string) => {
+      const since = new Date(Date.now() - 2_000).toISOString();
       const { error } = await supabase
         .from("deadlines")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
-      return id;
+      return { id, since };
     },
-    onSuccess: (id) => {
+    onSuccess: ({ id, since }) => {
       toast.success("تم الإنجاز");
-      void captureNotice("deadline", id, sinceRef.current);
+      void captureNotice("deadline", id, since);
       qc.invalidateQueries({ queryKey: ["deadlines"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
