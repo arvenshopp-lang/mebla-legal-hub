@@ -441,13 +441,26 @@ function DesignStudioPage() {
               `تم الحفظ${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString("ar-SA")}` : ""}`}
             {status === "error" && "فشل الحفظ — أعد المحاولة"}
           </span>
-          <Btn variant="secondary" size="sm" onClick={() => void doSave(false)}>
+          <Btn
+            variant="secondary"
+            size="sm"
+            disabled={!can.draft}
+            title={can.draft ? undefined : "لا تملك صلاحية تعديل مسودة التصميم."}
+            onClick={() => void doSave(false)}
+          >
             <Save className="h-4 w-4" aria-hidden /> حفظ مسودة فقط
           </Btn>
           <Btn
             size="sm"
             loading={publishMutation.isPending}
-            disabled={!validation.valid}
+            disabled={!validation.valid || !can.publish}
+            title={
+              !can.publish
+                ? "النشر يتطلب صلاحية «نشر التصميم»."
+                : !validation.valid
+                  ? "هناك قواعد CSS محظورة تمنع النشر."
+                  : undefined
+            }
             onClick={() => publishMutation.mutate()}
           >
             <Upload className="h-4 w-4" aria-hidden /> حفظ ونشر الآن
@@ -474,7 +487,8 @@ function DesignStudioPage() {
                 <Btn
                   variant="secondary"
                   size="sm"
-                  disabled={!state?.rollback_available || rollbackMutation.isPending}
+                  disabled={!can.rollback || !state?.rollback_available || rollbackMutation.isPending}
+                  title={can.rollback ? undefined : "الاسترجاع يتطلب صلاحية «التراجع عن النشر»."}
                   loading={rollbackMutation.isPending}
                   onClick={() => {
                     if (
@@ -491,6 +505,8 @@ function DesignStudioPage() {
                 <Btn
                   variant="danger"
                   size="sm"
+                  disabled={!can.draft || resetMutation.isPending}
+                  title={can.draft ? undefined : "إعادة التعيين تتطلب صلاحية تعديل المسودة."}
                   loading={resetMutation.isPending}
                   onClick={() => {
                     if (!window.confirm("إعادة تعيين هذه الصفحة للوضع الافتراضي وحذف مسودتها؟"))
@@ -848,6 +864,7 @@ function DesignStudioPage() {
                                 size="sm"
                                 disabled={
                                   restoreMutation.isPending ||
+                                  !can.rollback ||
                                   String(v.id) === String(studio.data?.active?.id ?? "")
                                 }
                                 onClick={() => {
