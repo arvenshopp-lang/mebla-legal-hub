@@ -533,17 +533,15 @@ function TaskDialog({
           </FormField>
         </div>
       </div>
+      {editing && activeOrgId && (
+        <WorkItemTimeline
+          organizationId={activeOrgId}
+          itemType="task"
+          itemId={editing.id}
+          enabled={open}
+        />
+      )}
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-        {editing && activeOrgId && (
-          <div className="w-full">
-            <WorkItemTimeline
-              organizationId={activeOrgId}
-              itemType="task"
-              itemId={editing.id}
-              enabled={open}
-            />
-          </div>
-        )}
         <div className="me-auto">
           <DraftStatus draft={draft as never} />
         </div>
