@@ -47,6 +47,13 @@ export type PdfBrand = {
   sellerAddress?: string | null;
   taxNumber?: string | null;
   bankDetails?: string | null;
+  commercialRegistration?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  website?: string | null;
+  signatoryName?: string | null;
+  signatoryTitle?: string | null;
+  documentFooterNote?: string | null;
 };
 
 export type PdfDocumentModel = {
@@ -67,6 +74,10 @@ export type PdfDocumentModel = {
   fileName: string;
   /** إظهار بيانات التحويل البنكي في التذييل (لا تُطبع في الإيصال). */
   showBankDetails?: boolean;
+  /** بطاقة «موجّه إلى» أعلى المستند (اسم الجهة والمستلم وبيانات تواصله). */
+  recipient?: { title: string; lines: string[] } | null;
+  /** خطّا توقيع أسفل المستند (الجهة المُصدرة والعميل). */
+  signatureSlots?: { label: string; caption?: string | null }[];
 };
 
 /* ------------------------------------------------------------------- الهوية */
