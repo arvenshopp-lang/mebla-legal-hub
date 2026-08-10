@@ -393,11 +393,11 @@ const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
 for (const { table, id } of faultIds) {
+  await adminFetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, { method: "DELETE" });
   await adminFetch(
     `${SUPABASE_URL}/rest/v1/system_failures?action=eq.work_item_events.capture&metadata->>item_id=eq.${id}`,
     { method: "DELETE" },
   );
-  await adminFetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, { method: "DELETE" });
 }
 
 console.log(`\nالنتيجة: ${results.length - fail.length} PASS / ${fail.length} FAIL`);
