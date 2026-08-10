@@ -9,7 +9,9 @@
 | --- | --- |
 | Row Level Security | مُفعّل (`relrowsecurity = true`) |
 | مالك الجدول | `postgres` |
-| صلاحيات `anon` / `authenticated` / `service_role` | **لا توجد أي صلاحية** (صفر GRANT) |
+| صلاحيات `anon` | **لا شيء** (تم `REVOKE ALL` في 2026-08-10) |
+| صلاحيات `authenticated` | `SELECT` فقط (لا `INSERT`/`UPDATE`/`DELETE`) |
+| صلاحيات `service_role` | كاملة (تُستخدم من الخادم للقراءة الإدارية) |
 | سياسات موجودة | `work_item_events_select_managers` — قراءة فقط (`SELECT`) لـ `authenticated` |
 | سياسات `INSERT` / `UPDATE` / `DELETE` | **لا توجد — ممنوعة تماماً** |
 
@@ -19,13 +21,18 @@
 private.has_organization_role(organization_id, auth.uid(), ARRAY['owner','admin']::app_role[])
 ```
 
+> ملاحظة تاريخية مهمة: قبل 2026-08-10 كان الجدول يمنح `anon` و`authenticated` صلاحيات كاملة
+> (`arwdDxtm`) وكان الحجب معتمداً على غياب سياسات الكتابة فقط. تم إلغاء تلك المنح لتطبيق
+> Least Privilege. عند فحص المنح لا تعتمد على `information_schema.role_table_grants` من دور
+> محدود (يُخفي منح الأدوار الأخرى) — استخدم `pg_class.relacl` أو `has_table_privilege`.
+
 ## 2. لماذا لا يمكن لأي مستخدم الكتابة مباشرة
 
 الحجب مبني على طبقتين مستقلتين (Defense in Depth):
 
-1. **غياب GRANT**: Data API (PostgREST) يعمل بأدوار `anon` / `authenticated`، ولا تملك أي منها
-   `INSERT` أو `UPDATE` أو `DELETE` أو حتى `SELECT` على الجدول، فأي طلب مباشر يُرفض بخطأ صلاحية
-   قبل تقييم RLS.
+1. **غياب GRANT للكتابة**: Data API (PostgREST) يعمل بأدوار `anon` / `authenticated`، ولا تملك أي
+   منها `INSERT` أو `UPDATE` أو `DELETE`، و`anon` بلا أي صلاحية إطلاقاً — فالطلب المباشر يُرفض
+   بخطأ صلاحية قبل تقييم RLS.
 2. **غياب سياسات الكتابة**: حتى لو مُنحت صلاحية بالخطأ مستقبلاً، لا توجد سياسة `WITH CHECK` لأي
    عملية كتابة، وRLS مُفعّل — فالنتيجة رفض الصف.
 
@@ -68,8 +75,14 @@ private.has_organization_role(organization_id, auth.uid(), ARRAY['owner','admin'
 - `src/lib/work-items/timeline.functions.ts` يعرّف دالة الخادم المستدعاة من الواجهة.
 - `src/components/work-items/work-item-timeline.tsx` يعرض الجدول الزمني بتوقيت الرياض.
 
-سياسة `work_item_events_select_managers` تبقى قائمة كطبقة نية ثانية (لو مُنح `SELECT` مستقبلاً
-فالقراءة تبقى محصورة على `owner`/`admin` داخل مكتبهم فقط) — ولا يُعتمد عليها كمسار قراءة حالي.
+سياسة `work_item_events_select_managers` تحصر القراءة المباشرة عبر Data API على `owner`/`admin`
+داخل مكتبهم فقط؛ بقية الأدوار تحصل على صفر صفوف.
+
+### حرس آلي دائم
+
+فحص `work_item_events_writable` في `scripts/security-guardrails.sql` (`bun run security:db`) يفشل
+فوراً إذا مُنح `anon` أو `authenticated` أي صلاحية كتابة، أو أُنشئت أي سياسة
+`INSERT`/`UPDATE`/`DELETE`/`ALL` على الجدول.
 
 ## 5. تغطية الاختبارات
 
