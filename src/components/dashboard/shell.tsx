@@ -197,8 +197,10 @@ export function DashboardShell({
               </p>
             )}
             <ul className="space-y-0.5">
-              {group.items.map(({ to, label, Icon }) => {
-                const activeItem = isActive(to);
+              {group.items
+                .filter((item) => !item.roles || (activeRole && item.roles.includes(activeRole)))
+                .map(({ to, label, Icon }) => {
+                  const activeItem = isActive(to);
                 return (
                   <li key={to}>
                     <Link
