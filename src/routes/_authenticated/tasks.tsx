@@ -32,6 +32,7 @@ import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import { WorkItemTimeline } from "@/components/work-items/work-item-timeline";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   component: Page,
@@ -532,6 +533,14 @@ function TaskDialog({
           </FormField>
         </div>
       </div>
+      {editing && activeOrgId && (
+        <WorkItemTimeline
+          organizationId={activeOrgId}
+          itemType="task"
+          itemId={editing.id}
+          enabled={open}
+        />
+      )}
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
         <div className="me-auto">
           <DraftStatus draft={draft as never} />
