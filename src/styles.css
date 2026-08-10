@@ -117,10 +117,10 @@
      Tajawal: خط الواجهة والنص والجداول والنماذج
      Cairo (--font-display): العناوين الكبرى والأرقام البارزة
      الاحتياطي: خطوط النظام فقط */
-  --font-sans: "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Cairo", system-ui, sans-serif;
+  --font-sans: "Tajawal", sans-serif;
+  --font-display: "Cairo", sans-serif;
   --font-serif: var(--font-display);
-  --font-mono: "Tajawal", ui-monospace, monospace;
+  --font-mono: "Tajawal", monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
