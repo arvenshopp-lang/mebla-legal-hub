@@ -194,6 +194,11 @@ function SalesDocumentPage() {
     validUntil: doc.valid_until ?? "",
     startsOn: doc.starts_on ?? "",
     endsOn: doc.ends_on ?? "",
+    recipientName: doc.recipient_name ?? "",
+    recipientCompany: doc.recipient_company ?? "",
+    recipientPhone: doc.recipient_phone ?? "",
+    recipientEmail: doc.recipient_email ?? "",
+    recipientAddress: doc.recipient_address ?? "",
     items: items.map((item) => ({
       description: item.description,
       quantity: item.quantity,
