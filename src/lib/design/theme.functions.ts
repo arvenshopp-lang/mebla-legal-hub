@@ -22,14 +22,18 @@ const draftSchema = z.object({
     .optional(),
 });
 
-/** حرس مالك المنصة — يرفض الموظفين والمشتركين. */
-async function requireOwner(supabase: SupabaseClient<Database>, userId: string) {
+/**
+ * حرس عمليات التصميم — تحقق خادمي لكل عملية بصلاحيتها الدقيقة.
+ * مالك المنصة (super_admin) غير مقيّد؛ وأي موظف آخر يحتاج الصلاحية الصريحة.
+ * إخفاء الأزرار في الواجهة ليس حماية: المنع الحقيقي هنا.
+ */
+async function requireDesign(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  permission: AdminPermission,
+) {
   const guard = await import("@/lib/admin-guard.server");
-  const staff = await guard.requireStaff(supabase, userId, "design.manage");
-  if (staff.role !== "super_admin") {
-    throw new Error("محرر تصميم المنصة متاح لمالك المنصة فقط.");
-  }
-  return staff;
+  return guard.requireStaff(supabase, userId, permission);
 }
 
 export const getDesignStudio = createServerFn({ method: "GET" })
