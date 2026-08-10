@@ -139,6 +139,35 @@ v_granted_without_policy AS (
     AND c.relrowsecurity
     AND has_table_privilege('authenticated', c.oid, 'SELECT')
     AND NOT EXISTS (SELECT 1 FROM pg_policy pol WHERE pol.polrelid = c.oid)
+),
+
+-- ---------------------------------------------------------------------------
+-- فحص 7: سجل أحداث المهام والمهل يجب أن يبقى Append-only عبر SECURITY DEFINER فقط
+--        (لا صلاحية كتابة لدور تطبيقي، ولا سياسة INSERT/UPDATE/DELETE)
+--        المرجع: docs/work-item-events-rls.md
+-- ---------------------------------------------------------------------------
+v_work_item_events_writable AS (
+  SELECT
+    'work_item_events_writable' AS check_id,
+    'public.work_item_events / ' || g.rolname || ':' || g.priv AS object_name,
+    'سجل أحداث المهام والمهل لا يُكتب إلا عبر private.work_item_capture_events (SECURITY DEFINER) — يجب إلغاء هذا المنح' AS detail
+  FROM (
+    SELECT r.rolname, p.priv
+    FROM (VALUES ('anon'), ('authenticated')) AS r(rolname)
+    CROSS JOIN (VALUES ('INSERT'), ('UPDATE'), ('DELETE')) AS p(priv)
+  ) g
+  WHERE to_regclass('public.work_item_events') IS NOT NULL
+    AND has_table_privilege(g.rolname, 'public.work_item_events', g.priv)
+
+  UNION ALL
+
+  SELECT
+    'work_item_events_writable' AS check_id,
+    'public.work_item_events / policy:' || pol.polname AS object_name,
+    'سياسة كتابة على سجل أحداث المهام والمهل — يجب حذفها والاعتماد على المشغّل فقط' AS detail
+  FROM pg_policy pol
+  WHERE pol.polrelid = to_regclass('public.work_item_events')
+    AND pol.polcmd IN ('a', 'w', 'd', '*')
 )
 
 SELECT * FROM v_secdef_anon
@@ -147,4 +176,5 @@ UNION ALL SELECT * FROM v_rpc_missing_uid_check
 UNION ALL SELECT * FROM v_table_without_rls
 UNION ALL SELECT * FROM v_anon_exposed_table
 UNION ALL SELECT * FROM v_granted_without_policy
+UNION ALL SELECT * FROM v_work_item_events_writable
 ORDER BY check_id, object_name;
