@@ -40,13 +40,30 @@ async function requireDesign(
 export const getDesignStudio = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireDesign(context.supabase, context.userId, "design.read");
+    const staff = await requireDesign(context.supabase, context.userId, "design.read");
+    const { hasPermission } = await import("@/lib/admin-permissions");
+    const canHistory = hasPermission(
+      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      "design.history.read",
+    );
+    const canPublish = hasPermission(
+      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      "design.publish",
+    );
+    const canRollback = hasPermission(
+      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      "design.rollback",
+    );
+    const canDraft = hasPermission(
+      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      "design.draft.write",
+    );
     const svc = await import("./theme.server");
     const [state, drafts, versions, audit, active] = await Promise.all([
       svc.getPublishState(false),
       svc.listDrafts(),
-      svc.listVersions(30),
-      svc.listAudit(40),
+      canHistory ? svc.listVersions(30) : Promise.resolve([]),
+      canHistory ? svc.listAudit(40) : Promise.resolve([]),
       svc.getActiveTheme(),
     ]);
     return {
@@ -54,6 +71,8 @@ export const getDesignStudio = createServerFn({ method: "GET" })
       drafts,
       versions,
       audit,
+      // الصلاحيات الفعلية للمستخدم — تُستخدم لتعطيل الأزرار فقط، والمنع الحقيقي على الخادم.
+      can: { draft: canDraft, history: canHistory, publish: canPublish, rollback: canRollback },
       active: active
         ? {
             id: active.id,
