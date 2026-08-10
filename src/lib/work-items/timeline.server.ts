@@ -41,6 +41,8 @@ export async function getWorkItemTimeline(
     .eq("item_type", itemType)
     .eq("item_id", itemId)
     .order("occurred_at", { ascending: true })
+    // فاصل ترجيح ثابت: حدثان في نفس اللحظة (نفس المعاملة) يظهران بترتيب تسجيلهما
+    .order("seq", { ascending: true })
     .limit(MAX_EVENTS);
   if (error) throw new Error("تعذّر جلب سجل الأحداث");
 

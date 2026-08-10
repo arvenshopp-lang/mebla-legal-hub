@@ -9151,6 +9151,7 @@ export type Database = {
           metadata: Json
           occurred_at: string
           organization_id: string
+          seq: number
           to_due_date: string | null
           to_user_id: string | null
         }
@@ -9165,6 +9166,7 @@ export type Database = {
           metadata?: Json
           occurred_at?: string
           organization_id: string
+          seq?: number
           to_due_date?: string | null
           to_user_id?: string | null
         }
@@ -9179,6 +9181,7 @@ export type Database = {
           metadata?: Json
           occurred_at?: string
           organization_id?: string
+          seq?: number
           to_due_date?: string | null
           to_user_id?: string | null
         }
