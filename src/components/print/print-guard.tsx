@@ -87,7 +87,7 @@ export function PrintGuard() {
           #${LAYER_ID} .cs { top: 50%; left: 50%; transform: translate(-50%,-50%); width: 170mm; height: 70mm;
             background: url("${classStamp ?? ""}") center / contain no-repeat; }
           #${LAYER_ID} .ft { bottom: 0; inset-inline: 0; background: #fff; color: #123C32;
-            font-family: "IBM Plex Sans Arabic", Arial, sans-serif; font-size: 7.5pt; text-align: center;
+            font-family: "Tajawal", "IBM Plex Sans Arabic", Arial, sans-serif; font-size: 7.5pt; text-align: center;
             padding: 2mm 6mm 3mm; border-top: 0.4pt solid rgba(18,60,50,.35); }
         </style>
         <div class="wm"></div>
