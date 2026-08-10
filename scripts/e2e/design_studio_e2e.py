@@ -227,8 +227,11 @@ async def owner_phase(browser, cfg):
     handle = await preview_frame(page)
     frame = await handle.content_frame()
     injected = ""
-    for _ in range(10):
-        frame = await handle.content_frame()
+    for _ in range(14):
+        frame = next(
+            (f for f in page.frames if f != page.main_frame and "__design" in (f.url or "")),
+            await handle.content_frame(),
+        )
         injected = await frame.evaluate(
             "()=>{const s=document.getElementById('mehla-design-draft');return s?s.textContent:''}"
         )
