@@ -68,11 +68,11 @@ function itemsTable(detail: DocumentDetail): PdfTable {
   const currency = detail.document.currency;
   return {
     columns: [
-      { label: "البند", width: 0.46 },
-      { label: "الكمية", width: 0.12 },
-      { label: "سعر الوحدة", width: 0.16 },
-      { label: "الخصم", width: 0.13 },
-      { label: "الإجمالي", width: 0.13 },
+      { label: "البند", width: 0.4 },
+      { label: "الكمية", width: 0.09 },
+      { label: "سعر الوحدة", width: 0.17 },
+      { label: "الخصم", width: 0.17 },
+      { label: "الإجمالي", width: 0.17 },
     ],
     rows: detail.items.map((item) => [
       item.description,
