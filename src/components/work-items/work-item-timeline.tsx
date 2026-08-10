@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { History } from "lucide-react";
+import { History, Loader2 } from "lucide-react";
 import { getWorkItemTimelineFn } from "@/lib/work-items/timeline.functions";
 import {
+  TIMELINE_PAGE_SIZE,
   WORK_EVENTS,
   WORK_EVENT_LABELS,
   type WorkEventName,
+  type WorkItemTimelineCursor,
   type WorkItemTimelineEvent,
 } from "@/lib/work-items/timeline.shared";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
@@ -60,25 +62,51 @@ export function WorkItemTimeline({
   enabled?: boolean;
 }) {
   const fetchTimeline = useServerFn(getWorkItemTimelineFn);
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["work-item-timeline", organizationId, itemType, itemId],
-    enabled: enabled && !!organizationId && !!itemId,
-    queryFn: () => fetchTimeline({ data: { organizationId, itemType, itemId } }),
-  });
+  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["work-item-timeline", organizationId, itemType, itemId],
+      enabled: enabled && !!organizationId && !!itemId,
+      initialPageParam: null as WorkItemTimelineCursor | null,
+      queryFn: ({ pageParam }) =>
+        fetchTimeline({
+          data: {
+            organizationId,
+            itemType,
+            itemId,
+            limit: TIMELINE_PAGE_SIZE,
+            cursor: pageParam,
+          },
+        }),
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    });
+
+  // إزالة أي تكرار محتمل بين الصفحات (نفس معرّف الحدث)
+  const events = useMemo<WorkItemTimelineEvent[]>(() => {
+    const seen = new Set<string>();
+    const out: WorkItemTimelineEvent[] = [];
+    for (const page of data?.pages ?? []) {
+      for (const e of page.events) {
+        if (seen.has(e.id)) continue;
+        seen.add(e.id);
+        out.push(e);
+      }
+    }
+    return out;
+  }, [data]);
 
   const [selected, setSelected] = useState<WorkEventName[]>([]);
 
   const counts = useMemo(() => {
     const map = new Map<WorkEventName, number>();
-    for (const e of data ?? []) map.set(e.event, (map.get(e.event) ?? 0) + 1);
+    for (const e of events) map.set(e.event, (map.get(e.event) ?? 0) + 1);
     return map;
-  }, [data]);
+  }, [events]);
 
   const available = useMemo(() => WORK_EVENTS.filter((name) => counts.has(name)), [counts]);
 
   const visible = useMemo(
-    () => (data ?? []).filter((e) => selected.length === 0 || selected.includes(e.event)),
-    [data, selected],
+    () => events.filter((e) => selected.length === 0 || selected.includes(e.event)),
+    [events, selected],
   );
 
   const toggle = (name: WorkEventName) =>
@@ -92,8 +120,11 @@ export function WorkItemTimeline({
       >
         <History className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         سجل الأحداث
-        {data?.length ? (
-          <span className="text-xs font-normal text-muted-foreground">({data.length} حدث)</span>
+        {events.length ? (
+          <span className="text-xs font-normal text-muted-foreground">
+            ({events.length}
+            {hasNextPage ? "+" : ""} حدث)
+          </span>
         ) : null}
       </h3>
       {isLoading ? (
@@ -102,7 +133,7 @@ export function WorkItemTimeline({
         <p role="alert" className="text-sm text-danger">
           تعذّر عرض سجل الأحداث. حدّث الصفحة وأعد المحاولة.
         </p>
-      ) : !data?.length ? (
+      ) : !events.length ? (
         <p className="text-sm text-muted-foreground">لا توجد أحداث مسجّلة بعد.</p>
       ) : (
         <>
@@ -123,7 +154,8 @@ export function WorkItemTimeline({
                     : "border-border bg-card text-muted-foreground hover:text-foreground",
                 )}
               >
-                الكل ({data.length})
+                الكل ({events.length}
+                {hasNextPage ? "+" : ""})
               </button>
               {available.map((name) => {
                 const active = selected.includes(name);
@@ -180,6 +212,19 @@ export function WorkItemTimeline({
               ))}
             </ol>
           )}
+          {hasNextPage ? (
+            <button
+              type="button"
+              onClick={() => void fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
+            >
+              {isFetchingNextPage ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : null}
+              {isFetchingNextPage ? "جاري التحميل…" : "تحميل أحداث أقدم"}
+            </button>
+          ) : null}
         </>
       )}
     </section>
