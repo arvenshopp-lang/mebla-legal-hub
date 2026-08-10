@@ -799,6 +799,20 @@ function DesignStudioPage() {
                   </ul>
                 </div>
               )}
+              {serverIssues.length > 0 && (
+                <div className="mt-3 rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3">
+                  <p className="text-[12.5px] font-semibold text-danger">
+                    نتيجة الفحص الخادمي (بأرقام الأسطر):
+                  </p>
+                  <ul className="mt-1.5 list-disc space-y-1 ps-5 text-[12px] text-danger">
+                    {serverIssues.map((r, i) => (
+                      <li key={i} dir="auto">
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {validation.warnings.length > 0 && (
                 <div className="mt-3 rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3">
                   <p className="text-[12.5px] font-semibold text-warning">تحذيرات:</p>
