@@ -7,7 +7,14 @@
  *
  * التشغيل: bun scripts/e2e/work_item_events.e2e.ts   (بعد bun scripts/e2e/org-qa-fixture.ts)
  */
-import { asUser, loadQaOrg, SUPABASE_URL, adminFetch, type OrgRole } from "./qa-support";
+import {
+  asUser,
+  loadQaOrg,
+  SUPABASE_URL,
+  adminFetch,
+  QA_ORG_PREFIX,
+  type OrgRole,
+} from "./qa-support";
 
 type Case = { name: string; pass: boolean; detail: string };
 const results: Case[] = [];
@@ -767,6 +774,203 @@ for (const table of ["tasks", "deadlines"] as const) {
     for (const id of [lawyerTask, assistantTask]) {
       await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, { method: "DELETE" });
     }
+  }
+}
+
+// ── قراءة السجل ضمن الصلاحيات الصحيحة فقط، ولا كتابة ولا تعديل لأي دور ─────
+{
+  // مهمة يعمل عليها المحامي: لها أحداث حقيقية داخل منظمة QA
+  const created = await asUser(lawyer.token, `/rest/v1/tasks`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: "QA مهمة صلاحيات القراءة",
+      assigned_to: lawyer.userId,
+      due_date: iso(3 * day),
+      created_by: lawyer.userId,
+    }),
+  });
+  const readTask = Array.isArray(created.body)
+    ? (created.body as { id: string }[])[0]?.id
+    : undefined;
+  record("تجهيز مهمة لاختبار صلاحيات القراءة", !!readTask, `status=${created.status}`);
+
+  // منظمة أخرى بمهمة وأحداث: يجب ألا تظهر لمالك منظمة QA
+  const foreignOrgRes = await adminFetch(`${SUPABASE_URL}/rest/v1/organizations`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ name: `${QA_ORG_PREFIX}قراءة-منظمة-أخرى-${Date.now()}` }),
+  });
+  const foreignOrg = ((await foreignOrgRes.json()) as { id: string }[])[0];
+  let foreignTask: string | undefined;
+  if (foreignOrg) {
+    const fc = await adminFetch(`${SUPABASE_URL}/rest/v1/clients`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ organization_id: foreignOrg.id, full_name: "QA عميل منظمة أخرى" }),
+    });
+    const fClient = ((await fc.json()) as { id: string }[])[0];
+    const fk = await adminFetch(`${SUPABASE_URL}/rest/v1/cases`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: foreignOrg.id,
+        case_title: "QA قضية منظمة أخرى",
+        client_id: fClient?.id ?? null,
+      }),
+    });
+    const fCase = ((await fk.json()) as { id: string }[])[0];
+    const ft = await adminFetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: foreignOrg.id,
+        case_id: fCase?.id ?? null,
+        title: "QA مهمة منظمة أخرى",
+        due_date: iso(4 * day),
+      }),
+    });
+    foreignTask = ((await ft.json()) as { id: string }[])[0]?.id;
+  }
+
+  if (readTask) {
+    // 1) القراءة المسموحة: أدوار الإدارة فقط، ومحصورة بمنظمتها
+    for (const role of ["owner", "admin"] as const) {
+      const r = await asUser(
+        acc(role).token,
+        `/rest/v1/work_item_events?item_id=eq.${readTask}&select=id,organization_id`,
+      );
+      const rows = Array.isArray(r.body) ? (r.body as { organization_id: string }[]) : [];
+      record(
+        `دور ${role} يقرأ أحداث عنصر داخل منظمته`,
+        r.status === 200 && rows.length > 0 && rows.every((x) => x.organization_id === org),
+        `status=${r.status} rows=${rows.length}`,
+      );
+    }
+
+    // 2) الأدوار غير الإدارية: قراءة صفرية دائماً (لا سجلاتها ولا سجل غيرها)
+    for (const role of ["lawyer", "legal_assistant", "viewer"] as const) {
+      const r = await asUser(
+        acc(role).token,
+        `/rest/v1/work_item_events?select=id&limit=5`,
+      );
+      record(
+        `دور ${role} لا يقرأ أي صف من work_item_events`,
+        Array.isArray(r.body) && r.body.length === 0,
+        `status=${r.status} rows=${Array.isArray(r.body) ? r.body.length : -1}`,
+      );
+      const scoped = await asUser(
+        acc(role).token,
+        `/rest/v1/work_item_events?item_id=eq.${readTask}&select=id`,
+      );
+      record(
+        `دور ${role} لا يقرأ سجل عنصر بمعرفه المباشر`,
+        Array.isArray(scoped.body) && scoped.body.length === 0,
+        `rows=${Array.isArray(scoped.body) ? scoped.body.length : -1}`,
+      );
+      const agg = await asUser(
+        acc(role).token,
+        `/rest/v1/work_item_events?select=id&organization_id=eq.${org}`,
+        { headers: { Prefer: "count=exact" } },
+      );
+      record(
+        `دور ${role} لا يستنتج عدد الأحداث عبر count`,
+        Array.isArray(agg.body) && agg.body.length === 0,
+        `rows=${Array.isArray(agg.body) ? agg.body.length : -1}`,
+      );
+    }
+
+    // 3) عزل المنظمات: المالك لا يرى أحداث منظمة أخرى ولو بالمعرف الصريح
+    if (foreignTask) {
+      const cross = await asUser(
+        acc("owner").token,
+        `/rest/v1/work_item_events?item_id=eq.${foreignTask}&select=id`,
+      );
+      record(
+        "مالك منظمة QA لا يقرأ أحداث عنصر في منظمة أخرى",
+        Array.isArray(cross.body) && cross.body.length === 0,
+        `rows=${Array.isArray(cross.body) ? cross.body.length : -1}`,
+      );
+      const crossOrg = await asUser(
+        acc("owner").token,
+        `/rest/v1/work_item_events?organization_id=eq.${foreignOrg?.id}&select=id`,
+      );
+      record(
+        "مالك منظمة QA لا يقرأ سجل منظمة أخرى بالمعرف",
+        Array.isArray(crossOrg.body) && crossOrg.body.length === 0,
+        `rows=${Array.isArray(crossOrg.body) ? crossOrg.body.length : -1}`,
+      );
+    }
+
+    // 4) لا كتابة ولا تعديل ولا حذف لأي دور — حتى المالك والمدير
+    const existing = (await eventsOf(readTask))[0];
+    for (const role of ["owner", "admin", "lawyer", "legal_assistant", "viewer"] as const) {
+      const ins = await asUser(acc(role).token, `/rest/v1/work_item_events`, {
+        method: "POST",
+        body: JSON.stringify({
+          organization_id: org,
+          item_type: "task",
+          item_id: readTask,
+          event: "completed",
+          actor_id: acc(role).userId,
+        }),
+      });
+      record(
+        `دور ${role} لا يستطيع إدراج حدث يدوياً`,
+        ins.status >= 400,
+        `status=${ins.status}`,
+      );
+
+      if (existing) {
+        const upd = await asUser(
+          acc(role).token,
+          `/rest/v1/work_item_events?id=eq.${existing.id}`,
+          {
+            method: "PATCH",
+            headers: { Prefer: "return=representation" },
+            body: JSON.stringify({ event: "note" }),
+          },
+        );
+        const updBlocked =
+          upd.status >= 400 || (Array.isArray(upd.body) && upd.body.length === 0);
+        record(`دور ${role} لا يستطيع تعديل حدث قائم`, updBlocked, `status=${upd.status}`);
+
+        const del = await asUser(
+          acc(role).token,
+          `/rest/v1/work_item_events?id=eq.${existing.id}`,
+          { method: "DELETE", headers: { Prefer: "return=representation" } },
+        );
+        const delBlocked =
+          del.status >= 400 || (Array.isArray(del.body) && del.body.length === 0);
+        record(`دور ${role} لا يستطيع حذف حدث قائم`, delBlocked, `status=${del.status}`);
+      }
+    }
+
+    // 5) السجل بقي سليماً بعد كل محاولات الكتابة
+    const after = await eventsOf(readTask);
+    record(
+      "السجل لم يتغيّر بعد محاولات الكتابة والتعديل والحذف",
+      after.length === 1 && after[0]?.event === "created" && after[0]?.id === existing?.id,
+      `events=${after.map((e) => e.event).join(",") || "لا شيء"}`,
+    );
+
+    await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${readTask}`, { method: "DELETE" });
+  }
+
+  if (foreignOrg) {
+    if (foreignTask)
+      await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${foreignTask}`, { method: "DELETE" });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/cases?organization_id=eq.${foreignOrg.id}`, {
+      method: "DELETE",
+    });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/clients?organization_id=eq.${foreignOrg.id}`, {
+      method: "DELETE",
+    });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/organizations?id=eq.${foreignOrg.id}`, {
+      method: "DELETE",
+    });
   }
 }
 
