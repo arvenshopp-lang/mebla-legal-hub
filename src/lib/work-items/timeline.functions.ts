@@ -17,6 +17,8 @@ const pageInput = input.extend({
 
 const captureInput = input.extend({ since: z.string().datetime() });
 
+const exportInput = input.extend({ format: z.enum(["csv", "pdf"]) });
+
 /** سجل أحداث مهمة/مهلة واحدة — متاح لكل عضو يقرأ العمل نفسه (محامي، مساعد، مدير). */
 export const getWorkItemTimelineFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -44,5 +46,24 @@ export const getWorkItemCaptureIssueFn = createServerFn({ method: "POST" })
       data.itemType,
       data.itemId,
       data.since,
+    );
+  });
+
+/**
+ * تصدير سجل الأحداث كـ CSV أو محتوى PDF — للأدوار المصرّح لها فقط،
+ * والتحقق يجري كاملاً على الخادم.
+ */
+export const exportWorkItemTimelineFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => exportInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { exportWorkItemTimeline } = await import("./timeline.server");
+    return exportWorkItemTimeline(
+      context.supabase,
+      context.userId,
+      data.organizationId,
+      data.itemType,
+      data.itemId,
+      data.format,
     );
   });
