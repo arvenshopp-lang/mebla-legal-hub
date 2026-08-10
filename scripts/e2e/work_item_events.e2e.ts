@@ -13,8 +13,10 @@ import {
   SUPABASE_URL,
   adminFetch,
   QA_ORG_PREFIX,
+  APP,
   type OrgRole,
 } from "./qa-support";
+import { resolveServerFns, callServerFn } from "./serverfn-rpc";
 
 type Case = { name: string; pass: boolean; detail: string };
 const results: Case[] = [];
