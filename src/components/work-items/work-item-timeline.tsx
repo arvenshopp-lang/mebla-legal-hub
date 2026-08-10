@@ -74,10 +74,7 @@ export function WorkItemTimeline({
     return map;
   }, [data]);
 
-  const available = useMemo(
-    () => WORK_EVENTS.filter((name) => counts.has(name)),
-    [counts],
-  );
+  const available = useMemo(() => WORK_EVENTS.filter((name) => counts.has(name)), [counts]);
 
   const visible = useMemo(
     () => (data ?? []).filter((e) => selected.length === 0 || selected.includes(e.event)),
@@ -150,9 +147,7 @@ export function WorkItemTimeline({
             </div>
           ) : null}
           {!visible.length ? (
-            <p className="text-sm text-muted-foreground">
-              لا توجد أحداث مطابقة للتصفية المختارة.
-            </p>
+            <p className="text-sm text-muted-foreground">لا توجد أحداث مطابقة للتصفية المختارة.</p>
           ) : (
             <ol className="relative space-y-4 pe-6">
               <span
