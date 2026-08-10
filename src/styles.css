@@ -430,3 +430,69 @@
     transform: none;
   }
 }
+
+/* ==========================================================================
+   الصفحة العامة للمكتب — رموز قالب مِهلة الثابت (مقصورة على سطح الصفحة العامة)
+   لا تؤثر على اللوحة أو الإدارة أو بوابة العملاء. تُحدَّث مركزياً عند إقرار الهوية.
+   ========================================================================== */
+[data-surface="office-public"] {
+  --office-primary: oklch(0.3357 0.0486 174.3);
+  --office-primary-hover: oklch(0.2937 0.0416 175.02);
+  --office-primary-foreground: oklch(1 0 0);
+  --office-accent: oklch(0.6558 0.096 79.6);
+  --office-whatsapp: oklch(0.5626 0.1352 152.4);
+  --office-background: oklch(0.9736 0.0042 106.5);
+  --office-surface: oklch(1 0 0);
+  --office-surface-alt: oklch(0.9581 0.0043 106.5);
+  --office-text: oklch(0.2315 0.0175 170.34);
+  --office-muted: oklch(0.5149 0.0184 166.17);
+  --office-border: oklch(0.9101 0.0084 157.08);
+  --office-radius: 14px;
+  --office-radius-sm: 10px;
+  --office-section-y: clamp(2.5rem, 1.6rem + 3vw, 4.5rem);
+  --office-hero-overlay: linear-gradient(
+    to top,
+    oklch(0.2 0.032 172 / 0.94) 0%,
+    oklch(0.2 0.032 172 / 0.82) 45%,
+    oklch(0.2 0.032 172 / 0.6) 100%
+  );
+
+  /* ربط الرموز العامة داخل النطاق فقط حتى تعمل أدوات Tailwind القائمة */
+  --background: var(--office-background);
+  --surface: var(--office-surface);
+  --surface-muted: var(--office-surface-alt);
+  --border: var(--office-border);
+  --text-primary: var(--office-text);
+  --text-secondary: var(--office-muted);
+  --primary: var(--office-primary);
+  --primary-hover: var(--office-primary-hover);
+  --primary-foreground: var(--office-primary-foreground);
+  --gold: var(--office-accent);
+}
+
+@utility office-container {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 1120px;
+  padding-inline: 1rem;
+  @media (min-width: 640px) {
+    padding-inline: 1.75rem;
+  }
+  @media (min-width: 1024px) {
+    padding-inline: 2.5rem;
+  }
+}
+
+@utility office-section {
+  padding-block: var(--office-section-y);
+}
+
+@utility office-card {
+  background: var(--office-surface);
+  border: 1px solid var(--office-border);
+  border-radius: var(--office-radius);
+}
+
+@utility office-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
