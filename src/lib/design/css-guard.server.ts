@@ -69,6 +69,8 @@ export function validateCustomCssServer(rawCss: string, pageKey = "global"): Css
     };
   }
 
+  /** مفتاح مقارنة يتجاهل بادئة رقم السطر والمسافات حتى لا تتكرر الرسالة نفسها. */
+  const norm = (message: string) => message.replace(/^سطر \d+:\s*/, "").replace(/\s+/g, "");
   const blocked = [...base.blocked_rules];
   const warnings = [...base.warnings];
 
@@ -91,9 +93,20 @@ export function validateCustomCssServer(rawCss: string, pageKey = "global"): Css
     }
   });
 
+  // فحوصات AST تحمل رقم السطر، فتحلّ محلّ النتيجة النصية المكافئة لها.
   const astFindings = checkRules(collectAstRules(root), pageKey);
-  for (const item of astFindings.blocked) if (!blocked.includes(item)) blocked.push(item);
-  for (const item of astFindings.warnings) if (!warnings.includes(item)) warnings.push(item);
+  for (const item of astFindings.blocked) {
+    const key = norm(item);
+    const index = blocked.findIndex((existing) => norm(existing) === key);
+    if (index >= 0) blocked[index] = item;
+    else blocked.push(item);
+  }
+  for (const item of astFindings.warnings) {
+    const key = norm(item);
+    const index = warnings.findIndex((existing) => norm(existing) === key);
+    if (index >= 0) warnings[index] = item;
+    else warnings.push(item);
+  }
 
   const valid = blocked.length === 0;
   return {
