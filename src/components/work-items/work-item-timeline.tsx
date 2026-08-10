@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { History, Loader2 } from "lucide-react";
-import { getWorkItemTimelineFn } from "@/lib/work-items/timeline.functions";
+import { FileDown, FileText, History, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { canDo } from "@/lib/doc-permissions";
+import { usePrintEngine } from "@/lib/print/print-engine";
+import {
+  exportWorkItemTimelineFn,
+  getWorkItemTimelineFn,
+} from "@/lib/work-items/timeline.functions";
 import {
   TIMELINE_PAGE_SIZE,
   WORK_EVENTS,
@@ -34,6 +41,91 @@ const TONES: Record<string, "green" | "red" | "warn" | "muted"> = {
 };
 
 const dueLabel = (v: string | null) => (v ? fmtDate(v) : "بدون تاريخ");
+
+function downloadCsv(content: string, fileName: string) {
+  const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+/** تصدير السجل: CSV مباشر، وPDF عبر محرك الطباعة المعتمد (علامة مائية + سجل تدقيق). */
+function TimelineExport({
+  organizationId,
+  itemType,
+  itemId,
+}: {
+  organizationId: string;
+  itemType: "task" | "deadline";
+  itemId: string;
+}) {
+  const { activeRole } = useAuth();
+  const runExport = useServerFn(exportWorkItemTimelineFn);
+  const { printHtml, can, busy: printBusy } = usePrintEngine();
+  const [busy, setBusy] = useState<"csv" | "pdf" | null>(null);
+  const allowed = canDo(activeRole, "print.export_pdf");
+  if (!allowed) return null;
+
+  const handle = async (format: "csv" | "pdf") => {
+    setBusy(format);
+    try {
+      const result = await runExport({ data: { organizationId, itemType, itemId, format } });
+      if (result.format === "csv") {
+        downloadCsv(result.content, result.fileName);
+        toast.success("تم تصدير السجل", { description: `${result.count} حدث بصيغة CSV` });
+        return;
+      }
+      await printHtml({
+        documentType: "report",
+        title: result.title,
+        fileName: result.fileName,
+        classification: "internal",
+        html: result.html,
+      });
+    } catch (error) {
+      toast.error("تعذّر تصدير السجل", { description: (error as Error).message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={() => void handle("csv")}
+        disabled={busy !== null}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 text-xs text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
+      >
+        {busy === "csv" ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <FileDown className="h-4 w-4" aria-hidden="true" />
+        )}
+        تصدير CSV
+      </button>
+      {can("print.print") ? (
+        <button
+          type="button"
+          onClick={() => void handle("pdf")}
+          disabled={busy !== null || printBusy !== null}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 text-xs text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
+        >
+          {busy === "pdf" || printBusy === "print" ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <FileText className="h-4 w-4" aria-hidden="true" />
+          )}
+          تصدير PDF
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function detail(e: WorkItemTimelineEvent): string | null {
   switch (e.event) {
@@ -114,19 +206,28 @@ export function WorkItemTimeline({
 
   return (
     <section aria-labelledby={`timeline-${itemId}`} className="mt-6 border-t border-border pt-4">
-      <h3
-        id={`timeline-${itemId}`}
-        className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"
-      >
-        <History className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        سجل الأحداث
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h3
+          id={`timeline-${itemId}`}
+          className="flex items-center gap-2 text-sm font-semibold text-foreground"
+        >
+          <History className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          سجل الأحداث
+          {events.length ? (
+            <span className="text-xs font-normal text-muted-foreground">
+              ({events.length}
+              {hasNextPage ? "+" : ""} حدث)
+            </span>
+          ) : null}
+        </h3>
         {events.length ? (
-          <span className="text-xs font-normal text-muted-foreground">
-            ({events.length}
-            {hasNextPage ? "+" : ""} حدث)
-          </span>
+          <TimelineExport
+            organizationId={organizationId}
+            itemType={itemType}
+            itemId={itemId}
+          />
         ) : null}
-      </h3>
+      </div>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">جاري تحميل السجل…</p>
       ) : error ? (
