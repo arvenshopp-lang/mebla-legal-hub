@@ -510,6 +510,107 @@ for (const table of ["tasks", "deadlines"] as const) {
   }
 }
 
+// ── الترتيب الزمني للأحداث بعد عمليات متتابعة متقاربة ──────────────────────
+{
+  type Timed = { event: string; occurred_at: string };
+  const timedEventsOf = async (itemId: string, desc = false): Promise<Timed[]> => {
+    const r = await asUser(
+      acc("owner").token,
+      `/rest/v1/work_item_events?item_id=eq.${itemId}&select=event,occurred_at&order=occurred_at.${desc ? "desc" : "asc"}`,
+    );
+    return Array.isArray(r.body) ? (r.body as Timed[]) : [];
+  };
+
+  const seqRes = await asUser(lawyer.token, `/rest/v1/tasks`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: "QA ترتيب زمني للأحداث",
+      assigned_to: lawyer.userId,
+      due_date: iso(3 * day),
+      created_by: lawyer.userId,
+    }),
+  });
+  const seq = Array.isArray(seqRes.body) ? (seqRes.body as { id: string }[])[0] : undefined;
+  record("تجهيز مهمة الترتيب الزمني", seqRes.status === 201 && !!seq, `status=${seqRes.status}`);
+
+  if (seq) {
+    // عمليات متتابعة بلا أي تأخير مُتعمّد لاختبار التقارب الزمني الشديد
+    const patches: Record<string, unknown>[] = [
+      { due_date: iso(5 * day) },
+      { assigned_to: assistant.userId },
+      { due_date: iso(7 * day), assigned_to: lawyer.userId },
+      { status: "completed" },
+      { status: "in_progress" },
+    ];
+    let allOk = true;
+    for (const body of patches) {
+      const r = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${seq.id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(body),
+      });
+      if (r.status !== 200) allOk = false;
+    }
+    record("نجاح كل العمليات المتتابعة المتقاربة", allOk);
+
+    const asc = await timedEventsOf(seq.id);
+    const stamps = asc.map((e) => Date.parse(e.occurred_at));
+
+    record(
+      "عدد الأحداث المسجّلة = 7 بعد السلسلة المتقاربة",
+      asc.length === 7,
+      `فعلي=${asc.length} [${asc.map((e) => e.event).join(",")}]`,
+    );
+
+    record(
+      "التواريخ غير متناقصة (ترتيب زمني صحيح)",
+      stamps.every((t, i) => i === 0 || t >= stamps[i - 1]!),
+      `الطوابع=[${asc.map((e) => `${e.event}@${e.occurred_at}`).join(" | ")}]`,
+    );
+
+    record(
+      "تسلسل الأحداث بالترتيب الزمني مطابق للمتوقّع",
+      asc.map((e) => e.event).join(",") ===
+        "created,due_changed,assigned,assigned,due_changed,completed,reopened",
+      `فعلي=[${asc.map((e) => e.event).join(",")}]`,
+    );
+
+    // الحدثان الناتجان عن نفس الطلب يجب أن يحملا طابعين مختلفين حتى لا يضطرب الترتيب
+    const pairUnique = new Set(stamps).size === stamps.length;
+    record(
+      "طابع زمني فريد لكل حدث حتى داخل نفس المعاملة",
+      pairUnique,
+      `فريدة=${new Set(stamps).size}/${stamps.length}`,
+    );
+
+    const desc = await timedEventsOf(seq.id, true);
+    record(
+      "الترتيب التنازلي معكوس تماماً للترتيب التصاعدي",
+      desc.map((e) => e.event).join(",") ===
+        asc
+          .map((e) => e.event)
+          .reverse()
+          .join(","),
+      `تنازلي=[${desc.map((e) => e.event).join(",")}]`,
+    );
+
+    const first = asc[0];
+    const last = asc[asc.length - 1];
+    record(
+      "أول حدث هو الإنشاء وآخر حدث هو الأحدث زمنياً",
+      first?.event === "created" &&
+        !!last &&
+        Date.parse(last.occurred_at) >= Date.parse(first!.occurred_at),
+      `أول=${first?.event ?? "—"} آخر=${last?.event ?? "—"}`,
+    );
+
+    await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${seq.id}`, { method: "DELETE" });
+  }
+}
+
 const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
