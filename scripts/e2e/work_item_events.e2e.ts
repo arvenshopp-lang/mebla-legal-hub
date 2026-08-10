@@ -976,6 +976,169 @@ for (const table of ["tasks", "deadlines"] as const) {
   }
 }
 
+// ── المستخدم العادي: لا قراءة مباشرة للجدول، والسجل يظهر عبر المسار المؤمّن ──
+{
+  const fns = await resolveServerFns(APP, "src/lib/work-items/timeline.functions.ts").catch(
+    (e: unknown) => {
+      record("قراءة وحدة دالة سجل الأحداث المؤمّنة", false, String(e));
+      return null;
+    },
+  );
+  const ref = fns?.["getWorkItemTimelineFn"];
+  record("دالة الخادم getWorkItemTimelineFn متاحة", !!ref, ref ? "" : "لم تُستخرج");
+
+  if (ref) {
+    // مهمة يملك المحامي قراءتها + مهلة، لتغطية النوعين
+    const tRes = await asUser(lawyer.token, `/rest/v1/tasks`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: org,
+        case_id: kase.id,
+        title: "QA مهمة المسار المؤمّن",
+        assigned_to: lawyer.userId,
+        due_date: iso(5 * day),
+        created_by: lawyer.userId,
+      }),
+    });
+    const taskId = Array.isArray(tRes.body) ? (tRes.body as { id: string }[])[0]?.id : undefined;
+    const dRes = await asUser(lawyer.token, `/rest/v1/deadlines`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: org,
+        case_id: kase.id,
+        title: "QA مهلة المسار المؤمّن",
+        deadline_type: "response",
+        due_date: iso(6 * day),
+        assigned_to: lawyer.userId,
+        created_by: lawyer.userId,
+      }),
+    });
+    const deadlineId = Array.isArray(dRes.body)
+      ? (dRes.body as { id: string }[])[0]?.id
+      : undefined;
+    record(
+      "تجهيز مهمة ومهلة لاختبار المسار المؤمّن",
+      !!taskId && !!deadlineId,
+      `task=${tRes.status} deadline=${dRes.status}`,
+    );
+
+    if (taskId && deadlineId) {
+      // تمديد المهلة بتوكن المحامي ليصير للسجل حدثان على الأقل
+      await asUser(lawyer.token, `/rest/v1/deadlines?id=eq.${deadlineId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ due_date: iso(9 * day) }),
+      });
+
+      const timeline = (token: string | undefined, itemType: "task" | "deadline", id: string) =>
+        callServerFn({
+          appOrigin: APP,
+          ref,
+          token,
+          data: { organizationId: org, itemType, itemId: id },
+        });
+
+      for (const [label, who] of [
+        ["المحامي", lawyer],
+        ["المساعد", assistant],
+      ] as const) {
+        // 1) القراءة المباشرة من الجدول مرفوضة/صفرية
+        const direct = await asUser(
+          who.token,
+          `/rest/v1/work_item_events?item_id=eq.${taskId}&select=id,event`,
+        );
+        record(
+          `${label} لا يقرأ work_item_events مباشرة من Data API`,
+          Array.isArray(direct.body) && direct.body.length === 0,
+          `status=${direct.status} rows=${Array.isArray(direct.body) ? direct.body.length : -1}`,
+        );
+
+        // 2) نفس المستخدم يرى السجل عبر المسار المؤمّن
+        const viaFn = await timeline(who.token, "task", taskId);
+        const rows = viaFn.ok
+          ? (JSON.parse(
+              JSON.stringify(
+                (viaFn.raw.match(/"event":"[a-z_]+"/g) ?? []).map((s) => s.split('"')[3]),
+              ),
+            ) as string[])
+          : [];
+        record(
+          `${label} يرى سجل المهمة عبر المسار المؤمّن`,
+          viaFn.ok && rows.includes("created"),
+          `status=${viaFn.status} events=${rows.join(",") || "لا شيء"} msg=${viaFn.message}`,
+        );
+
+        const viaFnDeadline = await timeline(who.token, "deadline", deadlineId);
+        const dEvents = (viaFnDeadline.raw.match(/"event":"[a-z_]+"/g) ?? []).map(
+          (s) => s.split('"')[3],
+        );
+        record(
+          `${label} يرى سجل المهلة عبر المسار المؤمّن`,
+          viaFnDeadline.ok && dEvents.includes("created") && dEvents.includes("due_changed"),
+          `status=${viaFnDeadline.status} events=${dEvents.join(",") || "لا شيء"}`,
+        );
+
+        // 3) المسار المؤمّن للقراءة فقط: لا يعيد صفوف قابلة للتعديل ولا يقبل كتابة
+        const write = await asUser(who.token, `/rest/v1/work_item_events?item_id=eq.${taskId}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ event: "note" }),
+        });
+        record(
+          `${label} لا يعدّل السجل بعد رؤيته عبر المسار المؤمّن`,
+          write.status >= 400 || (Array.isArray(write.body) && write.body.length === 0),
+          `status=${write.status}`,
+        );
+      }
+
+      // 4) خارج المنظمة: المسار المؤمّن يرفض برسالة عربية ولا يسرّب أحداثاً
+      const outsider = acc("outsider");
+      const outFn = await timeline(outsider.token, "task", taskId);
+      record(
+        "المسار المؤمّن يرفض مستخدماً من خارج المنظمة",
+        outFn.denied && !/"event":/.test(outFn.raw),
+        `status=${outFn.status} msg=${outFn.message}`,
+      );
+      record(
+        "رسالة الرفض عربية وواضحة",
+        /صلاحية/.test(outFn.message),
+        `msg=${outFn.message}`,
+      );
+
+      // 5) بلا توكن: لا سجل إطلاقاً
+      const anonFn = await timeline(undefined, "task", taskId);
+      record(
+        "المسار المؤمّن يرفض الطلب بلا مصادقة",
+        anonFn.denied && !/"event":/.test(anonFn.raw),
+        `status=${anonFn.status}`,
+      );
+
+      // 6) لا يمكن استخدام معرّف منظمة أخرى لتوسيع النطاق
+      const spoof = await callServerFn({
+        appOrigin: APP,
+        ref,
+        token: lawyer.token,
+        data: {
+          organizationId: "00000000-0000-0000-0000-000000000000",
+          itemType: "task",
+          itemId: taskId,
+        },
+      });
+      record(
+        "تبديل معرّف المنظمة في الطلب لا يمنح وصولاً",
+        spoof.denied && !/"event":/.test(spoof.raw),
+        `status=${spoof.status} msg=${spoof.message}`,
+      );
+
+      await adminFetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${taskId}`, { method: "DELETE" });
+      await adminFetch(`${SUPABASE_URL}/rest/v1/deadlines?id=eq.${deadlineId}`, {
+        method: "DELETE",
+      });
+    }
+  }
+}
+
 const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
