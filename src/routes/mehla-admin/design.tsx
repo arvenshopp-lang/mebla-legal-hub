@@ -253,7 +253,6 @@ function DesignStudioPage() {
   const studio = useQuery({
     queryKey: ["design-studio"],
     queryFn: () => load(),
-    enabled: isOwner,
   });
 
   const [pageKey, setPageKey] = useState("global");
@@ -262,6 +261,8 @@ function DesignStudioPage() {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectors, setSelectors] = useState<HarvestedSelector[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  /** قواعد محظورة كما أعادها الخادم بأرقام أسطرها الحقيقية (فحص AST). */
+  const [serverIssues, setServerIssues] = useState<string[]>([]);
   const hydrated = useRef(false);
   const dirty = useRef(false);
 
