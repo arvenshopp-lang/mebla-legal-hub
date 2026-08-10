@@ -414,18 +414,13 @@ function DesignStudioPage() {
       toast.error(error instanceof Error ? error.message : "تعذّرت إعادة التعيين."),
   });
 
-  if (!isOwner) {
-    return (
-      <AdminShell title="محرر تصميم المنصة">
-        <SectionCard title="وصول مقيّد">
-          <p className="text-body-sm text-muted-foreground">
-            محرر التصميم متاح لمالك المنصة فقط، وأي طلب من حساب آخر يُرفض على الخادم.
-          </p>
-        </SectionCard>
-      </AdminShell>
-    );
-  }
-
+  // صلاحيات دقيقة من الخادم — لتعطيل الأزرار فقط؛ المنع الحقيقي في دوال الخادم.
+  const can = studio.data?.can ?? {
+    draft: isOwner,
+    history: isOwner,
+    publish: isOwner,
+    rollback: isOwner,
+  };
   const state = studio.data?.state;
   const groups = TOKEN_GROUPS;
   const activeGroup = groups.find((g) => g.id === tab);
