@@ -221,11 +221,7 @@ export function WorkItemTimeline({
           ) : null}
         </h3>
         {events.length ? (
-          <TimelineExport
-            organizationId={organizationId}
-            itemType={itemType}
-            itemId={itemId}
-          />
+          <TimelineExport organizationId={organizationId} itemType={itemType} itemId={itemId} />
         ) : null}
       </div>
       {isLoading ? (

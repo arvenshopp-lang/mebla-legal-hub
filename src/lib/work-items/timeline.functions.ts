@@ -10,9 +10,7 @@ const input = z.object({
 
 const pageInput = input.extend({
   limit: z.number().int().min(1).max(100).optional(),
-  cursor: z
-    .object({ occurredAt: z.string(), seq: z.number().int().nonnegative() })
-    .nullish(),
+  cursor: z.object({ occurredAt: z.string(), seq: z.number().int().nonnegative() }).nullish(),
 });
 
 const captureInput = input.extend({ since: z.string().datetime() });
