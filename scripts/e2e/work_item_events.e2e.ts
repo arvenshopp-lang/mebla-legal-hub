@@ -1056,13 +1056,9 @@ for (const table of ["tasks", "deadlines"] as const) {
 
         // 2) نفس المستخدم يرى السجل عبر المسار المؤمّن
         const viaFn = await timeline(who.token, "task", taskId);
-        const rows = viaFn.ok
-          ? (JSON.parse(
-              JSON.stringify(
-                (viaFn.raw.match(/"event":"[a-z_]+"/g) ?? []).map((s) => s.split('"')[3]),
-              ),
-            ) as string[])
-          : [];
+        const rows = (viaFn.raw.match(/"event":"[a-z_]+"/g) ?? []).map(
+          (s) => s.split('"')[3] as string,
+        );
         record(
           `${label} يرى سجل المهمة عبر المسار المؤمّن`,
           viaFn.ok && rows.includes("created"),
