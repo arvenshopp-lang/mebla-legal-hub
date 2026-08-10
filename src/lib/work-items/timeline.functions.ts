@@ -8,15 +8,25 @@ const input = z.object({
   itemId: z.string().uuid(),
 });
 
+const pageInput = input.extend({
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z
+    .object({ occurredAt: z.string(), seq: z.number().int().nonnegative() })
+    .nullish(),
+});
+
 const captureInput = input.extend({ since: z.string().datetime() });
 
 /** سجل أحداث مهمة/مهلة واحدة — متاح لكل عضو يقرأ العمل نفسه (محامي، مساعد، مدير). */
 export const getWorkItemTimelineFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .inputValidator((d: unknown) => pageInput.parse(d))
   .handler(async ({ data, context }) => {
     const { getWorkItemTimeline } = await import("./timeline.server");
-    return getWorkItemTimeline(context.supabase, data.organizationId, data.itemType, data.itemId);
+    return getWorkItemTimeline(context.supabase, data.organizationId, data.itemType, data.itemId, {
+      limit: data.limit,
+      cursor: data.cursor ?? null,
+    });
   });
 
 /**
