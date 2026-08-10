@@ -5,7 +5,7 @@ import { Section, SurfaceCard } from "./primitives";
 export function OfficePublicAbout({ about }: { about: string }) {
   return (
     <Section titleId="about-title" title="عن المكتب" icon={BookOpenText}>
-      <SurfaceCard>
+      <SurfaceCard className="max-w-3xl">
         <p className="measure text-body whitespace-pre-line break-words text-foreground/90">
           {about}
         </p>

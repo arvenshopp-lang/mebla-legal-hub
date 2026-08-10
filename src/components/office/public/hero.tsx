@@ -47,7 +47,7 @@ export function OfficePublicHero({
             height={112}
             loading="eager"
             decoding="async"
-            className="size-20 shrink-0 rounded-[var(--office-radius)] border border-white/25 bg-white/95 object-contain p-2.5 shadow-lg sm:size-24 lg:size-28"
+            className="h-16 w-auto max-w-[200px] shrink-0 self-start rounded-[var(--office-radius)] border border-white/25 bg-white/95 object-contain px-3 py-2 shadow-lg sm:h-20 sm:max-w-[240px] lg:h-24"
           />
         )}
 
