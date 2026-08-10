@@ -146,9 +146,11 @@ function Page() {
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       toast.success("تم الإنجاز");
+      void captureNotice("deadline", id, sinceRef.current);
       qc.invalidateQueries({ queryKey: ["deadlines"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
