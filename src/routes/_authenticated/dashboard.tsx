@@ -161,7 +161,7 @@ function DashboardHome() {
               title="الجلسات القادمة"
               actions={
                 <Link to="/hearings">
-                  <Btn variant="ghost" size="sm">
+                  <Btn variant="ghost" size="sm" className="min-h-11">
                     عرض الكل <ChevronLeft className="h-4 w-4" aria-hidden />
                   </Btn>
                 </Link>
@@ -200,7 +200,7 @@ function DashboardHome() {
               title="المهل النشطة"
               actions={
                 <Link to="/deadlines">
-                  <Btn variant="ghost" size="sm">
+                  <Btn variant="ghost" size="sm" className="min-h-11">
                     عرض الكل <ChevronLeft className="h-4 w-4" aria-hidden />
                   </Btn>
                 </Link>
@@ -235,7 +235,7 @@ function DashboardHome() {
               title="مهام تحتاج إجراء"
               actions={
                 <Link to="/tasks">
-                  <Btn variant="ghost" size="sm">
+                  <Btn variant="ghost" size="sm" className="min-h-11">
                     عرض الكل <ChevronLeft className="h-4 w-4" aria-hidden />
                   </Btn>
                 </Link>

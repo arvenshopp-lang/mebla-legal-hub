@@ -490,7 +490,10 @@ function OrganizationsPage() {
                       </>
                     ) : (
                       <div className="mt-2 space-y-2">
-                        <FormField label="سبب إيقاف الصفحة العامة (يُسجَّل في سجل التدقيق)" required>
+                        <FormField
+                          label="سبب إيقاف الصفحة العامة (يُسجَّل في سجل التدقيق)"
+                          required
+                        >
                           <input
                             className={inputCls}
                             value={pageSuspendReason}

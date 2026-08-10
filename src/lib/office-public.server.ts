@@ -37,15 +37,13 @@ export async function listPublishedOfficeSlugs(): Promise<string[]> {
     .order("published_at", { ascending: false })
     .limit(1000);
   if (error || !data) return [];
-  const candidates = data
-    .map((row) => row.slug)
-    .filter((slug): slug is string => Boolean(slug));
+  const candidates = data.map((row) => row.slug).filter((slug): slug is string => Boolean(slug));
 
   const allowed: string[] = [];
   for (let i = 0; i < candidates.length; i += 20) {
     const batch = candidates.slice(i, i + 20);
     const gated = await Promise.all(
-      batch.map(async (slug) => (("reason" in (await loadPublishedOfficePage(slug))) ? null : slug)),
+      batch.map(async (slug) => ("reason" in (await loadPublishedOfficePage(slug)) ? null : slug)),
     );
     for (const slug of gated) if (slug) allowed.push(slug);
   }
