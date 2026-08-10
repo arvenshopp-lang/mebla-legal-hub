@@ -19,7 +19,6 @@ import {
   EmptyState,
   LoadingBlock,
   ErrorBlock,
-  DataCard,
   Th,
   Td,
   BusyOverlay,
@@ -33,6 +32,7 @@ import {
   ConfirmDialog,
   Pagination,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
 import {
   SecureDocActions,
@@ -143,6 +143,85 @@ function Page() {
     onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
+  const columns: Column<DocumentListRow>[] = [
+    {
+      id: "file",
+      header: "الملف",
+      mobile: "title",
+      wrap: true,
+      cell: (d) => (
+        <>
+          <div className="flex items-center gap-2">
+            {d.is_confidential && <Lock className="h-3.5 w-3.5 shrink-0 text-warning" />}
+            <span className="min-w-0 break-words">{d.file_name}</span>
+          </div>
+          {d.description && <div className="text-xs text-muted-foreground">{d.description}</div>}
+          {d.file_status === "FILE_MISSING" && (
+            <Badge tone="red">الملف مفقود — يلزم إعادة الرفع</Badge>
+          )}
+          {d.file_status === "INVALID_FILE" && <Badge tone="red">ملف غير صالح</Badge>}
+        </>
+      ),
+    },
+    { id: "case", header: "القضية", cell: (d) => d.case?.case_title ?? "—" },
+    { id: "client", header: "العميل", cell: (d) => d.client?.full_name ?? "—" },
+    {
+      id: "category",
+      header: "التصنيف",
+      cell: (d) => (d.document_category ? <Badge tone="muted">{d.document_category}</Badge> : "—"),
+    },
+    {
+      id: "processing",
+      header: "المعالجة",
+      cell: (d) => (
+        <ProcessingBadge job={jobFor(d.id)} fileName={d.file_name} fileType={d.file_type} />
+      ),
+    },
+    { id: "size", header: "الحجم", cell: (d) => fmtSize(d.file_size) },
+    { id: "date", header: "التاريخ", cell: (d) => fmtDate(d.created_at) },
+    { id: "uploader", header: "الرافع", cell: (d) => d.uploader?.full_name ?? "—" },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (d) => (
+        <div className="flex flex-wrap justify-end gap-1">
+          {extractableKind(d.file_name, d.file_type) && (
+            <>
+              <IconBtn
+                aria-label="النص المستخرج"
+                title="عرض النص المستخرج"
+                disabled={jobFor(d.id)?.status !== "completed"}
+                onClick={() => setViewingText(d as DocumentRow)}
+              >
+                <ScanText className="h-4 w-4" />
+              </IconBtn>
+              <RetryButton doc={d as DocumentRow} />
+            </>
+          )}
+          {d.file_status !== "FILE_MISSING" && d.file_status !== "INVALID_FILE" && (
+            <SecureDocActions
+              doc={d as SecureDoc}
+              engine={secure}
+              onShare={(target) => setSharing(target)}
+            />
+          )}
+          {canManage(activeRole) && (
+            <IconBtn
+              tone="danger"
+              aria-label="حذف"
+              title="حذف"
+              loading={del.isPending && deleting?.id === d.id}
+              onClick={() => setDeleting(d)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </IconBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <DashboardShell title="المستندات">
       <PageToolbar
@@ -176,96 +255,12 @@ function Page() {
       ) : (
         <>
           <BusyOverlay busy={isFetching && !isLoading}>
-            <DataCard>
-              <table className="min-w-full">
-                <thead className="bg-surface-muted/60">
-                  <tr>
-                    <Th>الملف</Th>
-                    <Th>القضية</Th>
-                    <Th>العميل</Th>
-                    <Th>التصنيف</Th>
-                    <Th>المعالجة</Th>
-                    <Th>الحجم</Th>
-                    <Th>التاريخ</Th>
-                    <Th>الرافع</Th>
-                    <Th> </Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.rows.map((d: DocumentListRow) => (
-                    <tr key={d.id} className="hover:bg-surface-muted/40">
-                      <Td className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {d.is_confidential && <Lock className="h-3.5 w-3.5 text-warning" />}
-                          <span>{d.file_name}</span>
-                        </div>
-                        {d.description && (
-                          <div className="text-xs text-muted-foreground">{d.description}</div>
-                        )}
-                        {d.file_status === "FILE_MISSING" && (
-                          <Badge tone="red">الملف مفقود — يلزم إعادة الرفع</Badge>
-                        )}
-                        {d.file_status === "INVALID_FILE" && <Badge tone="red">ملف غير صالح</Badge>}
-                      </Td>
-                      <Td>{d.case?.case_title ?? "—"}</Td>
-                      <Td>{d.client?.full_name ?? "—"}</Td>
-                      <Td>
-                        {d.document_category ? (
-                          <Badge tone="muted">{d.document_category}</Badge>
-                        ) : (
-                          "—"
-                        )}
-                      </Td>
-                      <Td>
-                        <ProcessingBadge
-                          job={jobFor(d.id)}
-                          fileName={d.file_name}
-                          fileType={d.file_type}
-                        />
-                      </Td>
-                      <Td>{fmtSize(d.file_size)}</Td>
-                      <Td>{fmtDate(d.created_at)}</Td>
-                      <Td>{d.uploader?.full_name ?? "—"}</Td>
-                      <Td>
-                        <div className="flex justify-end gap-1">
-                          {extractableKind(d.file_name, d.file_type) && (
-                            <>
-                              <IconBtn
-                                aria-label="النص المستخرج"
-                                title="عرض النص المستخرج"
-                                disabled={jobFor(d.id)?.status !== "completed"}
-                                onClick={() => setViewingText(d as DocumentRow)}
-                              >
-                                <ScanText className="h-4 w-4" />
-                              </IconBtn>
-                              <RetryButton doc={d as DocumentRow} />
-                            </>
-                          )}
-                          {d.file_status !== "FILE_MISSING" && d.file_status !== "INVALID_FILE" && (
-                            <SecureDocActions
-                              doc={d as SecureDoc}
-                              engine={secure}
-                              onShare={(target) => setSharing(target)}
-                            />
-                          )}
-                          {canManage(activeRole) && (
-                            <IconBtn
-                              tone="danger"
-                              aria-label="حذف"
-                              title="حذف"
-                              loading={del.isPending && deleting?.id === d.id}
-                              onClick={() => setDeleting(d)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </IconBtn>
-                          )}
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DataCard>
+            <DataView
+              label="جدول المستندات"
+              rows={data.rows as DocumentListRow[]}
+              rowKey={(d) => d.id}
+              columns={columns}
+            />
           </BusyOverlay>
           <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
         </>

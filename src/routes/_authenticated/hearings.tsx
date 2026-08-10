@@ -15,7 +15,6 @@ import {
   EmptyState,
   LoadingBlock,
   ErrorBlock,
-  DataCard,
   Th,
   Td,
   BusyOverlay,
@@ -29,6 +28,7 @@ import {
   ConfirmDialog,
   Pagination,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2 } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
@@ -150,6 +150,65 @@ function Page() {
     onError: (e: unknown) => toast.error("تعذّر الحذف", { description: errMsg(e) }),
   });
 
+  const columns: Column<HearingRow>[] = [
+    { id: "title", header: "العنوان", mobile: "title", wrap: true, cell: (h) => h.title },
+    { id: "case", header: "القضية", cell: (h) => h.case?.case_title ?? "—" },
+    { id: "client", header: "العميل", cell: (h) => h.case?.client?.full_name ?? "—" },
+    { id: "date", header: "التاريخ والوقت", cell: (h) => fmtDateTime(h.hearing_date) },
+    { id: "court", header: "المحكمة", cell: (h) => h.court_name ?? "—" },
+    {
+      id: "status",
+      header: "الحالة",
+      cell: (h) => (
+        <Badge
+          tone={
+            h.status === "completed"
+              ? "green"
+              : h.status === "missed"
+                ? "red"
+                : h.status === "postponed"
+                  ? "warn"
+                  : "muted"
+          }
+        >
+          {HEARING_STATUS[h.status] ?? h.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (h) => (
+        <div className="flex justify-end gap-1">
+          {canEdit(activeRole) && (
+            <IconBtn
+              aria-label="تعديل"
+              title="تعديل"
+              onClick={() => {
+                setEditing(h);
+                setOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </IconBtn>
+          )}
+          {canManage(activeRole) && (
+            <IconBtn
+              tone="danger"
+              aria-label="حذف"
+              title="حذف"
+              loading={del.isPending && deleting?.id === h.id}
+              onClick={() => setDeleting(h)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </IconBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <DashboardShell title="الجلسات">
       <PageToolbar
@@ -165,6 +224,7 @@ function Page() {
           setOpen(true);
         }}
         addLabel="جلسة جديدة"
+        activeFilters={(when === "upcoming" ? 0 : 1) + (status === "all" ? 0 : 1)}
         filters={
           <>
             <select
@@ -221,75 +281,12 @@ function Page() {
       ) : (
         <>
           <BusyOverlay busy={isFetching && !isLoading}>
-            <DataCard>
-              <table className="min-w-full">
-                <thead className="bg-surface-muted/60">
-                  <tr>
-                    <Th>العنوان</Th>
-                    <Th>القضية</Th>
-                    <Th>العميل</Th>
-                    <Th>التاريخ والوقت</Th>
-                    <Th>المحكمة</Th>
-                    <Th>الحالة</Th>
-                    <Th> </Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.rows.map((h: HearingRow) => (
-                    <tr key={h.id} className="hover:bg-surface-muted/40">
-                      <Td className="font-medium">{h.title}</Td>
-                      <Td>{h.case?.case_title ?? "—"}</Td>
-                      <Td>{h.case?.client?.full_name ?? "—"}</Td>
-                      <Td>{fmtDateTime(h.hearing_date)}</Td>
-                      <Td>{h.court_name ?? "—"}</Td>
-                      <Td>
-                        <Badge
-                          tone={
-                            h.status === "completed"
-                              ? "green"
-                              : h.status === "missed"
-                                ? "red"
-                                : h.status === "postponed"
-                                  ? "warn"
-                                  : "muted"
-                          }
-                        >
-                          {HEARING_STATUS[h.status] ?? h.status}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <div className="flex justify-end gap-1">
-                          {canEdit(activeRole) && (
-                            <button
-                              onClick={() => {
-                                setEditing(h);
-                                setOpen(true);
-                              }}
-                              aria-label="تعديل"
-                              title="تعديل"
-                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
-                          {canManage(activeRole) && (
-                            <IconBtn
-                              tone="danger"
-                              aria-label="حذف"
-                              title="حذف"
-                              loading={del.isPending && deleting?.id === h.id}
-                              onClick={() => setDeleting(h)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </IconBtn>
-                          )}
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DataCard>
+            <DataView
+              label="جدول الجلسات"
+              rows={data.rows as HearingRow[]}
+              rowKey={(h) => h.id}
+              columns={columns}
+            />
           </BusyOverlay>
           <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
         </>

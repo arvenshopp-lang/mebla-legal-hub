@@ -14,9 +14,6 @@ import {
   EmptyState,
   LoadingBlock,
   ErrorBlock,
-  DataCard,
-  Th,
-  Td,
   BusyOverlay,
   IconBtn,
   Modal,
@@ -28,6 +25,7 @@ import {
   ConfirmDialog,
   Pagination,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
 import type { Enums, Tables, TablesInsert } from "@/integrations/supabase/types";
@@ -208,6 +206,87 @@ function Page() {
             ? "gold"
             : "default";
 
+  const columns: Column<CaseRow>[] = [
+    {
+      id: "title",
+      header: "العنوان",
+      mobile: "title",
+      wrap: true,
+      cell: (c) => (
+        <Link
+          to="/cases/$id"
+          params={{ id: c.id }}
+          className="inline-flex min-h-11 items-center hover:underline md:min-h-0"
+        >
+          {c.case_title}
+        </Link>
+      ),
+    },
+    { id: "number", header: "الرقم", cell: (c) => c.case_number ?? "—" },
+    { id: "client", header: "العميل", cell: (c) => c.client?.full_name ?? "—" },
+    { id: "court", header: "المحكمة", cell: (c) => c.court_name ?? "—" },
+    {
+      id: "status",
+      header: "الحالة",
+      cell: (c) => <Badge tone={statusTone(c.status)}>{CASE_STATUS[c.status] ?? c.status}</Badge>,
+    },
+    {
+      id: "priority",
+      header: "الأولوية",
+      cell: (c) => (
+        <Badge tone={c.priority === "urgent" ? "red" : c.priority === "high" ? "warn" : "muted"}>
+          {CASE_PRIORITY[c.priority] ?? c.priority}
+        </Badge>
+      ),
+    },
+    {
+      id: "lawyer",
+      header: "المسؤول",
+      cell: (c) => c.lawyer?.full_name ?? <span className="text-muted-foreground">غير مُسند</span>,
+    },
+    { id: "activity", header: "آخر نشاط", cell: (c) => fmtDate(c.last_activity_at) },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (c) => (
+        <div className="flex justify-end gap-1">
+          <Link
+            to="/cases/$id"
+            params={{ id: c.id }}
+            aria-label="فتح القضية"
+            title="فتح القضية"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+          {canEdit(activeRole) && (
+            <IconBtn
+              aria-label="تعديل"
+              title="تعديل"
+              onClick={() => {
+                setEditing(c);
+                setOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </IconBtn>
+          )}
+          {canManage(activeRole) && c.status !== "archived" && (
+            <IconBtn
+              aria-label="أرشفة"
+              title="أرشفة"
+              className="text-warning hover:bg-warning-soft"
+              onClick={() => setArchiving(c)}
+            >
+              <Archive className="h-4 w-4" />
+            </IconBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <DashboardShell title="القضايا">
       <PageToolbar
@@ -223,6 +302,12 @@ function Page() {
           setOpen(true);
         }}
         addLabel="قضية جديدة"
+        activeFilters={
+          (status === "all" ? 0 : 1) +
+          (caseType ? 1 : 0) +
+          (court ? 1 : 0) +
+          (lawyer === "all" ? 0 : 1)
+        }
         filters={
           <>
             <select
@@ -300,93 +385,12 @@ function Page() {
       ) : (
         <>
           <BusyOverlay busy={isFetching && !isLoading}>
-            <DataCard>
-              <table className="min-w-full">
-                <thead className="bg-surface-muted/60">
-                  <tr>
-                    <Th>العنوان</Th>
-                    <Th>الرقم</Th>
-                    <Th>العميل</Th>
-                    <Th>المحكمة</Th>
-                    <Th>الحالة</Th>
-                    <Th>الأولوية</Th>
-                    <Th>المسؤول</Th>
-                    <Th>آخر نشاط</Th>
-                    <Th> </Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.rows.map((c) => (
-                    <tr key={c.id} className="hover:bg-surface-muted/40">
-                      <Td className="font-medium">
-                        <Link to="/cases/$id" params={{ id: c.id }} className="hover:underline">
-                          {c.case_title}
-                        </Link>
-                      </Td>
-                      <Td>{c.case_number ?? "—"}</Td>
-                      <Td>{c.client?.full_name ?? "—"}</Td>
-                      <Td>{c.court_name ?? "—"}</Td>
-                      <Td>
-                        <Badge tone={statusTone(c.status)}>
-                          {CASE_STATUS[c.status] ?? c.status}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <Badge
-                          tone={
-                            c.priority === "urgent"
-                              ? "red"
-                              : c.priority === "high"
-                                ? "warn"
-                                : "muted"
-                          }
-                        >
-                          {CASE_PRIORITY[c.priority] ?? c.priority}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        {c.lawyer?.full_name ?? (
-                          <span className="text-muted-foreground">غير مُسند</span>
-                        )}
-                      </Td>
-                      <Td>{fmtDate(c.last_activity_at)}</Td>
-                      <Td>
-                        <div className="flex justify-end gap-1">
-                          <Link
-                            to="/cases/$id"
-                            params={{ id: c.id }}
-                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                          {canEdit(activeRole) && (
-                            <button
-                              onClick={() => {
-                                setEditing(c);
-                                setOpen(true);
-                              }}
-                              aria-label="تعديل"
-                              title="تعديل"
-                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
-                          {canManage(activeRole) && c.status !== "archived" && (
-                            <button
-                              onClick={() => setArchiving(c)}
-                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-warning hover:bg-warning-soft md:min-h-0 md:min-w-0"
-                            >
-                              <Archive className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DataCard>
+            <DataView
+              label="جدول القضايا"
+              rows={data.rows}
+              rowKey={(c) => c.id}
+              columns={columns}
+            />
           </BusyOverlay>
           <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
         </>
