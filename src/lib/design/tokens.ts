@@ -22,13 +22,17 @@ export type TokenDef = {
 export type TokenGroup = { id: string; label: string; description?: string; tokens: TokenDef[] };
 
 /**
- * الخط الرسمي الوحيد للمنصة — IBM Plex Sans Arabic مستضاف محلياً.
+ * خطوط المنصة الرسمية — Tajawal للواجهة وCairo للعناوين، مستضافة محلياً.
  * لا يُسمح بأي خط خارجي أو رابط CDN؛ خط النظام خيار احتياطي فقط.
  */
 export const APPROVED_FONTS: { value: string; label: string }[] = [
   {
-    value: '"IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif',
-    label: "IBM Plex Sans Arabic (الخط الرسمي)",
+    value: '"Tajawal", system-ui, -apple-system, sans-serif',
+    label: "Tajawal (خط الواجهة الرسمي)",
+  },
+  {
+    value: '"Cairo", system-ui, -apple-system, sans-serif',
+    label: "Cairo (خط العناوين الرسمي)",
   },
   { value: "system-ui, -apple-system, sans-serif", label: "خط النظام (احتياطي)" },
 ];
