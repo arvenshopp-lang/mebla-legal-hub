@@ -1,10 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  WORK_EVENTS,
-  type WorkEventName,
-  type WorkItemTimelineEvent,
-} from "./timeline.shared";
+import { WORK_EVENTS, type WorkEventName, type WorkItemTimelineEvent } from "./timeline.shared";
 
 type Client = SupabaseClient<Database>;
 

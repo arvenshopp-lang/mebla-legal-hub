@@ -14,10 +14,5 @@ export const getWorkItemTimelineFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { getWorkItemTimeline } = await import("./timeline.server");
-    return getWorkItemTimeline(
-      context.supabase,
-      data.organizationId,
-      data.itemType,
-      data.itemId,
-    );
+    return getWorkItemTimeline(context.supabase, data.organizationId, data.itemType, data.itemId);
   });
