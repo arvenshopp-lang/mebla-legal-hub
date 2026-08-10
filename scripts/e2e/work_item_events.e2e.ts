@@ -387,6 +387,129 @@ for (const table of ["tasks", "deadlines"] as const) {
   );
 }
 
+// ── 6) دقّة عدّاد السجل: مقارنة المتوقع بالفعلي لسلسلة عمليات كاملة ─────────
+// نبني قائمة الأحداث المتوقعة خطوة بخطوة ثم نقارنها بالسجل عدداً وترتيباً،
+// بما يشمل عملية واحدة تُنتج حدثين، وعملية بلا تغيير لا تُنتج أي حدث.
+{
+  const expected: string[] = [];
+  const cmp = async (itemId: string, label: string) => {
+    const actual = (await eventsOf(itemId)).map((e) => e.event);
+    record(
+      label,
+      actual.length === expected.length && actual.every((e, i) => e === expected[i]),
+      `متوقع=[${expected.join(",")}] فعلي=[${actual.join(",")}]`,
+    );
+  };
+
+  // مهمة: إنشاء → تمديد → إسناد → (تمديد+إسناد في طلب واحد) → إنجاز → إعادة فتح → بلا تغيير → حذف
+  const cRes = await asUser(lawyer.token, `/rest/v1/tasks`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: "QA عدّاد أحداث المهمة",
+      assigned_to: lawyer.userId,
+      due_date: iso(4 * day),
+      created_by: lawyer.userId,
+    }),
+  });
+  const counted = Array.isArray(cRes.body) ? (cRes.body as { id: string }[])[0] : undefined;
+  record("تجهيز مهمة عدّاد الأحداث", cRes.status === 201 && !!counted, `status=${cRes.status}`);
+
+  if (counted) {
+    expected.push("created");
+    await cmp(counted.id, "عدّاد السجل بعد الإنشاء = 1 (created)");
+
+    const patch = async (body: Record<string, unknown>, adds: string[], label: string) => {
+      const r = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${counted.id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(body),
+      });
+      record(`نجاح العملية — ${label}`, r.status === 200, `status=${r.status}`);
+      expected.push(...adds);
+      await cmp(counted.id, `عدّاد السجل = ${expected.length} بعد ${label}`);
+    };
+
+    await patch({ due_date: iso(9 * day) }, ["due_changed"], "التمديد");
+    await patch({ assigned_to: assistant.userId }, ["assigned"], "الإسناد");
+    await patch(
+      { due_date: iso(14 * day), assigned_to: lawyer.userId },
+      ["assigned", "due_changed"],
+      "تمديد وإسناد في طلب واحد (حدثان)",
+    );
+    await patch({ status: "completed" }, ["completed"], "الإنجاز");
+    await patch({ status: "in_progress" }, ["reopened"], "إعادة الفتح");
+    await patch({ priority: "high" }, [], "تعديل لا يمس المهل/الإسناد/الحالة (بلا أحداث)");
+
+    const del = await asUser(acc("owner").token, `/rest/v1/tasks?id=eq.${counted.id}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=representation" },
+    });
+    record("نجاح العملية — الحذف", del.status === 200, `status=${del.status}`);
+    expected.push("deleted");
+    await cmp(counted.id, `العدّاد النهائي للمهمة = ${expected.length} بالترتيب الصحيح`);
+  }
+}
+{
+  const expected: string[] = [];
+  const dRes = await asUser(lawyer.token, `/rest/v1/deadlines`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: "QA عدّاد أحداث المهلة",
+      due_date: iso(6 * day),
+      responsible_user_id: lawyer.userId,
+      created_by: lawyer.userId,
+    }),
+  });
+  const dl = Array.isArray(dRes.body) ? (dRes.body as { id: string }[])[0] : undefined;
+  record("تجهيز مهلة عدّاد الأحداث", dRes.status === 201 && !!dl, `status=${dRes.status}`);
+  if (dl) {
+    const cmpDl = async (label: string) => {
+      const actual = (await eventsOf(dl.id)).map((e) => e.event);
+      record(
+        label,
+        actual.length === expected.length && actual.every((e, i) => e === expected[i]),
+        `متوقع=[${expected.join(",")}] فعلي=[${actual.join(",")}]`,
+      );
+    };
+    expected.push("created");
+    await cmpDl("عدّاد سجل المهلة بعد الإنشاء = 1");
+
+    const steps: { body: Record<string, unknown>; adds: string[]; label: string }[] = [
+      { body: { due_date: iso(12 * day) }, adds: ["due_changed"], label: "تمديد المهلة" },
+      {
+        body: { responsible_user_id: assistant.userId },
+        adds: ["assigned"],
+        label: "إسناد المهلة",
+      },
+      { body: { status: "completed" }, adds: ["completed"], label: "إنجاز المهلة" },
+    ];
+    for (const s of steps) {
+      const r = await asUser(lawyer.token, `/rest/v1/deadlines?id=eq.${dl.id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(s.body),
+      });
+      record(`نجاح العملية — ${s.label}`, r.status === 200, `status=${r.status}`);
+      expected.push(...s.adds);
+      await cmpDl(`عدّاد سجل المهلة = ${expected.length} بعد ${s.label}`);
+    }
+
+    const del = await asUser(acc("owner").token, `/rest/v1/deadlines?id=eq.${dl.id}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=representation" },
+    });
+    record("نجاح العملية — حذف المهلة", del.status === 200, `status=${del.status}`);
+    expected.push("deleted");
+    await cmpDl(`العدّاد النهائي للمهلة = ${expected.length} بالترتيب الصحيح`);
+  }
+}
+
 const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
