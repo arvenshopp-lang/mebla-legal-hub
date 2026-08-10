@@ -21,7 +21,6 @@ import {
   EmptyState,
   LoadingBlock,
   ErrorBlock,
-  DataCard,
   Th,
   Td,
   BusyOverlay,
@@ -35,6 +34,7 @@ import {
   ConfirmDialog,
   Pagination,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
@@ -154,6 +154,109 @@ function Page() {
     },
   });
 
+  const daysState = (d: DeadlineRow) => {
+    const days = daysUntil(d.due_date);
+    return {
+      days,
+      isOverdue: d.status === "active" && days !== null && days < 0,
+      isSoon: d.status === "active" && days !== null && days >= 0 && days <= 3,
+    };
+  };
+
+  const columns: Column<DeadlineRow>[] = [
+    { id: "title", header: "العنوان", mobile: "title", wrap: true, cell: (d) => d.title },
+    { id: "case", header: "القضية", cell: (d) => d.case?.case_title ?? "—" },
+    {
+      id: "type",
+      header: "النوع",
+      cell: (d) => DEADLINE_TYPE[d.deadline_type] ?? d.deadline_type,
+    },
+    { id: "due", header: "الاستحقاق", cell: (d) => fmtDate(d.due_date) },
+    {
+      id: "remaining",
+      header: "الأيام المتبقية",
+      cell: (d) => {
+        const { days, isOverdue, isSoon } = daysState(d);
+        if (days === null) return "—";
+        return (
+          <Badge tone={isOverdue ? "red" : isSoon ? "warn" : "muted"}>
+            {isOverdue ? `متأخرة بـ ${Math.abs(days)} يوم` : days === 0 ? "اليوم" : `${days} يوم`}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "الحالة",
+      cell: (d) => (
+        <Badge
+          tone={
+            d.status === "overdue"
+              ? "red"
+              : d.status === "completed"
+                ? "green"
+                : d.status === "cancelled"
+                  ? "muted"
+                  : "default"
+          }
+        >
+          {DEADLINE_STATUS[d.status]}
+        </Badge>
+      ),
+    },
+    {
+      id: "priority",
+      header: "الأولوية",
+      cell: (d) => (
+        <Badge tone={d.priority === "urgent" ? "red" : d.priority === "high" ? "warn" : "muted"}>
+          {CASE_PRIORITY[d.priority]}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (d) => (
+        <div className="flex justify-end gap-1">
+          {canEdit(activeRole) && d.status === "active" && (
+            <IconBtn
+              aria-label="إنجاز"
+              title="إنجاز"
+              className="hover:bg-primary-soft"
+              onClick={() => complete.mutate(d.id)}
+            >
+              <Check className="h-4 w-4" />
+            </IconBtn>
+          )}
+          {canEdit(activeRole) && (
+            <IconBtn
+              aria-label="تعديل"
+              title="تعديل"
+              onClick={() => {
+                setEditing(d);
+                setOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </IconBtn>
+          )}
+          {canManage(activeRole) && (
+            <IconBtn
+              tone="danger"
+              aria-label="حذف"
+              title="حذف"
+              loading={del.isPending && deleting?.id === d.id}
+              onClick={() => setDeleting(d)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </IconBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <DashboardShell title="المهل">
       <PageToolbar
@@ -169,6 +272,7 @@ function Page() {
           setOpen(true);
         }}
         addLabel="مهلة جديدة"
+        activeFilters={(status === "all" ? 0 : 1) + (type === "all" ? 0 : 1)}
         filters={
           <>
             <select
@@ -228,119 +332,16 @@ function Page() {
       ) : (
         <>
           <BusyOverlay busy={isFetching && !isLoading}>
-            <DataCard>
-              <table className="min-w-full">
-                <thead className="bg-surface-muted/60">
-                  <tr>
-                    <Th>العنوان</Th>
-                    <Th>القضية</Th>
-                    <Th>النوع</Th>
-                    <Th>الاستحقاق</Th>
-                    <Th>الأيام المتبقية</Th>
-                    <Th>الحالة</Th>
-                    <Th>الأولوية</Th>
-                    <Th> </Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.rows.map((d: DeadlineRow) => {
-                    const days = daysUntil(d.due_date);
-                    const isOverdue = d.status === "active" && days !== null && days < 0;
-                    const isSoon = d.status === "active" && days !== null && days >= 0 && days <= 3;
-                    return (
-                      <tr
-                        key={d.id}
-                        className={`hover:bg-surface-muted/40 ${isOverdue ? "bg-danger-soft/40" : isSoon ? "bg-warning-soft/40" : ""}`}
-                      >
-                        <Td className="font-medium">{d.title}</Td>
-                        <Td>{d.case?.case_title ?? "—"}</Td>
-                        <Td>{DEADLINE_TYPE[d.deadline_type] ?? d.deadline_type}</Td>
-                        <Td>{fmtDate(d.due_date)}</Td>
-                        <Td>
-                          {days === null ? (
-                            "—"
-                          ) : (
-                            <Badge tone={isOverdue ? "red" : isSoon ? "warn" : "muted"}>
-                              {isOverdue
-                                ? `متأخرة بـ ${Math.abs(days)} يوم`
-                                : days === 0
-                                  ? "اليوم"
-                                  : `${days} يوم`}
-                            </Badge>
-                          )}
-                        </Td>
-                        <Td>
-                          <Badge
-                            tone={
-                              d.status === "overdue"
-                                ? "red"
-                                : d.status === "completed"
-                                  ? "green"
-                                  : d.status === "cancelled"
-                                    ? "muted"
-                                    : "default"
-                            }
-                          >
-                            {DEADLINE_STATUS[d.status]}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <Badge
-                            tone={
-                              d.priority === "urgent"
-                                ? "red"
-                                : d.priority === "high"
-                                  ? "warn"
-                                  : "muted"
-                            }
-                          >
-                            {CASE_PRIORITY[d.priority]}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <div className="flex justify-end gap-1">
-                            {canEdit(activeRole) && d.status === "active" && (
-                              <button
-                                onClick={() => complete.mutate(d.id)}
-                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-foreground hover:bg-primary-soft md:min-h-0 md:min-w-0"
-                                aria-label="إنجاز"
-                                title="إنجاز"
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                            )}
-                            {canEdit(activeRole) && (
-                              <button
-                                onClick={() => {
-                                  setEditing(d);
-                                  setOpen(true);
-                                }}
-                                aria-label="تعديل"
-                                title="تعديل"
-                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                            )}
-                            {canManage(activeRole) && (
-                              <IconBtn
-                                tone="danger"
-                                aria-label="حذف"
-                                title="حذف"
-                                loading={del.isPending && deleting?.id === d.id}
-                                onClick={() => setDeleting(d)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </IconBtn>
-                            )}
-                          </div>
-                        </Td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </DataCard>
+            <DataView
+              label="جدول المهل"
+              rows={data.rows as DeadlineRow[]}
+              rowKey={(d) => d.id}
+              rowTone={(d) => {
+                const { isOverdue, isSoon } = daysState(d);
+                return isOverdue ? "bg-danger-soft/40" : isSoon ? "bg-warning-soft/40" : undefined;
+              }}
+              columns={columns}
+            />
           </BusyOverlay>
           <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
         </>

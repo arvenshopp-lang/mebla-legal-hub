@@ -13,9 +13,6 @@ import {
   EmptyState,
   LoadingBlock,
   ErrorBlock,
-  DataCard,
-  Th,
-  Td,
   BusyOverlay,
   IconBtn,
   Modal,
@@ -25,6 +22,7 @@ import {
   Badge,
   ConfirmDialog,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Copy, Mail } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
 import { describeInviteError } from "@/lib/invitations.shared";
@@ -211,6 +209,145 @@ function Page() {
     );
   });
 
+  const memberColumns: Column<MemberRow>[] = [
+    {
+      id: "name",
+      header: "الاسم",
+      mobile: "title",
+      wrap: true,
+      cell: (m) => (
+        <>
+          {m.profile?.full_name ?? "—"}{" "}
+          {m.user_id === user?.id && <span className="text-xs text-text-muted">(أنت)</span>}
+        </>
+      ),
+    },
+    { id: "email", header: "البريد", wrap: true, cell: (m) => m.profile?.email ?? "—" },
+    { id: "job", header: "المسمى", cell: (m) => m.profile?.job_title ?? "—" },
+    {
+      id: "role",
+      header: "الدور",
+      cell: (m) =>
+        admin && m.role !== "owner" && m.user_id !== user?.id ? (
+          <select
+            value={m.role}
+            aria-label="دور العضو"
+            onChange={(e) =>
+              changeRole.mutate({ id: m.id, role: e.target.value as Enums<"app_role"> })
+            }
+            className={inputCls + " max-w-[160px] py-1.5"}
+          >
+            {(["admin", "lawyer", "legal_assistant", "viewer"] as const).map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <Badge tone={m.role === "owner" ? "gold" : "muted"}>
+            {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS]}
+          </Badge>
+        ),
+    },
+    {
+      id: "status",
+      header: "الحالة",
+      cell: (m) => (
+        <Badge tone={m.status === "active" ? "green" : "muted"}>
+          {m.status === "active" ? "نشط" : m.status}
+        </Badge>
+      ),
+    },
+    { id: "joined", header: "تاريخ الانضمام", cell: (m) => fmtDate(m.joined_at) },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (m) =>
+        admin && m.role !== "owner" && m.user_id !== user?.id ? (
+          <IconBtn
+            tone="danger"
+            aria-label="إزالة العضو"
+            title="إزالة العضو"
+            loading={remove.isPending && removing?.id === m.id}
+            onClick={() => setRemoving(m)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </IconBtn>
+        ) : null,
+    },
+  ];
+
+  const invitationColumns: Column<InvitationRow>[] = [
+    { id: "email", header: "البريد", mobile: "title", wrap: true, cell: (inv) => inv.email },
+    {
+      id: "role",
+      header: "الدور",
+      cell: (inv) => (
+        <Badge tone="muted">{ROLE_LABELS[inv.role as keyof typeof ROLE_LABELS]}</Badge>
+      ),
+    },
+    {
+      id: "status",
+      header: "الحالة",
+      cell: (inv) => {
+        const status = effectiveInviteStatus(inv);
+        return (
+          <Badge tone={status === "pending" ? "warn" : status === "accepted" ? "green" : "muted"}>
+            {INVITATION_STATUS[status]}
+          </Badge>
+        );
+      },
+    },
+    { id: "expires", header: "تنتهي في", cell: (inv) => fmtDate(inv.expires_at) },
+    {
+      id: "link",
+      header: "الرابط",
+      cell: (inv) =>
+        effectiveInviteStatus(inv) === "pending" ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Btn
+              variant="link"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(inviteUrl(inv.token));
+                toast.success("تم نسخ الرابط");
+              }}
+            >
+              <Copy className="h-3 w-3" /> نسخ
+            </Btn>
+            <Btn
+              variant="link"
+              size="sm"
+              disabled={resend.isPending}
+              onClick={() => resend.mutate({ email: inv.email, role: inv.role })}
+            >
+              <Mail className="h-3 w-3" /> إعادة الإرسال
+            </Btn>
+          </div>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      id: "actions",
+      header: " ",
+      mobile: "actions",
+      cell: (inv) =>
+        effectiveInviteStatus(inv) === "pending" ? (
+          <IconBtn
+            tone="danger"
+            aria-label="إلغاء الدعوة"
+            title="إلغاء الدعوة"
+            loading={revoke.isPending && revoking?.id === inv.id}
+            onClick={() => setRevoking(inv)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </IconBtn>
+        ) : null,
+    },
+  ];
+
   return (
     <DashboardShell title="الفريق">
       <PageToolbar
@@ -229,167 +366,24 @@ function Page() {
         <EmptyState title="لا يوجد أعضاء" />
       ) : (
         <BusyOverlay busy={isFetching && !isLoading}>
-          <DataCard>
-            <table className="min-w-full">
-              <thead className="bg-surface-muted/60">
-                <tr>
-                  <Th>الاسم</Th>
-                  <Th>البريد</Th>
-                  <Th>المسمى</Th>
-                  <Th>الدور</Th>
-                  <Th>الحالة</Th>
-                  <Th>تاريخ الانضمام</Th>
-                  <Th> </Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((m: MemberRow) => {
-                  const isSelf = m.user_id === user?.id;
-                  const isOwner = m.role === "owner";
-                  return (
-                    <tr key={m.id} className="hover:bg-surface-muted/40">
-                      <Td className="font-medium">
-                        {m.profile?.full_name ?? "—"}{" "}
-                        {isSelf && <span className="text-xs text-text-muted">(أنت)</span>}
-                      </Td>
-                      <Td>{m.profile?.email ?? "—"}</Td>
-                      <Td>{m.profile?.job_title ?? "—"}</Td>
-                      <Td>
-                        {admin && !isOwner && !isSelf ? (
-                          <select
-                            value={m.role}
-                            onChange={(e) =>
-                              changeRole.mutate({
-                                id: m.id,
-                                role: e.target.value as Enums<"app_role">,
-                              })
-                            }
-                            className={inputCls + " max-w-[160px] py-1.5"}
-                          >
-                            {(["admin", "lawyer", "legal_assistant", "viewer"] as const).map(
-                              (r) => (
-                                <option key={r} value={r}>
-                                  {ROLE_LABELS[r]}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        ) : (
-                          <Badge tone={isOwner ? "gold" : "muted"}>
-                            {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS]}
-                          </Badge>
-                        )}
-                      </Td>
-                      <Td>
-                        <Badge tone={m.status === "active" ? "green" : "muted"}>
-                          {m.status === "active" ? "نشط" : m.status}
-                        </Badge>
-                      </Td>
-                      <Td>{fmtDate(m.joined_at)}</Td>
-                      <Td>
-                        {admin && !isOwner && !isSelf && (
-                          <IconBtn
-                            tone="danger"
-                            aria-label="إزالة العضو"
-                            title="إزالة العضو"
-                            loading={remove.isPending && removing?.id === m.id}
-                            onClick={() => setRemoving(m)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </IconBtn>
-                        )}
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </DataCard>
+          <DataView
+            label="جدول أعضاء الفريق"
+            rows={filtered as MemberRow[]}
+            rowKey={(m) => m.id}
+            columns={memberColumns}
+          />
         </BusyOverlay>
       )}
 
       {admin && (invitations ?? []).length > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 text-base font-bold text-foreground">الدعوات</h2>
-          <DataCard>
-            <table className="min-w-full">
-              <thead className="bg-surface-muted/60">
-                <tr>
-                  <Th>البريد</Th>
-                  <Th>الدور</Th>
-                  <Th>الحالة</Th>
-                  <Th>تنتهي في</Th>
-                  <Th>الرابط</Th>
-                  <Th> </Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {invitations!.map((inv: InvitationRow) => {
-                  const link = inviteUrl(inv.token);
-                  const status = effectiveInviteStatus(inv);
-                  return (
-                    <tr key={inv.id} className="hover:bg-surface-muted/40">
-                      <Td>{inv.email}</Td>
-                      <Td>
-                        <Badge tone="muted">
-                          {ROLE_LABELS[inv.role as keyof typeof ROLE_LABELS]}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <Badge
-                          tone={
-                            status === "pending"
-                              ? "warn"
-                              : status === "accepted"
-                                ? "green"
-                                : "muted"
-                          }
-                        >
-                          {INVITATION_STATUS[status]}
-                        </Badge>
-                      </Td>
-                      <Td>{fmtDate(inv.expires_at)}</Td>
-                      <Td>
-                        {status === "pending" && (
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(link);
-                                toast.success("تم نسخ الرابط");
-                              }}
-                              className="inline-flex items-center gap-1 text-xs text-foreground underline"
-                            >
-                              <Copy className="h-3 w-3" /> نسخ
-                            </button>
-                            <button
-                              onClick={() => resend.mutate({ email: inv.email, role: inv.role })}
-                              disabled={resend.isPending}
-                              className="inline-flex items-center gap-1 text-xs text-foreground underline disabled:opacity-60"
-                            >
-                              <Mail className="h-3 w-3" /> إعادة الإرسال
-                            </button>
-                          </div>
-                        )}
-                      </Td>
-                      <Td>
-                        {status === "pending" && (
-                          <IconBtn
-                            tone="danger"
-                            aria-label="إلغاء الدعوة"
-                            title="إلغاء الدعوة"
-                            loading={revoke.isPending && revoking?.id === inv.id}
-                            onClick={() => setRevoking(inv)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </IconBtn>
-                        )}
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </DataCard>
+          <DataView
+            label="جدول الدعوات"
+            rows={invitations as InvitationRow[]}
+            rowKey={(inv) => inv.id}
+            columns={invitationColumns}
+          />
         </div>
       )}
 

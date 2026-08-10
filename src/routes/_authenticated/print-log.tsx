@@ -7,15 +7,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { fmtDateTime } from "@/lib/enums";
 import {
   Badge,
-  DataCard,
   EmptyState,
   ErrorBlock,
   LoadingBlock,
   Pagination,
   SectionCard,
-  Td,
-  Th,
 } from "@/lib/list-utils";
+import { DataView, type Column } from "@/components/data/data-view";
 import { listPrintAudit } from "@/lib/print/print-audit.functions";
 import {
   CLASSIFICATION_LABELS,
@@ -39,6 +37,102 @@ export const Route = createFileRoute("/_authenticated/print-log")({
 });
 
 const PAGE_SIZE = 25;
+
+type PrintAuditRow = {
+  id: string;
+  print_ref: string;
+  action: string;
+  document_title: string;
+  document_ref: string;
+  document_version: string | number;
+  pages_count: number;
+  classification: string;
+  user_name: string | null;
+  user_email: string | null;
+  copy_number: number;
+  device: string | null;
+  browser: string | null;
+  os: string | null;
+  ip: string | null;
+  country: string | null;
+  created_at: string;
+};
+
+const printColumns: Column<PrintAuditRow>[] = [
+  {
+    id: "ref",
+    header: "معرّف الطباعة",
+    mobile: "subtitle",
+    className: "font-mono text-xs",
+    cell: (row) => <span className="font-mono text-xs">{row.print_ref}</span>,
+  },
+  {
+    id: "action",
+    header: "العملية",
+    cell: (row) => (
+      <Badge tone={row.action === "print" ? "info" : "muted"}>
+        {PRINT_ACTION_LABELS[row.action as PrintAction] ?? row.action}
+      </Badge>
+    ),
+  },
+  {
+    id: "document",
+    header: "المستند",
+    mobile: "title",
+    wrap: true,
+    cell: (row) => (
+      <>
+        {row.document_title}
+        <div className="text-xs text-muted-foreground">
+          {row.document_ref} · {row.document_version} · {row.pages_count} صفحة
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "classification",
+    header: "التصنيف",
+    cell: (row) => (
+      <Badge tone={row.classification === "internal" ? "muted" : "warn"}>
+        {CLASSIFICATION_LABELS[row.classification as Classification] ?? row.classification}
+      </Badge>
+    ),
+  },
+  {
+    id: "user",
+    header: "المنفّذ",
+    cell: (row) => (
+      <>
+        {row.user_name ?? "—"}
+        <div className="text-xs text-muted-foreground">{row.user_email ?? "—"}</div>
+      </>
+    ),
+  },
+  { id: "copy", header: "النسخة", cell: (row) => row.copy_number },
+  {
+    id: "device",
+    header: "الجهاز",
+    cell: (row) => (
+      <>
+        {row.device ?? "—"}
+        <div className="text-xs text-muted-foreground">
+          {row.browser ?? "—"} · {row.os ?? "—"}
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "ip",
+    header: "IP",
+    cell: (row) => (
+      <span className="font-mono text-xs">
+        {row.ip || "—"}
+        {row.country ? ` · ${row.country}` : ""}
+      </span>
+    ),
+  },
+  { id: "date", header: "التاريخ", cell: (row) => fmtDateTime(row.created_at) },
+];
 
 function Page() {
   const { activeOrgId } = useAuth();
@@ -72,63 +166,12 @@ function Page() {
           />
         ) : (
           <>
-            <DataCard>
-              <table className="min-w-full">
-                <thead className="bg-surface-muted/60">
-                  <tr>
-                    <Th>معرّف الطباعة</Th>
-                    <Th>العملية</Th>
-                    <Th>المستند</Th>
-                    <Th>التصنيف</Th>
-                    <Th>المنفّذ</Th>
-                    <Th>النسخة</Th>
-                    <Th>الجهاز</Th>
-                    <Th>IP</Th>
-                    <Th>التاريخ</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-surface-muted/40">
-                      <Td className="font-mono text-xs">{row.print_ref}</Td>
-                      <Td>
-                        <Badge tone={row.action === "print" ? "info" : "muted"}>
-                          {PRINT_ACTION_LABELS[row.action as PrintAction] ?? row.action}
-                        </Badge>
-                      </Td>
-                      <Td className="font-medium">
-                        {row.document_title}
-                        <div className="text-xs text-muted-foreground">
-                          {row.document_ref} · {row.document_version} · {row.pages_count} صفحة
-                        </div>
-                      </Td>
-                      <Td>
-                        <Badge tone={row.classification === "internal" ? "muted" : "warn"}>
-                          {CLASSIFICATION_LABELS[row.classification as Classification] ??
-                            row.classification}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        {row.user_name ?? "—"}
-                        <div className="text-xs text-muted-foreground">{row.user_email ?? "—"}</div>
-                      </Td>
-                      <Td>{row.copy_number}</Td>
-                      <Td>
-                        {row.device ?? "—"}
-                        <div className="text-xs text-muted-foreground">
-                          {row.browser ?? "—"} · {row.os ?? "—"}
-                        </div>
-                      </Td>
-                      <Td className="font-mono text-xs">
-                        {row.ip || "—"}
-                        {row.country ? ` · ${row.country}` : ""}
-                      </Td>
-                      <Td>{fmtDateTime(row.created_at)}</Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DataCard>
+            <DataView
+              label="سجل الطباعة والتصدير"
+              rows={data.rows as PrintAuditRow[]}
+              rowKey={(row) => row.id}
+              columns={printColumns}
+            />
             <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
           </>
         )}

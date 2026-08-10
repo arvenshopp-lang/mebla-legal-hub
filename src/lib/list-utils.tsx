@@ -4,7 +4,7 @@
  * والجداول والحالات (تحميل / فارغ / خطأ) عبر المنصة.
  */
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Loader2, Search, Plus, X } from "lucide-react";
+import { Loader2, Search, Plus, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ Buttons */
@@ -127,6 +127,7 @@ export function PageToolbar({
   canAdd = true,
   placeholder = "بحث…",
   searching = false,
+  activeFilters = 0,
 }: {
   search: string;
   setSearch: (v: string) => void;
@@ -137,11 +138,14 @@ export function PageToolbar({
   placeholder?: string;
   /** يعرض مؤشراً داخل حقل البحث أثناء جلب النتائج */
   searching?: boolean;
+  /** عدد الفلاتر المطبّقة — يظهر على زر «الفلاتر» في الجوال */
+  activeFilters?: number;
 }) {
   const id = useId();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2.5">
-      <div className="relative min-w-[200px] flex-1">
+    <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 md:flex md:flex-wrap">
+      <div className="relative col-span-2 min-w-0 md:min-w-[200px] md:flex-1">
         <label htmlFor={id} className="sr-only">
           بحث
         </label>
@@ -167,11 +171,44 @@ export function PageToolbar({
           </span>
         )}
       </div>
-      {filters}
+
+      {/* الفلاتر: مضمّنة على سطح المكتب، وورقة سفلية على الجوال */}
+      {filters && (
+        <>
+          <div className="hidden flex-wrap items-center gap-2.5 md:flex">{filters}</div>
+          <Btn variant="outline" className="md:hidden" onClick={() => setFiltersOpen(true)}>
+            <SlidersHorizontal className="h-4 w-4" aria-hidden /> الفلاتر
+            {activeFilters > 0 && (
+              <span className="ms-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+                {activeFilters}
+              </span>
+            )}
+          </Btn>
+        </>
+      )}
+
       {onAdd && canAdd && (
-        <Btn onClick={onAdd}>
+        <Btn onClick={onAdd} className={filters ? "" : "col-start-2"}>
           <Plus className="h-4 w-4" aria-hidden /> {addLabel ?? "إضافة"}
         </Btn>
+      )}
+
+      {filters && (
+        <Modal
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          title="الفلاتر"
+          description="حدّد الفلاتر ثم أغلق الورقة لعرض النتائج."
+        >
+          <div className="grid gap-4 [&_input]:w-full [&_select]:w-full [&_select]:max-w-none">
+            {filters}
+          </div>
+          <div className="mt-6">
+            <Btn className="w-full" onClick={() => setFiltersOpen(false)}>
+              عرض النتائج
+            </Btn>
+          </div>
+        </Modal>
       )}
     </div>
   );
