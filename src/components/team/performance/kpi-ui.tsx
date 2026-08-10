@@ -51,7 +51,7 @@ export function ScoreValue({
   return (
     <span
       className={cn(
-        "font-bold tabular-nums",
+        "font-display font-bold tabular-nums",
         TONE_TEXT[tone],
         size === "lg" ? "text-[34px] leading-none" : "text-[19px]",
       )}
@@ -149,7 +149,7 @@ export function StatCard({
       <p className="text-[12px] text-muted-foreground">{label}</p>
       <p
         className={cn(
-          "mt-1 text-[22px] font-bold tabular-nums",
+          "mt-1 font-display text-[22px] font-bold tabular-nums",
           tone === "danger"
             ? "text-danger"
             : tone === "warning"
