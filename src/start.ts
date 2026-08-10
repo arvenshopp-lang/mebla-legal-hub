@@ -19,8 +19,7 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       const pathname = new URL(getRequest().url).pathname;
       isApi = pathname.startsWith("/api/");
       const base = process.env["TSS_SERVER_FN_BASE"];
-      isServerFn =
-        (base ? pathname.startsWith(base) : false) || pathname.startsWith("/_serverFn/");
+      isServerFn = (base ? pathname.startsWith(base) : false) || pathname.startsWith("/_serverFn/");
     } catch {
       isApi = false;
     }

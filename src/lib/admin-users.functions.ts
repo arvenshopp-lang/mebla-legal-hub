@@ -224,8 +224,7 @@ export const transferOrganizationOwnership = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const g = await import("@/lib/admin-guard.server");
     const staff = await g.requireStaff(context.supabase, context.userId, "organizations.update");
-    if (data.fromUserId === data.toUserId)
-      throw new Error("اختر عضواً مختلفاً عن المالك الحالي.");
+    if (data.fromUserId === data.toUserId) throw new Error("اختر عضواً مختلفاً عن المالك الحالي.");
     const db = await g.admin();
     const lifecycle = await import("@/lib/admin-users.server");
     const result = await lifecycle.transferOwnership(db, data);
