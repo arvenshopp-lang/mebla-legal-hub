@@ -487,7 +487,9 @@ function DesignStudioPage() {
                 <Btn
                   variant="secondary"
                   size="sm"
-                  disabled={!can.rollback || !state?.rollback_available || rollbackMutation.isPending}
+                  disabled={
+                    !can.rollback || !state?.rollback_available || rollbackMutation.isPending
+                  }
                   title={can.rollback ? undefined : "الاسترجاع يتطلب صلاحية «التراجع عن النشر»."}
                   loading={rollbackMutation.isPending}
                   onClick={() => {
