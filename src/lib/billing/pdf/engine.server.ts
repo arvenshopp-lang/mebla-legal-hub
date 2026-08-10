@@ -453,10 +453,11 @@ function signatureBlock(ctx: Ctx, slots: { label: string; caption?: string | nul
   if (slots.length === 0) return;
   ensureSpace(ctx, 74);
   const right = A4.width - MARGIN;
-  const colWidth = (USABLE - 24) / slots.length;
+  const gap = 24;
+  const colWidth = (USABLE - gap * (slots.length - 1)) / slots.length;
   const baseY = ctx.y - 6;
   slots.forEach((slot, index) => {
-    const cellRight = right - index * (colWidth + 24 / Math.max(1, slots.length - 1 || 1));
+    const cellRight = right - index * (colWidth + gap);
     rightText(ctx, slot.label, cellRight, baseY, 9, INK);
     ctx.page.drawLine({
       start: { x: cellRight - colWidth, y: baseY - 34 },
@@ -637,7 +638,14 @@ function footer(ctx: Ctx, brand: PdfBrand): void {
     });
     drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
     drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
-    if (contact) {
+    const contactWidth = contact
+      ? splitDirectionalRuns(contact).reduce(
+          (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+          0,
+        )
+      : 0;
+    // لا نرسم سطر التواصل إن كان سيتراكب مع رقم الصفحة في منتصف التذييل.
+    if (contact && MARGIN + contactWidth < (A4.width - labelWidth) / 2 - 10) {
       drawLine(page, ctx.font, contact, MARGIN, MARGIN + 8, 8, MUTED);
     }
   });
