@@ -112,7 +112,10 @@ export function WorkspaceMobileNav({ pathname }: { pathname: string }) {
                               : "bg-surface text-foreground",
                           )}
                         >
-                          <Icon className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden />
+                          <Icon
+                            className="h-[18px] w-[18px] shrink-0 text-muted-foreground"
+                            aria-hidden
+                          />
                           <span className="truncate">{label}</span>
                         </Link>
                       </li>

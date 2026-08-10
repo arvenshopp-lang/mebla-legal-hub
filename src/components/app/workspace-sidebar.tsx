@@ -72,7 +72,10 @@ export function WorkspaceSidebar({
             </span>
             {memberships.length > 1 && (
               <ChevronDown
-                className={cn("h-4 w-4 shrink-0 text-nav-muted transition", orgOpen && "rotate-180")}
+                className={cn(
+                  "h-4 w-4 shrink-0 text-nav-muted transition",
+                  orgOpen && "rotate-180",
+                )}
                 aria-hidden
               />
             )}
@@ -145,9 +148,7 @@ export function WorkspaceSidebar({
       </nav>
 
       <div className="shrink-0 border-t border-nav-border p-3">
-        {!mini && (
-          <p className="mb-1.5 truncate px-3 text-[11px] text-nav-muted">{user?.email}</p>
-        )}
+        {!mini && <p className="mb-1.5 truncate px-3 text-[11px] text-nav-muted">{user?.email}</p>}
         <button
           onClick={onSignOut}
           title={mini ? "تسجيل الخروج" : undefined}
