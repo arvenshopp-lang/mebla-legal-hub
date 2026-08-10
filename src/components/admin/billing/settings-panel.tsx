@@ -174,6 +174,13 @@ export function SettingsPanel() {
     sellerAddress: "",
     paymentTermsDays: 14,
     bankDetails: "",
+    commercialRegistration: "",
+    contactPhone: "",
+    contactEmail: "",
+    website: "",
+    signatoryName: "",
+    signatoryTitle: "",
+    documentFooterNote: "",
   });
   const [taxDirty, setTaxDirty] = useState(false);
 
@@ -454,6 +461,115 @@ export function SettingsPanel() {
               }}
             />
           </FormField>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="هوية المستندات (PDF)"
+        description="تظهر في ترويسة وتذييل الفواتير وعروض الأسعار والعقود، وتُطبَّق فوراً على أي ملف يُصدَر بعد الحفظ."
+        actions={
+          manage && (
+            <Btn
+              size="sm"
+              loading={saveTax.isPending}
+              onClick={() => saveTax.mutate()}
+              disabled={!taxDirty}
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden /> حفظ
+            </Btn>
+          )
+        }
+      >
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          <FormField label="السجل التجاري">
+            <input
+              className={inputCls}
+              dir="ltr"
+              disabled={!manage}
+              value={tax.commercialRegistration}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, commercialRegistration: event.target.value });
+              }}
+            />
+          </FormField>
+          <FormField label="جوال التواصل">
+            <input
+              className={inputCls}
+              dir="ltr"
+              inputMode="tel"
+              disabled={!manage}
+              value={tax.contactPhone}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, contactPhone: event.target.value });
+              }}
+            />
+          </FormField>
+          <FormField label="بريد التواصل">
+            <input
+              className={inputCls}
+              dir="ltr"
+              type="email"
+              disabled={!manage}
+              value={tax.contactEmail}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, contactEmail: event.target.value });
+              }}
+            />
+          </FormField>
+          <FormField label="الموقع الإلكتروني">
+            <input
+              className={inputCls}
+              dir="ltr"
+              disabled={!manage}
+              value={tax.website}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, website: event.target.value });
+              }}
+            />
+          </FormField>
+          <FormField label="اسم المُفوَّض بالتوقيع">
+            <input
+              className={inputCls}
+              disabled={!manage}
+              value={tax.signatoryName}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, signatoryName: event.target.value });
+              }}
+            />
+          </FormField>
+          <FormField label="المسمى الوظيفي للمُفوَّض">
+            <input
+              className={inputCls}
+              disabled={!manage}
+              value={tax.signatoryTitle}
+              onChange={(event) => {
+                setTaxDirty(true);
+                setTax({ ...tax, signatoryTitle: event.target.value });
+              }}
+            />
+          </FormField>
+          <div className="sm:col-span-2">
+            <FormField
+              label="سطر التذييل"
+              hint="يظهر أسفل كل صفحة. اتركه فارغاً لاستخدام العبارة الافتراضية."
+            >
+              <input
+                className={inputCls}
+                disabled={!manage}
+                maxLength={300}
+                value={tax.documentFooterNote}
+                onChange={(event) => {
+                  setTaxDirty(true);
+                  setTax({ ...tax, documentFooterNote: event.target.value });
+                }}
+              />
+            </FormField>
+          </div>
         </div>
       </SectionCard>
 

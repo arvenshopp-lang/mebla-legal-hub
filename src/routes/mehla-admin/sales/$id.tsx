@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, FileDown, PenLine } from "lucide-react";
+import { ArrowLeft, FileDown, MessageCircle, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/shell";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
@@ -57,6 +57,17 @@ export const Route = createFileRoute("/mehla-admin/sales/$id")({
 });
 
 type DialogKind = "send" | "sign" | "decision" | "invoice" | "subscription" | "terminate" | null;
+
+/** تطبيع رقم الجوال السعودي إلى صيغة واتساب الدولية بدون رموز. */
+function waNumber(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("966")) return digits;
+  if (digits.startsWith("05")) return `966${digits.slice(1)}`;
+  if (digits.startsWith("5") && digits.length === 9) return `966${digits}`;
+  return digits;
+}
 
 function SalesDocumentPage() {
   const { id } = Route.useParams();
@@ -141,8 +152,10 @@ function SalesDocumentPage() {
     try {
       const payload = await pdfFn({ data: { id } });
       downloadPdfPayload(payload);
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر توليد ملف PDF.");
+      return false;
     }
   };
 
@@ -177,6 +190,31 @@ function SalesDocumentPage() {
   const status = doc.status as SalesDocStatus;
   const editable = !doc.locked && ["draft", "pending_approval", "approved"].includes(status);
 
+  /**
+   * مشاركة عبر واتساب: يُفتح واتساب برسالة عربية جاهزة (لا يمكن لأي متصفح
+   * إرفاق ملف تلقائياً)، ثم يُنزَّل ملف PDF ليُرفق يدوياً في المحادثة.
+   */
+  const shareWhatsApp = () => {
+    const amount = `${doc.total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${doc.currency}`;
+    const to =
+      doc.recipient_company ?? content.companyName ?? doc.organization_name ?? doc.recipient_name;
+    const lines = [
+      `${KIND_LABELS[doc.kind]}: ${doc.title}`,
+      doc.number ? `الرقم: ${doc.number}` : null,
+      to ? `الجهة: ${to}` : null,
+      `الإجمالي: ${amount}`,
+      doc.valid_until ? `صالح حتى: ${doc.valid_until}` : null,
+      "",
+      "مرفق ملف العرض بصيغة PDF.",
+    ].filter((line): line is string => line !== null);
+    const phone = waNumber(doc.recipient_phone);
+    const url = `https://wa.me/${phone ?? ""}?text=${encodeURIComponent(lines.join("\n"))}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    void downloadPdf().then((ok) => {
+      if (ok) toast.success("تم تنزيل ملف PDF — أرفقه في محادثة واتساب.");
+    });
+  };
+
   const editInitial: DraftFormValue = {
     id: doc.id,
     kind: doc.kind,
@@ -194,6 +232,11 @@ function SalesDocumentPage() {
     validUntil: doc.valid_until ?? "",
     startsOn: doc.starts_on ?? "",
     endsOn: doc.ends_on ?? "",
+    recipientName: doc.recipient_name ?? "",
+    recipientCompany: doc.recipient_company ?? "",
+    recipientPhone: doc.recipient_phone ?? "",
+    recipientEmail: doc.recipient_email ?? "",
+    recipientAddress: doc.recipient_address ?? "",
     items: items.map((item) => ({
       description: item.description,
       quantity: item.quantity,
@@ -211,6 +254,9 @@ function SalesDocumentPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Btn variant="outline" size="sm" onClick={downloadPdf}>
             <FileDown className="h-4 w-4" aria-hidden /> ملف PDF
+          </Btn>
+          <Btn variant="outline" size="sm" onClick={shareWhatsApp}>
+            <MessageCircle className="h-4 w-4" aria-hidden /> مشاركة واتساب
           </Btn>
           <Link
             to="/mehla-admin/sales"

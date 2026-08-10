@@ -38,6 +38,11 @@ export type DraftFormValue = {
   validUntil: string;
   startsOn: string;
   endsOn: string;
+  recipientName: string;
+  recipientCompany: string;
+  recipientPhone: string;
+  recipientEmail: string;
+  recipientAddress: string;
   items: DraftItem[];
 };
 
@@ -57,6 +62,11 @@ export const emptyDraft = (kind: SalesDocKind): DraftFormValue => ({
   validUntil: "",
   startsOn: "",
   endsOn: "",
+  recipientName: "",
+  recipientCompany: "",
+  recipientPhone: "",
+  recipientEmail: "",
+  recipientAddress: "",
   items: [{ description: "", quantity: 1, unitPrice: 0, discountAmount: 0 }],
 });
 
@@ -166,6 +176,11 @@ export function DocumentFormModal({
         validUntil: nullable(form.validUntil),
         startsOn: nullable(form.startsOn),
         endsOn: nullable(form.endsOn),
+        recipientName: nullable(form.recipientName),
+        recipientCompany: nullable(form.recipientCompany),
+        recipientPhone: nullable(form.recipientPhone),
+        recipientEmail: form.recipientEmail.trim(),
+        recipientAddress: nullable(form.recipientAddress),
         items: form.items.map((item) => ({
           description: item.description.trim(),
           quantity: Number(item.quantity) || 0,
@@ -194,6 +209,10 @@ export function DocumentFormModal({
       if (!(Number(item.quantity) > 0))
         nextErrors[`item-${index}`] = "الكمية يجب أن تكون أكبر من صفر.";
     });
+    const email = form.recipientEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      nextErrors.recipientEmail = "بريد إلكتروني غير صالح.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     save.mutate();
@@ -417,6 +436,62 @@ export function DocumentFormModal({
               onChange={(e) => set("taxRate", Number(e.target.value))}
             />
           </FormField>
+        </div>
+
+        <div className="rounded-[var(--radius-m)] border border-border p-4">
+          <h4 className="text-label mb-1">بيانات المستلم (تظهر في ملف PDF)</h4>
+          <p className="text-caption mb-3">
+            اتركها فارغة ليعتمد المستند بيانات الشركة أو المكتب المرتبط. استخدمها لإصدار عرض سعر
+            لجهة خارجية غير مسجّلة في سجل العملاء.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="اسم الجهة / الشركة">
+              <input
+                className={inputCls}
+                value={form.recipientCompany}
+                onChange={(e) => set("recipientCompany", e.target.value)}
+                maxLength={180}
+              />
+            </FormField>
+            <FormField label="اسم المستلم (عناية)">
+              <input
+                className={inputCls}
+                value={form.recipientName}
+                onChange={(e) => set("recipientName", e.target.value)}
+                maxLength={150}
+              />
+            </FormField>
+            <FormField label="جوال المستلم">
+              <input
+                className={inputCls}
+                inputMode="tel"
+                dir="ltr"
+                value={form.recipientPhone}
+                onChange={(e) => set("recipientPhone", e.target.value)}
+                maxLength={30}
+              />
+            </FormField>
+            <FormField label="بريد المستلم" error={errors.recipientEmail}>
+              <input
+                className={inputCls}
+                type="email"
+                dir="ltr"
+                value={form.recipientEmail}
+                onChange={(e) => set("recipientEmail", e.target.value)}
+                maxLength={160}
+              />
+            </FormField>
+            <div className="sm:col-span-2">
+              <FormField label="عنوان المستلم">
+                <input
+                  className={inputCls}
+                  value={form.recipientAddress}
+                  onChange={(e) => set("recipientAddress", e.target.value)}
+                  maxLength={300}
+                />
+              </FormField>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

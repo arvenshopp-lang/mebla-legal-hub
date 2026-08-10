@@ -76,6 +76,15 @@ export const draftSchema = z.object({
   validUntil: isoDate,
   startsOn: isoDate,
   endsOn: isoDate,
+  recipientName: optionalText(150),
+  recipientCompany: optionalText(180),
+  recipientPhone: optionalText(30),
+  recipientEmail: z
+    .union([z.literal(""), z.string().trim().email("بريد إلكتروني غير صالح.")])
+    .transform((v) => (v === "" ? null : (v ?? null)))
+    .nullable()
+    .optional(),
+  recipientAddress: optionalText(300),
   items: z.array(itemInputSchema).min(1, "أضف بنداً واحداً على الأقل.").max(80),
 });
 

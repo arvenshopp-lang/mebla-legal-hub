@@ -320,7 +320,12 @@ export const salesDocumentPdf = createServerFn({ method: "POST" })
         contactName: content.contactName,
         contactEmail: content.contactEmail,
       },
-      { intro: content.intro, terms: content.terms },
+      {
+        intro: content.intro,
+        terms: content.terms,
+        signatoryName: tax.signatoryName,
+        signatoryTitle: tax.signatoryTitle,
+      },
     );
     const bytes = await pdfEngine.renderBillingPdf(document, tax);
     return { fileName: document.fileName, base64: pdfEngine.toBase64(bytes) };

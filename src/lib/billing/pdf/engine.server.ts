@@ -47,6 +47,13 @@ export type PdfBrand = {
   sellerAddress?: string | null;
   taxNumber?: string | null;
   bankDetails?: string | null;
+  commercialRegistration?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  website?: string | null;
+  signatoryName?: string | null;
+  signatoryTitle?: string | null;
+  documentFooterNote?: string | null;
 };
 
 export type PdfDocumentModel = {
@@ -67,6 +74,10 @@ export type PdfDocumentModel = {
   fileName: string;
   /** إظهار بيانات التحويل البنكي في التذييل (لا تُطبع في الإيصال). */
   showBankDetails?: boolean;
+  /** بطاقة «موجّه إلى» أعلى المستند (اسم الجهة والمستلم وبيانات تواصله). */
+  recipient?: { title: string; lines: string[] } | null;
+  /** خطّا توقيع أسفل المستند (الجهة المُصدرة والعميل). */
+  signatureSlots?: { label: string; caption?: string | null }[];
 };
 
 /* ------------------------------------------------------------------- الهوية */
@@ -365,6 +376,16 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   if (brand.taxNumber) {
     rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
   }
+  if (!brand.taxNumber && brand.commercialRegistration) {
+    rightText(
+      ctx,
+      `السجل التجاري: ${brand.commercialRegistration}`,
+      right,
+      A4.height - 78,
+      8.5,
+      MUTED,
+    );
+  }
 
   leftText(ctx, truncate(ctx, model.title, titleWidth, 14), MARGIN, A4.height - 46, 14);
   leftText(ctx, truncate(ctx, model.reference, titleWidth, 11), MARGIN, A4.height - 64, 11, MUTED);
@@ -390,6 +411,65 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
     rightText(ctx, model.notice, right - 8, ctx.y, 9, INK);
     ctx.y -= 30;
   }
+}
+
+/**
+ * بطاقة «موجّه إلى»: إطار مستقل أعلى المستند يُبرز اسم الجهة المستلمة
+ * وبيانات تواصلها، وهي أهم عنصر بصري في عرض السعر.
+ */
+function recipientCard(ctx: Ctx, recipient: { title: string; lines: string[] }): void {
+  const lines = recipient.lines.filter((line) => line.trim().length > 0).slice(0, 5);
+  if (lines.length === 0) return;
+  const right = A4.width - MARGIN;
+  const height = 30 + lines.length * 14;
+  ensureSpace(ctx, height + 12);
+  const top = ctx.y + 10;
+  ctx.page.drawRectangle({
+    x: MARGIN,
+    y: top - height,
+    width: USABLE,
+    height,
+    color: SURFACE,
+    borderColor: LINE,
+    borderWidth: 0.7,
+  });
+  ctx.page.drawRectangle({ x: right - 3, y: top - height, width: 3, height, color: GOLD });
+  rightText(ctx, recipient.title, right - 14, top - 20, 8, MUTED);
+  lines.forEach((line, index) => {
+    rightText(
+      ctx,
+      truncate(ctx, line, USABLE - 28, index === 0 ? 11.5 : 9),
+      right - 14,
+      top - 36 - index * 14,
+      index === 0 ? 11.5 : 9,
+      index === 0 ? INK : MUTED,
+    );
+  });
+  ctx.y = top - height - 20;
+}
+
+/** خطوط توقيع رسمية أسفل المستند. */
+function signatureBlock(ctx: Ctx, slots: { label: string; caption?: string | null }[]): void {
+  if (slots.length === 0) return;
+  ensureSpace(ctx, 74);
+  const right = A4.width - MARGIN;
+  const gap = 24;
+  const colWidth = (USABLE - gap * (slots.length - 1)) / slots.length;
+  const baseY = ctx.y - 6;
+  slots.forEach((slot, index) => {
+    const cellRight = right - index * (colWidth + gap);
+    rightText(ctx, slot.label, cellRight, baseY, 9, INK);
+    ctx.page.drawLine({
+      start: { x: cellRight - colWidth, y: baseY - 34 },
+      end: { x: cellRight, y: baseY - 34 },
+      thickness: 0.7,
+      color: LINE,
+    });
+    if (slot.caption) {
+      rightText(ctx, truncate(ctx, slot.caption, colWidth, 8), cellRight, baseY - 48, 8, MUTED);
+    }
+  });
+  ctx.y = baseY - 66;
 }
 
 function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
@@ -533,8 +613,13 @@ function textBlocks(ctx: Ctx, blocks: PdfTextBlock[]): void {
   });
 }
 
-function footer(ctx: Ctx): void {
-  const note = "مستند صادر إلكترونياً من منصة مِهلة";
+function footer(ctx: Ctx, brand: PdfBrand): void {
+  const contact = [brand.contactPhone, brand.contactEmail, brand.website]
+    .filter((value): value is string => !!value && value.trim().length > 0)
+    .join("  ·  ");
+  const note = brand.documentFooterNote?.trim()
+    ? brand.documentFooterNote.trim()
+    : "مستند صادر إلكترونياً من منصة مِهلة";
   ctx.doc.getPages().forEach((page, index, pages) => {
     const label = `صفحة ${index + 1} / ${pages.length}`;
     const labelWidth = splitDirectionalRuns(label).reduce(
@@ -553,6 +638,16 @@ function footer(ctx: Ctx): void {
     });
     drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
     drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
+    const contactWidth = contact
+      ? splitDirectionalRuns(contact).reduce(
+          (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+          0,
+        )
+      : 0;
+    // لا نرسم سطر التواصل إن كان سيتراكب مع رقم الصفحة في منتصف التذييل.
+    if (contact && MARGIN + contactWidth < (A4.width - labelWidth) / 2 - 10) {
+      drawLine(page, ctx.font, contact, MARGIN, MARGIN + 8, 8, MUTED);
+    }
   });
 }
 
@@ -572,6 +667,7 @@ export async function renderBillingPdf(
   const ctx: Ctx = { doc, font, page: doc.addPage([A4.width, A4.height]), y: A4.height - MARGIN };
 
   header(ctx, model, brand);
+  if (model.recipient) recipientCard(ctx, model.recipient);
   metaGrid(ctx, model.meta);
   model.tables.forEach((spec) => table(ctx, spec));
   totalsBlock(ctx, model.totals);
@@ -584,7 +680,10 @@ export async function renderBillingPdf(
     });
   }
   textBlocks(ctx, blocks);
-  footer(ctx);
+  if (model.signatureSlots && model.signatureSlots.length > 0) {
+    signatureBlock(ctx, model.signatureSlots);
+  }
+  footer(ctx, brand);
 
   return doc.save();
 }

@@ -51,7 +51,7 @@ export type ListFilters = {
 };
 
 const LIST_COLUMNS =
-  "id, kind, status, number, title, organization_id, company_id, contact_id, currency, subtotal, discount_type, discount_value, discount_amount, tax_rate, tax_amount, total, requires_approval, locked, owner_staff_id, created_by, created_at, updated_at, sent_at, decided_at, valid_until, starts_on, ends_on, converted_invoice_id, converted_subscription_id, organizations(name), crm_companies(name)";
+  "id, kind, status, number, title, organization_id, company_id, contact_id, currency, subtotal, discount_type, discount_value, discount_amount, tax_rate, tax_amount, total, requires_approval, locked, owner_staff_id, created_by, created_at, updated_at, sent_at, decided_at, valid_until, starts_on, ends_on, converted_invoice_id, converted_subscription_id, recipient_name, recipient_company, recipient_phone, recipient_email, recipient_address, organizations(name), crm_companies(name)";
 
 function mapRow(row: AnyClient): SalesDocRow {
   return {
@@ -85,6 +85,11 @@ function mapRow(row: AnyClient): SalesDocRow {
     ends_on: row.ends_on,
     converted_invoice_id: row.converted_invoice_id,
     converted_subscription_id: row.converted_subscription_id,
+    recipient_name: row.recipient_name ?? null,
+    recipient_company: row.recipient_company ?? null,
+    recipient_phone: row.recipient_phone ?? null,
+    recipient_email: row.recipient_email ?? null,
+    recipient_address: row.recipient_address ?? null,
   };
 }
 
@@ -179,6 +184,11 @@ export type DraftInput = {
   validUntil?: string | null;
   startsOn?: string | null;
   endsOn?: string | null;
+  recipientName?: string | null;
+  recipientCompany?: string | null;
+  recipientPhone?: string | null;
+  recipientEmail?: string | null;
+  recipientAddress?: string | null;
   items: SalesDocItemInput[];
 };
 
@@ -247,8 +257,13 @@ export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<strin
     valid_until: input.validUntil ?? null,
     starts_on: input.startsOn ?? null,
     ends_on: input.endsOn ?? null,
+    recipient_name: input.recipientName ?? null,
+    recipient_company: input.recipientCompany ?? null,
+    recipient_phone: input.recipientPhone ?? null,
+    recipient_email: input.recipientEmail ?? null,
+    recipient_address: input.recipientAddress ?? null,
     status: "draft" as const,
-    updated_by: ctx.staff.email,
+    updated_by: ctx.staff.user_id,
   };
 
   let documentId = input.id ?? null;
@@ -259,7 +274,7 @@ export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<strin
   } else {
     const { data, error } = await client
       .from("sales_documents")
-      .insert({ ...payload, created_by: ctx.staff.email })
+      .insert({ ...payload, created_by: ctx.staff.user_id })
       .select("id")
       .single();
     if (error || !data) fail(error, "تعذّر إنشاء المستند.");
@@ -334,7 +349,7 @@ export async function requestApproval(
   assertTransition(doc.status, "pending_approval");
   const { error } = await client
     .from("sales_documents")
-    .update({ status: "pending_approval", updated_by: ctx.staff.email })
+    .update({ status: "pending_approval", updated_by: ctx.staff.user_id })
     .eq("id", id);
   if (error) fail(error, "تعذّر إرسال طلب الاعتماد.");
   await logEvent(
@@ -363,7 +378,7 @@ export async function decideApproval(
   const client = await db();
   const doc = await requireDoc(client, id);
   if (doc.status !== "pending_approval") throw new Error("المستند ليس بانتظار الاعتماد.");
-  if (doc.created_by && doc.created_by === ctx.staff.email) {
+  if (doc.created_by && doc.created_by === ctx.staff.user_id) {
     throw new Error(
       "لا يمكن اعتماد مستند أنشأته بنفسك — يلزم موظف آخر (مبدأ الفصل بين المُنشئ والمعتمد).",
     );
@@ -374,9 +389,9 @@ export async function decideApproval(
     .from("sales_documents")
     .update({
       status: toStatus,
-      approved_by: approve ? ctx.staff.email : null,
+      approved_by: approve ? ctx.staff.user_id : null,
       approved_at: approve ? new Date().toISOString() : null,
-      updated_by: ctx.staff.email,
+      updated_by: ctx.staff.user_id,
     })
     .eq("id", id);
   if (error) fail(error, "تعذّر تسجيل قرار الاعتماد.");
@@ -424,7 +439,7 @@ export async function sendDocument(
   const sentAt = new Date().toISOString();
   const { error } = await client
     .from("sales_documents")
-    .update({ status: "sent", number, sent_at: sentAt, updated_by: ctx.staff.email })
+    .update({ status: "sent", number, sent_at: sentAt, updated_by: ctx.staff.user_id })
     .eq("id", id);
   if (error) fail(error, "تعذّر إرسال المستند.");
   await logEvent(client, id, "sent", doc.status, "sent", ctx.staff.email, message, { to: toEmail });
@@ -502,7 +517,7 @@ export async function recordDecision(
       decided_at: decidedAt,
       decision_note: note ?? null,
       locked: decision === "accepted" ? true : doc.locked,
-      updated_by: ctx.staff.email,
+      updated_by: ctx.staff.user_id,
     })
     .eq("id", id);
   if (error) fail(error, "تعذّر تسجيل القرار.");
@@ -755,7 +770,7 @@ export async function convertToSubscription(
       ends_at: ends,
       status: "active",
       activation_method: "sales_document_conversion",
-      created_by: ctx.staff.email,
+      created_by: ctx.staff.user_id,
     })
     .select("id")
     .single();
@@ -826,7 +841,7 @@ export async function saveTemplate(ctx: SalesCtx, input: TemplateInput): Promise
     default_validity_days: input.defaultValidityDays,
     is_active: input.isActive,
     items: input.items as unknown as AnyClient,
-    updated_by: ctx.staff.email,
+    updated_by: ctx.staff.user_id,
   };
   if (input.id) {
     const { error } = await client
@@ -844,7 +859,7 @@ export async function saveTemplate(ctx: SalesCtx, input: TemplateInput): Promise
   }
   const { data, error } = await client
     .from("sales_document_templates")
-    .insert({ ...payload, created_by: ctx.staff.email })
+    .insert({ ...payload, created_by: ctx.staff.user_id })
     .select("id")
     .single();
   if (error || !data) fail(error, "تعذّر إنشاء القالب.");

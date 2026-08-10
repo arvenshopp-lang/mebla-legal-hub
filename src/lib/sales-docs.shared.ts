@@ -161,6 +161,11 @@ export type SalesDocRow = {
   ends_on: string | null;
   converted_invoice_id: string | null;
   converted_subscription_id: string | null;
+  recipient_name?: string | null;
+  recipient_company?: string | null;
+  recipient_phone?: string | null;
+  recipient_email?: string | null;
+  recipient_address?: string | null;
 };
 
 export type SalesDocItemRow = {
