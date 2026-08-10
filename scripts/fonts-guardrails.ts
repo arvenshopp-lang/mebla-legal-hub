@@ -9,7 +9,13 @@ import { join, relative } from "node:path";
 const ROOTS = ["src", "public"];
 const EXTS = [".ts", ".tsx", ".css", ".html", ".json"];
 /** مسارات معفاة: قوالب ورسائل البريد الصادر فقط */
-const EXEMPT = [/^src\/lib\/email\//, /^src\/lib\/email-templates\//, /^src\/routes\/lovable\/email\//];
+const EXEMPT = [
+  /^src\/lib\/email\//,
+  /^src\/lib\/email-templates\//,
+  /^src\/routes\/lovable\/email\//,
+  // خط مصغّر مدمج (base64) داخل ملفات PDF على الخادم — لا يصدر أي طلب شبكي
+  /^src\/lib\/secure-view\/watermark-font\.ts$/,
+];
 const FORBIDDEN = /IBM\s*Plex|ibm-plex/i;
 
 function walk(dir: string, out: string[] = []): string[] {

@@ -407,5 +407,5 @@ function toHtml(text: string): string {
     .split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 12px">${p.replace(/\n/g, "<br />")}</p>`)
     .join("");
-  return `<div dir="rtl" style="font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;font-size:15px;line-height:1.9;color:#1A1A1A;text-align:right">${paragraphs}</div>`;
+  return `<div dir="rtl" style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:15px;line-height:1.9;color:#1A1A1A;text-align:right">${paragraphs}</div>`;
 }
