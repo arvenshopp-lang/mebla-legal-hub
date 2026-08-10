@@ -30,7 +30,13 @@ import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
 import { PrintGuard } from "@/components/print/print-guard";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
-type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard };
+type NavItem = {
+  to: string;
+  label: string;
+  Icon: typeof LayoutDashboard;
+  /** يظهر لهذه الأدوار فقط — الإخفاء تحسين تجربة، والفرض على الخادم. */
+  roles?: AppRole[];
+};
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
@@ -55,6 +61,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "المكتب",
     items: [
       { to: "/team", label: "الفريق", Icon: UsersRound },
+      {
+        to: "/team-performance",
+        label: "أداء الفريق",
+        Icon: BarChart3,
+        roles: ["owner", "admin"],
+      },
       { to: "/office-page", label: "الصفحة العامة", Icon: Globe },
       { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
