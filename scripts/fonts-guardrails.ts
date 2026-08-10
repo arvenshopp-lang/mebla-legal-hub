@@ -1,5 +1,6 @@
 /**
- * حاجز الخطوط — يمنع أي عودة لخط IBM Plex في واجهة المنصة وملفات الطباعة.
+ * حاجز الخطوط — يمنع أي عودة لخط IBM Plex، ويوحّد عائلات الخطوط
+ * في الواجهة والطباعة على Tajawal + Cairo فقط (بدون خطوط احتياطية مسمّاة).
  * الاستثناء الوحيد: قوالب البريد الصادر (تُعرض في عميل بريد خارجي ولا تُحمّل خطوطنا).
  * التشغيل: bun run fonts:check
  */
@@ -17,6 +18,38 @@ const EXEMPT = [
   /^src\/lib\/secure-view\/watermark-font\.ts$/,
 ];
 const FORBIDDEN = /IBM\s*Plex|ibm-plex/i;
+
+/**
+ * العائلات المسموحة داخل أي تعريف font-family في الواجهة/الطباعة:
+ * الخطان الرسميان + العائلات العامة فقط. أي خط مسمّى آخر (Arial, Segoe UI,
+ * system-ui, Tahoma…) ممنوع لأنه يغيّر الهوية أو يفتح باباً لتحميل خارجي.
+ */
+const ALLOWED_FAMILIES = new Set([
+  "tajawal",
+  "cairo",
+  "sans-serif",
+  "serif",
+  "monospace",
+  "inherit",
+  "initial",
+  "unset",
+  "revert",
+]);
+const FONT_FAMILY_DECL = /font-?family\s*[:=]\s*(?:"([^"]+)"|'([^']+)'|([^;<>{}"'`]+))/gi;
+
+function familyViolations(line: string): string[] {
+  const bad: string[] = [];
+  for (const match of line.matchAll(FONT_FAMILY_DECL)) {
+    const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+    if (!value || value.includes("var(") || value.includes("${")) continue;
+    for (const raw of value.split(",")) {
+      const family = raw.trim().replace(/^['"]|['"]$/g, "").toLowerCase();
+      if (!family) continue;
+      if (!ALLOWED_FAMILIES.has(family)) bad.push(family);
+    }
+  }
+  return bad;
+}
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -37,14 +70,18 @@ for (const root of ROOTS) {
       .split("\n")
       .forEach((line, i) => {
         if (FORBIDDEN.test(line)) violations.push(`${rel}:${i + 1}  ${line.trim().slice(0, 120)}`);
+        const bad = familyViolations(line);
+        if (bad.length > 0) {
+          violations.push(`${rel}:${i + 1}  خط غير معتمد: ${[...new Set(bad)].join(", ")}`);
+        }
       });
   }
 }
 
 if (violations.length > 0) {
-  console.error("FAIL — استخدام خط IBM Plex ممنوع (الخطوط المعتمدة: Tajawal + Cairo):");
+  console.error("FAIL — مخالفات الخطوط (المعتمد فقط: Tajawal + Cairo أو var(--font-*)):");
   for (const v of violations) console.error("  " + v);
   console.error(`\nإجمالي المخالفات: ${violations.length}`);
   process.exit(1);
 }
-console.log("PASS — لا أثر لخط IBM Plex في الواجهة أو ملفات الطباعة (Tajawal + Cairo فقط).");
+console.log("PASS — الواجهة والطباعة تعتمد Tajawal + Cairo فقط، ولا أثر لخط IBM Plex.");
