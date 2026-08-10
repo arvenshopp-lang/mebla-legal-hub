@@ -9124,6 +9124,59 @@ export type Database = {
         }
         Relationships: []
       }
+      work_item_events: {
+        Row: {
+          actor_id: string | null
+          event: string
+          from_due_date: string | null
+          from_user_id: string | null
+          id: string
+          item_id: string
+          item_type: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          to_due_date: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          event: string
+          from_due_date?: string | null
+          from_user_id?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          to_due_date?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          event?: string
+          from_due_date?: string | null
+          from_user_id?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          to_due_date?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
