@@ -24,5 +24,7 @@ export function shapeArabicRun(text: string): string {
     }
     clusters.push(char);
   });
-  return clusters.reverse().join("");
+  // fontkit يتولى ترتيب المقطع العربي من اليمين إلى اليسار عند الرسم، لذا
+  // يُعاد النص المُشكَّل بترتيبه المنطقي دون عكس يدوي (العكس يُلغي ترتيبه).
+  return clusters.join("");
 }
