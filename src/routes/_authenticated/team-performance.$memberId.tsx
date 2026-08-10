@@ -76,7 +76,7 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function Page() {
   const { memberId } = Route.useParams();
-  const search = Route.useSearch();
+  const search = Route.useSearch() as PerformanceSearch;
   const navigate = Route.useNavigate();
   const { activeOrgId, activeRole } = useAuth();
   const [drilldown, setDrilldown] = useState<{ member: MemberKpi; kind: DrilldownKind } | null>(null);
