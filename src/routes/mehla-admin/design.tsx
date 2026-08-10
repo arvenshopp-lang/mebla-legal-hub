@@ -17,6 +17,7 @@ import {
 import { AdminShell } from "@/components/admin/shell";
 import { Badge, Btn, LoadingBlock, SectionCard, inputCls } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { hasPermission } from "@/lib/admin-permissions";
 import { cn } from "@/lib/utils";
 import { DesignPreview } from "@/components/admin/design-preview";
 import { DESIGN_PAGES, designPage, previewPathFor } from "@/lib/design/pages";
@@ -241,6 +242,7 @@ function CssEditor({
 function DesignStudioPage() {
   const { staff } = usePlatformAdmin();
   const isOwner = staff?.role === "super_admin";
+  const canRead = hasPermission(staff, "design.read");
   const queryClient = useQueryClient();
 
   const load = useServerFn(getDesignStudio);
@@ -265,6 +267,8 @@ function DesignStudioPage() {
   const [serverIssues, setServerIssues] = useState<string[]>([]);
   const hydrated = useRef(false);
   const dirty = useRef(false);
+  /** رقم مراجعة كل صفحة كما حُمّلت — أساس القفل التفاؤلي حتى لا تُطمس تعديلات جلسة أخرى. */
+  const revisions = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (!studio.data || hydrated.current) return;
@@ -279,6 +283,7 @@ function DesignStudioPage() {
         css: draft.custom_css ?? "",
         meta: { ...DEFAULT_META, ...(payload.meta ?? {}) },
       };
+      revisions.current[draft.page_key] = draft.revision_number ?? 0;
     }
     setPages(next);
     hydrated.current = true;
@@ -335,17 +340,26 @@ function DesignStudioPage() {
       setStatus("saving");
       try {
         const result = await save({
-          data: { pageKey, tokens: current.tokens, customCss: current.css, meta: current.meta },
+          data: {
+            pageKey,
+            tokens: current.tokens,
+            customCss: current.css,
+            meta: current.meta,
+            expectedRevision: revisions.current[pageKey] ?? 0,
+          },
         });
         setStatus("saved");
         setLastSavedAt(result.savedAt);
+        revisions.current[pageKey] = result.revision;
         setServerIssues(result.validation?.css?.blocked_rules ?? []);
         dirty.current = false;
         if (!silent) toast.success("تم حفظ المسودة دون نشر.");
         return true;
       } catch (error) {
         setStatus("error");
-        if (!silent) toast.error(error instanceof Error ? error.message : "تعذّر حفظ المسودة.");
+        const message = error instanceof Error ? error.message : "تعذّر حفظ المسودة.";
+        // تعارض المراجعات يُعلَن دائماً — حتى في الحفظ التلقائي — حتى لا يظن المحرر أن عمله محفوظ.
+        if (!silent || message.includes("عُدِّلت")) toast.error(message);
         return false;
       }
     },
@@ -428,6 +442,22 @@ function DesignStudioPage() {
     (acc[p.group] ??= []).push(p);
     return acc;
   }, {});
+
+  if (!canRead) {
+    return (
+      <AdminShell
+        title="محرر تصميم المنصة"
+        description="هذه الوحدة متاحة لمن يملك صلاحية الاطلاع على التصميم فقط."
+      >
+        <SectionCard title="لا تملك صلاحية الوصول">
+          <p className="text-[13px] text-muted-foreground">
+            الوصول إلى استوديو التصميم يتطلب صلاحية «الاطلاع على التصميم» (design.read). راجع مالك
+            المنصة لمنحك الصلاحية المناسبة.
+          </p>
+        </SectionCard>
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell
