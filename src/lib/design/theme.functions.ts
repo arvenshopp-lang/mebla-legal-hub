@@ -6,6 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AdminPermission } from "@/lib/admin-permissions";
 import type { Database } from "@/integrations/supabase/types";
 import { PAGE_KEYS } from "./pages";
 
@@ -39,7 +40,7 @@ async function requireDesign(
 export const getDesignStudio = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.read");
     const svc = await import("./theme.server");
     const [state, drafts, versions, audit, active] = await Promise.all([
       svc.getPublishState(false),
@@ -71,7 +72,7 @@ export const saveDesignDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => draftSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     const validation = svc.validateDraft(data.pageKey, data.tokens, data.customCss);
     const result = await svc.saveDraft({
@@ -95,7 +96,7 @@ export const validateDesignDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => draftSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     return svc.validateDraft(data.pageKey, data.tokens, data.customCss);
   });
@@ -115,7 +116,7 @@ export const previewDesignCss = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.preview");
     const svc = await import("./theme.server");
     const { sanitizeTokens } = await import("./tokens");
     const { validateCustomCss } = await import("./css-guard");
@@ -139,7 +140,7 @@ export const publishDesign = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.publish");
     const svc = await import("./theme.server");
     // «تطبيق ونشر» يحفظ آخر تعديل تلقائياً قبل النشر
     if (data.draft) {
@@ -160,7 +161,7 @@ export const restoreDesignVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ versionId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.rollback");
     const svc = await import("./theme.server");
     return svc.restoreVersion(data.versionId, context.userId);
   });
@@ -168,7 +169,7 @@ export const restoreDesignVersion = createServerFn({ method: "POST" })
 export const rollbackDesign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.rollback");
     const svc = await import("./theme.server");
     return svc.rollbackTheme(context.userId);
   });
@@ -177,7 +178,7 @@ export const resetDesignPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ pageKey: pageKeySchema }).parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     const result = await svc.resetPageTheme(data.pageKey, context.userId);
     await svc.writeDesignAudit({
