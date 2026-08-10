@@ -78,7 +78,7 @@ export function OfficePublicContact({
               href={website}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+              className="inline-flex min-h-11 items-center gap-1.5 font-medium text-primary hover:underline"
             >
               زيارة الموقع
               <ExternalLink size={14} strokeWidth={1.9} aria-hidden="true" />

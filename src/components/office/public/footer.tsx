@@ -9,7 +9,7 @@ export function OfficePublicFooter({ officeName }: { officeName: string }) {
           href="https://mehlalex.com/privacy"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-caption text-primary hover:underline"
+          className="inline-flex min-h-11 items-center text-caption text-primary hover:underline"
         >
           سياسة الخصوصية
         </a>
