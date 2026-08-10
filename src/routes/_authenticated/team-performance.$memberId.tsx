@@ -36,8 +36,14 @@ const searchSchema = z.object({
   preset: z
     .enum(["this_month", "last_month", "last_3_months", "last_6_months", "this_year", "custom"])
     .default("this_month"),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/team-performance/$memberId")({
@@ -79,7 +85,9 @@ function Page() {
   const search = Route.useSearch() as PerformanceSearch;
   const navigate = Route.useNavigate();
   const { activeOrgId, activeRole } = useAuth();
-  const [drilldown, setDrilldown] = useState<{ member: MemberKpi; kind: DrilldownKind } | null>(null);
+  const [drilldown, setDrilldown] = useState<{ member: MemberKpi; kind: DrilldownKind } | null>(
+    null,
+  );
 
   const preset = search.preset;
   const from = search.from ?? todayIso();
@@ -146,7 +154,9 @@ function Page() {
 
         {query.isPending && <LoadingBlock rows={6} cols={4} />}
         {query.isError && (
-          <ErrorBlock message={query.error instanceof Error ? query.error.message : "خطأ غير معروف."} />
+          <ErrorBlock
+            message={query.error instanceof Error ? query.error.message : "خطأ غير معروف."}
+          />
         )}
 
         {data && member && (
@@ -209,8 +219,8 @@ function Page() {
                 </tbody>
               </table>
               <p className="text-[11.5px] text-text-muted">
-                الأبعاد غير القابلة للتطبيق تُستبعد من الحساب ولا تُعتبر صفراً، ويُعاد توزيع أوزانها على
-                الأبعاد المتاحة.
+                الأبعاد غير القابلة للتطبيق تُستبعد من الحساب ولا تُعتبر صفراً، ويُعاد توزيع أوزانها
+                على الأبعاد المتاحة.
               </p>
             </section>
 
@@ -287,13 +297,18 @@ function Page() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {data.items.map((item) => {
-                        const state = STATE_LABELS[item.state] ?? { label: item.state, tone: "muted" as const };
+                        const state = STATE_LABELS[item.state] ?? {
+                          label: item.state,
+                          tone: "muted" as const,
+                        };
                         return (
                           <tr key={`${item.dimension}-${item.itemId}`}>
                             <Td>
                               <span className="font-medium text-foreground">{item.title}</span>
                               {item.caseTitle && (
-                                <span className="block text-[11px] text-text-muted">{item.caseTitle}</span>
+                                <span className="block text-[11px] text-text-muted">
+                                  {item.caseTitle}
+                                </span>
                               )}
                               {item.dueExtended && (
                                 <span className="mt-1 inline-block">
@@ -303,7 +318,8 @@ function Page() {
                             </Td>
                             <Td>{item.itemType === "task" ? "مهمة" : "مهلة"}</Td>
                             <Td className="text-[11.5px] text-muted-foreground">
-                              {KPI_DIMENSION_LABELS[item.dimension as KpiDimensionKey] ?? item.dimension}
+                              {KPI_DIMENSION_LABELS[item.dimension as KpiDimensionKey] ??
+                                item.dimension}
                             </Td>
                             <Td>{item.dueDate ? fmtDate(item.dueDate) : "—"}</Td>
                             <Td>{item.completedAt ? fmtDate(item.completedAt) : "—"}</Td>

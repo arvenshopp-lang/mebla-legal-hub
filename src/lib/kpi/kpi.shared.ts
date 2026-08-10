@@ -112,7 +112,9 @@ export function riyadhDayStart(year: number, month: number, day: number): string
 
 /** بداية اليوم التالي — تُستخدم كحد أعلى مفتوح. */
 export function riyadhDayEnd(year: number, month: number, day: number): string {
-  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0) + DAY_MS - RIYADH_OFFSET_MS).toISOString();
+  return new Date(
+    Date.UTC(year, month - 1, day, 0, 0, 0) + DAY_MS - RIYADH_OFFSET_MS,
+  ).toISOString();
 }
 
 function dayStartFromIsoDate(value: string): string {
@@ -143,7 +145,12 @@ export function resolvePeriod(
   if (preset === "custom") {
     const rawFrom = custom?.from;
     const rawTo = custom?.to;
-    if (!rawFrom || !rawTo || !/^\d{4}-\d{2}-\d{2}$/.test(rawFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(rawTo)) {
+    if (
+      !rawFrom ||
+      !rawTo ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(rawFrom) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(rawTo)
+    ) {
       throw new KpiPeriodError("يرجى تحديد تاريخ بداية ونهاية صحيحين للفترة المخصصة.");
     }
     from = dayStartFromIsoDate(rawFrom);

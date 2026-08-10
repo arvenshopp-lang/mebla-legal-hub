@@ -4,9 +4,22 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const periodInput = z.object({
   organizationId: z.string().uuid(),
-  preset: z.enum(["this_month", "last_month", "last_3_months", "last_6_months", "this_year", "custom"]),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  preset: z.enum([
+    "this_month",
+    "last_month",
+    "last_3_months",
+    "last_6_months",
+    "this_year",
+    "custom",
+  ]),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullish(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullish(),
 });
 
 const memberInput = periodInput.extend({ memberId: z.string().uuid() });
@@ -81,5 +94,8 @@ export const exportTeamPerformance = createServerFn({ method: "POST" })
       to: data.to ?? null,
     });
     const { buildPerformanceCsv } = await import("./kpi.export.server");
-    return { csv: buildPerformanceCsv(result), fileName: `mehla-team-performance-${data.preset}.csv` };
+    return {
+      csv: buildPerformanceCsv(result),
+      fileName: `mehla-team-performance-${data.preset}.csv`,
+    };
   });

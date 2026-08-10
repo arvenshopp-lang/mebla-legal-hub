@@ -201,32 +201,32 @@ export function DashboardShell({
                 .filter((item) => !item.roles || (activeRole && item.roles.includes(activeRole)))
                 .map(({ to, label, Icon }) => {
                   const activeItem = isActive(to);
-                return (
-                  <li key={to}>
-                    <Link
-                      to={to}
-                      title={mini ? label : undefined}
-                      aria-current={activeItem ? "page" : undefined}
-                      className={cn(
-                        "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
-                        mini && "justify-center px-0",
-                        activeItem
-                          ? "bg-primary-soft font-semibold text-primary"
-                          : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-                      )}
-                    >
-                      {activeItem && (
-                        <span
-                          className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary"
-                          aria-hidden
-                        />
-                      )}
-                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                      {!mini && <span className="truncate">{label}</span>}
-                    </Link>
-                  </li>
-                );
-              })}
+                  return (
+                    <li key={to}>
+                      <Link
+                        to={to}
+                        title={mini ? label : undefined}
+                        aria-current={activeItem ? "page" : undefined}
+                        className={cn(
+                          "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
+                          mini && "justify-center px-0",
+                          activeItem
+                            ? "bg-primary-soft font-semibold text-primary"
+                            : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+                        )}
+                      >
+                        {activeItem && (
+                          <span
+                            className="absolute inset-y-1.5 right-0 w-[3px] rounded-full bg-primary"
+                            aria-hidden
+                          />
+                        )}
+                        <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                        {!mini && <span className="truncate">{label}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
             </ul>
           </div>
         ))}

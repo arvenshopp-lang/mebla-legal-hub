@@ -86,7 +86,15 @@ export function DimensionBar({ dimension }: { dimension: KpiDimension }) {
   const labelId = useId();
   const value = dimension.value;
   const tone: ScoreTone =
-    value === null ? "fair" : value >= 90 ? "excellent" : value >= 75 ? "good" : value >= 60 ? "watch" : "low";
+    value === null
+      ? "fair"
+      : value >= 90
+        ? "excellent"
+        : value >= 75
+          ? "good"
+          : value >= 60
+            ? "watch"
+            : "low";
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
@@ -142,7 +150,11 @@ export function StatCard({
       <p
         className={cn(
           "mt-1 text-[22px] font-bold tabular-nums",
-          tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-foreground",
+          tone === "danger"
+            ? "text-danger"
+            : tone === "warning"
+              ? "text-warning"
+              : "text-foreground",
         )}
       >
         {value}
@@ -178,7 +190,10 @@ export function PeriodPicker({
   return (
     <div className="flex flex-wrap items-end gap-2">
       <div className="min-w-[170px] flex-1 sm:flex-none">
-        <label className="mb-1 block text-[11px] font-semibold text-muted-foreground" htmlFor="kpi-period">
+        <label
+          className="mb-1 block text-[11px] font-semibold text-muted-foreground"
+          htmlFor="kpi-period"
+        >
           الفترة
         </label>
         <select
@@ -198,7 +213,10 @@ export function PeriodPicker({
       {preset === "custom" && (
         <>
           <div className="min-w-[140px] flex-1 sm:flex-none">
-            <label className="mb-1 block text-[11px] font-semibold text-muted-foreground" htmlFor="kpi-from">
+            <label
+              className="mb-1 block text-[11px] font-semibold text-muted-foreground"
+              htmlFor="kpi-from"
+            >
               من
             </label>
             <input
@@ -211,7 +229,10 @@ export function PeriodPicker({
             />
           </div>
           <div className="min-w-[140px] flex-1 sm:flex-none">
-            <label className="mb-1 block text-[11px] font-semibold text-muted-foreground" htmlFor="kpi-to">
+            <label
+              className="mb-1 block text-[11px] font-semibold text-muted-foreground"
+              htmlFor="kpi-to"
+            >
               إلى
             </label>
             <input

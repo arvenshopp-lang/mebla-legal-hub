@@ -326,8 +326,7 @@ export async function computeTeamPerformance(
   const currentByOwner = byOwner(current);
   const previousByOwner = byOwner(previous);
 
-  const trackingStartedAt =
-    events.length > 0 ? (events[0]?.occurred_at ?? null) : null;
+  const trackingStartedAt = events.length > 0 ? (events[0]?.occurred_at ?? null) : null;
 
   const memberById = new Map(memberRows.map((m) => [m.user_id, m]));
   const participantIds = new Set<string>([
@@ -342,7 +341,11 @@ export async function computeTeamPerformance(
       .from("profiles")
       .select("id, full_name, job_title")
       .in("id", unknownIds);
-    for (const row of (data ?? []) as { id: string; full_name: string | null; job_title: string | null }[]) {
+    for (const row of (data ?? []) as {
+      id: string;
+      full_name: string | null;
+      job_title: string | null;
+    }[]) {
       formerProfiles.set(row.id, { full_name: row.full_name, job_title: row.job_title });
     }
   }
@@ -357,7 +360,11 @@ export async function computeTeamPerformance(
       jobTitle: profile?.job_title ?? null,
       role: row?.role ?? "—",
       isFormerMember: !row || row.status !== "active",
-      trackedDays: trackedDaysFor(row?.joined_at ?? row?.created_at ?? null, trackingStartedAt, period),
+      trackedDays: trackedDaysFor(
+        row?.joined_at ?? row?.created_at ?? null,
+        trackingStartedAt,
+        period,
+      ),
       activeCases: caseCounts.get(userId) ?? 0,
     };
     const prev = computeMemberKpi(
@@ -483,7 +490,13 @@ export async function computeMemberDetail(
     activeCases: caseCounts.get(memberId) ?? 0,
   };
 
-  const prev = computeMemberKpi(memberInput, previous, period.previous, period.previousBoundary, null);
+  const prev = computeMemberKpi(
+    memberInput,
+    previous,
+    period.previous,
+    period.previousBoundary,
+    null,
+  );
   const now = computeMemberKpi(
     memberInput,
     current,
@@ -527,9 +540,11 @@ export async function computeMemberDetail(
     if (isScored) continue;
     let reason: string = EXCLUSION_REASONS.outside_period;
     if (item.selfManaged) reason = EXCLUSION_REASONS.self_managed;
-    else if (item.state === "cancelled" && !item.missedBeforeClosure) reason = EXCLUSION_REASONS.cancelled;
+    else if (item.state === "cancelled" && !item.missedBeforeClosure)
+      reason = EXCLUSION_REASONS.cancelled;
     else if (!item.effectiveDueDate) reason = EXCLUSION_REASONS.no_due;
-    else if (new Date(item.effectiveDueDate).getTime() > boundaryMs) reason = EXCLUSION_REASONS.future_due;
+    else if (new Date(item.effectiveDueDate).getTime() > boundaryMs)
+      reason = EXCLUSION_REASONS.future_due;
     excluded.push({ itemId: item.itemId, itemType: item.itemType, title: item.title, reason });
   }
 
@@ -594,16 +609,18 @@ export async function computeDrilldown(
     return {
       kind,
       total: count ?? 0,
-      rows: (data ?? []).map((row: { id: string; case_title: string; next_action_date: string | null }) => ({
-        itemId: row.id,
-        itemType: "case" as const,
-        title: row.case_title,
-        caseId: row.id,
-        caseTitle: row.case_title,
-        dueDate: row.next_action_date,
-        completedAt: null,
-        delayDays: null,
-      })),
+      rows: (data ?? []).map(
+        (row: { id: string; case_title: string; next_action_date: string | null }) => ({
+          itemId: row.id,
+          itemType: "case" as const,
+          title: row.case_title,
+          caseId: row.id,
+          caseTitle: row.case_title,
+          dueDate: row.next_action_date,
+          completedAt: null,
+          delayDays: null,
+        }),
+      ),
     };
   }
 

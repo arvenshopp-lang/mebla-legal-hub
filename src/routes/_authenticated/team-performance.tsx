@@ -71,7 +71,9 @@ function Page() {
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState(todayIso());
   const [to, setTo] = useState(todayIso());
-  const [drilldown, setDrilldown] = useState<{ member: MemberKpi; kind: DrilldownKind } | null>(null);
+  const [drilldown, setDrilldown] = useState<{ member: MemberKpi; kind: DrilldownKind } | null>(
+    null,
+  );
   const [exporting, setExporting] = useState(false);
 
   const fetchPerformance = useServerFn(getTeamPerformance);
@@ -156,12 +158,16 @@ function Page() {
 
         {data && (
           <>
-            {data.partialHistory && <NoticeBar>{partialHistoryMessage(data.trackingStartedAt)}</NoticeBar>}
+            {data.partialHistory && (
+              <NoticeBar>{partialHistoryMessage(data.trackingStartedAt)}</NoticeBar>
+            )}
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard
                 label="متوسط أداء الفريق"
-                value={data.summary.averageScore === null ? "—" : data.summary.averageScore.toFixed(1)}
+                value={
+                  data.summary.averageScore === null ? "—" : data.summary.averageScore.toFixed(1)
+                }
                 hint={
                   data.summary.previousAverageScore === null
                     ? "لا مقارنة متاحة"
@@ -193,7 +199,10 @@ function Page() {
 
             {data.ranked.length === 0 ? (
               <div className="surface-card">
-                <EmptyState title="لا يوجد ترتيب موثوق لهذه الفترة" hint={INSUFFICIENT_DATA_MESSAGE} />
+                <EmptyState
+                  title="لا يوجد ترتيب موثوق لهذه الفترة"
+                  hint={INSUFFICIENT_DATA_MESSAGE}
+                />
               </div>
             ) : (
               <>
@@ -219,11 +228,17 @@ function Page() {
                       <tbody className="divide-y divide-border">
                         {data.ranked.map((member) => (
                           <tr key={member.userId} className="transition hover:bg-surface-muted/40">
-                            <Td className="font-bold tabular-nums text-muted-foreground">{member.rank}</Td>
+                            <Td className="font-bold tabular-nums text-muted-foreground">
+                              {member.rank}
+                            </Td>
                             <Td>
-                              <span className="font-semibold text-foreground">{member.fullName}</span>
+                              <span className="font-semibold text-foreground">
+                                {member.fullName}
+                              </span>
                               {member.jobTitle && (
-                                <span className="block text-[11px] text-text-muted">{member.jobTitle}</span>
+                                <span className="block text-[11px] text-text-muted">
+                                  {member.jobTitle}
+                                </span>
                               )}
                               {member.isFormerMember && (
                                 <span className="mt-1 inline-block">
@@ -234,7 +249,11 @@ function Page() {
                             <Td>
                               <ScoreValue score={member.score} tone={member.band?.tone ?? null} />
                             </Td>
-                            <Td>{member.band && <BandBadge tone={member.band.tone} label={member.band.label} />}</Td>
+                            <Td>
+                              {member.band && (
+                                <BandBadge tone={member.band.tone} label={member.band.label} />
+                              )}
+                            </Td>
                             <Td>
                               <TrendChip points={member.trendPoints} />
                             </Td>
@@ -271,7 +290,9 @@ function Page() {
                             {member.fullName}
                           </p>
                           {member.jobTitle && (
-                            <p className="truncate text-[11px] text-text-muted">{member.jobTitle}</p>
+                            <p className="truncate text-[11px] text-text-muted">
+                              {member.jobTitle}
+                            </p>
                           )}
                         </div>
                         <div className="text-left">
@@ -316,7 +337,9 @@ function Page() {
             {data.insufficient.length > 0 && (
               <section className="surface-card p-4">
                 <h2 className="text-[14px] font-bold text-foreground">أعضاء بلا ترتيب</h2>
-                <p className="mt-1 text-[12px] text-muted-foreground">{INSUFFICIENT_DATA_MESSAGE}</p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  {INSUFFICIENT_DATA_MESSAGE}
+                </p>
                 <ul className="mt-3 divide-y divide-border">
                   {data.insufficient.map((member) => (
                     <li
@@ -377,7 +400,14 @@ export function DrilldownDialog({
   const [page, setPage] = useState(0);
   const fetchDrilldown = useServerFn(getPerformanceDrilldown);
   const query = useQuery({
-    queryKey: ["performance-drilldown", organizationId, state?.member.userId, state?.kind, period, page],
+    queryKey: [
+      "performance-drilldown",
+      organizationId,
+      state?.member.userId,
+      state?.kind,
+      period,
+      page,
+    ],
     enabled: Boolean(state && organizationId),
     queryFn: () =>
       fetchDrilldown({
@@ -404,7 +434,9 @@ export function DrilldownDialog({
     >
       {query.isPending && <LoadingBlock rows={4} cols={3} />}
       {query.isError && (
-        <ErrorBlock message={query.error instanceof Error ? query.error.message : "خطأ غير معروف."} />
+        <ErrorBlock
+          message={query.error instanceof Error ? query.error.message : "خطأ غير معروف."}
+        />
       )}
       {query.data && query.data.rows.length === 0 && (
         <EmptyState title="لا توجد عناصر" hint="لا يوجد ما يطابق هذا المؤشر في الفترة المحددة." />

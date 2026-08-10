@@ -176,7 +176,11 @@ export function evaluateItem(item: WorkItemInput, boundaryIso: string): ItemEval
     }
   }
   const dueMs = ms(effectiveDue);
-  while (index > 0 && dueMs !== null && segments[index]!.from > dueMs - REASSIGN_GRACE_HOURS * HOUR_MS) {
+  while (
+    index > 0 &&
+    dueMs !== null &&
+    segments[index]!.from > dueMs - REASSIGN_GRACE_HOURS * HOUR_MS
+  ) {
     index -= 1;
   }
   const ownerId = segments.length > 0 ? segments[index]!.userId : owner;
@@ -234,7 +238,8 @@ function within(value: string | null, range: PeriodRange): boolean {
 
 /** هل العمل قابل للحكم عليه عند الحد الزمني (لا نعاقب على موعد لم يحن). */
 function judgeable(evaluation: ItemEvaluation, boundaryIso: string): boolean {
-  if (evaluation.state === "completed_on_time" || evaluation.state === "completed_late") return true;
+  if (evaluation.state === "completed_on_time" || evaluation.state === "completed_late")
+    return true;
   if (evaluation.state === "overdue") return true;
   if (evaluation.state === "cancelled" || evaluation.state === "deleted") {
     return evaluation.missedBeforeClosure;
@@ -405,7 +410,9 @@ export function computeMemberKpi(
       band: score !== null ? scoreBand(score) : null,
       previousScore,
       trendPoints:
-        score !== null && previousScore !== null ? Math.round((score - previousScore) * 10) / 10 : null,
+        score !== null && previousScore !== null
+          ? Math.round((score - previousScore) * 10) / 10
+          : null,
       dimensions,
       context,
       sampleItems,
