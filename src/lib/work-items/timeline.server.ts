@@ -6,10 +6,17 @@ import {
   WORK_EVENTS,
   type WorkEventName,
   type WorkItemTimelineCursor,
+  type WorkItemTimelineEvent,
   type WorkItemTimelinePage,
 } from "./timeline.shared";
 
 type Client = SupabaseClient<Database>;
+
+/** أدوار المكتب المصرح لها بتصدير سجل الأحداث (القارئ فقط ممنوع). */
+const EXPORT_ROLES = ["owner", "admin", "lawyer", "legal_assistant"];
+
+/** أقصى عدد أحداث يُصدَّر في ملف واحد. */
+const EXPORT_MAX_EVENTS = 2000;
 
 /** أعطال التقاط الأحداث تُقيَّد بهذا الإجراء داخل سجل الأعطال. */
 const CAPTURE_ACTION = "work_item_events.capture";
@@ -166,5 +173,99 @@ export async function getWorkItemTimeline(
       toDueDate: r.to_due_date,
     })),
     nextCursor,
+  };
+}
+
+/**
+ * تصدير سجل أحداث عمل واحد (CSV أو نص HTML يُطبع كـ PDF).
+ * الصلاحية تُتحقق على الخادم: عضوية نشطة في المكتب + دور مصرّح له بالتصدير،
+ * ثم قراءة العمل نفسه بعميل المستخدم (RLS) قبل قراءة الأحداث.
+ */
+export async function exportWorkItemTimeline(
+  userClient: Client,
+  userId: string,
+  organizationId: string,
+  itemType: "task" | "deadline",
+  itemId: string,
+  format: "csv" | "pdf",
+): Promise<
+  | { format: "csv"; fileName: string; content: string; count: number }
+  | { format: "pdf"; title: string; fileName: string; html: string; count: number }
+> {
+  const { data: member, error: memberError } = await userClient
+    .from("organization_members")
+    .select("role, status")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (memberError) throw new Error("تعذّر التحقق من صلاحيتك على هذا المكتب");
+  if (!member || member.status !== "active" || !EXPORT_ROLES.includes(member.role)) {
+    throw new Error("لا تملك صلاحية تصدير سجل الأحداث");
+  }
+
+  const table = itemType === "task" ? "tasks" : "deadlines";
+  const { data: item, error: itemError } = await userClient
+    .from(table)
+    .select("id, title")
+    .eq("id", itemId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (itemError) throw new Error("تعذّر التحقق من صلاحية عرض السجل");
+  if (!item) throw new Error("لا تملك صلاحية عرض سجل هذا العمل");
+
+  // نجمع كل الصفحات عبر نفس ترقيم keyset لضمان عدم التكرار أو الفقد
+  const events: WorkItemTimelineEvent[] = [];
+  let cursor: WorkItemTimelineCursor | null = null;
+  let truncated = false;
+  for (;;) {
+    const page = await getWorkItemTimeline(userClient, organizationId, itemType, itemId, {
+      limit: TIMELINE_MAX_PAGE_SIZE,
+      cursor,
+    });
+    events.push(...page.events);
+    cursor = page.nextCursor;
+    if (!cursor) break;
+    if (events.length >= EXPORT_MAX_EVENTS) {
+      truncated = true;
+      break;
+    }
+  }
+
+  const { data: org } = await userClient
+    .from("organizations")
+    .select("name")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  const meta = {
+    itemType,
+    itemTitle: item.title ?? "—",
+    officeName: org?.name ?? "—",
+    generatedAt: new Date().toISOString(),
+    truncated,
+  } as const;
+
+  const safeBase = (item.title ?? "work-item")
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .trim()
+    .slice(0, 60);
+
+  if (format === "csv") {
+    const { buildTimelineCsv } = await import("./timeline.export.server");
+    return {
+      format: "csv",
+      fileName: `mehla-timeline-${safeBase || itemType}.csv`,
+      content: buildTimelineCsv(events, meta),
+      count: events.length,
+    };
+  }
+
+  const { buildTimelineHtml } = await import("./timeline.export.server");
+  return {
+    format: "pdf",
+    title: `سجل الأحداث — ${meta.itemTitle}`,
+    fileName: `mehla-timeline-${safeBase || itemType}`,
+    html: buildTimelineHtml(events, meta),
+    count: events.length,
   };
 }
