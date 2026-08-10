@@ -9,7 +9,12 @@ export type CssValidation = {
   blocked_rules: string[];
   normalized_css: string;
   size_bytes: number;
+  /** خطأ صياغة حقيقي من محلّل CSS (يُملأ في الفحص الخادمي فقط) */
+  syntax_error?: { message: string; line: number; column: number };
 };
+
+/** قاعدة CSS جاهزة للفحص — `line` يُملأ عند الفحص الخادمي بالـ AST. */
+export type CheckedRule = { selector: string; body: string; line?: number };
 
 export const MAX_CSS_BYTES = 100 * 1024;
 
@@ -131,6 +136,73 @@ function collectRules(css: string, acc: Block[] = []): Block[] {
  * التحقق الأمني الكامل للـ CSS المخصص.
  * pageKey غير "global" يعني حصر النطاق في [data-page="pageKey"].
  */
+/**
+ * فحوصات مستوى القاعدة — مشتركة بين الفحص النصي السريع (الواجهة)
+ * والفحص الخادمي بالـ AST (الذي يمرّر أرقام الأسطر الحقيقية).
+ */
+export function checkRules(
+  rules: CheckedRule[],
+  pageKey: string,
+): { blocked: string[]; warnings: string[] } {
+  const blocked: string[] = [];
+  const warnings: string[] = [];
+  const at = (rule: CheckedRule) => (rule.line ? `سطر ${rule.line}: ` : "");
+
+  for (const rule of rules) {
+    const sel = rule.selector;
+    const body = rule.body;
+    const decl = `${sel}{${body.trim().slice(0, 120)}}`;
+
+    // هروب النطاق: عند صفحة محددة يُسمح بـ html/body/:root في بداية الـ selector فقط.
+    if (pageKey !== "global" && !sel.startsWith("@")) {
+      for (const part of sel.split(",")) {
+        const one = part.trim();
+        if (!one) continue;
+        const rest = one.replace(/^(html|:root|body)\b/i, "");
+        if (/(:root|\bhtml\b|\bbody\b)/i.test(rest)) {
+          blocked.push(`${at(rule)}محاولة تجاوز نطاق الصفحة إلى html/body: ${one.slice(0, 80)}`);
+          break;
+        }
+      }
+    }
+
+    if (PROTECTED_PATTERNS.some((p) => p.test(sel)) && HIDING_DECL.test(body)) {
+      blocked.push(`${at(rule)}محاولة إخفاء عنصر أمان أو رسالة حرجة: ${decl}`);
+    }
+
+    if (/pointer-events\s*:\s*none/i.test(body) && /^(\*|html|body|:root)\b/i.test(sel.trim())) {
+      blocked.push(`${at(rule)}تعطيل التفاعل على كامل الشاشة غير مسموح: ${decl}`);
+    }
+
+    const z = body.match(/z-index\s*:\s*(\d{3,})/i);
+    if (z && Number(z[1]) > 9999) {
+      blocked.push(`${at(rule)}z-index مفرط (${z[1]}) قد يغطي كامل الشاشة: ${decl}`);
+    }
+    if (
+      /position\s*:\s*fixed/i.test(body) &&
+      /(inset\s*:\s*0|(top|left|right|bottom)\s*:\s*0)/i.test(body) &&
+      /^(\*|html|body|:root)\b/i.test(sel.trim())
+    ) {
+      blocked.push(`${at(rule)}طبقة ثابتة تغطي كامل الشاشة غير مسموحة: ${decl}`);
+    }
+
+    if (/^\*(\s*,|\s*$)/.test(sel.trim()) && HIDING_DECL.test(body)) {
+      blocked.push(`${at(rule)}إخفاء عام بـ * غير مسموح: ${decl}`);
+    }
+    if (/^\*/.test(sel.trim())) {
+      warnings.push(`${at(rule)}selector عام (${sel.trim().slice(0, 40)}) قد يؤثر على كل العناصر.`);
+    }
+    if (/!important/i.test(body)) {
+      warnings.push(`${at(rule)}استخدام !important في: ${sel.trim().slice(0, 40)}`);
+    }
+    if (HIDING_DECL.test(body) && /^(html|body|:root)\b/i.test(sel.trim())) {
+      blocked.push(`${at(rule)}إخفاء الصفحة بالكامل غير مسموح: ${decl}`);
+    }
+  }
+
+  return { blocked, warnings };
+}
+
 export function validateCustomCss(rawCss: string, pageKey = "global"): CssValidation {
   const warnings: string[] = [];
   const blocked: string[] = [];
@@ -188,63 +260,9 @@ export function validateCustomCss(rawCss: string, pageKey = "global"): CssValida
   if (/\biframe\b/i.test(css)) blocked.push("لا يُسمح بقواعد تستهدف iframe.");
 
   const rules = collectRules(css).filter((b) => b.body !== "\u0000statement");
-
-  for (const rule of rules) {
-    const sel = rule.selector;
-    const body = rule.body;
-    const decl = `${sel}{${body.trim().slice(0, 120)}}`;
-
-    // 4b) هروب النطاق: عند صفحة محددة يُسمح بـ html/body/:root في بداية الـ selector فقط
-    //     (يُعاد كتابتها إلى نطاق الصفحة)، وأي ظهور آخر يعني تجاوز حدود الصفحة.
-    if (pageKey !== "global" && !sel.startsWith("@")) {
-      for (const part of sel.split(",")) {
-        const one = part.trim();
-        if (!one) continue;
-        const rest = one.replace(/^(html|:root|body)\b/i, "");
-        if (/(:root|\bhtml\b|\bbody\b)/i.test(rest)) {
-          blocked.push(`محاولة تجاوز نطاق الصفحة إلى html/body: ${one.slice(0, 80)}`);
-          break;
-        }
-      }
-    }
-
-    // 5) إخفاء عناصر الأمان أو الرسائل الحرجة
-    if (PROTECTED_PATTERNS.some((p) => p.test(sel)) && HIDING_DECL.test(body)) {
-      blocked.push(`محاولة إخفاء عنصر أمان أو رسالة حرجة: ${decl}`);
-    }
-
-    // 6) pointer-events على كامل الشاشة
-    if (/pointer-events\s*:\s*none/i.test(body) && /^(\*|html|body|:root)\b/i.test(sel.trim())) {
-      blocked.push(`تعطيل التفاعل على كامل الشاشة غير مسموح: ${decl}`);
-    }
-
-    // 7) z-index مفرط / طبقة فوق الشاشة
-    const z = body.match(/z-index\s*:\s*(\d{3,})/i);
-    if (z && Number(z[1]) > 9999) {
-      blocked.push(`z-index مفرط (${z[1]}) قد يغطي كامل الشاشة: ${decl}`);
-    }
-    if (
-      /position\s*:\s*fixed/i.test(body) &&
-      /(inset\s*:\s*0|(top|left|right|bottom)\s*:\s*0)/i.test(body) &&
-      /^(\*|html|body|:root)\b/i.test(sel.trim())
-    ) {
-      blocked.push(`طبقة ثابتة تغطي كامل الشاشة غير مسموحة: ${decl}`);
-    }
-
-    // 8) selectors عامة خطرة
-    if (/^\*(\s*,|\s*$)/.test(sel.trim()) && HIDING_DECL.test(body)) {
-      blocked.push(`إخفاء عام بـ * غير مسموح: ${decl}`);
-    }
-    if (/^\*/.test(sel.trim())) {
-      warnings.push(`selector عام (${sel.trim().slice(0, 40)}) قد يؤثر على كل العناصر.`);
-    }
-    if (/!important/i.test(body)) {
-      warnings.push(`استخدام !important في: ${sel.trim().slice(0, 40)}`);
-    }
-    if (HIDING_DECL.test(body) && /^(html|body|:root)\b/i.test(sel.trim())) {
-      blocked.push(`إخفاء الصفحة بالكامل غير مسموح: ${decl}`);
-    }
-  }
+  const ruleFindings = checkRules(rules, pageKey);
+  blocked.push(...ruleFindings.blocked);
+  warnings.push(...ruleFindings.warnings);
 
   // 9) تحقق بنيوي بسيط: توازن الأقواس
   const open = (css.match(/{/g) ?? []).length;

@@ -303,8 +303,24 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
       "content.rollback",
       "design.read",
       "design.manage",
+      "design.publish",
+      "design.rollback",
       "seo.read",
       "seo.manage",
+    ],
+  },
+  {
+    code: "platform_designer",
+    name_ar: "مصمم المنصة",
+    name_en: "Platform Designer",
+    tier: "operations",
+    summary:
+      "تصميم هوية المنصة فقط: قراءة التصميم وتعديل المسودة ومعاينتها وسجل الإصدارات. بلا نشر ولا تراجع ولا أي وصول لبيانات المكاتب أو القضايا أو العملاء أو المال.",
+    permissions: [
+      "design.read",
+      "design.draft.write",
+      "design.preview",
+      "design.history.read",
     ],
   },
   {

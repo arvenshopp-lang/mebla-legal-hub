@@ -253,7 +253,6 @@ function DesignStudioPage() {
   const studio = useQuery({
     queryKey: ["design-studio"],
     queryFn: () => load(),
-    enabled: isOwner,
   });
 
   const [pageKey, setPageKey] = useState("global");
@@ -262,6 +261,8 @@ function DesignStudioPage() {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectors, setSelectors] = useState<HarvestedSelector[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  /** قواعد محظورة كما أعادها الخادم بأرقام أسطرها الحقيقية (فحص AST). */
+  const [serverIssues, setServerIssues] = useState<string[]>([]);
   const hydrated = useRef(false);
   const dirty = useRef(false);
 
@@ -338,6 +339,7 @@ function DesignStudioPage() {
         });
         setStatus("saved");
         setLastSavedAt(result.savedAt);
+        setServerIssues(result.validation?.css?.blocked_rules ?? []);
         dirty.current = false;
         if (!silent) toast.success("تم حفظ المسودة دون نشر.");
         return true;
@@ -412,18 +414,13 @@ function DesignStudioPage() {
       toast.error(error instanceof Error ? error.message : "تعذّرت إعادة التعيين."),
   });
 
-  if (!isOwner) {
-    return (
-      <AdminShell title="محرر تصميم المنصة">
-        <SectionCard title="وصول مقيّد">
-          <p className="text-body-sm text-muted-foreground">
-            محرر التصميم متاح لمالك المنصة فقط، وأي طلب من حساب آخر يُرفض على الخادم.
-          </p>
-        </SectionCard>
-      </AdminShell>
-    );
-  }
-
+  // صلاحيات دقيقة من الخادم — لتعطيل الأزرار فقط؛ المنع الحقيقي في دوال الخادم.
+  const can = studio.data?.can ?? {
+    draft: isOwner,
+    history: isOwner,
+    publish: isOwner,
+    rollback: isOwner,
+  };
   const state = studio.data?.state;
   const groups = TOKEN_GROUPS;
   const activeGroup = groups.find((g) => g.id === tab);
@@ -444,13 +441,26 @@ function DesignStudioPage() {
               `تم الحفظ${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString("ar-SA")}` : ""}`}
             {status === "error" && "فشل الحفظ — أعد المحاولة"}
           </span>
-          <Btn variant="secondary" size="sm" onClick={() => void doSave(false)}>
+          <Btn
+            variant="secondary"
+            size="sm"
+            disabled={!can.draft}
+            title={can.draft ? undefined : "لا تملك صلاحية تعديل مسودة التصميم."}
+            onClick={() => void doSave(false)}
+          >
             <Save className="h-4 w-4" aria-hidden /> حفظ مسودة فقط
           </Btn>
           <Btn
             size="sm"
             loading={publishMutation.isPending}
-            disabled={!validation.valid}
+            disabled={!validation.valid || !can.publish}
+            title={
+              !can.publish
+                ? "النشر يتطلب صلاحية «نشر التصميم»."
+                : !validation.valid
+                  ? "هناك قواعد CSS محظورة تمنع النشر."
+                  : undefined
+            }
             onClick={() => publishMutation.mutate()}
           >
             <Upload className="h-4 w-4" aria-hidden /> حفظ ونشر الآن
@@ -477,7 +487,10 @@ function DesignStudioPage() {
                 <Btn
                   variant="secondary"
                   size="sm"
-                  disabled={!state?.rollback_available || rollbackMutation.isPending}
+                  disabled={
+                    !can.rollback || !state?.rollback_available || rollbackMutation.isPending
+                  }
+                  title={can.rollback ? undefined : "الاسترجاع يتطلب صلاحية «التراجع عن النشر»."}
                   loading={rollbackMutation.isPending}
                   onClick={() => {
                     if (
@@ -494,6 +507,8 @@ function DesignStudioPage() {
                 <Btn
                   variant="danger"
                   size="sm"
+                  disabled={!can.draft || resetMutation.isPending}
+                  title={can.draft ? undefined : "إعادة التعيين تتطلب صلاحية تعديل المسودة."}
                   loading={resetMutation.isPending}
                   onClick={() => {
                     if (!window.confirm("إعادة تعيين هذه الصفحة للوضع الافتراضي وحذف مسودتها؟"))
@@ -786,6 +801,20 @@ function DesignStudioPage() {
                   </ul>
                 </div>
               )}
+              {serverIssues.length > 0 && (
+                <div className="mt-3 rounded-[var(--radius-m)] border border-danger/25 bg-danger-soft p-3">
+                  <p className="text-[12.5px] font-semibold text-danger">
+                    نتيجة الفحص الخادمي (بأرقام الأسطر):
+                  </p>
+                  <ul className="mt-1.5 list-disc space-y-1 ps-5 text-[12px] text-danger">
+                    {serverIssues.map((r, i) => (
+                      <li key={i} dir="auto">
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {validation.warnings.length > 0 && (
                 <div className="mt-3 rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3">
                   <p className="text-[12.5px] font-semibold text-warning">تحذيرات:</p>
@@ -851,6 +880,7 @@ function DesignStudioPage() {
                                 size="sm"
                                 disabled={
                                   restoreMutation.isPending ||
+                                  !can.rollback ||
                                   String(v.id) === String(studio.data?.active?.id ?? "")
                                 }
                                 onClick={() => {

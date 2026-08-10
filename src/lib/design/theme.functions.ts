@@ -6,6 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AdminPermission } from "@/lib/admin-permissions";
 import type { Database } from "@/integrations/supabase/types";
 import { PAGE_KEYS } from "./pages";
 
@@ -22,26 +23,63 @@ const draftSchema = z.object({
     .optional(),
 });
 
-/** حرس مالك المنصة — يرفض الموظفين والمشتركين. */
-async function requireOwner(supabase: SupabaseClient<Database>, userId: string) {
+/**
+ * حرس عمليات التصميم — تحقق خادمي لكل عملية بصلاحيتها الدقيقة.
+ * مالك المنصة (super_admin) غير مقيّد؛ وأي موظف آخر يحتاج الصلاحية الصريحة.
+ * إخفاء الأزرار في الواجهة ليس حماية: المنع الحقيقي هنا.
+ */
+async function requireDesign(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  permission: AdminPermission,
+) {
   const guard = await import("@/lib/admin-guard.server");
-  const staff = await guard.requireStaff(supabase, userId, "design.manage");
-  if (staff.role !== "super_admin") {
-    throw new Error("محرر تصميم المنصة متاح لمالك المنصة فقط.");
-  }
-  return staff;
+  return guard.requireStaff(supabase, userId, permission);
 }
 
 export const getDesignStudio = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireOwner(context.supabase, context.userId);
+    const staff = await requireDesign(context.supabase, context.userId, "design.read");
+    const { hasPermission } = await import("@/lib/admin-permissions");
+    const canHistory = hasPermission(
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
+      "design.history.read",
+    );
+    const canPublish = hasPermission(
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
+      "design.publish",
+    );
+    const canRollback = hasPermission(
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
+      "design.rollback",
+    );
+    const canDraft = hasPermission(
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
+      "design.draft.write",
+    );
     const svc = await import("./theme.server");
     const [state, drafts, versions, audit, active] = await Promise.all([
       svc.getPublishState(false),
       svc.listDrafts(),
-      svc.listVersions(30),
-      svc.listAudit(40),
+      canHistory ? svc.listVersions(30) : Promise.resolve([]),
+      canHistory ? svc.listAudit(40) : Promise.resolve([]),
       svc.getActiveTheme(),
     ]);
     return {
@@ -49,6 +87,8 @@ export const getDesignStudio = createServerFn({ method: "GET" })
       drafts,
       versions,
       audit,
+      // الصلاحيات الفعلية للمستخدم — تُستخدم لتعطيل الأزرار فقط، والمنع الحقيقي على الخادم.
+      can: { draft: canDraft, history: canHistory, publish: canPublish, rollback: canRollback },
       active: active
         ? {
             id: active.id,
@@ -67,7 +107,7 @@ export const saveDesignDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => draftSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     const validation = svc.validateDraft(data.pageKey, data.tokens, data.customCss);
     const result = await svc.saveDraft({
@@ -91,7 +131,7 @@ export const validateDesignDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => draftSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     return svc.validateDraft(data.pageKey, data.tokens, data.customCss);
   });
@@ -111,12 +151,12 @@ export const previewDesignCss = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.preview");
     const svc = await import("./theme.server");
     const { sanitizeTokens } = await import("./tokens");
-    const { validateCustomCss } = await import("./css-guard");
-    const page = validateCustomCss(data.customCss, data.pageKey);
-    const global = data.globalCss ? validateCustomCss(data.globalCss, "global") : null;
+    const { validateCustomCssServer } = await import("./css-guard.server");
+    const page = validateCustomCssServer(data.customCss, data.pageKey);
+    const global = data.globalCss ? validateCustomCssServer(data.globalCss, "global") : null;
     const css = svc.buildPreviewBundle({
       pageKey: data.pageKey,
       tokens: sanitizeTokens(data.tokens).tokens,
@@ -135,7 +175,7 @@ export const publishDesign = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.publish");
     const svc = await import("./theme.server");
     // «تطبيق ونشر» يحفظ آخر تعديل تلقائياً قبل النشر
     if (data.draft) {
@@ -156,7 +196,7 @@ export const restoreDesignVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ versionId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.rollback");
     const svc = await import("./theme.server");
     return svc.restoreVersion(data.versionId, context.userId);
   });
@@ -164,7 +204,7 @@ export const restoreDesignVersion = createServerFn({ method: "POST" })
 export const rollbackDesign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.rollback");
     const svc = await import("./theme.server");
     return svc.rollbackTheme(context.userId);
   });
@@ -173,7 +213,7 @@ export const resetDesignPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ pageKey: pageKeySchema }).parse(data))
   .handler(async ({ data, context }) => {
-    await requireOwner(context.supabase, context.userId);
+    await requireDesign(context.supabase, context.userId, "design.draft.write");
     const svc = await import("./theme.server");
     const result = await svc.resetPageTheme(data.pageKey, context.userId);
     await svc.writeDesignAudit({

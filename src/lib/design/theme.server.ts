@@ -3,7 +3,8 @@
  * كل عمليات القراءة والكتابة والنشر والاسترجاع تمر من هنا بمفتاح الخدمة،
  * ولا تُخزَّن أي أنماط غير مفحوصة كنسخة منشورة.
  */
-import { validateCustomCss, type CssValidation } from "./css-guard";
+import { type CssValidation } from "./css-guard";
+import { validateCustomCssServer } from "./css-guard.server";
 import {
   fontLinks,
   sanitizeMeta,
@@ -239,7 +240,7 @@ const MAX_DRAFT_CSS = 120 * 1024;
 
 export function validateDraft(pageKey: string, tokens: Record<string, unknown>, customCss: string) {
   const { rejected } = sanitizeTokens(tokens);
-  const css: CssValidation = validateCustomCss(customCss ?? "", pageKey);
+  const css: CssValidation = validateCustomCssServer(customCss ?? "", pageKey);
   return {
     valid: css.valid && rejected.length === 0,
     css,
@@ -283,7 +284,7 @@ export async function publishTheme(args: {
       meta?: unknown;
     };
     const { tokens } = sanitizeTokens(payload.tokens ?? {});
-    const validation = validateCustomCss(draft.custom_css ?? "", draft.page_key);
+    const validation = validateCustomCssServer(draft.custom_css ?? "", draft.page_key);
     if (!validation.valid) {
       blocked.push({ pageKey: draft.page_key, rules: validation.blocked_rules });
       continue;
