@@ -1,4 +1,5 @@
 declare module "arabic-persian-reshaper" {
-  export const ArabicShaper: { convertArabic(input: string): string };
-  export const PersianShaper: { convertArabic(input: string): string };
+  type Shaper = { convertArabic(input: string): string };
+  const reshaper: { ArabicShaper: Shaper; PersianShaper: Shaper };
+  export default reshaper;
 }
