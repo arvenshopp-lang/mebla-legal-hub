@@ -512,11 +512,12 @@ for (const table of ["tasks", "deadlines"] as const) {
 
 // ── الترتيب الزمني للأحداث بعد عمليات متتابعة متقاربة ──────────────────────
 {
-  type Timed = { event: string; occurred_at: string };
+  type Timed = { event: string; occurred_at: string; seq: number };
   const timedEventsOf = async (itemId: string, desc = false): Promise<Timed[]> => {
+    const dir = desc ? "desc" : "asc";
     const r = await asUser(
       acc("owner").token,
-      `/rest/v1/work_item_events?item_id=eq.${itemId}&select=event,occurred_at&order=occurred_at.${desc ? "desc" : "asc"}`,
+      `/rest/v1/work_item_events?item_id=eq.${itemId}&select=event,occurred_at,seq&order=occurred_at.${dir},seq.${dir}`,
     );
     return Array.isArray(r.body) ? (r.body as Timed[]) : [];
   };
@@ -578,12 +579,12 @@ for (const table of ["tasks", "deadlines"] as const) {
       `فعلي=[${asc.map((e) => e.event).join(",")}]`,
     );
 
-    // الحدثان الناتجان عن نفس الطلب يجب أن يحملا طابعين مختلفين حتى لا يضطرب الترتيب
-    const pairUnique = new Set(stamps).size === stamps.length;
+    // حدثان في نفس اللحظة (نفس المعاملة) يجب أن يفصلهما تسلسل تصاعدي ثابت
+    const seqs = asc.map((e) => e.seq);
     record(
-      "طابع زمني فريد لكل حدث حتى داخل نفس المعاملة",
-      pairUnique,
-      `فريدة=${new Set(stamps).size}/${stamps.length}`,
+      "تسلسل ثابت تصاعدي يفصل الأحداث المتزامنة",
+      seqs.every((n) => Number.isFinite(n)) && seqs.every((n, i) => i === 0 || n > seqs[i - 1]!),
+      `التسلسل=[${seqs.join(",")}]`,
     );
 
     const desc = await timedEventsOf(seq.id, true);
