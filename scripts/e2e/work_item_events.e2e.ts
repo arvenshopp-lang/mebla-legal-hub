@@ -993,7 +993,7 @@ for (const table of ["tasks", "deadlines"] as const) {
       raw.matchAll(
         /"k":\["id","event"[\s\S]*?"v":\[\{"t":1,"s":"[0-9a-f-]+"\},\{"t":1,"s":"([a-z_]+)"\}/g,
       ),
-becomes    ).map((m) => m[1] as string);
+    ).map((m) => m[1] as string);
 
   if (ref) {
     // مهمة يملك المحامي قراءتها + مهلة، لتغطية النوعين
