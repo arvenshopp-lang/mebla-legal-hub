@@ -135,14 +135,17 @@ function Page() {
   });
   const complete = useMutation({
     mutationFn: async (id: string) => {
+      const since = new Date(Date.now() - 2_000).toISOString();
       const { error } = await supabase
         .from("tasks")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return { id, since };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, since }) => {
       toast.success("تم الإنجاز");
+      void captureNotice("task", id, since);
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
@@ -415,21 +418,29 @@ function TaskDialog({
     Object.keys(payload).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
     });
+    const since = new Date(Date.now() - 2_000).toISOString();
     const q = editing
       ? supabase
           .from("tasks")
           .update(payload as Partial<TablesInsert<"tasks">>)
           .eq("id", editing.id)
-      : supabase.from("tasks").insert({
-          ...(payload as Partial<TablesInsert<"tasks">>),
-          organization_id: orgId,
-          created_by: userId,
-        } as TablesInsert<"tasks">);
-    const { error } = await q;
+          .select("id")
+          .maybeSingle()
+      : supabase
+          .from("tasks")
+          .insert({
+            ...(payload as Partial<TablesInsert<"tasks">>),
+            organization_id: orgId,
+            created_by: userId,
+          } as TablesInsert<"tasks">)
+          .select("id")
+          .maybeSingle();
+    const { data: saved, error } = await q;
     setSaving(false);
     if (error) return toast.error("تعذّر الحفظ", { description: error.message });
     if (!editing) track("task_created", { action_source: "dashboard" });
     toast.success(editing ? "تم التحديث" : "تمت الإضافة");
+    void captureNotice("task", saved?.id ?? editing?.id, since);
     draft.clear();
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["case-tasks"] });
