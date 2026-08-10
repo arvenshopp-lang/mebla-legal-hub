@@ -339,6 +339,7 @@ function DesignStudioPage() {
         });
         setStatus("saved");
         setLastSavedAt(result.savedAt);
+        setServerIssues(result.validation?.blocked_rules ?? []);
         dirty.current = false;
         if (!silent) toast.success("تم حفظ المسودة دون نشر.");
         return true;
