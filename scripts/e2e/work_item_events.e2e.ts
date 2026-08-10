@@ -1139,6 +1139,168 @@ for (const table of ["tasks", "deadlines"] as const) {
   }
 }
 
+// ── 8) عطل جزئي: فشل التقاط نوع حدث واحد فقط لا يُسقط بقية الأحداث ──────────
+// العلامة QA-WIE-FAIL[<event>] داخل العنوان تُفشل تسجيل هذا النوع فقط، فنتحقق أن
+// العملية نفسها تنجح وتُثبَّت، وأن الأحداث الأخرى تُسجَّل، والعطل وحده يُقيَّد.
+{
+  const eventOfFailure = (f: FailureRow) =>
+    ((f.metadata as { event?: string } | null)?.event ?? "—") as string;
+
+  for (const table of ["tasks", "deadlines"] as const) {
+    const isTask = table === "tasks";
+    const label = isTask ? "المهمة" : "المهلة";
+    const createRes = await asUser(lawyer.token, `/rest/v1/${table}`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        organization_id: org,
+        case_id: kase.id,
+        title: `QA عطل جزئي ${label} QA-WIE-FAIL[due_changed]`,
+        due_date: iso(2 * day),
+        created_by: lawyer.userId,
+        ...(isTask ? { assigned_to: lawyer.userId } : { responsible_user_id: lawyer.userId }),
+      }),
+    });
+    const row = Array.isArray(createRes.body) ? (createRes.body as { id: string }[])[0] : undefined;
+    record(
+      `عطل جزئي — إنشاء ${label} ينجح`,
+      createRes.status === 201 && !!row,
+      `status=${createRes.status} ${JSON.stringify(createRes.body)}`,
+    );
+    if (!row) continue;
+    faultIds.push({ table, id: row.id });
+
+    record(
+      `عطل جزئي — حدث created لـ${label} مسجَّل (العطل يخص due_changed فقط)`,
+      (await eventsOf(row.id)).some((e) => e.event === "created"),
+      `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+    );
+    record(
+      `عطل جزئي — لا أعطال قبل تغيير استحقاق ${label}`,
+      (await failuresOf(row.id)).length === 0,
+      `count=${(await failuresOf(row.id)).length}`,
+    );
+
+    const newDue = iso(30 * day);
+    const dueRes = await asUser(lawyer.token, `/rest/v1/${table}?id=eq.${row.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ due_date: newDue }),
+    });
+    const afterDue = await readRow(table, row.id);
+    record(
+      `عطل جزئي — تغيير استحقاق ${label} ينجح رغم فشل التقاط حدثه`,
+      dueRes.status === 200,
+      `status=${dueRes.status} ${JSON.stringify(dueRes.body)}`,
+    );
+    record(
+      `عطل جزئي — الاستحقاق الجديد لـ${label} مُثبَّت (لا Rollback)`,
+      typeof afterDue?.["due_date"] === "string" &&
+        new Date(afterDue["due_date"] as string).getTime() === new Date(newDue).getTime(),
+      `due=${String(afterDue?.["due_date"])} expected=${newDue}`,
+    );
+    record(
+      `عطل جزئي — حدث due_changed غير مسجَّل لـ${label}`,
+      !(await eventsOf(row.id)).some((e) => e.event === "due_changed"),
+      `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+    );
+
+    const dueFailures = await failuresOf(row.id);
+    record(
+      `عطل جزئي — عطل واحد فقط مُقيَّد لـ${label} ونوعه due_changed`,
+      dueFailures.length === 1 &&
+        eventOfFailure(dueFailures[0]!) === "due_changed" &&
+        dueFailures[0]!.error_code === "42501" &&
+        !!dueFailures[0]!.ref?.startsWith("WIE-"),
+      `failures=${dueFailures.map((f) => `${f.ref}:${f.error_code}:${eventOfFailure(f)}`).join(",")}`,
+    );
+
+    if (isTask) {
+      const asgRes = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${row.id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ assigned_to: assistant.userId }),
+      });
+      record(
+        "عطل جزئي — إعادة إسناد المهمة تنجح وحدثها assigned مسجَّل",
+        asgRes.status === 200 && (await eventsOf(row.id)).some((e) => e.event === "assigned"),
+        `status=${asgRes.status} events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+      );
+    }
+
+    const doneRes = await asUser(lawyer.token, `/rest/v1/${table}?id=eq.${row.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ status: "completed" }),
+    });
+    const afterDone = await readRow(table, row.id);
+    record(
+      `عطل جزئي — إنجاز ${label} ينجح وحدثه completed مسجَّل`,
+      doneRes.status === 200 &&
+        afterDone?.["status"] === "completed" &&
+        (await eventsOf(row.id)).some((e) => e.event === "completed"),
+      `status=${doneRes.status} db=${String(afterDone?.["status"])} events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+    );
+    record(
+      `عطل جزئي — عدد الأعطال لـ${label} بقي واحداً بعد كل العمليات`,
+      (await failuresOf(row.id)).length === 1,
+      `count=${(await failuresOf(row.id)).length}`,
+    );
+  }
+
+  // استهداف نوع آخر: فشل completed فقط مع نجاح due_changed
+  const createRes = await asUser(lawyer.token, `/rest/v1/tasks`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      organization_id: org,
+      case_id: kase.id,
+      title: "QA عطل جزئي إنجاز QA-WIE-FAIL[completed]",
+      due_date: iso(2 * day),
+      assigned_to: lawyer.userId,
+      created_by: lawyer.userId,
+    }),
+  });
+  const row = Array.isArray(createRes.body) ? (createRes.body as { id: string }[])[0] : undefined;
+  record(
+    "عطل جزئي (completed) — إنشاء المهمة ينجح",
+    createRes.status === 201 && !!row,
+    `status=${createRes.status}`,
+  );
+  if (row) {
+    faultIds.push({ table: "tasks", id: row.id });
+    const dueRes = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${row.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ due_date: iso(15 * day) }),
+    });
+    record(
+      "عطل جزئي (completed) — حدث due_changed مسجَّل طبيعياً",
+      dueRes.status === 200 && (await eventsOf(row.id)).some((e) => e.event === "due_changed"),
+      `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")}`,
+    );
+    const doneRes = await asUser(lawyer.token, `/rest/v1/tasks?id=eq.${row.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ status: "completed" }),
+    });
+    const afterDone = await readRow("tasks", row.id);
+    const failures = await failuresOf(row.id);
+    record(
+      "عطل جزئي (completed) — إنجاز المهمة ينجح ويُثبَّت دون Rollback",
+      doneRes.status === 200 && afterDone?.["status"] === "completed",
+      `status=${doneRes.status} db=${String(afterDone?.["status"])}`,
+    );
+    record(
+      "عطل جزئي (completed) — حدث completed غير مسجَّل والعطل مُقيَّد بنوعه",
+      !(await eventsOf(row.id)).some((e) => e.event === "completed") &&
+        failures.length === 1 &&
+        eventOfFailure(failures[0]!) === "completed",
+      `events=${(await eventsOf(row.id)).map((e) => e.event).join(",")} failures=${failures.map((f) => eventOfFailure(f)).join(",")}`,
+    );
+  }
+}
+
 const fail = results.filter((r) => !r.pass);
 
 // تنظيف بيانات حقن العطل وأعطالها (مفتاح الخدمة — تنظيف QA فقط)
