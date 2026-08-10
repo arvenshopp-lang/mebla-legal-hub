@@ -13,13 +13,21 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
-    console.error(error);
     let isApi = false;
+    let isServerFn = false;
     try {
-      isApi = new URL(getRequest().url).pathname.startsWith("/api/");
+      const pathname = new URL(getRequest().url).pathname;
+      isApi = pathname.startsWith("/api/");
+      const base = process.env["TSS_SERVER_FN_BASE"];
+      isServerFn =
+        (base ? pathname.startsWith(base) : false) || pathname.startsWith("/_serverFn/");
     } catch {
       isApi = false;
     }
+    // أخطاء دوال الخادم يجب أن تعود للمتصفح مُسلسلة كخطأ حتى تُعرض كرسالة عربية
+    // داخل الصفحة، لا كصفحة خطأ HTML تُسقط الواجهة بالكامل.
+    if (isServerFn) throw error;
+    console.error(error);
     if (isApi) {
       return applySecurityHeaders(
         Response.json(

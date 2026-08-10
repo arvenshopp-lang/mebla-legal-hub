@@ -15,6 +15,7 @@
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
+import { shapeArabicRun } from "./arabic.server";
 
 /* ------------------------------------------------------------- نموذج المستند */
 
@@ -97,7 +98,12 @@ type Ctx = { doc: PDFDocument; page: PDFPage; font: PDFFont; y: number };
 
 /* -------------------------------------------- تقسيم السطر إلى مقاطع اتجاهية */
 
-type Run = { text: string; rtl: boolean };
+type Run = {
+  text: string;
+  rtl: boolean;
+  /** النص كما يُرسم فعلياً: العربية مُشكَّلة ومعكوسة، واللاتينية كما هي. */
+  glyphs: string;
+};
 
 const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const LTR_CHAR = /[A-Za-z0-9\u00C0-\u024F]/;
@@ -150,7 +156,7 @@ export function splitDirectionalRuns(input: string): Run[] {
     const rtl = resolved[index] === "R";
     const last = runs[runs.length - 1];
     if (last && last.rtl === rtl) last.text += char;
-    else runs.push({ text: char, rtl });
+    else runs.push({ text: char, rtl, glyphs: char });
   });
 
   // المسافات الطرفية تُفصل إلى مقاطع مستقلة: تحفظ الفراغ بموضعه الصحيح ولا
@@ -159,9 +165,14 @@ export function splitDirectionalRuns(input: string): Run[] {
   runs.forEach((run) => {
     const match = /^(\s*)([\s\S]*?)(\s*)$/.exec(run.text);
     const [, lead = "", core = "", trail = ""] = match ?? [];
-    if (lead) normalized.push({ text: lead, rtl: run.rtl });
-    if (core) normalized.push({ text: core, rtl: run.rtl });
-    if (trail) normalized.push({ text: trail, rtl: run.rtl });
+    if (lead) normalized.push({ text: lead, rtl: run.rtl, glyphs: lead });
+    if (core)
+      normalized.push({
+        text: core,
+        rtl: run.rtl,
+        glyphs: run.rtl ? shapeArabicRun(core) : core,
+      });
+    if (trail) normalized.push({ text: trail, rtl: run.rtl, glyphs: trail });
   });
   return normalized;
 }
@@ -214,7 +225,7 @@ export function formatPdfDateTime(value: string | null | undefined): string {
 
 function widthOf(ctx: Ctx, text: string, size: number): number {
   return splitDirectionalRuns(text).reduce(
-    (total, run) => total + ctx.font.widthOfTextAtSize(run.text, size),
+    (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, size),
     0,
   );
 }
@@ -235,13 +246,13 @@ function drawLine(
 ): void {
   let cursor = leftX;
   const runs = splitDirectionalRuns(text);
-  const widths = runs.map((run) => font.widthOfTextAtSize(run.text, size));
+  const widths = runs.map((run) => font.widthOfTextAtSize(run.glyphs, size));
   const total = widths.reduce((sum, width) => sum + width, 0);
   cursor = leftX + total;
   runs.forEach((run, index) => {
     cursor -= widths[index] ?? 0;
-    if (run.text.trim().length > 0) {
-      page.drawText(run.text, { x: cursor, y, size, font, color });
+    if (run.glyphs.trim().length > 0) {
+      page.drawText(run.glyphs, { x: cursor, y, size, font, color });
     }
   });
 }
@@ -623,11 +634,11 @@ function footer(ctx: Ctx, brand: PdfBrand): void {
   ctx.doc.getPages().forEach((page, index, pages) => {
     const label = `صفحة ${index + 1} / ${pages.length}`;
     const labelWidth = splitDirectionalRuns(label).reduce(
-      (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
       0,
     );
     const noteWidth = splitDirectionalRuns(note).reduce(
-      (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
       0,
     );
     page.drawLine({
@@ -640,7 +651,7 @@ function footer(ctx: Ctx, brand: PdfBrand): void {
     drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
     const contactWidth = contact
       ? splitDirectionalRuns(contact).reduce(
-          (total, run) => total + ctx.font.widthOfTextAtSize(run.text, 8),
+          (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
           0,
         )
       : 0;
