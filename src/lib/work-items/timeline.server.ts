@@ -1,10 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { WORK_EVENTS, type WorkEventName, type WorkItemTimelineEvent } from "./timeline.shared";
+import {
+  TIMELINE_MAX_PAGE_SIZE,
+  TIMELINE_PAGE_SIZE,
+  WORK_EVENTS,
+  type WorkEventName,
+  type WorkItemTimelineCursor,
+  type WorkItemTimelinePage,
+} from "./timeline.shared";
 
 type Client = SupabaseClient<Database>;
-
-const MAX_EVENTS = 200;
 
 /** أعطال التقاط الأحداث تُقيَّد بهذا الإجراء داخل سجل الأعطال. */
 const CAPTURE_ACTION = "work_item_events.capture";
@@ -87,7 +92,10 @@ export async function getWorkItemTimeline(
   organizationId: string,
   itemType: "task" | "deadline",
   itemId: string,
-): Promise<WorkItemTimelineEvent[]> {
+  options: { limit?: number; cursor?: WorkItemTimelineCursor | null } = {},
+): Promise<WorkItemTimelinePage> {
+  const limit = Math.min(Math.max(options.limit ?? TIMELINE_PAGE_SIZE, 1), TIMELINE_MAX_PAGE_SIZE);
+  const cursor = options.cursor ?? null;
   const table = itemType === "task" ? "tasks" : "deadlines";
   const { data: item, error: itemError } = await userClient
     .from(table)
@@ -99,21 +107,37 @@ export async function getWorkItemTimeline(
   if (!item) throw new Error("لا تملك صلاحية عرض سجل هذا العمل");
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: rows, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("work_item_events")
     .select(
-      "id, event, occurred_at, actor_id, from_user_id, to_user_id, from_due_date, to_due_date",
+      "id, event, occurred_at, seq, actor_id, from_user_id, to_user_id, from_due_date, to_due_date",
     )
     .eq("organization_id", organizationId)
     .eq("item_type", itemType)
-    .eq("item_id", itemId)
+    .eq("item_id", itemId);
+
+  // ترقيم keyset: يمنع التكرار أو القفز عند إضافة أحداث جديدة بين الصفحات
+  if (cursor) {
+    query = query.or(
+      `occurred_at.gt.${cursor.occurredAt},and(occurred_at.eq.${cursor.occurredAt},seq.gt.${cursor.seq})`,
+    );
+  }
+
+  const { data: rows, error } = await query
     .order("occurred_at", { ascending: true })
     // فاصل ترجيح ثابت: حدثان في نفس اللحظة (نفس المعاملة) يظهران بترتيب تسجيلهما
     .order("seq", { ascending: true })
-    .limit(MAX_EVENTS);
+    .limit(limit + 1);
   if (error) throw new Error("تعذّر جلب سجل الأحداث");
 
-  const events = (rows ?? []).filter((r) => isWorkEvent(r.event));
+  const all = rows ?? [];
+  const hasMore = all.length > limit;
+  const pageRows = hasMore ? all.slice(0, limit) : all;
+  const last = pageRows.at(-1);
+  const nextCursor: WorkItemTimelineCursor | null =
+    hasMore && last ? { occurredAt: last.occurred_at, seq: last.seq } : null;
+
+  const events = pageRows.filter((r) => isWorkEvent(r.event));
   const userIds = Array.from(
     new Set(
       events.flatMap((r) => [r.actor_id, r.from_user_id, r.to_user_id]).filter(Boolean) as string[],
@@ -130,14 +154,17 @@ export async function getWorkItemTimeline(
 
   const nameOf = (id: string | null) => (id ? (names.get(id) ?? "مستخدم محذوف") : null);
 
-  return events.map((r) => ({
-    id: r.id,
-    event: r.event as WorkEventName,
-    occurredAt: r.occurred_at,
-    actorName: nameOf(r.actor_id),
-    fromUserName: nameOf(r.from_user_id),
-    toUserName: nameOf(r.to_user_id),
-    fromDueDate: r.from_due_date,
-    toDueDate: r.to_due_date,
-  }));
+  return {
+    events: events.map((r) => ({
+      id: r.id,
+      event: r.event as WorkEventName,
+      occurredAt: r.occurred_at,
+      actorName: nameOf(r.actor_id),
+      fromUserName: nameOf(r.from_user_id),
+      toUserName: nameOf(r.to_user_id),
+      fromDueDate: r.from_due_date,
+      toDueDate: r.to_due_date,
+    })),
+    nextCursor,
+  };
 }
