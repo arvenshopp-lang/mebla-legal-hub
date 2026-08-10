@@ -40,7 +40,7 @@ export function StatCard({
           aria-hidden
         />
       ) : (
-        <p className="mt-2 text-[28px] font-bold leading-none tabular-nums">{value}</p>
+        <p className="mt-2 font-display text-[28px] font-bold leading-none tabular-nums">{value}</p>
       )}
       {hint && <p className="text-caption mt-1.5">{hint}</p>}
     </div>
