@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, FileDown, PenLine } from "lucide-react";
+import { ArrowLeft, FileDown, MessageCircle, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/shell";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
@@ -141,8 +141,10 @@ function SalesDocumentPage() {
     try {
       const payload = await pdfFn({ data: { id } });
       downloadPdfPayload(payload);
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر توليد ملف PDF.");
+      return false;
     }
   };
 
