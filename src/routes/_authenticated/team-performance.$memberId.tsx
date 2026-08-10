@@ -30,6 +30,8 @@ import {
   type PeriodPreset,
 } from "@/lib/kpi/kpi.shared";
 
+type PerformanceSearch = { preset: PeriodPreset; from?: string; to?: string };
+
 const searchSchema = z.object({
   preset: z
     .enum(["this_month", "last_month", "last_3_months", "last_6_months", "this_year", "custom"])
@@ -40,7 +42,8 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/team-performance/$memberId")({
   component: Page,
-  validateSearch: (search: Record<string, unknown>) => searchSchema.parse(search),
+  validateSearch: (search: Record<string, unknown>): PerformanceSearch =>
+    searchSchema.parse(search) as PerformanceSearch,
   head: () => ({
     meta: [
       { title: "تفصيل أداء العضو | مِهلة" },
