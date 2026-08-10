@@ -190,6 +190,31 @@ function SalesDocumentPage() {
   const status = doc.status as SalesDocStatus;
   const editable = !doc.locked && ["draft", "pending_approval", "approved"].includes(status);
 
+  /**
+   * مشاركة عبر واتساب: يُفتح واتساب برسالة عربية جاهزة (لا يمكن لأي متصفح
+   * إرفاق ملف تلقائياً)، ثم يُنزَّل ملف PDF ليُرفق يدوياً في المحادثة.
+   */
+  const shareWhatsApp = () => {
+    const amount = `${doc.total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${doc.currency}`;
+    const to =
+      doc.recipient_company ?? content.companyName ?? doc.organization_name ?? doc.recipient_name;
+    const lines = [
+      `${KIND_LABELS[doc.kind]}: ${doc.title}`,
+      doc.number ? `الرقم: ${doc.number}` : null,
+      to ? `الجهة: ${to}` : null,
+      `الإجمالي: ${amount}`,
+      doc.valid_until ? `صالح حتى: ${doc.valid_until}` : null,
+      "",
+      "مرفق ملف العرض بصيغة PDF.",
+    ].filter((line): line is string => line !== null);
+    const phone = waNumber(doc.recipient_phone);
+    const url = `https://wa.me/${phone ?? ""}?text=${encodeURIComponent(lines.join("\n"))}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    void downloadPdf().then((ok) => {
+      if (ok) toast.success("تم تنزيل ملف PDF — أرفقه في محادثة واتساب.");
+    });
+  };
+
   const editInitial: DraftFormValue = {
     id: doc.id,
     kind: doc.kind,
@@ -229,6 +254,9 @@ function SalesDocumentPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Btn variant="outline" size="sm" onClick={downloadPdf}>
             <FileDown className="h-4 w-4" aria-hidden /> ملف PDF
+          </Btn>
+          <Btn variant="outline" size="sm" onClick={shareWhatsApp}>
+            <MessageCircle className="h-4 w-4" aria-hidden /> مشاركة واتساب
           </Btn>
           <Link
             to="/mehla-admin/sales"
