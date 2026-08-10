@@ -23,18 +23,17 @@ export type TokenGroup = { id: string; label: string; description?: string; toke
 
 /**
  * خطوط المنصة الرسمية — Tajawal للواجهة وCairo للعناوين، مستضافة محلياً.
- * لا يُسمح بأي خط خارجي أو رابط CDN؛ خط النظام خيار احتياطي فقط.
+ * لا يُسمح بأي خط خارجي أو رابط CDN، ولا بخيار خط نظام قد يُغيّر الهوية أو يضيف تحميلات.
  */
 export const APPROVED_FONTS: { value: string; label: string }[] = [
   {
-    value: '"Tajawal", system-ui, -apple-system, sans-serif',
+    value: '"Tajawal", sans-serif',
     label: "Tajawal (خط الواجهة الرسمي)",
   },
   {
-    value: '"Cairo", system-ui, -apple-system, sans-serif',
+    value: '"Cairo", sans-serif',
     label: "Cairo (خط العناوين الرسمي)",
   },
-  { value: "system-ui, -apple-system, sans-serif", label: "خط النظام (احتياطي)" },
 ];
 
 const WEIGHTS = ["400", "500", "600", "700", "800"].map((w) => ({ value: w, label: w }));
