@@ -48,7 +48,7 @@ export function WorkspaceTopbar({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <button
-            className="-m-1 hidden rounded-[var(--radius-s)] p-2 text-muted-foreground transition hover:bg-surface-muted hover:text-foreground lg:inline-flex"
+            className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-s)] text-muted-foreground transition hover:bg-surface-muted hover:text-foreground lg:inline-flex"
             onClick={onToggleCollapse}
             aria-label={collapsed ? "توسيع القائمة الجانبية" : "تصغير القائمة الجانبية"}
           >
@@ -73,7 +73,7 @@ export function WorkspaceTopbar({
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-m)] bg-primary px-3 text-[13px] font-semibold text-primary-foreground shadow-xs transition hover:bg-primary-hover md:min-h-9"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-m)] bg-primary px-3 text-[13px] font-semibold text-primary-foreground shadow-xs transition hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden />
                 <span className="hidden sm:inline">إنشاء</span>
