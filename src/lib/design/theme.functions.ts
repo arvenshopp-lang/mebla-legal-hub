@@ -43,19 +43,35 @@ export const getDesignStudio = createServerFn({ method: "GET" })
     const staff = await requireDesign(context.supabase, context.userId, "design.read");
     const { hasPermission } = await import("@/lib/admin-permissions");
     const canHistory = hasPermission(
-      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
       "design.history.read",
     );
     const canPublish = hasPermission(
-      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
       "design.publish",
     );
     const canRollback = hasPermission(
-      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
       "design.rollback",
     );
     const canDraft = hasPermission(
-      { role: staff.role, permissions: staff.permissions, rolePermissions: staff.platform_roles?.permissions ?? null },
+      {
+        role: staff.role,
+        permissions: staff.permissions,
+        rolePermissions: staff.platform_roles?.permissions ?? null,
+      },
       "design.draft.write",
     );
     const svc = await import("./theme.server");

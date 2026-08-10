@@ -4,12 +4,7 @@
  * ويعيد فحوصات مستوى القاعدة على شجرة حقيقية بدل نص، مع أرقام أسطر عربية.
  */
 import postcss, { type ChildNode, type Container } from "postcss";
-import {
-  checkRules,
-  validateCustomCss,
-  type CheckedRule,
-  type CssValidation,
-} from "./css-guard";
+import { checkRules, validateCustomCss, type CheckedRule, type CssValidation } from "./css-guard";
 
 const NESTING_AT_RULES = new Set(["media", "supports", "container", "layer"]);
 const ALLOWED_AT_RULES = new Set([...NESTING_AT_RULES, "keyframes", "font-face", "property"]);
