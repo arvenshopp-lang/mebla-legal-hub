@@ -271,6 +271,20 @@ export type DraftInput = {
   items: DraftItemInput[];
 };
 
+/**
+ * تاريخ الاستحقاق يُختار كتاريخ يوم فقط، فيُثبَّت على نهاية ذلك اليوم بتوقيت
+ * الرياض (23:59:59.999 +03) حتى لا تصبح الفاتورة «متأخرة» في لحظة إصدارها.
+ */
+export function endOfRiyadhDay(value?: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  // اليوم الميلادي بتوقيت الرياض (UTC+3) ثم نهايته المحوّلة إلى UTC.
+  const riyadh = new Date(parsed.getTime() + 3 * 3600_000);
+  const day = riyadh.toISOString().slice(0, 10);
+  return new Date(`${day}T23:59:59.999+03:00`).toISOString();
+}
+
 export async function saveDraft(ctx: BillingCtx, input: DraftInput): Promise<string> {
   const before = input.id ? await safeInvoiceSnapshot(input.id) : null;
   const { data, error } = await ctx.sb.rpc("billing_save_draft", {
@@ -293,7 +307,7 @@ export async function saveDraft(ctx: BillingCtx, input: DraftInput): Promise<str
       tax_exemption_reason: input.taxExemptionReason ?? null,
       service_period_start: input.servicePeriodStart ?? null,
       service_period_end: input.servicePeriodEnd ?? null,
-      due_at: input.dueAt ?? null,
+      due_at: endOfRiyadhDay(input.dueAt),
       notes: input.notes ?? null,
       internal_notes: input.internalNotes ?? null,
       items: input.items.map((item) => ({
@@ -362,7 +376,10 @@ export async function issueInvoice(
     .update({
       status: "pending",
       issued_at: issuedAt,
-      due_at: input.dueAt ?? invoice.due_at ?? new Date(Date.now() + 14 * 86400_000).toISOString(),
+      due_at:
+        endOfRiyadhDay(input.dueAt) ??
+        (invoice.due_at as string | null) ??
+        endOfRiyadhDay(new Date(Date.now() + 14 * 86400_000).toISOString()),
       updated_at: issuedAt,
     })
     .eq("id", input.id)
