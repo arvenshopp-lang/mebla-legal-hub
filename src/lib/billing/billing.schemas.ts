@@ -196,6 +196,13 @@ export const taxSettingsSchema = z.object({
   sellerAddress: text(400),
   paymentTermsDays: z.number().int().min(0).max(180),
   bankDetails: text(600),
+  commercialRegistration: text(30).default(""),
+  contactPhone: text(30).default(""),
+  contactEmail: text(160).default(""),
+  website: text(120).default(""),
+  signatoryName: text(120).default(""),
+  signatoryTitle: text(120).default(""),
+  documentFooterNote: text(300).default(""),
 });
 
 export const rangeSchema = z.object({ from: isoDateTime, to: isoDateTime });
