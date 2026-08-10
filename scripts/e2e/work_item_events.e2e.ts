@@ -1011,7 +1011,7 @@ for (const table of ["tasks", "deadlines"] as const) {
         title: "QA مهلة المسار المؤمّن",
         deadline_type: "response",
         due_date: iso(6 * day),
-        assigned_to: lawyer.userId,
+        responsible_user_id: lawyer.userId,
         created_by: lawyer.userId,
       }),
     });
