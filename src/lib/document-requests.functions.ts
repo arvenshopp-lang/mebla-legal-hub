@@ -41,6 +41,10 @@ export const createDocumentRequest = createServerFn({ method: "POST" })
       .maybeSingle();
     if (caseErr || !kase) throw new Error("القضية غير موجودة أو لا تملك صلاحية الوصول إليها.");
 
+    // ترابط صريح: لا يُكتب أي طلب قبل إثبات أن القضية تنتمي لنفس المكتب.
+    const { assertCaseBelongsToOrganization } = await import("./document-requests.server");
+    await assertCaseBelongsToOrganization(supabase, kase.id, kase.organization_id);
+
     // بوابة استحقاق خادمية: رفع مستندات العملاء ميزة مرتبطة بالباقة ولا يجوز الاعتماد على الواجهة.
     const { assertEntitlement } = await import("./subscription.server");
     await assertEntitlement(supabase, kase.organization_id, {
