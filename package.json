@@ -24,7 +24,8 @@
     "design:fixture": "bun scripts/e2e/design-studio-fixture.ts",
     "design:e2e": "python3 scripts/e2e/design_studio_e2e.py",
     "work-items:e2e": "bun scripts/e2e/work_item_events.e2e.ts",
-    "documents:guardrails": "bun scripts/documents-intake-guardrails.ts"
+    "documents:guardrails": "bun scripts/documents-intake-guardrails.ts",
+    "cron:guardrails": "bun scripts/cron-auth-guardrails.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
