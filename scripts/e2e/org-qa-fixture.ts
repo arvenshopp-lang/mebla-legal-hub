@@ -11,6 +11,7 @@
  *   bun scripts/e2e/org-qa-fixture.ts --cleanup  # حذف كامل
  */
 import {
+  assertE2eEnvironmentSafe,
   SUPABASE_URL,
   PUBLISHABLE,
   adminHeaders,

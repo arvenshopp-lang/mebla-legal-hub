@@ -15,7 +15,8 @@
  *   bun scripts/e2e/qa-volume-fixture.ts             # تهيئة
  *   bun scripts/e2e/qa-volume-fixture.ts --cleanup   # حذف كامل
  */
-import { SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn, asUser } from "./qa-support";
+import {
+  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn, asUser } from "./qa-support";
 
 const PREFIX = "QA-LIVE-20260809-";
 const FILE = "/tmp/browser/qa-volume.json";

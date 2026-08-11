@@ -11,6 +11,7 @@
  * MEHLA_E2E_ALLOW، ومكتب QA بالبادئة المعتمدة. أي موارد اختبار تُنظّف في finally.
  */
 import {
+  assertE2eEnvironmentSafe,
   APP,
   SUPABASE_URL,
   PUBLISHABLE,

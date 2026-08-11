@@ -7,7 +7,8 @@
  *
  * التشغيل: bun scripts/e2e/destructive-actions.e2e.ts
  */
-import { SUPABASE_URL, PUBLISHABLE, APP, adminHeaders, adminFetch, signIn } from "./qa-support";
+import {
+  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, APP, adminHeaders, adminFetch, signIn } from "./qa-support";
 import { resolveServerFns, callServerFn, type ServerFnRef } from "./serverfn-rpc";
 
 const PREFIX = "QA-DESTRUCT-20260809-";

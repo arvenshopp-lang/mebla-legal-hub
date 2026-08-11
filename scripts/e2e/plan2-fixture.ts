@@ -8,7 +8,8 @@
  *   bun scripts/e2e/plan2-fixture.ts            # تهيئة
  *   bun scripts/e2e/plan2-fixture.ts --cleanup  # حذف كامل
  */
-import { SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn } from "./qa-support";
+import {
+  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn } from "./qa-support";
 
 export const P2_PREFIX = "QA-PLAN2-20260809-";
 export const P2_FILE = "/tmp/browser/plan2/orgs.json";
