@@ -45,9 +45,13 @@ check("routeTree: no diagnostic public route", !/\/api\/public\/(qa|debug|diag)/
 const publicGlob = new Bun.Glob("src/routes/api/public/**/*.ts");
 for await (const rel of publicGlob.scan({ cwd: ROOT })) {
   const src = readFileSync(join(ROOT, rel), "utf8");
-  const leaksImportErrors =
-    /import\(\s*["'`]@\//.test(src) && /error\s*\.\s*(name|message|stack)/.test(src);
-  check(`public: ${rel} does not leak import errors`, !leaksImportErrors);
+  // أسماء/آثار الأخطاء الخادمية لا تُعاد أبداً لعميل عام
+  check(`public: ${rel} hides error name/stack`, !/error\s*\.\s*(name|stack)/.test(src));
+  // ولا خرائط تشخيصية لنتائج استيراد الوحدات
+  const diagnosticPayload =
+    /import\(\s*["'`]@\//.test(src) &&
+    /Response\.json\(\s*(results|diagnostics|modules|status|report)\s*\)/.test(src);
+  check(`public: ${rel} exposes no module diagnostics`, !diagnosticPayload);
 }
 
 console.log(`\nPASS = ${pass} / FAIL = ${fail}`);
