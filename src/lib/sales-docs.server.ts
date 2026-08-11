@@ -47,7 +47,6 @@ type DbError = { message?: string; code?: string; details?: string; hint?: strin
 function dbReason(error: DbError): string | null {
   const code = error?.code ?? "";
   const detail = `${error?.message ?? ""} ${error?.details ?? ""}`;
-  if (code === "23505" || code === "23505") return null;
   if (code === "23514") {
     if (/sales_tpl_name_len/.test(detail)) return "اسم القالب يجب أن يكون بين حرفين و160 حرفاً.";
     if (/sales_tpl_validity_chk/.test(detail))
@@ -59,13 +58,11 @@ function dbReason(error: DbError): string | null {
     if (/sales_doc_amount_chk/.test(detail)) return "قيم المستند لا يمكن أن تكون سالبة.";
     return "إحدى القيم المدخلة لا تحقق قواعد التحقق المعتمدة.";
   }
-  if (code === "23505") return null;
   if (code === "23503") return "أحد الحقول المرتبطة (العميل أو الشركة أو القالب) غير موجود.";
   if (code === "23502") return "حقل إلزامي مفقود في البيانات المرسلة.";
   if (code === "22P02") return "قيمة غير صالحة في أحد الحقول (تنسيق غير مقبول).";
   if (code === "42501" || code === "PGRST301")
     return "لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.";
-  if (code === "23U01") return null;
   return null;
 }
 
