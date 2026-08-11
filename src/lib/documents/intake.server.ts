@@ -160,3 +160,72 @@ export async function verifyUploadedObject(input: {
   }
   return { ...verdict.file, path };
 }
+
+/** الأدوار التي تحذف أي مستند داخل المكتب. */
+const DELETE_ANY_ROLES = ["owner", "admin"] as const;
+/** الأدوار التي تحذف مستنداتها التي رفعتها بنفسها فقط. */
+const DELETE_OWN_ROLES = ["lawyer", "legal_assistant"] as const;
+
+/**
+ * يتحقق من صلاحية حذف مستند معيّن، بنفس قاعدة الصلاحيات المعتمدة سابقاً:
+ * المالك والمدير يحذفان أي مستند، والمحامي/المساعد يحذف ما رفعه بنفسه.
+ * القراءة تجري بعميل المستخدم (RLS) قبل أي عملية بمفتاح الخدمة.
+ */
+export async function requireDocumentDeletePermission(
+  supabase: Client,
+  userId: string,
+  documentId: string,
+) {
+  const { data: doc, error } = await supabase
+    .from("documents")
+    .select("id, organization_id, file_name, file_path, uploaded_by")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (error || !doc) throw new IntakeRejection("المستند غير موجود.");
+
+  const { data: member, error: memberError } = await supabase
+    .from("organization_members")
+    .select("role, status")
+    .eq("organization_id", doc.organization_id)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (memberError || !member) throw new IntakeRejection("لا تملك وصولاً إلى هذا المكتب.");
+
+  const role = member.role as string;
+  const canDeleteAny = (DELETE_ANY_ROLES as readonly string[]).includes(role);
+  const canDeleteOwn =
+    (DELETE_OWN_ROLES as readonly string[]).includes(role) && doc.uploaded_by === userId;
+  if (!canDeleteAny && !canDeleteOwn) {
+    throw new IntakeRejection("لا تملك صلاحية حذف هذا المستند.");
+  }
+
+  assertOwnedPath(doc.file_path, `${doc.organization_id}/`);
+  return doc;
+}
+
+/**
+ * يزيل كائن التخزين أولاً ثم الصف. لا يُحذف الصف أبداً إذا بقي الكائن، لتجنّب
+ * كائنات يتيمة أو سجلات معلّقة بلا ملف.
+ */
+export async function purgeDocument(doc: { id: string; file_path: string }) {
+  const db = await admin();
+  const { data: removed, error: removeError } = await db.storage
+    .from(DOCUMENTS_BUCKET)
+    .remove([doc.file_path]);
+  if (removeError) throw new Error("تعذّر إزالة ملف المستند من المخزن، لم يُحذف شيء.");
+  // كائن مفقود مسبقاً: الحذف يكمل لتنظيف السجل المعلّق.
+  if (!removed || removed.length === 0) {
+    const { data: still } = await db.storage
+      .from(DOCUMENTS_BUCKET)
+      .list(doc.file_path.split("/").slice(0, -1).join("/"), {
+        search: doc.file_path.split("/").pop()!,
+        limit: 1,
+      });
+    if (still && still.length > 0) {
+      throw new Error("تعذّر إزالة ملف المستند من المخزن، لم يُحذف شيء.");
+    }
+  }
+  const { error } = await db.from("documents").delete().eq("id", doc.id);
+  if (error) throw new Error("تعذّر حذف سجل المستند بعد إزالة الملف.");
+}

@@ -112,6 +112,91 @@ check(
   finalize.indexOf("requireDocumentWriteRole(") < finalize.indexOf('.from("documents")'),
 );
 
+// 3b) حذف المستندات: مسار خادمي واحد، وصلاحيات متطابقة، وبلا تجاهل لأخطاء المخزن
+let deleteSql = "";
+for await (const rel of new Bun.Glob("supabase/migrations/*.sql").scan({ cwd: ROOT })) {
+  const sql = read(rel);
+  if (/REVOKE DELETE ON public\.documents FROM authenticated/i.test(sql)) deleteSql += `\n${sql}`;
+}
+check("delete: migration revokes row DELETE from authenticated", deleteSql.length > 0);
+check(
+  "delete: migration drops docs_delete policy",
+  /DROP POLICY IF EXISTS docs_delete ON public\.documents/i.test(deleteSql),
+);
+check(
+  "delete: migration drops direct storage delete policy",
+  /DROP POLICY IF EXISTS docs_storage_delete ON storage\.objects/i.test(deleteSql),
+);
+
+const intakeServer = read("src/lib/documents/intake.server.ts");
+check(
+  "delete: server permission check exists",
+  intakeServer.includes("export async function requireDocumentDeletePermission"),
+);
+check(
+  "delete: permission rule matches previous policy (owner/admin, or own upload for lawyer/legal_assistant)",
+  /DELETE_ANY_ROLES = \["owner", "admin"\]/.test(intakeServer) &&
+    /DELETE_OWN_ROLES = \["lawyer", "legal_assistant"\]/.test(intakeServer) &&
+    /doc\.uploaded_by === userId/.test(intakeServer),
+);
+check(
+  "delete: permission read uses user client (RLS)",
+  /requireDocumentDeletePermission\([\s\S]{0,200}supabase: Client/.test(intakeServer),
+);
+check(
+  "delete: path is org-scoped before purge",
+  /assertOwnedPath\(doc\.file_path/.test(intakeServer),
+);
+check(
+  "delete: storage removal error aborts before row delete",
+  intakeServer.indexOf("لم يُحذف شيء") < intakeServer.indexOf('.from("documents").delete()'),
+);
+check(
+  "delete: row delete happens only after object removal",
+  /remove\(\[doc\.file_path\]\)[\s\S]*\.from\("documents"\)\n?\s*\.delete\(\)/.test(
+    intakeServer.replace(/\s+/g, (m) => m),
+  ),
+);
+
+const deleteFn = read("src/lib/documents/intake.functions.ts");
+check(
+  "delete: exposed as authenticated server function",
+  /export const deleteDocument = createServerFn[\s\S]{0,200}requireSupabaseAuth/.test(deleteFn),
+);
+check(
+  "delete: validates uuid input",
+  /deleteDocument[\s\S]{0,400}documentId: z\.string\(\)\.uuid\(\)/.test(deleteFn),
+);
+
+const docsPage = read("src/routes/_authenticated/documents.tsx");
+check(
+  "delete UI: calls the server function",
+  /removeDocument\(\{ data: \{ documentId: d\.id \} \}\)/.test(docsPage),
+);
+check(
+  "delete UI: no direct storage.remove",
+  !/storage\.from\("documents"\)\s*\n?\s*\.remove/m.test(docsPage),
+);
+check("delete UI: no direct row delete", !/from\("documents"\)\s*\n?\s*\.delete\(/m.test(docsPage));
+check("delete UI: surfaces a controlled error", /onError:[\s\S]{0,120}تعذّر الحذف/.test(docsPage));
+
+for (const rel of await Array.fromAsync(new Bun.Glob("src/**/*.{ts,tsx}").scan({ cwd: ROOT }))) {
+  if (rel.endsWith("routeTree.gen.ts") || rel.includes("intake.server")) continue;
+  const src = read(rel);
+  const browserRemove =
+    /(context\.supabase|\bsupabase)\.storage\s*\n?\s*\.from\(\s*"documents"\s*\)\s*\n?\s*\.remove/m.test(
+      src,
+    );
+  const browserDelete =
+    /(context\.supabase|\bsupabase)\s*\n?\s*\.from\(\s*"documents"\s*\)\s*\n?\s*\.delete/m.test(
+      src,
+    );
+  check(
+    `source: ${rel} has no browser/user-client document deletion`,
+    !browserRemove && !browserDelete,
+  );
+}
+
 // 4) الرفض الدفاعي في secure-view قبل أي رابط موقّع
 const secure = read("src/lib/secure-view/secure-view.server.ts");
 check(

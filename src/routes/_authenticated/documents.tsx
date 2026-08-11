@@ -30,7 +30,11 @@ import {
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { prepareDocumentUpload, finalizeDocumentUpload } from "@/lib/documents/intake.functions";
+import {
+  prepareDocumentUpload,
+  finalizeDocumentUpload,
+  deleteDocument,
+} from "@/lib/documents/intake.functions";
 import {
   SecureDocActions,
   SecureDocumentViewer,
@@ -118,12 +122,12 @@ function Page() {
 
   const jobs = useProcessingJobs((data?.rows ?? []).map((d) => d.id));
   const jobFor = (id: string) => (jobs.data ?? []).find((j) => j.document_id === id);
+  const removeDocument = useServerFn(deleteDocument);
 
   const del = useMutation({
     mutationFn: async (d: DocumentListRow) => {
-      await supabase.storage.from("documents").remove([d.file_path]);
-      const { error } = await supabase.from("documents").delete().eq("id", d.id);
-      if (error) throw error;
+      // الحذف خادمي بالكامل: يُزال ملف المخزن أولاً ثم السجل، ولا يُتجاهل أي خطأ.
+      await removeDocument({ data: { documentId: d.id } });
       await audit({
         organizationId: d.organization_id,
         action: "document.delete",
