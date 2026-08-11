@@ -56,8 +56,14 @@ check(
 );
 const baselineEnv = trackedEnv.filter((file) => KNOWN_BLOCKED_ENV.has(file));
 
-const trackedRepro = tracked.filter((file) => file.startsWith("tmp-repro/") || file === "tmp-repro");
-check("tmp-repro غير متتبع في HEAD", trackedRepro.length === 0, `ملفات متتبعة: ${trackedRepro.join(", ")}`);
+const trackedRepro = tracked.filter(
+  (file) => file.startsWith("tmp-repro/") || file === "tmp-repro",
+);
+check(
+  "tmp-repro غير متتبع في HEAD",
+  trackedRepro.length === 0,
+  `ملفات متتبعة: ${trackedRepro.join(", ")}`,
+);
 check("tmp-repro غير موجود على القرص", !existsSync(resolve(ROOT, "tmp-repro")));
 
 const gitignorePath = resolve(ROOT, ".gitignore");
