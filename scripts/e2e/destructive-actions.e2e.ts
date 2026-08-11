@@ -8,7 +8,14 @@
  * التشغيل: bun scripts/e2e/destructive-actions.e2e.ts
  */
 import {
-  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, APP, adminHeaders, adminFetch, signIn } from "./qa-support";
+  assertE2eEnvironmentSafe,
+  SUPABASE_URL,
+  PUBLISHABLE,
+  APP,
+  adminHeaders,
+  adminFetch,
+  signIn,
+} from "./qa-support";
 import { resolveServerFns, callServerFn, type ServerFnRef } from "./serverfn-rpc";
 
 const PREFIX = "QA-DESTRUCT-20260809-";
@@ -246,7 +253,9 @@ async function cleanup(quiet = false) {
   await tryDelete(`platform_feature_flags?key=like.qa_destruct%25`);
   await tryDelete(`platform_email_templates?code=like.qa-destruct%25`);
   await tryDelete(`platform_roles?code=like.qa_destruct%25`);
-  await tryDelete(`platform_backup_restore_requests?reason=like.${encodeURIComponent(PREFIX + "%")}`);
+  await tryDelete(
+    `platform_backup_restore_requests?reason=like.${encodeURIComponent(PREFIX + "%")}`,
+  );
   for (const email of [
     "qa.destruct.staff.a@mehlaqa.test",
     "qa.destruct.staff.b@mehlaqa.test",
@@ -262,8 +271,7 @@ async function cleanup(quiet = false) {
     const u = ((await list.json()) as { users?: { id: string; email: string }[] }).users?.find(
       (x) => x.email?.toLowerCase() === email,
     );
-    if (u)
-      await adminFetch(`${SUPABASE_URL}/auth/v1/admin/users/${u.id}`, { method: "DELETE" });
+    if (u) await adminFetch(`${SUPABASE_URL}/auth/v1/admin/users/${u.id}`, { method: "DELETE" });
   }
   if (!quiet) console.log(`تنظيف: ${orgs.length} مكتب QA وحسابات الاختبار.`);
 }
@@ -448,7 +456,8 @@ async function flagsAndTemplatesAndRoles(c: Ctx) {
   else {
     rec("إنشاء قالب بريد QA", "PASS");
     const del = await call("ops", "deleteEmailTemplate", c.staffA.token, { id: tmpl["id"] });
-    const gone = (await rest(`platform_email_templates?code=eq.${tmplCode}&select=id`)).length === 0;
+    const gone =
+      (await rest(`platform_email_templates?code=eq.${tmplCode}&select=id`)).length === 0;
     rec("حذف قالب البريد + اختفاؤه", del.ok && gone ? "PASS" : "FAIL", del.message);
   }
 
@@ -667,9 +676,7 @@ async function billingRefundFlow(c: Ctx) {
     taxAmount: 7.5,
     reason: "إشعار دائن لاختبار QA",
   });
-  const cnRow = await one(
-    `platform_credit_notes?invoice_id=eq.${invoice["id"]}&select=id&limit=1`,
-  );
+  const cnRow = await one(`platform_credit_notes?invoice_id=eq.${invoice["id"]}&select=id&limit=1`);
   rec("إصدار إشعار دائن + صف في القاعدة", cn.ok && cnRow ? "PASS" : "FAIL", cn.message);
 }
 
@@ -788,7 +795,8 @@ async function documentRequestRevoke(c: Ctx) {
   );
   if (token) {
     const post = await call("portal", "getUploadRequest", "", { token });
-    const revokedState = /"revoked"|"invalid"|"expired"/.test(post.raw) && !/"active"/.test(post.raw);
+    const revokedState =
+      /"revoked"|"invalid"|"expired"/.test(post.raw) && !/"active"/.test(post.raw);
     rec(
       "رفض الرابط بعد الإبطال خادمياً (state=revoked وليس active)",
       post.denied || revokedState ? "PASS" : "FAIL",
@@ -863,10 +871,7 @@ async function main() {
   console.log(
     `\nالنتيجة: ${results.filter((r) => r.status === "PASS").length}/${results.length} PASS، ${fail.length} FAIL، ${blocked.length} BLOCKED`,
   );
-  await Bun.write(
-    "/tmp/browser/destructive-results.json",
-    JSON.stringify(results, null, 2),
-  );
+  await Bun.write("/tmp/browser/destructive-results.json", JSON.stringify(results, null, 2));
   if (fail.length) process.exitCode = 1;
 }
 

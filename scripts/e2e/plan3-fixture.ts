@@ -4,7 +4,13 @@
  * ومكتب QA ببادئة QA-DESTRUCT- لتنفيذ الإجراءات الخطرة بأمان.
  */
 import {
-  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, adminFetch, adminHeaders, signIn } from "./qa-support";
+  assertE2eEnvironmentSafe,
+  SUPABASE_URL,
+  PUBLISHABLE,
+  adminFetch,
+  adminHeaders,
+  signIn,
+} from "./qa-support";
 
 export const P3_PREFIX = "QA-DESTRUCT-20260809P3-";
 export const P3_FILE = "/tmp/browser/plan3/ctx.json";
@@ -72,10 +78,9 @@ export async function buildP3(): Promise<P3Ctx> {
     officeOwner: await ensureUser(emails.officeOwner, `${P3_PREFIX}مالك مكتب`),
   };
 
-  await rest(
-    `platform_staff?user_id=in.(${ids.superAdmin},${ids.plainStaff},${ids.officeOwner})`,
-    { method: "DELETE" },
-  );
+  await rest(`platform_staff?user_id=in.(${ids.superAdmin},${ids.plainStaff},${ids.officeOwner})`, {
+    method: "DELETE",
+  });
   await rest("platform_staff", {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=minimal" },

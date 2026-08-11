@@ -107,7 +107,8 @@ for (const c of cases) {
   check(
     `${c.name} — الرسالة بلا أسرار`,
     res.reasons.every(
-      (r) => !r.includes("://") && !r.includes(PROD) && !r.includes(QA_REF) && !/[A-Za-z]{20,}/.test(r),
+      (r) =>
+        !r.includes("://") && !r.includes(PROD) && !r.includes(QA_REF) && !/[A-Za-z]{20,}/.test(r),
     ),
     res.reasons.join(" | "),
   );
@@ -136,10 +137,14 @@ check(
 
 const support = readFileSync("scripts/e2e/qa-support.ts", "utf8");
 for (const fn of ["adminFetch", "signIn", "asUser"]) {
-  const body = support.slice(support.indexOf(`export ${fn.startsWith("a") && fn !== "asUser" ? "function " + fn : ""}`));
+  const body = support.slice(
+    support.indexOf(`export ${fn.startsWith("a") && fn !== "asUser" ? "function " + fn : ""}`),
+  );
   check(
     `${fn} يستدعي البوابة قبل أي fetch`,
-    new RegExp(`${fn}\\([\\s\\S]{0,220}?assertE2eEnvironmentSafe\\(\\);[\\s\\S]{0,120}?fetch\\(`).test(support),
+    new RegExp(
+      `${fn}\\([\\s\\S]{0,220}?assertE2eEnvironmentSafe\\(\\);[\\s\\S]{0,120}?fetch\\(`,
+    ).test(support),
     "",
   );
   void body;
@@ -171,7 +176,8 @@ for (const file of destructive) {
 const fixture = readFileSync("scripts/e2e/org-qa-fixture.ts", "utf8");
 check(
   "fixture ينادي البوابة قبل setup/cleanup",
-  fixture.indexOf("assertE2eEnvironmentSafe();") < fixture.indexOf("await cleanup();\nelse await setup();"),
+  fixture.indexOf("assertE2eEnvironmentSafe();") <
+    fixture.indexOf("await cleanup();\nelse await setup();"),
 );
 check(
   "documents_security لم يبقِ بوابة محلية مكررة للأصل",

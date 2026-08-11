@@ -9,7 +9,13 @@
  *   bun scripts/e2e/plan2-fixture.ts --cleanup  # حذف كامل
  */
 import {
-  assertE2eEnvironmentSafe, SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn } from "./qa-support";
+  assertE2eEnvironmentSafe,
+  SUPABASE_URL,
+  PUBLISHABLE,
+  adminHeaders,
+  adminFetch,
+  signIn,
+} from "./qa-support";
 
 export const P2_PREFIX = "QA-PLAN2-20260809-";
 export const P2_FILE = "/tmp/browser/plan2/orgs.json";
@@ -84,10 +90,9 @@ async function cleanup() {
   );
   const orgs = (await res.json()) as { id: string }[];
   for (const org of orgs) {
-    await adminFetch(
-      `${SUPABASE_URL}/rest/v1/support_tickets?organization_id=eq.${org.id}`,
-      { method: "DELETE" },
-    );
+    await adminFetch(`${SUPABASE_URL}/rest/v1/support_tickets?organization_id=eq.${org.id}`, {
+      method: "DELETE",
+    });
     await adminFetch(`${SUPABASE_URL}/rest/v1/organizations?id=eq.${org.id}`, { method: "DELETE" });
   }
   let users = 0;
