@@ -363,6 +363,25 @@ export async function readOriginal(
   return { bytes, trace };
 }
 
+/**
+ * يرفض أي مسار تخزين لا يقع حرفياً داخل مجلد المكتب المالك. حماية دفاعية أخيرة
+ * قبل إنشاء أي رابط موقّع، وتغطي الصفوف القديمة وأي خطأ خادمي محتمل.
+ */
+export function assertOrgScopedStoragePath(filePath: string, organizationId: string): string {
+  const clean = (filePath ?? "").trim();
+  if (
+    !clean ||
+    clean.length > 400 ||
+    clean.startsWith("/") ||
+    clean.includes("..") ||
+    clean.includes("//") ||
+    !clean.startsWith(`${organizationId}/`)
+  ) {
+    throw new Error("مسار المستند غير صالح.");
+  }
+  return clean;
+}
+
 /** يجمع بيانات المستند + هوية العارض لبناء العلامة المائية. */
 export async function loadDocumentForStamp(documentId: string) {
   const db = await admin();
@@ -374,6 +393,7 @@ export async function loadDocumentForStamp(documentId: string) {
     .eq("id", documentId)
     .maybeSingle();
   if (error || !data) throw new Error("المستند غير موجود.");
+  assertOrgScopedStoragePath(data.file_path, data.organization_id);
   return data;
 }
 
