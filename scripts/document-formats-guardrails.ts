@@ -47,10 +47,12 @@ check(
   ALLOWED_EXTENSIONS.join(","),
 );
 for (const ext of REMOVED) {
-  check(`الامتداد ${ext} مُزال من كل القوائم`, 
+  check(
+    `الامتداد ${ext} مُزال من كل القوائم`,
     !(ALLOWED_EXTENSIONS as readonly string[]).includes(ext) &&
       EXTENSION_MIME[ext] === undefined &&
-      !ACCEPT_ATTR.split(",").includes(`.${ext}`));
+      !ACCEPT_ATTR.split(",").includes(`.${ext}`),
+  );
 }
 check(
   "لكل امتداد مسموح نوع معياري داخل قائمة المخزن",
@@ -69,8 +71,14 @@ check(
     (p) => ALLOWED_BUCKET_MIME.some((m) => m.startsWith(p)) || p === "application/csv",
   ),
 );
-check("سمة accept مبنية من نفس القائمة", ACCEPT_ATTR === ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(","));
-check("رسالة المستخدم تذكر الصيغ المدعومة فقط", UNSUPPORTED_FORMAT_MESSAGE.includes(SUPPORTED_FORMATS_LABEL));
+check(
+  "سمة accept مبنية من نفس القائمة",
+  ACCEPT_ATTR === ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(","),
+);
+check(
+  "رسالة المستخدم تذكر الصيغ المدعومة فقط",
+  UNSUPPORTED_FORMAT_MESSAGE.includes(SUPPORTED_FORMATS_LABEL),
+);
 for (const word of ["Office", "Excel", "PowerPoint", "HEIC"]) {
   check(`نص الصيغ المدعومة لا يذكر ${word}`, !SUPPORTED_FORMATS_LABEL.includes(word));
 }
@@ -146,10 +154,7 @@ check(
 
 const intake = readFileSync("src/lib/documents/intake.server.ts", "utf8");
 check("الإدخال يستخدم رسالة الصيغ الموحدة", intake.includes("UNSUPPORTED_FORMAT_MESSAGE"));
-check(
-  "لا رسالة صيغ مكتوبة يدوياً في الإدخال",
-  !intake.includes("مستندات Office"),
-);
+check("لا رسالة صيغ مكتوبة يدوياً في الإدخال", !intake.includes("مستندات Office"));
 
 const pipeline = readFileSync("src/lib/document-pipeline.ts", "utf8");
 check("محرك المعالجة يعتمد extractableKind الموحدة", pipeline.includes("extractableKind"));

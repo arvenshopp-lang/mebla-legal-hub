@@ -41,7 +41,8 @@ export const ALLOWED_MIME_PREFIXES = [
  * مسار عرض مائي (PDF أو صورة مباشرة) أو استخراج نصي يُنتج نسخة PDF مائية.
  * لا تُوسّع هذه القائمة قبل توفير معالجة وعرض حقيقيين للصيغة الجديدة.
  */
-export const SUPPORTED_FORMATS_LABEL = "PDF أو Word (docx) أو صور (JPG / PNG / WebP) أو نصوص (TXT / CSV)";
+export const SUPPORTED_FORMATS_LABEL =
+  "PDF أو Word (docx) أو صور (JPG / PNG / WebP) أو نصوص (TXT / CSV)";
 
 export const UNSUPPORTED_FORMAT_MESSAGE = `نوع الملف غير مسموح به. يُسمح بملفات ${SUPPORTED_FORMATS_LABEL} فقط.`;
 

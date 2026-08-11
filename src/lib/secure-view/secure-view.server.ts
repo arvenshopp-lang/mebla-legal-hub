@@ -274,9 +274,8 @@ export async function readOriginal(
   } = {},
 ): Promise<{ bytes: Uint8Array; trace: StorageReadTrace; stampable: boolean }> {
   if (options.organizationId) assertOrgScopedStoragePath(filePath, options.organizationId);
-  const { isAllowedDocumentMime, isViewerNativeMime } = await import(
-    "@/lib/documents/file-signature"
-  );
+  const { isAllowedDocumentMime, isViewerNativeMime } =
+    await import("@/lib/documents/file-signature");
   const db = await admin();
   const verifiedAt = new Date().toISOString();
   const updateFileStatus = async (fileStatus: "AVAILABLE" | "FILE_MISSING" | "INVALID_FILE") => {
