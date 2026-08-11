@@ -191,24 +191,7 @@ function LoginPage() {
   }
 
   return (
-    <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة">
-      <button
-        type="button"
-        onClick={google}
-        disabled={googleLoading}
-        aria-busy={googleLoading}
-        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-[0_1px_2px_rgba(18,60,50,0.06)] transition hover:bg-surface-muted active:scale-[0.99] disabled:opacity-60"
-      >
-        <GoogleIcon />
-        <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
-      </button>
-      <p className="mt-2 text-center text-[11px] leading-5 text-text-muted">
-        دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
-      </p>
-      <div className="my-5 flex items-center gap-3 text-xs text-text-muted">
-        <div className="h-px flex-1 bg-surface-muted" /> أو{" "}
-        <div className="h-px flex-1 bg-surface-muted" />
-      </div>
+    <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة" variant="login">
       <form onSubmit={submit} noValidate className="space-y-4">
         {formError && (
           <div
@@ -239,27 +222,31 @@ function LoginPage() {
         <Field label="البريد الإلكتروني">
           <input
             type="email"
+            name="email"
+            inputMode="email"
+            spellCheck={false}
             autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={fieldInputCls}
+            className={loginInputCls}
           />
         </Field>
         <Field label="كلمة المرور">
           <input
             type="password"
+            name="password"
             autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={fieldInputCls}
+            className={loginInputCls}
           />
         </Field>
-        <div className="text-left">
+        <div className="text-end">
           <Link
             to="/forgot-password"
-            className="text-xs font-medium text-muted-foreground underline hover:text-foreground"
+            className="inline-flex min-h-[44px] items-center text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             نسيت كلمة المرور؟
           </Link>
@@ -268,7 +255,7 @@ function LoginPage() {
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition disabled:opacity-60"
+          className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-primary-hover active:bg-primary-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "جاري تسجيل الدخول…" : "دخول"}
         </button>
@@ -276,14 +263,36 @@ function LoginPage() {
           type="button"
           onClick={requestMagicLink}
           disabled={actionBusy === "magic"}
-          className="flex min-h-[44px] w-full items-center justify-center text-center text-xs font-medium text-muted-foreground underline transition hover:text-foreground disabled:opacity-60"
+          aria-busy={actionBusy === "magic"}
+          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-m)] text-center text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
         </button>
       </form>
+      <div className="my-6 flex items-center gap-3 text-xs text-text-muted">
+        <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        <span>أو</span>
+        <span aria-hidden="true" className="h-px flex-1 bg-border" />
+      </div>
+      <button
+        type="button"
+        onClick={google}
+        disabled={googleLoading}
+        aria-busy={googleLoading}
+        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <GoogleIcon />
+        <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
+      </button>
+      <p className="mt-2.5 text-center text-[11px] leading-5 text-text-muted">
+        دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
+      </p>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         ليس لديك حساب؟{" "}
-        <Link to="/register" className="font-semibold text-foreground underline">
+        <Link
+          to="/register"
+          className="font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
           إنشاء حساب
         </Link>
       </p>
@@ -292,6 +301,9 @@ function LoginPage() {
 }
 
 export { inputCls } from "@/lib/list-utils";
+
+/** تنسيق حقول صفحة الدخول: يبني على inputCls المشترك دون تعديله عالمياً. */
+const loginInputCls = `${fieldInputCls} min-h-[46px] rounded-[var(--radius-m)] focus-visible:outline-none`;
 
 export function Field({
   label,
@@ -315,25 +327,45 @@ export function AuthShell({
   title,
   subtitle,
   children,
+  variant = "default",
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  variant?: "default" | "login";
 }) {
   return (
     <div dir="rtl" className="flex min-h-dvh flex-col bg-background px-4 py-10">
-      <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center">
+      <div
+        className={`mx-auto flex w-full flex-1 flex-col justify-center ${
+          variant === "login" ? "max-w-[412px]" : "max-w-[420px]"
+        }`}
+      >
         <Link
           to="/"
-          className="mb-8 flex min-h-[44px] items-center justify-center text-center text-[17px] font-bold tracking-tight text-foreground"
+          className="mb-8 flex min-h-[44px] items-center justify-center rounded-[var(--radius-m)] text-center text-[17px] font-bold tracking-tight text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           مِهلة <span className="text-text-muted">·</span>{" "}
           <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
         </Link>
-        <div className="surface-card p-6 shadow-sm sm:p-8">
-          <h1 className="text-h2">{title}</h1>
-          {subtitle && <p className="mt-1.5 text-body-sm text-muted-foreground">{subtitle}</p>}
-          <div className="mt-7">{children}</div>
+        <div
+          className={
+            variant === "login"
+              ? "surface-card p-5 shadow-sm sm:p-8"
+              : "surface-card p-6 shadow-sm sm:p-8"
+          }
+        >
+          <h1 className={variant === "login" ? "text-h2 text-center" : "text-h2"}>{title}</h1>
+          {subtitle && (
+            <p
+              className={`mt-1.5 text-body-sm text-muted-foreground ${
+                variant === "login" ? "text-center" : ""
+              }`}
+            >
+              {subtitle}
+            </p>
+          )}
+          <div className={variant === "login" ? "mt-6" : "mt-7"}>{children}</div>
         </div>
         <p className="mt-6 text-center text-[12px] text-text-muted">
           منصة مِهلة لإدارة الممارسة القانونية · mehlalex.com
