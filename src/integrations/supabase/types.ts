@@ -9471,6 +9471,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      verify_cron_secret: { Args: { candidate: string }; Returns: boolean }
     }
     Enums: {
       app_role: "owner" | "admin" | "lawyer" | "legal_assistant" | "viewer"
