@@ -15,7 +15,15 @@
  *   bun scripts/e2e/qa-volume-fixture.ts             # تهيئة
  *   bun scripts/e2e/qa-volume-fixture.ts --cleanup   # حذف كامل
  */
-import { SUPABASE_URL, PUBLISHABLE, adminHeaders, adminFetch, signIn, asUser } from "./qa-support";
+import {
+  assertE2eEnvironmentSafe,
+  SUPABASE_URL,
+  PUBLISHABLE,
+  adminHeaders,
+  adminFetch,
+  signIn,
+  asUser,
+} from "./qa-support";
 
 const PREFIX = "QA-LIVE-20260809-";
 const FILE = "/tmp/browser/qa-volume.json";
@@ -36,16 +44,89 @@ const PEOPLE: { role: Role; email: string; fullName: string }[] = [
   { role: "viewer", email: "qa.live.viewer@mehlaqa.test", fullName: "سلطان بن عبدالله الدوسري" },
 ];
 
-const FIRST_M = ["عبدالله","محمد","خالد","فهد","سعد","تركي","بندر","ماجد","نايف","سلمان","عمر","ياسر","راكان","مشعل","وليد"];
-const FIRST_F = ["نورة","سارة","لطيفة","هيا","منى","دانة","الجوهرة","شهد","أمل","رنا"];
-const FAMILY = ["العتيبي","القحطاني","الغامدي","الشهري","الدوسري","الحربي","الزهراني","العمري","المطيري","السبيعي","الشمري","البلوي","الجهني","السهلي","الخالدي"];
-const CITIES = ["الرياض","جدة","الدمام","مكة المكرمة","المدينة المنورة","الخبر","أبها","تبوك","بريدة","الطائف"];
-const COMPANIES = ["شركة الأفق للتجارة","مؤسسة البناء الحديث","شركة نماء القابضة","شركة الخليج للمقاولات","مجموعة التقنية المتقدمة","شركة الواحة الغذائية","شركة درة العقارية","مصنع الرياض للبلاستيك"];
-const GOV = ["أمانة منطقة الرياض","الهيئة العامة للعقار","وزارة الشؤون البلدية","الهيئة السعودية للمياه"];
-const COURTS = ["المحكمة العامة بالرياض","المحكمة التجارية بجدة","محكمة الاستئناف بالرياض","المحكمة العمالية بالدمام","محكمة التنفيذ بالرياض","ديوان المظالم"];
-const CASE_TYPES = ["مطالبة مالية","نزاع تجاري","قضية عمالية","تنفيذ حكم","نزاع عقاري","اعتراض على قرار","قضية أحوال شخصية","تحكيم تجاري"];
+const FIRST_M = [
+  "عبدالله",
+  "محمد",
+  "خالد",
+  "فهد",
+  "سعد",
+  "تركي",
+  "بندر",
+  "ماجد",
+  "نايف",
+  "سلمان",
+  "عمر",
+  "ياسر",
+  "راكان",
+  "مشعل",
+  "وليد",
+];
+const FIRST_F = ["نورة", "سارة", "لطيفة", "هيا", "منى", "دانة", "الجوهرة", "شهد", "أمل", "رنا"];
+const FAMILY = [
+  "العتيبي",
+  "القحطاني",
+  "الغامدي",
+  "الشهري",
+  "الدوسري",
+  "الحربي",
+  "الزهراني",
+  "العمري",
+  "المطيري",
+  "السبيعي",
+  "الشمري",
+  "البلوي",
+  "الجهني",
+  "السهلي",
+  "الخالدي",
+];
+const CITIES = [
+  "الرياض",
+  "جدة",
+  "الدمام",
+  "مكة المكرمة",
+  "المدينة المنورة",
+  "الخبر",
+  "أبها",
+  "تبوك",
+  "بريدة",
+  "الطائف",
+];
+const COMPANIES = [
+  "شركة الأفق للتجارة",
+  "مؤسسة البناء الحديث",
+  "شركة نماء القابضة",
+  "شركة الخليج للمقاولات",
+  "مجموعة التقنية المتقدمة",
+  "شركة الواحة الغذائية",
+  "شركة درة العقارية",
+  "مصنع الرياض للبلاستيك",
+];
+const GOV = [
+  "أمانة منطقة الرياض",
+  "الهيئة العامة للعقار",
+  "وزارة الشؤون البلدية",
+  "الهيئة السعودية للمياه",
+];
+const COURTS = [
+  "المحكمة العامة بالرياض",
+  "المحكمة التجارية بجدة",
+  "محكمة الاستئناف بالرياض",
+  "المحكمة العمالية بالدمام",
+  "محكمة التنفيذ بالرياض",
+  "ديوان المظالم",
+];
+const CASE_TYPES = [
+  "مطالبة مالية",
+  "نزاع تجاري",
+  "قضية عمالية",
+  "تنفيذ حكم",
+  "نزاع عقاري",
+  "اعتراض على قرار",
+  "قضية أحوال شخصية",
+  "تحكيم تجاري",
+];
 
-const rnd = <T,>(a: T[], i: number) => a[i % a.length]!;
+const rnd = <T>(a: T[], i: number) => a[i % a.length]!;
 const pad = (n: number, w = 3) => String(n).padStart(w, "0");
 const days = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 
@@ -62,7 +143,11 @@ async function ensureUser(email: string, password: string, fullName: string) {
   if (existing) {
     await adminFetch(`${SUPABASE_URL}/auth/v1/admin/users/${existing}`, {
       method: "PUT",
-      body: JSON.stringify({ password, email_confirm: true, user_metadata: { full_name: fullName } }),
+      body: JSON.stringify({
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      }),
     });
     return existing;
   }
@@ -217,7 +302,9 @@ async function setup() {
     ...Array<string>(7).fill("closed"),
     ...Array<string>(3).fill("archived"),
   ];
-  const lawyers = accounts.filter((a) => a.role === "lawyer" || a.role === "owner" || a.role === "admin");
+  const lawyers = accounts.filter(
+    (a) => a.role === "lawyer" || a.role === "owner" || a.role === "admin",
+  );
   const caseRows = await insertRows(
     "cases",
     STATUSES.map((status, idx) => {
@@ -229,10 +316,13 @@ async function setup() {
         case_number: `${PREFIX}${4500 + i}/1447`,
         case_title: `${PREFIX}${rnd(CASE_TYPES, i)} — ${rnd(FAMILY, i)} ضد ${rnd(COMPANIES, i)}`,
         case_type: rnd(CASE_TYPES, i),
-        client_role: rnd(["plaintiff", "defendant", "appellant", "respondent", "execution_applicant"], i),
+        client_role: rnd(
+          ["plaintiff", "defendant", "appellant", "respondent", "execution_applicant"],
+          i,
+        ),
         court_name: rnd(COURTS, i),
         court_branch: `فرع ${rnd(CITIES, i)}`,
-        judicial_circuit: `الدائرة ${((i % 12) + 1)}`,
+        judicial_circuit: `الدائرة ${(i % 12) + 1}`,
         judge_name: `القاضي ${rnd(FIRST_M, i)} ${rnd(FAMILY, i + 3)}`,
         opponent_name: `${rnd(COMPANIES, i + 1)}`,
         status,
@@ -240,7 +330,9 @@ async function setup() {
         assigned_lawyer_id: rnd(lawyers, i).userId,
         opened_at: days(-200 + i * 3).slice(0, 10),
         closed_at: closed ? days(-10 + (i % 5)).slice(0, 10) : null,
-        next_action: closed ? null : `متابعة ${rnd(["مذكرة الرد", "لائحة الاعتراض", "طلب الخبرة", "تنفيذ الحكم"], i)}`,
+        next_action: closed
+          ? null
+          : `متابعة ${rnd(["مذكرة الرد", "لائحة الاعتراض", "طلب الخبرة", "تنفيذ الحكم"], i)}`,
         next_action_date: closed ? null : days(3 + (i % 20)),
         last_activity_at: days(-(i % 15)),
         description: `ملف قضية تجريبي ${i}: ${rnd(CASE_TYPES, i)} أمام ${rnd(COURTS, i)} بمبلغ مطالبة ${(i * 12_500).toLocaleString("en-US")} ريال.`,
@@ -385,7 +477,15 @@ async function setup() {
 
   // تحقق فعلي: قراءة بتوكن المالك عبر Data API مع RLS
   const counts: Record<string, number> = {};
-  for (const t of ["clients", "cases", "hearings", "deadlines", "tasks", "case_updates", "case_parties"]) {
+  for (const t of [
+    "clients",
+    "cases",
+    "hearings",
+    "deadlines",
+    "tasks",
+    "case_updates",
+    "case_parties",
+  ]) {
     const r = await asUser(
       accounts[0]!.token,
       `/rest/v1/${t}?organization_id=eq.${organizationId}&select=id`,
@@ -410,5 +510,6 @@ async function setup() {
   console.log(`المكتب جاهز — البيانات في ${FILE}`);
 }
 
+assertE2eEnvironmentSafe();
 if (process.argv.includes("--cleanup")) await cleanup();
 else await setup();

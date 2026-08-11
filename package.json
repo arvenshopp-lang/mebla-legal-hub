@@ -28,7 +28,8 @@
     "cron:guardrails": "bun scripts/cron-auth-guardrails.ts",
     "routes:guardrails": "bun scripts/diagnostic-routes-guardrails.ts",
     "documents:integrity": "bun scripts/documents-integrity-guardrails.ts",
-    "documents:formats": "bun scripts/document-formats-guardrails.ts"
+    "documents:formats": "bun scripts/document-formats-guardrails.ts",
+    "e2e:gate": "bun scripts/e2e-gate-guardrails.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
