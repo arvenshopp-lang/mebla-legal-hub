@@ -4,7 +4,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
-import { resendSignupConfirmation, sendMagicLink } from "@/lib/auth-actions";
+import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
 
