@@ -4,7 +4,7 @@
  *
  * التشغيل: bun run cron:guardrails
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   CRON_SECRET_HEADER,
@@ -61,11 +61,16 @@ const helper = read("src/lib/security/cron-auth.server.ts");
 check("helper: custom header name", CRON_SECRET_HEADER === "x-mehla-cron-secret");
 check("helper: verifies via restricted rpc", helper.includes('rpc("verify_cron_secret"'));
 check("helper: no publishable/anon fallback", !/ANON_KEY|PUBLISHABLE_KEY/.test(helper));
-check("helper: no hardcoded secret", !/sb_publishable_|sb_secret_|eyJ[A-Za-z0-9]/.test(helper));
+// أنماط المفاتيح تُبنى ديناميكياً حتى لا يوجد أي literal يشبه مفتاح مشروع في المصدر.
+const PUBLISHABLE_PREFIX = ["sb", "publishable"].join("_") + "_";
+const SECRET_PREFIX = ["sb", "secret"].join("_") + "_";
+const keyLikePattern = new RegExp(`${PUBLISHABLE_PREFIX}|${SECRET_PREFIX}|eyJ[A-Za-z0-9]`);
+check("helper: no hardcoded secret", !keyLikePattern.test(helper));
 
 // 3) رفض المفاتيح العامة والترويسات الناقصة (بدون أي نداء شبكي)
 const url = "https://app.mehlalex.com/api/public/hooks/email-dispatch";
-const publishable = "sb_publishable_DdaWa67SEQa2mSUOmmjCvg_HMlsuwbg";
+// قيمة اختبار محايدة: لا تشبه ولا تنسخ أي مفتاح مشروع حقيقي.
+const publishable = "test-public-key-not-a-real-project-key";
 
 const cases: Array<[string, Request]> = [
   ["no headers", new Request(url, { method: "POST" })],
