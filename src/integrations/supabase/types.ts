@@ -9359,12 +9359,37 @@ export type Database = {
           permission: string
         }[]
       }
+      my_profile: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          job_title: string
+          mfa_status: string
+          phone: string
+          phone_verification_status: string
+          phone_verified_at: string
+          updated_at: string
+        }[]
+      }
       my_subscription_overview: {
         Args: { _organization_id: string }
         Returns: Json
       }
       next_financial_number: { Args: { _kind: string }; Returns: string }
       normalize_ar: { Args: { _input: string }; Returns: string }
+      org_team_contacts: {
+        Args: { _organization_id: string }
+        Returns: {
+          email: string
+          phone: string
+          user_id: string
+        }[]
+      }
       print_copy_number: {
         Args: {
           _document_id: string

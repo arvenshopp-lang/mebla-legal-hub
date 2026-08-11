@@ -7,6 +7,7 @@ import { Download, Star } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
 import { replyToTicket } from "@/lib/admin.functions";
+import { getPlatformUserContacts } from "@/lib/admin-users.functions";
 import {
   TICKET_CATEGORY_LABELS,
   TICKET_PRIORITY_LABELS,
@@ -104,12 +105,9 @@ function SupportPage() {
       const ids = Array.from(
         new Set((tickets ?? []).map((t) => t.user_id).filter((id): id is string => !!id)),
       );
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", ids);
-      if (error) throw error;
-      return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
+      if (ids.length === 0) return {};
+      const rows = await getPlatformUserContacts({ data: { userIds: ids } });
+      return Object.fromEntries(rows.map((p) => [p.id, p]));
     },
   });
 
@@ -262,13 +260,9 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
       ]);
       if (ticket.error) throw ticket.error;
       if (messages.error) throw messages.error;
-      const { data: requester } = ticket.data.user_id
-        ? await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", ticket.data.user_id)
-            .maybeSingle()
-        : { data: null };
+      const requester = ticket.data.user_id
+        ? ((await getPlatformUserContacts({ data: { userIds: [ticket.data.user_id] } }))[0] ?? null)
+        : null;
       return { ticket: ticket.data, messages: messages.data ?? [], requester };
     },
   });

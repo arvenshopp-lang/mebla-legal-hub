@@ -110,11 +110,31 @@ function Page() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_members")
-        .select("*, profile:profiles(full_name, email, phone, job_title, avatar_url)")
+        .select("*, profile:profiles(full_name, job_title, avatar_url)")
         .eq("organization_id", activeOrgId!)
         .order("joined_at");
       if (error) throw error;
-      return data ?? [];
+      const rows = (data ?? []) as MemberRow[];
+      // بيانات التواصل تُمنح لمالك/مدير المكتب فقط عبر دالة خادمية مقيّدة.
+      if (!canManage(activeRole)) return rows;
+      const { data: contacts } = await supabase.rpc("org_team_contacts", {
+        _organization_id: activeOrgId!,
+      });
+      const byUser = new Map(
+        ((contacts ?? []) as { user_id: string; email: string | null; phone: string | null }[]).map(
+          (c) => [c.user_id, c],
+        ),
+      );
+      return rows.map((m) => ({
+        ...m,
+        profile: m.profile
+          ? {
+              ...m.profile,
+              email: byUser.get(m.user_id)?.email ?? null,
+              phone: byUser.get(m.user_id)?.phone ?? null,
+            }
+          : null,
+      }));
     },
   });
 

@@ -64,9 +64,7 @@ export const openPrintEvent = createServerFn({ method: "POST" })
 
     const [{ data: profile }, { data: org }, { data: copyNumber }] = await Promise.all([
       context.supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("id", context.userId)
+        .rpc("my_profile")
         .maybeSingle(),
       context.supabase
         .from("organizations")

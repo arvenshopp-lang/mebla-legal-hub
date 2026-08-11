@@ -77,6 +77,31 @@ export const listPlatformUsers = createServerFn({ method: "POST" })
 
 /* ------------------------------------------------------------- الحالة والحذف */
 
+const contactsSchema = z.object({
+  userIds: z.array(z.string().uuid()).min(1).max(200),
+});
+
+export type PlatformUserContact = { id: string; full_name: string | null; email: string | null };
+
+/**
+ * بيانات تواصل مستخدمين محددين لفريق المنصة فقط.
+ * بيانات التواصل غير مقروءة من الواجهة مباشرة (صلاحيات أعمدة على profiles)،
+ * فتُقرأ هنا بعد تحقق صلاحية users.read وتُقيَّد بالمعرّفات المطلوبة فقط.
+ */
+export const getPlatformUserContacts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => contactsSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const g = await import("@/lib/admin-guard.server");
+    await g.requireStaff(context.supabase, context.userId, "users.read");
+    const db = await g.admin();
+    const { data: rows } = await db
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", data.userIds);
+    return (rows ?? []) as PlatformUserContact[];
+  });
+
 const toggleSchema = z.object({
   userId: z.string().uuid(),
   active: z.boolean(),
