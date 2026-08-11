@@ -140,7 +140,10 @@ const intakeSrv = readFileSync("src/lib/documents/intake.server.ts", "utf8");
 const portalFns = readFileSync("src/lib/client-portal.functions.ts", "utf8");
 const e2e = readFileSync("scripts/e2e/documents_security.e2e.ts", "utf8");
 
-check("الإنهاء يتحقق من انتماء القضية/العميل للمكتب", intakeFns.includes("assertCaseAndClientInOrg"));
+check(
+  "الإنهاء يتحقق من انتماء القضية/العميل للمكتب",
+  intakeFns.includes("assertCaseAndClientInOrg"),
+);
 check("الإنهاء يمنع إعادة استخدام المسار", intakeFns.includes("assertPathNotLinked"));
 check("بوابة العميل تمنع إعادة استخدام المسار", portalFns.includes("assertPathNotLinked"));
 check(
