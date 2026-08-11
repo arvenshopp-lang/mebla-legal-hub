@@ -253,9 +253,11 @@ const latestTrigger = definingMigrations.length
   : "";
 
 check("trigger: latest definition found", latestTrigger.length > 0);
+// نتجاهل تعليقات SQL حتى يبقى الفحص على الكود التنفيذي فقط
+const latestTriggerCode = latestTrigger.replace(/--[^\n]*/g, "");
 check(
   "trigger: no current_user privilege bypass",
-  !/current_user/i.test(latestTrigger),
+  !/current_user/i.test(latestTriggerCode),
   "current_user يساوي مالك الدالة داخل SECURITY DEFINER",
 );
 check(
