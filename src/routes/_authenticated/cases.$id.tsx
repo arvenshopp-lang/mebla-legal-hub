@@ -94,6 +94,20 @@ function Page() {
     },
   });
 
+  // الملاحظات الداخلية في سجل مستقل: يقرأه المالك والمدير والمحامي فقط (RLS).
+  const { data: internalNotes } = useQuery({
+    queryKey: ["case-internal-notes", id],
+    enabled: !!activeOrgId && !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_internal_notes")
+        .select("notes")
+        .eq("case_id", id)
+        .maybeSingle();
+      return data?.notes ?? null;
+    },
+  });
+
   const { data: members } = useQuery({
     queryKey: ["members-basic", activeOrgId],
     enabled: !!activeOrgId,
