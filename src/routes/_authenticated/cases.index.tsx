@@ -546,6 +546,23 @@ export function CaseDialog({
       return toast.error("تعذّر الحفظ", {
         description: describeMutationError(result.error.message),
       });
+    if (result.data) {
+      // كتابة/حذف الملاحظة الداخلية بعد نجاح حفظ القضية، بصلاحية الدور نفسها.
+      if (internalNotes) {
+        await supabase.from("case_internal_notes").upsert(
+          {
+            case_id: result.data.id,
+            organization_id: activeOrgId!,
+            notes: internalNotes,
+            updated_by: user?.id ?? null,
+          },
+          { onConflict: "case_id" },
+        );
+      } else if (editing) {
+        await supabase.from("case_internal_notes").delete().eq("case_id", result.data.id);
+      }
+      qc.invalidateQueries({ queryKey: ["case-internal-notes"] });
+    }
     toast.success(editing ? "تم التحديث" : "تم إنشاء القضية");
     if (!editing) {
       // «أول قضية» تُقاس من الخادم بعد نجاح الإنشاء فعلياً
