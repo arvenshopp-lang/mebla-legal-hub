@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS documents_file_path_key ON public.documents (file_path);
