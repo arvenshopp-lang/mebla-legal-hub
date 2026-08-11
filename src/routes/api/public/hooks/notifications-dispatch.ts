@@ -1,9 +1,10 @@
 /**
  * مسار دوري لمحرك الإشعارات: إعادة العالقين → تحويل الأحداث إلى طابور → الإرسال.
- * عام بحكم البادئة، لذا التحقق هنا بمفتاح المشروع العام بمقارنة ثابتة الزمن،
+ * عام بحكم البادئة، لذا التحقق هنا بسر التشغيل الخاص بمقارنة ثابتة الزمن،
  * ولا تُعاد أي بيانات مستلمين — عدّادات فقط.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { guardCronRequest } from "@/lib/security/cron-auth.server";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -12,29 +13,12 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length || a.length === 0) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 export const Route = createFileRoute("/api/public/hooks/notifications-dispatch")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expected = (
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-          process.env["SUPABASE_ANON_KEY"] ??
-          ""
-        ).trim();
-        const provided = (
-          request.headers.get("apikey") ??
-          request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-          ""
-        ).trim();
-        if (!expected || !safeEqual(provided, expected))
-          return json({ error: "unauthorized" }, 401);
+        const denied = await guardCronRequest(request);
+        if (denied) return denied;
 
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
