@@ -209,7 +209,7 @@ async function main() {
   const caseRes = await adminFetch(`${SUPABASE_URL}/rest/v1/cases`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
-    body: JSON.stringify({ organization_id: org, client_id: clientId, case_title: "QA قضية الاختبار", status: "active" }),
+    body: JSON.stringify({ organization_id: org, client_id: clientId, case_title: "QA قضية الاختبار", status: "open" }),
   });
   const caseBody = (await caseRes.json()) as { id?: string }[] | { message?: string };
   const caseId = Array.isArray(caseBody) ? (caseBody[0]?.id ?? null) : null;
