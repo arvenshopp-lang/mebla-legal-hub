@@ -261,9 +261,7 @@ function TicketDrawer({ ticketId, onClose }: { ticketId: string | null; onClose:
       if (ticket.error) throw ticket.error;
       if (messages.error) throw messages.error;
       const requester = ticket.data.user_id
-        ? ((
-            await getPlatformUserContacts({ data: { userIds: [ticket.data.user_id] } })
-          )[0] ?? null)
+        ? ((await getPlatformUserContacts({ data: { userIds: [ticket.data.user_id] } }))[0] ?? null)
         : null;
       return { ticket: ticket.data, messages: messages.data ?? [], requester };
     },
