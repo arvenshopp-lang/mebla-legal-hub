@@ -200,12 +200,27 @@ async function main() {
   const rawToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
   const tokenHash = Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const clientRes = await adminFetch(`${SUPABASE_URL}/rest/v1/clients`, {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=representation" },
+    body: JSON.stringify({ organization_id: org, full_name: "QA عميل الاختبار", client_type: "individual" }),
+  });
+  const clientId = ((await clientRes.json()) as { id?: string }[])[0]?.id ?? null;
+  const caseRes = await adminFetch(`${SUPABASE_URL}/rest/v1/cases`, {
+    method: "POST",
+    headers: { ...adminHeaders, Prefer: "return=representation" },
+    body: JSON.stringify({ organization_id: org, client_id: clientId, title: "QA قضية الاختبار", status: "active" }),
+  });
+  const caseId = ((await caseRes.json()) as { id?: string }[])[0]?.id ?? null;
+  check("تهيئة قضية QA لطلب الرفع", !!caseId, JSON.stringify(await caseRes.status).slice(0, 80));
   const reqRes = await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
     body: JSON.stringify({
       organization_id: org,
+      case_id: caseId,
       title: "QA طلب رفع",
+      requested_items: [],
       token_hash: tokenHash,
       status: "active",
       expires_at: new Date(Date.now() + 3_600_000).toISOString(),
@@ -244,6 +259,10 @@ async function main() {
       check("رفع صالح من بوابة العميل ينجح", submit.ok, submit.message);
     }
     await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests?id=eq.${requestId}`, { method: "DELETE" });
+  }
+  if (caseId) {
+    await adminFetch(`${SUPABASE_URL}/rest/v1/documents?case_id=eq.${caseId}`, { method: "DELETE" });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/cases?id=eq.${caseId}`, { method: "DELETE" });
   }
 
   console.log(`\nالنتيجة: ${pass} PASS — ${failures.length} FAIL`);
