@@ -21,14 +21,13 @@ export const EXTENSION_MIME: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
   heic: "image/heic",
+  heif: "image/heif",
   txt: "text/plain",
   csv: "text/csv",
 };
 
 /** قائمة MIME المسموح بها على مستوى المخزن (مطابقة للامتدادات أعلاه). */
-export const ALLOWED_BUCKET_MIME = [
-  ...new Set([...Object.values(EXTENSION_MIME), "image/heif"]),
-].sort();
+export const ALLOWED_BUCKET_MIME = [...new Set(Object.values(EXTENSION_MIME))].sort();
 
 /**
  * النوع المعياري من الامتداد. بعض المتصفحات (خاصة على iOS) ترسل MIME فارغاً أو
@@ -49,6 +48,87 @@ function ascii(bytes: Uint8Array, start: number, length: number): string {
 }
 
 const HEIF_BRANDS = ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "heis", "avif"];
+
+/* ------------------------------ OOXML (ZIP) ------------------------------ *
+ * أول أربعة بايتات PK تعني «أرشيف ZIP» فقط، وليست إثباتاً على مستند Office.
+ * لذلك نقرأ فهرس الأرشيف ونطلب الأجزاء الداخلية المطابقة للامتداد المُعلن،
+ * فيُرفض أي ZIP عشوائي أو متنكر (مثل ملف مضغوط يحوي تنفيذياً).
+ * ------------------------------------------------------------------------ */
+
+/** الجزء الداخلي الإلزامي لكل عائلة OOXML. */
+const OOXML_REQUIRED_PART: Record<string, string> = {
+  docx: "word/document.xml",
+  doc: "word/document.xml",
+  xlsx: "xl/workbook.xml",
+  xls: "xl/workbook.xml",
+  pptx: "ppt/presentation.xml",
+  ppt: "ppt/presentation.xml",
+};
+
+function u16(bytes: Uint8Array, at: number): number {
+  return (bytes[at] ?? 0) | ((bytes[at + 1] ?? 0) << 8);
+}
+
+function u32(bytes: Uint8Array, at: number): number {
+  return (
+    ((bytes[at] ?? 0) |
+      ((bytes[at + 1] ?? 0) << 8) |
+      ((bytes[at + 2] ?? 0) << 16) |
+      ((bytes[at + 3] ?? 0) << 24)) >>>
+    0
+  );
+}
+
+/**
+ * أسماء المدخلات داخل أرشيف ZIP، من الفهرس المركزي (Central Directory) عند
+ * توفره، وإلا من ترويسات المدخلات المحلية. دالة قراءة فقط بلا فك ضغط.
+ */
+export function zipEntryNames(bytes: Uint8Array, limit = 400): string[] {
+  const names: string[] = [];
+  // البحث عن ترويسة نهاية الفهرس المركزي من آخر الملف (التعليق ≤ 65535).
+  const min = Math.max(0, bytes.byteLength - (22 + 65535));
+  let eocd = -1;
+  for (let i = bytes.byteLength - 22; i >= min; i -= 1) {
+    if (u32(bytes, i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd >= 0) {
+    const count = u16(bytes, eocd + 10);
+    let at = u32(bytes, eocd + 16);
+    for (let n = 0; n < Math.min(count, limit); n += 1) {
+      if (at + 46 > bytes.byteLength || u32(bytes, at) !== 0x02014b50) break;
+      const nameLen = u16(bytes, at + 28);
+      names.push(ascii(bytes, at + 46, nameLen));
+      at += 46 + nameLen + u16(bytes, at + 30) + u16(bytes, at + 32);
+    }
+    if (names.length) return names;
+  }
+  // احتياط: مسح ترويسات المدخلات المحلية عند تلف/غياب الفهرس المركزي.
+  for (let at = 0; at + 30 <= bytes.byteLength && names.length < limit; ) {
+    if (u32(bytes, at) !== 0x04034b50) break;
+    const nameLen = u16(bytes, at + 26);
+    names.push(ascii(bytes, at + 30, nameLen));
+    const compressed = u32(bytes, at + 18);
+    if (compressed === 0 || compressed === 0xffffffff) break; // Data Descriptor / ZIP64
+    at += 30 + nameLen + u16(bytes, at + 28) + compressed;
+  }
+  return names;
+}
+
+function isZip(bytes: Uint8Array): boolean {
+  return startsWith(bytes, [0x50, 0x4b, 0x03, 0x04]);
+}
+
+/** بنية OOXML الداخلية تطابق الامتداد المُعلن؟ (يعمل في المتصفح والخادم معاً) */
+export function isOoxmlForExtension(bytes: Uint8Array, ext: string): boolean {
+  const required = OOXML_REQUIRED_PART[ext];
+  if (!required || !isZip(bytes)) return false;
+  const names = zipEntryNames(bytes).map((n) => n.replace(/^\/+/, "").toLowerCase());
+  if (!names.includes("[content_types].xml")) return false;
+  return names.includes(required);
+}
 
 /** يرفض الصفحات والبيانات النصية المتنكرة في هيئة مستند. */
 export function looksLikeMarkupOrJson(bytes: Uint8Array): boolean {
@@ -79,20 +159,21 @@ export function signatureMatchesExtension(bytes: Uint8Array, ext: string): boole
     case "webp":
       return ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP";
     case "heic":
+    case "heif":
       return (
         ascii(bytes, 4, 4) === "ftyp" && HEIF_BRANDS.includes(ascii(bytes, 8, 4).toLowerCase())
       );
     case "docx":
     case "xlsx":
     case "pptx":
-      return startsWith(bytes, [0x50, 0x4b, 0x03, 0x04]);
+      return isOoxmlForExtension(bytes, ext);
     case "doc":
     case "xls":
     case "ppt":
-      // OLE2 القديم، أو ملف Office حديث أُعطي امتداداً قديماً.
+      // OLE2 القديم، أو مستند OOXML من نفس العائلة أُعطي امتداداً قديماً.
       return (
         startsWith(bytes, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]) ||
-        startsWith(bytes, [0x50, 0x4b, 0x03, 0x04])
+        isOoxmlForExtension(bytes, ext)
       );
     case "txt":
     case "csv":
