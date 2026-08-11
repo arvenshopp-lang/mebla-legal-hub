@@ -429,7 +429,10 @@ export function CaseDialog({
   members: { id: string; name: string }[];
   onCreated?: (c: Tables<"cases">) => void;
 }) {
-  const { activeOrgId, user } = useAuth();
+  const { activeOrgId, user, activeRole } = useAuth();
+  // الملاحظات الداخلية: المالك والمدير والمحامي فقط (مطابق لسياسات RLS).
+  const canSeeInternalNotes =
+    activeRole === "owner" || activeRole === "admin" || activeRole === "lawyer";
   const qc = useQueryClient();
   const [form, setForm] = useState<Partial<CaseForm>>({});
   const draft = useDialogDraft<CaseForm>({
@@ -471,7 +474,7 @@ export function CaseDialog({
   // الملاحظات الداخلية محفوظة في سجل مستقل مقيّد بالدور، وتُحمّل للتعديل فقط.
   const { data: existingNotes } = useQuery({
     queryKey: ["case-internal-notes", editing?.id],
-    enabled: open && !!editing?.id,
+    enabled: open && !!editing?.id && canSeeInternalNotes,
     queryFn: async () => {
       const { data } = await supabase
         .from("case_internal_notes")
@@ -548,7 +551,9 @@ export function CaseDialog({
       });
     if (result.data) {
       // كتابة/حذف الملاحظة الداخلية بعد نجاح حفظ القضية، بصلاحية الدور نفسها.
-      if (internalNotes) {
+      if (!canSeeInternalNotes) {
+        // لا شيء: هذا الدور لا يملك صلاحية الملاحظات الداخلية.
+      } else if (internalNotes) {
         await supabase.from("case_internal_notes").upsert(
           {
             case_id: result.data.id,
@@ -743,16 +748,18 @@ export function CaseDialog({
             />
           </FormField>
         </div>
-        <div className="md:col-span-2">
-          <FormField label="ملاحظات داخلية">
-            <textarea
-              rows={2}
-              value={form.internal_notes ?? ""}
-              onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
-              className={inputCls}
-            />
-          </FormField>
-        </div>
+        {canSeeInternalNotes && (
+          <div className="md:col-span-2">
+            <FormField label="ملاحظات داخلية">
+              <textarea
+                rows={2}
+                value={form.internal_notes ?? ""}
+                onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
+                className={inputCls}
+              />
+            </FormField>
+          </div>
+        )}
       </div>
       <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
         <div className="me-auto">
