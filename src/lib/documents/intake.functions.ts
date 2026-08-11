@@ -68,7 +68,10 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     });
     await assertPathNotLinked(verified.path);
 
-    const { data: inserted, error } = await context.supabase
+    // الإدراج بمفتاح الخدمة حصراً: جدول documents لا يقبل INSERT من المتصفح،
+    // والصلاحية والملكية والبايتات تم التحقق منها أعلاه عبر عميل المستخدم.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserted, error } = await supabaseAdmin
       .from("documents")
       .insert({
         organization_id: data.organizationId,
