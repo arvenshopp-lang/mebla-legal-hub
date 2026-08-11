@@ -35,18 +35,42 @@ for await (const rel of migrations.scan({ cwd: ROOT })) {
   if (sql.includes("documents_enforce_integrity")) hardening += `\n${sql}`;
 }
 check("migration: documents hardening present", hardening.length > 0);
-check("migration: drops browser INSERT policy", /DROP POLICY IF EXISTS\s+docs_insert/i.test(hardening));
-check("migration: revokes INSERT from authenticated", /REVOKE INSERT ON public\.documents FROM authenticated/i.test(hardening));
-check("migration: enforces org-prefixed file_path", /organization_id::text \|\| '\/'/.test(hardening));
-check("migration: validates case ownership", /public\.cases[\s\S]{0,200}organization_id = NEW\.organization_id/.test(hardening));
-check("migration: validates client ownership", /public\.clients[\s\S]{0,200}organization_id = NEW\.organization_id/.test(hardening));
-for (const col of ["file_path", "file_type", "file_size", "storage_verified_at", "organization_id"]) {
+check(
+  "migration: drops browser INSERT policy",
+  /DROP POLICY IF EXISTS\s+docs_insert/i.test(hardening),
+);
+check(
+  "migration: revokes INSERT from authenticated",
+  /REVOKE INSERT ON public\.documents FROM authenticated/i.test(hardening),
+);
+check(
+  "migration: enforces org-prefixed file_path",
+  /organization_id::text \|\| '\/'/.test(hardening),
+);
+check(
+  "migration: validates case ownership",
+  /public\.cases[\s\S]{0,200}organization_id = NEW\.organization_id/.test(hardening),
+);
+check(
+  "migration: validates client ownership",
+  /public\.clients[\s\S]{0,200}organization_id = NEW\.organization_id/.test(hardening),
+);
+for (const col of [
+  "file_path",
+  "file_type",
+  "file_size",
+  "storage_verified_at",
+  "organization_id",
+]) {
   check(
     `migration: ${col} immutable for authenticated`,
     new RegExp(`NEW\\.${col} IS DISTINCT FROM OLD\\.${col}`).test(hardening),
   );
 }
-check("migration: unique file_path index", /CREATE UNIQUE INDEX IF NOT EXISTS documents_file_path_unique/i.test(hardening));
+check(
+  "migration: unique file_path index",
+  /CREATE UNIQUE INDEX IF NOT EXISTS documents_file_path_unique/i.test(hardening),
+);
 check("migration: fixed search_path", /SET search_path = private, public, pg_temp/.test(hardening));
 check(
   "migration: idempotent statements only",
@@ -62,7 +86,9 @@ for (const rel of sources) {
   if (rel.endsWith("routeTree.gen.ts")) continue;
   const src = read(rel);
   const userClientInsert =
-    /(context\.supabase|\bsupabase)\s*\n?\s*\.from\(\s*"documents"\s*\)\s*\n?\s*\.insert/m.test(src);
+    /(context\.supabase|\bsupabase)\s*\n?\s*\.from\(\s*"documents"\s*\)\s*\n?\s*\.insert/m.test(
+      src,
+    );
   check(`source: ${rel} has no browser/user-client document insert`, !userClientInsert);
 }
 
@@ -72,7 +98,10 @@ check("finalize: requires write role", finalize.includes("requireDocumentWriteRo
 check("finalize: verifies uploaded bytes", finalize.includes("verifyUploadedObject"));
 check("finalize: blocks cross-org links", finalize.includes("assertCaseAndClientInOrg"));
 check("finalize: blocks path replay", finalize.includes("assertPathNotLinked"));
-check("finalize: inserts with service admin", /supabaseAdmin\s*\n?\s*\.from\("documents"\)\s*\n?\s*\.insert/m.test(finalize));
+check(
+  "finalize: inserts with service admin",
+  /supabaseAdmin\s*\n?\s*\.from\("documents"\)\s*\n?\s*\.insert/m.test(finalize),
+);
 check(
   "finalize: role check precedes insert",
   finalize.indexOf("requireDocumentWriteRole(") < finalize.indexOf('.from("documents")'),
@@ -80,8 +109,14 @@ check(
 
 // 4) الرفض الدفاعي في secure-view قبل أي رابط موقّع
 const secure = read("src/lib/secure-view/secure-view.server.ts");
-check("secure-view: exports path assertion", secure.includes("export function assertOrgScopedStoragePath"));
-check("secure-view: guards loadDocumentForStamp", /assertOrgScopedStoragePath\(data\.file_path, data\.organization_id\)/.test(secure));
+check(
+  "secure-view: exports path assertion",
+  secure.includes("export function assertOrgScopedStoragePath"),
+);
+check(
+  "secure-view: guards loadDocumentForStamp",
+  /assertOrgScopedStoragePath\(data\.file_path, data\.organization_id\)/.test(secure),
+);
 check(
   "secure-view: guard runs before createSignedUrl",
   secure.indexOf("if (options.organizationId) assertOrgScopedStoragePath") <
@@ -112,7 +147,10 @@ for (const [label, path] of rejected) {
   }
   check(`guard rejects: ${label}`, threw);
 }
-check("guard accepts owned path", assertOrgScopedStoragePath(`${org}/file.pdf`, org) === `${org}/file.pdf`);
+check(
+  "guard accepts owned path",
+  assertOrgScopedStoragePath(`${org}/file.pdf`, org) === `${org}/file.pdf`,
+);
 
 console.log(`\nPASS = ${pass} / FAIL = ${fail}`);
 if (fail > 0) process.exit(1);
