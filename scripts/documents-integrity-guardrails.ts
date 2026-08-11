@@ -242,5 +242,59 @@ check(
   assertOrgScopedStoragePath(`${org}/file.pdf`, org) === `${org}/file.pdf`,
 );
 
+// 6) أحدث تعريف للتريجر: لا تجاوز صلاحيات عبر current_user، والهوية من دور الطلب
+const definingMigrations: string[] = [];
+for await (const rel of new Bun.Glob("supabase/migrations/*.sql").scan({ cwd: ROOT })) {
+  if (read(rel).includes("FUNCTION private.documents_enforce_integrity")) definingMigrations.push(rel);
+}
+definingMigrations.sort();
+const latestTrigger = definingMigrations.length
+  ? read(definingMigrations[definingMigrations.length - 1]!)
+  : "";
+
+check("trigger: latest definition found", latestTrigger.length > 0);
+check(
+  "trigger: no current_user privilege bypass",
+  !/current_user/i.test(latestTrigger),
+  "current_user يساوي مالك الدالة داخل SECURITY DEFINER",
+);
+check(
+  "trigger: caller role derived from request jwt",
+  /current_setting\(\s*'request\.jwt\.claim\.role'\s*,\s*true\s*\)/.test(latestTrigger) &&
+    /current_setting\(\s*'request\.jwt\.claims'\s*,\s*true\s*\)/.test(latestTrigger),
+);
+check(
+  "trigger: only service_role counts as trusted",
+  /v_is_service_role\s*:=\s*v_request_role\s*=\s*'service_role'/.test(latestTrigger) &&
+    /v_is_privileged\s*:=\s*v_is_service_role/.test(latestTrigger),
+);
+check(
+  "trigger: authenticated/anon never privileged",
+  !/v_request_role\s*(=|IN)\s*\(?\s*'(authenticated|anon)'/i.test(latestTrigger),
+);
+check(
+  "trigger: admin fallback requires absent request context and session_user",
+  /NOT v_has_request_context AND session_user IN \('postgres', 'supabase_admin'\)/.test(
+    latestTrigger,
+  ),
+);
+check(
+  "trigger: storage fields immutable for non-privileged callers",
+  /TG_OP = 'UPDATE' AND NOT v_is_privileged/.test(latestTrigger) &&
+    ["file_path", "file_type", "file_size", "storage_verified_at", "organization_id"].every((col) =>
+      new RegExp(`NEW\\.${col} IS DISTINCT FROM OLD\\.${col}`).test(latestTrigger),
+    ),
+);
+check(
+  "trigger: security definer with fixed search_path",
+  /SECURITY DEFINER/.test(latestTrigger) &&
+    /SET search_path = private, public, pg_temp/.test(latestTrigger),
+);
+check(
+  "trigger: idempotent redefinition",
+  /CREATE OR REPLACE FUNCTION private\.documents_enforce_integrity/.test(latestTrigger) &&
+    /DROP TRIGGER IF EXISTS documents_enforce_integrity/.test(latestTrigger),
+);
+
 console.log(`\nPASS = ${pass} / FAIL = ${fail}`);
 if (fail > 0) process.exit(1);
