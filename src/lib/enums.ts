@@ -81,37 +81,11 @@ export const INVITATION_STATUS: Record<string, string> = {
 export const asOptions = (r: Record<string, string>) =>
   Object.entries(r).map(([value, label]) => ({ value, label }));
 
-// التقويم الميلادي (Gregorian) بأرقام لاتينية موحّدة في كل المنصة
-const DATE_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
+// التقويم الميلادي بأرقام إنجليزية — الصيغة الموحّدة في src/lib/format.ts
+export { fmtDate, fmtDateTime, fmtSize, fmtNumber, fmtMoney } from "./format";
 
-export function fmtDate(v?: string | null) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleDateString(DATE_LOCALE, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "—";
-  }
-}
-export function fmtDateTime(v?: string | null) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleString(DATE_LOCALE, { dateStyle: "medium", timeStyle: "short" });
-  } catch {
-    return "—";
-  }
-}
 export function daysUntil(v?: string | null): number | null {
   if (!v) return null;
   const ms = new Date(v).getTime() - Date.now();
   return Math.round(ms / 86400000);
-}
-export function fmtSize(bytes?: number | null) {
-  if (!bytes) return "—";
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(0)} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
 }

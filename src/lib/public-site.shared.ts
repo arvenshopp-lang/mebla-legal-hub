@@ -135,7 +135,7 @@ export function activeSocialLinks(info: PublicSiteInfo): Array<{ label: string; 
     .map((item) => ({ label: item.label, href: item.href }));
 }
 
-const AR_DATE = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
+const AR_DATE = new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
   day: "numeric",
   month: "long",
   year: "numeric",

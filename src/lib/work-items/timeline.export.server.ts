@@ -13,7 +13,7 @@ export type TimelineExportMeta = {
 const RIYADH = "Asia/Riyadh";
 
 const fmtDateTime = (iso: string) =>
-  new Intl.DateTimeFormat("ar-SA", {
+  new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
     timeZone: RIYADH,
     dateStyle: "medium",
     timeStyle: "short",
@@ -22,7 +22,7 @@ const fmtDateTime = (iso: string) =>
 
 const fmtDate = (iso: string | null) =>
   iso
-    ? new Intl.DateTimeFormat("ar-SA", {
+    ? new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
         timeZone: RIYADH,
         dateStyle: "medium",
         numberingSystem: "latn",

@@ -562,12 +562,15 @@ export function FormField({
   hint,
   error,
   required,
+  optional,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
   error?: string;
   required?: boolean;
+  /** يُظهر «(اختياري)» بجانب العنوان — لتمييز الحقول غير الإلزامية بوضوح. */
+  optional?: boolean;
 }) {
   return (
     <label className="block">
@@ -578,6 +581,9 @@ export function FormField({
             {" "}
             *
           </span>
+        )}
+        {!required && optional && (
+          <span className="font-normal text-text-muted"> (اختياري)</span>
         )}
       </span>
       {children}

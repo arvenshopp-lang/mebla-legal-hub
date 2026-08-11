@@ -6,6 +6,7 @@
  * `admin_jobs_overview`). لا يوجد أي رقم ثابت أو بيانات تجريبية، ولا يُشتق تنبيه
  * بلا إجراء واضح يمكن للمالك تنفيذه.
  */
+import { fmtNumber } from "@/lib/format";
 import type { PlatformMetrics } from "@/lib/admin-metrics.shared";
 import type { ActivityOverview, JobsOverview, ServiceHealth } from "@/lib/admin-console.shared";
 
@@ -30,7 +31,7 @@ export type CommandCenterInput = {
 };
 
 const n = (v: number | null | undefined) => Number(v ?? 0);
-const ar = (v: number | null | undefined) => new Intl.NumberFormat("ar-SA").format(n(v));
+const ar = (v: number | null | undefined) => fmtNumber(n(v));
 
 const SEVERITY_WEIGHT: Record<AlertSeverity, number> = { critical: 0, warning: 1, info: 2 };
 

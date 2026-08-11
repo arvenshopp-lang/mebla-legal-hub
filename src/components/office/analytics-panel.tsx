@@ -5,6 +5,7 @@ import { ErrorBlock, LoadingBlock, inputCls } from "@/lib/list-utils";
 import { OFFICE_EVENT_LABELS, type OfficeEventKind } from "@/lib/office-page.shared";
 import { getOfficePageAnalytics } from "@/lib/office-page.functions";
 import { errMsg } from "@/lib/errors";
+import { fmtNumber } from "@/lib/format";
 
 const CHANNEL_LABELS: Record<string, string> = {
   direct: "زيارة مباشرة",
@@ -53,9 +54,7 @@ export function OfficeAnalyticsPanel({ organizationId }: { organizationId: strin
         {(Object.keys(OFFICE_EVENT_LABELS) as OfficeEventKind[]).map((kind) => (
           <div key={kind} className="surface-card p-4">
             <p className="text-caption text-muted-foreground">{OFFICE_EVENT_LABELS[kind]}</p>
-            <p className="mt-1 text-2xl font-bold">
-              {(data.totals[kind] ?? 0).toLocaleString("ar-SA")}
-            </p>
+            <p className="mt-1 text-2xl font-bold">{fmtNumber(data.totals[kind] ?? 0)}</p>
           </div>
         ))}
         <div className="surface-card p-4">
@@ -64,11 +63,11 @@ export function OfficeAnalyticsPanel({ organizationId }: { organizationId: strin
         </div>
         <div className="surface-card p-4">
           <p className="text-caption text-muted-foreground">إجمالي الطلبات (كل الفترات)</p>
-          <p className="mt-1 text-2xl font-bold">{data.leadsTotal.toLocaleString("ar-SA")}</p>
+          <p className="mt-1 text-2xl font-bold">{fmtNumber(data.leadsTotal)}</p>
         </div>
         <div className="surface-card p-4">
           <p className="text-caption text-muted-foreground">طلبات تحوّلت إلى عملاء</p>
-          <p className="mt-1 text-2xl font-bold">{data.convertedTotal.toLocaleString("ar-SA")}</p>
+          <p className="mt-1 text-2xl font-bold">{fmtNumber(data.convertedTotal)}</p>
         </div>
       </div>
 
@@ -107,7 +106,7 @@ export function OfficeAnalyticsPanel({ organizationId }: { organizationId: strin
             {data.byChannel.map((row) => (
               <li key={row.channel} className="flex items-center justify-between gap-3">
                 <span>{CHANNEL_LABELS[row.channel] ?? row.channel}</span>
-                <span className="font-semibold">{row.count.toLocaleString("ar-SA")}</span>
+                <span className="font-semibold">{fmtNumber(row.count)}</span>
               </li>
             ))}
           </ul>

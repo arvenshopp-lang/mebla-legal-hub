@@ -12,6 +12,7 @@ import {
   Th,
 } from "@/lib/list-utils";
 import { getRevenueSummary } from "@/lib/admin.functions";
+import { fmtMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/mehla-admin/revenue")({
   head: () => ({
@@ -23,8 +24,7 @@ export const Route = createFileRoute("/mehla-admin/revenue")({
   component: RevenuePage,
 });
 
-const money = (n: number) =>
-  `${Number(n ?? 0).toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س`;
+const money = (n: number) => fmtMoney(Number(n ?? 0));
 const MONTHS = [
   "يناير",
   "فبراير",

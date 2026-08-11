@@ -10,6 +10,7 @@
  * - المستند يُقفل (locked=true) فور القبول ولا تُعدَّل بنوده بعدها.
  */
 import { writeAudit, type StaffRow } from "@/lib/admin-guard.server";
+import { fmtDecimal } from "@/lib/format";
 import {
   APPROVAL_DISCOUNT_PERCENT_THRESHOLD,
   computeSalesDocTotals,
@@ -466,11 +467,7 @@ export async function sendDocument(
         null,
         message || "مرفق تفاصيل المستند، يسعدنا استلام ردكم في أقرب وقت.",
       ),
-      React.createElement(
-        "p",
-        null,
-        `الإجمالي: ${Number(doc.total).toLocaleString("en-US")} ${doc.currency}`,
-      ),
+      React.createElement("p", null, `الإجمالي: ${fmtDecimal(Number(doc.total))} ${doc.currency}`),
     );
     await sendAppEmail({
       to: toEmail,

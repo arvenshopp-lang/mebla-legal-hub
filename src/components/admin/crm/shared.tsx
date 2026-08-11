@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Badge } from "@/lib/list-utils";
 import { exportCrmCsv } from "@/lib/crm.functions";
+import { fmtDecimal } from "@/lib/format";
 import {
   CRM_ACTIVITY_KIND_LABEL,
   CRM_DEAL_STATUS_LABEL,
@@ -52,11 +53,7 @@ export function ActivityKindBadge({ kind }: { kind: CrmActivityKind }) {
 export function Money({ value, currency = "SAR" }: { value: number; currency?: string | null }) {
   return (
     <span className="tabular-nums">
-      {Number(value).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}{" "}
-      {currency || "SAR"}
+      {fmtDecimal(Number(value))} {currency || "SAR"}
     </span>
   );
 }

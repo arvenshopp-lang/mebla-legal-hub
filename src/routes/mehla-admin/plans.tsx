@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtNumber } from "@/lib/format";
 import {
   Badge,
   Btn,
@@ -202,11 +203,11 @@ function PlansPage() {
                 {p.ai_enabled && <Badge tone="gold">ذكاء اصطناعي</Badge>}
               </div>
               <p className="mt-3 text-[20px] font-bold tabular-nums">
-                {Number(p.price_monthly).toLocaleString("ar-SA")}{" "}
+                {fmtNumber(Number(p.price_monthly))}{" "}
                 <span className="text-[12px] font-normal text-muted-foreground">ريال / شهر</span>
               </p>
               <p className="text-[12px] text-muted-foreground">
-                سنوياً: {Number(p.price_yearly).toLocaleString("ar-SA")} ريال
+                سنوياً: {fmtNumber(Number(p.price_yearly))} ريال
               </p>
               <ul className="mt-3 space-y-1 text-[12px] text-muted-foreground">
                 <li>المستخدمون: {p.max_users ?? "بلا حد"}</li>

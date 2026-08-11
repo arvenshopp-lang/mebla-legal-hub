@@ -50,13 +50,15 @@ export interface BillingEventEmailProps {
 }
 
 const money = (value: number, currency: string) =>
-  `${new Intl.NumberFormat("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${
+  `${new Intl.NumberFormat("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${
     currency === "SAR" ? "ر.س" : currency
   }`;
 
 const hijriSafeDate = (value: string | null) =>
   value
-    ? new Intl.DateTimeFormat("ar-SA-u-nu-latn", { dateStyle: "long" }).format(new Date(value))
+    ? new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { dateStyle: "long" }).format(
+        new Date(value),
+      )
     : "—";
 
 function bodyText(props: BillingEventEmailProps): string {

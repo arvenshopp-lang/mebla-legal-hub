@@ -23,6 +23,7 @@ import {
   listMarketingCampaigns,
 } from "@/lib/marketing.functions";
 import type { MarketingConversionEventRow } from "@/lib/marketing.shared";
+import { fmtNumber } from "@/lib/format";
 
 export function ConversionsPanel({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
@@ -75,7 +76,7 @@ export function ConversionsPanel({ canManage }: { canManage: boolean }) {
                     <Td>{e.campaign_name ?? "—"}</Td>
                     <Td>{e.event_key}</Td>
                     <Td>{e.label ?? "—"}</Td>
-                    <Td className="tabular-nums">{e.value_amount.toLocaleString("ar-SA")}</Td>
+                    <Td className="tabular-nums">{fmtNumber(e.value_amount)}</Td>
                     <Td>{e.source ?? "—"}</Td>
                     <Td>{fmtDateTime(e.occurred_at)}</Td>
                   </tr>

@@ -31,6 +31,7 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime, fmtSize } from "@/lib/enums";
+import { fmtDecimal } from "@/lib/format";
 
 export const Route = createFileRoute("/mehla-admin/subscriptions")({
   head: () => ({
@@ -173,7 +174,7 @@ function SubscriptionsPage() {
                     <Td>{String(s.email)}</Td>
                     <Td>{String(s.plan_label)}</Td>
                     <Td className="tabular-nums">
-                      {Number(s.amount).toLocaleString("ar-SA")} {String(s.currency)}
+                      {fmtDecimal(Number(s.amount))} {String(s.currency)}
                     </Td>
                     <Td>{fmtDate(String(s.starts_at))}</Td>
                     <Td>{fmtDate(String(s.ends_at))}</Td>
