@@ -63,9 +63,7 @@ export const openPrintEvent = createServerFn({ method: "POST" })
     const { ip, country, userAgent } = resolveRequestOrigin();
 
     const [{ data: profile }, { data: org }, { data: copyNumber }] = await Promise.all([
-      context.supabase
-        .rpc("my_profile")
-        .maybeSingle(),
+      context.supabase.rpc("my_profile").maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")

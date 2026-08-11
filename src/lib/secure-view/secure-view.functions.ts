@@ -76,9 +76,7 @@ export const requestDocumentAccess = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase
-        .rpc("my_profile")
-        .maybeSingle(),
+      context.supabase.rpc("my_profile").maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")
@@ -178,9 +176,7 @@ export const createDocumentShareLink = createServerFn({ method: "POST" })
     }
 
     const [{ data: profile }, { data: org }] = await Promise.all([
-      context.supabase
-        .rpc("my_profile")
-        .maybeSingle(),
+      context.supabase.rpc("my_profile").maybeSingle(),
       context.supabase
         .from("organizations")
         .select("name")

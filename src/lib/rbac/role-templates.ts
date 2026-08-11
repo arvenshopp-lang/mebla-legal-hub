@@ -316,12 +316,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     tier: "operations",
     summary:
       "تصميم هوية المنصة فقط: قراءة التصميم وتعديل المسودة ومعاينتها وسجل الإصدارات. بلا نشر ولا تراجع ولا أي وصول لبيانات المكاتب أو القضايا أو العملاء أو المال.",
-    permissions: [
-      "design.read",
-      "design.draft.write",
-      "design.preview",
-      "design.history.read",
-    ],
+    permissions: ["design.read", "design.draft.write", "design.preview", "design.history.read"],
   },
   {
     code: "hr_manager",

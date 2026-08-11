@@ -582,9 +582,7 @@ export function FormField({
             *
           </span>
         )}
-        {!required && optional && (
-          <span className="font-normal text-text-muted"> (اختياري)</span>
-        )}
+        {!required && optional && <span className="font-normal text-text-muted"> (اختياري)</span>}
       </span>
       {children}
       {hint && !error && <span className="text-caption mt-1 block">{hint}</span>}
