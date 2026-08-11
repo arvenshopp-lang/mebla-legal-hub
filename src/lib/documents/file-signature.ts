@@ -79,7 +79,9 @@ export function signatureMatchesExtension(bytes: Uint8Array, ext: string): boole
     case "webp":
       return ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP";
     case "heic":
-      return ascii(bytes, 4, 4) === "ftyp" && HEIF_BRANDS.includes(ascii(bytes, 8, 4).toLowerCase());
+      return (
+        ascii(bytes, 4, 4) === "ftyp" && HEIF_BRANDS.includes(ascii(bytes, 8, 4).toLowerCase())
+      );
     case "docx":
     case "xlsx":
     case "pptx":
@@ -114,7 +116,10 @@ export function verifyFileBytes(
   const ext = fileExtension(fileName);
   const mime = normalizedMime(fileName);
   if (!ext || !mime) {
-    return { ok: false, reason: "نوع الملف غير مسموح به. يُسمح بملفات PDF والصور ومستندات Office فقط." };
+    return {
+      ok: false,
+      reason: "نوع الملف غير مسموح به. يُسمح بملفات PDF والصور ومستندات Office فقط.",
+    };
   }
   if (bytes.byteLength === 0) return { ok: false, reason: "الملف فارغ." };
   if (bytes.byteLength > MAX_UPLOAD_SIZE) {

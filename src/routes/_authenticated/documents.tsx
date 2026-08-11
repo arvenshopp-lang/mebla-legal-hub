@@ -8,11 +8,7 @@ import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import { audit } from "@/lib/audit";
-import {
-  validateClientFile,
-  ACCEPT_ATTR,
-  MAX_UPLOAD_SIZE,
-} from "@/lib/client-portal.shared";
+import { validateClientFile, ACCEPT_ATTR, MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
 import {
   PageToolbar,
   EmptyState,
@@ -34,10 +30,7 @@ import {
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  prepareDocumentUpload,
-  finalizeDocumentUpload,
-} from "@/lib/documents/intake.functions";
+import { prepareDocumentUpload, finalizeDocumentUpload } from "@/lib/documents/intake.functions";
 import {
   SecureDocActions,
   SecureDocumentViewer,

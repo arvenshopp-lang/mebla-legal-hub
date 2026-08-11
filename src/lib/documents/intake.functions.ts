@@ -45,9 +45,8 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { sanitizeFileName } = await import("@/lib/client-portal.shared");
-    const { requireDocumentWriteRole, verifyUploadedObject, removeOrphanObject } = await import(
-      "./intake.server"
-    );
+    const { requireDocumentWriteRole, verifyUploadedObject, removeOrphanObject } =
+      await import("./intake.server");
     await requireDocumentWriteRole(context.supabase, context.userId, data.organizationId);
 
     const verified = await verifyUploadedObject({

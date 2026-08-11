@@ -122,9 +122,8 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ip = clientIp();
-    const { verifyUploadedObject, removeOrphanObject } = await import(
-      "@/lib/documents/intake.server"
-    );
+    const { verifyUploadedObject, removeOrphanObject } =
+      await import("@/lib/documents/intake.server");
 
     // لا يُربط أي كائن بسجل مستند قبل تحقق خادمي كامل من المسار والبايتات.
     const verified: { file: (typeof data.files)[number]; mime: string; size: number }[] = [];

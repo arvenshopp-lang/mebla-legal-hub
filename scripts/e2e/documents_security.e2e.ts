@@ -53,12 +53,18 @@ function token(qa: QaOrg, role: string) {
   return acc.token;
 }
 
-async function uploadToSlot(slot: { path: string; uploadToken: string; contentType: string }, bytes: Uint8Array) {
-  return fetch(`${SUPABASE_URL}/storage/v1/object/upload/sign/documents/${slot.path}?token=${slot.uploadToken}`, {
-    method: "PUT",
-    headers: { apikey: PUBLISHABLE, "content-type": slot.contentType },
-    body: bytes,
-  });
+async function uploadToSlot(
+  slot: { path: string; uploadToken: string; contentType: string },
+  bytes: Uint8Array,
+) {
+  return fetch(
+    `${SUPABASE_URL}/storage/v1/object/upload/sign/documents/${slot.path}?token=${slot.uploadToken}`,
+    {
+      method: "PUT",
+      headers: { apikey: PUBLISHABLE, "content-type": slot.contentType },
+      body: bytes,
+    },
+  );
 }
 
 async function objectExists(path: string) {
@@ -82,7 +88,11 @@ async function main() {
   });
   check("تجهيز رفع لدور محامي ينجح", prep.ok, prep.message);
   const slot = prep.ok ? slotFrom(prep.raw) : null;
-  check("فتحة الرفع داخل مجلد المكتب", !!slot && slot.path.startsWith(`${org}/`), slot?.path ?? "لا فتحة");
+  check(
+    "فتحة الرفع داخل مجلد المكتب",
+    !!slot && slot.path.startsWith(`${org}/`),
+    slot?.path ?? "لا فتحة",
+  );
   if (!slot) throw new Error("تعذّر متابعة الاختبار بلا فتحة رفع");
 
   const up = await uploadToSlot(slot, MINIMAL_PDF);
@@ -115,7 +125,11 @@ async function main() {
     check(`${role}: منع تحميل الأصل مباشرة من المخزن`, direct.status !== 200, `${direct.status}`);
     const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${slot.path}`, {
       method: "POST",
-      headers: { apikey: PUBLISHABLE, Authorization: `Bearer ${token(qa, role)}`, "content-type": "application/json" },
+      headers: {
+        apikey: PUBLISHABLE,
+        Authorization: `Bearer ${token(qa, role)}`,
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ expiresIn: 60 }),
     });
     check(`${role}: منع توقيع رابط للأصل`, signed.status !== 200, `${signed.status}`);
@@ -137,7 +151,11 @@ async function main() {
       const view = await fetch(`${APP}${url}`);
       const ct = view.headers.get("content-type") ?? "";
       const head = new TextDecoder().decode((await view.arrayBuffer()).slice(0, 5));
-      check("العرض يعيد PDF مائي", view.ok && ct.startsWith("application/pdf") && head === "%PDF-", `${view.status} ${ct} ${head}`);
+      check(
+        "العرض يعيد PDF مائي",
+        view.ok && ct.startsWith("application/pdf") && head === "%PDF-",
+        `${view.status} ${ct} ${head}`,
+      );
     }
     const viewerAccess = await callServerFn({
       appOrigin: APP,
@@ -149,19 +167,38 @@ async function main() {
   }
 
   // 5) حصص OCR: قارئ فقط محجوب، محامي مسموح.
-  for (const [role, expectDenied] of [["viewer", true], ["lawyer", false]] as const) {
+  for (const [role, expectDenied] of [
+    ["viewer", true],
+    ["lawyer", false],
+  ] as const) {
     const rpc = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_ocr_pages`, {
       method: "POST",
-      headers: { apikey: PUBLISHABLE, Authorization: `Bearer ${token(qa, role)}`, "content-type": "application/json" },
+      headers: {
+        apikey: PUBLISHABLE,
+        Authorization: `Bearer ${token(qa, role)}`,
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ _organization_id: org, _pages: 1 }),
     });
-    check(`consume_ocr_pages ${role}: ${expectDenied ? "مرفوض" : "مسموح"}`, expectDenied ? rpc.status >= 400 : rpc.ok, `${rpc.status}`);
+    check(
+      `consume_ocr_pages ${role}: ${expectDenied ? "مرفوض" : "مسموح"}`,
+      expectDenied ? rpc.status >= 400 : rpc.ok,
+      `${rpc.status}`,
+    );
     const metered = await fetch(`${SUPABASE_URL}/rest/v1/rpc/record_metered_usage`, {
       method: "POST",
-      headers: { apikey: PUBLISHABLE, Authorization: `Bearer ${token(qa, role)}`, "content-type": "application/json" },
+      headers: {
+        apikey: PUBLISHABLE,
+        Authorization: `Bearer ${token(qa, role)}`,
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ _organization_id: org, _metric: "ocr_pages", _amount: 1 }),
     });
-    check(`record_metered_usage ${role}: ${expectDenied ? "مرفوض" : "مسموح"}`, expectDenied ? metered.status >= 400 : metered.ok, `${metered.status}`);
+    check(
+      `record_metered_usage ${role}: ${expectDenied ? "مرفوض" : "مسموح"}`,
+      expectDenied ? metered.status >= 400 : metered.ok,
+      `${metered.status}`,
+    );
   }
 
   // 6) ملف متنكر: يفشل الإنهاء ولا يبقى كائن يتيم.
@@ -183,7 +220,9 @@ async function main() {
     });
     check("ملف HTML متنكر كـ PDF يُرفض", badFin.denied, badFin.message);
     check("الكائن اليتيم حُذف بعد الرفض", !(await objectExists(badSlot.path)));
-    const rows = await adminFetch(`${SUPABASE_URL}/rest/v1/documents?file_path=eq.${encodeURIComponent(badSlot.path)}&select=id`);
+    const rows = await adminFetch(
+      `${SUPABASE_URL}/rest/v1/documents?file_path=eq.${encodeURIComponent(badSlot.path)}&select=id`,
+    );
     check("لا سجل مستند للملف المرفوض", ((await rows.json()) as unknown[]).length === 0);
   }
 
@@ -192,24 +231,39 @@ async function main() {
     appOrigin: APP,
     ref: intake["finalizeDocumentUpload"]!,
     token: token(qa, "lawyer"),
-    data: { organizationId: org, path: `${crypto.randomUUID()}/qa-valid.pdf`, fileName: "qa-valid.pdf" },
+    data: {
+      organizationId: org,
+      path: `${crypto.randomUUID()}/qa-valid.pdf`,
+      fileName: "qa-valid.pdf",
+    },
   });
   check("مسار خارج مجلد المكتب يُرفض", escapeFin.denied, escapeFin.message);
 
   // 8) بوابة العميل: لا يمكن إرفاق مسار خارج طلب الرفع.
   const rawToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
-  const tokenHash = Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const tokenHash = Array.from(new Uint8Array(hashBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
   const clientRes = await adminFetch(`${SUPABASE_URL}/rest/v1/clients`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
-    body: JSON.stringify({ organization_id: org, full_name: "QA عميل الاختبار", client_type: "individual" }),
+    body: JSON.stringify({
+      organization_id: org,
+      full_name: "QA عميل الاختبار",
+      client_type: "individual",
+    }),
   });
   const clientId = ((await clientRes.json()) as { id?: string }[])[0]?.id ?? null;
   const caseRes = await adminFetch(`${SUPABASE_URL}/rest/v1/cases`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
-    body: JSON.stringify({ organization_id: org, client_id: clientId, case_title: "QA قضية الاختبار", status: "open" }),
+    body: JSON.stringify({
+      organization_id: org,
+      client_id: clientId,
+      case_title: "QA قضية الاختبار",
+      status: "open",
+    }),
   });
   const caseBody = (await caseRes.json()) as { id?: string }[] | { message?: string };
   const caseId = Array.isArray(caseBody) ? (caseBody[0]?.id ?? null) : null;
@@ -236,17 +290,31 @@ async function main() {
       ref: portal["submitUploadRequest"]!,
       data: {
         token: rawToken,
-        files: [{ name: "qa-valid.pdf", size: MINIMAL_PDF.byteLength, type: "application/pdf", path: slot.path }],
+        files: [
+          {
+            name: "qa-valid.pdf",
+            size: MINIMAL_PDF.byteLength,
+            type: "application/pdf",
+            path: slot.path,
+          },
+        ],
       },
     });
     check("بوابة العميل ترفض مسار خارج الطلب", escape.denied, escape.message);
     const ok = await callServerFn({
       appOrigin: APP,
       ref: portal["createUploadSlots"]!,
-      data: { token: rawToken, files: [{ name: "qa-client.pdf", size: MINIMAL_PDF.byteLength, type: "application/pdf" }] },
+      data: {
+        token: rawToken,
+        files: [{ name: "qa-client.pdf", size: MINIMAL_PDF.byteLength, type: "application/pdf" }],
+      },
     });
     const clientSlot = slotFrom(ok.raw);
-    check("بوابة العميل تجهّز فتحة داخل مجلد الطلب", !!clientSlot && clientSlot.path.includes(`client-uploads/${requestId}/`), ok.message || (clientSlot?.path ?? ""));
+    check(
+      "بوابة العميل تجهّز فتحة داخل مجلد الطلب",
+      !!clientSlot && clientSlot.path.includes(`client-uploads/${requestId}/`),
+      ok.message || (clientSlot?.path ?? ""),
+    );
     if (clientSlot) {
       await uploadToSlot(clientSlot, MINIMAL_PDF);
       const submit = await callServerFn({
@@ -254,15 +322,26 @@ async function main() {
         ref: portal["submitUploadRequest"]!,
         data: {
           token: rawToken,
-          files: [{ name: "qa-client.pdf", size: MINIMAL_PDF.byteLength, type: "application/pdf", path: clientSlot.path }],
+          files: [
+            {
+              name: "qa-client.pdf",
+              size: MINIMAL_PDF.byteLength,
+              type: "application/pdf",
+              path: clientSlot.path,
+            },
+          ],
         },
       });
       check("رفع صالح من بوابة العميل ينجح", submit.ok, submit.message);
     }
-    await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests?id=eq.${requestId}`, { method: "DELETE" });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests?id=eq.${requestId}`, {
+      method: "DELETE",
+    });
   }
   if (caseId) {
-    await adminFetch(`${SUPABASE_URL}/rest/v1/documents?case_id=eq.${caseId}`, { method: "DELETE" });
+    await adminFetch(`${SUPABASE_URL}/rest/v1/documents?case_id=eq.${caseId}`, {
+      method: "DELETE",
+    });
     await adminFetch(`${SUPABASE_URL}/rest/v1/cases?id=eq.${caseId}`, { method: "DELETE" });
   }
 
