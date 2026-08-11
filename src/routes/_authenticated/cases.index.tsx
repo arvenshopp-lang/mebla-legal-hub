@@ -468,6 +468,25 @@ export function CaseDialog({
     );
   }
 
+  // الملاحظات الداخلية محفوظة في سجل مستقل مقيّد بالدور، وتُحمّل للتعديل فقط.
+  const { data: existingNotes } = useQuery({
+    queryKey: ["case-internal-notes", editing?.id],
+    enabled: open && !!editing?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_internal_notes")
+        .select("notes")
+        .eq("case_id", editing!.id)
+        .maybeSingle();
+      return data?.notes ?? "";
+    },
+  });
+  const [notesKey, setNotesKey] = useState<string | null>(null);
+  if (existingNotes !== undefined && editing && notesKey !== editing.id) {
+    setNotesKey(editing.id);
+    setForm((prev) => ({ ...prev, internal_notes: existingNotes }));
+  }
+
   const save = async () => {
     const res = caseSchema.safeParse({
       ...form,
@@ -485,6 +504,8 @@ export function CaseDialog({
     }
     setSaving(true);
     const payload: Partial<TablesInsert<"cases">> = { ...res.data };
+    const internalNotes = (res.data.internal_notes ?? "").trim();
+    delete (payload as Record<string, unknown>)["internal_notes"];
     (Object.keys(payload) as Array<keyof typeof payload>).forEach((k) => {
       if (payload[k] === "" || payload[k] === undefined)
         (payload as Record<string, unknown>)[k] = null;
