@@ -122,7 +122,7 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ip = clientIp();
-    const { verifyUploadedObject, removeOrphanObject } =
+    const { verifyUploadedObject, removeOrphanObject, assertPathNotLinked, isDuplicatePathError } =
       await import("@/lib/documents/intake.server");
 
     // لا يُربط أي كائن بسجل مستند قبل تحقق خادمي كامل من المسار والبايتات.
@@ -130,6 +130,8 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
     try {
       for (const f of data.files) {
         const v = await verifyUploadedObject({ path: f.path, prefix, fileName: f.name });
+        // منع إعادة استخدام مسار مرفوع سابقاً لإنشاء سجل مستند إضافي.
+        await assertPathNotLinked(f.path);
         verified.push({ file: f, mime: v.mime, size: v.size });
       }
     } catch (cause) {
@@ -160,6 +162,10 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
 
     const { error: insErr } = await supabaseAdmin.from("documents").insert(rows);
     if (insErr) {
+      // مسار مرتبط بمستند قائم: لا يجوز حذف كائناته.
+      if (isDuplicatePathError(insErr)) {
+        throw new Error("تم استلام هذه الملفات مسبقاً.");
+      }
       for (const v of verified) await removeOrphanObject(v.file.path);
       throw new Error("تعذّر حفظ المستندات، حاول مرة أخرى.");
     }
