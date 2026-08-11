@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.documents_file_path_unique;
