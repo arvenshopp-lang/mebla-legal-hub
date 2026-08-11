@@ -27,6 +27,7 @@ export const ALLOWED_EXTENSIONS = [
   "png",
   "webp",
   "heic",
+  "heif",
   "txt",
   "csv",
 ] as const;
