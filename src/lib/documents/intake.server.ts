@@ -79,6 +79,60 @@ export async function removeOrphanObject(path: string) {
 
 export class IntakeRejection extends Error {}
 
+/** رمز خطأ Postgres لتعارض الفهرس الفريد (مسار رفع مُستخدم مسبقاً). */
+export const UNIQUE_VIOLATION = "23505";
+
+export function isDuplicatePathError(error: { code?: string | null } | null): boolean {
+  return (error?.code ?? "") === UNIQUE_VIOLATION;
+}
+
+/**
+ * يمنع إعادة استخدام مسار رفع ناجح لإنشاء سجل مستند إضافي (replay). الفحص هنا
+ * سريع وواضح الرسالة، والفهرس الفريد على documents.file_path هو الضمان النهائي
+ * ضد التسابق.
+ */
+export async function assertPathNotLinked(path: string) {
+  const db = await admin();
+  const { data, error } = await db
+    .from("documents")
+    .select("id")
+    .eq("file_path", path)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new IntakeRejection("تعذّر التحقق من الملف المرفوع. أعد المحاولة.");
+  if (data) throw new IntakeRejection("هذا الملف مرتبط بمستند مسجّل مسبقاً.");
+}
+
+/**
+ * يتحقق — عبر عميل المستخدم (RLS) — أن القضية والعميل الممرَّرين ينتميان لنفس
+ * المكتب. يمنع الربط المتقاطع بين المكاتب قبل أي insert.
+ */
+export async function assertCaseAndClientInOrg(
+  supabase: Client,
+  organizationId: string,
+  caseId: string | null,
+  clientId: string | null,
+) {
+  if (caseId) {
+    const { data, error } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    if (error || !data) throw new IntakeRejection("القضية المحددة لا تنتمي إلى هذا المكتب.");
+  }
+  if (clientId) {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", clientId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    if (error || !data) throw new IntakeRejection("العميل المحدد لا ينتمي إلى هذا المكتب.");
+  }
+}
+
 /**
  * يتحقق من الكائن المرفوع فعلياً: ملكية المسار، وجود الملف، الحجم، النوع
  * المعياري، وبصمة البايتات. عند أي فشل يُحذف الكائن ويُرفع خطأ عربي واضح.

@@ -5,7 +5,10 @@
  * حجب استهلاك حصة OCR على «قارئ فقط»، ومنع ربط مسار خارج مجلد الطلب.
  *
  *   bun scripts/e2e/org-qa-fixture.ts
- *   bun scripts/e2e/documents_security.e2e.ts
+ *   MEHLA_E2E_ALLOW=1 bun scripts/e2e/documents_security.e2e.ts
+ *
+ * fail-closed: يرفض التشغيل على أي نطاق/بيئة إنتاج، ويشترط موافقة صريحة عبر
+ * MEHLA_E2E_ALLOW، ومكتب QA بالبادئة المعتمدة. أي موارد اختبار تُنظّف في finally.
  */
 import {
   APP,
@@ -14,9 +17,38 @@ import {
   adminFetch,
   adminHeaders,
   loadQaOrg,
+  QA_ORG_PREFIX,
   type QaOrg,
 } from "./qa-support";
 import { callServerFn, resolveServerFns } from "./serverfn-rpc";
+
+/** بوابة fail-closed: لا تشغيل إلا على أصل تطوير/معاينة مع موافقة صريحة. */
+function assertNonProduction(orgName: string) {
+  const reasons: string[] = [];
+  if (process.env["MEHLA_E2E_ALLOW"] !== "1") {
+    reasons.push("MEHLA_E2E_ALLOW=1 غير مضبوط (موافقة صريحة مطلوبة).");
+  }
+  let host = "";
+  try {
+    host = new URL(APP).hostname.toLowerCase();
+  } catch {
+    reasons.push("APP_ORIGIN غير صالح.");
+  }
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
+  const isPreview = /(^|\.)id-preview--|-dev\.lovable\.app$/.test(host);
+  if (!isLocal && !isPreview) reasons.push(`أصل غير مسموح للاختبار: ${host}`);
+  if (/mehlalex\.com$/.test(host) || host === "mebla.lovable.app") {
+    reasons.push("نطاق إنتاج مرفوض.");
+  }
+  if (!orgName.startsWith(QA_ORG_PREFIX)) {
+    reasons.push("مكتب الاختبار لا يحمل بادئة QA المعتمدة.");
+  }
+  if (reasons.length) {
+    console.error("توقّف fail-closed قبل إنشاء أي بيانات:");
+    for (const r of reasons) console.error(` - ${r}`);
+    process.exit(2);
+  }
+}
 
 let pass = 0;
 const failures: string[] = [];
@@ -72,8 +104,43 @@ async function objectExists(path: string) {
   return res.status === 200;
 }
 
-async function main() {
-  const qa = await loadQaOrg();
+/** كل موارد الاختبار المُنشأة، لتنظيفها في finally حتى عند الفشل. */
+type Ctx = {
+  objects: string[];
+  documentIds: string[];
+  requestIds: string[];
+  caseIds: string[];
+  clientIds: string[];
+};
+
+async function cleanup(ctx: Ctx) {
+  const del = (path: string) => adminFetch(`${SUPABASE_URL}/rest/v1/${path}`, { method: "DELETE" });
+  try {
+    for (const id of ctx.documentIds) await del(`documents?id=eq.${id}`);
+    for (const id of ctx.requestIds) {
+      await del(`documents?document_request_id=eq.${id}`);
+      await del(`document_requests?id=eq.${id}`);
+    }
+    for (const id of ctx.caseIds) {
+      await del(`documents?case_id=eq.${id}`);
+      await del(`cases?id=eq.${id}`);
+    }
+    for (const id of ctx.clientIds) await del(`clients?id=eq.${id}`);
+    if (ctx.objects.length) {
+      await adminFetch(`${SUPABASE_URL}/storage/v1/object/documents`, {
+        method: "DELETE",
+        body: JSON.stringify({ prefixes: [...new Set(ctx.objects)] }),
+      });
+    }
+    console.log(
+      `تنظيف: ${ctx.documentIds.length} مستند، ${ctx.requestIds.length} طلب، ${ctx.caseIds.length} قضية، ${ctx.clientIds.length} عميل، ${new Set(ctx.objects).size} كائن.`,
+    );
+  } catch (err) {
+    console.error("تحذير: تعذّر إكمال التنظيف —", (err as Error).message);
+  }
+}
+
+async function scenarios(qa: QaOrg, ctx: Ctx) {
   const org = qa.organizationId;
   const intake = await resolveServerFns(APP, "src/lib/documents/intake.functions.ts");
   const secure = await resolveServerFns(APP, "src/lib/secure-view/secure-view.functions.ts");
@@ -94,6 +161,7 @@ async function main() {
     slot?.path ?? "لا فتحة",
   );
   if (!slot) throw new Error("تعذّر متابعة الاختبار بلا فتحة رفع");
+  ctx.objects.push(slot.path);
 
   const up = await uploadToSlot(slot, MINIMAL_PDF);
   check("رفع البايتات إلى الفتحة الموقّعة", up.ok, `${up.status}`);
@@ -106,6 +174,7 @@ async function main() {
   });
   check("إنهاء الرفع بعد تحقق البصمة ينجح", fin.ok, fin.message);
   const documentId = documentIdFrom(fin.raw);
+  if (documentId) ctx.documentIds.push(documentId);
   check("سجل المستند أُنشئ", !!documentId, fin.raw.slice(0, 120));
 
   // 2) قارئ فقط لا يستطيع تجهيز رفع.
@@ -209,6 +278,7 @@ async function main() {
     data: { organizationId: org, fileName: "qa-fake.pdf", fileSize: FAKE_PDF.byteLength },
   });
   const badSlot = slotFrom(badPrep.raw);
+  if (badSlot) ctx.objects.push(badSlot.path);
   check("تجهيز رفع الملف المتنكر", !!badSlot, badPrep.message);
   if (badSlot) {
     await uploadToSlot(badSlot, FAKE_PDF);
@@ -255,6 +325,7 @@ async function main() {
     }),
   });
   const clientId = ((await clientRes.json()) as { id?: string }[])[0]?.id ?? null;
+  if (clientId) ctx.clientIds.push(clientId);
   const caseRes = await adminFetch(`${SUPABASE_URL}/rest/v1/cases`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
@@ -267,6 +338,7 @@ async function main() {
   });
   const caseBody = (await caseRes.json()) as { id?: string }[] | { message?: string };
   const caseId = Array.isArray(caseBody) ? (caseBody[0]?.id ?? null) : null;
+  if (caseId) ctx.caseIds.push(caseId);
   check("تهيئة قضية QA لطلب الرفع", !!caseId, JSON.stringify(caseBody).slice(0, 200));
   const reqRes = await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests`, {
     method: "POST",
@@ -283,6 +355,7 @@ async function main() {
   });
   const reqRow = (await reqRes.json()) as { id?: string }[];
   const requestId = reqRow[0]?.id ?? null;
+  if (requestId) ctx.requestIds.push(requestId);
   check("تهيئة طلب رفع QA", !!requestId, JSON.stringify(reqRow).slice(0, 160));
   if (requestId) {
     const escape = await callServerFn({
@@ -310,6 +383,7 @@ async function main() {
       },
     });
     const clientSlot = slotFrom(ok.raw);
+    if (clientSlot) ctx.objects.push(clientSlot.path);
     check(
       "بوابة العميل تجهّز فتحة داخل مجلد الطلب",
       !!clientSlot && clientSlot.path.includes(`client-uploads/${requestId}/`),
@@ -334,17 +408,18 @@ async function main() {
       });
       check("رفع صالح من بوابة العميل ينجح", submit.ok, submit.message);
     }
-    await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests?id=eq.${requestId}`, {
-      method: "DELETE",
-    });
   }
-  if (caseId) {
-    await adminFetch(`${SUPABASE_URL}/rest/v1/documents?case_id=eq.${caseId}`, {
-      method: "DELETE",
-    });
-    await adminFetch(`${SUPABASE_URL}/rest/v1/cases?id=eq.${caseId}`, { method: "DELETE" });
-  }
+}
 
+async function main() {
+  const qa = await loadQaOrg();
+  assertNonProduction(qa.orgName);
+  const ctx: Ctx = { objects: [], documentIds: [], requestIds: [], caseIds: [], clientIds: [] };
+  try {
+    await scenarios(qa, ctx);
+  } finally {
+    await cleanup(ctx);
+  }
   console.log(`\nالنتيجة: ${pass} PASS — ${failures.length} FAIL`);
   if (failures.length) {
     for (const f of failures) console.log(` - ${f}`);

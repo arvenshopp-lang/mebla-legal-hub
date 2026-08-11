@@ -45,15 +45,28 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { sanitizeFileName } = await import("@/lib/client-portal.shared");
-    const { requireDocumentWriteRole, verifyUploadedObject, removeOrphanObject } =
-      await import("./intake.server");
+    const {
+      requireDocumentWriteRole,
+      verifyUploadedObject,
+      removeOrphanObject,
+      assertCaseAndClientInOrg,
+      assertPathNotLinked,
+      isDuplicatePathError,
+    } = await import("./intake.server");
     await requireDocumentWriteRole(context.supabase, context.userId, data.organizationId);
+    await assertCaseAndClientInOrg(
+      context.supabase,
+      data.organizationId,
+      data.caseId,
+      data.clientId,
+    );
 
     const verified = await verifyUploadedObject({
       path: data.path,
       prefix: `${data.organizationId}/`,
       fileName: data.fileName,
     });
+    await assertPathNotLinked(verified.path);
 
     const { data: inserted, error } = await context.supabase
       .from("documents")
@@ -76,6 +89,10 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       .single();
 
     if (error || !inserted) {
+      // مسار مرتبط مسبقاً: الكائن يملكه مستند قائم، فلا يُحذف أبداً.
+      if (isDuplicatePathError(error)) {
+        throw new Error("هذا الملف مرتبط بمستند مسجّل مسبقاً.");
+      }
       await removeOrphanObject(verified.path);
       throw new Error("تعذّر حفظ المستند. أعد المحاولة.");
     }
