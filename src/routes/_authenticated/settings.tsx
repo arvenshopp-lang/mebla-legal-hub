@@ -74,8 +74,8 @@ function ProfileTab({ userId }: { userId?: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["profile", userId],
     enabled: !!userId,
-    queryFn: async () =>
-      (await supabase.from("profiles").select("*").eq("id", userId!).maybeSingle()).data,
+    // بيانات المستخدم نفسه (تشمل البريد والجوال) عبر دالة مقيّدة بهويته.
+    queryFn: async () => (await supabase.rpc("my_profile").maybeSingle()).data,
   });
   const [form, setForm] = useState<Partial<Tables<"profiles">>>({});
   useEffect(() => {
