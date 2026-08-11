@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      case_internal_notes: {
+        Row: {
+          case_id: string
+          created_at: string
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_internal_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_internal_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_lookup_attempts: {
         Row: {
           code_attempt: string | null
@@ -413,7 +455,6 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          internal_notes: string | null
           judge_name: string | null
           judicial_circuit: string | null
           last_activity_at: string
@@ -441,7 +482,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          internal_notes?: string | null
           judge_name?: string | null
           judicial_circuit?: string | null
           last_activity_at?: string
@@ -469,7 +509,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          internal_notes?: string | null
           judge_name?: string | null
           judicial_circuit?: string | null
           last_activity_at?: string
