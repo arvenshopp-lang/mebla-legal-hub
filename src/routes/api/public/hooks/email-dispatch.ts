@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * معالجة قائمة الإرسال المستحقة (الرسائل المجدولة وإعادة المحاولات).
- * مسار دوري يُستدعى من pg_cron → pg_net، ويُتحقق من المُستدعي بمفتاح المشروع.
+ * مسار دوري يُستدعى من pg_cron → pg_net، والتوثيق عبر سر التشغيل الخاص فقط.
  */
+import { guardCronRequest } from "@/lib/security/cron-auth.server";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -13,12 +14,8 @@ function json(body: unknown, status = 200) {
 }
 
 async function handle(request: Request) {
-  const provided =
-    request.headers.get("apikey") ??
-    (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  const expected =
-    process.env["SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
-  if (!expected || !provided || provided !== expected) return json({ error: "unauthorized" }, 401);
+  const denied = await guardCronRequest(request);
+  if (denied) return denied;
 
   try {
     const { dispatchDue } = await import("@/lib/email/workspace.server");
