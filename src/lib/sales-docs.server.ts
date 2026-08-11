@@ -53,8 +53,7 @@ function dbReason(error: DbError): string | null {
       return "مدة صلاحية القالب يجب أن تكون بين 0 و365 يوماً.";
     if (/sales_tpl_tax_chk|sales_doc_tax_chk/.test(detail))
       return "نسبة الضريبة يجب أن تكون بين 0 و100.";
-    if (/sales_doc_title_len/.test(detail))
-      return "عنوان المستند يجب أن يكون بين حرفين و200 حرف.";
+    if (/sales_doc_title_len/.test(detail)) return "عنوان المستند يجب أن يكون بين حرفين و200 حرف.";
     if (/sales_doc_amount_chk/.test(detail)) return "قيم المستند لا يمكن أن تكون سالبة.";
     return "إحدى القيم المدخلة لا تحقق قواعد التحقق المعتمدة.";
   }
