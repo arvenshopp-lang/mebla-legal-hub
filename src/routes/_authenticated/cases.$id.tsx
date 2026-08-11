@@ -316,10 +316,10 @@ function Page() {
               {data.description}
             </div>
           )}
-          {data.internal_notes && (
+          {internalNotes && (
             <div className="mt-3 border-t border-border pt-3 text-sm">
               <div className="mb-1 text-xs font-semibold text-muted-foreground">ملاحظات داخلية</div>
-              {data.internal_notes}
+              {internalNotes}
             </div>
           )}
         </section>
