@@ -1,27 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { guardCronRequest } from "@/lib/security/cron-auth.server";
 
 /**
  * Scheduled janitor endpoint (pg_cron → pg_net).
  *
  * Purges expired watermark tickets and their transient storage artefacts.
- * Public prefix, so the caller is verified here with the project apikey.
+ * Public prefix, so the caller is verified here with the private cron secret.
  */
 
-function unauthorized() {
-  return new Response(JSON.stringify({ error: "unauthorized" }), {
-    status: 401,
-    headers: { "content-type": "application/json" },
-  });
-}
-
 async function handle(request: Request) {
-  const provided =
-    request.headers.get("apikey") ??
-    (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  const expected =
-    process.env["SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
-
-  if (!expected || !provided || provided !== expected) return unauthorized();
+  const denied = await guardCronRequest(request);
+  if (denied) return denied;
 
   try {
     const { runSecureArtifactCleanup } = await import("@/lib/secure-view/cleanup.server");
