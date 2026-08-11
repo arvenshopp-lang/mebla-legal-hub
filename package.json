@@ -30,7 +30,8 @@
     "documents:integrity": "bun scripts/documents-integrity-guardrails.ts",
     "documents:formats": "bun scripts/document-formats-guardrails.ts",
     "e2e:gate": "bun scripts/e2e-gate-guardrails.ts",
-    "documents:requests": "bun scripts/document-requests-integrity-guardrails.ts"
+    "documents:requests": "bun scripts/document-requests-integrity-guardrails.ts",
+    "repo:hygiene": "bun scripts/repo-hygiene-guardrails.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
