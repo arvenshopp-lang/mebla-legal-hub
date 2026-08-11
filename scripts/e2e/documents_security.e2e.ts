@@ -30,6 +30,18 @@ function check(name: string, ok: boolean, detail = "") {
   }
 }
 
+/** استخراج قيم نصية من إطار seroval بترتيب المفاتيح، بدل التخمين. */
+function slotFrom(raw: string): { path: string; uploadToken: string; contentType: string } | null {
+  const m = raw.match(
+    /"k":\["path","uploadToken","contentType"(?:,"name")?\],"v":\[\{"t":1,"s":"([^"]+)"\},\{"t":1,"s":"([^"]+)"\},\{"t":1,"s":"([^"]+)"\}/,
+  );
+  return m ? { path: m[1]!, uploadToken: m[2]!, contentType: m[3]! } : null;
+}
+
+function documentIdFrom(raw: string): string | null {
+  return raw.match(/"k":\["documentId"[^\]]*\],"v":\[\{"t":1,"s":"([0-9a-f-]{36})"/)?.[1] ?? null;
+}
+
 const MINIMAL_PDF = new TextEncoder().encode(
   "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n",
 );
@@ -69,11 +81,7 @@ async function main() {
     data: { organizationId: org, fileName: "qa-valid.pdf", fileSize: MINIMAL_PDF.byteLength },
   });
   check("تجهيز رفع لدور محامي ينجح", prep.ok, prep.message);
-  const slot = prep.ok
-    ? (JSON.parse(prep.raw.match(/\{"path":"[^"]+","uploadToken":"[^"]+","contentType":"[^"]+"\}/)?.[0] ?? "null") as
-        | { path: string; uploadToken: string; contentType: string }
-        | null)
-    : null;
+  const slot = prep.ok ? slotFrom(prep.raw) : null;
   check("فتحة الرفع داخل مجلد المكتب", !!slot && slot.path.startsWith(`${org}/`), slot?.path ?? "لا فتحة");
   if (!slot) throw new Error("تعذّر متابعة الاختبار بلا فتحة رفع");
 
@@ -87,7 +95,7 @@ async function main() {
     data: { organizationId: org, path: slot.path, fileName: "qa-valid.pdf", category: "QA" },
   });
   check("إنهاء الرفع بعد تحقق البصمة ينجح", fin.ok, fin.message);
-  const documentId = fin.raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g)?.slice(-1)[0] ?? null;
+  const documentId = documentIdFrom(fin.raw);
   check("سجل المستند أُنشئ", !!documentId, fin.raw.slice(0, 120));
 
   // 2) قارئ فقط لا يستطيع تجهيز رفع.
@@ -163,9 +171,7 @@ async function main() {
     token: token(qa, "lawyer"),
     data: { organizationId: org, fileName: "qa-fake.pdf", fileSize: FAKE_PDF.byteLength },
   });
-  const badSlot = JSON.parse(badPrep.raw.match(/\{"path":"[^"]+","uploadToken":"[^"]+","contentType":"[^"]+"\}/)?.[0] ?? "null") as
-    | { path: string; uploadToken: string; contentType: string }
-    | null;
+  const badSlot = slotFrom(badPrep.raw);
   check("تجهيز رفع الملف المتنكر", !!badSlot, badPrep.message);
   if (badSlot) {
     await uploadToSlot(badSlot, FAKE_PDF);
@@ -223,9 +229,7 @@ async function main() {
       ref: portal["createUploadSlots"]!,
       data: { token: rawToken, files: [{ name: "qa-client.pdf", size: MINIMAL_PDF.byteLength, type: "application/pdf" }] },
     });
-    const clientSlot = JSON.parse(ok.raw.match(/\{"path":"[^"]+","uploadToken":"[^"]+","contentType":"[^"]+","name":"[^"]*"\}/)?.[0] ?? "null") as
-      | { path: string; uploadToken: string; contentType: string }
-      | null;
+    const clientSlot = slotFrom(ok.raw);
     check("بوابة العميل تجهّز فتحة داخل مجلد الطلب", !!clientSlot && clientSlot.path.includes(`client-uploads/${requestId}/`), ok.message || (clientSlot?.path ?? ""));
     if (clientSlot) {
       await uploadToSlot(clientSlot, MINIMAL_PDF);
