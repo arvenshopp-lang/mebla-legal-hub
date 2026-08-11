@@ -160,24 +160,6 @@ function LoginPage() {
     }
   };
 
-  const requestMagicLink = async () => {
-    if (actionBusy) return;
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setFormError("أدخل بريدك الإلكتروني أولاً لإرسال رابط الدخول");
-      return;
-    }
-    setActionBusy("magic");
-    const result = await sendMagicLink(cleanEmail);
-    setActionBusy(null);
-    if (result.ok) {
-      setFormError(null);
-      setNotice(result.message);
-      toast.success(result.message);
-    } else {
-      setFormError(result.message);
-    }
-  };
 
   // Only show the verification screen when a session actually exists.
   if (session && (authLoading || organizationLoading)) {
