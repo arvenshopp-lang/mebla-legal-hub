@@ -19,7 +19,7 @@ export function clientIp() {
 }
 
 type DocumentRequestWithRelations = Tables<"document_requests"> & {
-  case: { client_id: string } | null;
+  case: { client_id: string; organization_id: string } | null;
   organization: { name: string; logo_url: string | null } | null;
 };
 
@@ -34,10 +34,15 @@ export async function loadRequestByToken(token: string): Promise<LoadedRequest |
   const tokenHash = await hashText(token);
   const { data: request } = await supabaseAdmin
     .from("document_requests")
-    .select("*, case:cases(client_id), organization:organizations(name, logo_url)")
+    .select("*, case:cases(client_id, organization_id), organization:organizations(name, logo_url)")
     .eq("token_hash", tokenHash)
     .maybeSingle();
   if (!request) return null;
+
+  // رفض دفاعي: أي طلب مرتبط بقضية من مكتب مختلف يُعتبر رابطاً غير صالح،
+  // فالعميل والمسار يُستمدّان من القضية المتحققة فقط.
+  const linked = request as DocumentRequestWithRelations;
+  if (!linked.case || linked.case.organization_id !== linked.organization_id) return null;
 
   let effectiveStatus = request.status as LoadedRequest["effectiveStatus"];
   if (
