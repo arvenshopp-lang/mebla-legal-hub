@@ -410,5 +410,6 @@ async function setup() {
   console.log(`المكتب جاهز — البيانات في ${FILE}`);
 }
 
+assertE2eEnvironmentSafe();
 if (process.argv.includes("--cleanup")) await cleanup();
 else await setup();

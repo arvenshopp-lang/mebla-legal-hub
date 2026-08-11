@@ -869,4 +869,5 @@ async function main() {
   if (fail.length) process.exitCode = 1;
 }
 
+assertE2eEnvironmentSafe();
 await main();

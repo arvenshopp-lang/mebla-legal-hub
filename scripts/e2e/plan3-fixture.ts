@@ -145,6 +145,7 @@ export async function buildP3(): Promise<P3Ctx> {
 }
 
 if (import.meta.main) {
+  assertE2eEnvironmentSafe();
   const ctx = await buildP3();
   console.log(`جاهز: مكتب QA ${ctx.org.id} — 3 حسابات مفعّلة (بلا طبع لأي سر)`);
 }

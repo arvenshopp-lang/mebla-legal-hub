@@ -169,5 +169,6 @@ async function setup() {
   console.log(`مكتب QA جاهز (${accounts.length} حساب) — البيانات في ${QA_FILE}`);
 }
 
+assertE2eEnvironmentSafe();
 if (process.argv.includes("--cleanup")) await cleanup();
 else await setup();

@@ -264,6 +264,7 @@ export async function loadP2(): Promise<P2Fixture> {
 }
 
 if (import.meta.main) {
+  assertE2eEnvironmentSafe();
   if (process.argv.includes("--cleanup")) await cleanup();
   else await setup();
 }
