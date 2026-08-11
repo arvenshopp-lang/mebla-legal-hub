@@ -94,7 +94,8 @@ function Page() {
         const { error: upErr } = await supabase.storage
           .from("documents")
           .uploadToSignedUrl(slot.path, slot.uploadToken, picked[i].file, {
-            contentType: picked[i].file.type || undefined,
+            // النوع يُطبَّع من الامتداد على الخادم: بعض المتصفحات ترسل MIME فارغاً.
+            contentType: slot.contentType,
           });
         if (upErr) throw new Error(`تعذّر رفع ${picked[i].file.name}`);
         uploaded.push({ ...metas[i], path: slot.path });
