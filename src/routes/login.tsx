@@ -173,6 +173,24 @@ function LoginPage() {
 
   return (
     <AuthShell title="تسجيل الدخول" subtitle="أدخل بياناتك للمتابعة" variant="login">
+      <button
+        type="button"
+        onClick={google}
+        disabled={googleLoading}
+        aria-busy={googleLoading}
+        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <GoogleIcon />
+        <span>{googleLoading ? "جاري الاتصال بـ Google…" : "تسجيل الدخول بحساب Google"}</span>
+      </button>
+      <p className="mt-2.5 text-center text-[11px] leading-5 text-text-muted">
+        دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
+      </p>
+      <div className="my-6 flex items-center gap-3 text-xs text-text-muted">
+        <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        <span>أو</span>
+        <span aria-hidden="true" className="h-px flex-1 bg-border" />
+      </div>
       <form onSubmit={submit} noValidate className="space-y-4">
         {formError && (
           <div
@@ -241,24 +259,6 @@ function LoginPage() {
           {loading ? "جاري تسجيل الدخول…" : "دخول"}
         </button>
       </form>
-      <div className="my-6 flex items-center gap-3 text-xs text-text-muted">
-        <span aria-hidden="true" className="h-px flex-1 bg-border" />
-        <span>أو</span>
-        <span aria-hidden="true" className="h-px flex-1 bg-border" />
-      </div>
-      <button
-        type="button"
-        onClick={google}
-        disabled={googleLoading}
-        aria-busy={googleLoading}
-        className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <GoogleIcon />
-        <span>{googleLoading ? "جاري فتح نافذة Google…" : "المتابعة عبر Google"}</span>
-      </button>
-      <p className="mt-2.5 text-center text-[11px] leading-5 text-text-muted">
-        دخول آمن عبر حساب Google — لا نطّلع على كلمة مرورك إطلاقاً.
-      </p>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         ليس لديك حساب؟{" "}
         <Link
