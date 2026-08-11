@@ -16,37 +16,34 @@ export function isPortalTokenShape(token: string | undefined | null): boolean {
 
 export const ALLOWED_EXTENSIONS = [
   "pdf",
-  "doc",
   "docx",
-  "xls",
-  "xlsx",
-  "ppt",
-  "pptx",
   "jpg",
   "jpeg",
   "png",
   "webp",
-  "heic",
-  "heif",
   "txt",
   "csv",
 ] as const;
 
 export const ALLOWED_MIME_PREFIXES = [
   "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument",
-  "application/vnd.ms-excel",
-  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/heic",
-  "image/heif",
   "text/plain",
   "text/csv",
   "application/csv",
 ];
+
+/**
+ * الصيغ المدعومة فعلياً من الرفع حتى العرض الآمن: لكل صيغة في هذه القائمة
+ * مسار عرض مائي (PDF أو صورة مباشرة) أو استخراج نصي يُنتج نسخة PDF مائية.
+ * لا تُوسّع هذه القائمة قبل توفير معالجة وعرض حقيقيين للصيغة الجديدة.
+ */
+export const SUPPORTED_FORMATS_LABEL = "PDF أو Word (docx) أو صور (JPG / PNG / WebP) أو نصوص (TXT / CSV)";
+
+export const UNSUPPORTED_FORMAT_MESSAGE = `نوع الملف غير مسموح به. يُسمح بملفات ${SUPPORTED_FORMATS_LABEL} فقط.`;
 
 export const ACCEPT_ATTR = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(",");
 
@@ -59,7 +56,7 @@ export function fileExtension(name: string) {
 export function validateClientFile(file: { name: string; size: number; type: string }) {
   const ext = fileExtension(file.name);
   if (!ext || !(ALLOWED_EXTENSIONS as readonly string[]).includes(ext)) {
-    return "نوع الملف غير مسموح به. يُسمح بملفات PDF والصور ومستندات Office فقط.";
+    return UNSUPPORTED_FORMAT_MESSAGE;
   }
   if (file.size <= 0) return "الملف فارغ.";
   if (file.size > MAX_UPLOAD_SIZE) return "حجم الملف يتجاوز 20 ميجابايت.";

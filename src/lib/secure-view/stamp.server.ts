@@ -205,7 +205,13 @@ export async function buildWatermarkedPdf(input: StampInput): Promise<Uint8Array
       );
     }
   } else {
-    pdf = await buildTextPdf(input.fallbackText ?? "", input.title);
+    // صيغة مسموح بها وغير قابلة للختم المباشر: نسخة مائية من النص المستخرج،
+    // أو رسالة مائية واضحة عند عدم توفر نص. لا يُعاد الأصل في أي حالة.
+    pdf = await buildTextPdf(
+      input.fallbackText?.trim() ||
+        "هذا الملف من صيغة تُعرض عبر نسخة نصية مائية، ولم يُستخرج منها نص بعد. يمكن إعادة معالجة المستند لاستخراج نصه، ثم إعادة العرض.",
+      input.title,
+    );
   }
 
   const font = await pdf.embedFont(watermarkFontBytes(), { subset: false });

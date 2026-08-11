@@ -14,6 +14,7 @@ import {
   ACCEPT_ATTR,
   MAX_FILES_PER_REQUEST,
   isPortalTokenShape,
+  SUPPORTED_FORMATS_LABEL,
   validateClientFile,
 } from "@/lib/client-portal.shared";
 import { fmtDateTime, fmtSize } from "@/lib/enums";
@@ -239,7 +240,7 @@ function Page() {
                 <FileUp className="h-6 w-6 text-text-muted" />
                 <span className="text-sm font-medium">اختر ملفات للرفع</span>
                 <span className="text-[11px] text-muted-foreground">
-                  PDF أو صور أو مستندات Office · حتى 20 ميجابايت للملف
+                  {SUPPORTED_FORMATS_LABEL} · حتى 20 ميجابايت للملف
                 </span>
                 <input
                   type="file"

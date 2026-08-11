@@ -5,29 +5,45 @@
  * من الامتداد المسموح به، ثم تُفحص بصمة البايتات الحقيقية. أي ملف متنكر
  * (HTML أو JSON أو تنفيذي) يُرفض قبل أن يُربط بأي سجل مستند.
  */
-import { ALLOWED_EXTENSIONS, fileExtension, MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
+import {
+  ALLOWED_EXTENSIONS,
+  fileExtension,
+  MAX_UPLOAD_SIZE,
+  UNSUPPORTED_FORMAT_MESSAGE,
+} from "@/lib/client-portal.shared";
 
 /** النوع المعياري الوحيد المقبول لكل امتداد مسموح به. */
 export const EXTENSION_MIME: Record<string, string> = {
   pdf: "application/pdf",
-  doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  xls: "application/vnd.ms-excel",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ppt: "application/vnd.ms-powerpoint",
-  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
-  heic: "image/heic",
-  heif: "image/heif",
   txt: "text/plain",
   csv: "text/csv",
 };
 
 /** قائمة MIME المسموح بها على مستوى المخزن (مطابقة للامتدادات أعلاه). */
 export const ALLOWED_BUCKET_MIME = [...new Set(Object.values(EXTENSION_MIME))].sort();
+
+/** الأنواع التي يفتحها محرك الختم مباشرة (PDF أو صورة قابلة للإدراج). */
+export const VIEWER_NATIVE_MIME = ["application/pdf", "image/png", "image/jpeg"] as const;
+
+/** هل يمكن ختم هذا النوع مباشرة كصفحة PDF أو صورة؟ */
+export function isViewerNativeMime(mime: string | null | undefined): boolean {
+  return /^(application\/pdf|image\/(png|jpeg))(?:\s*;|$)/.test((mime ?? "").trim().toLowerCase());
+}
+
+/**
+ * هل النوع داخل عقد الصيغ المسموح بها؟ الصيغ المسموح بها وغير القابلة للختم
+ * المباشر تُعرض عبر تمثيل نصي مائي، ولا تُعد ملفاً غير صالح.
+ */
+export function isAllowedDocumentMime(mime: string | null | undefined): boolean {
+  const value = (mime ?? "").trim().toLowerCase().split(";")[0]?.trim() ?? "";
+  if (!value) return false;
+  return ALLOWED_BUCKET_MIME.includes(value) || value === "application/csv";
+}
 
 /**
  * النوع المعياري من الامتداد. بعض المتصفحات (خاصة على iOS) ترسل MIME فارغاً أو
@@ -58,11 +74,6 @@ const HEIF_BRANDS = ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "he
 /** الجزء الداخلي الإلزامي لكل عائلة OOXML. */
 const OOXML_REQUIRED_PART: Record<string, string> = {
   docx: "word/document.xml",
-  doc: "word/document.xml",
-  xlsx: "xl/workbook.xml",
-  xls: "xl/workbook.xml",
-  pptx: "ppt/presentation.xml",
-  ppt: "ppt/presentation.xml",
 };
 
 function u16(bytes: Uint8Array, at: number): number {
@@ -164,17 +175,7 @@ export function signatureMatchesExtension(bytes: Uint8Array, ext: string): boole
         ascii(bytes, 4, 4) === "ftyp" && HEIF_BRANDS.includes(ascii(bytes, 8, 4).toLowerCase())
       );
     case "docx":
-    case "xlsx":
-    case "pptx":
       return isOoxmlForExtension(bytes, ext);
-    case "doc":
-    case "xls":
-    case "ppt":
-      // OLE2 القديم، أو مستند OOXML من نفس العائلة أُعطي امتداداً قديماً.
-      return (
-        startsWith(bytes, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]) ||
-        isOoxmlForExtension(bytes, ext)
-      );
     case "txt":
     case "csv":
       // لا بصمة للنص: يُشترط ألا يكون ثنائياً ولا صفحة/بيانات متنكرة.
@@ -199,7 +200,7 @@ export function verifyFileBytes(
   if (!ext || !mime) {
     return {
       ok: false,
-      reason: "نوع الملف غير مسموح به. يُسمح بملفات PDF والصور ومستندات Office فقط.",
+      reason: UNSUPPORTED_FORMAT_MESSAGE,
     };
   }
   if (bytes.byteLength === 0) return { ok: false, reason: "الملف فارغ." };
