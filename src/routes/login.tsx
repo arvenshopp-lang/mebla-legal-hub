@@ -308,13 +308,14 @@ function normalizeEmail(value: string) {
 }
 
 /** رسائل تحقق عربية واضحة للبريد الإلكتروني، وتشمل حالة كتابته بحروف عربية. */
-export function validateEmail(cleanEmail: string): string | null {
+function validateEmail(cleanEmail: string): string | null {
   if (!cleanEmail) return "يرجى إدخال البريد الإلكتروني.";
   if (/[\u0600-\u06FF\u0750-\u077F]/.test(cleanEmail))
     return "البريد الإلكتروني يُكتب بالحروف اللاتينية والأرقام الإنجليزية فقط. يرجى تبديل لغة لوحة المفاتيح إلى الإنجليزية.";
   if (/[٠-٩۰-۹]/.test(cleanEmail))
     return "استخدم الأرقام الإنجليزية (0-9) في البريد الإلكتروني بدلاً من الأرقام العربية.";
-  if (!cleanEmail.includes("@")) return "البريد الإلكتروني يجب أن يحتوي على الرمز @، مثال: name@example.com";
+  if (!cleanEmail.includes("@"))
+    return "البريد الإلكتروني يجب أن يحتوي على الرمز @، مثال: name@example.com";
   if (cleanEmail.split("@").length > 2) return "البريد الإلكتروني يحتوي على أكثر من رمز @ واحد.";
   const [local, domain] = cleanEmail.split("@");
   if (!local) return "يرجى كتابة اسم المستخدم قبل الرمز @.";
@@ -329,7 +330,7 @@ export function validateEmail(cleanEmail: string): string | null {
 }
 
 /** رسائل تحقق عربية واضحة لكلمة المرور (تحقق شكلي فقط دون كشف سياسة الحساب). */
-export function validatePassword(value: string): string | null {
+function validatePassword(value: string): string | null {
   if (!value) return "يرجى إدخال كلمة المرور.";
   if (value.trim().length === 0) return "كلمة المرور لا يمكن أن تكون مسافات فقط.";
   if (value.length < 8) return "كلمة المرور يجب أن تكون 8 أحرف على الأقل.";
