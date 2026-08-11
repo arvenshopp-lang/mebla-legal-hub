@@ -211,8 +211,9 @@ async function main() {
     headers: { ...adminHeaders, Prefer: "return=representation" },
     body: JSON.stringify({ organization_id: org, client_id: clientId, case_title: "QA قضية الاختبار", status: "active" }),
   });
-  const caseId = ((await caseRes.json()) as { id?: string }[])[0]?.id ?? null;
-  check("تهيئة قضية QA لطلب الرفع", !!caseId, JSON.stringify(await caseRes.status).slice(0, 80));
+  const caseBody = (await caseRes.json()) as { id?: string }[] | { message?: string };
+  const caseId = Array.isArray(caseBody) ? (caseBody[0]?.id ?? null) : null;
+  check("تهيئة قضية QA لطلب الرفع", !!caseId, JSON.stringify(caseBody).slice(0, 200));
   const reqRes = await adminFetch(`${SUPABASE_URL}/rest/v1/document_requests`, {
     method: "POST",
     headers: { ...adminHeaders, Prefer: "return=representation" },
