@@ -245,7 +245,8 @@ check(
 // 6) أحدث تعريف للتريجر: لا تجاوز صلاحيات عبر current_user، والهوية من دور الطلب
 const definingMigrations: string[] = [];
 for await (const rel of new Bun.Glob("supabase/migrations/*.sql").scan({ cwd: ROOT })) {
-  if (read(rel).includes("FUNCTION private.documents_enforce_integrity")) definingMigrations.push(rel);
+  if (read(rel).includes("FUNCTION private.documents_enforce_integrity"))
+    definingMigrations.push(rel);
 }
 definingMigrations.sort();
 const latestTrigger = definingMigrations.length
