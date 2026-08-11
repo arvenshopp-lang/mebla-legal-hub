@@ -30,10 +30,14 @@ function read(rel: string): string {
 // 1) migration التحصين موجود ويحتوي كل الضمانات، وidempotent
 const migrations = new Bun.Glob("supabase/migrations/*.sql");
 let hardening = "";
+let uniqueIndexSql = "";
 for await (const rel of migrations.scan({ cwd: ROOT })) {
   const sql = read(rel);
   if (sql.includes("documents_enforce_integrity")) hardening += `\n${sql}`;
+  if (/CREATE UNIQUE INDEX[^;]*documents[^;]*\(\s*file_path\s*\)/i.test(sql))
+    uniqueIndexSql += `\n${sql}`;
 }
+check("migration: unique file_path index declared", uniqueIndexSql.length > 0);
 check("migration: documents hardening present", hardening.length > 0);
 check(
   "migration: drops browser INSERT policy",
@@ -69,7 +73,8 @@ for (const col of [
 }
 check(
   "migration: unique file_path index",
-  /CREATE UNIQUE INDEX IF NOT EXISTS documents_file_path_unique/i.test(hardening),
+  /CREATE UNIQUE INDEX IF NOT EXISTS documents_file_path_unique/i.test(hardening) ||
+    /documents_file_path_key/i.test(uniqueIndexSql),
 );
 check("migration: fixed search_path", /SET search_path = private, public, pg_temp/.test(hardening));
 check(
