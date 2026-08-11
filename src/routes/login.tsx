@@ -241,15 +241,6 @@ function LoginPage() {
         >
           {loading ? "جاري تسجيل الدخول…" : "دخول"}
         </button>
-        <button
-          type="button"
-          onClick={requestMagicLink}
-          disabled={actionBusy === "magic"}
-          aria-busy={actionBusy === "magic"}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-m)] text-center text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
-        </button>
       </form>
       <div className="my-6 flex items-center gap-3 text-xs text-text-muted">
         <span aria-hidden="true" className="h-px flex-1 bg-border" />
