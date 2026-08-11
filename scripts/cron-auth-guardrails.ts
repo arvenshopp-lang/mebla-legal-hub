@@ -44,10 +44,16 @@ for (const hook of HOOKS) {
   check(`${hook}: no SUPABASE_ANON_KEY`, !src.includes("SUPABASE_ANON_KEY"));
   check(`${hook}: no SUPABASE_PUBLISHABLE_KEY`, !src.includes("SUPABASE_PUBLISHABLE_KEY"));
   check(`${hook}: no apikey header auth`, !/headers\.get\(\s*["']apikey["']\s*\)/.test(src));
-  check(`${hook}: no authorization bearer auth`, !/headers\.get\(\s*["']authorization["']/i.test(src));
+  check(
+    `${hook}: no authorization bearer auth`,
+    !/headers\.get\(\s*["']authorization["']/i.test(src),
+  );
   check(`${hook}: no SERVICE_ROLE literal`, !src.includes("SERVICE_ROLE_KEY"));
   check(`${hook}: uses cron-auth guard`, src.includes("guardCronRequest"));
-  check(`${hook}: guard runs before work`, src.indexOf("guardCronRequest") < src.indexOf("await import("));
+  check(
+    `${hook}: guard runs before work`,
+    src.indexOf("guardCronRequest") < src.indexOf("await import("),
+  );
 }
 
 // 2) الهيلبر: ترويسة مخصصة + تحقق داخل قاعدة البيانات + لا أسرار في المصدر
@@ -93,10 +99,7 @@ check("denial: opaque body", body === JSON.stringify({ error: "unauthorized" }))
 const publicHooks = new Bun.Glob("src/routes/api/public/hooks/*.ts");
 for await (const rel of publicHooks.scan({ cwd: ROOT })) {
   const src = read(rel);
-  check(
-    `scan: ${rel} free of public-key auth`,
-    !/SUPABASE_(ANON|PUBLISHABLE)_KEY/.test(src),
-  );
+  check(`scan: ${rel} free of public-key auth`, !/SUPABASE_(ANON|PUBLISHABLE)_KEY/.test(src));
 }
 
 console.log(`\nPASS = ${pass} / FAIL = ${fail}`);
