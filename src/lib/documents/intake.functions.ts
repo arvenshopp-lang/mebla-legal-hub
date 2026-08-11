@@ -102,3 +102,23 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
 
     return { documentId: inserted.id, fileType: verified.mime, fileSize: verified.size };
   });
+
+/**
+ * حذف مستند: التحقق من الصلاحية بعميل المستخدم، ثم إزالة كائن التخزين ثم الصف
+ * بمفتاح الخدمة. المتصفح لم يعد يملك DELETE على الجدول ولا على المخزن.
+ */
+export const deleteDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ documentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { requireDocumentDeletePermission, purgeDocument } = await import("./intake.server");
+    const doc = await requireDocumentDeletePermission(
+      context.supabase,
+      context.userId,
+      data.documentId,
+    );
+    await purgeDocument(doc);
+    return { organizationId: doc.organization_id, fileName: doc.file_name };
+  });
