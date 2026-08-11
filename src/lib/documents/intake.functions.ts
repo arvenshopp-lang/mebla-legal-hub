@@ -109,9 +109,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
  */
 export const deleteDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ documentId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: unknown) => z.object({ documentId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { requireDocumentDeletePermission, purgeDocument } = await import("./intake.server");
     const doc = await requireDocumentDeletePermission(
