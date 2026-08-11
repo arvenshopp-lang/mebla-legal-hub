@@ -46,8 +46,7 @@ check("دالة الإنشاء تستدعي التحقق الخادمي", assert
 check("التحقق يسبق أي كتابة على document_requests", assertIdx > 0 && assertIdx < insertIdx);
 check(
   "الإدراج يستخدم مكتب القضية المتحققة لا مدخلاً من العميل",
-  /organization_id: kase\.organization_id/.test(createFn) &&
-    /case_id: kase\.id/.test(createFn),
+  /organization_id: kase\.organization_id/.test(createFn) && /case_id: kase\.id/.test(createFn),
 );
 
 /* ------------------------------ طبقة القاعدة ----------------------------- */
@@ -81,7 +80,8 @@ if (guardSql) {
   );
   check(
     "التريجر يعمل بأمان SECURITY DEFINER مع search_path مثبّت",
-    /SECURITY DEFINER/.test(guardSql) && /SET search_path = private, public, pg_temp/.test(guardSql),
+    /SECURITY DEFINER/.test(guardSql) &&
+      /SET search_path = private, public, pg_temp/.test(guardSql),
   );
 }
 
@@ -113,7 +113,9 @@ check(
     /client_id: found\.clientId/.test(portalFns),
 );
 
-console.log(`\n${failures.length === 0 ? "OK" : "FAILED"} — PASS = ${pass} / FAIL = ${failures.length}`);
+console.log(
+  `\n${failures.length === 0 ? "OK" : "FAILED"} — PASS = ${pass} / FAIL = ${failures.length}`,
+);
 if (failures.length > 0) {
   for (const f of failures) console.log(`  - ${f}`);
   process.exit(1);
