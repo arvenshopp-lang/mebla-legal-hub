@@ -107,5 +107,62 @@ for await (const rel of publicHooks.scan({ cwd: ROOT })) {
   check(`scan: ${rel} free of public-key auth`, !/SUPABASE_(ANON|PUBLISHABLE)_KEY/.test(src));
 }
 
+// 6) الميجريشن الأحدث لدالة verify_cron_secret: مقارنة ثابتة عدد الخطوات على 32 بايت
+const migrationsDir = "supabase/migrations";
+const migrationFiles = readdirSync(join(ROOT, migrationsDir))
+  .filter((name) => name.endsWith(".sql"))
+  .sort();
+const verifyMigrations = migrationFiles.filter((name) =>
+  read(`${migrationsDir}/${name}`).includes("FUNCTION public.verify_cron_secret"),
+);
+check("migration: verify_cron_secret defined", verifyMigrations.length > 0);
+
+const latestVerifySql = verifyMigrations.length
+  ? read(`${migrationsDir}/${verifyMigrations[verifyMigrations.length - 1]!}`)
+  : "";
+
+check("migration: plpgsql implementation", /LANGUAGE\s+plpgsql/i.test(latestVerifySql));
+check("migration: fixed 32-byte loop", /FOR\s+i\s+IN\s+0\.\.31\s+LOOP/i.test(latestVerifySql));
+check(
+  "migration: accumulates every byte without early exit",
+  /diff\s*:=\s*diff\s*\|\s*\(\s*get_byte\(\s*stored_digest\s*,\s*i\s*\)\s*#\s*get_byte\(\s*candidate_digest\s*,\s*i\s*\)\s*\)/i.test(
+    latestVerifySql,
+  ),
+);
+check("migration: result derived from accumulator", /RETURN\s+diff\s*=\s*0/i.test(latestVerifySql));
+check(
+  "migration: no direct digest equality",
+  !/digest\s*\([^)]*\)\s*(=|<>|!=)\s*digest\s*\(/i.test(latestVerifySql),
+);
+check(
+  "migration: no direct secret equality",
+  !/\b(stored|stored_digest)\b\s*(=|<>|!=)\s*\b(candidate|candidate_digest)\b/i.test(
+    latestVerifySql,
+  ),
+);
+check(
+  "migration: no loop early exit",
+  !/LOOP[\s\S]*?(EXIT|RETURN)[\s\S]*?END\s+LOOP/i.test(latestVerifySql),
+);
+check(
+  "migration: execute restricted to service_role",
+  /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.verify_cron_secret\(text\)\s+TO\s+service_role/i.test(
+    latestVerifySql,
+  ) &&
+    /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.verify_cron_secret\(text\)\s+FROM\s+anon,\s*authenticated/i.test(
+      latestVerifySql,
+    ),
+);
+check(
+  "migration: does not return the secret",
+  !/RETURN\s+(stored|secret)\s*;/i.test(latestVerifySql),
+);
+
+// 7) لا يوجد literal يشبه مفتاح مشروع داخل أي حارس
+const guardScripts = new Bun.Glob("scripts/*guardrails*.ts");
+for await (const rel of guardScripts.scan({ cwd: ROOT })) {
+  check(`guardrail: ${rel} free of project-key literals`, !keyLikePattern.test(read(rel)));
+}
+
 console.log(`\nPASS = ${pass} / FAIL = ${fail}`);
 if (fail > 0) process.exit(1);
