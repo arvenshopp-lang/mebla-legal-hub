@@ -21,7 +21,9 @@ allowed_authenticated_rpc(proname) AS (
     ('consume_ocr_pages'),
     ('create_organization_with_owner'),
     ('my_case_party_permissions'),
+    ('my_profile'),
     ('my_subscription_overview'),
+    ('org_team_contacts'),
     ('print_copy_number'),
     ('recalc_invoice'),
     ('record_metered_usage')
