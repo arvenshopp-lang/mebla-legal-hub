@@ -144,11 +144,8 @@ export const verifyPhoneCode = createServerFn({ method: "POST" })
 export const getMyPhoneStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
-      .from("profiles")
-      .select("phone, phone_verification_status, phone_verified_at, mfa_status")
-      .eq("id", context.userId)
-      .maybeSingle();
+    const { data, error } = await context.supabase.rpc("my_profile").maybeSingle();
+    if (error) throw new Error("تعذّر قراءة حالة توثيق الجوال. أعد المحاولة.");
     return {
       phone: data?.phone ?? null,
       status: (data?.phone_verification_status ?? "not_required") as string,
