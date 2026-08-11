@@ -192,16 +192,16 @@ export type ContentPage = {
   updated_at: string;
 };
 
+import { fmtNumber as sharedNumber, fmtMoney as sharedMoney, fmtDecimal } from "./format";
+
 export const fmtBytes = (n: number | null | undefined): string => {
   const v = Number(n ?? 0);
-  if (v >= 1024 ** 3) return `${(v / 1024 ** 3).toFixed(2)} ج.ب`;
-  if (v >= 1024 ** 2) return `${(v / 1024 ** 2).toFixed(1)} م.ب`;
-  if (v >= 1024) return `${(v / 1024).toFixed(0)} ك.ب`;
-  return `${v} بايت`;
+  if (v >= 1024 ** 3) return `${fmtDecimal(v / 1024 ** 3)} ج.ب`;
+  if (v >= 1024 ** 2) return `${fmtDecimal(v / 1024 ** 2)} م.ب`;
+  if (v >= 1024) return `${sharedNumber(v / 1024)} ك.ب`;
+  return `${sharedNumber(v)} بايت`;
 };
 
-export const fmtNumber = (n: number | null | undefined): string =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(Number(n ?? 0));
+export const fmtNumber = (n: number | null | undefined): string => sharedNumber(n);
 
-export const fmtMoney = (n: number | null | undefined): string =>
-  `${new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(Number(n ?? 0))} ر.س`;
+export const fmtMoney = (n: number | null | undefined): string => sharedMoney(n);

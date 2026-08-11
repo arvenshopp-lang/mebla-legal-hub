@@ -22,6 +22,7 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
+import { fmtNumber } from "@/lib/format";
 import {
   MARKETING_CAMPAIGN_STATUS,
   MARKETING_CAMPAIGN_STATUS_LABELS,
@@ -205,10 +206,10 @@ export function CampaignsPanel({
                       </Badge>
                     </Td>
                     <Td className="tabular-nums">
-                      {c.budget_amount.toLocaleString("ar-SA")} {c.currency}
+                      {fmtNumber(c.budget_amount)} {c.currency}
                     </Td>
                     <Td className="tabular-nums">
-                      {c.spend_amount.toLocaleString("ar-SA")} {c.currency}
+                      {fmtNumber(c.spend_amount)} {c.currency}
                     </Td>
                     <Td>
                       {c.starts_on ? fmtDate(c.starts_on) : "—"} —{" "}

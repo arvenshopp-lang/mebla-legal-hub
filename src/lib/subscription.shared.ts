@@ -3,6 +3,8 @@
  * Every number here originates from the database (`my_subscription_overview`).
  */
 
+import { fmtNumber } from "@/lib/format";
+
 export type SubscriptionState = "active" | "trial" | "expired" | "suspended" | "cancelled" | "none";
 
 export type PlanFeatureKey =
@@ -165,7 +167,7 @@ function tone(percent: number | null): LimitRow["tone"] {
   return "ok";
 }
 
-const NUM = (n: number) => n.toLocaleString("ar-SA-u-nu-latn");
+const NUM = (n: number) => fmtNumber(n);
 
 export function buildLimits(plan: SubscriptionPlan, usage: SubscriptionUsage): LimitRow[] {
   const rows: Array<{

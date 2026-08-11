@@ -930,9 +930,7 @@ export const createOfficeSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => officeTicketSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: profile } = await context.supabase
-      .rpc("my_profile")
-      .maybeSingle();
+    const { data: profile } = await context.supabase.rpc("my_profile").maybeSingle();
     const { data: membership } = await context.supabase
       .from("organization_members")
       .select("organization_id")

@@ -584,6 +584,26 @@ export function CaseDialog({
     onClose();
   };
 
+  // التحقق الحيّ من الإلزاميات: زر الحفظ معطّل حتى تكتمل، مع بيان السبب للمستخدم.
+  const parsed = caseSchema.safeParse({
+    ...form,
+    status: form.status ?? "open",
+    priority: form.priority ?? "medium",
+  });
+  const canSave = parsed.success;
+  /** يعرض خطأ الحقل عند مغادرته فقط، حتى لا تظهر أخطاء قبل الكتابة. */
+  const markTouched = (field: keyof CaseForm) => {
+    const issue = parsed.success
+      ? null
+      : (parsed.error.issues.find((i) => i.path[0] === field) ?? null);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (issue) next[field as string] = issue.message;
+      else delete next[field as string];
+      return next;
+    });
+  };
+
   return (
     <Modal
       open={open}
@@ -596,23 +616,25 @@ export function CaseDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="عنوان القضية *">
+          <FormField label="عنوان القضية" required error={errors.case_title}>
             <input
               value={form.case_title ?? ""}
               onChange={(e) => setForm({ ...form, case_title: e.target.value })}
+              onBlur={() => markTouched("case_title")}
+              required
+              aria-required
               className={inputCls}
             />
-            {errors.case_title && <span className="text-xs text-danger">{errors.case_title}</span>}
           </FormField>
         </div>
-        <FormField label="رقم القضية">
+        <FormField label="رقم القضية" optional>
           <input
             value={form.case_number ?? ""}
             onChange={(e) => setForm({ ...form, case_number: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="نوع القضية">
+        <FormField label="نوع القضية" optional>
           <input
             value={form.case_type ?? ""}
             onChange={(e) => setForm({ ...form, case_type: e.target.value })}
@@ -620,13 +642,13 @@ export function CaseDialog({
             className={inputCls}
           />
         </FormField>
-        <FormField label="العميل">
+        <FormField label="العميل" optional>
           <select
             value={form.client_id ?? ""}
             onChange={(e) => setForm({ ...form, client_id: e.target.value || null })}
             className={inputCls}
           >
-            <option value="">— بدون —</option>
+            <option value="">اختر عميلاً…</option>
             {(clients ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.full_name}
@@ -634,7 +656,7 @@ export function CaseDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="صفة العميل">
+        <FormField label="صفة العميل" optional>
           <select
             value={form.client_role ?? ""}
             onChange={(e) =>
@@ -645,7 +667,7 @@ export function CaseDialog({
             }
             className={inputCls}
           >
-            <option value="">—</option>
+            <option value="">غير محدد</option>
             {asOptions(CLIENT_ROLE).map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -653,44 +675,45 @@ export function CaseDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="اسم الخصم">
+        <FormField label="اسم الخصم" optional>
           <input
             value={form.opponent_name ?? ""}
             onChange={(e) => setForm({ ...form, opponent_name: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="المحكمة">
+        <FormField label="المحكمة" optional>
           <input
             value={form.court_name ?? ""}
             onChange={(e) => setForm({ ...form, court_name: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="الفرع">
+        <FormField label="الفرع" optional>
           <input
             value={form.court_branch ?? ""}
             onChange={(e) => setForm({ ...form, court_branch: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="الدائرة">
+        <FormField label="الدائرة" optional>
           <input
             value={form.judicial_circuit ?? ""}
             onChange={(e) => setForm({ ...form, judicial_circuit: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="القاضي">
+        <FormField label="القاضي" optional>
           <input
             value={form.judge_name ?? ""}
             onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "open"}
+            aria-required
             onChange={(e) => setForm({ ...form, status: e.target.value as Enums<"case_status"> })}
             className={inputCls}
           >
@@ -701,9 +724,10 @@ export function CaseDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="الأولوية *">
+        <FormField label="الأولوية" required>
           <select
             value={form.priority ?? "medium"}
+            aria-required
             onChange={(e) =>
               setForm({ ...form, priority: e.target.value as Enums<"case_priority"> })
             }
@@ -716,13 +740,13 @@ export function CaseDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="المحامي المسؤول">
+        <FormField label="المحامي المسؤول" optional>
           <select
             value={form.assigned_lawyer_id ?? ""}
             onChange={(e) => setForm({ ...form, assigned_lawyer_id: e.target.value || null })}
             className={inputCls}
           >
-            <option value="">—</option>
+            <option value="">غير محدد</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -730,7 +754,7 @@ export function CaseDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="تاريخ الفتح">
+        <FormField label="تاريخ الفتح" optional>
           <input
             type="date"
             value={form.opened_at ?? ""}
@@ -739,7 +763,7 @@ export function CaseDialog({
           />
         </FormField>
         <div className="md:col-span-2">
-          <FormField label="الوصف">
+          <FormField label="الوصف" optional>
             <textarea
               rows={3}
               value={form.description ?? ""}
@@ -750,7 +774,7 @@ export function CaseDialog({
         </div>
         {canSeeInternalNotes && (
           <div className="md:col-span-2">
-            <FormField label="ملاحظات داخلية">
+            <FormField label="ملاحظات داخلية" optional>
               <textarea
                 rows={2}
                 value={form.internal_notes ?? ""}
@@ -761,14 +785,24 @@ export function CaseDialog({
           </div>
         )}
       </div>
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+      {!canSave && (
+        <p id="case-form-required-hint" className="text-caption mt-4 text-text-muted">
+          أكمل الحقول الإلزامية المعلَّمة بنجمة حمراء لتفعيل الحفظ.
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
         <div className="me-auto">
           <DraftStatus draft={draft as never} />
         </div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>
           إلغاء
         </Btn>
-        <Btn onClick={save} loading={saving}>
+        <Btn
+          onClick={save}
+          loading={saving}
+          disabled={!canSave}
+          {...(!canSave ? { "aria-describedby": "case-form-required-hint" } : {})}
+        >
           {saving ? "جاري الحفظ…" : "حفظ"}
         </Btn>
       </div>

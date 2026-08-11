@@ -388,21 +388,43 @@ export function ClientDialog({
       : "commercial_registration";
   const piiMask = (mask?.[piiField] ?? "—") as string;
 
+  // التحقق الحيّ من الإلزاميات: زر الحفظ معطّل حتى تكتمل، مع بيان السبب للمستخدم.
+  const parsed = clientSchema.safeParse({
+    ...form,
+    client_type: form.client_type ?? "individual",
+  });
+  const canSave = parsed.success;
+  /** يعرض خطأ الحقل عند مغادرته فقط، حتى لا تظهر أخطاء قبل الكتابة. */
+  const markTouched = (field: keyof ClientForm) => {
+    const issue = parsed.success
+      ? null
+      : (parsed.error.issues.find((i) => i.path[0] === field) ?? null);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (issue) next[field as string] = issue.message;
+      else delete next[field as string];
+      return next;
+    });
+  };
+
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل عميل" : "عميل جديد"} size="lg">
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
-        <FormField label="الاسم الكامل *">
+        <FormField label="الاسم الكامل" required error={errors.full_name}>
           <input
             value={form.full_name ?? ""}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            onBlur={() => markTouched("full_name")}
+            required
+            aria-required
             className={inputCls}
           />
-          {errors.full_name && <span className="text-xs text-danger">{errors.full_name}</span>}
         </FormField>
-        <FormField label="نوع العميل *">
+        <FormField label="نوع العميل" required>
           <select
             value={form.client_type ?? "individual"}
+            aria-required
             onChange={(e) => {
               const next = e.target.value as ClientForm["client_type"];
               // تفريغ حقول الجهة عند التحويل إلى «فرد» حتى لا تُحفظ بيانات لا تنتمي للعميل
@@ -427,7 +449,7 @@ export function ClientDialog({
           </select>
         </FormField>
         {form.client_type !== "individual" && (
-          <FormField label="اسم الجهة/الشركة">
+          <FormField label="اسم الجهة/الشركة" optional>
             <input
               value={form.company_name ?? ""}
               onChange={(e) => setForm({ ...form, company_name: e.target.value })}
@@ -444,30 +466,30 @@ export function ClientDialog({
           onStartEdit={() => setPiiEdit({ field: piiField, value: "" })}
           onCancelEdit={() => setPiiEdit(null)}
         />
-        <FormField label="الجوال">
+        <FormField label="الجوال" optional>
           <input
             value={form.phone ?? ""}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="البريد الإلكتروني">
+        <FormField label="البريد الإلكتروني" optional error={errors.email}>
           <input
             type="email"
             value={form.email ?? ""}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onBlur={() => markTouched("email")}
             className={inputCls}
           />
-          {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
         </FormField>
-        <FormField label="المدينة">
+        <FormField label="المدينة" optional>
           <input
             value={form.city ?? ""}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
             className={inputCls}
           />
         </FormField>
-        <FormField label="العنوان">
+        <FormField label="العنوان" optional>
           <input
             value={form.address ?? ""}
             onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -475,7 +497,7 @@ export function ClientDialog({
           />
         </FormField>
         <div className="md:col-span-2">
-          <FormField label="ملاحظات">
+          <FormField label="ملاحظات" optional>
             <textarea
               rows={3}
               value={form.notes ?? ""}
@@ -485,14 +507,24 @@ export function ClientDialog({
           </FormField>
         </div>
       </div>
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+      {!canSave && (
+        <p id="client-form-required-hint" className="text-caption mt-4 text-text-muted">
+          أكمل الحقول الإلزامية المعلَّمة بنجمة حمراء لتفعيل الحفظ.
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
         <div className="me-auto">
           <DraftStatus draft={draft as never} />
         </div>
         <Btn variant="outline" onClick={onClose} disabled={saving}>
           إلغاء
         </Btn>
-        <Btn onClick={save} loading={saving}>
+        <Btn
+          onClick={save}
+          loading={saving}
+          disabled={!canSave}
+          {...(!canSave ? { "aria-describedby": "client-form-required-hint" } : {})}
+        >
           {saving ? "جاري الحفظ…" : "حفظ"}
         </Btn>
       </div>

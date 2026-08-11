@@ -959,12 +959,7 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "content.publish": ["content.read"],
   // الصلاحية الواسعة تبقى مقبولة وتُترجم إلى الصلاحيات الدقيقة الحديثة،
   // بلا نشر ولا تراجع: هاتان تُمنحان صراحة فقط.
-  "design.manage": [
-    "design.read",
-    "design.draft.write",
-    "design.preview",
-    "design.history.read",
-  ],
+  "design.manage": ["design.read", "design.draft.write", "design.preview", "design.history.read"],
   "sms.manage": ["sms.read"],
   "security.manage": ["security.read"],
   "feature_flags.manage": ["feature_flags.read"],

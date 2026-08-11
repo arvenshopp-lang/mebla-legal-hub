@@ -12,6 +12,7 @@ import { CampaignsPanel } from "@/components/admin/marketing/campaigns-panel";
 import { ConversionsPanel } from "@/components/admin/marketing/conversions-panel";
 import { ReferralsPanel } from "@/components/admin/marketing/referrals-panel";
 import { ProvidersPanel } from "@/components/admin/marketing/providers-panel";
+import { fmtNumber } from "@/lib/format";
 
 export const Route = createFileRoute("/mehla-admin/marketing")({
   head: () => ({
@@ -90,25 +91,25 @@ function MarketingPage() {
           <SummaryCard
             Icon={LineChart}
             label="إجمالي الإنفاق"
-            value={`${totals.spend.toLocaleString("ar-SA")} ﷼`}
-            hint={`من إجمالي ميزانية ${totals.budget.toLocaleString("ar-SA")} ﷼`}
+            value={`${fmtNumber(totals.spend)} ﷼`}
+            hint={`من إجمالي ميزانية ${fmtNumber(totals.budget)} ﷼`}
           />
           <SummaryCard
             Icon={Target}
             label="عملاء محتملون مرتبطون"
-            value={totals.leads.toLocaleString("ar-SA")}
-            hint={`${totals.deals.toLocaleString("ar-SA")} صفقة مرتبطة بحملات`}
+            value={fmtNumber(totals.leads)}
+            hint={`${fmtNumber(totals.deals)} صفقة مرتبطة بحملات`}
           />
           <SummaryCard
             Icon={Trophy}
             label="قيمة الصفقات الفائزة"
-            value={`${totals.wonAmount.toLocaleString("ar-SA")} ﷼`}
+            value={`${fmtNumber(totals.wonAmount)} ﷼`}
             hint="محسوبة من الصفقات المطابقة لبيانات UTM"
           />
           <SummaryCard
             Icon={BadgePercent}
             label="أحداث التحويل المسجّلة"
-            value={totals.conversionEvents.toLocaleString("ar-SA")}
+            value={fmtNumber(totals.conversionEvents)}
             hint="عبر جميع الحملات"
           />
         </div>

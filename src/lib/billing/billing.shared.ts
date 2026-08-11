@@ -2,6 +2,7 @@
  * المركز المالي — أنواع ومسميات وحسابات مشتركة بين الخادم والواجهة.
  * لا يحتوي هذا الملف على أي منطق خادمي أو أسرار.
  */
+import { fmtDate, fmtDateTime, fmtDecimal } from "@/lib/format";
 
 export const INVOICE_STATUSES = [
   "draft",
@@ -275,25 +276,15 @@ export function computeTotals(
 export function formatMoney(amount: number | string | null | undefined, currency = "SAR"): string {
   const value = Number(amount ?? 0);
   const label = currency === "SAR" ? "ر.س" : currency;
-  return `${value.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${label}`;
+  return `${fmtDecimal(value)} ${label}`;
 }
 
 export function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("ar-SA-u-ca-gregory", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  return fmtDate(value);
 }
 
 export function formatDateTime(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return `${formatDate(value)} · ${date.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}`;
+  return fmtDateTime(value);
 }
 
 /** فئات تقرير أعمار الدين. */

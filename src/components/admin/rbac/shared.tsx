@@ -174,7 +174,7 @@ export type RbacOverview = {
 
 /* ------------------------------ التواريخ ------------------------------ */
 
-const AR_DATE = new Intl.DateTimeFormat("ar-SA-u-nu-latn", {
+const AR_DATE = new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
   timeZone: "Asia/Riyadh",
   dateStyle: "medium",
   timeStyle: "short",

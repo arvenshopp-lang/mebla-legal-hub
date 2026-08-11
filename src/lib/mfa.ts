@@ -3,6 +3,7 @@
  * السرّ لا يُخزَّن في قاعدة بيانات المنصة ولا يمر عبر خوادمنا التطبيقية.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { fmtDate } from "@/lib/format";
 
 export type MfaFactor = {
   id: string;
@@ -24,7 +25,7 @@ export async function startTotpEnrollment(): Promise<{
 }> {
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: `مِهلة ${new Date().toLocaleDateString("ar-SA")}`,
+    friendlyName: `مِهلة ${fmtDate(new Date())}`,
   });
   if (error || !data) {
     throw new Error(

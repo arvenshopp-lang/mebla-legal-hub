@@ -33,6 +33,7 @@ import {
   type TokenDef,
 } from "@/lib/design/tokens";
 import { MAX_CSS_BYTES, validateCustomCss } from "@/lib/design/css-guard";
+import { fmtDateTime, fmtTime } from "@/lib/format";
 import {
   getDesignStudio,
   publishDesign,
@@ -467,8 +468,7 @@ function DesignStudioPage() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11.5px] text-muted-foreground" role="status" aria-live="polite">
             {status === "saving" && "جارٍ الحفظ…"}
-            {status === "saved" &&
-              `تم الحفظ${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString("ar-SA")}` : ""}`}
+            {status === "saved" && `تم الحفظ${lastSavedAt ? ` · ${fmtTime(lastSavedAt)}` : ""}`}
             {status === "error" && "فشل الحفظ — أعد المحاولة"}
           </span>
           <Btn
@@ -569,9 +569,7 @@ function DesignStudioPage() {
               <div>
                 <dt className="text-[11.5px] text-muted-foreground">آخر نشر</dt>
                 <dd className="text-[13px]">
-                  {state?.last_published_at
-                    ? new Date(state.last_published_at).toLocaleString("ar-SA")
-                    : "لا يوجد"}
+                  {state?.last_published_at ? fmtDateTime(state.last_published_at) : "لا يوجد"}
                 </dd>
               </div>
               <div>
@@ -900,9 +898,7 @@ function DesignStudioPage() {
                               {v.change_summary ? String(v.change_summary) : "—"}
                             </td>
                             <td className="p-2.5">
-                              {v.published_at
-                                ? new Date(String(v.published_at)).toLocaleString("ar-SA")
-                                : "—"}
+                              {v.published_at ? fmtDateTime(String(v.published_at)) : "—"}
                             </td>
                             <td className="p-2.5">
                               <Btn
@@ -958,7 +954,7 @@ function DesignStudioPage() {
                         {a.actor_email ? String(a.actor_email) : "—"}
                       </span>
                       <span className="ms-auto text-text-muted">
-                        {new Date(String(a.created_at)).toLocaleString("ar-SA")}
+                        {fmtDateTime(String(a.created_at))}
                       </span>
                     </li>
                   ))}

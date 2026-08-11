@@ -38,6 +38,7 @@ import {
 } from "@/lib/sales-docs.functions";
 import { KIND_LABELS, STATUS_LABELS, type SalesDocStatus } from "@/lib/sales-docs.shared";
 import { DocumentFormModal, type DraftFormValue } from "@/components/admin/sales/document-form";
+import { fmtDecimal } from "@/lib/format";
 import {
   KindBadge,
   Money,
@@ -195,7 +196,7 @@ function SalesDocumentPage() {
    * إرفاق ملف تلقائياً)، ثم يُنزَّل ملف PDF ليُرفق يدوياً في المحادثة.
    */
   const shareWhatsApp = () => {
-    const amount = `${doc.total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${doc.currency}`;
+    const amount = `${fmtDecimal(doc.total)} ${doc.currency}`;
     const to =
       doc.recipient_company ?? content.companyName ?? doc.organization_name ?? doc.recipient_name;
     const lines = [
