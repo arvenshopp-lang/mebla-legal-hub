@@ -123,11 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const [profileResult, membershipResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, full_name, email, phone, avatar_url, job_title")
-          .eq("id", currentUser.id)
-          .maybeSingle(),
+        // بيانات التواصل الشخصية تُقرأ عبر دالة خادمية مقيّدة بالمستخدم نفسه
+        // (أعمدة البريد والجوال في profiles غير مقروءة مباشرة من الواجهة).
+        supabase.rpc("my_profile").maybeSingle(),
         supabase
           .from("organization_members")
           .select("organization_id, role, status, organization:organizations(id,name)")
@@ -159,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: created, error: createError } = await supabase
           .from("profiles")
           .insert({ id: currentUser.id, full_name: fullName, email: currentUser.email ?? null })
-          .select("id, full_name, email, phone, avatar_url, job_title")
+          .select("id, full_name, avatar_url, job_title")
           .maybeSingle();
         if (createError) {
           loadError = AUTH_MESSAGES.profileLoadFailed;
@@ -172,20 +170,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
         if (requestId.current !== currentRequestId) return [];
-        setProfile((created ?? null) as Profile | null);
+        if (created) {
+          const { data: fresh } = await supabase.rpc("my_profile").maybeSingle();
+          setProfile((fresh ?? created) as Profile | null);
+        } else {
+          setProfile(null);
+        }
       } else {
         setProfile(profileResult.data as Profile);
         // مزامنة بريد الملف الشخصي بعد تأكيد تغيير البريد من رسالة التأكيد
         const authEmail = currentUser.email ?? null;
         const profileEmail = (profileResult.data as Profile).email ?? null;
         if (authEmail && authEmail.toLowerCase() !== (profileEmail ?? "").toLowerCase()) {
-          const { data: synced } = await supabase
+          const { error: syncError } = await supabase
             .from("profiles")
             .update({ email: authEmail })
-            .eq("id", currentUser.id)
-            .select("id, full_name, email, phone, avatar_url, job_title")
-            .maybeSingle();
-          if (requestId.current === currentRequestId && synced) setProfile(synced as Profile);
+            .eq("id", currentUser.id);
+          if (!syncError) {
+            const { data: synced } = await supabase.rpc("my_profile").maybeSingle();
+            if (requestId.current === currentRequestId && synced) setProfile(synced as Profile);
+          }
         }
       }
 
