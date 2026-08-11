@@ -160,7 +160,6 @@ function LoginPage() {
     }
   };
 
-
   // Only show the verification screen when a session actually exists.
   if (session && (authLoading || organizationLoading)) {
     return (
