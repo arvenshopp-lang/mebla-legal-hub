@@ -10,7 +10,6 @@ import { fmtDate, fmtSize } from "@/lib/enums";
 import { audit } from "@/lib/audit";
 import {
   validateClientFile,
-  fileExtension,
   ACCEPT_ATTR,
   MAX_UPLOAD_SIZE,
 } from "@/lib/client-portal.shared";
@@ -34,6 +33,11 @@ import {
 } from "@/lib/list-utils";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  prepareDocumentUpload,
+  finalizeDocumentUpload,
+} from "@/lib/documents/intake.functions";
 import {
   SecureDocActions,
   SecureDocumentViewer,
@@ -41,7 +45,7 @@ import {
   useSecureDocument,
   type SecureDoc,
 } from "@/components/documents/secure-document";
-import { describeMutationError } from "@/lib/subscription.shared";
+import { normalizedMime } from "@/lib/documents/file-signature";
 import {
   ExtractedTextDialog,
   ProcessingBadge,
@@ -80,7 +84,7 @@ const PAGE_SIZE = 20;
 const MAX_SIZE = MAX_UPLOAD_SIZE;
 
 function Page() {
-  const { activeOrgId, activeRole, user } = useAuth();
+  const { activeOrgId, activeRole } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -265,12 +269,7 @@ function Page() {
           <Pagination page={page} setPage={setPage} total={data.count} pageSize={PAGE_SIZE} />
         </>
       )}
-      <UploadDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        orgId={activeOrgId!}
-        userId={user?.id}
-      />
+      <UploadDialog open={open} onClose={() => setOpen(false)} orgId={activeOrgId!} />
       <ExtractedTextDialog doc={viewingText} onClose={() => setViewingText(null)} />
       {secure.viewing && (
         <SecureDocumentViewer
@@ -296,12 +295,10 @@ function UploadDialog({
   open,
   onClose,
   orgId,
-  userId,
 }: {
   open: boolean;
   onClose: () => void;
   orgId: string;
-  userId?: string;
 }) {
   const qc = useQueryClient();
   const { activeOrgId } = useAuth();
@@ -315,6 +312,8 @@ function UploadDialog({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const prepare = useServerFn(prepareDocumentUpload);
+  const finalize = useServerFn(finalizeDocumentUpload);
 
   const { data: cases, isLoading: loadingCases } = useQuery({
     queryKey: ["cases-basic", activeOrgId],
@@ -353,41 +352,40 @@ function UploadDialog({
     if (typeError) return toast.error("ملف غير مسموح به", { description: typeError });
     setUploading(true);
     setProgress(10);
-    const ext = fileExtension(file.name) || "bin";
-    const path = `${orgId}/${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from("documents")
-      .upload(path, file, { contentType: file.type });
-    if (upErr) {
+    let documentId: string | null = null;
+    try {
+      // الخادم يوقّع فتحة الرفع، ثم يتحقق من البايتات قبل ربطها بأي سجل.
+      const slot = await prepare({
+        data: { organizationId: orgId, fileName: file.name, fileSize: file.size },
+      });
+      setProgress(35);
+      const { error: upErr } = await supabase.storage
+        .from("documents")
+        .uploadToSignedUrl(slot.path, slot.uploadToken, file, {
+          contentType: normalizedMime(file.name) ?? slot.contentType,
+        });
+      if (upErr) throw new Error("تعذّر رفع الملف إلى المخزن. أعد المحاولة.");
+      setProgress(70);
+      const saved = await finalize({
+        data: {
+          organizationId: orgId,
+          path: slot.path,
+          fileName: file.name,
+          caseId: caseId || null,
+          clientId: clientId || null,
+          category: category || "",
+          description: description || "",
+          isConfidential: confidential,
+        },
+      });
+      documentId = saved.documentId;
+    } catch (e: unknown) {
       setUploading(false);
-      return toast.error("تعذّر الرفع", { description: upErr.message });
+      setProgress(0);
+      return toast.error("تعذّر الرفع", { description: errMsg(e) });
     }
-    setProgress(70);
-    const { data: inserted, error: dbErr } = await supabase
-      .from("documents")
-      .insert({
-        organization_id: orgId,
-        case_id: caseId || null,
-        client_id: clientId || null,
-        file_name: file.name,
-        file_path: path,
-        file_type: file.type || null,
-        file_size: file.size,
-        file_status: "AVAILABLE",
-        storage_verified_at: new Date().toISOString(),
-        document_category: category || null,
-        description: description || null,
-        is_confidential: confidential,
-        uploaded_by: userId,
-      })
-      .select("id")
-      .single();
     setUploading(false);
     setProgress(100);
-    if (dbErr) {
-      await supabase.storage.from("documents").remove([path]);
-      return toast.error("تعذّر الحفظ", { description: describeMutationError(dbErr.message) });
-    }
     toast.success("تم الرفع");
     track("document_uploaded", { action_source: "dashboard" });
     await audit({
@@ -400,8 +398,8 @@ function UploadDialog({
     qc.invalidateQueries({ queryKey: ["documents"] });
     qc.invalidateQueries({ queryKey: ["case-documents"] });
     // الفهرسة تعمل في الخلفية بعد إغلاق النافذة حتى لا تُعطّل المستخدم.
-    if (inserted?.id) {
-      void indexUploaded({ organizationId: orgId, documentId: inserted.id, file });
+    if (documentId) {
+      void indexUploaded({ organizationId: orgId, documentId, file });
     }
     reset();
     onClose();

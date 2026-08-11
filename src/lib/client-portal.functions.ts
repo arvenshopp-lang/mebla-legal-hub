@@ -6,7 +6,6 @@ import {
   MAX_UPLOAD_SIZE,
   validateClientFile,
   sanitizeFileName,
-  fileExtension,
   PORTAL_TOKEN_MIN,
   PORTAL_TOKEN_MAX,
 } from "./client-portal.shared";
@@ -79,17 +78,16 @@ export const createUploadSlots = createServerFn({ method: "POST" })
       const err = validateClientFile(f);
       if (err) throw new Error(`${f.name}: ${err}`);
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createUploadSlot } = await import("@/lib/documents/intake.server");
     const req = found.request;
-    const slots: Array<{ path: string; uploadToken: string; name: string }> = [];
+    const slots: Array<{ path: string; uploadToken: string; name: string; contentType: string }> =
+      [];
     for (const f of data.files) {
-      const ext = fileExtension(f.name) || "bin";
-      const path = `${req.organization_id}/client-uploads/${req.id}/${crypto.randomUUID()}.${ext}`;
-      const { data: signed, error } = await supabaseAdmin.storage
-        .from("documents")
-        .createSignedUploadUrl(path);
-      if (error || !signed) throw new Error("تعذّر تجهيز الرفع، حاول مرة أخرى.");
-      slots.push({ path, uploadToken: signed.token, name: f.name });
+      const slot = await createUploadSlot(
+        `${req.organization_id}/client-uploads/${req.id}/`,
+        f.name,
+      );
+      slots.push({ ...slot, name: f.name });
     }
     return { slots };
   });
@@ -120,21 +118,38 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
     for (const f of data.files) {
       const err = validateClientFile(f);
       if (err) throw new Error(`${f.name}: ${err}`);
-      if (!f.path.startsWith(prefix) || f.path.includes(".."))
-        throw new Error("مسار ملف غير صالح.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ip = clientIp();
+    const { verifyUploadedObject, removeOrphanObject } = await import(
+      "@/lib/documents/intake.server"
+    );
 
-    const rows = data.files.map((f) => ({
+    // لا يُربط أي كائن بسجل مستند قبل تحقق خادمي كامل من المسار والبايتات.
+    const verified: { file: (typeof data.files)[number]; mime: string; size: number }[] = [];
+    try {
+      for (const f of data.files) {
+        const v = await verifyUploadedObject({ path: f.path, prefix, fileName: f.name });
+        verified.push({ file: f, mime: v.mime, size: v.size });
+      }
+    } catch (cause) {
+      // تنظيف باقي كائنات هذه الدفعة حتى لا تبقى ملفات يتيمة.
+      for (const v of verified) await removeOrphanObject(v.file.path);
+      await logEvent(req, "rejected", { reason: "verification_failed" }, ip);
+      throw cause;
+    }
+
+    const rows = verified.map(({ file: f, mime, size }) => ({
       organization_id: req.organization_id,
       case_id: req.case_id,
       client_id: found.clientId,
       file_name: sanitizeFileName(f.name),
       file_path: f.path,
-      file_type: f.type || null,
-      file_size: f.size,
+      file_type: mime,
+      file_size: size,
+      file_status: "AVAILABLE",
+      storage_verified_at: new Date().toISOString(),
       document_category: f.label ? f.label.slice(0, 80) : "مستند من العميل",
       description: `مرفوع من العميل عبر طلب: ${req.title}`,
       is_confidential: false,
@@ -145,7 +160,10 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
     }));
 
     const { error: insErr } = await supabaseAdmin.from("documents").insert(rows);
-    if (insErr) throw new Error("تعذّر حفظ المستندات، حاول مرة أخرى.");
+    if (insErr) {
+      for (const v of verified) await removeOrphanObject(v.file.path);
+      throw new Error("تعذّر حفظ المستندات، حاول مرة أخرى.");
+    }
 
     await supabaseAdmin
       .from("document_requests")
