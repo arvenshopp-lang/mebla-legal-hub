@@ -23,24 +23,13 @@ import {
 } from "./qa-support";
 import { callServerFn, resolveServerFns } from "./serverfn-rpc";
 
-/** بوابة fail-closed: لا تشغيل إلا على أصل تطوير/معاينة مع موافقة صريحة. */
+/**
+ * بوابة fail-closed: البوابة المركزية في qa-support تتحقق من الأصل والخادم
+ * الخلفي معاً، وهنا نضيف شرط بادئة مكتب QA فقط.
+ */
 function assertNonProduction(orgName: string) {
+  assertE2eEnvironmentSafe();
   const reasons: string[] = [];
-  if (process.env["MEHLA_E2E_ALLOW"] !== "1") {
-    reasons.push("MEHLA_E2E_ALLOW=1 غير مضبوط (موافقة صريحة مطلوبة).");
-  }
-  let host = "";
-  try {
-    host = new URL(APP).hostname.toLowerCase();
-  } catch {
-    reasons.push("APP_ORIGIN غير صالح.");
-  }
-  const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-  const isPreview = /(^|\.)id-preview--|-dev\.lovable\.app$/.test(host);
-  if (!isLocal && !isPreview) reasons.push(`أصل غير مسموح للاختبار: ${host}`);
-  if (/mehlalex\.com$/.test(host) || host === "mebla.lovable.app") {
-    reasons.push("نطاق إنتاج مرفوض.");
-  }
   if (!orgName.startsWith(QA_ORG_PREFIX)) {
     reasons.push("مكتب الاختبار لا يحمل بادئة QA المعتمدة.");
   }
