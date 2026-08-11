@@ -5,7 +5,10 @@
  * حجب استهلاك حصة OCR على «قارئ فقط»، ومنع ربط مسار خارج مجلد الطلب.
  *
  *   bun scripts/e2e/org-qa-fixture.ts
- *   bun scripts/e2e/documents_security.e2e.ts
+ *   MEHLA_E2E_ALLOW=1 bun scripts/e2e/documents_security.e2e.ts
+ *
+ * fail-closed: يرفض التشغيل على أي نطاق/بيئة إنتاج، ويشترط موافقة صريحة عبر
+ * MEHLA_E2E_ALLOW، ومكتب QA بالبادئة المعتمدة. أي موارد اختبار تُنظّف في finally.
  */
 import {
   APP,
@@ -14,9 +17,38 @@ import {
   adminFetch,
   adminHeaders,
   loadQaOrg,
+  QA_ORG_PREFIX,
   type QaOrg,
 } from "./qa-support";
 import { callServerFn, resolveServerFns } from "./serverfn-rpc";
+
+/** بوابة fail-closed: لا تشغيل إلا على أصل تطوير/معاينة مع موافقة صريحة. */
+function assertNonProduction(orgName: string) {
+  const reasons: string[] = [];
+  if (process.env["MEHLA_E2E_ALLOW"] !== "1") {
+    reasons.push("MEHLA_E2E_ALLOW=1 غير مضبوط (موافقة صريحة مطلوبة).");
+  }
+  let host = "";
+  try {
+    host = new URL(APP).hostname.toLowerCase();
+  } catch {
+    reasons.push("APP_ORIGIN غير صالح.");
+  }
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
+  const isPreview = /(^|\.)id-preview--|-dev\.lovable\.app$/.test(host);
+  if (!isLocal && !isPreview) reasons.push(`أصل غير مسموح للاختبار: ${host}`);
+  if (/mehlalex\.com$/.test(host) || host === "mebla.lovable.app") {
+    reasons.push("نطاق إنتاج مرفوض.");
+  }
+  if (!orgName.startsWith(QA_ORG_PREFIX)) {
+    reasons.push("مكتب الاختبار لا يحمل بادئة QA المعتمدة.");
+  }
+  if (reasons.length) {
+    console.error("توقّف fail-closed قبل إنشاء أي بيانات:");
+    for (const r of reasons) console.error(` - ${r}`);
+    process.exit(2);
+  }
+}
 
 let pass = 0;
 const failures: string[] = [];
@@ -74,6 +106,7 @@ async function objectExists(path: string) {
 
 async function main() {
   const qa = await loadQaOrg();
+  assertNonProduction(qa.orgName);
   const org = qa.organizationId;
   const intake = await resolveServerFns(APP, "src/lib/documents/intake.functions.ts");
   const secure = await resolveServerFns(APP, "src/lib/secure-view/secure-view.functions.ts");
