@@ -124,6 +124,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               allowProcessingFormat: resolved.kind === "process",
               documentId: resolved.documentId,
               organizationId: doc.organization_id,
+              declaredMime: doc.file_type,
             });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
@@ -184,7 +185,10 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             });
           }
 
-          const kind = shared.viewableKind(doc.file_name, doc.file_type);
+          // الصيغ غير القابلة للختم المباشر تُعرض كنسخة نصية مائية دائماً.
+          const kind = storageRead.stampable
+            ? shared.viewableKind(doc.file_name, doc.file_type)
+            : ("text" as const);
           // النص المستخرج يُستخدم كنسخة عرض للصيغ غير القابلة للختم، وكذلك
           // كخطة بديلة إن كان الملف الأصلي تالفاً أو غير قابل للقراءة.
           const fallbackText = await secure.loadExtractedText(resolved.documentId);

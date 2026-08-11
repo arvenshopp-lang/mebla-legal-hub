@@ -8,7 +8,12 @@ import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { fmtDate, fmtSize } from "@/lib/enums";
 import { audit } from "@/lib/audit";
-import { validateClientFile, ACCEPT_ATTR, MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
+import {
+  validateClientFile,
+  ACCEPT_ATTR,
+  MAX_UPLOAD_SIZE,
+  SUPPORTED_FORMATS_LABEL,
+} from "@/lib/client-portal.shared";
 import {
   PageToolbar,
   EmptyState,
@@ -426,6 +431,9 @@ function UploadDialog({
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className={inputCls}
             />
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              {SUPPORTED_FORMATS_LABEL} · حتى 20 ميجابايت
+            </span>
             {file && (
               <span className="mt-1 block text-xs text-muted-foreground">
                 {file.name} · {fmtSize(file.size)}

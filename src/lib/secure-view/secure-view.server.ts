@@ -265,9 +265,17 @@ function matchesStoredFile(bytes: Uint8Array, contentType: string): boolean {
  */
 export async function readOriginal(
   filePath: string,
-  options: { allowProcessingFormat?: boolean; documentId?: string; organizationId?: string } = {},
-): Promise<{ bytes: Uint8Array; trace: StorageReadTrace }> {
+  options: {
+    allowProcessingFormat?: boolean;
+    documentId?: string;
+    organizationId?: string;
+    /** النوع المسجّل للمستند، يُستخدم عندما لا يُعيد المخزن نوعاً مفيداً. */
+    declaredMime?: string | null;
+  } = {},
+): Promise<{ bytes: Uint8Array; trace: StorageReadTrace; stampable: boolean }> {
   if (options.organizationId) assertOrgScopedStoragePath(filePath, options.organizationId);
+  const { isAllowedDocumentMime, isViewerNativeMime } =
+    await import("@/lib/documents/file-signature");
   const db = await admin();
   const verifiedAt = new Date().toISOString();
   const updateFileStatus = async (fileStatus: "AVAILABLE" | "FILE_MISSING" | "INVALID_FILE") => {
@@ -310,7 +318,7 @@ export async function readOriginal(
   try {
     response = await fetch(signedUrl, {
       redirect: "follow",
-      headers: { Accept: "application/pdf, image/png, image/jpeg" },
+      headers: { Accept: "application/pdf, image/*, text/plain, application/octet-stream" },
     });
   } catch (error) {
     trace.errorCode = error instanceof Error ? error.name : "STORAGE_FETCH_FAILED";
@@ -329,21 +337,26 @@ export async function readOriginal(
     if (response.status === 404) await updateFileStatus("FILE_MISSING");
     throw new StorageReadError("الملف غير متاح في المخزن.", trace);
   }
-  const supportedViewerType = /^(application\/pdf|image\/(png|jpeg))(?:;|$)/.test(
-    trace.contentType,
-  );
-  if (
-    trace.contentType.includes("text/html") ||
-    (!supportedViewerType && !options.allowProcessingFormat)
-  ) {
+  const effectiveType = isAllowedDocumentMime(trace.contentType)
+    ? trace.contentType
+    : (options.declaredMime ?? "").toLowerCase();
+  const supportedViewerType = isViewerNativeMime(effectiveType);
+  // صيغة مسموح بها لكنها تحتاج تمثيلاً نصياً (docx / txt / csv / webp) ليست
+  // ملفاً غير صالح: تُعرض كنسخة PDF مائية من نصها المستخرج.
+  const representable =
+    supportedViewerType || options.allowProcessingFormat || isAllowedDocumentMime(effectiveType);
+  if (trace.contentType.includes("text/html") || !representable) {
     trace.errorCode = "UNSUPPORTED_CONTENT_TYPE";
     await updateFileStatus("INVALID_FILE");
     throw new StorageReadError("نوع الملف المسترجع غير صالح للعرض.", trace);
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
-  const validSignature =
-    options.allowProcessingFormat || matchesStoredFile(bytes, trace.contentType);
+  const validSignature = supportedViewerType
+    ? matchesStoredFile(bytes, effectiveType)
+    : // الصيغ غير القابلة للختم لا تُفحص بصمتها هنا: بصمتها فُحصت عند الإدخال،
+      // ويكفي التأكد من وجود كائن حقيقي غير صفحة HTML.
+      true;
   if (!bytes.length || beginsWithHtml(bytes) || !validSignature) {
     trace.errorCode = beginsWithHtml(bytes) ? "HTML_BODY_REJECTED" : "FILE_SIGNATURE_MISMATCH";
     await updateFileStatus("INVALID_FILE");
@@ -361,7 +374,7 @@ export async function readOriginal(
     final_response_host: trace.finalUrl,
     error_code: trace.errorCode,
   });
-  return { bytes, trace };
+  return { bytes, trace, stampable: supportedViewerType };
 }
 
 /**

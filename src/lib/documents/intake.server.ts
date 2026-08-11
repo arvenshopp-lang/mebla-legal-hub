@@ -7,7 +7,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { MAX_UPLOAD_SIZE } from "@/lib/client-portal.shared";
+import { MAX_UPLOAD_SIZE, UNSUPPORTED_FORMAT_MESSAGE } from "@/lib/client-portal.shared";
 import { normalizedMime, verifyFileBytes, type VerifiedFile } from "./file-signature";
 
 export const DOCUMENTS_BUCKET = "documents";
@@ -57,7 +57,7 @@ export function assertOwnedPath(path: string, prefix: string) {
 export async function createUploadSlot(prefix: string, fileName: string) {
   const mime = normalizedMime(fileName);
   if (!mime) {
-    throw new Error("نوع الملف غير مسموح به. يُسمح بملفات PDF والصور ومستندات Office فقط.");
+    throw new Error(UNSUPPORTED_FORMAT_MESSAGE);
   }
   const ext = fileName.toLowerCase().split(".").pop()!;
   const path = `${prefix}${crypto.randomUUID()}.${ext}`;

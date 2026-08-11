@@ -74,13 +74,9 @@ const realDocx = makeZip({
   "_rels/.rels": "<Relationships/>",
   "word/document.xml": "<w:document/>",
 });
-const realXlsx = makeZip({
+const spreadsheetZip = makeZip({
   "[Content_Types].xml": CONTENT_TYPES,
   "xl/workbook.xml": "<workbook/>",
-});
-const realPptx = makeZip({
-  "[Content_Types].xml": CONTENT_TYPES,
-  "ppt/presentation.xml": "<p:presentation/>",
 });
 const randomZip = makeZip({ "notes.txt": "hello", "payload.exe": "MZ binary" });
 const zipWithoutContentTypes = makeZip({ "word/document.xml": "<w:document/>" });
@@ -89,34 +85,31 @@ const zipWithoutContentTypes = makeZip({ "word/document.xml": "<w:document/>" })
 
 check("قراءة فهرس ZIP تُرجع أسماء المدخلات", zipEntryNames(realDocx).includes("word/document.xml"));
 check("docx حقيقي مقبول", verifyFileBytes("a.docx", realDocx).ok);
-check("xlsx حقيقي مقبول", verifyFileBytes("a.xlsx", realXlsx).ok);
-check("pptx حقيقي مقبول", verifyFileBytes("a.pptx", realPptx).ok);
+check("xlsx مرفوض (خارج عقد الصيغ المدعومة)", !verifyFileBytes("a.xlsx", spreadsheetZip).ok);
+check("pptx مرفوض (خارج عقد الصيغ المدعومة)", !verifyFileBytes("a.pptx", spreadsheetZip).ok);
 check("ZIP عشوائي باسم .docx مرفوض", !verifyFileBytes("evil.docx", randomZip).ok);
 check("ZIP بلا [Content_Types].xml مرفوض", !verifyFileBytes("a.docx", zipWithoutContentTypes).ok);
-check("docx باسم .xlsx مرفوض (عائلة مختلفة)", !verifyFileBytes("a.xlsx", realDocx).ok);
-check("xlsx باسم .pptx مرفوض", !verifyFileBytes("a.pptx", realXlsx).ok);
-check("امتداد .doc مع OOXML من نفس العائلة مقبول", verifyFileBytes("a.doc", realDocx).ok);
-check("امتداد .doc مع ZIP عشوائي مرفوض", !verifyFileBytes("a.doc", randomZip).ok);
-check("امتداد .xls مع docx مرفوض", !verifyFileBytes("a.xls", realDocx).ok);
+check("docx باسم .xlsx مرفوض", !verifyFileBytes("a.xlsx", realDocx).ok);
+check("امتداد .doc مرفوض", !verifyFileBytes("a.doc", realDocx).ok);
 check(
-  "OLE2 القديم يبقى مقبولاً لـ .doc",
-  verifyFileBytes(
+  "OLE2 القديم مرفوض (doc/xls/ppt الثنائية خارج العقد)",
+  !verifyFileBytes(
     "legacy.doc",
     new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0]),
   ).ok,
 );
 check("isOoxmlForExtension لا تقبل امتداداً غير Office", !isOoxmlForExtension(realDocx, "pdf"));
 
-/* -------------------------------- HEIF -------------------------------- */
+/* --------------------- صيغ أُزيلت من عقد الصيغ --------------------- */
 
 function heif(brand: string): Uint8Array {
   return new Uint8Array([0, 0, 0, 0x18, ...te.encode("ftyp"), ...te.encode(brand), 0, 0, 0, 0]);
 }
-check("heif مسموح كامتداد", (ALLOWED_EXTENSIONS as readonly string[]).includes("heif"));
-check("نوع heif معياري", EXTENSION_MIME["heif"] === "image/heif");
-check("ملف HEIF صالح مقبول بامتداد .heif", verifyFileBytes("p.heif", heif("mif1")).ok);
-check("ملف HEIC صالح مقبول بامتداد .heic", verifyFileBytes("p.heic", heif("heic")).ok);
-check("ftyp ببراند غير مدعوم مرفوض", !verifyFileBytes("p.heif", heif("qt  ")).ok);
+check("heif غير مسموح كامتداد", !(ALLOWED_EXTENSIONS as readonly string[]).includes("heif"));
+check("heic غير مسموح كامتداد", !(ALLOWED_EXTENSIONS as readonly string[]).includes("heic"));
+check("لا نوع معياري لـ heif", EXTENSION_MIME["heif"] === undefined);
+check("ملف HEIF مرفوض", !verifyFileBytes("p.heif", heif("mif1")).ok);
+check("ملف HEIC مرفوض", !verifyFileBytes("p.heic", heif("heic")).ok);
 check(
   "توافق قائمة المخزن مع الامتدادات",
   ALLOWED_EXTENSIONS.every((e) => ALLOWED_BUCKET_MIME.includes(EXTENSION_MIME[e]!)) &&
@@ -125,7 +118,7 @@ check(
     ),
   ALLOWED_BUCKET_MIME.join(","),
 );
-check("image/heif داخل قائمة المخزن", ALLOWED_BUCKET_MIME.includes("image/heif"));
+check("image/heif خارج قائمة المخزن", !ALLOWED_BUCKET_MIME.includes("image/heif"));
 
 /* ------------------------- متنكرات نصية شائعة ------------------------- */
 
