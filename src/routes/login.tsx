@@ -50,6 +50,8 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [actionBusy, setActionBusy] = useState<null | "resend" | "magic">(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -86,13 +88,15 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setFormError("يرجى إدخال بريد إلكتروني صحيح");
-      return;
-    }
-    if (!password) {
-      setFormError("يرجى إدخال كلمة المرور");
+    const cleanEmail = normalizeEmail(email);
+    const nextEmailError = validateEmail(cleanEmail);
+    const nextPasswordError = validatePassword(password);
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    if (nextEmailError || nextPasswordError) {
+      setFormError(null);
+      setNotice(null);
+      setNeedsConfirmation(false);
       return;
     }
     setLoading(true);
@@ -222,25 +226,43 @@ function LoginPage() {
           <input
             type="email"
             name="email"
+            id="login-email"
             inputMode="email"
             spellCheck={false}
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={loginInputCls}
+            aria-invalid={emailError ? true : undefined}
+            aria-describedby={emailError ? "login-email-error" : undefined}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (emailError) setEmailError(null);
+            }}
+            onBlur={(e) => {
+              const value = e.target.value;
+              setEmailError(value.trim() ? validateEmail(normalizeEmail(value)) : null);
+            }}
+            className={`${loginInputCls} ${emailError ? invalidFieldCls : ""}`}
           />
+          {emailError && <FieldError id="login-email-error">{emailError}</FieldError>}
         </Field>
         <Field label="كلمة المرور">
           <input
             type="password"
             name="password"
+            id="login-password"
             autoComplete="current-password"
             required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={loginInputCls}
+            aria-invalid={passwordError ? true : undefined}
+            aria-describedby={passwordError ? "login-password-error" : undefined}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (passwordError) setPasswordError(null);
+            }}
+            className={`${loginInputCls} ${passwordError ? invalidFieldCls : ""}`}
           />
+          {passwordError && <FieldError id="login-password-error">{passwordError}</FieldError>}
         </Field>
         <div className="text-end">
           <Link
@@ -276,6 +298,57 @@ export { inputCls } from "@/lib/list-utils";
 
 /** تنسيق حقول صفحة الدخول: يبني على inputCls المشترك دون تعديله عالمياً. */
 const loginInputCls = `${fieldInputCls} min-h-[46px] rounded-[var(--radius-m)] focus-visible:outline-none`;
+
+/** إبراز بصري للحقل غير الصحيح دون تعديل التنسيق المشترك. */
+const invalidFieldCls = "border-danger focus-visible:outline-danger";
+
+/** توحيد صيغة البريد: إزالة الفراغات والمسافات غير المرئية وتصغير الأحرف. */
+function normalizeEmail(value: string) {
+  return value.replace(/[\s\u200b-\u200f\u202a-\u202e]/g, "").toLowerCase();
+}
+
+/** رسائل تحقق عربية واضحة للبريد الإلكتروني، وتشمل حالة كتابته بحروف عربية. */
+function validateEmail(cleanEmail: string): string | null {
+  if (!cleanEmail) return "يرجى إدخال البريد الإلكتروني.";
+  if (/[\u0600-\u06FF\u0750-\u077F]/.test(cleanEmail))
+    return "البريد الإلكتروني يُكتب بالحروف اللاتينية والأرقام الإنجليزية فقط. يرجى تبديل لغة لوحة المفاتيح إلى الإنجليزية.";
+  if (/[٠-٩۰-۹]/.test(cleanEmail))
+    return "استخدم الأرقام الإنجليزية (0-9) في البريد الإلكتروني بدلاً من الأرقام العربية.";
+  if (!cleanEmail.includes("@"))
+    return "البريد الإلكتروني يجب أن يحتوي على الرمز @، مثال: name@example.com";
+  if (cleanEmail.split("@").length > 2) return "البريد الإلكتروني يحتوي على أكثر من رمز @ واحد.";
+  const [local, domain] = cleanEmail.split("@");
+  if (!local) return "يرجى كتابة اسم المستخدم قبل الرمز @.";
+  if (!domain) return "يرجى كتابة اسم النطاق بعد الرمز @، مثال: example.com";
+  if (!domain.includes(".") || domain.startsWith(".") || domain.endsWith("."))
+    return "اسم النطاق غير مكتمل. يجب أن يكون على هيئة example.com";
+  if (!/^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+$/.test(local))
+    return "البريد الإلكتروني يحتوي على رموز غير مسموح بها.";
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain))
+    return "اسم النطاق غير صحيح. يجب أن يكون على هيئة example.com";
+  return null;
+}
+
+/** رسائل تحقق عربية واضحة لكلمة المرور (تحقق شكلي فقط دون كشف سياسة الحساب). */
+function validatePassword(value: string): string | null {
+  if (!value) return "يرجى إدخال كلمة المرور.";
+  if (value.trim().length === 0) return "كلمة المرور لا يمكن أن تكون مسافات فقط.";
+  if (value.length < 8) return "كلمة المرور يجب أن تكون 8 أحرف على الأقل.";
+  return null;
+}
+
+/** رسالة خطأ حقل واحد داخل منطقة role=\"alert\" ليقرأها قارئ الشاشة فوراً. */
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <span
+      id={id}
+      role="alert"
+      className="mt-1.5 block text-[12px] leading-5 font-medium text-danger"
+    >
+      {children}
+    </span>
+  );
+}
 
 export function Field({
   label,
