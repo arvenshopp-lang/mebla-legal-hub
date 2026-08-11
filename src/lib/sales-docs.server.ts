@@ -11,6 +11,7 @@
  */
 import { writeAudit, type StaffRow } from "@/lib/admin-guard.server";
 import { fmtDecimal } from "@/lib/format";
+import { newTraceRef } from "@/lib/security/sensitive-guard.server";
 import {
   APPROVAL_DISCOUNT_PERCENT_THRESHOLD,
   computeSalesDocTotals,
@@ -34,8 +35,48 @@ async function db(): Promise<AnyClient> {
   return supabaseAdmin as unknown as AnyClient;
 }
 
-function fail(error: { message?: string } | null, fallback: string): never {
-  throw new Error(fallback + (error?.message ? "" : ""));
+/**
+ * فشل موحّد لعمليات الوحدة.
+ *
+ * القاعدة: لا تُكتم أسباب الفشل. تُترجم أكواد Postgres المعروفة إلى رسالة عربية
+ * دقيقة تشرح السبب الفعلي، ويُسجَّل الخطأ الأصلي في سجل الخادم مع معرّف تتبع
+ * يُعاد للمستخدم — دون كشف تفاصيل داخلية أو Stack Trace في الواجهة.
+ */
+type DbError = { message?: string; code?: string; details?: string; hint?: string } | null;
+
+function dbReason(error: DbError): string | null {
+  const code = error?.code ?? "";
+  const detail = `${error?.message ?? ""} ${error?.details ?? ""}`;
+  if (code === "23514") {
+    if (/sales_tpl_name_len/.test(detail)) return "اسم القالب يجب أن يكون بين حرفين و160 حرفاً.";
+    if (/sales_tpl_validity_chk/.test(detail))
+      return "مدة صلاحية القالب يجب أن تكون بين 0 و365 يوماً.";
+    if (/sales_tpl_tax_chk|sales_doc_tax_chk/.test(detail))
+      return "نسبة الضريبة يجب أن تكون بين 0 و100.";
+    if (/sales_doc_title_len/.test(detail)) return "عنوان المستند يجب أن يكون بين حرفين و200 حرف.";
+    if (/sales_doc_amount_chk/.test(detail)) return "قيم المستند لا يمكن أن تكون سالبة.";
+    return "إحدى القيم المدخلة لا تحقق قواعد التحقق المعتمدة.";
+  }
+  if (code === "23503") return "أحد الحقول المرتبطة (العميل أو الشركة أو القالب) غير موجود.";
+  if (code === "23502") return "حقل إلزامي مفقود في البيانات المرسلة.";
+  if (code === "22P02") return "قيمة غير صالحة في أحد الحقول (تنسيق غير مقبول).";
+  if (code === "42501" || code === "PGRST301")
+    return "لا تملك الصلاحية اللازمة لتنفيذ هذه العملية.";
+  return null;
+}
+
+function fail(error: DbError, fallback: string): never {
+  const trace = newTraceRef("SD");
+  console.error(
+    `[sales-docs] ${trace} ${fallback} :: code=${error?.code ?? "-"} message=${error?.message ?? "-"} details=${error?.details ?? "-"}`,
+  );
+  const unique = error?.code === "23505";
+  const reason = unique
+    ? /sales_document_templates_name_key/.test(`${error?.message} ${error?.details}`)
+      ? "يوجد قالب آخر بنفس الاسم لهذا النوع — اختر اسماً مختلفاً."
+      : "توجد قيمة مكررة تمنع الحفظ."
+    : dbReason(error);
+  throw new Error(`${reason ?? fallback} (مرجع: ${trace})`);
 }
 
 /* ------------------------------------------------------------------ القراءة */
