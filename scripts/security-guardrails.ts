@@ -36,11 +36,18 @@ const ALLOWED_AUTHENTICATED_RPC = [
 ] as const;
 
 const SECRET_PATTERNS: { id: string; label: string; re: RegExp }[] = [
-  { id: "supabase_secret_key", label: "مفتاح Supabase سرّي", re: /\bsb_secret_[A-Za-z0-9_-]{10,}/ },
+  {
+    id: "supabase_secret_key",
+    label: "مفتاح Supabase سرّي",
+    // النمط يُبنى ديناميكياً حتى لا يوجد literal يشبه مفتاح مشروع داخل الحراس.
+    re: new RegExp(`\\b${["sb", "secret"].join("_")}_[A-Za-z0-9_-]{10,}`),
+  },
   {
     id: "service_role_jwt",
     label: "رمز JWT لدور الخدمة",
-    re: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/,
+    re: new RegExp(
+      `${["ey", "J"].join("")}[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}`,
+    ),
   },
   {
     id: "private_key_block",
