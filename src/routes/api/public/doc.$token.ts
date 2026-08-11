@@ -123,6 +123,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
             storageRead = await secure.readOriginal(doc.file_path, {
               allowProcessingFormat: resolved.kind === "process",
               documentId: resolved.documentId,
+              organizationId: doc.organization_id,
             });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;

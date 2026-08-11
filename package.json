@@ -26,7 +26,8 @@
     "work-items:e2e": "bun scripts/e2e/work_item_events.e2e.ts",
     "documents:guardrails": "bun scripts/documents-intake-guardrails.ts",
     "cron:guardrails": "bun scripts/cron-auth-guardrails.ts",
-    "routes:guardrails": "bun scripts/diagnostic-routes-guardrails.ts"
+    "routes:guardrails": "bun scripts/diagnostic-routes-guardrails.ts",
+    "documents:integrity": "bun scripts/documents-integrity-guardrails.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
