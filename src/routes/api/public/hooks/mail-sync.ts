@@ -1,11 +1,12 @@
 /**
  * مسار دوري لمزامنة صناديق Hostinger: عبر Agentic Mail عند تفعيله، وعبر IMAP دائماً.
  *
- * المسار عام بحكم البادئة، لذا الحماية تُفرض هنا: مفتاح المشروع العام في ترويسة
- * `apikey` بمقارنة ثابتة الزمن، ولا تُعاد أي بيانات رسائل أو أسرار — عدّادات فقط.
+ * المسار عام بحكم البادئة، لذا الحماية تُفرض هنا: سر التشغيل الخاص في الترويسة
+ * المخصصة بمقارنة ثابتة الزمن، ولا تُعاد أي بيانات رسائل أو أسرار — عدّادات فقط.
  * مسار Agentic مجدول بذاته (منع تداخل، تراجع أُسّي، قاطع دائرة) فلا يُستدعى مباشرة.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { guardCronRequest } from "@/lib/security/cron-auth.server";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -14,26 +15,12 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length || a.length === 0) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 export const Route = createFileRoute("/api/public/hooks/mail-sync")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expected = (process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "").trim();
-        const provided = (
-          request.headers.get("apikey") ??
-          request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-          ""
-        ).trim();
-        if (!expected || !safeEqual(provided, expected)) {
-          return json({ error: "unauthorized" }, 401);
-        }
+        const denied = await guardCronRequest(request);
+        if (denied) return denied;
 
         try {
           const { admin } = await import("@/lib/admin-guard.server");
