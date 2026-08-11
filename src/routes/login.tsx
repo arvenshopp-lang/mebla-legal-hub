@@ -4,7 +4,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
-import { resendSignupConfirmation, sendMagicLink } from "@/lib/auth-actions";
+import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
 
@@ -160,25 +160,6 @@ function LoginPage() {
     }
   };
 
-  const requestMagicLink = async () => {
-    if (actionBusy) return;
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setFormError("أدخل بريدك الإلكتروني أولاً لإرسال رابط الدخول");
-      return;
-    }
-    setActionBusy("magic");
-    const result = await sendMagicLink(cleanEmail);
-    setActionBusy(null);
-    if (result.ok) {
-      setFormError(null);
-      setNotice(result.message);
-      toast.success(result.message);
-    } else {
-      setFormError(result.message);
-    }
-  };
-
   // Only show the verification screen when a session actually exists.
   if (session && (authLoading || organizationLoading)) {
     return (
@@ -258,15 +239,6 @@ function LoginPage() {
           className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-primary-hover active:bg-primary-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "جاري تسجيل الدخول…" : "دخول"}
-        </button>
-        <button
-          type="button"
-          onClick={requestMagicLink}
-          disabled={actionBusy === "magic"}
-          aria-busy={actionBusy === "magic"}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-m)] text-center text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {actionBusy === "magic" ? "جاري إرسال الرابط…" : "الدخول برابط لمرة واحدة عبر البريد"}
         </button>
       </form>
       <div className="my-6 flex items-center gap-3 text-xs text-text-muted">
