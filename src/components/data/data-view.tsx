@@ -68,18 +68,23 @@ export function DataView<T>({
               <tbody>
                 {rows.map((row) => (
                   <tr key={rowKey(row)} className={rowTone?.(row)}>
-                    {columns.map((c) => (
+                    {columns.map((c) => {
+                      const clamp = !c.wrap && c.mobile !== "actions";
+                      return (
                       <td
                         key={c.id}
                         className={cn(
                           c.mobile === "title" && "font-medium text-foreground",
-                          c.wrap ? "max-w-[32ch] whitespace-normal" : "max-w-[26ch]",
+                          c.wrap && "max-w-[32ch] whitespace-normal",
+                          clamp && "max-w-[26ch]",
+                          c.mobile === "actions" && "whitespace-nowrap",
                           c.className,
                         )}
                       >
-                        {c.wrap ? c.cell(row) : <span className="cell-truncate">{c.cell(row)}</span>}
+                        {clamp ? <span className="cell-truncate">{c.cell(row)}</span> : c.cell(row)}
                       </td>
-                    ))}
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
