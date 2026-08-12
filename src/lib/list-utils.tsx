@@ -94,6 +94,7 @@ export function SectionCard({
   actions,
   children,
   className,
+  density,
 }: {
   title?: string;
   description?: string;
