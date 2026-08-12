@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { DataCard, Td, Th } from "@/lib/list-utils";
+
+/* ملاحظة: هذا المكوّن يعتمد أدوات المرحلة 1 في styles.css
+   (table-mehla, table-scroll, cell-truncate, density-*) بدل أنماط محلية مكرّرة. */
 
 /**
  * تعريف عمود واحد يُستخدم في العرضين معاً:
@@ -29,55 +31,73 @@ type DataViewProps<T> = {
   rowTone?: (row: T) => string | undefined;
   /** وصف الجدول لقارئ الشاشة */
   label: string;
+  /** كثافة العرض: مريحة لمساحة المكتب، مضغوطة للأسطح الإدارية */
+  density?: "comfortable" | "compact";
 };
 
-export function DataView<T>({ columns, rows, rowKey, rowTone, label }: DataViewProps<T>) {
+export function DataView<T>({
+  columns,
+  rows,
+  rowKey,
+  rowTone,
+  label,
+  density = "comfortable",
+}: DataViewProps<T>) {
   const titleCols = columns.filter((c) => c.mobile === "title");
   const subtitleCols = columns.filter((c) => c.mobile === "subtitle");
   const metaCols = columns.filter((c) => !c.mobile || c.mobile === "meta");
   const actionCols = columns.filter((c) => c.mobile === "actions");
+  const densityCls = density === "compact" ? "density-compact" : "density-comfortable";
 
   return (
     <>
       {/* سطح المكتب: جدول بتمرير داخلي منضبط داخل البطاقة — لا تمرير على مستوى الصفحة */}
-      <div className="hidden md:block">
-        <DataCard>
-          <table className="min-w-full" aria-label={label}>
-            <thead className="bg-surface-muted/60">
-              <tr>
-                {columns.map((c) => (
-                  <Th key={c.id} className={c.headerClassName}>
-                    {c.header}
-                  </Th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((row) => (
-                <tr key={rowKey(row)} className={cn("hover:bg-surface-muted/40", rowTone?.(row))}>
+      <div className={cn("hidden md:block", densityCls)}>
+        <div className="surface-card overflow-hidden">
+          <div className="table-scroll max-h-[70dvh] overflow-y-auto">
+            <table className="table-mehla min-w-full" aria-label={label}>
+              <thead>
+                <tr>
                   {columns.map((c) => (
-                    <Td
-                      key={c.id}
-                      className={cn(
-                        c.mobile === "title" && "font-medium",
-                        c.wrap && "max-w-[28ch] whitespace-normal",
-                        c.className,
-                      )}
-                    >
-                      {c.cell(row)}
-                    </Td>
+                    <th key={c.id} scope="col" className={c.headerClassName}>
+                      {c.header}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataCard>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={rowKey(row)} className={rowTone?.(row)}>
+                    {columns.map((c) => (
+                      <td
+                        key={c.id}
+                        className={cn(
+                          c.mobile === "title" && "font-medium text-foreground",
+                          c.wrap ? "max-w-[32ch] whitespace-normal" : "max-w-[26ch]",
+                          c.className,
+                        )}
+                      >
+                        {c.wrap ? c.cell(row) : <span className="cell-truncate">{c.cell(row)}</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* الجوال: بطاقات حقيقية بدل جدول مضغوط */}
-      <ul className="space-y-3 md:hidden" aria-label={label}>
+      <ul className={cn("space-y-2.5 md:hidden", densityCls)} aria-label={label}>
         {rows.map((row) => (
-          <li key={rowKey(row)} className={cn("surface-card overflow-hidden p-4", rowTone?.(row))}>
+          <li
+            key={rowKey(row)}
+            className={cn(
+              "surface-card overflow-hidden px-4 py-[var(--density-pad-y,1rem)]",
+              rowTone?.(row),
+            )}
+          >
             {titleCols.map((c) => (
               <div
                 key={c.id}
