@@ -79,7 +79,8 @@ export function PageHeader({
   return (
     <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <h2 className="text-h3 truncate">{title}</h2>
+        {/* لا نقصّ العنوان العربي: يلتف على سطرين كحد أقصى بدل ellipsis */}
+        <h2 className="text-h3 line-clamp-2 break-words text-balance">{title}</h2>
         {description && <p className="mt-1 text-body-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -99,19 +100,29 @@ export function SectionCard({
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** كثافة الحشو داخل البطاقة */
+  density?: "comfortable" | "compact";
 }) {
   return (
-    <section className={cn("surface-card overflow-hidden", className)}>
+    <section
+      className={cn(
+        "surface-card overflow-hidden",
+        density === "compact" ? "density-compact" : "density-comfortable",
+        className,
+      )}
+    >
       {(title || actions) && (
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-4">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-[var(--density-pad-x,1.25rem)] py-3.5">
           <div className="min-w-0">
-            {title && <h3 className="text-h4 truncate">{title}</h3>}
+            {title && <h3 className="text-h4 min-w-0 break-words">{title}</h3>}
             {description && <p className="text-caption mt-0.5">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>
       )}
-      <div className="p-5">{children}</div>
+      <div className="px-[var(--density-pad-x,1.25rem)] py-[var(--density-pad-y,1.25rem)]">
+        {children}
+      </div>
     </section>
   );
 }
