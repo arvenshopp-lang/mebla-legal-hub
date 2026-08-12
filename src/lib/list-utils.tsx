@@ -568,7 +568,7 @@ export function Modal({
             <X className="h-4 w-4" aria-hidden />
           </button>
         </header>
-        <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+        <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:pb-5">
           {children}
           {busy && (
             <div
