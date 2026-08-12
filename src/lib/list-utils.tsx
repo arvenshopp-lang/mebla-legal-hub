@@ -436,10 +436,22 @@ export function ErrorBlock({ message }: { message: string }) {
 
 /* -------------------------------------------------------------------- Table */
 
-export function DataCard({ children }: { children: ReactNode }) {
+export function DataCard({
+  children,
+  density,
+}: {
+  children: ReactNode;
+  density?: "comfortable" | "compact";
+}) {
   return (
-    <div className="surface-card overflow-hidden">
-      <div className="overflow-x-auto">{children}</div>
+    <div
+      className={cn(
+        "surface-card overflow-hidden",
+        density === "compact" ? "density-compact" : "density-comfortable",
+      )}
+    >
+      {/* التمرير داخل الإطار فقط — ضمانة عدم وجود تمرير أفقي على مستوى الصفحة */}
+      <div className="table-scroll">{children}</div>
     </div>
   );
 }
@@ -449,7 +461,7 @@ export function Th({ children, className }: { children: ReactNode; className?: s
     <th
       scope="col"
       className={cn(
-        "whitespace-nowrap border-b border-border bg-surface-muted/60 px-4 py-3 text-right text-[12px] font-semibold text-muted-foreground",
+        "sticky top-0 z-1 whitespace-nowrap border-b border-border bg-surface-muted px-3.5 py-2.5 text-start text-[12px] font-semibold text-muted-foreground",
         className,
       )}
     >
@@ -459,7 +471,16 @@ export function Th({ children, className }: { children: ReactNode; className?: s
 }
 
 export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <td className={cn("whitespace-nowrap px-4 py-3.5 text-table", className)}>{children}</td>;
+  return (
+    <td
+      className={cn(
+        "whitespace-nowrap px-3.5 py-[var(--density-row-y,0.875rem)] align-middle text-table",
+        className,
+      )}
+    >
+      {children}
+    </td>
+  );
 }
 
 /* -------------------------------------------------------------------- Modal */
@@ -624,17 +645,20 @@ export function Badge({
 }) {
   const t = {
     default: "bg-surface-muted text-foreground ring-border",
-    green: "bg-success-soft text-success ring-success/20",
-    info: "bg-info-soft text-info ring-info/20",
-    gold: "bg-warning-soft text-warning ring-warning/20",
-    red: "bg-danger-soft text-danger ring-danger/20",
-    warn: "bg-warning-soft text-warning ring-warning/20",
-    muted: "bg-surface-muted text-muted-foreground ring-border",
+    green: "bg-success-soft text-success ring-success/25",
+    info: "bg-info-soft text-info ring-info/25",
+    gold: "bg-warning-soft text-warning ring-warning/25",
+    // الخطر والتحذير يُميّزان أيضاً بشكل النقطة (مربّعة) لا باللون وحده
+    red: "bg-danger-soft text-danger ring-danger/25 before:rounded-[2px]",
+    warn: "bg-warning-soft text-warning ring-warning/25 before:rounded-[2px]",
+    muted: "bg-surface-muted text-muted-foreground ring-border before:opacity-60",
   }[tone];
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
+        // نقطة دلالية إضافية: الحالة تُقرأ بالنص والشكل قبل اللون
+        "before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:bg-current before:content-['']",
         t,
       )}
     >
