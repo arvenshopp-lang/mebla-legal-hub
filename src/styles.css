@@ -561,3 +561,284 @@
     gap: 1.5rem;
   }
 }
+
+/* ==========================================================================
+   المرحلة 1 — أساس بصري موحّد: الكثافة، الحالة والاستحقاق، الجداول،
+   شريط المِهلة، وأسطح الجوال. كل الأدوات تعتمد التوكنات أعلاه فقط.
+   ========================================================================== */
+
+/* ---- سلّم الكثافة: يضبط حشو البطاقات وارتفاع صفوف الجداول داخل الحاوية ---- */
+@utility density-comfortable {
+  --density-pad-x: 1.25rem;
+  --density-pad-y: 1.25rem;
+  --density-row-y: 0.875rem;
+  --density-gap: 1rem;
+}
+
+@utility density-compact {
+  --density-pad-x: 1rem;
+  --density-pad-y: 0.875rem;
+  --density-row-y: 0.5rem;
+  --density-gap: 0.75rem;
+}
+
+/* ---- شارة حالة: نقطة + نص، ولا تعتمد اللون وحده ---- */
+@utility status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.5rem;
+  padding-inline: 0.5rem;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+
+  &::before {
+    content: "";
+    inline-size: 0.375rem;
+    block-size: 0.375rem;
+    border-radius: 999px;
+    background: currentcolor;
+    flex: none;
+  }
+}
+
+/* ---- لغة الاستحقاق: تُقرأ بالنص والشكل قبل اللون ---- */
+@utility due-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &::before {
+    content: "";
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 2px;
+    background: currentcolor;
+    flex: none;
+  }
+
+  /* متأخر: أقصى تمييز — لون + خط سفلي مزدوج */
+  &[data-due="overdue"] {
+    color: var(--danger);
+    text-decoration: underline double var(--danger);
+    text-underline-offset: 3px;
+  }
+  /* اليوم: لمسة ذهبية محدودة */
+  &[data-due="today"] {
+    color: var(--primary);
+    &::before {
+      background: var(--gold);
+      border-radius: 999px;
+    }
+  }
+  &[data-due="soon"] {
+    color: var(--warning);
+  }
+  &[data-due="week"] {
+    color: var(--info);
+  }
+  &[data-due="done"] {
+    color: var(--success);
+    &::before {
+      content: "✓";
+      inline-size: auto;
+      block-size: auto;
+      background: none;
+      font-size: 0.75rem;
+      line-height: 1;
+    }
+  }
+  &[data-due="cancelled"] {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  /* بلا تاريخ أو بلا مسؤول: إطار متقطع يشير إلى نقص البيانات */
+  &[data-due="unset"] {
+    color: var(--text-muted);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-s);
+    padding-inline: 0.375rem;
+    &::before {
+      background: none;
+      border: 1px dashed currentcolor;
+    }
+  }
+}
+
+/* ---- جدول مِهلة: رأس مثبّت، حدود هادئة، بدايات عربية صحيحة ---- */
+@utility table-mehla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+
+  & thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    text-align: start;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  & tbody td {
+    padding: var(--density-row-y, 0.75rem) 0.875rem;
+    border-bottom: 1px solid var(--border);
+    text-align: start;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+  }
+
+  & tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  & tbody tr {
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  & tbody tr:hover {
+    background: var(--surface-muted);
+  }
+}
+
+/* منطقة تمرير الجدول: التمرير داخل الإطار فقط — لا تمرير أفقي للصفحة */
+@utility table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* قصّ ذكي لخلية عربية مع الإبقاء على القيمة الكاملة عبر title */
+@utility cell-truncate {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- «شريط المِهلة»: خط زمني هادئ بعُقد دقيقة ---- */
+@utility mehla-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding-inline-start: 1.125rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0.35rem 0.35rem;
+    inset-inline-start: 0.25rem;
+    inline-size: 1px;
+    background: linear-gradient(to bottom, var(--border-strong), var(--border));
+  }
+}
+
+@utility mehla-timeline-node {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -1.0625rem;
+    top: 0.5rem;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+  }
+
+  &[data-tone="critical"]::before {
+    background: var(--danger);
+    border-color: var(--danger);
+  }
+  &[data-tone="attention"]::before {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+  &[data-tone="done"]::before {
+    background: var(--success);
+    border-color: var(--success);
+  }
+}
+
+/* شريط تقدّم زمني أفقي — يستخدم في بطاقات المهل والجلسات */
+@utility mehla-track {
+  position: relative;
+  block-size: 3px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+
+  & > span {
+    display: block;
+    block-size: 100%;
+    border-radius: 999px;
+    background: var(--primary);
+  }
+
+  &[data-tone="critical"] > span {
+    background: var(--danger);
+  }
+  &[data-tone="attention"] > span {
+    background: var(--gold);
+  }
+  &[data-tone="done"] > span {
+    background: var(--success);
+  }
+}
+
+/* ---- سطح سفلي للجوال (Bottom Sheet) بمنطقة آمنة ---- */
+@utility sheet-mobile {
+  border-start-start-radius: var(--radius-xl2);
+  border-start-end-radius: var(--radius-xl2);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  background: var(--surface);
+  box-shadow: var(--elevation-overlay);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &::before {
+    content: "";
+    display: block;
+    inline-size: 2.25rem;
+    block-size: 4px;
+    margin: 0.5rem auto 0.25rem;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+}
+
+/* ---- ضمانة عامة: لا تمرير أفقي على مستوى الصفحة ---- */
+@layer base {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+}
