@@ -703,6 +703,13 @@
     border-bottom: 1px solid var(--border);
     text-align: start;
     vertical-align: middle;
+    /* الكلمات العربية لا تُكسر داخل الكلمة؛ الالتفاف على حدود الكلمات فقط */
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  /* خلية تحتاج كسراً قسرياً (روابط، أسماء ملفات بلا مسافات) تُعلَّم صراحة */
+  & tbody td[data-break="anywhere"] {
     overflow-wrap: anywhere;
   }
 
@@ -728,13 +735,37 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* قصّ ذكي لخلية عربية مع الإبقاء على القيمة الكاملة عبر title */
+/* قصّ ذكي لخلية عربية: سطر واحد بثلاث نقاط، يعمل حتى مع محتوى مركّب
+   (شارات/أسطر داخلية) لأنه لا يعتمد white-space: nowrap */
 @utility cell-truncate {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* عنوان عربي طويل: سطران كحد أقصى بدل قطعه على سطر واحد */
+@utility cell-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-width: 100%;
+  overflow: hidden;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* خلية إجراءات الجدول: صف واحد دائماً على سطح المكتب */
+@utility cell-actions {
   white-space: nowrap;
+  & > * {
+    white-space: nowrap;
+  }
 }
 
 /* ---- «شريط المِهلة»: خط زمني هادئ بعُقد دقيقة ---- */
