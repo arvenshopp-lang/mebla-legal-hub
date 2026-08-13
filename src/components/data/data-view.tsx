@@ -19,6 +19,13 @@ export type Column<T> = {
   mobileLabel?: ReactNode;
   /** يجعل العمود يلتف على سطرين بدل قطع النص، للنصوص الطويلة */
   wrap?: boolean;
+  /**
+   * الحد الأدنى لعرض العمود على سطح المكتب. يمنع ضغط الأعمدة العربية
+   * إلى كلمة في كل سطر عند كثرة الأعمدة؛ التمرير يبقى داخل إطار الجدول.
+   */
+  width?: "sm" | "md" | "lg" | "num" | "auto";
+  /** يسمح بكسر النص داخل الكلمة (روابط وأسماء ملفات بلا مسافات) */
+  breakAnywhere?: boolean;
   className?: string;
   headerClassName?: string;
 };
@@ -34,6 +41,23 @@ type DataViewProps<T> = {
   /** كثافة العرض: مريحة لمساحة المكتب، مضغوطة للأسطح الإدارية */
   density?: "comfortable" | "compact";
 };
+
+const MIN_WIDTH: Record<NonNullable<Column<unknown>["width"]>, string | undefined> = {
+  sm: "7rem",
+  md: "11rem",
+  lg: "16rem",
+  num: "5.5rem",
+  auto: undefined,
+};
+
+/** عرض افتراضي مشتق من موضع العمود حين لا يحدده المستدعي */
+function columnMinWidth<T>(c: Column<T>): string | undefined {
+  if (c.width) return MIN_WIDTH[c.width];
+  if (c.mobile === "actions") return undefined;
+  if (c.mobile === "title") return MIN_WIDTH.lg;
+  if (c.mobile === "subtitle") return MIN_WIDTH.md;
+  return MIN_WIDTH.sm;
+}
 
 export function DataView<T>({
   columns,
@@ -59,7 +83,12 @@ export function DataView<T>({
               <thead>
                 <tr>
                   {columns.map((c) => (
-                    <th key={c.id} scope="col" className={c.headerClassName}>
+                    <th
+                      key={c.id}
+                      scope="col"
+                      className={c.headerClassName}
+                      style={{ minWidth: columnMinWidth(c) }}
+                    >
                       {c.header}
                     </th>
                   ))}
@@ -73,16 +102,19 @@ export function DataView<T>({
                       return (
                         <td
                           key={c.id}
+                          data-break={c.breakAnywhere ? "anywhere" : undefined}
                           className={cn(
                             c.mobile === "title" && "font-medium text-foreground",
-                            c.wrap && "max-w-[32ch] whitespace-normal",
-                            clamp && "max-w-[26ch]",
-                            c.mobile === "actions" && "whitespace-nowrap",
+                            c.wrap && "max-w-[38ch] whitespace-normal",
+                            clamp && "max-w-[30ch]",
+                            c.mobile === "actions" && "cell-actions w-px",
                             c.className,
                           )}
                         >
                           {clamp ? (
-                            <span className="cell-truncate">{c.cell(row)}</span>
+                            <span className={c.mobile === "title" ? "cell-clamp-2" : "cell-truncate"}>
+                              {c.cell(row)}
+                            </span>
                           ) : (
                             c.cell(row)
                           )}
