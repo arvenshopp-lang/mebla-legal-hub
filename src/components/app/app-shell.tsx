@@ -2,7 +2,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { useAuth, canEdit } from "@/hooks/use-auth";
+import { useAuth, canEdit, ROLE_LABELS } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionAlert } from "@/components/subscription/subscription-ui";
 import { PrintGuard } from "@/components/print/print-guard";
@@ -28,7 +28,7 @@ export function AppShell({
   actions?: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { signOut, activeRole } = useAuth();
+  const { signOut, activeRole, user } = useAuth();
   const { overview } = useSubscription();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -84,6 +84,9 @@ export function AppShell({
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
           canCreate={canEdit(activeRole)}
+          userEmail={user?.email ?? undefined}
+          roleLabel={activeRole ? ROLE_LABELS[activeRole] : undefined}
+          onSignOut={onSignOut}
         />
         <main id="workspace-main" className="workspace-page workspace-stack">
           {pathname !== "/subscription" && <SubscriptionAlert overview={overview} />}
@@ -91,7 +94,7 @@ export function AppShell({
         </main>
       </div>
 
-      <WorkspaceMobileNav pathname={pathname} />
+      <WorkspaceMobileNav pathname={pathname} onSignOut={onSignOut} />
     </div>
   );
 }

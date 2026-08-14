@@ -191,7 +191,7 @@ function Page() {
       header: " ",
       mobile: "actions",
       cell: (d) => (
-        <div className="flex flex-wrap justify-end gap-1">
+        <div className="cell-actions flex flex-nowrap items-center justify-end gap-1">
           {extractableKind(d.file_name, d.file_type) && (
             <>
               <IconBtn
