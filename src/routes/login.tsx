@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch, useHydrated } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +55,7 @@ function LoginPage() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [actionBusy, setActionBusy] = useState<null | "resend" | "magic">(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   const safeRedirect =
     typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
@@ -85,9 +86,30 @@ function LoginPage() {
     safeRedirect,
   ]);
 
+  // POST-EXPOSURE CLEANUP ONLY: remove any leaked email/password from the URL
+  // without logging the original URL or search params. Runs client-side only.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+    if (params.has("email")) {
+      params.delete("email");
+      changed = true;
+    }
+    if (params.has("password")) {
+      params.delete("password");
+      changed = true;
+    }
+    if (changed) {
+      const search = params.toString();
+      const url = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (!hydrated || loading) return;
     const cleanEmail = normalizeEmail(email);
     const nextEmailError = validateEmail(cleanEmail);
     const nextPasswordError = validatePassword(password);
@@ -180,8 +202,9 @@ function LoginPage() {
       <button
         type="button"
         onClick={google}
-        disabled={googleLoading}
+        disabled={!hydrated || googleLoading}
         aria-busy={googleLoading}
+        aria-disabled={!hydrated}
         className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         <GoogleIcon />
@@ -195,7 +218,7 @@ function LoginPage() {
         <span>أو</span>
         <span aria-hidden="true" className="h-px flex-1 bg-border" />
       </div>
-      <form onSubmit={submit} noValidate className="space-y-4">
+      <form onSubmit={submit} method="post" noValidate className="space-y-4">
         {formError && (
           <div
             role="alert"
@@ -231,6 +254,7 @@ function LoginPage() {
             spellCheck={false}
             autoComplete="email"
             required
+            disabled={!hydrated}
             value={email}
             aria-invalid={emailError ? true : undefined}
             aria-describedby={emailError ? "login-email-error" : undefined}
@@ -242,7 +266,7 @@ function LoginPage() {
               const value = e.target.value;
               setEmailError(value.trim() ? validateEmail(normalizeEmail(value)) : null);
             }}
-            className={`${loginInputCls} ${emailError ? invalidFieldCls : ""}`}
+            className={`${loginInputCls} ${emailError ? invalidFieldCls : ""} disabled:cursor-not-allowed disabled:opacity-60`}
           />
           {emailError && <FieldError id="login-email-error">{emailError}</FieldError>}
         </Field>
@@ -253,6 +277,7 @@ function LoginPage() {
             id="login-password"
             autoComplete="current-password"
             required
+            disabled={!hydrated}
             value={password}
             aria-invalid={passwordError ? true : undefined}
             aria-describedby={passwordError ? "login-password-error" : undefined}
@@ -260,7 +285,7 @@ function LoginPage() {
               setPassword(e.target.value);
               if (passwordError) setPasswordError(null);
             }}
-            className={`${loginInputCls} ${passwordError ? invalidFieldCls : ""}`}
+            className={`${loginInputCls} ${passwordError ? invalidFieldCls : ""} disabled:cursor-not-allowed disabled:opacity-60`}
           />
           {passwordError && <FieldError id="login-password-error">{passwordError}</FieldError>}
         </Field>
@@ -274,11 +299,12 @@ function LoginPage() {
         </div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={!hydrated || loading}
           aria-busy={loading}
+          aria-disabled={!hydrated}
           className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-primary-hover active:bg-primary-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "جاري تسجيل الدخول…" : "دخول"}
+          {!hydrated ? "جاري التهيئة…" : loading ? "جاري تسجيل الدخول…" : "دخول"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
