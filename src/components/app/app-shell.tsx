@@ -94,7 +94,7 @@ export function AppShell({
         </main>
       </div>
 
-      <WorkspaceMobileNav pathname={pathname} />
+      <WorkspaceMobileNav pathname={pathname} onSignOut={onSignOut} />
     </div>
   );
 }
