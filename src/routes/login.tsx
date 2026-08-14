@@ -86,6 +86,27 @@ function LoginPage() {
     safeRedirect,
   ]);
 
+  // POST-EXPOSURE CLEANUP ONLY: remove any leaked email/password from the URL
+  // without logging the original URL or search params. Runs client-side only.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+    if (params.has("email")) {
+      params.delete("email");
+      changed = true;
+    }
+    if (params.has("password")) {
+      params.delete("password");
+      changed = true;
+    }
+    if (changed) {
+      const search = params.toString();
+      const url = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
