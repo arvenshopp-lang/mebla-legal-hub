@@ -125,7 +125,7 @@ export const SURFACES: SurfaceDef[] = [
     entry: "/",
     // تسجيل الدخول يتم على نطاق واحد فقط (app) لضمان جلسة موحدة وآمنة.
     // الصفحة العامة لمكتب المحاماة تُخدم على النطاق التسويقي فقط.
-    allow: ["/", "/privacy", "/terms", "/office"],
+    allow: ["/", "/pricing", "/privacy", "/terms", "/office"],
     requiresLawyerAuth: false,
   },
   // ————— نطاقات محجوزة للتوسع المستقبلي (تُفعّل بإزالة planned) —————
