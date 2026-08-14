@@ -202,8 +202,9 @@ function LoginPage() {
       <button
         type="button"
         onClick={google}
-        disabled={googleLoading}
+        disabled={!hydrated || googleLoading}
         aria-busy={googleLoading}
+        aria-disabled={!hydrated}
         className="flex w-full min-h-[46px] items-center justify-center gap-2.5 rounded-[var(--radius-m)] border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         <GoogleIcon />
