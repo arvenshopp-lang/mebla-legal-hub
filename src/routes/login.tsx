@@ -55,6 +55,7 @@ function LoginPage() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [actionBusy, setActionBusy] = useState<null | "resend" | "magic">(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   const safeRedirect =
     typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
