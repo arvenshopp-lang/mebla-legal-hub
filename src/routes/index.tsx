@@ -826,6 +826,7 @@ const FOOTER_LINKS: Array<{ href: string; label: string }> = [
   { href: "#product", label: "المنتج" },
   { href: "#capabilities", label: "المزايا" },
   { href: "#security", label: "الأمان" },
+  { href: "/pricing", label: "الباقات والأسعار" },
   { href: "/docs", label: "مركز المساعدة" },
   { href: "/privacy", label: "سياسة الخصوصية" },
   { href: "/terms", label: "الشروط والأحكام" },
@@ -912,6 +913,7 @@ function MehlaLanding() {
         <HowItWorks />
         <Workflow />
         <Security />
+        <PricingTeaser />
         <CTA registerHref={registerHref} />
       </main>
       <Footer {...links} />
