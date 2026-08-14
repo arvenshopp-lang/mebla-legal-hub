@@ -131,10 +131,10 @@
 
 ## BATCH 6 — تنظيف منخفض الأولوية
 
-**CONFIRMED_ROOT_CAUSE:** (أ) حد الحجم مكتوب يدوياً «20 ميجابايت» في موضعين بدل مصدر واحد. (ب) ورقة «المزيد» في تنقل الجوال لا تُغلق بمفتاح Escape.
-**EVIDENCE:** `src/routes/_authenticated/documents.tsx:435` و`src/routes/upload.$token.tsx:243` يستخدمان `SUPPORTED_FORMATS_LABEL` من `src/lib/client-portal.shared.ts` مع رقم حجم مكتوب نصاً؛ `src/components/app/workspace-mobile-nav.tsx` يدير `moreOpen` بـ`aria-expanded` دون معالج Escape.
-**MINIMAL_FIX:** ثابت واحد لحد الحجم في `src/lib/client-portal.shared.ts` يُستهلك في الموضعين؛ وإغلاق الورقة بـEscape مع إعادة التركيز إلى الزر.
-**WHAT_WILL_NOT_CHANGE:** الحد الفعلي المطبَّق على الخادم والمخزن، قائمة الصيغ المسموحة، عناصر التنقل.
+**CONFIRMED_ROOT_CAUSE:** (أ) الحد مفروض فعلياً من ثابت واحد في الكود، لكن النصوص المعروضة ورسالة التحقق الأمامي تكتب «20 ميجابايت» يدوياً بدل الاشتقاق منه. (ب) ورقة «المزيد» في تنقل الجوال لا تُغلق بمفتاح Escape.
+**EVIDENCE (مصدر الفرض الفعلي مُثبت):** `src/lib/client-portal.shared.ts:1` يعرّف `MAX_UPLOAD_SIZE = 20 * 1024 * 1024`، ويستهلكه التحقق الخادمي في `src/lib/documents/intake.server.ts:151` و`src/lib/documents/file-signature.ts:207`، والتحقق الأمامي في `src/lib/client-portal.shared.ts:63` — لكن الرسالة هناك نصية، وكذلك `src/routes/_authenticated/documents.tsx:435` و`src/routes/upload.$token.tsx:243`. `src/components/app/workspace-mobile-nav.tsx` يدير `moreOpen` بـ`aria-expanded` دون معالج Escape.
+**MINIMAL_FIX:** الاعتماد على `MAX_UPLOAD_SIZE` القائم كمصدر وحيد للحقيقة (لا ثابت UI جديد): تسمية مشتقّة منه في نفس الملف تُستخدم في رسالة التحقق الأمامي وفي التسميتين المعروضتين، بحيث يقود تغيير الثابت وحده كل النصوص والتحقق الأمامي والخادمي — ONE CANONICAL LIMIT لا نقل hardcode. القيمة الفعلية لا تتغير. وإغلاق ورقة الجوال بـEscape مع إعادة التركيز إلى الزر.
+**WHAT_WILL_NOT_CHANGE:** القيمة الفعلية للحد (20 MiB) وفرضها على الخادم وفي المخزن، قائمة الصيغ المسموحة، عناصر التنقل.
 **REGRESSION_RISK:** منخفض.
 **TARGETED_TESTS:** مطابقة النص مع الحد الخادمي الفعلي؛ فتح وإغلاق ورقة الجوال بلوحة المفاتيح وباللمس.
 **MIGRATION:** لا يوجد. **PRODUCTION_DATA_IMPACT:** لا يوجد.
@@ -145,5 +145,5 @@
 1) Batch 1 (P0). 2) تشخيص Batch 2 ثم إصلاحه بدليل. 3) تشخيص 3A و3B. 4) تشخيص Batch 4 ثم إصلاحه بتصنيفه. 5) Batch 5. 6) Batch 6.
 بعد كل دفعة: Type Check + ESLint + اختبار الرحلة الفعلية (نجاح/فشل/صلاحيات/جوال)، ثم انتظار إعادة اختبار مستقل قبل الإغلاق.
 
-CORRECTED_PLAN_READY
+FINAL_PLAN_READY
 USER_APPROVAL_REQUIRED
