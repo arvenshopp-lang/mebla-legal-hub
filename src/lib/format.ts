@@ -36,6 +36,81 @@ const numericDateFmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: RIYADH_TZ,
 });
 
+/**
+ * أجزاء التاريخ والوقت بتوقيت الرياض — تُستخدم لحساب الإزاحة فعلياً من
+ * قاعدة بيانات المناطق الزمنية للمتصفح، لا بإزاحة ثابتة مكتوبة يدوياً.
+ */
+const riyadhPartsFmt = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: RIYADH_TZ,
+});
+
+const pad = (n: number, len = 2): string => String(n).padStart(len, "0");
+
+/** إزاحة توقيت الرياض عن UTC بالمللي ثانية عند لحظة زمنية محددة. */
+const riyadhOffsetMs = (instant: Date): number => {
+  const parts = riyadhPartsFmt.formatToParts(instant);
+  const get = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((p) => p.type === type)?.value ?? "0");
+  const hour = get("hour") % 24; // بعض المحركات تُعيد 24 عند منتصف الليل
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second"),
+  );
+  return asUtc - Math.floor(instant.getTime() / 1000) * 1000;
+};
+
+/**
+ * يحوّل قيمة `datetime-local` («2026-08-20T10:00») باعتبارها بتوقيت الرياض
+ * إلى ISO instant صحيح بـ UTC — دون أي اعتماد على توقيت جهاز المستخدم.
+ */
+export const riyadhLocalToIso = (localValue: string | null | undefined): string | null => {
+  if (!localValue) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(localValue.trim());
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s] = m;
+  const naiveUtc = Date.UTC(
+    Number(y),
+    Number(mo) - 1,
+    Number(d),
+    Number(h),
+    Number(mi),
+    Number(s ?? 0),
+  );
+  // تقدير أولي للإزاحة ثم تصحيحها بلحظة النتيجة (آمن مع أي تغيّر مستقبلي في الإزاحة).
+  const firstGuess = naiveUtc - riyadhOffsetMs(new Date(naiveUtc));
+  const corrected = naiveUtc - riyadhOffsetMs(new Date(firstGuess));
+  const result = new Date(corrected);
+  return Number.isFinite(result.getTime()) ? result.toISOString() : null;
+};
+
+/**
+ * يحوّل ISO instant مخزّناً في قاعدة البيانات إلى قيمة `datetime-local`
+ * بتوقيت الرياض («2026-08-20T10:00») — دون اعتماد على توقيت الجهاز.
+ */
+export const isoToRiyadhLocalInput = (v: string | number | Date | null | undefined): string => {
+  const d = toDate(v);
+  if (!d) return "";
+  const parts = riyadhPartsFmt.formatToParts(d);
+  const get = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((p) => p.type === type)?.value ?? "0");
+  const hour = get("hour") % 24;
+  return `${pad(get("year"), 4)}-${pad(get("month"))}-${pad(get("day"))}T${pad(hour)}:${pad(get("minute"))}`;
+};
+
+/** نص توضيحي موحّد يُعرض بجانب حقول التاريخ والوقت. */
+export const RIYADH_TZ_HINT = "بتوقيت الرياض";
+
 const DASH = "—";
 
 const toDate = (v: string | number | Date | null | undefined): Date | null => {

@@ -10,6 +10,7 @@ import { track } from "@/lib/product-analytics";
 import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { useHashCreate } from "@/hooks/use-hash-create";
 import { HEARING_STATUS, asOptions, fmtDateTime } from "@/lib/enums";
+import { RIYADH_TZ_HINT, isoToRiyadhLocalInput, riyadhLocalToIso } from "@/lib/format";
 import {
   PageToolbar,
   EmptyState,
@@ -357,7 +358,7 @@ function HearingDialog({
     setErrors({});
     setForm(
       editing
-        ? { ...editing, hearing_date: editing.hearing_date?.slice(0, 16) }
+        ? { ...editing, hearing_date: isoToRiyadhLocalInput(editing.hearing_date) }
         : { status: "scheduled" },
     );
   }
@@ -374,9 +375,16 @@ function HearingDialog({
       return;
     }
     setSaving(true);
+    const hearingIso = riyadhLocalToIso(res.data.hearing_date);
+    if (!hearingIso) {
+      setSaving(false);
+      setErrors({ hearing_date: "تاريخ ووقت الجلسة غير صحيح" });
+      toast.error("تحقق من الحقول المطلوبة", { description: "تاريخ ووقت الجلسة غير صحيح" });
+      return;
+    }
     const payload: Record<string, unknown> = {
       ...res.data,
-      hearing_date: new Date(res.data.hearing_date).toISOString(),
+      hearing_date: hearingIso,
     };
     Object.keys(payload).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
@@ -442,7 +450,7 @@ function HearingDialog({
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
           </FormField>
         </div>
-        <FormField label="التاريخ والوقت *">
+        <FormField label="التاريخ والوقت *" hint={RIYADH_TZ_HINT}>
           <input
             type="datetime-local"
             value={form.hearing_date ?? ""}
