@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { publicPlansQueryOptions } from "@/lib/pricing.query";
+import { fmtNumber } from "@/lib/format";
+import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
 const DESCRIPTION =
@@ -10,6 +14,7 @@ const DESCRIPTION =
 
 export const Route = createFileRoute("/")({
   component: MehlaLanding,
+  loader: ({ context }) => context.queryClient.prefetchQuery(publicPlansQueryOptions()),
   head: () => ({
     meta: [
       { title: TITLE },
@@ -113,6 +118,7 @@ const NAV = [
   { href: "#capabilities", label: "المزايا" },
   { href: "#how", label: "كيف تعمل" },
   { href: "#workflow", label: "سير العمل" },
+  { href: "/pricing", label: "الأسعار" },
   { href: "#security", label: "الأمان" },
 ];
 
@@ -749,10 +755,74 @@ function CTA({ registerHref }: { registerHref: string }) {
   );
 }
 
+/** لمحة الأسعار — أرقام حقيقية من كتالوج المنصة، والتفاصيل الكاملة في صفحة الأسعار. */
+function PricingTeaser() {
+  const { data } = useQuery(publicPlansQueryOptions());
+  const plans = data ?? [];
+  if (plans.length === 0) return null;
+  const highlighted = highlightedPlanCode(plans);
+
+  return (
+    <section id="pricing" className="section-y border-b border-border bg-surface">
+      <div className="container-page">
+        <div className="reveal flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-h2">باقات واضحة بأسعار معلنة</h2>
+            <p className="measure mt-3 text-body text-muted-foreground">
+              اختر الباقة حسب عدد المستخدمين وحجم القضايا. لا تحتاج بطاقة دفع لإنشاء الحساب.
+            </p>
+          </div>
+          <a
+            href="/pricing"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted"
+          >
+            كل تفاصيل الباقات <ArrowLeft className="h-4 w-4" aria-hidden />
+          </a>
+        </div>
+
+        <ul className="mt-8 grid gap-5 lg:grid-cols-3">
+          {plans.map((plan) => {
+            const users = planLimitRows(plan).find((r) => r.key === "users")?.value;
+            const cases = planLimitRows(plan).find((r) => r.key === "cases")?.value;
+            const saving = yearlySavingPercent(plan);
+            return (
+              <li
+                key={plan.code}
+                className={cn(
+                  "reveal rounded-[var(--radius-l)] border bg-background p-6",
+                  plan.code === highlighted ? "border-primary" : "border-border",
+                )}
+              >
+                <p className="text-h4">{plan.name_ar}</p>
+                <p className="mt-4 flex flex-wrap items-baseline gap-1.5">
+                  <span className="text-[26px] font-bold tabular-nums leading-none" dir="ltr">
+                    {fmtNumber(Math.round(plan.price_monthly))}
+                  </span>
+                  <span className="text-[13px] font-semibold text-muted-foreground">ريال</span>
+                  <span className="text-[12.5px] text-text-muted">/ شهرياً</span>
+                </p>
+                <p className="mt-3 text-body-sm text-muted-foreground">
+                  {users} مستخدم · {cases} قضية
+                </p>
+                {saving !== null && (
+                  <p className="mt-1.5 text-[12.5px] text-primary">
+                    توفير {saving}% عند الدفع السنوي
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 const FOOTER_LINKS: Array<{ href: string; label: string }> = [
   { href: "#product", label: "المنتج" },
   { href: "#capabilities", label: "المزايا" },
   { href: "#security", label: "الأمان" },
+  { href: "/pricing", label: "الباقات والأسعار" },
   { href: "/docs", label: "مركز المساعدة" },
   { href: "/privacy", label: "سياسة الخصوصية" },
   { href: "/terms", label: "الشروط والأحكام" },
@@ -839,6 +909,7 @@ function MehlaLanding() {
         <HowItWorks />
         <Workflow />
         <Security />
+        <PricingTeaser />
         <CTA registerHref={registerHref} />
       </main>
       <Footer {...links} />
