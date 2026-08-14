@@ -141,9 +141,24 @@
 
 ---
 
-## ترتيب التنفيذ المقترح
-1) Batch 1 (P0). 2) تشخيص Batch 2 ثم إصلاحه بدليل. 3) تشخيص 3A و3B. 4) تشخيص Batch 4 ثم إصلاحه بتصنيفه. 5) Batch 5. 6) Batch 6.
-بعد كل دفعة: Type Check + ESLint + اختبار الرحلة الفعلية (نجاح/فشل/صلاحيات/جوال)، ثم انتظار إعادة اختبار مستقل قبل الإغلاق.
+## بوابة التنفيذ (Execution Gate)
+لا يُنفَّذ أي شيء الآن. بعد موافقة المستخدم على الخطة:
 
-FINAL_PLAN_READY
+1. **EXECUTE BATCH 1 ONLY — MEHLA-AUTH-001.**
+2. بعد التنفيذ:
+   - تشغيل الاختبارات المستهدفة الخاصة بـAUTH-001 فقط.
+   - Type Check + ESLint للملفات المتأثرة.
+   - اختبار فعلي: pre-hydration، JavaScript disabled/failure، post-hydration، valid login، invalid login، Google OAuth، Magic Link، Forgot Password، URL/query safety.
+   - تقديم الأدلة والملفات التي تغيرت.
+3. لا يُعتبر Finding مغلقاً نهائياً.
+4. لا يبدأ Batch 2.
+5. لا تشخيص أو تنفيذ للدفعات 2–6.
+6. لا Migration.
+7. لا Production data changes.
+8. الحالة بعد التنفيذ: **BATCH_1_IMPLEMENTED / AWAITING_CODEX_INDEPENDENT_RETEST / USER_APPROVAL_REQUIRED_FOR_NEXT_BATCH**.
+9. STOP وانتظار إعادة اختبار Codex المستقلة وموافقة المستخدم.
+
+بعد اجتياز Batch 1: العودة للخطة لتنفيذ الدفعات التالية بالترتيب (Batch 2 تشخيص، 3A/3B تشخيص، Batch 4 تشخيص، Batch 5، Batch 6)، مع Type Check + ESLint + اختبار الرحلة الفعلية بعد كل دفعة.
+
+FINAL_PLAN_READY_WITH_EXECUTION_GATE
 USER_APPROVAL_REQUIRED
