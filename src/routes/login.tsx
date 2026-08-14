@@ -299,11 +299,12 @@ function LoginPage() {
         </div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={!hydrated || loading}
           aria-busy={loading}
+          aria-disabled={!hydrated}
           className="w-full min-h-[46px] rounded-[var(--radius-m)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors duration-[var(--duration-fast)] hover:bg-primary-hover active:bg-primary-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "جاري تسجيل الدخول…" : "دخول"}
+          {!hydrated ? "جاري التهيئة…" : loading ? "جاري تسجيل الدخول…" : "دخول"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
