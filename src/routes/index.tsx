@@ -122,6 +122,7 @@ const NAV = [
   { href: "#capabilities", label: "المزايا" },
   { href: "#how", label: "كيف تعمل" },
   { href: "#workflow", label: "سير العمل" },
+  { href: "/pricing", label: "الأسعار" },
   { href: "#security", label: "الأمان" },
 ];
 
