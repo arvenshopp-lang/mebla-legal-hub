@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 const NAV = [
   { to: "/about", label: "من نحن" },
   { to: "/how-it-works", label: "كيف تستخدم مِهلة" },
+  { to: "/pricing", label: "الأسعار" },
   { to: "/faq", label: "الأسئلة الشائعة" },
   { to: "/security", label: "الأمان" },
   { to: "/contact", label: "تواصل معنا" },
