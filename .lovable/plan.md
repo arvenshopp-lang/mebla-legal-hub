@@ -22,6 +22,8 @@
 5. تنظيف ما قد يكون تسرّب سابقاً: إن وُجد `email`/`password` في `location.search` تُزال بـ`history.replaceState` دون تسجيلها — يُوصف صراحةً كـ POST-EXPOSURE CLEANUP ONLY، وليس منعاً للتسريب لأن الرابط قد يكون وصل مسبقاً إلى سجلات المتصفح أو الشبكة أو التحليلات.
 6. نص الزر قبل الـHydration: «جاري التهيئة…» مع `aria-busy` كي لا يبدو الزر معطلاً بلا سبب.
 
+**قيود التنظيف الآمن للرابط:** يعمل في المتصفح بعد الـmount فقط داخل `useEffect`؛ لا قراءة لـ`window`/`location` أثناء SSR؛ لا تسجيل للرابط الأصلي ولا لمعاملات البحث في أي سجل؛ يحذف `email` و`password` فقط ويحفظ بقية المعاملات الشرعية (مثل `redirect`)؛ يستخدم `replaceState` دون إضافة مدخل جديد في سجل التنقل. يبقى تصنيفه POST-EXPOSURE CLEANUP ONLY وليس ضابطاً أمنياً أساسياً.
+
 **WHY_THIS_FIX:** ينقل الحماية من طبقة JS (fail-open) إلى HTML الصادر من الخادم (fail-closed)، ويبقى صحيحاً حتى مع فشل تحميل JS كلياً.
 
 **WHAT_WILL_NOT_CHANGE:** منطق المصادقة، Supabase، الـRouting، رسائل الأخطاء الحالية، Google OAuth، إعادة تعيين كلمة المرور، `autoComplete`، الـLabels وإمكانية الوصول، تصميم الصفحة.
@@ -70,10 +72,17 @@
 
 **EVIDENCE (تم استبعاد فرضيات لا إثبات سبب):** كل المفاتيح الأجنبية على `sales_documents` بـ`ON DELETE CASCADE` (`sales_document_items`, `sales_document_events`, `sales_document_signatures`)؛ تريجر `sales_doc_immutability` يعمل `BEFORE UPDATE` فقط ولا يمسّ الحذف؛ الحذف يجري بعميل خادمي يتجاوز RLS. رسالة الفشل التي رآها الفحص تحمل «مرجع» وهي مولّدة من `fail()` في `src/lib/sales-docs.server.ts`، لكن سجلات الخادم لا تحفظ إلا ساعة واحدة فلم يُستخرج كود الخطأ الحقيقي بعد. المسودة القائمة `QA-E2E-QUOTE-20260814-537738` بحالة `draft` وصالحة لإعادة الإنتاج.
 
-**DIAGNOSTIC:** تنفيذ الحذف على مسودة QA في المعاينة مع قراءة سجل دالة الخادم فوراً لاستخراج كود Postgres/سبب الرفض الفعلي من سطر `[sales-docs]`.
+**PRODUCTION DATA SAFETY (شرط مسبق):** لا نفترض أن المعاينة تستخدم قاعدة بيانات منفصلة عن الإنتاج. قبل أي تشخيص يشمل حذفاً:
+1. إثبات هدف الـbackend/قاعدة البيانات الفعلي للمعاينة.
+2. إن كانت المعاينة تتصل بقاعدة الإنتاج نفسها: لا يُحذف أي سجل قائم لأغراض التشخيص — بما في ذلك `QA-E2E-QUOTE-20260814-537738`.
+3. البديل المسموح: إنشاء مسودة QA مخصّصة للاختبار (disposable) إن كان ذلك آمناً، وحذفها داخل نفس دورة الاختبار.
+4. إن لم تتوفر بيئة بيانات آمنة للتعديل: يُسجَّل `DIAGNOSTIC_BLOCKED_BY_PRODUCTION_DATA_SAFETY` ولا يُنفَّذ الحذف، ويُجمع الدليل من سجلات الخادم عند أول تكرار طبيعي للعطل.
+ممنوع تعديل أو حذف أي بيانات عميل حقيقية.
+
+**DIAGNOSTIC:** بعد استيفاء الشرط أعلاه: تنفيذ الحذف على مسودة QA مخصّصة أُنشئت للاختبار (لا على سجل قائم) مع قراءة سجل دالة الخادم فوراً لاستخراج كود Postgres/سبب الرفض الفعلي من سطر `[sales-docs]`.
 **MINIMAL_FIX:** يُحدَّد بعد ذلك (تحقق صلاحية، أو قيد ارتباط من جدول أُضيف لاحقاً، أو تحقق حالة) — أصغر إصلاح يعالج السبب، مع رسالة عربية تشرح السبب الحقيقي دون كشف تفاصيل داخلية.
 **WHAT_WILL_NOT_CHANGE:** حالات المستند، الثبات (immutability) للمستندات المُرسلة، سجل التدقيق.
-**MIGRATION:** لا يوجد حتى إثبات السبب. **PRODUCTION_DATA_IMPACT:** الحذف يُجرى على مسودة QA فقط.
+**MIGRATION:** لا يوجد حتى إثبات السبب. **PRODUCTION_DATA_IMPACT:** لا حذف ولا تعديل لأي سجل قائم؛ الحذف — إن سُمح به — يقع على سجل QA أُنشئ خصيصاً ويُحذف داخل نفس الدورة، وإلا يُوقف التشخيص بـ`DIAGNOSTIC_BLOCKED_BY_PRODUCTION_DATA_SAFETY`.
 
 **STOP.**
 
@@ -122,10 +131,10 @@
 
 ## BATCH 6 — تنظيف منخفض الأولوية
 
-**CONFIRMED_ROOT_CAUSE:** (أ) حد الحجم مكتوب يدوياً «20 ميجابايت» في موضعين بدل مصدر واحد. (ب) ورقة «المزيد» في تنقل الجوال لا تُغلق بمفتاح Escape.
-**EVIDENCE:** `src/routes/_authenticated/documents.tsx:435` و`src/routes/upload.$token.tsx:243` يستخدمان `SUPPORTED_FORMATS_LABEL` من `src/lib/client-portal.shared.ts` مع رقم حجم مكتوب نصاً؛ `src/components/app/workspace-mobile-nav.tsx` يدير `moreOpen` بـ`aria-expanded` دون معالج Escape.
-**MINIMAL_FIX:** ثابت واحد لحد الحجم في `src/lib/client-portal.shared.ts` يُستهلك في الموضعين؛ وإغلاق الورقة بـEscape مع إعادة التركيز إلى الزر.
-**WHAT_WILL_NOT_CHANGE:** الحد الفعلي المطبَّق على الخادم والمخزن، قائمة الصيغ المسموحة، عناصر التنقل.
+**CONFIRMED_ROOT_CAUSE:** (أ) الحد مفروض فعلياً من ثابت واحد في الكود، لكن النصوص المعروضة ورسالة التحقق الأمامي تكتب «20 ميجابايت» يدوياً بدل الاشتقاق منه. (ب) ورقة «المزيد» في تنقل الجوال لا تُغلق بمفتاح Escape.
+**EVIDENCE (مصدر الفرض الفعلي مُثبت):** `src/lib/client-portal.shared.ts:1` يعرّف `MAX_UPLOAD_SIZE = 20 * 1024 * 1024`، ويستهلكه التحقق الخادمي في `src/lib/documents/intake.server.ts:151` و`src/lib/documents/file-signature.ts:207`، والتحقق الأمامي في `src/lib/client-portal.shared.ts:63` — لكن الرسالة هناك نصية، وكذلك `src/routes/_authenticated/documents.tsx:435` و`src/routes/upload.$token.tsx:243`. `src/components/app/workspace-mobile-nav.tsx` يدير `moreOpen` بـ`aria-expanded` دون معالج Escape.
+**MINIMAL_FIX:** الاعتماد على `MAX_UPLOAD_SIZE` القائم كمصدر وحيد للحقيقة (لا ثابت UI جديد): تسمية مشتقّة منه في نفس الملف تُستخدم في رسالة التحقق الأمامي وفي التسميتين المعروضتين، بحيث يقود تغيير الثابت وحده كل النصوص والتحقق الأمامي والخادمي — ONE CANONICAL LIMIT لا نقل hardcode. القيمة الفعلية لا تتغير. وإغلاق ورقة الجوال بـEscape مع إعادة التركيز إلى الزر.
+**WHAT_WILL_NOT_CHANGE:** القيمة الفعلية للحد (20 MiB) وفرضها على الخادم وفي المخزن، قائمة الصيغ المسموحة، عناصر التنقل.
 **REGRESSION_RISK:** منخفض.
 **TARGETED_TESTS:** مطابقة النص مع الحد الخادمي الفعلي؛ فتح وإغلاق ورقة الجوال بلوحة المفاتيح وباللمس.
 **MIGRATION:** لا يوجد. **PRODUCTION_DATA_IMPACT:** لا يوجد.
@@ -136,5 +145,5 @@
 1) Batch 1 (P0). 2) تشخيص Batch 2 ثم إصلاحه بدليل. 3) تشخيص 3A و3B. 4) تشخيص Batch 4 ثم إصلاحه بتصنيفه. 5) Batch 5. 6) Batch 6.
 بعد كل دفعة: Type Check + ESLint + اختبار الرحلة الفعلية (نجاح/فشل/صلاحيات/جوال)، ثم انتظار إعادة اختبار مستقل قبل الإغلاق.
 
-CORRECTED_PLAN_READY
+FINAL_PLAN_READY
 USER_APPROVAL_REQUIRED
