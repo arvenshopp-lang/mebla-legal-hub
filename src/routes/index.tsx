@@ -5,12 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
-import { fmtNumber, } from "@/lib/format";
-import {
-  highlightedPlanCode,
-  planLimitRows,
-  yearlySavingPercent,
-} from "@/lib/pricing.shared";
+import { fmtNumber } from "@/lib/format";
+import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
 const DESCRIPTION =

@@ -114,7 +114,7 @@ export function planSupportRows(plan: PublicPlan): PlanLimitRow[] {
     {
       key: "support",
       label: "مستوى الدعم",
-      value: plan.support_level ? SUPPORT_LABELS[plan.support_level] ?? plan.support_level : "—",
+      value: plan.support_level ? (SUPPORT_LABELS[plan.support_level] ?? plan.support_level) : "—",
     },
     {
       key: "sla",

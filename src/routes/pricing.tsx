@@ -75,15 +75,7 @@ function PlansJsonLd({ plans }: { plans: PublicPlan[] }) {
   );
 }
 
-function StateBox({
-  title,
-  body,
-  onRetry,
-}: {
-  title: string;
-  body: string;
-  onRetry?: () => void;
-}) {
+function StateBox({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
   return (
     <div className="mx-auto max-w-lg rounded-[var(--radius-l)] border border-border bg-surface p-6 text-center">
       <p className="text-[15px] font-semibold">{title}</p>
