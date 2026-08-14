@@ -218,7 +218,7 @@ function LoginPage() {
         <span>أو</span>
         <span aria-hidden="true" className="h-px flex-1 bg-border" />
       </div>
-      <form onSubmit={submit} noValidate className="space-y-4">
+      <form onSubmit={submit} method="post" noValidate className="space-y-4">
         {formError && (
           <div
             role="alert"
