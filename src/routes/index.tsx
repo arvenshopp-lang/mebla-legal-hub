@@ -759,6 +759,90 @@ function CTA({ registerHref }: { registerHref: string }) {
   );
 }
 
+/** لمحة الأسعار — أرقام حقيقية من كتالوج المنصة، والتفاصيل الكاملة في صفحة الأسعار. */
+function PricingTeaser() {
+  const { data } = useQuery(publicPlansQueryOptions());
+  const plans = data ?? [];
+  if (plans.length === 0) return null;
+  const highlighted = highlightedPlanCode(plans);
+
+  return (
+    <section id="pricing" className="section-y border-b border-border bg-surface">
+      <div className="container-page">
+        <div className="reveal flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-h2">باقات واضحة بأسعار معلنة</h2>
+            <p className="measure mt-3 text-body text-muted-foreground">
+              اختر الباقة حسب عدد المستخدمين وحجم القضايا. لا تحتاج بطاقة دفع لإنشاء الحساب.
+            </p>
+          </div>
+          <a
+            href="/pricing"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted"
+          >
+            كل تفاصيل الباقات <ArrowLeft className="h-4 w-4" aria-hidden />
+          </a>
+        </div>
+
+        <ul className="mt-8 grid gap-5 lg:grid-cols-3">
+          {plans.map((plan) => {
+            const users = planLimitRows(plan).find((r) => r.key === "users")?.value;
+            const cases = planLimitRows(plan).find((r) => r.key === "cases")?.value;
+            const saving = yearlySavingPercent(plan);
+            return (
+              <li
+                key={plan.code}
+                className={cn(
+                  "reveal rounded-[var(--radius-l)] border bg-background p-6",
+                  plan.code === highlighted ? "border-primary" : "border-border",
+                )}
+              >
+                <p className="text-h4">{plan.name_ar}</p>
+                <p className="mt-4 flex flex-wrap items-baseline gap-1.5">
+                  <span className="text-[26px] font-bold tabular-nums leading-none" dir="ltr">
+                    {fmtNumber(Math.round(plan.price_monthly))}
+                  </span>
+                  <span className="text-[13px] font-semibold text-muted-foreground">ريال</span>
+                  <span className="text-[12.5px] text-text-muted">/ شهرياً</span>
+                </p>
+                <p className="mt-3 text-body-sm text-muted-foreground">
+                  {users} مستخدم · {cases} قضية
+                </p>
+                {saving !== null && (
+                  <p className="mt-1.5 text-[12.5px] text-primary">
+                    توفير {saving}% عند الدفع السنوي
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function LegacyCTA({ registerHref }: { registerHref: string }) {
+  return (
+    <section className="section-y">
+      <div className="container-page">
+        <div className="reveal rounded-[var(--radius-l)] bg-primary px-6 py-12 text-primary-foreground md:px-12 md:py-16">
+          <h2 className="text-h2 measure">جاهز لتنظيم عمل مكتبك؟</h2>
+          <p className="measure mt-3 text-body text-primary-foreground/80">
+            أنشئ مكتبك خلال دقيقة، وابدأ بتسجيل أول قضية ومتابعة مهلها وجلساتها.
+          </p>
+          <a
+            href={registerHref}
+            className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
+          >
+            إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const FOOTER_LINKS: Array<{ href: string; label: string }> = [
   { href: "#product", label: "المنتج" },
   { href: "#capabilities", label: "المزايا" },
