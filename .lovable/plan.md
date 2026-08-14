@@ -1,85 +1,137 @@
-# MEHLA-E2E-001 — تشخيص فقدان قيمة التاريخ والوقت (تقرير جذري، بلا تنفيذ)
+# MEHLA-SALES-002 — تشخيص فشل حذف مسودة عرض سعر (تقرير جذري، بلا تنفيذ)
 
-## HEARING_FLOW
+## MEHLA-SALES-002
+P1 — حذف مستند بيع `kind=quotation` و`status=draft` يفشل دائماً برسالة عربية عامة مع مرجع تتبع.
+
+## DELETE_FLOW
 ```text
-input[type=datetime-local]  →  "2026-08-20T10:00" (نص بلا منطقة زمنية)
-setForm({...form, hearing_date})          hearings.tsx:445-455
-useDialogDraft → useAutoSaveDraft         حفظ مشفّر كل 1s + استعادة async
-schema.safeParse (z.string().min(1))      لا تحويل ولا تحقق زمني
-new Date(res.data.hearing_date).toISOString()   hearings.tsx:379  ← تفسير بتوقيت المتصفح
-insert/update hearings.hearing_date       timestamptz (مؤكد من قاعدة البيانات)
-العرض في الجدول: fmtDateTime → Intl بـ Asia/Riyadh   format.ts:20-31
-إعادة الفتح للتعديل: editing.hearing_date.slice(0,16)  hearings.tsx:360  ← قطع نص UTC الخام
+زر «حذف» (يظهر فقط عند status==='draft' و can('sales_docs.delete'))
+  src/routes/mehla-admin/sales/$id.tsx:541
+useServerFn(salesDeleteDraft) → { id }
+  src/lib/sales-docs.functions.ts:100-110
+requireSupabaseAuth (جلسة + bearer)
+requireStaff(context.supabase, userId, "sales_docs.delete")   ← فحص RBAC خادمي
+engine.deleteDraft({ staff }, id)                              src/lib/sales-docs.server.ts:352
+  1) select status → موجود
+  2) status !== 'draft' ؟ لا → يتجاوز الفحص
+  3) DELETE FROM sales_documents WHERE id = $1   (supabaseAdmin، يتجاوز RLS)
+       ↳ CASCADE على sales_document_items   → مسموح (trigger الحماية يمرّر حالة draft)
+       ↳ CASCADE على sales_document_signatures → لا صفوف للمسودة
+       ↳ CASCADE على sales_document_events  → **BEFORE DELETE trigger يرفع استثناء**
+  4) fail(error, "تعذّر حذف المسودة.")  ← يُغلّف الخطأ ويعيد مرجع SD-…
+  5) writeAudit(...) لا يُنفَّذ أبداً (الكود يتوقف قبله)
 ```
 
-## DEADLINE_FLOW
-مطابق حرفياً لنفس المسار:
-`deadlines.tsx:546` (الإدخال) → `deadlines.tsx:458` (`new Date(due_date).toISOString()`) → `due_date timestamptz` → العرض `fmtDate` بتوقيت الرياض → إعادة الفتح `deadlines.tsx:433` (`due_date.slice(0,16)`).
+## FIRST_FAILURE_POINT
+الخطوة 3 — داخل PostgreSQL أثناء الحذف المتتالي (CASCADE) لصفوف `sales_document_events`.
+`CREATE TRIGGER sales_events_no_delete BEFORE DELETE ON public.sales_document_events FOR EACH ROW EXECUTE FUNCTION deny_hard_delete()` والدالة تنفّذ حرفياً:
+`RAISE EXCEPTION 'RECORD_DELETE_FORBIDDEN' USING ERRCODE = 'P0001'`.
+الاستثناء داخل نفس المعاملة ⇒ يفشل حذف الصف الأصل كاملاً (rollback).
 
-## FIRST_POINT_OF_CORRUPTION
-حدّان في نفس الطبقة (العميل)، وليس الخادم ولا قاعدة البيانات:
-1. **التسلسل عند الحفظ**: `new Date("YYYY-MM-DDTHH:mm").toISOString()` يفسّر النص بتوقيت جهاز المستخدم، لا بتوقيت المكتب/الرياض الذي يُعرض به لاحقاً.
-2. **الترطيب عند التعديل**: `.slice(0, 16)` على قيمة ISO مخزّنة بـ UTC يضع UTC داخل حقل datetime-local المحلي دون تحويل.
-
-النتيجة: **VALUE_SHIFTED** لا VALUE_LOST. القيمة موجودة في قاعدة البيانات دائماً، لكنها تُقرأ وتُعرض على أساس منطقتين زمنيتين مختلفتين، والانزياح **يتراكم**: كل دورة تعديل ثم حفظ تطرح فرق المنطقة من جديد (‎3 ساعات لجهاز بتوقيت الرياض).
-
-## أثر ذلك على اختبار E2E
-متصفح Playwright يعمل بتوقيت UTC. لذلك عند إدخال 10:00 يُخزَّن 10:00Z ويظهر في الجدول 13:00 بتوقيت الرياض — وهذا بالضبط ما يُقرأ بشريّاً كأن «القيمة ضاعت أو تغيّرت». على جهاز بتوقيت الرياض يظهر الجدول صحيحاً، لكن نافذة التعديل تُظهر 07:00 بدل 10:00.
-
-## المسودات (الفرضية السابقة)
-الفحص يقول: الكتابة فوق القيمة **ممكنة تقنياً لكنها ليست السبب الأساسي**.
-- `use-autosave-draft.ts:93-111` يقرأ المسودة ويفكّ تشفيرها بشكل غير متزامن، ثم — إن كانت من نفس جلسة التبويب — يستدعي `restoreRef.current(envelope.value)` **صامتاً**.
-- `use-dialog-draft.ts:29-32` يدمج بـ `{...prev, ...value}`، أي أن مفتاح `hearing_date` / `due_date` الموجود في مسودة قديمة **يستبدل** ما كتبه المستخدم لو أنهى الكتابة قبل انتهاء فك التشفير.
-- المسودة لا تُحذف إلا عند حفظ ناجح أو رفض صريح، فمحاولات الإنشاء المتكرّرة في الاختبار تُبقي مسودات قديمة قابلة للاستعادة.
-- المفتاح الخاطئ: `userKey: activeOrgId` لا معرّف المستخدم — مسودة مشتركة على مستوى المكتب لا المستخدم.
-التصنيف هنا: **OVERWRITTEN (نافذة سباق ضيّقة)** وليس CLEARED. لم أثبته حياً: بيئة المتصفح الآلي حالياً `signed_out` فلا جلسة مصادقة لإعادة الإنتاج، ولذلك أفصله عن السبب المؤكد.
-
-## HEARING_ROOT_CAUSE
-غياب تحويل منطقة زمنية صريح عند الكتابة (`hearings.tsx:379`) وعند إعادة الترطيب (`hearings.tsx:360`)، مقابل عرض بتوقيت الرياض.
-
-## DEADLINE_ROOT_CAUSE
-نفس الخلل حرفياً (`deadlines.tsx:458` و`deadlines.tsx:433`).
-
-## SHARED_ROOT_CAUSE
-YES — نمط واحد مكرّر نصّياً في الملفين (ويتكرر في أي نموذج datetime آخر). لا يوجد اليوم utility مشتركة للتاريخ/الوقت؛ لذلك الإصلاح الصحيح إنشاء واحدة واستخدامها في الملفين.
+## ROOT_CAUSE
+CONFIRMED.
+تعارض معماري بين قاعدتين صحيحتين كلٌّ على حدة:
+1. `sales_document_events` جدول **غير قابل للحذف** (append-only، حماية Auditability).
+2. المفتاح الأجنبي من الأحداث إلى المستند هو **ON DELETE CASCADE**، أي أن حذف المستند يعني حذف أحداثه.
+وبما أن `createDraft` يكتب دائماً حدث `created` عند الإنشاء (`sales-docs.server.ts:324`)، فإن **كل** مسودة تملك حدثاً واحداً على الأقل ⇒ الحذف الصلب لأي مسودة **مستحيل بنيوياً**، لا استثناء. الميزة معطّلة كلياً وليست حالة حدّية.
 
 ## CONFIDENCE
-- انزياح المنطقة الزمنية: **عالية (مؤكد بالكود + أنواع الأعمدة)**.
-- سباق استعادة المسودة: **متوسطة (ممكن بالكود، غير مُثبت حياً)**.
+عالية — مثبت بالكود وبمخطط قاعدة البيانات وبنص دالة الـtrigger وببيانات فعلية (المسودة الحالية الوحيدة لها حدث واحد مرتبط).
 
 ## EVIDENCE
-- `hearings.hearing_date` و`deadlines.due_date` من نوع `timestamp with time zone` (استعلام مخطط فعلي).
-- `format.ts:20-36` يفرض `timeZone: RIYADH_TZ` على كل العرض.
-- `hearings.tsx:379` و`deadlines.tsx:458`: تحويل بلا مرجع زمني.
-- `hearings.tsx:360` و`deadlines.tsx:433`: `.slice(0,16)` على ISO بتوقيت UTC.
-- `use-autosave-draft.ts:98-103` استعادة صامتة غير متزامنة + `use-dialog-draft.ts:30` دمج يستبدل المفاتيح.
+- FKs الفعلية على `sales_documents`: `sales_document_items`, `sales_document_events`, `sales_document_signatures` — الثلاثة `ON DELETE CASCADE` (`confdeltype='c'`).
+- Triggers الفعلية: `sales_events_no_delete` (BEFORE DELETE → `deny_hard_delete`)، `sales_sig_no_delete`، `sales_items_locked_guard` (BEFORE INSERT/UPDATE/DELETE)، و`sales_doc_immutability` **على UPDATE فقط** (لا يوجد أي trigger DELETE على `sales_documents` نفسه — أي الخلل ليس في المستند بل في أحداثه).
+- `deny_hard_delete()` = `RAISE EXCEPTION 'RECORD_DELETE_FORBIDDEN' ERRCODE P0001`.
+- `sales_document_items_guard()` يسمح بالحذف عندما تكون الحالة `draft/pending_approval/approved` ⇒ البنود ليست العائق.
+- استعلام قراءة فقط: صفوف الأحداث الحالية = مسودة واحدة بحدث واحد، ومستند مُرسل بحدثين.
+- `dbReason()` لا يعالج كود `P0001` (`sales-docs.server.ts:47-66`) ⇒ يعود إلى النص العام + مرجع، وهو بالضبط ما ظهر في الاختبار.
 
-## EXACT_FILES_INVOLVED
-`src/routes/_authenticated/hearings.tsx`، `src/routes/_authenticated/deadlines.tsx`، `src/lib/format.ts`، `src/lib/drafts/use-autosave-draft.ts`، `src/lib/drafts/use-dialog-draft.ts`
+## EXACT_FILES
+- `src/routes/mehla-admin/sales/$id.tsx` (زر الحذف والتأكيد وعرض الخطأ)
+- `src/lib/sales-docs.functions.ts` (`salesDeleteDraft`)
+- `src/lib/sales-docs.server.ts` (`deleteDraft`, `fail`, `dbReason`, `logEvent`)
+- قاعدة البيانات: `sales_document_events` (trigger + FK)
+
+## AUTHORIZATION_RESULT
+PASS — لا علاقة للصلاحيات بالعطل.
+- مفتاح واحد متطابق في الطرفين: `sales_docs.delete` موجود في كتالوج الصلاحيات (`admin-permissions.ts:94/642/1006`)، ويُفحص في الواجهة (`$id.tsx:541`) وخادمياً عبر `requireStaff` (`sales-docs.functions.ts:108`). لا mismatch.
+- الفشل يقع **بعد** الترخيص وبعد فحص الحالة، داخل قاعدة البيانات.
+- المحرّك يستخدم `supabaseAdmin` ⇒ RLS ليس عاملاً؛ ولا يوجد كود `42501`.
+
+## BUSINESS_RULE_RESULT
+القاعدة الحالية في الكود واضحة وقصدها **السماح** بحذف المسودة فقط:
+- `DRAFT` → مسموح بالحذف نظرياً (`sales-docs.server.ts:360` يمرّر الحالة draft فقط).
+- `SENT`, `ACCEPTED`, `REJECTED`, `CANCELLED`, `EXPIRED`, `PENDING_APPROVAL`, `APPROVED` → ممنوع بالحذف برسالة «لا يمكن حذف إلا مسودة لم تُرسل بعد».
+لا توجد قاعدة أعمال تمنع حذف المسودة. المنع غير مقصود ونابع من طبقة قاعدة البيانات، أي أن **النية والتنفيذ متعارضان**. لم أغيّر أي قاعدة.
+
+## DATABASE_CONSTRAINT_RESULT
+| العلاقة | السلوك | يمنع الحذف؟ |
+|---|---|---|
+| `sales_document_items.document_id` | CASCADE | لا |
+| `sales_document_signatures.document_id` | CASCADE | لا (ولا صفوف للمسودة، لكنه كان سيمنع لو وُجدت — نفس النمط) |
+| `sales_document_events.document_id` | CASCADE | **نعم — نقطة الفشل** |
+لا FK بـ RESTRICT/NO ACTION/SET NULL نحو `sales_documents`. لا CHECK constraint متعلق بالحذف.
+
+## TRIGGER_RESULT
+- `sales_events_no_delete` = السبب المباشر (P0001).
+- `sales_sig_no_delete` = قنبلة موقوتة مماثلة لأي مستند مسودة يملك توقيعاً.
+- `sales_doc_immutability` على UPDATE فقط — البيانات السابقة كانت صحيحة وما زالت.
+- `sales_items_locked_guard` يسمح بالحذف في حالة draft.
+
+## AUDIT_EVENT_RESULT
+العطل ليس في كتابة سجل التدقيق ولا في ترتيبه ولا في انتهاك FK للسجل، بل في **حذف** الأحداث:
+- الأحداث تُكتب قبل الحذف (عند الإنشاء) وتبقى مرتبطة بـ`document_id`.
+- `writeAudit` في `deleteDraft` يأتي **بعد** الحذف ولا يُنفَّذ لأن العملية تفشل قبله — أي أن محاولة الحذف الفاشلة لا تُترك لها أي أثر في `admin_audit_logs`، وهذه فجوة تدقيق ثانوية يجب معالجتها مع الإصلاح (تسجيل المحاولة والفشل أيضاً).
+- `admin_audit_logs` نفسه append-only (`no_delete` + `immutable`) وهذا سليم ولا يُلمس.
+
+## ERROR_WRAPPING_RESULT
+- الخطأ الداخلي الحقيقي: `P0001 RECORD_DELETE_FORBIDDEN` (من trigger الأحداث عبر CASCADE).
+- ما يظهر للمستخدم: «تعذّر حذف المسودة. (مرجع: SD-XXXX)» — لأن `dbReason` لا يعرف `P0001`.
+- الخصوصية: سليمة — لا Stack Trace ولا أسماء جداول ولا تفاصيل Postgres للمستخدم؛ التفاصيل في سجل الخادم مع نفس المرجع.
+- المرجع مفيد للدعم من ناحية الربط، لكن الرسالة **غير قابلة للتصرّف** ولا تشرح السبب. لم أغيّر أي شيء في تجربة الخطأ الآن.
+
+## SHARED_OR_ISOLATED_DEFECT
+نمط مشترك محتمل: أي جدول append-only مربوط بأصل بـ`ON DELETE CASCADE`. النطاق المؤكد الآن معزول في وحدة عروض الأسعار (`sales_document_events` + `sales_document_signatures`). التحقق من بقية الجداول append-only مسألة منفصلة لا تدخل هذا الإصلاح.
 
 ## MINIMAL_FIX_RECOMMENDATION
-(للاعتماد فقط — لم يُنفَّذ شيء)
-1. utility مشتركة واحدة في `src/lib/format.ts`: `riyadhLocalToIso(local)` و`isoToRiyadhLocalInput(iso)`، بحيث يكون توقيت الرياض هو المرجع في الكتابة والقراءة معاً، وتُستخدم في الملفين بدل `new Date(...)` و`.slice(0,16)`.
-2. إضافة تسمية صريحة للحقل تُبيّن أن التوقيت بتوقيت الرياض.
-3. (منفصل، ثانوي) إغلاق سباق المسودة: تجاهل الاستعادة الصامتة إذا لمس المستخدم النموذج قبل وصولها، وتغيير `userKey` إلى `userId:orgId`.
+لا تعطيل الـtrigger ولا إسقاط FK. المسار المقترح (بانتظار الاعتماد):
+1. تحويل حذف المسودة إلى **دالة قاعدة بيانات واحدة** `security definer` (مثل `sales_delete_draft(_id uuid)`) تعمل داخل معاملة واحدة وبالترتيب الآمن:
+   أ. التحقق من الحالة = `draft` ومن عدم وجود توقيعات، وإلا استثناء واضح.
+   ب. كتابة سجل تدقيق **قبل** الحذف في `admin_audit_logs` يحمل نسخة (snapshot) من صفوف `sales_document_events` وبيانات المستند الأساسية — فتُحفظ قابلية التدقيق بعد زوال الأصل.
+   ج. السماح بحذف صفوف الأحداث لهذه العملية فقط عبر مفتاح معاملة صريح (`set local`) يقرؤه `deny_hard_delete` (أو دالة حماية مخصّصة للأحداث)، بحيث يبقى الحذف ممنوعاً في كل المسارات الأخرى.
+   د. حذف المستند.
+2. `deleteDraft` في الخادم يستدعي هذه الدالة بدل `.delete()` المباشر، ويسجّل الفشل أيضاً لا النجاح فقط.
+3. إضافة تعريف عربي دقيق لكود `P0001` داخل `dbReason` حتى لا تعود أي رسالة غامضة مستقبلاً.
+بديل أخف لو رُفض تعديل قاعدة البيانات: اعتماد **إلغاء المسودة** (`cancelled`) بدل الحذف الصلب وتغيير الزر ونصّه وفقاً لذلك — لكن هذا **تغيير قاعدة أعمال** يحتاج قراراً منك، لا إصلاحاً تقنياً.
+
+## CHANGED_FILES_EXPECTED
+`src/lib/sales-docs.server.ts`، `src/routes/mehla-admin/sales/$id.tsx` (نص/حالة الخطأ فقط إن لزم)، + Migration واحدة (دالة الحذف وتعديل حماية الأحداث). لا ملفات أخرى.
 
 ## MIGRATION_REQUIRED
-NO
+YES (للمسار المقترح رقم 1؛ لا Migration للبديل الأخف)
 
 ## DATABASE_CHANGE_REQUIRED
-NO — الأعمدة `timestamptz` صحيحة والبيانات المخزّنة سليمة كلحظة زمنية.
+YES — دالة جديدة + تحديث منطق حماية `sales_document_events` بحيث تظل append-only خارج مسار حذف المسودة. بلا تغيير مخطط الأعمدة وبلا إسقاط FK.
+
+## PRODUCTION_DATA_IMPACT
+NONE — لم يُنفَّذ أي mutation، ولم يُقرأ سوى المخطط وعدّاد صفوف. السجل `QA-E2E-QUOTE-20260814-537738` لم يُلمس ولم يُستخدم كتجربة حذف.
+ملاحظة سلامة: المعاينة وقاعدة البيانات هدف واحد، لذلك لم أُجرِ أي إعادة إنتاج حية للحذف.
 
 ## REGRESSION_RISK
-منخفض إلى متوسط: الصفوف المُنشأة سابقاً بمنطق خاطئ ستُقرأ بمرجع جديد، فقد تتغيّر القيم المعروضة للسجلات القديمة (تصحيح لا كسر). المخاطرة الحقيقية هي نسخ التحويل في مكان واحد فقط ونسيان الآخر — لذا utility مشتركة إلزامية. مسارات مرتبطة يجب اختبارها: `daysUntil` والتذكيرات وKPI المهل وتصفية «القادمة/السابقة» في الجلسات.
+متوسط ومحدود إن نُفّذ كما هو مقترح:
+- الخطر الحقيقي هو توسيع إذن حذف الأحداث خارج مسار المسودة ⇒ يجب أن يكون المفتاح على مستوى المعاملة داخل الدالة وحدها، مع اختبار يثبت أن الحذف المباشر للأحداث ما زال ممنوعاً.
+- مسارات يجب اختبارها بعد الإصلاح: إنشاء/تعديل المسودة، الإرسال، طلب الاعتماد والاعتماد (Four-Eyes)، القبول والقفل، قائمة المستندات، وسجل `admin_audit_logs`.
 
 ## TARGETED_ACCEPTANCE_TESTS
-1. جهاز بتوقيت الرياض: إنشاء جلسة 20/08 10:00 → الجدول 10:00 → إعادة الفتح 10:00 → حفظ دون تعديل → تبقى 10:00 (لا تراكم).
-2. متصفح بتوقيت UTC: نفس الإدخال يعطي نفس العرض (10:00 بتوقيت الرياض).
-3. نفس السيناريوهين للمهل مع تحقق «الأيام المتبقية» عند حدّ منتصف الليل.
-4. مسودات: فتح بلا مسودة / مع مسودة / إدخال التاريخ فوراً بعد الفتح / بعد اكتمال الاستعادة → في الحالات الأربع تبقى القيمة PRESERVED.
-5. سجل عبر منتصف الليل بتوقيت الرياض للتأكد من عدم انزياح اليوم.
+1. مسودة جديدة (بحدث `created` واحد) → حذف → نجاح، وتختفي من القائمة بعد Refresh.
+2. مسودة بعدة أحداث → حذف → نجاح.
+3. مستند `sent` أو `accepted` → زر الحذف مخفي، ونداء الخادم المباشر يُرفض برسالة الحالة.
+4. مستخدم بلا `sales_docs.delete` → رفض خادمي، لا حذف.
+5. بعد كل حذف ناجح: وجود سجل في `admin_audit_logs` يحمل snapshot الأحداث؛ وبعد كل فشل: وجود سجل محاولة فاشلة.
+6. `DELETE` مباشر على `sales_document_events` خارج الدالة → ما زال يفشل بـ`RECORD_DELETE_FORBIDDEN`.
+7. `DELETE` مباشر على `sales_document_signatures` → ما زال ممنوعاً؛ ومسودة تملك توقيعاً تُرفض برسالة واضحة لا برسالة عامة.
+8. لا رسالة خطأ عامة بلا سبب: أي فشل يظهر بنص عربي يشرح السبب + مرجع.
 
 ## الحالة
-ROOT_CAUSE_CONFIRMED (انزياح المنطقة الزمنية — سبب مشترك)
-NEEDS_MORE_EVIDENCE (سباق استعادة المسودة — يحتاج جلسة مصادقة لإعادة الإنتاج حياً)
-READY_FOR_USER_REVIEW — لم يُعدَّل أي ملف، ولا Migration، ولا تغيير على بيانات الإنتاج.
+ROOT_CAUSE_CONFIRMED
+READY_FOR_FIX_REVIEW
