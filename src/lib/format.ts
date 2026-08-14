@@ -59,7 +59,14 @@ const riyadhOffsetMs = (instant: Date): number => {
   const get = (type: Intl.DateTimeFormatPartTypes): number =>
     Number(parts.find((p) => p.type === type)?.value ?? "0");
   const hour = get("hour") % 24; // بعض المحركات تُعيد 24 عند منتصف الليل
-  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), hour, get("minute"), get("second"));
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second"),
+  );
   return asUtc - Math.floor(instant.getTime() / 1000) * 1000;
 };
 
@@ -72,7 +79,14 @@ export const riyadhLocalToIso = (localValue: string | null | undefined): string 
   const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(localValue.trim());
   if (!m) return null;
   const [, y, mo, d, h, mi, s] = m;
-  const naiveUtc = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s ?? 0));
+  const naiveUtc = Date.UTC(
+    Number(y),
+    Number(mo) - 1,
+    Number(d),
+    Number(h),
+    Number(mi),
+    Number(s ?? 0),
+  );
   // تقدير أولي للإزاحة ثم تصحيحها بلحظة النتيجة (آمن مع أي تغيّر مستقبلي في الإزاحة).
   const firstGuess = naiveUtc - riyadhOffsetMs(new Date(naiveUtc));
   const corrected = naiveUtc - riyadhOffsetMs(new Date(firstGuess));
