@@ -100,7 +100,7 @@ export function planLimitRows(plan: PublicPlan): PlanLimitRow[] {
     { key: "cases", label: "القضايا", value: limit(plan.max_cases) },
     { key: "clients", label: "العملاء", value: limit(plan.max_clients) },
     { key: "documents", label: "المستندات", value: limit(plan.max_documents) },
-    { key: "storage", label: "مساحة التخزين", value: limit(plan.storage_gb, " GB") },
+    { key: "storage", label: "مساحة التخزين", value: limit(plan.storage_gb, " جيجابايت") },
     {
       key: "ocr",
       label: "صفحات القراءة الضوئية شهرياً",
