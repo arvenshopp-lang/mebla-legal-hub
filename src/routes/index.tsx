@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { publicPlansQueryOptions } from "@/lib/pricing.query";
+import { fmtNumber, } from "@/lib/format";
+import {
+  highlightedPlanCode,
+  planLimitRows,
+  yearlySavingPercent,
+} from "@/lib/pricing.shared";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
 const DESCRIPTION =
@@ -10,6 +18,7 @@ const DESCRIPTION =
 
 export const Route = createFileRoute("/")({
   component: MehlaLanding,
+  loader: ({ context }) => context.queryClient.prefetchQuery(publicPlansQueryOptions()),
   head: () => ({
     meta: [
       { title: TITLE },
