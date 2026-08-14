@@ -109,7 +109,7 @@ function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (!hydrated || loading) return;
     const cleanEmail = normalizeEmail(email);
     const nextEmailError = validateEmail(cleanEmail);
     const nextPasswordError = validatePassword(password);
