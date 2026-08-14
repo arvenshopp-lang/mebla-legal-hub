@@ -1,5 +1,26 @@
 # نظام الباقات والاشتراكات والتسعير — معمارية وخطة تنفيذ (خطة فقط)
 
+> **APPROVED_DESIGN_BASELINE — لا تنفيذ.** هذه الخطة محفوظة كخط أساس تصميمي معتمد فقط: لا Migration، لا تعديل كود، لا تغيير على الإنتاج.
+
+## 0. SAFETY AMENDMENT (قيود ملزِمة قبل أي تنفيذ)
+**0.1 RECOVERY GATE** — كل Batch يحتاج Migration أو جداول/أعمدة جديدة أو ترحيل استحقاقات أو ترحيل إصدارات باقات حالته: `DESIGN_APPROVED` + `IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE` حتى إثبات Backup/Restore على بيئة الإنتاج وفق مسار الاستعادة المعتمد. ممنوع أي Migration على الإنتاج قبل ذلك. المعني: B1، B2، B5، B7 (وB3/B6 عند اعتمادهما على أعمدة جديدة).
+**0.2 FEATURE TRUTH / RELEASE GATE** — لا تُصنَّف ميزة `AVAILABLE` في الكتالوج إلا بتحقق الثلاثة: `FEATURE_IMPLEMENTED = TRUE` و`PRODUCTION_ACCEPTANCE_TEST = PASS` و`NO_OPEN_P0_P1_BLOCKER_FOR_FEATURE = TRUE`؛ وإلا فهي `LIMITED` / `COMING_SOON` / `NOT_IMPLEMENTED` / `DEFERRED_PROVIDER`. حالياً: الدفع = DEFERRED_PROVIDER، WhatsApp/WhatsLine = DEFERRED_PROVIDER، SMS OTP = DEFERRED_PROVIDER، API = COMING_SOON، وأي قدرة عروض أسعار/عقود لديها Finding مفتوح لا تُسوَّق كجاهزة حتى الإغلاق المستقل.
+**0.3 EXPIRED/SUSPENDED POLICY** — السلوك الحالي (`private.org_effective_plan` يرجع إلى `free` عند عدم كون الحالة active/trial) يبقى **كما هو دون أي تغيير الآن**، و`EXPIRED_SUBSCRIPTION_ACCESS_POLICY = USER_APPROVAL_REQUIRED`.
+**0.4 BILLING PROTECTION** — لا مساس بـ `platform_invoices` / `platform_payments` / الاستردادات / الإشعارات الدائنة / ويبهوكات الدفع، ولا دمج بين معمارية الاشتراكات الجديدة والنظام المالي قبل قرار المزود. `BILLING_PROVIDER_INTEGRATION = DEFERRED_PROVIDER`.
+**0.5 PRICING** — 149 / 449 / 1199 والأسعار السنوية المقترحة تبقى `PRICE_REQUIRES_USER_APPROVAL` ولا تُدخل كقيم إنتاجية.
+**0.6 EXECUTION PRIORITY** — التنفيذ لا يبدأ قبل إغلاق العيوب الحالية ذات الأولوية والوصول إلى `CURRENT PLATFORM BASELINE = FEATURE_READY`.
+
+### فصل حالات المشترك (تصميم مستقبلي، بلا تنفيذ)
+```text
+active → past_due → grace → restricted (read_only) → suspended
+```
+- **FREE CUSTOMER**: لم يشترك قط؛ حدود الباقة المجانية كتابةً وقراءةً.
+- **PAST_DUE**: انتهى/فشل الاستحقاق حديثاً؛ صلاحيات كاملة مع تنبيه تجديد.
+- **GRACE_PERIOD**: مهلة محددة؛ صلاحيات كاملة مع تنبيه تصاعدي.
+- **EXPIRED PAID CUSTOMER**: لا يُفترض تحويله تلقائياً إلى Free بصلاحيات كتابة كاملة؛ الوضع المقترح `restricted/read_only` (قراءة وتصدير كامل، منع الإنشاء) — بانتظار قرار المستخدم.
+- **SUSPENDED**: قراءة فقط ومنع كل كتابة (السلوك القائم).
+- في كل الحالات: **لا حذف بيانات ولا تقليص محتوى**؛ التقييد على الكتابة فقط، مع حالة صريحة محفوظة على الاشتراك وسجل تدقيق لكل انتقال.
+
 ## 1. CURRENT_SUBSCRIPTION_ARCHITECTURE (مُتحقَّق من الكود وقاعدة البيانات)
 - الكتالوج: جدول `platform_plans` (code, name_ar/name_en, description, price_monthly, price_yearly, currency, duration_months, max_users/max_cases/max_clients/max_documents/max_branches, storage_gb, ocr_pages_monthly, features jsonb, is_active, is_public, sort_order, color, support_level, sla_hours + رايات: ai/esignature/voice/api/pdf_search/client_upload/public_office_page).
 - الباقات الفعلية اليوم: free (غير عامة، 1 مستخدم/5 قضايا)، basic 199/1990، professional 499/4990، enterprise 1499/14990 — كلها SAR.
@@ -77,20 +98,28 @@ platform_plans (كتالوج) → plan_versions → plan_entitlements (key,value
 ## 15. RISKS
 تغيير سعر يمس عملاء حاليين (يُعالج بالإصدارات وتثبيت السعر)؛ ازدواج مصدر الحقيقة أثناء الترحيل (Dual-read محدود المدة)؛ محاولة تجاوز الاستحقاق عبر RPC مباشر (كل قدرة تُفرض خادمياً)؛ الوعد بميزات غير جاهزة (قاعدة التصنيف إلزامية)؛ جدول مقارنة غير قابل للاستخدام على الجوال (Accordion)؛ تسريب بيانات الطلبات (RLS + مسار عام محمي بـ Rate limit).
 
-## 16. IMPLEMENTATION BATCHES
-B1 الكتالوج والإصدارات والاستحقاقات (DB) · B2 قراءة الاستحقاقات الفعلية والفرض الخادمي + Overrides · B3 لوحة إدارة الباقات (محرر/مصفوفة/حدود/Draft-Publish/تدقيق/معاينة) · B4 صفحة الأسعار العامة · B5 طلبات الباقات المخصصة (عام + إدارة) · B6 صفحة اشتراك المكتب وتحذيرات الاستهلاك · B7 الترحيل والتوافق وإزالة الازدواج · B8 (مؤجل) ربط Moyasar.
+## 16. IMPLEMENTATION BATCHES (كلها مؤجلة حتى FEATURE_READY)
+- B1 الكتالوج والإصدارات والاستحقاقات (DB) — DESIGN_APPROVED · IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE
+- B2 الاستحقاقات الفعلية والفرض الخادمي + Overrides — DESIGN_APPROVED · IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE
+- B3 لوحة إدارة الباقات (محرر/مصفوفة/حدود/Draft-Publish/تدقيق/معاينة) — DESIGN_APPROVED (يُحجب إن احتاج أعمدة جديدة)
+- B4 صفحة الأسعار العامة (عرض فقط، بتصنيفات الميزات وبلا Checkout) — DESIGN_APPROVED
+- B5 طلبات الباقات المخصصة — DESIGN_APPROVED · IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE
+- B6 صفحة اشتراك المكتب وتحذيرات الاستهلاك — DESIGN_APPROVED
+- B7 الترحيل والتوافق — DESIGN_APPROVED · IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE
+- B8 ربط Moyasar — DEFERRED_PROVIDER
 
 ## 17. COST / SCOPE ASSESSMENT
 REUSE: تريجرات الحدود، `org_effective_plan`، `subscription.server/shared`، `FeatureGate`، هيكل لوحة الإدارة. SMALL_CHANGE: تحذيرات الاستهلاك، أعمدة الظهور/Badge. MEDIUM_CHANGE: صفحة الأسعار، طلبات المؤسسات، Overrides. LARGE_CHANGE: نموذج الاستحقاقات والإصدارات وDraft/Publish/Audit في لوحة الإدارة.
 
 ## 18. ITEMS REQUIRING USER DECISION
-FINAL_PRICING · ANNUAL_DISCOUNT · PLAN_NAMES · FREE_PLAN_POLICY (الحالية `free` غير عامة وتُستخدم كسقف افتراضي عند انتهاء الاشتراك — التوصية KEEP كسقف داخلي دون تسويقها) · CANCELLATION_POLICY = USER_APPROVAL_REQUIRED · EXISTING_CUSTOMER_PRICE_CHANGE_POLICY · CUSTOM_PLAN_POLICY · REFUND_POLICY = PRODUCT_POLICY_REQUIRED · TRIAL_POLICY.
+FINAL_PRICING · ANNUAL_DISCOUNT · PLAN_NAMES · FREE_PLAN_POLICY (الحالية `free` غير عامة وتُستخدم كسقف افتراضي عند انتهاء الاشتراك — التوصية KEEP كسقف داخلي دون تسويقها) · CANCELLATION_POLICY = USER_APPROVAL_REQUIRED · EXPIRED_SUBSCRIPTION_ACCESS_POLICY = USER_APPROVAL_REQUIRED · EXISTING_CUSTOMER_PRICE_CHANGE_POLICY · CUSTOM_PLAN_POLICY · REFUND_POLICY = PRODUCT_POLICY_REQUIRED · TRIAL_POLICY · GRACE_PERIOD_DURATION.
 
 ## 19. DEFERRED
-PAYMENT_GATEWAY = DEFERRED_PROVIDER · MOYASAR_INTEGRATION = DEFERRED_PROVIDER · WHATSLINE = DEFERRED_PROVIDER · SMS_OTP = DEFERRED_PROVIDER · API_ACCESS = COMING_SOON · AI/VOICE = غير مسوّقة.
+PAYMENT_GATEWAY = DEFERRED_PROVIDER · MOYASAR_INTEGRATION = DEFERRED_PROVIDER · BILLING_PROVIDER_INTEGRATION = DEFERRED_PROVIDER · WHATSLINE = DEFERRED_PROVIDER · SMS_OTP = DEFERRED_PROVIDER · API_ACCESS = COMING_SOON · AI/VOICE = غير مسوّقة.
 
 ## 20. FINAL RECOMMENDATION
 أوصي بمسار تطوّري لا ثوري: الإبقاء على `platform_plans` كجدول الكتالوج وعلى تريجرات الحدود كمكان الفرض، وإضافة طبقة `plan_versions + plan_entitlements + org_plan_overrides` بوصفها مصدر الحقيقة الوحيد للقدرات والحدود، مع تثبيت شروط العملاء الحاليين على إصدارهم. هذا يمنح كتالوجاً تجارياً يُدار من اللوحة، وحمايةً كاملة للمشتركين الحاليين، وجهوزية Moyasar عبر نقطة ربط واحدة — دون كسر أي وظيفة إنتاجية قائمة.
 
-SUBSCRIPTION_ARCHITECTURE_PLAN_READY
+SUBSCRIPTION_DESIGN_BASELINE_READY
+IMPLEMENTATION_DEFERRED_UNTIL_FEATURE_READY
 USER_APPROVAL_REQUIRED
