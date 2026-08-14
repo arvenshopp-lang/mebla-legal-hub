@@ -430,7 +430,7 @@ function DeadlineDialog({
     setErrors({});
     setForm(
       editing
-        ? { ...editing, due_date: editing.due_date?.slice(0, 16) }
+        ? { ...editing, due_date: isoToRiyadhLocalInput(editing.due_date) }
         : { status: "active", priority: "medium", deadline_type: "custom" },
     );
   }
@@ -452,10 +452,17 @@ function DeadlineDialog({
       return;
     }
     setSaving(true);
+    const dueIso = riyadhLocalToIso(res.data.due_date);
+    if (!dueIso) {
+      setSaving(false);
+      setErrors({ due_date: "تاريخ الاستحقاق غير صحيح" });
+      toast.error("تحقق من الحقول المطلوبة", { description: "تاريخ الاستحقاق غير صحيح" });
+      return;
+    }
     const since = new Date(Date.now() - 2_000).toISOString();
     const payload: Record<string, unknown> = {
       ...res.data,
-      due_date: new Date(res.data.due_date).toISOString(),
+      due_date: dueIso,
     };
     Object.keys(payload).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
@@ -539,7 +546,7 @@ function DeadlineDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="تاريخ الاستحقاق *">
+        <FormField label="تاريخ الاستحقاق *" hint={RIYADH_TZ_HINT}>
           <input
             type="datetime-local"
             value={form.due_date ?? ""}
