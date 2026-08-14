@@ -277,6 +277,7 @@ function LoginPage() {
             id="login-password"
             autoComplete="current-password"
             required
+            disabled={!hydrated}
             value={password}
             aria-invalid={passwordError ? true : undefined}
             aria-describedby={passwordError ? "login-password-error" : undefined}
@@ -284,7 +285,7 @@ function LoginPage() {
               setPassword(e.target.value);
               if (passwordError) setPasswordError(null);
             }}
-            className={`${loginInputCls} ${passwordError ? invalidFieldCls : ""}`}
+            className={`${loginInputCls} ${passwordError ? invalidFieldCls : ""} disabled:cursor-not-allowed disabled:opacity-60`}
           />
           {passwordError && <FieldError id="login-password-error">{passwordError}</FieldError>}
         </Field>
