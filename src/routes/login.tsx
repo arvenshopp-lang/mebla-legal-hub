@@ -254,6 +254,7 @@ function LoginPage() {
             spellCheck={false}
             autoComplete="email"
             required
+            disabled={!hydrated}
             value={email}
             aria-invalid={emailError ? true : undefined}
             aria-describedby={emailError ? "login-email-error" : undefined}
@@ -265,7 +266,7 @@ function LoginPage() {
               const value = e.target.value;
               setEmailError(value.trim() ? validateEmail(normalizeEmail(value)) : null);
             }}
-            className={`${loginInputCls} ${emailError ? invalidFieldCls : ""}`}
+            className={`${loginInputCls} ${emailError ? invalidFieldCls : ""} disabled:cursor-not-allowed disabled:opacity-60`}
           />
           {emailError && <FieldError id="login-email-error">{emailError}</FieldError>}
         </Field>
