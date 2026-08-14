@@ -822,27 +822,6 @@ function PricingTeaser() {
   );
 }
 
-function LegacyCTA({ registerHref }: { registerHref: string }) {
-  return (
-    <section className="section-y">
-      <div className="container-page">
-        <div className="reveal rounded-[var(--radius-l)] bg-primary px-6 py-12 text-primary-foreground md:px-12 md:py-16">
-          <h2 className="text-h2 measure">جاهز لتنظيم عمل مكتبك؟</h2>
-          <p className="measure mt-3 text-body text-primary-foreground/80">
-            أنشئ مكتبك خلال دقيقة، وابدأ بتسجيل أول قضية ومتابعة مهلها وجلساتها.
-          </p>
-          <a
-            href={registerHref}
-            className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
-          >
-            إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 const FOOTER_LINKS: Array<{ href: string; label: string }> = [
   { href: "#product", label: "المنتج" },
   { href: "#capabilities", label: "المزايا" },
