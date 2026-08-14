@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MoreHorizontal, X } from "lucide-react";
+import { LogOut, MoreHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
@@ -9,7 +9,13 @@ import { visibleGroups, isNavActive, MOBILE_PRIMARY, type NavItem } from "./nav"
  * تنقل الجوال: شريط سفلي للمقاصد اليومية + ورقة سفلية «المزيد» لباقي المسارات.
  * لا نضغط قائمة سطح المكتب داخل الجوال.
  */
-export function WorkspaceMobileNav({ pathname }: { pathname: string }) {
+export function WorkspaceMobileNav({
+  pathname,
+  onSignOut,
+}: {
+  pathname: string;
+  onSignOut: () => void;
+}) {
   const [moreOpen, setMoreOpen] = useState(false);
   const { activeRole, memberships, activeOrgId, user } = useAuth();
   const groups = visibleGroups(activeRole);
@@ -123,6 +129,16 @@ export function WorkspaceMobileNav({ pathname }: { pathname: string }) {
                   </ul>
                 </div>
               ))}
+              <button
+                onClick={() => {
+                  setMoreOpen(false);
+                  onSignOut();
+                }}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[var(--radius-m)] border border-danger/30 bg-danger-soft px-3 text-[13px] font-semibold text-danger"
+              >
+                <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                <span>تسجيل الخروج</span>
+              </button>
             </div>
           </div>
         </div>
