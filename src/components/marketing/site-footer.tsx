@@ -13,6 +13,7 @@ import { openCookiePreferences } from "@/lib/product-analytics";
 const ABOUT_LINKS = [
   { to: "/about", label: "من نحن" },
   { to: "/how-it-works", label: "كيف تستخدم مِهلة" },
+  { to: "/pricing", label: "الباقات والأسعار" },
   { to: "/faq", label: "الأسئلة الشائعة" },
 ] as const;
 
