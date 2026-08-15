@@ -303,8 +303,8 @@ async function approvedPublicNames(
  * الترتيب العام (Top 5). كل الشروط تُتحقق خادمياً:
  * موافقة صريحة + لا استثناء منصة + مكتب نشط + اشتراك نشط + صفحة عامة منشورة
  * باسم معتمد + أهلية B1 + نتيجة ≥ الحد الأدنى.
- * الترتيب: `score` تنازلياً، وعند التعادل الأقدم حساباً (`computed_at`) ثم الاسم
- * ترتيباً أبجدياً ثابتاً — قطعي وغير حساس لأي بيانات داخلية.
+ * الترتيب: `score` تنازلياً، ثم الاسم العام ترتيباً عربياً، ثم معرّف المكتب فاصلاً
+ * نهائياً داخلياً — قطعي، ولا يمنح وقت الحساب أي أفضلية بين مكتبين متعادلين.
  */
 export async function getPublicRanking(adminSupabase: Client): Promise<PublicOperationalRanking> {
   const empty: PublicOperationalRanking = { enabled: false, computedAt: null, items: [] };
@@ -335,15 +335,16 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
   const [subscribed, names, snapshots] = await Promise.all([
     activeSubscriptionOrganizations(adminSupabase, activeOrgs),
     approvedPublicNames(adminSupabase, activeOrgs),
-    latestSnapshotsByOrganization(adminSupabase, activeOrgs),
   ]);
 
-  type Candidate = PublicOperationalRankingItem & { computedAt: string };
+  // اللقطات تُقرأ للمرشحين النهائيين فقط: أقل استعلامات وأقل بيانات.
+  const shortlist = activeOrgs.filter((orgId) => subscribed.has(orgId) && names.has(orgId));
+  const snapshots = await latestSnapshotsByOrganization(adminSupabase, shortlist);
+
+  type Candidate = PublicOperationalRankingItem & { computedAt: string; organizationId: string };
   const candidates: Candidate[] = [];
-  for (const orgId of activeOrgs) {
-    if (!subscribed.has(orgId)) continue;
-    const publicName = names.get(orgId);
-    if (!publicName) continue;
+  for (const orgId of shortlist) {
+    const publicName = names.get(orgId) as string;
     const snap = snapshots.get(orgId);
     if (!snap || !snap.eligible || snap.score === null) continue;
     if (snap.score < PUBLIC_MINIMUM_SCORE) continue;
@@ -354,14 +355,15 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
       badge: null,
       logoUrl: null,
       computedAt: snap.computedAt,
+      organizationId: orgId,
     });
   }
 
   candidates.sort(
     (a, b) =>
       b.score - a.score ||
-      new Date(a.computedAt).getTime() - new Date(b.computedAt).getTime() ||
-      a.publicName.localeCompare(b.publicName, "ar"),
+      a.publicName.localeCompare(b.publicName, "ar") ||
+      a.organizationId.localeCompare(b.organizationId),
   );
 
   const top = candidates.slice(0, PUBLIC_RESULTS_COUNT);
