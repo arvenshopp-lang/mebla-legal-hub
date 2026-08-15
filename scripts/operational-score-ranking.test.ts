@@ -4,7 +4,10 @@
  */
 
 import { getPublicRanking } from "../src/lib/operational-score/ranking.server";
-import { PUBLIC_MINIMUM_SCORE } from "../src/lib/operational-score/score.shared";
+import {
+  OPERATIONAL_SCORE_FORMULA_VERSION,
+  PUBLIC_MINIMUM_SCORE,
+} from "../src/lib/operational-score/score.shared";
 
 let pass = 0;
 const failures: string[] = [];
@@ -24,14 +27,19 @@ type Rows = Record<string, unknown[]>;
 function fakeClient(rows: Rows, settingValue: unknown = { enabled: true }) {
   const build = (table: string) => {
     const filters: Array<(row: Record<string, unknown>) => boolean> = [];
+    const orders: Array<{ column: string; ascending: boolean }> = [];
+    let rowLimit: number | null = null;
     const api: Record<string, unknown> = {};
     const self = () => api;
     api["select"] = self;
-    api["order"] = self;
-    api["limit"] = () => ({
-      then: undefined,
-      ...result(),
-    });
+    api["order"] = (column: string, options?: { ascending?: boolean }) => {
+      orders.push({ column, ascending: options?.ascending !== false });
+      return api;
+    };
+    api["limit"] = (value: number) => {
+      rowLimit = value;
+      return api;
+    };
     api["eq"] = (col: string, val: unknown) => {
       filters.push((r) => r[col] === val);
       return api;
@@ -44,11 +52,24 @@ function fakeClient(rows: Rows, settingValue: unknown = { enabled: true }) {
       filters.push((r) => vals.includes(r[col]));
       return api;
     };
-    api["maybeSingle"] = () => Promise.resolve(result());
+    api["maybeSingle"] = () => {
+      const res = result();
+      if (table === "platform_settings") return Promise.resolve(res);
+      const data = res.data as Array<Record<string, unknown>>;
+      return Promise.resolve({ data: data[0] ?? null, error: null });
+    };
     function result() {
-      const data = ((rows[table] ?? []) as Array<Record<string, unknown>>).filter((r) =>
+      let data = ((rows[table] ?? []) as Array<Record<string, unknown>>).filter((r) =>
         filters.every((f) => f(r)),
       );
+      for (const { column, ascending } of [...orders].reverse()) {
+        data = [...data].sort((a, b) => {
+          const left = String(a[column] ?? "");
+          const right = String(b[column] ?? "");
+          return ascending ? left.localeCompare(right) : right.localeCompare(left);
+        });
+      }
+      if (rowLimit !== null) data = data.slice(0, rowLimit);
       return { data: table === "platform_settings" ? { value: settingValue } : data, error: null };
     }
     // السلسلة قابلة للانتظار في أي نقطة.
