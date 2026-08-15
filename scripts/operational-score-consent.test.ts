@@ -95,7 +95,7 @@ check(
 /* ---------- طبقة الخادم: الإيقاف يسحب الموافقة، والتفعيل يمر بالبوابة ---------- */
 
 type Row = { public_opt_in: boolean; platform_excluded: boolean };
-function makeClients(row: Row, opts: { manager: boolean; scoreEligible: boolean }) {
+function makeClients(row: Row, opts: { manager: boolean }) {
   const writes: Array<Record<string, unknown>> = [];
   const client = {
     from(table: string) {
@@ -103,6 +103,18 @@ function makeClients(row: Row, opts: { manager: boolean; scoreEligible: boolean 
         select: () => api,
         eq: () => api,
         in: () => api,
+        not: () => api,
+        is: () => api,
+        gte: () => api,
+        lte: () => api,
+        lt: () => api,
+        gt: () => api,
+        or: () => api,
+        order: () => api,
+        limit: () => api,
+        // استعلامات القوائم تُعاد فارغة: المكتب بلا نشاط كافٍ (لا يمنع الإيقاف).
+        then: (resolve: (v: { data: unknown[]; error: null }) => unknown) =>
+          Promise.resolve({ data: [], error: null }).then(resolve),
         maybeSingle: async () => {
           if (table === "organization_members")
             return { data: opts.manager ? { role: "owner" } : { role: "lawyer" }, error: null };
@@ -136,7 +148,6 @@ function makeClients(row: Row, opts: { manager: boolean; scoreEligible: boolean 
           writes.push({ table, ...payload });
           return { error: null };
         },
-        then: undefined,
       };
       return api;
     },
@@ -150,7 +161,7 @@ const USER = "22222222-2222-4222-8222-222222222222";
 // 7. الإيقاف يسحب الموافقة ولا يحذف نتيجة/لقطة.
 {
   const row: Row = { public_opt_in: true, platform_excluded: false };
-  const { client, writes } = makeClients(row, { manager: true, scoreEligible: true });
+  const { client, writes } = makeClients(row, { manager: true });
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await setRankingConsent(client as any, client as any, ORG, USER, false);
@@ -167,7 +178,7 @@ const USER = "22222222-2222-4222-8222-222222222222";
 // 5ب/AUTH. عضو غير مخوّل يُرفض خادمياً.
 {
   const row: Row = { public_opt_in: false, platform_excluded: false };
-  const { client } = makeClients(row, { manager: false, scoreEligible: true });
+  const { client } = makeClients(row, { manager: false });
   let rejected = false;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
