@@ -101,3 +101,18 @@ REVOKE ALL ON FUNCTION public.claim_notification_email_batch(integer) FROM PUBLI
 REVOKE ALL ON FUNCTION public.claim_notification_email_batch(integer) FROM anon;
 REVOKE ALL ON FUNCTION public.claim_notification_email_batch(integer) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_notification_email_batch(integer) TO service_role;
+
+-- المهمة الدورية: تصريف طابور بريد التنبيهات كل دقيقة عبر المسار المحمي
+-- بسر التشغيل نفسه المستخدم في بقية المهام (ops.cron_secret()).
+SELECT cron.schedule(
+  'mehla-notification-emails',
+  '* * * * *',
+  $cron$
+  SELECT net.http_post(
+    url := 'https://project--0ac4f813-8ba3-4f48-9bc7-432613df3dae.lovable.app/api/public/hooks/notification-emails',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-mehla-cron-secret', ops.cron_secret()),
+    body := '{}'::jsonb
+  ) AS request_id;
+  $cron$
+)
+WHERE NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'mehla-notification-emails');
