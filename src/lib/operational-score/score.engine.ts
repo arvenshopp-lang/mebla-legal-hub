@@ -271,16 +271,29 @@ export function computeOperationalScore(input: ScoreEngineInput): OperationalSco
   };
 
   const countedItems = countedDeadlines.length + countedTasks.length + countedHearings.length;
-  const itemsWithProvenSignals = [...countedDeadlines, ...countedTasks].filter(
-    (a) => a.provenSignals.length > 0,
-  ).length;
-  const integrityFactor = computeIntegrityFactor(itemsWithProvenSignals, countedItems);
+  const integrityFactor = computeIntegrityFactor();
 
+  // عمر المكتب: شرط مستقل تماماً عن فترة التتبع، بحدود يوم الرياض.
   const orgCreatedMs = new Date(input.organizationCreatedAt).getTime();
   const organizationAgeDays = Number.isFinite(orgCreatedMs)
-    ? Math.floor((windowEndMs - orgCreatedMs) / DAY_MS)
+    ? Math.max(0, riyadhDaysBetween(orgCreatedMs, windowEndMs))
     : 0;
-  const trackingDays = Math.max(0, Math.min(SCORE_WINDOW_DAYS, organizationAgeDays));
+
+  // فترة التتبع: من أقدم نشاط تشغيلي مؤهل فعلاً (مقيّداً ببداية النافذة) حتى نهايتها.
+  const activityStarts = [...countedDeadlines, ...countedTasks, ...countedHearings]
+    .map((a) => a.createdAtMs)
+    .filter((v): v is number => v !== null);
+  const earliestActivityMs = activityStarts.length > 0 ? Math.min(...activityStarts) : null;
+  const trackingDays =
+    earliestActivityMs === null
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            SCORE_WINDOW_DAYS,
+            riyadhDaysBetween(Math.max(windowStartMs, earliestActivityMs), windowEndMs) + 1,
+          ),
+        );
   const deadlinesAndHearings = countedDeadlines.length + countedHearings.length;
   const appliedDimensions = Object.values(dimensions).filter((d) => d.applied);
 
