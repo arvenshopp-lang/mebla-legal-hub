@@ -53,8 +53,7 @@ export function PublicRankingConsentCard({ orgId }: { orgId: string | null }) {
       void qc.invalidateQueries({ queryKey });
       void qc.invalidateQueries({ queryKey: ["operational-ranking-prompt", orgId] });
     },
-    onError: () =>
-      toast.error("تعذّر تحديث إعداد الظهور العام حالياً. حاول مرة أخرى."),
+    onError: () => toast.error("تعذّر تحديث إعداد الظهور العام حالياً. حاول مرة أخرى."),
   });
 
   if (!orgId) return null;

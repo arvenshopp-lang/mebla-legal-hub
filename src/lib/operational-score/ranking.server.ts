@@ -24,10 +24,7 @@ import {
   type PublicOperationalRanking,
   type PublicOperationalRankingItem,
 } from "./score.shared";
-import {
-  readSnapshotIntegrityStatus,
-  type PublicIntegrityStatus,
-} from "./integrity.shared";
+import { readSnapshotIntegrityStatus, type PublicIntegrityStatus } from "./integrity.shared";
 
 /*
  * الجداول الجديدة (organization_ranking_settings / operational_score_snapshots)

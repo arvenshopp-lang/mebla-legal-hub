@@ -70,10 +70,7 @@ check(
 // 5. عضو غير مخوّل لا يستطيع التبديل في أي اتجاه.
 const member = evaluateConsentState({ ...base, isManager: false });
 const memberOptedIn = evaluateConsentState({ ...base, isManager: false, publicOptIn: true });
-check(
-  "5. عضو غير مخوّل: لا تفعيل ولا إيقاف",
-  !member.canEnable && !memberOptedIn.canDisable,
-);
+check("5. عضو غير مخوّل: لا تفعيل ولا إيقاف", !member.canEnable && !memberOptedIn.canDisable);
 
 // 6. المدير يستطيع التفعيل والإيقاف.
 const managerOptedIn = evaluateConsentState({ ...base, publicOptIn: true });
@@ -190,10 +187,9 @@ const USER = "22222222-2222-4222-8222-222222222222";
 }
 
 // 8. لا معلومات حساسة في نصوص الواجهة (لا سبب Anti-Gaming تقني).
-const copy = [
-  ...Object.values(CONSENT_STATUS_LABELS),
-  ...Object.values(CONSENT_STATUS_HINTS),
-].join(" ");
+const copy = [...Object.values(CONSENT_STATUS_LABELS), ...Object.values(CONSENT_STATUS_HINTS)].join(
+  " ",
+);
 const forbidden = [
   "burst",
   "concentration",
@@ -214,10 +210,7 @@ const componentSource = readFileSync(
   "src/components/settings/public-ranking-consent-card.tsx",
   "utf8",
 );
-const promptSource = readFileSync(
-  "src/components/dashboard/operational-score-prompt.tsx",
-  "utf8",
-);
+const promptSource = readFileSync("src/components/dashboard/operational-score-prompt.tsx", "utf8");
 const serverSource = readFileSync("src/lib/operational-score/ranking.server.ts", "utf8");
 check(
   "9. مصدر حقيقة واحد بلا حالة موافقة موازية",
