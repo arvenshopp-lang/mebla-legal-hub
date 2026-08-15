@@ -4450,6 +4450,8 @@ export type Database = {
           excluded_at: string | null
           excluded_by: string | null
           exclusion_reason: string | null
+          opt_in_prompted_at: string | null
+          opt_in_snoozed_until: string | null
           opted_in_at: string | null
           opted_in_by: string | null
           organization_id: string
@@ -4462,6 +4464,8 @@ export type Database = {
           excluded_at?: string | null
           excluded_by?: string | null
           exclusion_reason?: string | null
+          opt_in_prompted_at?: string | null
+          opt_in_snoozed_until?: string | null
           opted_in_at?: string | null
           opted_in_by?: string | null
           organization_id: string
@@ -4474,6 +4478,8 @@ export type Database = {
           excluded_at?: string | null
           excluded_by?: string | null
           exclusion_reason?: string | null
+          opt_in_prompted_at?: string | null
+          opt_in_snoozed_until?: string | null
           opted_in_at?: string | null
           opted_in_by?: string | null
           organization_id?: string
