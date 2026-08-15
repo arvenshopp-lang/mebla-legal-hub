@@ -1,55 +1,143 @@
-# MEHLA-SALES-002 — مراجعة أمان بعد التنفيذ (READ-ONLY)
+# MEHLA OPERATIONAL SCORE — مؤشر الإنجاز التشغيلي (خطة فقط)
 
-لم يُعدَّل أي ملف، ولا Migration، ولا بيانات.
+## 1. CURRENT_DATA_AVAILABILITY
+مبني على فحص فعلي للمخطط ولمحرك KPI الحالي (`src/lib/kpi/*`, 1605 سطر) الذي يحسب أداء الأعضاء داخل المكتب على الخادم.
 
-## نتائج المراجعة
+| Metric | المصدر | AVAILABLE | RELIABLE | PRIVACY_SAFE | GAMEABLE | RECOMMENDED |
+|---|---|---|---|---|---|---|
+| مهام منجزة في موعدها | `tasks.due_date, completed_at, status` | نعم | نعم | نعم (Metadata فقط) | متوسط (تغيير due / مهام سهلة) | نعم |
+| معدل إنجاز المهام المستحقة | `tasks` | نعم | نعم | نعم | متوسط | نعم |
+| الالتزام بالمهل | `deadlines.due_date, status, completed_at` | نعم | نعم | نعم | منخفض (المهل مرتبطة بالمحكمة) | نعم — أعلى وزن |
+| متابعة الجلسات | `hearings.hearing_date, status` (`scheduled/completed/postponed/cancelled/missed`) | نعم | نعم | نعم | متوسط (تحديث الحالة يدوي) | نعم بوزن محدود |
+| المتابعة التشغيلية للقضايا | `cases.status, last_activity_at, next_action_date` | نعم | جزئياً (`last_activity_at` يتحرك بأي تعديل) | نعم | مرتفع | لا للنسخة الأولى |
+| سجل النزاهة | `work_item_events` (`due_changed`, `reopened`, `deleted`, `assigned`, `from/to_due_date`, `seq`) | نعم | نعم | نعم | — | نعم كطبقة مضادة للتلاعب |
+| حالة الاشتراك | `subscriptions.status, ends_at` | نعم | نعم | داخلي | — | نعم للأهلية |
+| الاسم العام | `organizations.name/legal_name` + `office_public_pages.published` | نعم | نعم | معتمد للنشر عبر الصفحة العامة | — | نعم |
 
-ATOMIC_TRANSACTION: **NO**
-- كل خطوة استدعاء PostgREST مستقل عبر `supabaseAdmin` في `cancelDraft` (src/lib/sales-docs.server.ts). لا وجود لـ transaction واحدة ولا RPC.
+غير مستخدم إطلاقاً: المستندات، العملاء، أطراف القضايا، الفواتير/المبالغ، محتوى المهام، نتائج الدعاوى.
 
-MUTATION_ORDER:
-1. جلب المستند + التحقق (status=draft، غير locked، number IS NULL)
-2. التحقق من غياب التوقيعات (`sales_document_signatures`)
-3. `assertTransition(draft → cancelled)`
-4. UPDATE status = cancelled (مع شرط `.eq("status","draft")`) — يُفحص خطؤه
-5. INSERT حدث `draft_discarded` عبر `logEvent` — **لا يُفحص خطؤه إطلاقاً**
-6. `writeAudit` سجل التدقيق الإداري — لا يُفحص خطؤه
+## 2. RECOMMENDED_SCORE_FORMULA (v1)
+ثلاثة أبعاد فقط + معامل نزاهة — نسب لا أحجام. N/A لا يُحسب صفراً بل يُعاد توزيع وزنه.
 
-PARTIAL_FAILURE_RISK: **مؤكد (سيناريو A و C)**
-- A: الحالة صارت `cancelled` وفشل إدراج الحدث بصمت ⇒ المسودة **تبقى ظاهرة** في القوائم لكن بحالة «ملغاة» بلا أي أثر في سجل الأحداث ⇒ تناقض بين الحالة والسجل، والمستخدم يرى العملية «ناجحة» (لا يُرجع خطأ).
-- C: الحالة والحدث نجحا وفشل `admin_audit_logs` بصمت ⇒ عملية بلا سجل إداري.
-- B (حدث بلا تحديث حالة) غير ممكن بالترتيب الحالي، لكنه سيصبح ممكناً لو عُكس الترتيب — وهو الأخطر لأنه **يخفي مسودة ما زالت draft**.
+| البعد | الوزن | التعريف | المصدر | خطر التلاعب |
+|---|---|---|---|---|
+| الالتزام بالمهل | 45% | مهل مستحقة داخل النافذة أُنجزت قبل أول موعد مسجل | `deadlines` + `work_item_events` | منخفض |
+| المهام في موعدها | 35% | مهام مستحقة أُنجزت قبل موعدها الأساسي | `tasks` + الأحداث | متوسط |
+| متابعة الجلسات | 20% | جلسات مضت وحُدِّثت حالتها خلال 7 أيام (`completed/postponed`) وليست `missed` أو ما زالت `scheduled` | `hearings` | متوسط |
 
-SAFE_DISCRIMINATOR_LOGIC: **غير كافٍ**
-- `discardedDraftIds()` تقرأ `sales_document_events` بشرط `event = 'draft_discarded'` فقط، وتعيد `document_id` المميّزة. الربط بالمستند صحيح (`document_id`)، لكن **لا يوجد أي شرط على `status = 'cancelled'`**، فالحدث وحده يخفي السجل — ما يعني أن حدثاً منفرداً (أو مستنداً أعيد إلى مسار آخر) قادر على إخفاء مستند حالته ليست ملغاة.
+`raw = Σ(value×weight)/Σ(weights المطبقة)` → `score = round(raw×100×integrityFactor)`، والنتيجة 0–100.
+سبب الاختلاف عن 35/30/20/15: المهل هي الالتزام القانوني الأصعب تلاعباً؛ ومتابعة القضايا عبر `last_activity_at` قابلة للتضخيم بأي تعديل صوري فتُستثنى من v1.
 
-TENANT_ISOLATION: **PASS (بملاحظة)**
-- المسار كله داخل `/mehla-admin` بصلاحية `sales_docs.read/delete` عبر `requireStaff`، والاستعلامات في `crm.functions.ts` (شركة/فرصة) مقيّدة أصلاً بـ `company_id` / `deal_id`، والاستبعاد يتم بمطابقة `id` داخل نفس النتيجة. لا يخرج أي محتوى مستند لمكتب آخر.
-- ملاحظة: `discardedDraftIds` تُقرأ عبر admin client بلا أي حد أو نطاق، فتجلب معرّفات أحداث المنصة بالكامل — أوسع من المطلوب رغم أنها لا تُعرض.
+## 3. ELIGIBILITY_RULES
+- اشتراك `active` وغير موقوف، والمكتب `is_active`.
+- عمر المكتب ≥ 45 يوماً.
+- ≥ 25 عملاً مؤهلاً فريداً (مهل + مهام + جلسات مستحقة) خلال النافذة، منها ≥ 5 مهل أو جلسات — يمنع مكتب المهام الصورية.
+- ≥ 30 يوم تتبع فعلي.
+- `public_ranking_opt_in = true` (افتراضي OFF).
+- اسم عام معتمد موجود.
+- `score ≥ MINIMUM_PUBLIC_SCORE` (مقترح 78).
+- غير مستبعد إدارياً، وصفحته العامة غير موقوفة (`suspended_by_platform`).
+- بيانات غير كافية ⇒ «بيانات غير كافية»، ولا 0%، ولا دخول للترتيب.
 
-QUERY_PATTERN: **DATABASE_FILTER + قائمة معرّفات غير محدودة**
-- قائمة Sales تُطبّق `.in(...)` / `.not("id","in",(...))` على الخادم (وليس تصفية في JavaScript).
-- CRM يجلب مجموعة المعرّفات ثم يصفّي في JavaScript على مصفوفة المستندات (استعلام واحد، لا استعلام لكل مستند).
+## 4. PRIVACY_MODEL
+- **عام:** الترتيب، الاسم العام، النسبة، شعار اختياري، Badge. لا `organization_id` (يُستخدم مفتاح مبهم/مؤقت أو لا مفتاح).
+- **خاص بالمكتب:** نتيجته وأبعادها + «أنت ضمن أفضل X%» كشرائح خمسية فقط (25/50/75) وبحد أدنى 8 مكاتب مؤهلة قبل إظهار الشريحة.
+- **مالك المنصة:** Top 50 داخلياً، الأبعاد، الأهلية، سبب الاستبعاد، آخر حساب، الاتجاه.
+- **ممنوع في كل الطبقات:** عملاء، قضايا، مستندات، مبالغ، موظفون، وسائل تواصل، نتائج قضايا، أعداد خام تكشف حجم المكتب.
 
-N_PLUS_ONE_RISK: **لا** — استعلام واحد إضافي ثابت. المخاطرة الحقيقية هي نمو قائمة المعرّفات بلا حد (طول URL/ذاكرة) مع الوقت.
+## 5. ANTI_GAMING_MODEL
+- الاستحقاق يقاس بـ **أول موعد مسجل** من `work_item_events.due_changed` (baseline)، فتأجيل الموعد بعد التأخر لا ينفع.
+- الحذف لا يُنجي: عناصر `deleted`/`cancelled` بعد استحقاقها تبقى محسوبة عبر سجل الأحداث.
+- `reopened` بعد الإنجاز يُلغي احتساب الإنجاز في موعده.
+- المهام المُنشأة ومُنجزة داخل نفس الساعة تُستثنى من البسط والمقام.
+- سقف مساهمة المهام: لا يمكن أن يتجاوز وزنه المقرر حتى مع أحجام ضخمة.
+- معامل نزاهة (0.85–1.00) ينخفض مع كثافة `due_changed` المتأخرة والحذف بعد الاستحقاق.
+- التصنيف بلا أي قراءة لمحتوى قانوني.
 
-SERVER_AUTHORIZATION: **PASS** — `salesCancelDraft` تفرض `requireStaff(..., "sales_docs.delete")` داخل معالج الخادم قبل استدعاء المحرك، ومستقلة عن `sales_docs.decide`. الاستدعاء المباشر للدالة دون واجهة يخضع للفحص نفسه.
+## 6. SCORE_WINDOW
+**ROLLING 90 DAYS** للمؤشر الرسمي (استقرار أعلى)، مع **Monthly Ranking** منفصل يُحسب بنفس الصيغة على الشهر الميلادي بتوقيت الرياض ويُسمى «الأكثر إنجازاً هذا الشهر». المؤشر ≠ الترتيب الشهري ولا يُخلط بينهما في العرض.
 
-ELIGIBILITY_SERVER_SIDE: **PASS** — draft، number IS NULL، غير locked، لا توقيعات، وانتقال حالة مُتحقق — كلها خادمية، مع شرط تنافسي `.eq("status","draft")` في UPDATE.
+## 7. SCORE_UPDATE_ARCHITECTURE
+حساب مجدول (Cron) عبر مسار `POST /api/public/hooks/operational-score` محمي بـ `guardCronRequest` — نفس نمط `notifications-dispatch`. الدورة: كل 6 ساعات (وشهرياً لإغلاق الشهر). الناتج لقطة واحدة مخزّنة (rank + name + score + badge + computed_at + formula_version). الصفحة العامة تقرأ اللقطة فقط: استعلام واحد، بلا أي aggregate لكل زيارة.
 
-OLD_HARD_DELETE_CALLERS: **PASS** — لا يوجد أي `.delete()` على `sales_documents` في الكود، ولا دالة خادمية قديمة للحذف الصلب؛ الواجهة في `sales/$id.tsx` تستدعي `salesCancelDraft` فقط.
+## 8. DATABASE IMPACT
+**MIGRATION_REQUIRED** للنسخة الكاملة. الحد الأدنى المطلوب:
+1. `organization_ranking_settings` (أو أعمدة مكافئة): `organization_id`, `public_opt_in bool default false`, `opted_in_at/by`, `platform_excluded bool`, `exclusion_reason` + GRANT + RLS (المكتب يقرأ/يعدّل خاصته، منصة تقرأ الكل).
+2. `operational_score_snapshots`: `organization_id`, `window_kind` (rolling_90/month), `period_start/end`, `score`, `dimensions jsonb`, `eligible bool`, `ineligibility_reason`, `sample_items`, `integrity_factor`, `formula_version`, `computed_at`.
+3. مفتاح إعدادات في `platform_settings` (`operational_score`) — بلا Migration للجدول، لكن قراءته العامة تحتاج توسيع سياسة `anyone reads public settings` (قائمة المفاتيح مقيدة حالياً بـ general/seo/public_site) أو قراءة اللقطة خادمياً.
+4. سجل تدقيق: يُعاد استخدام `admin_audit_logs` و`activity_logs` — لا جداول جديدة.
+لا يوجد حل نظيف بلا Migration: لا يوجد أي حقل موافقة عام حالياً، وحقن العلم داخل `office_public_pages.draft/published` يربط الموافقة بنشر الصفحة ويلوّث لقطة مُصمَّمة لمحتوى الصفحة — مرفوض كـ workaround.
 
-EVENT_SERVER_CONTROLLED: **PASS** — اسم الحدث ثابت `DISCARD_EVENT` في الخادم، لا يأتي من المدخلات (المُدخل معرّف المستند فقط)، ولم تُمس حمايات Append-Only.
+## 9. RECOVERY_GATE_STATUS
+- B1 محرك الحساب (كود فقط، بلا تخزين) — قابل للتنفيذ.
+- B3 عرض المكتب الخاص لنتيجته (حساب لحظي) — قابل للتنفيذ.
+- B2 الموافقة + B4 اللقطات/الإدارة + B5 القسم العام — **IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE** حتى إثبات Backup/Restore.
 
-DEPLOYMENT_RECOMMENDATION: **FIX_REQUIRED_BEFORE_DEPLOY**
+## 10. PUBLIC API/RPC DESIGN
+`getPublicOperationalRanking()` — Server Function عام، قراءة فقط، بلا مدخلات (أو `window: rolling_90 | month` فقط).
+يُعيد: `{ enabled, computedAt, window, items: [{ rank, publicName, score, badge?, logoUrl? }] }`.
+لا `organization_id`، لا أبعاد، لا أعداد خام، لا استعلام لمكتب محدد، لا تعداد للمؤسسات، ولا تجاوز للموافقة.
 
-ATOMICITY_GAP_CONFIRMED
+## 11. HOMEPAGE UX
+قسم في `src/routes/index.tsx` بعد المميزات وقبل الأسعار: عنوان **«الأكثر إنجازاً على مِهلة»** (بديل مقترح: «مكاتب متميزة في الالتزام التشغيلي»)، وصف سطر واحد، ثم 5 صفوف: رقم `01–05` بخط العرض الذهبي الخفيف، اسم المكتب، نسبة مئوية tabular-nums، شريط تقدّم رقيق بلون الهوية، وسم «مؤشر الإنجاز التشغيلي». تمييز المركز الأول بحدّ ذهبي رقيق فقط — بلا ذهب/فضة/برونز ولا Gamification. حركة Reveal واحدة تحترم `prefers-reduced-motion`. RTL بالكامل، بطاقات متراكمة على الجوال، أهداف لمس ≥44px. Disclaimer: «يعكس المؤشر مستوى الإنجاز التشغيلي داخل مِهلة ولا يمثل تقييماً لجودة الخدمات القانونية أو نتائج القضايا.»
 
-## أصغر إصلاح ممكن (بدون Migration — غير منفَّذ)
+## 12. OFFICE SETTINGS UX
+قسم «الظهور في مؤشر الإنجاز» داخل إعدادات المكتب: ما يظهر (الاسم، النسبة، الترتيب) وما لا يظهر (عملاء/قضايا/مستندات/أرقام)، اختيارية الانضمام، أن النسبة تشغيلية لا نتائج قضايا، وإمكانية التعطيل في أي وقت مع الاختفاء في الدورة التالية. مفتاح واحد Default OFF + CTA «السماح بالظهور في قائمة المكاتب المتميزة». مقصور على مالك/مدير المكتب ويُدقَّق في `activity_logs`.
 
-1. `logEvent`: إرجاع خطأ الإدراج بدل تجاهله (أو نسخة تتحقق منه في مسار الإلغاء فقط).
-2. في `cancelDraft`: إذا فشل إدراج `draft_discarded` ⇒ تعويض فوري بإرجاع الحالة إلى `draft` (`update status='draft' where id and status='cancelled'`) ثم رفع خطأ عربي بمرجع تتبع — فلا تبقى حالة متناقضة ولا نجاح كاذب.
-3. تقوية المُميِّز: أن يُبنى الاستبعاد على **status = 'cancelled' مع وجود الحدث لنفس المستند**، لا على الحدث وحده (مثلاً تقييد `discardedDraftIds` بمعرّفات المستندات الملغاة المعروضة فعلاً، أو التحقق من الحالة عند التصفية).
-4. `writeAudit`: تسجيل فشله كخطأ خادمي صريح (لا كتم صامت) دون التراجع عن العملية.
+## 13. OFFICE PRIVATE SCORE UX
+بطاقة في لوحة المكتب: النتيجة الكلية + الأبعاد الثلاثة + الاتجاه مقابل الفترة السابقة + سبب عدم الأهلية إن وُجد + شريحة «أنت ضمن أفضل X%» بشروط المادة 4. لا أسماء منافسين إطلاقاً. تظهر بلا علاقة بالموافقة العامة.
 
-لا شيء منها يحتاج تغييراً في المخطط أو الـ Triggers. STOP.
+## 14. PLATFORM ADMIN UX
+`/mehla-admin/operational-score` (يُضاف إلى `src/lib/admin-nav.ts`): جدول Top 50 (الترتيب، المكتب، النتيجة، الأبعاد، الأهلية/السبب، حالة الموافقة، آخر حساب، الاتجاه)، بطاقات إعدادات، ومعاينة القسم العام. محمي بصلاحية منصة مخصصة، وكل قراءة تُتحقق خادمياً.
+
+## 15. ADMIN CONTROLS
+تشغيل/إيقاف القسم العام، الحد الأدنى للنسبة، الحد الأدنى للنشاط، عدد النتائج (افتراضي 5)، نافذة القياس، استبعاد/إعادة إدراج مكتب بسبب مسجّل، معاينة، وإعادة حساب يدوية. **لا تعديل يدوي للنتيجة — Score = CALCULATED ONLY** ولا واجهة ولا دالة تسمح بذلك.
+
+## 16. FORMULA VERSIONING
+الأوزان **CODE CONTROLLED** في v1 داخل ملف مشترك مع `FORMULA_VERSION = "v1"` مخزّن في كل لقطة، فلا تُقارن نتائج بصيغتين مختلفتين. تعديل الأوزان من الإدارة يؤجَّل حتى تتوفر Draft/Publish وتاريخ سريان وسجل تدقيق.
+
+## 17. SECURITY / TENANT_ISOLATION
+المسار العام قراءة فقط للقطة المؤهلة. نتيجة المكتب تُحسب عبر `requireSupabaseAuth` وتقتصر على مؤسسة العضو. لوحة المنصة تتحقق من الصلاحية على الخادم. الحساب الدوري بمفتاح الخدمة داخل مسار Cron محمي بسر بمقارنة ثابتة الزمن. تُدقَّق: opt-in/out، استبعاد/إدراج إداري، تغيير الإعدادات — بلا أي بيانات عملاء أو قضايا.
+
+## 18. PERFORMANCE
+الزيارة العامة = قراءة لقطة واحدة + كاش استعلام. الحساب الدوري بدُفعات لكل مؤسسة مع فهارس الاستخدام الحالية. لا aggregate عند الطلب على الصفحة العامة، ولا N+1، والمكوّن مُقسَّم كسولاً.
+
+## 19. FAILURE / FALLBACK BEHAVIOR
+فشل الحساب ⇒ تبقى آخر لقطة صالحة معروضة مع حد أقصى للعمر (72 ساعة)، وبعده يُخفى القسم بصمت. لا نتائج جزئية، لا 0%، لا بيانات وهمية، ولا كسر للصفحة الرئيسية.
+
+## 20. EXACT FILES / ROUTES EXPECTED
+- `src/lib/operational-score/score.shared.ts` (الأوزان، النسخة، العتبات، الصياغات)
+- `src/lib/operational-score/score.engine.ts` (حساب نقي قابل للاختبار)
+- `src/lib/operational-score/score.server.ts` (قراءات + أهلية + لقطات)
+- `src/lib/operational-score/score.functions.ts` (خاص بالمكتب + إدارة المنصة)
+- `src/lib/operational-score/public.functions.ts` + `public.server.ts` (قراءة عامة)
+- `src/routes/api/public/hooks/operational-score.ts` (Cron)
+- `src/components/marketing/top-offices.tsx` + إدراج في `src/routes/index.tsx`
+- `src/components/office/ranking-consent.tsx` داخل إعدادات المكتب
+- `src/components/dashboard/operational-score-card.tsx`
+- `src/routes/mehla-admin/operational-score.tsx` + `src/lib/admin-nav.ts` + `src/lib/admin-permissions.ts`
+- `docs/operational-score-architecture.md`
+
+## 21. IMPLEMENTATION BATCHES
+- **B1 — محرك النتيجة (بلا تخزين):** shared + engine + اختبارات وحدة للأهلية والنزاهة و N/A. غير محجوب.
+- **B2 — نتيجة المكتب الخاصة:** server fn + بطاقة اللوحة، بلا شريحة مقارنة. غير محجوب.
+- **B3 — الموافقة والاستبعاد الإداري:** يحتاج Migration ⇒ محجوب.
+- **B4 — اللقطات + Cron:** يحتاج Migration ⇒ محجوب.
+- **B5 — لوحة مالك المنصة + الإعدادات + المعاينة:** بعد B3/B4.
+- **B6 — القسم العام في الصفحة الرئيسية + الشريحة المئوية:** بعد B4/B5.
+- **B7 — QA وتحقق الخصوصية والاستجابة ثم النشر.**
+
+## 22. LIVE RELEASE CHECKLIST
+Type Check + ESLint + Build؛ تحقق يدوي أن المخرج العام لا يحمل إلا 5 حقول؛ إثبات أن مكتباً بلا موافقة لا يظهر؛ إثبات أن مكتباً بعمل واحد لا يدخل؛ إثبات أن تأجيل موعد متأخر لا يرفع النتيجة؛ إثبات أن حذف عنصر متأخر لا يرفعها؛ عزل المستأجرين؛ سلوك Fallback عند فشل الحساب؛ جوال/تابلت/سطح مكتب؛ سجلات التدقيق؛ ثم النشر.
+
+## 23. RISKS
+تفاوت جودة إدخال حالات الجلسات؛ عدد المكاتب المؤهلة قد يقل عن 5 عند الإطلاق؛ حساسية تسويقية للترتيب العام؛ خطر تفسير النسبة كتقييم مهني (يخفّفه الاسم والتنبيه)؛ اعتماد النزاهة على اكتمال `work_item_events` للفترات القديمة.
+
+## 24. ITEMS REQUIRING USER DECISION
+FINAL_SCORE_FORMULA (45/35/20 مقترح) — PUBLIC_MINIMUM_SCORE (78) — MINIMUM_ACTIVITY_THRESHOLD (25 عملاً منها 5 مهل/جلسات، عمر 45 يوماً) — SCORE_WINDOW (Rolling 90 + ترتيب شهري) — PUBLIC_SECTION_TITLE («الأكثر إنجازاً على مِهلة») — OPT_IN_COPY — FORMULA_ADMIN_EDITABILITY (مقترح: مثبتة في الكود لـ v1) — عدد النتائج العامة (5).
+
+## 25. FINAL VERDICT
+**PARTIAL** — المحرك ونتيجة المكتب الخاصة قابلان للبناء نظيفاً من المعمارية الحالية فوراً. الموافقة العامة واللقطات المخزّنة والقسم العام **تحتاج Migration** ⇒ `IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE`.
+
+MEHLA_OPERATIONAL_SCORE_PLAN_READY
+USER_APPROVAL_REQUIRED
