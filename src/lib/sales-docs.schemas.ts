@@ -48,7 +48,6 @@ export const listFiltersSchema = paginationSchema.extend({
   companyId: uuid.nullable().optional(),
   from: optionalText(40),
   to: optionalText(40),
-  discarded: z.enum(["exclude", "only", "include"]).nullable().optional(),
 });
 
 export const itemInputSchema = z.object({

@@ -667,9 +667,7 @@ export const getCompanyDetail = createServerFn({ method: "POST" })
         .select("id, kind, title, status, total, currency, created_at")
         .eq("company_id", data.id)
         .order("created_at", { ascending: false });
-      const sales = await import("@/lib/sales-docs.server");
-      const discarded = new Set(await sales.discardedDraftIds(db));
-      documents = (docs ?? []).filter((row: AnyClient) => !discarded.has(row.id));
+      documents = docs ?? [];
     }
     void staffCtx;
     return {
@@ -1115,9 +1113,7 @@ export const getDealDetail = createServerFn({ method: "POST" })
         .select("id, kind, title, status, total, currency, created_at")
         .eq("deal_id", data.id)
         .order("created_at", { ascending: false });
-      const sales = await import("@/lib/sales-docs.server");
-      const discarded = new Set(await sales.discardedDraftIds(db));
-      documents = (docs ?? []).filter((row: AnyClient) => !discarded.has(row.id));
+      documents = docs ?? [];
     }
     return {
       deal: {
