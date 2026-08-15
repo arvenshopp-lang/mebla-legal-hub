@@ -332,7 +332,7 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
     .map((r) => String(r["id"]));
   if (activeOrgs.length === 0) return { enabled: true, computedAt: null, items: [] };
 
-  const [subscribed, names, snapshots] = await Promise.all([
+  const [subscribed, names] = await Promise.all([
     activeSubscriptionOrganizations(adminSupabase, activeOrgs),
     approvedPublicNames(adminSupabase, activeOrgs),
   ]);
