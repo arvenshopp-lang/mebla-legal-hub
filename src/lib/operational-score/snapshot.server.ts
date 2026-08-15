@@ -4,9 +4,13 @@
  * اللقطة تخزّن Metadata تشغيلية فقط: لا عناوين قضايا ولا أسماء عملاء ولا محتوى قانوني.
  */
 
-import { computeOrganizationScore } from "./score.server";
+import { computeOrganizationScoreWithIntegrity } from "./score.server";
 import { SNAPSHOTS_TABLE, SNAPSHOT_WINDOW_KIND } from "./ranking.server";
 import type { OperationalScoreResult } from "./score.shared";
+import {
+  INTEGRITY_SNAPSHOT_KEY,
+  type PublicIntegrityAssessment,
+} from "./integrity.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
@@ -32,7 +36,11 @@ async function eligibleOrganizations(adminSupabase: Client, limit: number): Prom
   return ((data ?? []) as Array<{ id: string }>).map((r) => r.id);
 }
 
-function toSnapshotRow(organizationId: string, result: OperationalScoreResult) {
+function toSnapshotRow(
+  organizationId: string,
+  result: OperationalScoreResult,
+  integrity: PublicIntegrityAssessment,
+) {
   return {
     organization_id: organizationId,
     window_kind: SNAPSHOT_WINDOW_KIND,
@@ -41,7 +49,9 @@ function toSnapshotRow(organizationId: string, result: OperationalScoreResult) {
     score: result.eligible ? result.score : null,
     eligible: result.eligible,
     ineligibility_reason: result.eligible ? null : result.eligibilityReason,
-    dimensions: result.dimensions,
+    // حالة نزاهة الظهور العام تُخزَّن داخل نفس الحقل القائم بلا Migration،
+    // وتحت مفتاح مستقل لا يمس أبعاد النتيجة الثلاثة.
+    dimensions: { ...result.dimensions, [INTEGRITY_SNAPSHOT_KEY]: integrity },
     sample_items: result.eligibleItems,
     integrity_factor: result.integrityFactor,
     formula_version: result.formulaVersion,
@@ -63,10 +73,14 @@ export async function generateOperationalScoreSnapshots(
 
   for (const organizationId of organizations) {
     try {
-      const result = await computeOrganizationScore(adminSupabase, adminSupabase, organizationId);
+      const { result, integrity } = await computeOrganizationScoreWithIntegrity(
+        adminSupabase,
+        adminSupabase,
+        organizationId,
+      );
       const { error } = await adminSupabase
         .from(SNAPSHOTS_TABLE)
-        .insert(toSnapshotRow(organizationId, result));
+        .insert(toSnapshotRow(organizationId, result, integrity));
       if (error) throw new Error("snapshot_insert_failed");
       stored += 1;
     } catch {
