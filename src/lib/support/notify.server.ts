@@ -100,6 +100,7 @@ export async function notifyOffice(
       title: copy.title,
       message: copy.message(ticketRef(ticket)),
       dedupKey,
+      sentAt: new Date().toISOString(),
     });
     if (result.duplicate) return { sent: false, duplicate: true };
     return { sent: result.notificationId !== null, duplicate: false };
