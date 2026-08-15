@@ -168,7 +168,8 @@ async function loadOrganizationMetrics(
     completedAt: row.completed_at,
     status: row.status,
     events: (eventsByItem.get(row.id) ?? [])
-      .filter((e) => e.item_type === itemType)
+      // محرك النتيجة يستهلك `due_changed` فقط — أي حدث آخر لا يصل إليه.
+      .filter((e) => e.item_type === itemType && e.event === "due_changed")
       .map((e) => ({
         event: "due_changed" as const,
         occurredAt: e.occurred_at,
