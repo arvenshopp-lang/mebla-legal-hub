@@ -4,15 +4,15 @@
  *
  * مبدأ السلامة: سجل الأحداث `work_item_events` دليل إيجابي فقط.
  * غياب الحدث لا يُعدّ دليلاً سلبياً ولا يخفض النتيجة أبداً.
+ *
+ * قاعدة v1 لمنع العقوبة المزدوجة: الحدث المثبت يُصحِّح المقياس نفسه فقط
+ * (الموعد المعتمد / حالة الإنجاز)، ولا يُخصم مرة ثانية من معامل النزاهة.
  */
 
 import {
   DAY_MS,
   ELIGIBILITY_MESSAGES,
-  HEARING_FOLLOW_UP_DAYS,
-  INTEGRITY_FACTOR_FLOOR,
-  INTEGRITY_FACTOR_MAX,
-  INTEGRITY_PENALTY_SCALE,
+  INTEGRITY_FACTOR_NEUTRAL,
   MIN_DEADLINES_OR_HEARINGS,
   MIN_ELIGIBLE_ITEMS,
   MIN_ORGANIZATION_AGE_DAYS,
@@ -24,14 +24,19 @@ import {
   SCORE_WINDOW_DAYS,
   SHORT_LIVED_TASK_MS,
   resolveScoreWindow,
+  riyadhDaysBetween,
   type EligibilityReason,
   type OperationalScoreResult,
   type ScoreDimension,
   type ScoreDimensionKey,
 } from "./score.shared";
 
-/** أحداث السجل المستخدمة كدليل إيجابي فقط. */
-export type ScoreEventName = "due_changed" | "reopened" | "deleted";
+/**
+ * الحدث الوحيد المستهلَك في v1: `due_changed` كتصحيح للموعد المعتمد.
+ * `deleted` مؤجَّل (DEFERRED_ANTI_GAMING_SIGNAL) و`reopened` ينعكس أثره في
+ * الحالة الرسمية الحالية للعنصر فلا يُستهلك كإشارة منفصلة.
+ */
+export type ScoreEventName = "due_changed";
 
 export type ScoreEvent = {
   event: ScoreEventName;
@@ -55,7 +60,7 @@ export type HearingMetric = {
   id: string;
   hearingDate: string;
   status: string;
-  updatedAt: string | null;
+  createdAt: string;
 };
 
 export type ScoreEngineInput = {
@@ -81,7 +86,7 @@ export type ItemAssessment = {
   onTime: boolean;
   /** الموعد المعتمد للتقييم بعد تطبيق قاعدة التمديد المثبت. */
   effectiveDueMs: number | null;
-  provenSignals: ScoreEventName[];
+  createdAtMs: number | null;
 };
 
 /**
@@ -110,32 +115,12 @@ export function resolveEffectiveDue(item: WorkItemMetric): {
   return { effectiveDueMs: earliestProven, lateExtension: true };
 }
 
-/** أدلة التلاعب المثبتة على عنصر واحد (إيجابية فقط). */
-export function provenSignalsFor(item: WorkItemMetric, lateExtension: boolean): ScoreEventName[] {
-  const signals: ScoreEventName[] = [];
-  if (lateExtension) signals.push("due_changed");
-  const completedAt = ms(item.completedAt);
-  const due = resolveEffectiveDue(item).effectiveDueMs;
-  for (const ev of item.events) {
-    const at = ms(ev.occurredAt);
-    if (at === null) continue;
-    if (ev.event === "reopened") {
-      // إعادة فتح مثبتة بعد إنجاز مثبت.
-      if (completedAt !== null && at > completedAt) signals.push("reopened");
-      continue;
-    }
-    if (ev.event === "deleted" && due !== null && at > due) signals.push("deleted");
-  }
-  return signals;
-}
-
 function assessItem(
   item: WorkItemMetric,
   windowStartMs: number,
   windowEndMs: number,
 ): ItemAssessment {
-  const { effectiveDueMs, lateExtension } = resolveEffectiveDue(item);
-  const provenSignals = provenSignalsFor(item, lateExtension);
+  const { effectiveDueMs } = resolveEffectiveDue(item);
   const completedAt = ms(item.completedAt);
   const createdAt = ms(item.createdAt);
 
@@ -144,7 +129,7 @@ function assessItem(
     counted: false,
     onTime: false,
     effectiveDueMs,
-    provenSignals,
+    createdAtMs: createdAt,
   };
 
   if (EXCLUDED_ITEM_STATUSES.has(item.status)) return base;
@@ -169,32 +154,35 @@ function assessItem(
   };
 }
 
-export type HearingAssessment = { id: string; counted: boolean; followedUp: boolean };
+export type HearingAssessment = {
+  id: string;
+  counted: boolean;
+  followedUp: boolean;
+  createdAtMs: number | null;
+};
 
 /**
- * متابعة الجلسات: الجلسات التي مضى موعدها داخل النافذة.
- * ناجحة إذا أصبحت `completed` أو `postponed` خلال 7 أيام من موعدها.
- * `scheduled` بعد الموعد أو `missed` = غير متابَعة. `cancelled` مستبعدة كلياً
- * لأن دلالة الإلغاء الحالية لا تفرّق بين إلغاء مشروع وإهمال.
+ * متابعة الجلسات (Metric v1 محافظة): الجلسات المنقضية داخل النافذة.
+ * تُعدّ متابَعة إذا كانت حالتها الحالية `completed` أو `postponed`.
+ * `scheduled` بعد الموعد أو `missed` = غير متابَعة. `cancelled` مستبعدة من
+ * البسط والمقام. لا ادعاء زمني عن «وقت تغيير الحالة» لأن `hearings` لا يملك
+ * أي timestamp موثوق لتغيّر الحالة (`updated_at` يتغير بأي تعديل).
  */
 export function assessHearing(
   hearing: HearingMetric,
   windowStartMs: number,
   windowEndMs: number,
 ): HearingAssessment {
+  const createdAtMs = ms(hearing.createdAt);
   const date = ms(hearing.hearingDate);
   if (date === null || date < windowStartMs || date > windowEndMs) {
-    return { id: hearing.id, counted: false, followedUp: false };
+    return { id: hearing.id, counted: false, followedUp: false, createdAtMs };
   }
-  if (hearing.status === "cancelled") return { id: hearing.id, counted: false, followedUp: false };
-  if (hearing.status === "completed" || hearing.status === "postponed") {
-    const updated = ms(hearing.updatedAt);
-    const deadline = date + HEARING_FOLLOW_UP_DAYS * DAY_MS;
-    // لا تحديث مسجّل: لا نعاقب على غياب الدليل الزمني، ونعتمد الحالة النهائية.
-    const followedUp = updated === null ? true : updated <= deadline;
-    return { id: hearing.id, counted: true, followedUp };
+  if (hearing.status === "cancelled") {
+    return { id: hearing.id, counted: false, followedUp: false, createdAtMs };
   }
-  return { id: hearing.id, counted: true, followedUp: false };
+  const followedUp = hearing.status === "completed" || hearing.status === "postponed";
+  return { id: hearing.id, counted: true, followedUp, createdAtMs };
 }
 
 function dimension(key: ScoreDimensionKey, numerator: number, denominator: number): ScoreDimension {
@@ -210,15 +198,14 @@ function dimension(key: ScoreDimensionKey, numerator: number, denominator: numbe
   };
 }
 
-/** معامل النزاهة: 1.00 افتراضاً، وينخفض بنسبة العناصر ذات الأدلة المثبتة فقط. */
-export function computeIntegrityFactor(
-  itemsWithProvenSignals: number,
-  countedItems: number,
-): number {
-  if (countedItems <= 0 || itemsWithProvenSignals <= 0) return INTEGRITY_FACTOR_MAX;
-  const ratio = Math.min(1, itemsWithProvenSignals / countedItems);
-  const factor = INTEGRITY_FACTOR_MAX - ratio * INTEGRITY_PENALTY_SCALE;
-  return Math.round(Math.max(INTEGRITY_FACTOR_FLOOR, factor) * 10000) / 10000;
+/**
+ * معامل النزاهة في v1 = 1.00 دائماً.
+ * الإشارات المتاحة حالياً (`due_changed`, `reopened`) ينعكس أثرها بالكامل داخل
+ * المقياس نفسه، فخصمها ثانية = عقوبة مزدوجة. و`deleted-after-due` مؤجَّل لأن
+ * الصف المحذوف لا يصل إلى الحساب بصورة موثوقة. الحقل محفوظ في العقد للتوسع.
+ */
+export function computeIntegrityFactor(): number {
+  return INTEGRITY_FACTOR_NEUTRAL;
 }
 
 export type EligibilityInput = {
