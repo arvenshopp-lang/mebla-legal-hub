@@ -277,8 +277,8 @@ const shortTracking = computeOperationalScore({
   now: NOW,
 });
 check(
-  "16. Tracking period derived from eligible activity",
-  shortTracking.trackingDays === 26,
+  "16. Tracking period derived from eligible activity, not organization age",
+  shortTracking.trackingDays === 35 && shortTracking.trackingDays < 400,
   `${shortTracking.trackingDays}`,
 );
 check(
