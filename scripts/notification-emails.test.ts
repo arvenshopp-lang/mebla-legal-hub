@@ -11,6 +11,7 @@ import {
   EMAIL_ENABLED_EVENTS,
   isEmailEnabledEvent,
   isRetryableFailure,
+  maskEmailForLog,
   retryDelayMs,
   templateKeyForEvent,
 } from "@/lib/notifications/email-channel.shared";
