@@ -10,6 +10,7 @@
 import {
   PUBLIC_MINIMUM_SCORE,
   PUBLIC_RESULTS_COUNT,
+  OPERATIONAL_SCORE_FORMULA_VERSION,
   sanitizePublicRankingItems,
   type PublicOperationalRanking,
   type PublicOperationalRankingItem,
