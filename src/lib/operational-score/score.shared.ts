@@ -90,8 +90,11 @@ export function sanitizePublicRankingItems(
         item.rank <= PUBLIC_RESULTS_COUNT,
     )
     .slice(0, PUBLIC_RESULTS_COUNT)
+    // انتقاء صريح للحقول العامة: أي Metadata داخلية (نزاهة، معرّفات، أعداد)
+    // لا يمكن أن تعبر إلى الاستجابة العامة حتى لو مُررت بالخطأ.
     .map((item) => ({
-      ...item,
+      rank: item.rank,
+      publicName: item.publicName,
       score: Math.max(0, Math.min(100, Number(item.score) || 0)),
       badge: item.badge ?? null,
       logoUrl: item.logoUrl ?? null,

@@ -5,6 +5,8 @@
  */
 
 import { computeOperationalScore, type HearingMetric, type WorkItemMetric } from "./score.engine";
+import { assessPublicIntegrity, type DeletionEvent } from "./integrity.engine";
+import type { PublicIntegrityAssessment } from "./integrity.shared";
 import {
   DAY_MS,
   SCORE_WINDOW_DAYS,
@@ -57,8 +59,12 @@ type ItemRow = {
 
 type HearingRow = { id: string; hearing_date: string; status: string; created_at: string };
 
-/** الحدث الوحيد المستهلَك في v1: تصحيح الموعد المعتمد. */
-const EVIDENCE_EVENTS = ["due_changed"] as const;
+/**
+ * الحدث الوحيد المستهلَك في **حساب النتيجة** (B1): تصحيح الموعد المعتمد.
+ * `deleted` يُقرأ في نفس الاستعلام لكنه لا يصل إلى محرك النتيجة أبداً — يُستخدم
+ * فقط في بوابة نزاهة الظهور العام كدليل مثبت.
+ */
+const EVIDENCE_EVENTS = ["due_changed", "deleted"] as const;
 
 /** حدود صريحة تمنع نمو الاستعلامات بلا سقف على المكاتب الكبيرة. */
 const ITEM_ROWS_LIMIT = 5000;
@@ -66,15 +72,25 @@ const EVENT_ROWS_LIMIT = 10000;
 /** الأحداث المصححة قد تسبق النافذة، فتُقرأ بنافذة زمنية موسّعة محدودة لا بقائمة معرفات. */
 const EVENT_LOOKBACK_DAYS = SCORE_WINDOW_DAYS;
 
+type OrganizationMetrics = {
+  organizationCreatedAt: string;
+  tasks: WorkItemMetric[];
+  deadlines: WorkItemMetric[];
+  hearings: HearingMetric[];
+  deletionEvents: DeletionEvent[];
+  now: string;
+};
+
 /**
- * يحسب مؤشر المكتب الحالي داخل نافذة 90 يوماً.
+ * تحميل واحد لكل Metadata التشغيلية داخل نافذة 90 يوماً.
  * استعلامات مجمّعة فقط: ثلاثة استعلامات للأعمال + استعلام واحد للأحداث + عمر المكتب. لا N+1.
+ * تُعاد نفس الدفعة لمحرك النتيجة ولبوابة النزاهة بلا قراءة ثانية.
  */
-export async function computeOrganizationScore(
+async function loadOrganizationMetrics(
   supabase: Client,
   adminSupabase: Client,
   organizationId: string,
-): Promise<OperationalScoreResult> {
+): Promise<OrganizationMetrics> {
   const now = new Date().toISOString();
   const { windowStart, windowEnd } = resolveScoreWindow(now);
 
@@ -152,7 +168,8 @@ export async function computeOrganizationScore(
     completedAt: row.completed_at,
     status: row.status,
     events: (eventsByItem.get(row.id) ?? [])
-      .filter((e) => e.item_type === itemType)
+      // محرك النتيجة يستهلك `due_changed` فقط — أي حدث آخر لا يصل إليه.
+      .filter((e) => e.item_type === itemType && e.event === "due_changed")
       .map((e) => ({
         event: "due_changed" as const,
         occurredAt: e.occurred_at,
@@ -168,11 +185,55 @@ export async function computeOrganizationScore(
     createdAt: h.created_at,
   }));
 
-  return computeOperationalScore({
+  // أحداث الحذف: دليل مستقل لبوابة النزاهة فقط، ولا يمر على محرك النتيجة.
+  const deletionEvents: DeletionEvent[] = eventRows
+    .filter((e) => e.event === "deleted")
+    .map((e) => ({
+      itemType: e.item_type,
+      occurredAt: e.occurred_at,
+      dueDate: e.from_due_date ?? e.to_due_date,
+    }));
+
+  return {
     organizationCreatedAt: (org.data?.created_at as string | undefined) ?? now,
     tasks: taskRows.map((r) => toMetric(r, "task")),
     deadlines: deadlineRows.map((r) => toMetric(r, "deadline")),
     hearings: hearingMetrics,
+    deletionEvents,
     now,
+  };
+}
+
+/** نتيجة المكتب (B1) — سلوكها ومدخلاتها لم تتغير. */
+export async function computeOrganizationScore(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+): Promise<OperationalScoreResult> {
+  const metrics = await loadOrganizationMetrics(supabase, adminSupabase, organizationId);
+  return computeOperationalScore(metrics);
+}
+
+/**
+ * النتيجة + بوابة نزاهة الظهور العام من **نفس** دفعة البيانات (بلا استعلام إضافي).
+ * النتيجة تُحسب أولاً وتُمرَّر كما هي: البوابة لا تعدّلها ولا تخفضها.
+ */
+export async function computeOrganizationScoreWithIntegrity(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+): Promise<{ result: OperationalScoreResult; integrity: PublicIntegrityAssessment }> {
+  const metrics = await loadOrganizationMetrics(supabase, adminSupabase, organizationId);
+  const result = computeOperationalScore(metrics);
+  const integrity = assessPublicIntegrity({
+    organizationCreatedAt: metrics.organizationCreatedAt,
+    tasks: metrics.tasks,
+    deadlines: metrics.deadlines,
+    hearings: metrics.hearings,
+    deletionEvents: metrics.deletionEvents,
+    baseEligible: result.eligible,
+    baseEligibilityReason: result.eligibilityReason,
+    now: metrics.now,
   });
+  return { result, integrity };
 }

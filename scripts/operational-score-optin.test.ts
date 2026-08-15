@@ -189,6 +189,7 @@ const baseInput: PromptEligibilityInput = {
   publicOptIn: false,
   publicNameApproved: true,
   snoozedUntil: null,
+  integrityPass: true,
   now: NOW.toISOString(),
 };
 

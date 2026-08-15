@@ -22,6 +22,10 @@ import {
   type PublicOperationalRanking,
   type PublicOperationalRankingItem,
 } from "./score.shared";
+import {
+  readSnapshotIntegrityStatus,
+  type PublicIntegrityStatus,
+} from "./integrity.shared";
 
 /*
  * الجداول الجديدة (organization_ranking_settings / operational_score_snapshots)
@@ -193,6 +197,8 @@ export type RankingStatusRow = {
   platformExcluded: boolean;
   exclusionReason: string | null;
   latestScore: number | null;
+  /** عقد لوحة المنصة: حالة النزاهة بلا أي محتوى تشغيلي أو قانوني. */
+  integrityStatus: PublicIntegrityStatus | null;
   latestComputedAt: string | null;
 };
 
@@ -225,12 +231,19 @@ export async function listRankingStatus(
       platformExcluded: r["platform_excluded"] === true,
       exclusionReason: (r["exclusion_reason"] as string | null) ?? null,
       latestScore: snap?.score ?? null,
+      integrityStatus: snap?.integrityStatus ?? null,
       latestComputedAt: snap?.computedAt ?? null,
     };
   });
 }
 
-type LatestSnapshot = { score: number | null; eligible: boolean; computedAt: string };
+type LatestSnapshot = {
+  score: number | null;
+  eligible: boolean;
+  computedAt: string;
+  /** حالة بوابة النزاهة المخزّنة في اللقطة — `null` عند الغياب أو إصدار مختلف. */
+  integrityStatus: PublicIntegrityStatus | null;
+};
 
 /** عدد استعلامات اللقطة المتزامنة: يحدّ الضغط على القاعدة بلا تسلسل بطيء. */
 const SNAPSHOT_LOOKUP_CONCURRENCY = 8;
@@ -247,7 +260,7 @@ async function latestSnapshotForOrganization(
 ): Promise<LatestSnapshot | null> {
   const { data, error } = await client
     .from(SNAPSHOTS_TABLE)
-    .select("score, eligible, computed_at")
+    .select("score, eligible, computed_at, dimensions")
     .eq("organization_id", organizationId)
     .eq("window_kind", SNAPSHOT_WINDOW_KIND)
     .eq("formula_version", OPERATIONAL_SCORE_FORMULA_VERSION)
@@ -261,6 +274,7 @@ async function latestSnapshotForOrganization(
     score: row["score"] === null || row["score"] === undefined ? null : Number(row["score"]),
     eligible: row["eligible"] === true,
     computedAt: String(row["computed_at"]),
+    integrityStatus: readSnapshotIntegrityStatus(row["dimensions"]),
   };
 }
 
@@ -380,6 +394,8 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
     const snap = snapshots.get(orgId);
     if (!snap || !snap.eligible || snap.score === null) continue;
     if (snap.score < PUBLIC_MINIMUM_SCORE) continue;
+    // بوابة النزاهة: `pass` فقط تدخل الترتيب العام (Fail closed عند الغياب).
+    if (snap.integrityStatus !== "pass") continue;
     candidates.push({
       rank: 0,
       publicName,
@@ -479,14 +495,19 @@ export async function evaluateOptInPrompt(
     };
   }
 
-  const { computeOrganizationScore } = await import("./score.server");
-  const result = await computeOrganizationScore(supabase, adminSupabase, organizationId);
+  const { computeOrganizationScoreWithIntegrity } = await import("./score.server");
+  const { result, integrity } = await computeOrganizationScoreWithIntegrity(
+    supabase,
+    adminSupabase,
+    organizationId,
+  );
 
   const decision = evaluatePromptEligibility({
     isManager,
     scoreEligible: result.eligible,
     score: result.score,
     minimumScore: PUBLIC_MINIMUM_SCORE,
+    integrityPass: integrity.status === "pass",
     organizationActive: orgActive,
     subscriptionActive: subscribed.has(organizationId),
     platformExcluded: settings.platformExcluded,

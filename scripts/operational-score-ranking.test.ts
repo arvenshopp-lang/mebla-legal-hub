@@ -8,6 +8,7 @@ import {
   OPERATIONAL_SCORE_FORMULA_VERSION,
   PUBLIC_MINIMUM_SCORE,
 } from "../src/lib/operational-score/score.shared";
+import { INTEGRITY_MODEL_VERSION } from "../src/lib/operational-score/integrity.shared";
 
 let pass = 0;
 const failures: string[] = [];
@@ -90,9 +91,12 @@ type SnapshotSeed = {
   eligible: boolean;
   computedAt: string;
   formulaVersion?: string;
+  /** حالة بوابة النزاهة داخل اللقطة — الافتراضي `pass` لحالات الاختبار المعتمدة. */
+  integrityStatus?: "pass" | "review_required" | "ineligible" | null;
 };
 
 function snapshot(seed: SnapshotSeed): Record<string, unknown> {
+  const integrityStatus = seed.integrityStatus === undefined ? "pass" : seed.integrityStatus;
   return {
     organization_id: seed.organizationId,
     score: seed.score,
@@ -101,6 +105,10 @@ function snapshot(seed: SnapshotSeed): Record<string, unknown> {
     created_at: seed.computedAt,
     window_kind: "rolling_90",
     formula_version: seed.formulaVersion ?? V1,
+    dimensions:
+      integrityStatus === null
+        ? {}
+        : { integrity: { status: integrityStatus, modelVersion: INTEGRITY_MODEL_VERSION } },
   };
 }
 
