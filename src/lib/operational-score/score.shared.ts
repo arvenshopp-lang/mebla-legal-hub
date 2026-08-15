@@ -6,6 +6,8 @@
 
 export const OPERATIONAL_SCORE_FORMULA_VERSION = "v1" as const;
 
+import { DAY_MS, RIYADH_TZ, riyadhDayStart, riyadhDaysBetween } from "@/lib/format";
+
 export type ScoreDimensionKey = "deadlines" | "tasks" | "hearings";
 
 /** الأوزان الرسمية المعتمدة: المهل 45% — المهام 35% — الجلسات 20%. */
