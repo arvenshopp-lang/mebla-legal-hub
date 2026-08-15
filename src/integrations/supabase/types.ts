@@ -4289,6 +4289,65 @@ export type Database = {
           },
         ]
       }
+      operational_score_snapshots: {
+        Row: {
+          computed_at: string
+          created_at: string
+          dimensions: Json
+          eligible: boolean
+          formula_version: string
+          id: string
+          ineligibility_reason: string | null
+          integrity_factor: number
+          organization_id: string
+          period_end: string
+          period_start: string
+          sample_items: number
+          score: number | null
+          window_kind: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          dimensions?: Json
+          eligible: boolean
+          formula_version: string
+          id?: string
+          ineligibility_reason?: string | null
+          integrity_factor?: number
+          organization_id: string
+          period_end: string
+          period_start: string
+          sample_items?: number
+          score?: number | null
+          window_kind?: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          dimensions?: Json
+          eligible?: boolean
+          formula_version?: string
+          id?: string
+          ineligibility_reason?: string | null
+          integrity_factor?: number
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          sample_items?: number
+          score?: number | null
+          window_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_score_snapshots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           created_at: string
@@ -4381,6 +4440,73 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_ranking_settings: {
+        Row: {
+          created_at: string
+          excluded_at: string | null
+          excluded_by: string | null
+          exclusion_reason: string | null
+          opt_in_prompted_at: string | null
+          opt_in_snoozed_until: string | null
+          opted_in_at: string | null
+          opted_in_by: string | null
+          organization_id: string
+          platform_excluded: boolean
+          public_opt_in: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          exclusion_reason?: string | null
+          opt_in_prompted_at?: string | null
+          opt_in_snoozed_until?: string | null
+          opted_in_at?: string | null
+          opted_in_by?: string | null
+          organization_id: string
+          platform_excluded?: boolean
+          public_opt_in?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          exclusion_reason?: string | null
+          opt_in_prompted_at?: string | null
+          opt_in_snoozed_until?: string | null
+          opted_in_at?: string | null
+          opted_in_by?: string | null
+          organization_id?: string
+          platform_excluded?: boolean
+          public_opt_in?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_ranking_settings_excluded_by_fkey"
+            columns: ["excluded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_ranking_settings_opted_in_by_fkey"
+            columns: ["opted_in_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_ranking_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
