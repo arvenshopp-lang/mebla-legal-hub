@@ -1,137 +1,59 @@
-# MEHLA-SALES-002 — تشخيص فشل حذف مسودة عرض سعر (تقرير جذري، بلا تنفيذ)
+# MEHLA-SALES-002 — قرار دلالات حذف المسودة (تحليل فقط، بلا تنفيذ)
 
-## MEHLA-SALES-002
-P1 — حذف مستند بيع `kind=quotation` و`status=draft` يفشل دائماً برسالة عربية عامة مع مرجع تتبع.
+الحالة: ROOT_CAUSE_CONFIRMED — `sales_document_events` جدول Append-Only محمي بـ `sales_events_no_delete → deny_hard_delete()`، وFK من الأحداث إلى `sales_documents` بـ `ON DELETE CASCADE`، فيصطدم الحذف الصلب دائماً بـ P0001.
 
-## DELETE_FLOW
-```text
-زر «حذف» (يظهر فقط عند status==='draft' و can('sales_docs.delete'))
-  src/routes/mehla-admin/sales/$id.tsx:541
-useServerFn(salesDeleteDraft) → { id }
-  src/lib/sales-docs.functions.ts:100-110
-requireSupabaseAuth (جلسة + bearer)
-requireStaff(context.supabase, userId, "sales_docs.delete")   ← فحص RBAC خادمي
-engine.deleteDraft({ staff }, id)                              src/lib/sales-docs.server.ts:352
-  1) select status → موجود
-  2) status !== 'draft' ؟ لا → يتجاوز الفحص
-  3) DELETE FROM sales_documents WHERE id = $1   (supabaseAdmin، يتجاوز RLS)
-       ↳ CASCADE على sales_document_items   → مسموح (trigger الحماية يمرّر حالة draft)
-       ↳ CASCADE على sales_document_signatures → لا صفوف للمسودة
-       ↳ CASCADE على sales_document_events  → **BEFORE DELETE trigger يرفع استثناء**
-  4) fail(error, "تعذّر حذف المسودة.")  ← يُغلّف الخطأ ويعيد مرجع SD-…
-  5) writeAudit(...) لا يُنفَّذ أبداً (الكود يتوقف قبله)
-```
+## ما تم التحقق منه فعلياً في هذه الجولة
 
-## FIRST_FAILURE_POINT
-الخطوة 3 — داخل PostgreSQL أثناء الحذف المتتالي (CASCADE) لصفوف `sales_document_events`.
-`CREATE TRIGGER sales_events_no_delete BEFORE DELETE ON public.sales_document_events FOR EACH ROW EXECUTE FUNCTION deny_hard_delete()` والدالة تنفّذ حرفياً:
-`RAISE EXCEPTION 'RECORD_DELETE_FORBIDDEN' USING ERRCODE = 'P0001'`.
-الاستثناء داخل نفس المعاملة ⇒ يفشل حذف الصف الأصل كاملاً (rollback).
+- `sales_documents` لا تحتوي أي عمود: `deleted_at` / `archived_at` / `is_hidden`. (فحص information_schema — 45 عموداً، لا شيء منها للحذف الناعم.)
+- `sales_doc_status` يشمل: draft, pending_approval, approved, sent, viewed, accepted, rejected, expired, cancelled, active, terminated — لا حالة تعني "مسودة تخلّص منها المستخدم".
+- `STATUS_TRANSITIONS` في `src/lib/sales-docs.shared.ts:120`: **draft → cancelled مسموح اليوم**.
+- `recordDecision` في `src/lib/sales-docs.server.ts:544` يقبل `cancelled` ويكتب `decided_at` و`decision_note` وحدث `decision_cancelled`، بصلاحية `sales_docs.decide` — أي أن مساراً خادمياً جاهزاً موجود بلا أي Migration.
+- `sales_documents_immutability_guard` لا يمنع الانتقال إلى cancelled؛ يمنع فقط تغيير المبالغ/العملة/النوع/الرقم بعد الحالات النهائية. لذا الانتقال آمن بنيوياً.
+- الترقيم يُمنح فقط عند الإرسال (`sales-docs.server.ts:484`)، فالمسودة `number = NULL` ولا تستهلك تسلسلاً مالياً.
+- لا تقارير مالية تقرأ `sales_documents`؛ الاستخدام الخارجي الوحيد في `src/lib/crm.functions.ts:666,1112` (قائمة مستندات الشركة/الفرصة) وقائمة `/mehla-admin/sales` بفلتر حالة اختياري — أي إخفاء يجب أن يكون في هذه المواضع الثلاثة.
+- الأحداث تبقى سليمة في كل الحالات لأن لا شيء يُحذف.
 
-## ROOT_CAUSE
-CONFIRMED.
-تعارض معماري بين قاعدتين صحيحتين كلٌّ على حدة:
-1. `sales_document_events` جدول **غير قابل للحذف** (append-only، حماية Auditability).
-2. المفتاح الأجنبي من الأحداث إلى المستند هو **ON DELETE CASCADE**، أي أن حذف المستند يعني حذف أحداثه.
-وبما أن `createDraft` يكتب دائماً حدث `created` عند الإنشاء (`sales-docs.server.ts:324`)، فإن **كل** مسودة تملك حدثاً واحداً على الأقل ⇒ الحذف الصلب لأي مسودة **مستحيل بنيوياً**، لا استثناء. الميزة معطّلة كلياً وليست حالة حدّية.
+## OPTION_A_HARD_DELETE
 
-## CONFIDENCE
-عالية — مثبت بالكود وبمخطط قاعدة البيانات وبنص دالة الـtrigger وببيانات فعلية (المسودة الحالية الوحيدة لها حدث واحد مرتبط).
+- MIGRATION_REQUIRED: نعم (دالة SECURITY DEFINER + تعديل منطق `deny_hard_delete` أو استثناء بمفتاح جلسة).
+- SECURITY_RISK: مرتفع — أي استثناء داخل حارس Append-Only يفتح مساراً قابلاً لإعادة الاستخدام على جداول تدقيق أخرى؛ ويتطلب ضوابط: draft-only، document-specific، transaction-scoped، server-controlled، authorization-checked، audited، غير قابل للنداء من أدوار العميل.
+- AUDITABILITY: أدنى الخيارات — يُفقد الأثر الأصلي ويُستبدل بلقطة (snapshot) في `admin_audit_logs`، أي تدقيق مشتق لا أصلي.
+- COMPLEXITY: مرتفع؛ Rollback معقّد لأن الصفوف المحذوفة غير قابلة للاستعادة.
+- RECOMMENDATION: مرفوض الآن. وحالته على أي حال: IMPLEMENTATION_BLOCKED_BY_RECOVERY_GATE.
 
-## EVIDENCE
-- FKs الفعلية على `sales_documents`: `sales_document_items`, `sales_document_events`, `sales_document_signatures` — الثلاثة `ON DELETE CASCADE` (`confdeltype='c'`).
-- Triggers الفعلية: `sales_events_no_delete` (BEFORE DELETE → `deny_hard_delete`)، `sales_sig_no_delete`، `sales_items_locked_guard` (BEFORE INSERT/UPDATE/DELETE)، و`sales_doc_immutability` **على UPDATE فقط** (لا يوجد أي trigger DELETE على `sales_documents` نفسه — أي الخلل ليس في المستند بل في أحداثه).
-- `deny_hard_delete()` = `RAISE EXCEPTION 'RECORD_DELETE_FORBIDDEN' ERRCODE P0001`.
-- `sales_document_items_guard()` يسمح بالحذف عندما تكون الحالة `draft/pending_approval/approved` ⇒ البنود ليست العائق.
-- استعلام قراءة فقط: صفوف الأحداث الحالية = مسودة واحدة بحدث واحد، ومستند مُرسل بحدثين.
-- `dbReason()` لا يعالج كود `P0001` (`sales-docs.server.ts:47-66`) ⇒ يعود إلى النص العام + مرجع، وهو بالضبط ما ظهر في الاختبار.
+## OPTION_B_SOFT_DELETE_OR_ARCHIVE
 
-## EXACT_FILES
-- `src/routes/mehla-admin/sales/$id.tsx` (زر الحذف والتأكيد وعرض الخطأ)
-- `src/lib/sales-docs.functions.ts` (`salesDeleteDraft`)
-- `src/lib/sales-docs.server.ts` (`deleteDraft`, `fail`, `dbReason`, `logEvent`)
-- قاعدة البيانات: `sales_document_events` (trigger + FK)
+- CURRENT_SCHEMA_SUPPORT: لا يوجد عمود حذف ناعم/أرشفة.
+- CURRENT_STATUS_SUPPORT: جزئي — `cancelled` قابل للوصول من `draft` عبر مسار خادمي قائم.
+- BUSINESS_SEMANTIC_COMPATIBILITY: غير مطابق تماماً. `cancelled` في المنصة تعني "إلغاء تجاري لمستند صدر/أُرسل" (مقترن بـ decided_at وdecision_note وأحداث قرار)، وليس "مسودة أزالها المستخدم". ويمكن تمييز الحالتين استنتاجياً بـ `number IS NULL` و`from_status='draft'` في الحدث، لكن هذا تمييز مشتق لا حالة صريحة.
+- MIGRATION_REQUIRED: لا (للمسار الانتقالي)، نعم (للحالة الصريحة الصحيحة).
+- AUDITABILITY: الأفضل — لا حذف، والسلسلة كاملة ونهائية.
+- USER_EXPERIENCE: مقبول — تختفي المسودة من قائمة العمل الافتراضية وتبقى قابلة للعرض بفلتر صريح؛ وقابلة للاستعادة فقط إن أُضيف انتقال عكسي (غير موجود اليوم: `cancelled: []`).
+- RECOMMENDATION: يُعتمد كمسار انتقالي فقط، مع وسم صريح للحدث، وبدون إعادة تعريف معنى cancelled.
 
-## AUTHORIZATION_RESULT
-PASS — لا علاقة للصلاحيات بالعطل.
-- مفتاح واحد متطابق في الطرفين: `sales_docs.delete` موجود في كتالوج الصلاحيات (`admin-permissions.ts:94/642/1006`)، ويُفحص في الواجهة (`$id.tsx:541`) وخادمياً عبر `requireStaff` (`sales-docs.functions.ts:108`). لا mismatch.
-- الفشل يقع **بعد** الترخيص وبعد فحص الحالة، داخل قاعدة البيانات.
-- المحرّك يستخدم `supabaseAdmin` ⇒ RLS ليس عاملاً؛ ولا يوجد كود `42501`.
+## RECOMMENDED_MEHLA_MODEL
 
-## BUSINESS_RULE_RESULT
-القاعدة الحالية في الكود واضحة وقصدها **السماح** بحذف المسودة فقط:
-- `DRAFT` → مسموح بالحذف نظرياً (`sales-docs.server.ts:360` يمرّر الحالة draft فقط).
-- `SENT`, `ACCEPTED`, `REJECTED`, `CANCELLED`, `EXPIRED`, `PENDING_APPROVAL`, `APPROVED` → ممنوع بالحذف برسالة «لا يمكن حذف إلا مسودة لم تُرسل بعد».
-لا توجد قاعدة أعمال تمنع حذف المسودة. المنع غير مقصود ونابع من طبقة قاعدة البيانات، أي أن **النية والتنفيذ متعارضان**. لم أغيّر أي قاعدة.
+**NEEDS_NEW_STATE** (الهدف النهائي) — الصحيح دلالياً هو حالة/علامة صريحة مثل `discarded` (أو `draft_discarded_at`) تعني: مسودة لم تُرسل، أزالها المستخدم، لا أثر مالي، لا رقم، قابلة للاستعادة اختيارياً. السبب: الحفاظ على Append-Only بلا استثناءات، وعدم تلويث معنى `cancelled` التجاري، وعدم فقدان أي تدقيق. وهذا يتطلب Migration ⇒ محجوب حالياً.
 
-## DATABASE_CONSTRAINT_RESULT
-| العلاقة | السلوك | يمنع الحذف؟ |
-|---|---|---|
-| `sales_document_items.document_id` | CASCADE | لا |
-| `sales_document_signatures.document_id` | CASCADE | لا (ولا صفوف للمسودة، لكنه كان سيمنع لو وُجدت — نفس النمط) |
-| `sales_document_events.document_id` | CASCADE | **نعم — نقطة الفشل** |
-لا FK بـ RESTRICT/NO ACTION/SET NULL نحو `sales_documents`. لا CHECK constraint متعلق بالحذف.
+## المسار الآمن بلا Migration (تقييم، بلا تنفيذ)
 
-## TRIGGER_RESULT
-- `sales_events_no_delete` = السبب المباشر (P0001).
-- `sales_sig_no_delete` = قنبلة موقوتة مماثلة لأي مستند مسودة يملك توقيعاً.
-- `sales_doc_immutability` على UPDATE فقط — البيانات السابقة كانت صحيحة وما زالت.
-- `sales_items_locked_guard` يسمح بالحذف في حالة draft.
+موجود ولكنه انتقالي لا نهائي: استخدام `draft → cancelled` عبر المسار الخادمي القائم، مع حدث موسوم بنية "إزالة مسودة"، وإخفاء المسودات الملغاة (`status='cancelled' AND number IS NULL`) من القوائم الافتراضية مع فلتر صريح لعرضها.
 
-## AUDIT_EVENT_RESULT
-العطل ليس في كتابة سجل التدقيق ولا في ترتيبه ولا في انتهاك FK للسجل، بل في **حذف** الأحداث:
-- الأحداث تُكتب قبل الحذف (عند الإنشاء) وتبقى مرتبطة بـ`document_id`.
-- `writeAudit` في `deleteDraft` يأتي **بعد** الحذف ولا يُنفَّذ لأن العملية تفشل قبله — أي أن محاولة الحذف الفاشلة لا تُترك لها أي أثر في `admin_audit_logs`، وهذه فجوة تدقيق ثانوية يجب معالجتها مع الإصلاح (تسجيل المحاولة والفشل أيضاً).
-- `admin_audit_logs` نفسه append-only (`no_delete` + `immutable`) وهذا سليم ولا يُلمس.
+EXACT_FILES (المواضع الدقيقة، للمراجعة فقط):
+1. `src/lib/sales-docs.server.ts` — استبدال `deleteDraft` (سطر ~350-375) بمسار "discardDraft" يستدعي نفس منطق `recordDecision('cancelled')` مع `decision_note` ثابت، ويكتب حدثاً باسم مميّز (`draft_discarded`) بدل `decision_cancelled`؛ وإضافة تعيين واضح لـ P0001 في `dbReason` (تحسين رسالة فقط، ليس إصلاحاً جذرياً).
+2. `src/lib/sales-docs.functions.ts` — المسار ~95-115: الإبقاء على فحص `sales_docs.delete` كصلاحية الإزالة بدل `sales_docs.decide` حتى لا تُوسّع صلاحية القرار التجاري.
+3. `src/routes/mehla-admin/sales/index.tsx` — استبعاد المسودات المُزالة من القائمة الافتراضية وإتاحة فلتر "مسودات مُزالة".
+4. `src/routes/mehla-admin/sales/$id.tsx` — نص الزر ورسالة التأكيد.
+5. `src/lib/crm.functions.ts:666,1112` — استبعاد نفس الصفوف من مستندات الشركة/الفرصة.
 
-## ERROR_WRAPPING_RESULT
-- الخطأ الداخلي الحقيقي: `P0001 RECORD_DELETE_FORBIDDEN` (من trigger الأحداث عبر CASCADE).
-- ما يظهر للمستخدم: «تعذّر حذف المسودة. (مرجع: SD-XXXX)» — لأن `dbReason` لا يعرف `P0001`.
-- الخصوصية: سليمة — لا Stack Trace ولا أسماء جداول ولا تفاصيل Postgres للمستخدم؛ التفاصيل في سجل الخادم مع نفس المرجع.
-- المرجع مفيد للدعم من ناحية الربط، لكن الرسالة **غير قابلة للتصرّف** ولا تشرح السبب. لم أغيّر أي شيء في تجربة الخطأ الآن.
+MINIMAL_FIX: نقل زر الحذف إلى مسار إزالة غير مدمّرة + إخفاء القوائم + تعيين رسالة P0001. لا Migration، لا Trigger، لا SECURITY DEFINER، لا تعديل بيانات.
 
-## SHARED_OR_ISOLATED_DEFECT
-نمط مشترك محتمل: أي جدول append-only مربوط بأصل بـ`ON DELETE CASCADE`. النطاق المؤكد الآن معزول في وحدة عروض الأسعار (`sales_document_events` + `sales_document_signatures`). التحقق من بقية الجداول append-only مسألة منفصلة لا تدخل هذا الإصلاح.
+## نص الزر الموصى به
 
-## MINIMAL_FIX_RECOMMENDATION
-لا تعطيل الـtrigger ولا إسقاط FK. المسار المقترح (بانتظار الاعتماد):
-1. تحويل حذف المسودة إلى **دالة قاعدة بيانات واحدة** `security definer` (مثل `sales_delete_draft(_id uuid)`) تعمل داخل معاملة واحدة وبالترتيب الآمن:
-   أ. التحقق من الحالة = `draft` ومن عدم وجود توقيعات، وإلا استثناء واضح.
-   ب. كتابة سجل تدقيق **قبل** الحذف في `admin_audit_logs` يحمل نسخة (snapshot) من صفوف `sales_document_events` وبيانات المستند الأساسية — فتُحفظ قابلية التدقيق بعد زوال الأصل.
-   ج. السماح بحذف صفوف الأحداث لهذه العملية فقط عبر مفتاح معاملة صريح (`set local`) يقرؤه `deny_hard_delete` (أو دالة حماية مخصّصة للأحداث)، بحيث يبقى الحذف ممنوعاً في كل المسارات الأخرى.
-   د. حذف المستند.
-2. `deleteDraft` في الخادم يستدعي هذه الدالة بدل `.delete()` المباشر، ويسجّل الفشل أيضاً لا النجاح فقط.
-3. إضافة تعريف عربي دقيق لكود `P0001` داخل `dbReason` حتى لا تعود أي رسالة غامضة مستقبلاً.
-بديل أخف لو رُفض تعديل قاعدة البيانات: اعتماد **إلغاء المسودة** (`cancelled`) بدل الحذف الصلب وتغيير الزر ونصّه وفقاً لذلك — لكن هذا **تغيير قاعدة أعمال** يحتاج قراراً منك، لا إصلاحاً تقنياً.
+"إلغاء المسودة" فقط إن اعتُمد المسار الانتقالي (لأن الحالة المخزَّنة فعلاً هي cancelled — والصدق مع المستخدم مطلوب). النص المستهدف بعد إضافة الحالة الصريحة: "أرشفة المسودة". النص "حذف المسودة" غير صحيح دلالياً في كل الأحوال ويجب إزالته لأن الصف لا يُحذف.
 
-## CHANGED_FILES_EXPECTED
-`src/lib/sales-docs.server.ts`، `src/routes/mehla-admin/sales/$id.tsx` (نص/حالة الخطأ فقط إن لزم)، + Migration واحدة (دالة الحذف وتعديل حماية الأحداث). لا ملفات أخرى.
+## القرار
 
-## MIGRATION_REQUIRED
-YES (للمسار المقترح رقم 1؛ لا Migration للبديل الأخف)
-
-## DATABASE_CHANGE_REQUIRED
-YES — دالة جديدة + تحديث منطق حماية `sales_document_events` بحيث تظل append-only خارج مسار حذف المسودة. بلا تغيير مخطط الأعمدة وبلا إسقاط FK.
-
-## PRODUCTION_DATA_IMPACT
-NONE — لم يُنفَّذ أي mutation، ولم يُقرأ سوى المخطط وعدّاد صفوف. السجل `QA-E2E-QUOTE-20260814-537738` لم يُلمس ولم يُستخدم كتجربة حذف.
-ملاحظة سلامة: المعاينة وقاعدة البيانات هدف واحد، لذلك لم أُجرِ أي إعادة إنتاج حية للحذف.
-
-## REGRESSION_RISK
-متوسط ومحدود إن نُفّذ كما هو مقترح:
-- الخطر الحقيقي هو توسيع إذن حذف الأحداث خارج مسار المسودة ⇒ يجب أن يكون المفتاح على مستوى المعاملة داخل الدالة وحدها، مع اختبار يثبت أن الحذف المباشر للأحداث ما زال ممنوعاً.
-- مسارات يجب اختبارها بعد الإصلاح: إنشاء/تعديل المسودة، الإرسال، طلب الاعتماد والاعتماد (Four-Eyes)، القبول والقفل، قائمة المستندات، وسجل `admin_audit_logs`.
-
-## TARGETED_ACCEPTANCE_TESTS
-1. مسودة جديدة (بحدث `created` واحد) → حذف → نجاح، وتختفي من القائمة بعد Refresh.
-2. مسودة بعدة أحداث → حذف → نجاح.
-3. مستند `sent` أو `accepted` → زر الحذف مخفي، ونداء الخادم المباشر يُرفض برسالة الحالة.
-4. مستخدم بلا `sales_docs.delete` → رفض خادمي، لا حذف.
-5. بعد كل حذف ناجح: وجود سجل في `admin_audit_logs` يحمل snapshot الأحداث؛ وبعد كل فشل: وجود سجل محاولة فاشلة.
-6. `DELETE` مباشر على `sales_document_events` خارج الدالة → ما زال يفشل بـ`RECORD_DELETE_FORBIDDEN`.
-7. `DELETE` مباشر على `sales_document_signatures` → ما زال ممنوعاً؛ ومسودة تملك توقيعاً تُرفض برسالة واضحة لا برسالة عامة.
-8. لا رسالة خطأ عامة بلا سبب: أي فشل يظهر بنص عربي يشرح السبب + مرجع.
-
-## الحالة
-ROOT_CAUSE_CONFIRMED
-READY_FOR_FIX_REVIEW
+- الحل النهائي (NEEDS_NEW_STATE) يحتاج Migration ⇒ `MEHLA-SALES-002 = BLOCKED_BY_RECOVERY_GATE`.
+- يوجد مسار انتقالي آمن بلا Migration (أعلاه) لم يُنفّذ ولن يُنفّذ إلا بموافقة صريحة منك.
+- لم يُعدَّل أي ملف أو بيان أو قاعدة بيانات في هذه الجولة.
