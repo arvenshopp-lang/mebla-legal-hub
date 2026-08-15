@@ -10,6 +10,7 @@
 import {
   PUBLIC_MINIMUM_SCORE,
   PUBLIC_RESULTS_COUNT,
+  OPERATIONAL_SCORE_FORMULA_VERSION,
   sanitizePublicRankingItems,
   type PublicOperationalRanking,
   type PublicOperationalRankingItem,
@@ -110,8 +111,6 @@ export async function setRankingOptIn(
     {
       organization_id: organizationId,
       public_opt_in: optIn,
-      opted_in_at: optIn ? new Date().toISOString() : null,
-      opted_in_by: optIn ? userId : null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "organization_id" },
@@ -129,7 +128,8 @@ export async function setRankingOptIn(
     metadata: { previous_opt_in: before.publicOptIn, new_opt_in: optIn },
   });
 
-  return { ...before, publicOptIn: optIn, optedInAt: optIn ? new Date().toISOString() : null };
+  // القيمة المُعادة تُقرأ من القاعدة: توثيق الموافقة تُحدده القاعدة لا العميل.
+  return getRankingSettings(supabase, organizationId);
 }
 
 /** استثناء/إعادة مكتب من الترتيب العام — عملية منصة فقط (تُستدعى بعد حرس الصلاحيات). */
@@ -200,28 +200,54 @@ export async function listRankingStatus(
 
 type LatestSnapshot = { score: number | null; eligible: boolean; computedAt: string };
 
-/** أحدث لقطة لكل مكتب داخل استعلام واحد مقيّد (بلا N+1). */
+/** عدد استعلامات اللقطة المتزامنة: يحدّ الضغط على القاعدة بلا تسلسل بطيء. */
+const SNAPSHOT_LOOKUP_CONCURRENCY = 8;
+
+/**
+ * أحدث لقطة **لكل مكتب** بشكل حتمي: استعلام مفهرس واحد لكل مكتب مقيّد بـ`limit(1)`
+ * على مفتاح `(organization_id, computed_at DESC)`، ومقيّد بالنافذة المعتمدة
+ * وبإصدار المعادلة الحالي فقط. لا يوجد سقف عالمي مشترك، فلا يمكن لمكتب كثير
+ * اللقطات أن يُقصي مكتباً آخر من النتيجة، ولا يمكن لإصدار قديم أن يظهر.
+ */
+async function latestSnapshotForOrganization(
+  client: Client,
+  organizationId: string,
+): Promise<LatestSnapshot | null> {
+  const { data, error } = await client
+    .from(SNAPSHOTS_TABLE)
+    .select("score, eligible, computed_at")
+    .eq("organization_id", organizationId)
+    .eq("window_kind", SNAPSHOT_WINDOW_KIND)
+    .eq("formula_version", OPERATIONAL_SCORE_FORMULA_VERSION)
+    .order("computed_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as Record<string, unknown>;
+  return {
+    score: row["score"] === null || row["score"] === undefined ? null : Number(row["score"]),
+    eligible: row["eligible"] === true,
+    computedAt: String(row["computed_at"]),
+  };
+}
+
+/** أحدث لقطة لكل مكتب — دفعات متزامنة محدودة، والنتيجة مفتاحها معرّف المكتب. */
 export async function latestSnapshotsByOrganization(
   adminSupabase: Client,
   organizationIds: string[],
 ): Promise<Map<string, LatestSnapshot>> {
   const result = new Map<string, LatestSnapshot>();
   if (organizationIds.length === 0) return result;
-  const { data, error } = await adminSupabase
-    .from(SNAPSHOTS_TABLE)
-    .select("organization_id, score, eligible, computed_at")
-    .eq("window_kind", SNAPSHOT_WINDOW_KIND)
-    .in("organization_id", organizationIds)
-    .order("computed_at", { ascending: false })
-    .limit(organizationIds.length * 8);
-  if (error) return result;
-  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
-    const id = String(row["organization_id"]);
-    if (result.has(id)) continue; // الأحدث أولاً بحكم الترتيب
-    result.set(id, {
-      score: row["score"] === null ? null : Number(row["score"]),
-      eligible: row["eligible"] === true,
-      computedAt: String(row["computed_at"]),
+  const unique = Array.from(new Set(organizationIds));
+  for (let index = 0; index < unique.length; index += SNAPSHOT_LOOKUP_CONCURRENCY) {
+    const batch = unique.slice(index, index + SNAPSHOT_LOOKUP_CONCURRENCY);
+    const snapshots = await Promise.all(
+      batch.map((organizationId) => latestSnapshotForOrganization(adminSupabase, organizationId)),
+    );
+    batch.forEach((organizationId, position) => {
+      const snapshot = snapshots[position];
+      if (snapshot) result.set(organizationId, snapshot);
     });
   }
   return result;
@@ -277,8 +303,8 @@ async function approvedPublicNames(
  * الترتيب العام (Top 5). كل الشروط تُتحقق خادمياً:
  * موافقة صريحة + لا استثناء منصة + مكتب نشط + اشتراك نشط + صفحة عامة منشورة
  * باسم معتمد + أهلية B1 + نتيجة ≥ الحد الأدنى.
- * الترتيب: `score` تنازلياً، وعند التعادل الأقدم حساباً (`computed_at`) ثم الاسم
- * ترتيباً أبجدياً ثابتاً — قطعي وغير حساس لأي بيانات داخلية.
+ * الترتيب: `score` تنازلياً، ثم الاسم العام ترتيباً عربياً، ثم معرّف المكتب فاصلاً
+ * نهائياً داخلياً — قطعي، ولا يمنح وقت الحساب أي أفضلية بين مكتبين متعادلين.
  */
 export async function getPublicRanking(adminSupabase: Client): Promise<PublicOperationalRanking> {
   const empty: PublicOperationalRanking = { enabled: false, computedAt: null, items: [] };
@@ -306,18 +332,19 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
     .map((r) => String(r["id"]));
   if (activeOrgs.length === 0) return { enabled: true, computedAt: null, items: [] };
 
-  const [subscribed, names, snapshots] = await Promise.all([
+  const [subscribed, names] = await Promise.all([
     activeSubscriptionOrganizations(adminSupabase, activeOrgs),
     approvedPublicNames(adminSupabase, activeOrgs),
-    latestSnapshotsByOrganization(adminSupabase, activeOrgs),
   ]);
 
-  type Candidate = PublicOperationalRankingItem & { computedAt: string };
+  // اللقطات تُقرأ للمرشحين النهائيين فقط: أقل استعلامات وأقل بيانات.
+  const shortlist = activeOrgs.filter((orgId) => subscribed.has(orgId) && names.has(orgId));
+  const snapshots = await latestSnapshotsByOrganization(adminSupabase, shortlist);
+
+  type Candidate = PublicOperationalRankingItem & { computedAt: string; organizationId: string };
   const candidates: Candidate[] = [];
-  for (const orgId of activeOrgs) {
-    if (!subscribed.has(orgId)) continue;
-    const publicName = names.get(orgId);
-    if (!publicName) continue;
+  for (const orgId of shortlist) {
+    const publicName = names.get(orgId) as string;
     const snap = snapshots.get(orgId);
     if (!snap || !snap.eligible || snap.score === null) continue;
     if (snap.score < PUBLIC_MINIMUM_SCORE) continue;
@@ -328,14 +355,15 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
       badge: null,
       logoUrl: null,
       computedAt: snap.computedAt,
+      organizationId: orgId,
     });
   }
 
   candidates.sort(
     (a, b) =>
       b.score - a.score ||
-      new Date(a.computedAt).getTime() - new Date(b.computedAt).getTime() ||
-      a.publicName.localeCompare(b.publicName, "ar"),
+      a.publicName.localeCompare(b.publicName, "ar") ||
+      a.organizationId.localeCompare(b.organizationId),
   );
 
   const top = candidates.slice(0, PUBLIC_RESULTS_COUNT);
