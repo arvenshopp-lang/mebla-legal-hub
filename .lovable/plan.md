@@ -1,52 +1,38 @@
-# MEHLA OPERATIONAL SCORE — B1/B2 POST-BUILD REVIEW (READ-ONLY)
+# MEHLA OPERATIONAL SCORE — FINAL B1/B2 ACCEPTANCE (READ-ONLY)
 
-لم يُعدَّل أي كود. المراجعة على المصدر الحالي فقط.
+نطاق هذا التقرير: نقطتان فقط (تفويض المكتب النشط + عقد الخصوصية). لم تُعَد مراجعة الصيغة أو المنطقة الزمنية أو النزاهة أو الجلسات أو أداء الاستعلامات.
 
-## النتائج المطلوبة
+## 1. ACTIVE ORGANIZATION AUTHORIZATION
 
-TIMEZONE_IMPLEMENTATION: **NEEDS_FIX**
+**هل العميل يرسل organization_id؟** نعم. `src/lib/operational-score/score.functions.ts` يستقبل `{ organizationId: uuid }` من الواجهة، ويمرره لـ `computeOrganizationScore` بعد الحارس.
 
-TIMEZONE_SOURCE: `RIYADH_OFFSET_MS = 3*60*60*1000` معرّف محلياً في `score.shared.ts:66` ويُستخدم داخل `riyadhDayStart`. لا استيراد لـ `RIYADH_TZ` من `src/lib/format.ts:10`. النتيجة صحيحة سلوكياً (الرياض بلا توقيت صيفي) لكنها نسخة رابعة من سياسة الوقت (`format.ts`, `support/sla.server.ts`, `kpi/kpi.shared.ts`) ولا تحقق Single Source of Truth.
+**الحارس الفعلي:** `requireActiveMembership(context.supabase, organizationId, context.userId)` — استعلام على `organization_members` بـ `organization_id = X` و `user_id = auth.uid()` و `status = 'active'`، ويُرفَض الطلب إن لم يوجد صف. يعمل بجلسة المستخدم (RLS سارية) لا بالدور الإداري، ودالة الخادم محمية بـ `requireSupabaseAuth` (JWT حقيقي)، وكل استعلامات القياس مقيّدة بـ `.eq("organization_id", organizationId)`. قراءة `work_item_events` إدارية لكنها تحدث **بعد** الحارس ومقيّدة بنفس المكتب.
 
-INTEGRITY_DENOMINATOR: `countedItems = المهل + المهام + الجلسات` (`score.engine.ts:286`) بينما البسط من `[countedDeadlines, countedTasks]` فقط (`:287`).
+**الشرط الحالي هو:** `user is an active member of organization X` — وليس `X = current active organization`.
 
-INTEGRITY_DILUTION_RISK: **CONFIRMED** — الجلسات لا تملك `work_item_events`، فكل جلسة تُضاف للمقام تخفّف عقوبة تلاعب مثبت في المهام/المهل.
-الصيغة الأدق (بدون تنفيذ): `ratio = itemsWithProvenSignals / (countedDeadlines + countedTasks)`، وعند غياب عناصر قابلة للتدقيق يبقى `integrityFactor = 1.00`.
+**قراءة المعمارية:** «المكتب النشط» في مِهلة مفهوم واجهة فقط: `src/hooks/use-auth.tsx` يبني `activeOrgId` من عضويات المستخدم النشطة ويخزّنه في `localStorage` (`mehla_active_org`)، فلا وجود لمكتب نشط خادمي يمكن التحقق منه. وهذا هو النمط الموحد في كل الدوال المستأجَرة (`subscription.functions.ts`, `pii.functions.ts`, `document-ai.functions.ts`): `organizationId` جزء موثّق من Context الطلب، والحماية = عضوية نشطة (+ دور/استحقاق عند الحاجة). لذلك إرسال معرّف مكتب آخر يملك المستخدم فيه عضوية نشطة يعرض **نتيجته الخاصة بذلك المكتب** فقط، وهو سلوك مقصود لا تصعيد صلاحيات ولا اختراق عزل مستأجرين.
 
-DUE_CHANGED_RULE: **PASS** — الشرط الفعلي `to > from && at > from` (`score.engine.ts:105`) أي: الموعد السابق كان قد فات لحظة التغيير، والجديد لاحق له. التقديم والتعديل قبل الاستحقاق والتصحيح المبكر لا يُعاقب عليها.
+**ACTIVE_ORG_ENFORCEMENT:** NOT_APPLICABLE_BY_CURRENT_ARCHITECTURE (لا مفهوم خادمي لمكتب نشط؛ المستوى المطبَّق هو عضوية نشطة مثبتة خادمياً — مطابق للمعمارية المعتمدة، ولم يُعدَّل شيء).
 
-REOPEN_RULE: **TOO_BROAD** — أي `reopened` بعد `completed_at` يُعدّ إشارة تلاعب (`:122-125`) بلا شرط علاقة بالموعد ولا أثر فعلي على النتيجة، فإعادة الفتح المشروعة تُعاقب.
+**AUTHORIZATION_PATTERN:** `requireSupabaseAuth` (JWT) → `requireActiveMembership` (صف عضوية `status = active` بجلسة المستخدم فوق RLS) → كل استعلام مقيّد بـ `organization_id` → قراءة إدارية واحدة للأحداث بعد الحارس ومقيّدة بنفس المكتب.
 
-DOUBLE_PENALTY_RISK: **CONFIRMED** في مسارين:
-- `due_changed` المثبت يُرجع الموعد المعتمد إلى `from` فيخفض البسط `onTime` **و** يخفض `integrityFactor`.
-- `reopened` يؤخّر/يمسح `completed_at` عملياً فيخفض `onTime` **و** يخفض `integrityFactor`.
-القاعدة الصحيحة: الإشارة التي تُصحَّح داخل المقياس نفسه لا تُخصم ثانية في معامل النزاهة؛ يُحتفظ بالنزاهة للإشارات غير القابلة للتصحيح داخل البسط.
+## 2. FINAL CONTRACT CHECK
 
-DELETED_EVENT_SUFFICIENCY: **INSUFFICIENT (LIMIT)** — `computeOrganizationScore` يبني `itemIds` من صفوف `tasks/deadlines` الموجودة فقط (`score.server.ts:96`)، فالصف المحذوف لا يظهر ولا تُقرأ أحداثه أبداً؛ أي أن قاعدة «الحذف بعد الاستحقاق» غير قابلة للتشغيل فعلياً في التنفيذ الحالي. كذلك تقييم الحدث يعتمد `effectiveDue` المشتق من الصف الحالي، وحدث `deleted` لا يضمن حمل `from_due_date`، مع أن الجدول يملك `metadata` غير مستخدم هنا.
+شكل الاستجابة `OperationalScoreResult` (`score.shared.ts`) يحتوي حصراً: `score`, `formulaVersion`, `windowStart`, `windowEnd`, `computedAt`, `eligible`, `eligibilityReason`, `eligibilityMessage`, `eligibleItems`, `deadlinesAndHearings`, `trackingDays`, `integrityFactor`, و`dimensions` (مفتاح، عنوان بعد ثابت، نسبة، وزن، applied، quality، sampleSize).
 
-HEARING_7_DAY_RULE: **NOT_PROVABLE**
+- لا بيانات عملاء ولا قضايا ولا مستندات ولا عناوين/أوصاف مهام أو مهل — الأعمدة المقروءة أصلاً هي Metadata فقط (`id, created_at, due_date, completed_at, status`, و`hearing_date, status, created_at`).
+- لا معرّفات أعمال ولا معرّفات مكاتب ولا أي محتوى قانوني خام في المخرجات؛ المعرّفات تبقى داخل المحرك ولا تُسرَّب.
+- لا أي بيانات عن مكاتب أخرى ولا مقارنة ولا ترتيب.
 
-HEARING_TIMESTAMP_SOURCE: `hearings.updated_at` فقط — عمود تحديث صف عام يتغير بأي تعديل (ملاحظات، قاعة، رابط)، ولا يوجد `completed_at` ولا `status_changed_at` في المخطط. وأيضاً `updatedAt === null ⇒ followedUp = true` (`score.engine.ts:194`).
-Metric v1 محافظة مقترحة: «تحديث حالة الجلسات المنقضية» = الجلسات المنقضية داخل النافذة التي حالتها النهائية `completed` أو `postponed` ÷ الجلسات المنقضية (باستثناء `cancelled`)، بلا أي ادعاء زمني، مع إزالة عبارة «خلال 7 أيام» من الشرح والوثيقة حتى توفّر Timestamp حقيقي.
+**PRIVATE_RESPONSE_PRIVACY:** PASS
 
-TRACKING_PERIOD_DEFINITION: **NOT_DETERMINISTIC_AS_CLAIMED** — `trackingDays = min(90, organizationAgeDays)` مشتق من `organizations.created_at` فقط (`:296`)، فهو عمر المكتب لا فترة تتبع؛ وشرط `MIN_TRACKING_DAYS = 30` مستهلَك تلقائياً بشرط العمر 45 يوماً فلا يفحص شيئاً. التعريف القطعي المقترح: عدد أيام الرياض بين أقدم عمل مؤهل داخل النافذة (`created_at`) وحد النافذة النهائي، بحدٍّ أقصى 90.
+عند `eligible = false`: المحرك يعيد `score: eligible ? score : null` (`score.engine.ts`)، فلا نسبة إجمالية تُنقل عبر الشبكة أصلاً. والواجهة (`operational-score-card.tsx`) تعرض «بيانات غير كافية» بدل النسبة الإجمالية، وتُخفي نسب الأبعاد كذلك عندما `eligible = false`.
 
-QUERY_SCALE_RISK: **MEDIUM** — لا `limit` ولا Pagination على الاستعلامات الثلاثة، و`.in("item_id", itemIds)` بلا حد أقصى (`score.server.ts:105`). مكتب كبير (≈50 عملاً/يوم) ≈ 4–5 آلاف معرف ⇒ سلسلة استعلام تتجاوز حدود طول URL في PostgREST/الوسيط، مع نمو ذاكرة خطي. لا N+1 ولا Explosion تربيعية، لذا الخطر متوسط، ويصبح HIGH فوق ≈3000 معرف.
+**INELIGIBLE_SCORE_EXPOSURE:** PASS
 
-TENANT_AUTHORIZATION: **PASS (بملاحظة)** — `organizationId` القادم من العميل يُتحقق منه عبر `requireActiveMembership` بعميل المستخدم (RLS) وبشرط `status === "active"` قبل أي قراءة إدارية، والقراءة الإدارية مقيدة بـ `eq("organization_id", organizationId)`. لا تسريب بين المكاتب. الملاحظة: العضو في أكثر من مكتب يستطيع طلب نتيجة أي مكتب هو عضو نشط فيه حتى لو لم يكن هو المكتب النشط في جلسته — مصرّح به لكنه لا يطابق دلالة Active organization حرفياً.
+## 3. الحكم
 
-UI_ELIGIBILITY_BEHAVIOR: **PASS** — عند `eligible = false` تُعرض «بيانات غير كافية» مع سبب عربي ولا تُعرض أي نسبة كلية، والبعد غير المتوفر يعرض «بيانات غير كافية» لا 0%. ملاحظة صغيرة: نسب الأبعاد تظهر حتى مع عدم الأهلية وقد تُقرأ كنتيجة جزئية معتمدة.
+- **SOURCE_CHANGED_SINCE_CORRECTION:** NO (المصادر المفحوصة مطابقة لحالة ما بعد Correction Batch: 26 اختباراً ناجحاً، TypeCheck وESLint نظيفان).
+- **FINAL_B1_B2_VERDICT:** READY_FOR_PREVIEW_QA
 
-B1_B2_CORRECTNESS: **FIX_REQUIRED_BEFORE_DEPLOY**
-
-## الإصلاحات المطلوبة (تشخيص فقط — غير منفَّذة)
-
-1) ROOT_CAUSE: إزاحة زمنية مكرّرة داخل المحرك. MINIMAL_FIX: حذف `RIYADH_OFFSET_MS` المحلي واستخدام سياسة الوقت المركزية من `src/lib/format.ts`. EXPECTED_FILES: `src/lib/operational-score/score.shared.ts`.
-2) ROOT_CAUSE: مقام النزاهة يشمل الجلسات غير القابلة للتدقيق. MINIMAL_FIX: قصر المقام على المهام والمهل المحتسبة. EXPECTED_FILES: `score.engine.ts` + اختبارات المحرك.
-3) ROOT_CAUSE: عقوبة مزدوجة على `due_changed` و`reopened`. MINIMAL_FIX: خصم النزاهة فقط للإشارات غير المصحَّحة داخل البسط، وتقييد `reopened` بالنمط ذي الأثر (إعادة فتح بعد الاستحقاق). EXPECTED_FILES: `score.engine.ts`, `docs/operational-score-architecture.md`.
-4) ROOT_CAUSE: قاعدة الحذف بعد الاستحقاق غير قابلة للتشغيل لأن المعرفات تُشتق من الصفوف الباقية. MINIMAL_FIX: قراءة أحداث `deleted` للمكتب داخل النافذة مباشرة اعتماداً على `from_due_date`/`metadata`، أو إسقاط القاعدة صراحةً من v1. EXPECTED_FILES: `score.server.ts`, `score.engine.ts`, الوثيقة.
-5) ROOT_CAUSE: ادعاء «7 أيام» غير قابل للإثبات من `updated_at`. MINIMAL_FIX: اعتماد Metric الحالة النهائية المحافظة وتصحيح نص الشرح. EXPECTED_FILES: `score.engine.ts`, `score.shared.ts`, `src/components/dashboard/operational-score-card.tsx`, الوثيقة.
-6) ROOT_CAUSE: `trackingDays` = عمر المكتب. MINIMAL_FIX: اشتقاقه من أقدم عمل مؤهل داخل النافذة. EXPECTED_FILES: `score.engine.ts`.
-7) ROOT_CAUSE: `.in(itemIds)` بلا حد. MINIMAL_FIX: تقسيم قراءة الأحداث إلى دفعات ثابتة، أو استعلام أحداث المكتب بالنافذة الزمنية دون قائمة معرفات. EXPECTED_FILES: `score.server.ts`.
-
-STOP.
+لم يُعدَّل أي كود، ولا Deploy، ولا Migration.
