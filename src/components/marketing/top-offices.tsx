@@ -33,9 +33,7 @@ function RankBadge({ rank, isFirst }: { rank: number; isFirst: boolean }) {
     <span
       className={cn(
         "flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-m)] text-[15px] font-bold tabular-nums leading-none",
-        isFirst
-          ? "bg-primary text-primary-foreground"
-          : "bg-surface-muted text-muted-foreground",
+        isFirst ? "bg-primary text-primary-foreground" : "bg-surface-muted text-muted-foreground",
       )}
       aria-label={`المرتبة ${rankLabels[rank] ?? rank}`}
     >
@@ -103,9 +101,7 @@ export function TopOffices({ ranking }: { ranking: PublicOperationalRanking }) {
       <div className="container-page">
         <header className="mb-8 md:mb-10">
           <h2 className="text-h2">{PUBLIC_SECTION_TITLE}</h2>
-          <p className="measure mt-3 text-body-lg text-muted-foreground">
-            {PUBLIC_SECTION_INTRO}
-          </p>
+          <p className="measure mt-3 text-body-lg text-muted-foreground">{PUBLIC_SECTION_INTRO}</p>
         </header>
 
         <ol
@@ -134,9 +130,7 @@ export function TopOffices({ ranking }: { ranking: PublicOperationalRanking }) {
                           {item.publicName}
                         </p>
                         {item.badge && (
-                          <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                            {item.badge}
-                          </p>
+                          <p className="mt-0.5 text-[11.5px] text-muted-foreground">{item.badge}</p>
                         )}
                       </div>
                     </div>
