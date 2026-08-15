@@ -52,9 +52,8 @@ function fakeClient(rows: Rows, settingValue: unknown = { enabled: true }) {
       return { data: table === "platform_settings" ? { value: settingValue } : data, error: null };
     }
     // السلسلة قابلة للانتظار في أي نقطة.
-    (api as { then?: unknown })["then"] = (
-      resolve: (value: unknown) => unknown,
-    ) => Promise.resolve(result()).then(resolve);
+    (api as { then?: unknown })["then"] = (resolve: (value: unknown) => unknown) =>
+      Promise.resolve(result()).then(resolve);
     return api;
   };
   return { from: (table: string) => build(table) };
@@ -95,7 +94,10 @@ function baseRows(overrides: Partial<Rows> = {}): Rows {
 const run = async () => {
   // الميزة معطّلة افتراضياً عند غياب المفتاح (Fail closed).
   const disabled = await getPublicRanking(fakeClient(baseRows(), {}));
-  check("feature flag missing ⇒ disabled", disabled.enabled === false && disabled.items.length === 0);
+  check(
+    "feature flag missing ⇒ disabled",
+    disabled.enabled === false && disabled.items.length === 0,
+  );
 
   // مكتب مؤهل كامل يظهر مرة واحدة بالحقول العامة فقط.
   const ok = await getPublicRanking(fakeClient(baseRows()));
@@ -126,7 +128,10 @@ const run = async () => {
         ],
       },
     ],
-    ["inactive organization", { organizations: [{ id: ORG, is_active: false, suspended_at: null }] }],
+    [
+      "inactive organization",
+      { organizations: [{ id: ORG, is_active: false, suspended_at: null }] },
+    ],
     [
       "inactive subscription",
       { subscriptions: [{ organization_id: ORG, status: "expired", ends_at: null }] },

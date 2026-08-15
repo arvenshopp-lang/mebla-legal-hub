@@ -22,9 +22,8 @@ export const Route = createFileRoute("/api/public/hooks/operational-score")({
 
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { generateOperationalScoreSnapshots } = await import(
-            "@/lib/operational-score/snapshot.server"
-          );
+          const { generateOperationalScoreSnapshots } =
+            await import("@/lib/operational-score/snapshot.server");
           const result = await generateOperationalScoreSnapshots(supabaseAdmin);
           return json({ ok: true, ...result });
         } catch (error) {

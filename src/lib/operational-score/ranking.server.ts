@@ -341,9 +341,7 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
   const top = candidates.slice(0, PUBLIC_RESULTS_COUNT);
   const computedAt =
     top.length > 0
-      ? new Date(
-          Math.max(...top.map((c) => new Date(c.computedAt).getTime())),
-        ).toISOString()
+      ? new Date(Math.max(...top.map((c) => new Date(c.computedAt).getTime()))).toISOString()
       : null;
 
   // تصفية نهائية: الحقول العامة فقط، بلا أي Metadata داخلية.
