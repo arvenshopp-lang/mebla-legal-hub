@@ -197,6 +197,8 @@ export type RankingStatusRow = {
   platformExcluded: boolean;
   exclusionReason: string | null;
   latestScore: number | null;
+  /** عقد لوحة المنصة: حالة النزاهة بلا أي محتوى تشغيلي أو قانوني. */
+  integrityStatus: PublicIntegrityStatus | null;
   latestComputedAt: string | null;
 };
 
@@ -392,6 +394,8 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
     const snap = snapshots.get(orgId);
     if (!snap || !snap.eligible || snap.score === null) continue;
     if (snap.score < PUBLIC_MINIMUM_SCORE) continue;
+    // بوابة النزاهة: `pass` فقط تدخل الترتيب العام (Fail closed عند الغياب).
+    if (snap.integrityStatus !== "pass") continue;
     candidates.push({
       rank: 0,
       publicName,
