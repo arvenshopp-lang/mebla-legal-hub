@@ -8,6 +8,7 @@ import {
   OPERATIONAL_SCORE_FORMULA_VERSION,
   PUBLIC_MINIMUM_SCORE,
 } from "../src/lib/operational-score/score.shared";
+import { INTEGRITY_MODEL_VERSION } from "../src/lib/operational-score/integrity.shared";
 
 let pass = 0;
 const failures: string[] = [];
