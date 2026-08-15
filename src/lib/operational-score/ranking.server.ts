@@ -495,14 +495,19 @@ export async function evaluateOptInPrompt(
     };
   }
 
-  const { computeOrganizationScore } = await import("./score.server");
-  const result = await computeOrganizationScore(supabase, adminSupabase, organizationId);
+  const { computeOrganizationScoreWithIntegrity } = await import("./score.server");
+  const { result, integrity } = await computeOrganizationScoreWithIntegrity(
+    supabase,
+    adminSupabase,
+    organizationId,
+  );
 
   const decision = evaluatePromptEligibility({
     isManager,
     scoreEligible: result.eligible,
     score: result.score,
     minimumScore: PUBLIC_MINIMUM_SCORE,
+    integrityPass: integrity.status === "pass",
     organizationActive: orgActive,
     subscriptionActive: subscribed.has(organizationId),
     platformExcluded: settings.platformExcluded,
