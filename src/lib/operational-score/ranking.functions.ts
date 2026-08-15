@@ -30,6 +30,47 @@ export const setOperationalRankingOptIn = createServerFn({ method: "POST" })
     return setRankingOptIn(context.supabase, data.organizationId, context.userId, data.optIn);
   });
 
+/** حالة دعوة الظهور العام للمكتب الحالي — مخوّلون فقط، وبيانات المكتب نفسه فقط. */
+export const getOperationalRankingPromptState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orgInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { evaluateOptInPrompt } = await import("./ranking.server");
+    const { requireActiveMembership } = await import("./score.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await requireActiveMembership(context.supabase, data.organizationId, context.userId);
+    return evaluateOptInPrompt(
+      context.supabase,
+      supabaseAdmin,
+      data.organizationId,
+      context.userId,
+    );
+  });
+
+/** قبول الدعوة — يعيد التحقق من الصلاحية والأهلية خادمياً قبل التفعيل. */
+export const acceptOperationalRankingPrompt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orgInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { acceptOptInFromPrompt } = await import("./ranking.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return acceptOptInFromPrompt(
+      context.supabase,
+      supabaseAdmin,
+      data.organizationId,
+      context.userId,
+    );
+  });
+
+/** «ليس الآن» / الإغلاق: تأجيل خادمي 30 يوماً بلا أي تغيير في الموافقة. */
+export const snoozeOperationalRankingPrompt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orgInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { snoozeOptInPrompt } = await import("./ranking.server");
+    return snoozeOptInPrompt(context.supabase, data.organizationId, context.userId);
+  });
+
 /** حالة الترتيب لموظفي المنصة. */
 export const adminListRankingStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
