@@ -32,7 +32,8 @@
     "e2e:gate": "bun scripts/e2e-gate-guardrails.ts",
     "documents:requests": "bun scripts/document-requests-integrity-guardrails.ts",
     "repo:hygiene": "bun scripts/repo-hygiene-guardrails.ts",
-    "score:test": "bun scripts/operational-score.test.ts"
+    "score:test": "bun scripts/operational-score.test.ts",
+    "score:ranking:test": "bun scripts/operational-score-ranking.test.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
