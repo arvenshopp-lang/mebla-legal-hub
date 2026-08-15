@@ -21,13 +21,40 @@ export const getMyRankingSettings = createServerFn({ method: "POST" })
     return getRankingSettings(context.supabase, data.organizationId);
   });
 
-/** موافقة/سحب موافقة الظهور العام — مدير المكتب فقط، مع سجل تدقيق. */
+/** حالة الظهور العام لصفحة الإعدادات — أعضاء المكتب النشطون، بلا طوابع دعوة. */
+export const getOperationalRankingConsent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orgInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { evaluateRankingConsent } = await import("./ranking.server");
+    const { requireActiveMembership } = await import("./score.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await requireActiveMembership(context.supabase, data.organizationId, context.userId);
+    return evaluateRankingConsent(
+      context.supabase,
+      supabaseAdmin,
+      data.organizationId,
+      context.userId,
+    );
+  });
+
+/**
+ * موافقة/سحب موافقة الظهور العام — مدير المكتب فقط، مع سجل تدقيق.
+ * التفعيل يعيد التحقق خادمياً من الأهلية وبوابة النزاهة، فلا يمكن تجاوزها من الواجهة.
+ */
 export const setOperationalRankingOptIn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => optInInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { setRankingOptIn } = await import("./ranking.server");
-    return setRankingOptIn(context.supabase, data.organizationId, context.userId, data.optIn);
+    const { setRankingConsent } = await import("./ranking.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return setRankingConsent(
+      context.supabase,
+      supabaseAdmin,
+      data.organizationId,
+      context.userId,
+      data.optIn,
+    );
   });
 
 /** حالة دعوة الظهور العام للمكتب الحالي — مخوّلون فقط، وبيانات المكتب نفسه فقط. */
