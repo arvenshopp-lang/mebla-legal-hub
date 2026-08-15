@@ -14,9 +14,14 @@ export const NOTIFICATION_EMAIL_STATUS = [
 ] as const;
 export type NotificationEmailStatus = (typeof NOTIFICATION_EMAIL_STATUS)[number];
 
-/** أنواع الإشعارات المسموح لها بالبريد في المرحلة 1 وقالب كل نوع. */
+/**
+ * أنواع الإشعارات المسموح لها بالبريد في المرحلة 1 وقالب كل نوع.
+ * ثلاث فئات وظيفية وثلاثة قوالب؛ `support_reply` معرّف تاريخي لصفوف قديمة
+ * أُنشئت قبل توحيد اسم الحدث إلى `support_new_reply` (بلا أي إرسال رجعي).
+ */
 export const EMAIL_ENABLED_EVENTS = {
   team_member_joined: "notif-team-member-joined",
+  support_new_reply: "notif-support-reply",
   support_reply: "notif-support-reply",
   support_ticket_created: "notif-support-ticket-created",
 } as const;

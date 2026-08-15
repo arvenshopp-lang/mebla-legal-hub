@@ -38,7 +38,8 @@
     "score:consent:test": "bun scripts/operational-score-consent.test.ts",
     "score:integrity:test": "bun scripts/operational-score-integrity.test.ts",
     "score:integrity:dryrun": "bun scripts/operational-score-integrity-dryrun.ts",
-    "score:public-ui:test": "bun scripts/operational-score-public-ui.test.ts"
+    "score:public-ui:test": "bun scripts/operational-score-public-ui.test.ts",
+    "notif-email:test": "bun scripts/notification-emails.test.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
