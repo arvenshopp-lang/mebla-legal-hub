@@ -900,6 +900,16 @@ function Footer({ loginHref, registerHref, trackHref }: SurfaceLinks) {
 
 /* --------------------------------------------------------------------- page */
 
+/**
+ * قسم «الأكثر إنجازاً» — يعتمد كلياً على العقد الخادمي العام.
+ * الميزة معطّلة أو القائمة فارغة أو الطلب فاشل = لا يُعرض القسم إطلاقاً.
+ */
+function TopOfficesSection() {
+  const { data } = useQuery(publicRankingQueryOptions());
+  if (!data) return null;
+  return <TopOffices ranking={data} />;
+}
+
 function MehlaLanding() {
   useReveal();
   const loginHref = useSurfaceHref("/login");
@@ -916,6 +926,7 @@ function MehlaLanding() {
         <HowItWorks />
         <Workflow />
         <Security />
+        <TopOfficesSection />
         <PricingTeaser />
         <CTA registerHref={registerHref} />
       </main>
