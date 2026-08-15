@@ -111,6 +111,31 @@ export const isoToRiyadhLocalInput = (v: string | number | Date | null | undefin
 /** نص توضيحي موحّد يُعرض بجانب حقول التاريخ والوقت. */
 export const RIYADH_TZ_HINT = "بتوقيت الرياض";
 
+/** يوم واحد بالمللي ثانية — ثابت مشترك لحسابات النوافذ الزمنية. */
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * بداية اليوم بتوقيت الرياض للحظة معطاة — تُشتق من قاعدة المناطق الزمنية
+ * عبر `RIYADH_TZ` لا بإزاحة ثابتة مكتوبة يدوياً، وهي المصدر الوحيد لحدود
+ * اليوم في كل حسابات المنصة الخادمية.
+ */
+export const riyadhDayStart = (v: string | number | Date): Date => {
+  const d = toDate(v);
+  if (!d) throw new Error("قيمة زمنية غير صالحة");
+  const parts = riyadhPartsFmt.formatToParts(d);
+  const get = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((p) => p.type === type)?.value ?? "0");
+  const naiveUtc = Date.UTC(get("year"), get("month") - 1, get("day"), 0, 0, 0);
+  const firstGuess = naiveUtc - riyadhOffsetMs(new Date(naiveUtc));
+  return new Date(naiveUtc - riyadhOffsetMs(new Date(firstGuess)));
+};
+
+/** عدد أيام الرياض الكاملة بين لحظتين (حدود يوم لا فروق ساعات). */
+export const riyadhDaysBetween = (
+  from: string | number | Date,
+  to: string | number | Date,
+): number => Math.round((riyadhDayStart(to).getTime() - riyadhDayStart(from).getTime()) / DAY_MS);
+
 const DASH = "—";
 
 const toDate = (v: string | number | Date | null | undefined): Date | null => {

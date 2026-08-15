@@ -18,8 +18,10 @@ import { fmtPercent } from "@/lib/format";
 
 const ORDER: ScoreDimensionKey[] = ["deadlines", "tasks", "hearings"];
 
-function DimensionRow({ dimension }: { dimension: ScoreDimension }) {
+function DimensionRow({ dimension, eligible }: { dimension: ScoreDimension; eligible: boolean }) {
   const isHearings = dimension.key === "hearings";
+  const value = dimension.applied ? dimension.value : null;
+  const showValue = eligible && value !== null;
   return (
     <li className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
       <span className="flex min-w-0 items-center gap-1.5">
@@ -35,9 +37,9 @@ function DimensionRow({ dimension }: { dimension: ScoreDimension }) {
           </span>
         )}
       </span>
-      {dimension.applied && dimension.value !== null ? (
+      {showValue && value !== null ? (
         <span className="shrink-0 text-[14px] font-semibold tabular-nums">
-          {fmtPercent(dimension.value * 100, 0)}
+          {fmtPercent(value * 100, 0)}
         </span>
       ) : (
         <span className="shrink-0 text-[12px] text-muted-foreground">
@@ -77,7 +79,7 @@ export function OperationalScoreCard({ organizationId }: { organizationId: strin
           </div>
           <ul className="mt-4 divide-y divide-border border-t border-border pt-1">
             {ORDER.map((key) => (
-              <DimensionRow key={key} dimension={data.dimensions[key]} />
+              <DimensionRow key={key} dimension={data.dimensions[key]} eligible={data.eligible} />
             ))}
           </ul>
         </>

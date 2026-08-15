@@ -5,14 +5,23 @@
  */
 
 import { computeOperationalScore, type HearingMetric, type WorkItemMetric } from "./score.engine";
-import { resolveScoreWindow, type OperationalScoreResult } from "./score.shared";
+import {
+  DAY_MS,
+  SCORE_WINDOW_DAYS,
+  resolveScoreWindow,
+  type OperationalScoreResult,
+} from "./score.shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
 
 export class OperationalScoreAccessError extends Error {}
 
-/** يتحقق أن المستخدم عضو نشط في المكتب المطلوب (فوق RLS لا بدلاً منه). */
+/**
+ * الحارس المركزي المعتمد في مِهلة: يثبت أن المكتب المطلوب هو مكتب يملك
+ * المستخدم فيه عضوية **نشطة** مصرّحاً بها، فلا يُوثق بأي `organization_id`
+ * قادم من العميل قبل هذا الإثبات (فوق RLS لا بدلاً منه).
+ */
 export async function requireActiveMembership(
   supabase: Client,
   organizationId: string,
@@ -23,11 +32,10 @@ export async function requireActiveMembership(
     .select("status")
     .eq("organization_id", organizationId)
     .eq("user_id", userId)
+    .eq("status", "active")
     .maybeSingle();
   if (error) throw new OperationalScoreAccessError("تعذّر التحقق من صلاحيتك على هذا المكتب.");
-  if (!data || data.status !== "active") {
-    throw new OperationalScoreAccessError("لا تملك وصولاً إلى هذا المكتب.");
-  }
+  if (!data) throw new OperationalScoreAccessError("لا تملك وصولاً إلى هذا المكتب.");
 }
 
 type EventRow = {
@@ -47,9 +55,16 @@ type ItemRow = {
   status: string;
 };
 
-type HearingRow = { id: string; hearing_date: string; status: string; updated_at: string | null };
+type HearingRow = { id: string; hearing_date: string; status: string; created_at: string };
 
-const EVIDENCE_EVENTS = ["due_changed", "reopened", "deleted"] as const;
+/** الحدث الوحيد المستهلَك في v1: تصحيح الموعد المعتمد. */
+const EVIDENCE_EVENTS = ["due_changed"] as const;
+
+/** حدود صريحة تمنع نمو الاستعلامات بلا سقف على المكاتب الكبيرة. */
+const ITEM_ROWS_LIMIT = 5000;
+const EVENT_ROWS_LIMIT = 10000;
+/** الأحداث المصححة قد تسبق النافذة، فتُقرأ بنافذة زمنية موسّعة محدودة لا بقائمة معرفات. */
+const EVENT_LOOKBACK_DAYS = SCORE_WINDOW_DAYS;
 
 /**
  * يحسب مؤشر المكتب الحالي داخل نافذة 90 يوماً.
@@ -71,20 +86,23 @@ export async function computeOrganizationScore(
       .eq("organization_id", organizationId)
       .not("due_date", "is", null)
       .gte("due_date", windowStart)
-      .lte("due_date", windowEnd),
+      .lte("due_date", windowEnd)
+      .limit(ITEM_ROWS_LIMIT),
     supabase
       .from("deadlines")
       .select("id, created_at, due_date, completed_at, status")
       .eq("organization_id", organizationId)
       .not("due_date", "is", null)
       .gte("due_date", windowStart)
-      .lte("due_date", windowEnd),
+      .lte("due_date", windowEnd)
+      .limit(ITEM_ROWS_LIMIT),
     supabase
       .from("hearings")
-      .select("id, hearing_date, status, updated_at")
+      .select("id, hearing_date, status, created_at")
       .eq("organization_id", organizationId)
       .gte("hearing_date", windowStart)
-      .lte("hearing_date", windowEnd),
+      .lte("hearing_date", windowEnd)
+      .limit(ITEM_ROWS_LIMIT),
   ]);
 
   const failed = [org.error, tasks.error, deadlines.error, hearings.error].find(Boolean);
@@ -93,19 +111,30 @@ export async function computeOrganizationScore(
   const taskRows = (tasks.data ?? []) as ItemRow[];
   const deadlineRows = (deadlines.data ?? []) as ItemRow[];
   const hearingRows = (hearings.data ?? []) as HearingRow[];
-  const itemIds = [...taskRows.map((r) => r.id), ...deadlineRows.map((r) => r.id)];
+  const relevantIds = new Set([...taskRows.map((r) => r.id), ...deadlineRows.map((r) => r.id)]);
 
-  // الأحداث دليل إيجابي فقط، وتُقرأ إدارياً بعد التحقق من العضوية لأن الجدول مغلق أمام Data API.
+  /*
+   * نمط الاستعلام المعتمد (بلا Migration وبلا `IN (thousandsOfIds)`):
+   * تقييد بالمكتب + نافذة زمنية محدودة + نوع الحدث المطلوب فقط، ثم الربط
+   * داخلياً عبر Set/Map. لا N+1 ولا استعلام لكل عنصر ولا طول URL غير محدود.
+   * يُقرأ إدارياً بعد إثبات العضوية لأن الجدول مغلق أمام Data API لغير owner/admin.
+   */
   let eventRows: EventRow[] = [];
-  if (itemIds.length > 0) {
+  if (relevantIds.size > 0) {
+    const eventsFrom = new Date(
+      new Date(windowStart).getTime() - EVENT_LOOKBACK_DAYS * DAY_MS,
+    ).toISOString();
     const { data, error } = await adminSupabase
       .from("work_item_events")
       .select("item_type, item_id, event, occurred_at, from_due_date, to_due_date")
       .eq("organization_id", organizationId)
-      .in("item_id", itemIds)
-      .in("event", EVIDENCE_EVENTS as unknown as string[]);
+      .in("event", EVIDENCE_EVENTS as unknown as string[])
+      .gte("occurred_at", eventsFrom)
+      .lte("occurred_at", windowEnd)
+      .order("occurred_at", { ascending: false })
+      .limit(EVENT_ROWS_LIMIT);
     // فشل قراءة الأحداث لا يُعاقب المكتب: نكمل بلا أدلة (Positive evidence only).
-    if (!error) eventRows = (data ?? []) as EventRow[];
+    if (!error) eventRows = ((data ?? []) as EventRow[]).filter((r) => relevantIds.has(r.item_id));
   }
 
   const eventsByItem = new Map<string, EventRow[]>();
@@ -125,7 +154,7 @@ export async function computeOrganizationScore(
     events: (eventsByItem.get(row.id) ?? [])
       .filter((e) => e.item_type === itemType)
       .map((e) => ({
-        event: e.event as "due_changed" | "reopened" | "deleted",
+        event: "due_changed" as const,
         occurredAt: e.occurred_at,
         fromDueDate: e.from_due_date,
         toDueDate: e.to_due_date,
@@ -136,7 +165,7 @@ export async function computeOrganizationScore(
     id: h.id,
     hearingDate: h.hearing_date,
     status: h.status,
-    updatedAt: h.updated_at,
+    createdAt: h.created_at,
   }));
 
   return computeOperationalScore({

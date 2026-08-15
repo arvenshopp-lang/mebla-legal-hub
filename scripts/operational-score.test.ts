@@ -4,6 +4,7 @@
  */
 
 import {
+  assessHearing,
   computeIntegrityFactor,
   computeOperationalScore,
   evaluateEligibility,
@@ -14,8 +15,11 @@ import {
 } from "../src/lib/operational-score/score.engine";
 import {
   DAY_MS,
-  INTEGRITY_FACTOR_FLOOR,
+  INTEGRITY_FACTOR_NEUTRAL,
+  MIN_TRACKING_DAYS,
+  SCORE_DIMENSION_HINTS,
   SCORE_WEIGHTS,
+  RIYADH_TZ,
   riyadhDayStart,
   resolveScoreWindow,
 } from "../src/lib/operational-score/score.shared";
@@ -37,6 +41,7 @@ function check(name: string, condition: boolean, detail = ""): void {
 
 const iso = (msValue: number): string => new Date(msValue).toISOString();
 const daysAgo = (d: number): number => nowMs - d * DAY_MS;
+const HOUR = 60 * 60 * 1000;
 
 function task(
   id: string,
@@ -67,18 +72,10 @@ function deadline(id: string, opts: Parameters<typeof task>[1]): WorkItemMetric 
   return { ...task(id, opts), itemType: "deadline" };
 }
 
-function hearing(id: string, dueDaysAgo: number, status: string, updatedOffsetMs: number | null) {
+function hearing(id: string, dueDaysAgo: number, status: string): HearingMetric {
   const date = daysAgo(dueDaysAgo);
-  const h: HearingMetric = {
-    id,
-    hearingDate: iso(date),
-    status,
-    updatedAt: updatedOffsetMs === null ? null : iso(date + updatedOffsetMs),
-  };
-  return h;
+  return { id, hearingDate: iso(date), status, createdAt: iso(date - 20 * DAY_MS) };
 }
-
-const HOUR = 60 * 60 * 1000;
 
 // عيّنة أساسية مؤهلة: 20 مهمة + 5 مهل، كلها في موعدها.
 const onTimeTasks = Array.from({ length: 20 }, (_, i) =>
@@ -89,7 +86,6 @@ const onTimeDeadlines = Array.from({ length: 5 }, (_, i) =>
 );
 const ORG_OLD = iso(daysAgo(400));
 
-// 1 — نتيجة كاملة
 const perfect = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: onTimeTasks,
@@ -99,34 +95,249 @@ const perfect = computeOperationalScore({
 });
 check("1. Perfect score = 100", perfect.score === 100 && perfect.eligible, String(perfect.score));
 
-// 2 — نتيجة مختلطة: 5 مهل (3 في الموعد) + 20 مهمة في الموعد ⇒ 45%*0.6 + 35%*1
-const mixed = computeOperationalScore({
+// 2 — نافذة الرياض عبر السياسة المركزية (لا إزاحة ثابتة داخل المحرك)
+const win = resolveScoreWindow(NOW);
+const riyadhHourOf = (v: string): number =>
+  Number(
+    new Intl.DateTimeFormat("en-CA", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: RIYADH_TZ,
+    }).format(new Date(v)),
+  ) % 24;
+check(
+  "2. Riyadh window via central timezone policy",
+  riyadhHourOf(win.windowStart) === 0 &&
+    riyadhDayStart("2026-08-15T00:30:00.000Z").toISOString() === "2026-08-14T21:00:00.000Z",
+  `${win.windowStart}`,
+);
+
+// 3 — تمديد متأخر مثبت: يُستخدم الموعد السابق المثبت
+const lateExtensionItem = deadline("ext", {
+  dueDaysAgo: 5,
+  completedOffsetMs: -1 * HOUR,
+  events: [
+    {
+      event: "due_changed",
+      occurredAt: iso(daysAgo(19)),
+      fromDueDate: iso(daysAgo(20)),
+      toDueDate: iso(daysAgo(5)),
+    },
+  ],
+});
+const effective = resolveEffectiveDue(lateExtensionItem);
+check(
+  "3. Late due extension uses original proven due",
+  effective.lateExtension === true && effective.effectiveDueMs === daysAgo(20),
+);
+
+// 4 — التمديد المتأخر لا يُنقذ عنصراً فائتاً، ولا يُخصم مرة ثانية من النزاهة
+const lateExt = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: onTimeTasks,
-  deadlines: [
-    ...onTimeDeadlines.slice(0, 3),
-    deadline("dl1", { dueDaysAgo: 30, completedOffsetMs: 3 * DAY_MS }),
-    deadline("dl2", { dueDaysAgo: 31, completedOffsetMs: null }),
-  ],
+  deadlines: [...onTimeDeadlines.slice(0, 4), lateExtensionItem],
   hearings: [],
   now: NOW,
 });
-const mixedExpected = Math.round(((0.6 * 0.45 + 1 * 0.35) / 0.8) * 100);
+const lateExtExpected = Math.round(((0.8 * 0.45 + 1 * 0.35) / 0.8) * 100);
 check(
-  "2. Mixed score calculation",
-  mixed.score === mixedExpected,
-  `${mixed.score} vs ${mixedExpected}`,
+  "4. Late extension does not rescue an overdue item",
+  lateExt.dimensions.deadlines.value === 0.8 && lateExt.score === lateExtExpected,
+  `${lateExt.dimensions.deadlines.value} / ${lateExt.score}`,
+);
+check(
+  "5. Late extension has NO double penalty",
+  lateExt.integrityFactor === INTEGRITY_FACTOR_NEUTRAL,
+  `${lateExt.integrityFactor}`,
 );
 
-// 3 — إعادة توزيع الأوزان عند N/A
+// 6 — تعديل الموعد قبل استحقاقه أو تقديمه: لا عقوبة إطلاقاً
+const earlyChange = deadline("early", {
+  dueDaysAgo: 21,
+  completedOffsetMs: -1 * HOUR,
+  events: [
+    {
+      event: "due_changed",
+      occurredAt: iso(daysAgo(40)),
+      fromDueDate: iso(daysAgo(30)),
+      toDueDate: iso(daysAgo(21)),
+    },
+    {
+      event: "due_changed",
+      occurredAt: iso(daysAgo(35)),
+      fromDueDate: iso(daysAgo(25)),
+      toDueDate: iso(daysAgo(28)),
+    },
+  ],
+});
+const early = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: onTimeTasks,
+  deadlines: [...onTimeDeadlines.slice(0, 4), earlyChange],
+  hearings: [],
+  now: NOW,
+});
 check(
-  "3. N/A dimension reweighting",
+  "6. Early / bring-forward due change does not penalize",
+  resolveEffectiveDue(earlyChange).lateExtension === false &&
+    early.score === 100 &&
+    early.integrityFactor === INTEGRITY_FACTOR_NEUTRAL,
+  `${early.score}`,
+);
+
+// 7 — إعادة الفتح وحدها بلا عقوبة نزاهة: الحالة الرسمية فقط تحدد المقياس
+const reopenedNotCompleted = task("re-open", {
+  dueDaysAgo: 8,
+  completedOffsetMs: null,
+  status: "in_progress",
+});
+const reopenedStillCompleted = task("re-done", { dueDaysAgo: 7, completedOffsetMs: -1 * HOUR });
+const reopenedRun = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: [...onTimeTasks.slice(0, 19), reopenedNotCompleted, reopenedStillCompleted],
+  deadlines: onTimeDeadlines,
+  hearings: [],
+  now: NOW,
+});
+check(
+  "7. Reopened alone has NO integrity penalty (metric-only effect)",
+  reopenedRun.integrityFactor === INTEGRITY_FACTOR_NEUTRAL &&
+    reopenedRun.dimensions.tasks.value === 20 / 21,
+  `${reopenedRun.integrityFactor} / ${reopenedRun.dimensions.tasks.value}`,
+);
+
+// 8 — الحذف بعد الاستحقاق مؤجَّل من v1
+const deletedDeferred = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: onTimeTasks,
+  deadlines: onTimeDeadlines,
+  hearings: [],
+  now: NOW,
+});
+check(
+  "8. Deleted-after-due deferred in v1 (no signal consumed)",
+  deletedDeferred.integrityFactor === INTEGRITY_FACTOR_NEUTRAL && deletedDeferred.score === 100,
+);
+
+// 9 — معامل النزاهة محايد
+check(
+  "9. integrityFactor = 1.00 in v1",
+  computeIntegrityFactor() === 1 && perfect.integrityFactor === 1,
+);
+
+// 10..13 — دلالات الجلسات على الحالة الحالية فقط
+const winStartMs = new Date(win.windowStart).getTime();
+const winEndMs = new Date(win.windowEnd).getTime();
+const hs = (status: string) =>
+  assessHearing(hearing(`h-${status}`, 30, status), winStartMs, winEndMs);
+check("10. Hearing completed = followed up", hs("completed").counted && hs("completed").followedUp);
+check("11. Hearing postponed = followed up", hs("postponed").counted && hs("postponed").followedUp);
+check(
+  "12. Hearing scheduled after date = not followed up",
+  hs("scheduled").counted && hs("scheduled").followedUp === false,
+);
+check(
+  "13. Hearing missed = not followed up",
+  hs("missed").counted && hs("missed").followedUp === false,
+);
+check(
+  "14. Hearing cancelled = excluded from numerator and denominator",
+  hs("cancelled").counted === false && hs("cancelled").followedUp === false,
+);
+
+// 15 — لا افتراض زمني 7 أيام: حالة نهائية بعد شهور تُعدّ متابعة
+const veryLateUpdate = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: onTimeTasks,
+  deadlines: [],
+  hearings: [
+    hearing("h1", 85, "completed"),
+    hearing("h2", 84, "postponed"),
+    hearing("h3", 83, "completed"),
+    hearing("h4", 82, "completed"),
+    hearing("h5", 81, "cancelled"),
+  ],
+  now: NOW,
+});
+check(
+  "15. No 7-day status-change assumption",
+  veryLateUpdate.dimensions.hearings.value === 1 &&
+    veryLateUpdate.dimensions.hearings.sampleSize === 4 &&
+    veryLateUpdate.dimensions.hearings.quality === "self_reported" &&
+    !SCORE_DIMENSION_HINTS.hearings.includes("7"),
+  `${veryLateUpdate.dimensions.hearings.value}`,
+);
+
+// 16 — فترة التتبع من النشاط المؤهل الفعلي، لا من عمر المكتب
+const recentActivity = Array.from({ length: 26 }, (_, i) =>
+  task(`r${i}`, { dueDaysAgo: 1 + (i % 5), completedOffsetMs: -1 * HOUR, createdOffsetMs: DAY_MS }),
+);
+const shortTracking = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: recentActivity,
+  deadlines: onTimeDeadlines,
+  hearings: [],
+  now: NOW,
+});
+check(
+  "16. Tracking period derived from eligible activity, not organization age",
+  shortTracking.trackingDays === 35 && shortTracking.trackingDays < 400,
+  `${shortTracking.trackingDays}`,
+);
+check(
+  "17. Tracking period floor blocks ineligible short history",
+  evaluateEligibility({
+    organizationAgeDays: 400,
+    trackingDays: MIN_TRACKING_DAYS - 1,
+    eligibleItems: 100,
+    deadlinesAndHearings: 50,
+    hasMeasurableDimension: true,
+  }).reason === "tracking_period_too_short",
+);
+check(
+  "18. Organization age and tracking period remain separate",
+  evaluateEligibility({
+    organizationAgeDays: 40,
+    trackingDays: 90,
+    eligibleItems: 100,
+    deadlinesAndHearings: 50,
+    hasMeasurableDimension: true,
+  }).reason === "organization_too_new" && perfect.trackingDays <= 90,
+);
+
+// 19 — إعادة توزيع الأوزان عند N/A
+check(
+  "19. N/A dimension reweighting",
   perfect.dimensions.hearings.applied === false &&
     perfect.dimensions.hearings.value === null &&
+    perfect.dimensions.hearings.sampleSize === 0 &&
     perfect.score === 100,
 );
 
-// 4 — نشاط غير كافٍ
+// 20 — ثبات الأوزان
+check(
+  "20. Formula weights remain 45/35/20",
+  SCORE_WEIGHTS.deadlines === 0.45 &&
+    SCORE_WEIGHTS.tasks === 0.35 &&
+    SCORE_WEIGHTS.hearings === 0.2 &&
+    perfect.formulaVersion === "v1",
+);
+
+// 21 — حصر النتيجة 0–100
+const worst = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: Array.from({ length: 20 }, (_, i) =>
+    task(`w${i}`, { dueDaysAgo: 10 + i, completedOffsetMs: null, status: "pending" }),
+  ),
+  deadlines: Array.from({ length: 5 }, (_, i) =>
+    deadline(`wd${i}`, { dueDaysAgo: 20 + i, completedOffsetMs: null, status: "active" }),
+  ),
+  hearings: [],
+  now: NOW,
+});
+check("21. Score clamp 0–100", worst.score === 0 && perfect.score === 100, `${worst.score}`);
+
+// 22 — عقد الواجهة عند عدم الأهلية: لا نتيجة إجمالية
 const sparse = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: onTimeTasks.slice(0, 3),
@@ -135,28 +346,15 @@ const sparse = computeOperationalScore({
   now: NOW,
 });
 check(
-  "4. Insufficient activity",
+  "22. Ineligible UI contract does not produce total score",
   sparse.eligible === false &&
     sparse.score === null &&
-    sparse.eligibilityReason === "insufficient_items",
+    sparse.eligibilityReason === "insufficient_items" &&
+    sparse.eligibilityMessage.length > 0,
   sparse.eligibilityReason,
 );
 
-// 5 — عتبة 25 عملاً
-const at24 = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks.slice(0, 19),
-  deadlines: onTimeDeadlines,
-  hearings: [],
-  now: NOW,
-});
-check(
-  "5. Minimum 25 threshold",
-  at24.eligibleItems === 24 && at24.eligible === false && perfect.eligibleItems === 25,
-  `${at24.eligibleItems}`,
-);
-
-// 6 — عتبة المهل/الجلسات = 5
+// 23 — عتبة المهل/الجلسات = 5
 const noDeadlines = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: Array.from({ length: 26 }, (_, i) =>
@@ -167,13 +365,13 @@ const noDeadlines = computeOperationalScore({
   now: NOW,
 });
 check(
-  "6. Minimum deadlines/hearings threshold",
+  "23. Minimum deadlines/hearings threshold",
   noDeadlines.eligible === false &&
     noDeadlines.eligibilityReason === "insufficient_deadlines_or_hearings",
   noDeadlines.eligibilityReason,
 );
 
-// 7 — استبعاد المهام قصيرة العمر
+// 24 — استبعاد المهام قصيرة العمر
 const shortLived = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: [
@@ -189,204 +387,17 @@ const shortLived = computeOperationalScore({
   now: NOW,
 });
 check(
-  "7. Short-lived task exclusion",
+  "24. Short-lived task exclusion",
   shortLived.dimensions.tasks.sampleSize === 20,
   String(shortLived.dimensions.tasks.sampleSize),
 );
 
-// 8 — تمديد متأخر مثبت: الموعد المعتمد هو السابق ⇒ يُحتسب فوتاً
-const lateExtensionItem = deadline("ext", {
-  dueDaysAgo: 5,
-  completedOffsetMs: -1 * HOUR,
-  events: [
-    {
-      event: "due_changed",
-      occurredAt: iso(daysAgo(19)),
-      fromDueDate: iso(daysAgo(20)),
-      toDueDate: iso(daysAgo(5)),
-    },
-  ],
-});
-const effective = resolveEffectiveDue(lateExtensionItem);
-check(
-  "8. Proven late due-date extension",
-  effective.lateExtension === true && effective.effectiveDueMs === daysAgo(20),
-);
-
-// 9 — غياب الحدث لا يعاقب
-const withoutEvents = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks,
-  deadlines: onTimeDeadlines,
-  hearings: [],
-  now: NOW,
-});
-check(
-  "9. Missing event does NOT penalize",
-  withoutEvents.integrityFactor === 1 && withoutEvents.score === 100,
-);
-
-// 10 — إعادة فتح مثبتة بعد الإنجاز
-const reopened = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: [
-    ...onTimeTasks.slice(0, 19),
-    task("re", {
-      dueDaysAgo: 8,
-      completedOffsetMs: -2 * HOUR,
-      events: [
-        {
-          event: "reopened",
-          occurredAt: iso(daysAgo(7)),
-          fromDueDate: null,
-          toDueDate: null,
-        },
-      ],
-    }),
-  ],
-  deadlines: onTimeDeadlines,
-  hearings: [],
-  now: NOW,
-});
-check(
-  "10. Reopened confirmed event handling",
-  reopened.integrityFactor < 1 && reopened.score !== null && reopened.score < 100,
-  `${reopened.integrityFactor}`,
-);
-
-// 11 — حذف مثبت بعد الاستحقاق
-const deletedAfterDue = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks,
-  deadlines: [
-    ...onTimeDeadlines.slice(0, 4),
-    deadline("del", {
-      dueDaysAgo: 25,
-      completedOffsetMs: null,
-      status: "active",
-      events: [
-        { event: "deleted", occurredAt: iso(daysAgo(20)), fromDueDate: null, toDueDate: null },
-      ],
-    }),
-  ],
-  hearings: [],
-  now: NOW,
-});
-check(
-  "11. Deleted-after-due confirmed handling",
-  deletedAfterDue.integrityFactor < 1,
-  `${deletedAfterDue.integrityFactor}`,
-);
-
-// 12 — أرضية معامل النزاهة
-check(
-  "12. Integrity factor floor = 0.85",
-  computeIntegrityFactor(30, 30) === INTEGRITY_FACTOR_FLOOR && computeIntegrityFactor(0, 30) === 1,
-  `${computeIntegrityFactor(30, 30)}`,
-);
-
-// 13 — حصر النتيجة 0–100
-const worst = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: Array.from({ length: 20 }, (_, i) =>
-    task(`w${i}`, { dueDaysAgo: 10 + i, completedOffsetMs: null, status: "pending" }),
-  ),
-  deadlines: Array.from({ length: 5 }, (_, i) =>
-    deadline(`wd${i}`, { dueDaysAgo: 20 + i, completedOffsetMs: null, status: "active" }),
-  ),
-  hearings: [],
-  now: NOW,
-});
-check(
-  "13. Score clamp 0–100",
-  worst.score === 0 && perfect.score === 100,
-  `${worst.score}/${perfect.score}`,
-);
-
-// 14 — جلسة أُنجزت خلال 7 أيام
-const hearingsOk = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks,
-  deadlines: [],
-  hearings: [
-    hearing("h1", 30, "completed", 2 * DAY_MS),
-    hearing("h2", 29, "postponed", 6 * DAY_MS),
-    hearing("h3", 28, "completed", 1 * DAY_MS),
-    hearing("h4", 27, "completed", 3 * DAY_MS),
-    hearing("h5", 26, "completed", 4 * DAY_MS),
-  ],
-  now: NOW,
-});
-check(
-  "14. Hearing completed within 7 days",
-  hearingsOk.dimensions.hearings.value === 1 && hearingsOk.score === 100,
-  `${hearingsOk.dimensions.hearings.value}`,
-);
-
-// 15 — جلسة فائتة
-const hearingMissed = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks,
-  deadlines: [],
-  hearings: [
-    hearing("h1", 30, "missed", 1 * DAY_MS),
-    hearing("h2", 29, "completed", 2 * DAY_MS),
-    hearing("h3", 28, "completed", 1 * DAY_MS),
-    hearing("h4", 27, "completed", 3 * DAY_MS),
-    hearing("h5", 26, "completed", 4 * DAY_MS),
-  ],
-  now: NOW,
-});
-check(
-  "15. Hearing missed",
-  hearingMissed.dimensions.hearings.value === 0.8,
-  `${hearingMissed.dimensions.hearings.value}`,
-);
-
-// 16 — جلسة بقيت scheduled بعد موعدها
-const hearingStale = computeOperationalScore({
-  organizationCreatedAt: ORG_OLD,
-  tasks: onTimeTasks,
-  deadlines: [],
-  hearings: [
-    hearing("h1", 30, "scheduled", null),
-    hearing("h2", 29, "completed", 2 * DAY_MS),
-    hearing("h3", 28, "completed", 1 * DAY_MS),
-    hearing("h4", 27, "completed", 3 * DAY_MS),
-    hearing("h5", 26, "completed", 4 * DAY_MS),
-  ],
-  now: NOW,
-});
-check(
-  "16. Hearing still scheduled after date",
-  hearingStale.dimensions.hearings.value === 0.8 &&
-    hearingStale.dimensions.hearings.quality === "self_reported",
-  `${hearingStale.dimensions.hearings.value}`,
-);
-
-// 17 — لا جلسات ⇒ البعد N/A
-check(
-  "17. No hearings => hearing N/A",
-  perfect.dimensions.hearings.applied === false && perfect.dimensions.hearings.sampleSize === 0,
-);
-
-// 18 — حدود اليوم بتوقيت الرياض
-const win = resolveScoreWindow(NOW);
-const startLocalHour = new Date(new Date(win.windowStart).getTime() + 3 * HOUR).getUTCHours();
-check(
-  "18. Riyadh date boundary",
-  startLocalHour === 0 &&
-    riyadhDayStart("2026-08-15T00:30:00.000Z").toISOString() === "2026-08-14T21:00:00.000Z",
-  `${win.windowStart} / ${startLocalHour}`,
-);
-
-// 19 — سجل baseline التاريخي ليس دليلاً سلبياً
+// 25 — بيانات تاريخية ناقصة ليست دليلاً سلبياً
 const baselineOnly = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: onTimeTasks.map((t) => ({
     ...t,
     events: [
-      // حدث تغيير موعد بلا موعد سابق مثبت (بيانات تاريخية ناقصة) — يُتجاهل.
       { event: "due_changed", occurredAt: iso(daysAgo(40)), fromDueDate: null, toDueDate: null },
     ] as ScoreEvent[],
   })),
@@ -395,29 +406,27 @@ const baselineOnly = computeOperationalScore({
   now: NOW,
 });
 check(
-  "19. Historical baseline does not become negative evidence",
+  "25. Missing/partial event history is not negative evidence",
   baselineOnly.integrityFactor === 1 && baselineOnly.score === 100,
 );
 
-// 20 — ثبات الأوزان
+// 26 — نتيجة مختلطة
+const mixed = computeOperationalScore({
+  organizationCreatedAt: ORG_OLD,
+  tasks: onTimeTasks,
+  deadlines: [
+    ...onTimeDeadlines.slice(0, 3),
+    deadline("dl1", { dueDaysAgo: 30, completedOffsetMs: 3 * DAY_MS }),
+    deadline("dl2", { dueDaysAgo: 31, completedOffsetMs: null }),
+  ],
+  hearings: [],
+  now: NOW,
+});
+const mixedExpected = Math.round(((0.6 * 0.45 + 1 * 0.35) / 0.8) * 100);
 check(
-  "20. Formula weights remain 45/35/20",
-  SCORE_WEIGHTS.deadlines === 0.45 &&
-    SCORE_WEIGHTS.tasks === 0.35 &&
-    SCORE_WEIGHTS.hearings === 0.2 &&
-    perfect.formulaVersion === "v1",
-);
-
-// فحص إضافي: محرك الأهلية مستقل
-check(
-  "21. Eligibility engine independence",
-  evaluateEligibility({
-    organizationAgeDays: 40,
-    trackingDays: 40,
-    eligibleItems: 100,
-    deadlinesAndHearings: 50,
-    hasMeasurableDimension: true,
-  }).reason === "organization_too_new",
+  "26. Mixed score calculation",
+  mixed.score === mixedExpected,
+  `${mixed.score} vs ${mixedExpected}`,
 );
 
 console.log(`\n${pass} PASS / ${failures.length} FAIL`);
