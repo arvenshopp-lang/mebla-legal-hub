@@ -82,6 +82,65 @@ function fakeClient(rows: Rows, settingValue: unknown = { enabled: true }) {
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 const ORG2 = "22222222-2222-2222-2222-222222222222";
+const V1 = OPERATIONAL_SCORE_FORMULA_VERSION;
+
+type SnapshotSeed = {
+  organizationId: string;
+  score: number | null;
+  eligible: boolean;
+  computedAt: string;
+  formulaVersion?: string;
+};
+
+function snapshot(seed: SnapshotSeed): Record<string, unknown> {
+  return {
+    organization_id: seed.organizationId,
+    score: seed.score,
+    eligible: seed.eligible,
+    computed_at: seed.computedAt,
+    created_at: seed.computedAt,
+    window_kind: "rolling_90",
+    formula_version: seed.formulaVersion ?? V1,
+  };
+}
+
+/** مكتب معتمد كامل الشروط (ما عدا اللقطة) — يُستخدم لتركيب حالات متعددة المكاتب. */
+function officeRows(organizationId: string, publicName: string) {
+  return {
+    settings: { organization_id: organizationId, public_opt_in: true, platform_excluded: false },
+    organization: { id: organizationId, is_active: true, suspended_at: null },
+    subscription: {
+      organization_id: organizationId,
+      status: "active",
+      ends_at: null,
+      suspended_at: null,
+    },
+    page: {
+      organization_id: organizationId,
+      status: "published",
+      suspended_by_platform: false,
+      published: { office_name: publicName },
+    },
+  };
+}
+
+/** يبني مجموعة صفوف لمكتبين باسمين محددين مع لقطاتهما. */
+function twoOfficeRows(
+  nameOne: string,
+  nameTwo: string,
+  snapshots: Array<Record<string, unknown>>,
+): Rows {
+  const one = officeRows(ORG, nameOne);
+  const two = officeRows(ORG2, nameTwo);
+  return {
+    platform_settings: [{ key: "operational_score", value: { enabled: true } }],
+    organization_ranking_settings: [one.settings, two.settings],
+    organizations: [one.organization, two.organization],
+    subscriptions: [one.subscription, two.subscription],
+    office_public_pages: [one.page, two.page],
+    operational_score_snapshots: snapshots,
+  };
+}
 
 function baseRows(overrides: Partial<Rows> = {}): Rows {
   return {
@@ -100,13 +159,12 @@ function baseRows(overrides: Partial<Rows> = {}): Rows {
       },
     ],
     operational_score_snapshots: [
-      {
-        organization_id: ORG,
+      snapshot({
+        organizationId: ORG,
         score: 90,
         eligible: true,
-        computed_at: "2026-08-15T00:00:00.000Z",
-        window_kind: "rolling_90",
-      },
+        computedAt: "2026-08-15T00:00:00.000Z",
+      }),
     ],
     ...overrides,
   };
