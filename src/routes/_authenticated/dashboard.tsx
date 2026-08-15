@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { OperationalScoreCard } from "@/components/dashboard/operational-score-card";
+import { OperationalScorePrompt } from "@/components/dashboard/operational-score-prompt";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { ChevronLeft } from "lucide-react";
@@ -135,6 +136,7 @@ function DashboardHome() {
         <ErrorBlock message="حاول تحديث الصفحة." />
       ) : (
         <>
+          <OperationalScorePrompt organizationId={activeOrgId ?? null} />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="قضايا مفتوحة" loading={isLoading} value={stats?.openCases ?? 0} />
             <StatCard
