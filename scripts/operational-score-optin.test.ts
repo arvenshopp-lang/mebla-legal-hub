@@ -159,9 +159,7 @@ function eligibleRows(overrides: Partial<Rows> = {}): Rows {
         opt_in_snoozed_until: null,
       },
     ],
-    subscriptions: [
-      { organization_id: ORG, status: "active", ends_at: null, suspended_at: null },
-    ],
+    subscriptions: [{ organization_id: ORG, status: "active", ends_at: null, suspended_at: null }],
     office_public_pages: [
       {
         organization_id: ORG,
@@ -248,7 +246,10 @@ const run = async () => {
   );
 
   /* ---------- 6–13: محرك أهلية الدعوة ---------- */
-  check("6. eligible + score>=78 + no opt-in ⇒ prompt", evaluatePromptEligibility(baseInput).visible);
+  check(
+    "6. eligible + score>=78 + no opt-in ⇒ prompt",
+    evaluatePromptEligibility(baseInput).visible,
+  );
   check(
     "7. score < 78 ⇒ no prompt",
     evaluatePromptEligibility({ ...baseInput, score: 70 }).reason === "score_below_threshold",

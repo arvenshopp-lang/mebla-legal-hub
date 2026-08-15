@@ -47,7 +47,9 @@ export function OperationalScorePrompt({ organizationId }: { organizationId: str
   const finish = useCallback(() => {
     setDecided(true);
     setOpen(false);
-    void queryClient.invalidateQueries({ queryKey: ["operational-ranking-prompt", organizationId] });
+    void queryClient.invalidateQueries({
+      queryKey: ["operational-ranking-prompt", organizationId],
+    });
   }, [organizationId, queryClient]);
 
   const accept = useMutation({
