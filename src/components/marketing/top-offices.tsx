@@ -106,7 +106,7 @@ export function TopOffices({ ranking }: { ranking: PublicOperationalRanking }) {
 
         <ol
           className="space-y-3"
-          aria-label={`أفضل ${Math.min(items.length, PUBLIC_RESULTS_COUNT)} مكاتب`}
+          aria-label={`قائمة الأكثر إنجازاً — ${Math.min(items.length, PUBLIC_RESULTS_COUNT)} مكاتب`}
         >
           {items.map((item, index) => {
             const isFirst = index === 0;
