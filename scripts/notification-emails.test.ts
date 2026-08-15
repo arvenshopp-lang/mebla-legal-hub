@@ -210,7 +210,11 @@ const deliveriesDdl = foundationSql.slice(
   foundationSql.indexOf("CREATE OR REPLACE FUNCTION public.finalize_notification_email_delivery"),
 );
 check("الجدول موجود في هجرة الأساس", deliveriesDdl.length > 0);
-check("لا مفتاح أجنبي إطلاقاً على سجل التسليم", !/REFERENCES/i.test(deliveriesDdl), "REFERENCES found");
+check(
+  "لا مفتاح أجنبي إطلاقاً على سجل التسليم",
+  !/REFERENCES/i.test(deliveriesDdl),
+  "REFERENCES found",
+);
 check("لا CASCADE في سجل التسليم", !/ON DELETE/i.test(deliveriesDdl));
 check(
   "حذف الإشعار يحذف صف الطابور (CASCADE محفوظ)",
@@ -238,10 +242,16 @@ check(
 );
 check(
   "دور الخدمة: قراءة وإدراج فقط",
-  deliveriesDdl.includes("GRANT SELECT, INSERT ON public.notification_email_deliveries TO service_role") &&
-    !/GRANT ALL ON public\.notification_email_deliveries/.test(deliveriesDdl),
+  deliveriesDdl.includes(
+    "GRANT SELECT, INSERT ON public.notification_email_deliveries TO service_role",
+  ) && !/GRANT ALL ON public\.notification_email_deliveries/.test(deliveriesDdl),
 );
-check("RLS مفعّل على السجل", deliveriesDdl.includes("ALTER TABLE public.notification_email_deliveries ENABLE ROW LEVEL SECURITY"));
+check(
+  "RLS مفعّل على السجل",
+  deliveriesDdl.includes(
+    "ALTER TABLE public.notification_email_deliveries ENABLE ROW LEVEL SECURITY",
+  ),
+);
 check(
   "لا سياسات لأدوار المتصفح",
   !/CREATE POLICY[\s\S]{0,200}TO (anon|authenticated)/.test(deliveriesDdl),
@@ -253,16 +263,15 @@ check(
 );
 check(
   "تفرّد سجل التسليم لكل إشعار",
-  deliveriesDdl.includes("notification_email_deliveries_notification_unique UNIQUE (notification_id)"),
+  deliveriesDdl.includes(
+    "notification_email_deliveries_notification_unique UNIQUE (notification_id)",
+  ),
 );
 check(
   "بريد مُقنّع فقط بلا عنوان كامل",
   deliveriesDdl.includes("recipient_masked text") && !/recipient_email/.test(deliveriesDdl),
 );
-check(
-  "لا حقول محتوى في السجل",
-  !/(title|message|body|subject|content|html)/i.test(deliveriesDdl),
-);
+check("لا حقول محتوى في السجل", !/(title|message|body|subject|content|html)/i.test(deliveriesDdl));
 check(
   "فهارس مقيّدة ومفيدة",
   ["(notification_id)", "(created_at DESC)", "(delivery_status, created_at DESC)"].every((idx) =>
@@ -276,7 +285,10 @@ const finalizeSql = foundationSql.slice(
   foundationSql.indexOf("CREATE OR REPLACE FUNCTION public.finalize_notification_email_delivery"),
 );
 check("الدالة موجودة", finalizeSql.length > 0);
-check("SECURITY DEFINER بمسار بحث مثبّت", /SECURITY DEFINER[\s\S]{0,60}SET search_path = public/.test(finalizeSql));
+check(
+  "SECURITY DEFINER بمسار بحث مثبّت",
+  /SECURITY DEFINER[\s\S]{0,60}SET search_path = public/.test(finalizeSql),
+);
 check("قفل صف الطابور", finalizeSql.includes("FOR UPDATE"));
 check("تحقق من حالة processing", finalizeSql.includes("v_row.status <> 'processing'"));
 check(
@@ -311,7 +323,10 @@ check(
   "لا كتابة مباشرة في سجل التسليم من العامل",
   !workerSrc.includes('from("notification_email_deliveries")'),
 );
-check("الإنهاء عبر RPC واحد", (workerSrc.match(/finalize_notification_email_delivery/g) ?? []).length === 1);
+check(
+  "الإنهاء عبر RPC واحد",
+  (workerSrc.match(/finalize_notification_email_delivery/g) ?? []).length === 1,
+);
 check(
   "sent/failed/cancelled كلها عبر finalize",
   /finalize\(db, item, "sent"/.test(workerSrc) &&
@@ -320,7 +335,9 @@ check(
 );
 check(
   "لا تحويل مباشر إلى sent خارج الدالة",
-  !/status: "sent"/.test(workerSrc) && !/status: "cancelled"/.test(workerSrc) && !/status: "failed"/.test(workerSrc),
+  !/status: "sent"/.test(workerSrc) &&
+    !/status: "cancelled"/.test(workerSrc) &&
+    !/status: "failed"/.test(workerSrc),
 );
 check(
   "مفتاح تفرّد المزوّد حتمي ومعاد استخدامه",
@@ -335,10 +352,7 @@ check("التقنيع فقط في السجل التشغيلي", workerSrc.includ
 
 /** محاكاة دلالات الدالة: الإنهاء المتكرر لا ينشئ سجلاً ثانياً. */
 type Store = { queueStatus: string; deliveries: string[] };
-function finalizeRun(
-  store: Store,
-  finalStatus: string,
-): { outcome: string; store: Store } {
+function finalizeRun(store: Store, finalStatus: string): { outcome: string; store: Store } {
   if (!["sent", "failed", "cancelled"].includes(finalStatus))
     return { outcome: "INVALID_FINAL_STATUS", store };
   const alreadyFinal = ["sent", "failed", "cancelled"].includes(store.queueStatus);

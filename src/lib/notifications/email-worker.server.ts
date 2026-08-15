@@ -10,10 +10,7 @@ import { NotificationSupportReplyEmail } from "@/lib/email-templates/notificatio
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
 import { sendAppEmail } from "@/lib/email/app-email.server";
-import {
-  isEmailPreferenceEnabled,
-  resolveNotificationRecipient,
-} from "./email-channel.server";
+import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import {
   CANCEL_REASON,
   isEmailEnabledEvent,
