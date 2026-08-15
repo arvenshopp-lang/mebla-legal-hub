@@ -1,103 +1,82 @@
-# تنبيهات البريد — معمارية المرحلة 1 (أحداث الإشعارات القائمة → بريد)
+# مراجعة تطبيق هجرة قناة بريد التنبيهات — المرحلة 1 (قراءة فقط)
 
-## 1) القرار المعماري
-**الموصى به: الخيار (B)** — جدول طابور مخصص `notification_email_queue` + عامل دوري يستدعي `sendAppEmail`.
+لم يُطبَّق أي شيء: لا هجرة، لا Cron، لا بريد.
 
-- (A) الإرسال المباشر داخل مسار الحدث يربط نجاح العملية التجارية بزمن استجابة مزوّد البريد، ولا يوفّر إعادة محاولة ولا سجل تسليم ولا تفرّد على مستوى القاعدة.
-- (C) إعادة استخدام `email_outbox` مرفوضة: دلالتها مراسلات بشرية من صندوق المكتب عبر SMTP وبها مرفقات وخيوط محادثة و`email-dispatch` كل دقيقة؛ خلط تنبيهات النظام بها يفسد التقارير ويعرّض التنبيهات لمسار نقل مختلف ولمشكلات الحجب البشري.
-- محرك واتساب (`notification_events` → `notification_queue`) يبقى كما هو دون لمس؛ لا تجريد قناة مشترك في المرحلة 1.
+## 1. جرد محتوى الهجرة
 
-## 2) مصدر الحقيقة
-`public.notifications` يبقى سجل الإشعار داخل التطبيق فقط (بلا أي حقول مزوّد). حالة تسليم البريد تعيش في الجدول الجديد وحده.
+الملف: `supabase/migrations/20260815150000_notification_email_queue.sql`
 
-## 3) الجدول المقترح (تصميم فقط — بلا Migration الآن)
-`public.notification_email_queue`
-- `id uuid pk`
-- `notification_id uuid not null references public.notifications(id) on delete cascade`
-- `organization_id uuid not null references public.organizations(id)`
-- `user_id uuid not null` (نفس مستهدف الإشعار)
-- `event_type text not null`
-- `template_key text not null`
-- `recipient_email text not null` (لقطة وقت الإدراج)
-- `status text not null default 'queued'` ∈ (`queued`,`processing`,`sent`,`failed`,`cancelled`)
-- `attempts int not null default 0`، `max_attempts int not null default 4`
-- `scheduled_at timestamptz not null default now()`
-- `provider_reference text`، `last_error_code text`، `last_error_message text` (مقتطع 400 حرف، رمز آمن فقط)
-- `created_at`, `updated_at`, `processing_started_at`, `sent_at`, `failed_at`
-- **قيد التفرّد:** `unique (notification_id)` — قناة البريد واحدة لكل إشعار.
-- فهارس: `(status, scheduled_at)`، `(organization_id, created_at desc)`، `(event_type, status)`.
-- الأمان: `ENABLE ROW LEVEL SECURITY`؛ `GRANT ALL ... TO service_role` فقط (بلا `anon` وبلا `authenticated`) — الجدول تشغيلي خادمي، ولا يُقرأ من المتصفح. القراءة الإدارية تمر عبر دالة خادمية بصلاحية موظف.
-- لا يُخزَّن نص قانوني: العنوان والملخص يُبنى وقت الإرسال من `notifications` + القالب.
+- TABLE: `public.notification_email_queue` (جديد، لا يمس أي جدول قائم)
+- CONSTRAINTS: `status CHECK` بخمس حالات، `attempts >= 0 AND max_attempts > 0`، `UNIQUE(notification_id)`، مفتاحان أجنبيان: `notifications(id) ON DELETE CASCADE` و`organizations(id) ON DELETE CASCADE`
+- INDEXES: `(status, scheduled_at)`، `(organization_id, created_at DESC)`، `(event_type, status)`
+- TRIGGER: `trg_notification_email_queue_updated` على `set_updated_at()` (دالة قائمة)
+- RLS: مُفعّل، وسياسة واحدة لدور الخدمة فقط
+- GRANTS/REVOKES: سحب كل الصلاحيات من PUBLIC/anon/authenticated ومنح دور الخدمة فقط (جدولاً ودالة)
+- FUNCTION: `claim_notification_email_batch(integer)` — SECURITY DEFINER، تنفيذ لدور الخدمة فقط
+- CRON JOB: نعم — `cron.schedule('mehla-notification-emails', '* * * * *', ...)` مشروطة بعدم وجود المهمة
 
-## 4) نموذج التفرّد
-مفتاح حتمي على مستويين:
-1. قيد `unique(notification_id)` يمنع أكثر من صف بريد لأي إشعار.
-2. `idempotencyKey = notif-email:{notification_id}` يُمرَّر إلى `sendAppEmail`، فتمنع خدمة البريد التكرار حتى لو أُعيد سحب الصف بعد انقطاع الشبكة أو إعادة تشغيل الخادم.
-سحب الدفعة يتم بـ RPC على نمط `claim_notification_batch` القائم (`FOR UPDATE SKIP LOCKED` + نقل إلى `processing`) فلا يعالج عاملان الصف نفسه.
+**CRON_WOULD_ACTIVATE_ON_APPLY: YES** — لذلك الهجرة بشكلها الحالي غير جاهزة للتطبيق.
 
-## 5) فرض التفضيلات (المفتاح الرئيسي حقيقي)
-عند إدراج أي إشعار مؤهّل للبريد يقرأ الخادم `user_notification_preferences` للمستخدم + المكتب:
-- لا يوجد صف تفضيلات → الافتراضي `email_enabled = true` (كما DEFAULT في القاعدة).
-- `email_enabled = false` → **لا إدراج إطلاقاً** (لا صف مُلغى ولا ضجيج).
-- `email_enabled = true` + نوع الحدث داخل قائمة السماح → إدراج.
-- مفاتيح الأحداث التفصيلية (الجلسات/المهل/المهام) لا تُقرأ في المرحلة 1 لعدم وجود أحداثها.
+## 2. الإصلاحات المطلوبة قبل التطبيق
 
-## 6) مصفوفة أحداث المرحلة 1
-| EVENT_TYPE | IN_APP | EMAIL_V1 | PREFERENCE_KEY | TEMPLATE | السبب |
-|---|---|---|---|---|---|
-| `team_member_joined` | نعم | **نعم** | `email_enabled` | `notif-team-member-joined` | حدث إداري يهم المدير ولا يحمل بيانات قضايا |
-| `support_reply` | نعم | **نعم** | `email_enabled` | `notif-support-reply` | المكتب ينتظر رداً؛ بريد بلا نص الرد + رابط التذكرة |
-| `support_ticket_created` | نعم | **نعم** | `email_enabled` | `notif-support-ticket-created` | تأكيد استلام لطلب أنشأه المستخدم نفسه |
-| `platform_broadcast` | نعم | **لا** | — | — | إعلان جماعي = تسويق/بث؛ خارج نطاق بريد المعاملات |
-| إشعار طلب استشارة (office lead) | نعم | **لا** في هذه الطبقة | — | — | له بريد مباشر عامل بالفعل (`sendOfficeLeadEmail`)؛ إضافته هنا تعني بريدين |
-| تذكيرات الجلسات/المهل/المهام | لا يوجد حدث اليوم | لا | مؤجّل | — | المرحلة 2 |
+1. **فصل الـ Cron:** إزالة بلوك `cron.schedule` من هجرة الأساس ونقله إلى هجرة تنشيط منفصلة تُطبَّق فقط بعد نجاح الاختبار المفرد المضبوط. الأساس يُطبَّق و`PRODUCTION_CRON_COUNT = 0`.
+2. **تصحيح اسم حدث الرد (عطل وظيفي مثبت):** منتج ردود الدعم يكتب `notifications.type = 'support_new_reply'` (من `support_${event}` مع `event = "new_reply"`)، بينما قائمة السماح في `email-channel.shared.ts` تحتوي `support_reply` فقط. النتيجة الحالية: ردود الدعم لا تُدرج في الطابور إطلاقاً. الإصلاح: إضافة `support_new_reply` بالقالب نفسه، والإبقاء على `support_reply` لتغطية الصفوف القديمة (8 صفوف موجودة بهذا النوع).
+3. **منع تعليق صف عند آخر محاولة:** استرجاع الصفوف العالقة في `processing` مشروط بـ `attempts < max_attempts`، فلو تعطل العامل أثناء المحاولة الأخيرة يبقى الصف في `processing` أبداً. الإصلاح داخل الدالة نفسها: تحويل صفوف `processing` الأقدم من 15 دقيقة التي استنفدت محاولاتها إلى `failed` بسبب `STALE_MAX_ATTEMPTS` قبل السحب.
 
-## 7) القوالب المطلوبة
-ثلاثة قوالب React Email عربية RTL بهوية مِهلة (أخضر #123C32، خلفية الجسم #ffffff، خط النظام):
-`notif-team-member-joined` · `notif-support-reply` · `notif-support-ticket-created`
-كل قالب: عنوان واضح + سطر ملخص آمن + زر «فتح في مِهلة» يشير إلى المسار الداخلي. **بلا** أسماء عملاء أو أرقام قضايا أو نص رسائل أو مرفقات. القالب المفقود لنوع مسموح = عدم إدراج (وليس فشل إرسال).
+## 3. نتيجة المراجعة التفصيلية
 
-## 8) استنتاج المستلم وعزل المكاتب
-المستلم يُستنتج خادمياً من `notification.user_id` + `notification.organization_id` حصراً:
-1. عضوية نشطة في نفس المكتب (`organization_members.status = 'active'`) — أو موظف منصة للتذاكر الداخلية.
-2. `profiles.email` موجود وغير فارغ.
-3. التفضيل مفعّل.
-أي فحص فاشل = عدم إدراج. لا يُقبل بريد أو معرّف مستلم من المتصفح إطلاقاً، فيستحيل أن يخرج إشعار مكتب A إلى عضو مكتب B.
+- **الجدول:** جديد بالكامل، لا تحديث ولا حذف لأي بيانات إنتاج. لا يحتوي أي نص رسالة أو محتوى تذكرة؛ فقط مفاتيح وحالة وبريد المستلم كلقطة تدقيق. `max_attempts = 4` معقول مع تراجع 2د/10د/60د.
+- **الأمان:** الصلاحيات الافتراضية للمشروع تمنح `anon`/`authenticated` صلاحيات كاملة على أي جدول جديد في `public`، والهجرة تسحبها صراحةً في نفس الملف، مع RLS مفعّل وبلا أي سياسة لدور مستخدم ⇒ لا وصول من المتصفح.
+- **السحب والتزامن:** `FOR UPDATE SKIP LOCKED` مع تحديث ذرّي إلى `processing` وزيادة `attempts` — لا يمكن لعاملين امتلاك نفس الصف. مهلة العلوق: **15 دقيقة**، والعامل يعمل بدفعات 25 صفاً، فاحتمال تجاوز إرسال واحد لـ15 دقيقة نظري فقط، ومفتاح التفرّد لدى المزوّد يمنع التكرار لو حدث.
+- **نموذج الحالات:** queued → processing → sent / failed / cancelled، أو رجوع إلى queued بجدولة تراجع. الأسباب النهائية (عنوان موقوف، غير صالح، بريد غير مُهيّأ، قالب مفقود) لا تُعاد أبداً، والباقي محدود بـ`max_attempts` ⇒ لا حلقة لا نهائية.
+- **التفرّد:** `UNIQUE(notification_id)` على مستوى القاعدة + `idempotency_key` حتمي (`notif-email:<notification_id>`) يُرسل فعلاً إلى خدمة البريد.
+- **إعادة التحقق قبل الإرسال:** العامل يعيد قراءة الإشعار، ويتحقق من النوع في قائمة السماح، والعضوية النشطة في نفس المكتب، والبريد الحالي من `profiles`، و`email_enabled` لحظة الإرسال؛ أي تغيّر ⇒ `cancelled` بلا إرسال. البريد المخزَّن في الطابور لا يُستخدم للإرسال.
+- **قائمة السماح:** ثلاثة أنواع فقط ولا سلوك "بريد لكل إشعار". `platform_broadcast` وبريد عملاء المكتب والجلسات والمهل والمهام غير مشمولة.
+- **تغطية المنتجين:** `team_member_joined` (قبول الدعوة) و`support_ticket_created` مربوطان فعلاً عبر `createUserNotification`، وكلاهما داخل `try/catch` فلا تعتمد العملية التجارية على البريد. الردود غير مغطاة فعلياً بسبب فرق الاسم (البند 2).
+- **القوالب:** الثلاثة عربية RTL، زر واحد إلى داخل المنصة، بلا نص الرد وبلا أي بيانات قضية أو عميل أو مستند، وبلا رقم تذكرة.
+- **الأنظمة القائمة:** لا تعديل على `email_outbox`، ولا محرك البريد البشري، ولا طابور واتساب، ولا `notifications-dispatch`، ولا فواتير/عروض/عملاء المكتب، ولا نظام النتيجة التشغيلية.
 
-## 9) العامل الدوري
-- مسار جديد `POST /api/public/hooks/notification-emails` محمي بـ `guardCronRequest` (نفس نمط المهام القائمة)، ومهمة `pg_cron` واحدة كل 5 دقائق.
-- دفعة 25 صفاً، سحب بقفل `SKIP LOCKED`، إعادة محاولة تراجعية 2د/10د/60د، `max_attempts = 4`، ثم `failed` نهائي (Dead-letter منطقي عبر الحالة + رمز الخطأ).
-- الأخطاء على مستوى المستلم (`recipient_suppressed`, `invalid_recipient`) نهائية بلا إعادة محاولة. `429` يؤجّل الصف دون استهلاك محاولة.
-- لا خلط مع عامل واتساب ولا مع `email-dispatch`.
+## 4. مسار الاختبار المضبوط (للدفعة القادمة — لا يُنفَّذ الآن)
 
-## 10) المزوّد والمرسل
-`sendAppEmail` كما هو (الخدمة المُدارة، `mail.mehlalex.com`، المرسل `MEHLA <noreply@mehlalex.com>`). لا علاقة لصندوق Hostinger البشري.
+بعد هجرة الأساس والـ Cron مُغلق: إنشاء تذكرة دعم حقيقية بحساب QA (بلا أي بيانات قضايا) ⇒ التحقق من صف واحد `queued` ⇒ استدعاء `/api/public/hooks/notification-emails` مرة واحدة بسر التشغيل ⇒ التحقق من `status = sent` وعدم وجود صف ثانٍ ⇒ إعادة الاستدعاء للتأكد من عدم إرسال مكرر ⇒ اختبار إيقاف التفضيل ينتج `cancelled`.
 
-## 11) عزل الفشل
-الحدث التجاري ثم الإشعار داخل التطبيق ينجحان أولاً؛ الإدراج في طابور البريد يجري بعدهما ولا يرمي أبداً (فشله يُسجَّل في سجل الأعطال القائم). فشل الإرسال لا يلمس `notifications` ولا يعيد أي عملية.
+## 5. التراجع
 
-## 12) الرصد
-عدّادات فقط: `queued/processing/sent/failed` لكل `event_type` و`template_key`، متوسط زمن التسليم، أقدم صف معلّق، ورموز الأخطاء. تُعرض في لوحة الإدارة كأرقام مجمّعة. لا تسجيل لنص الرسالة ولا لأسماء العملاء ولا لعناوين كاملة (تقنيع `z***@domain.com`).
+الاستجابة الأولى دائماً غير هدّامة: إيقاف مهمة الـ Cron (إن كانت مُنشأة) وتحويل الصفوف المعلّقة إلى `cancelled`. الحذف الهيكلي (الجدول + الدالة) مسموح فقط والطابور فارغ؛ إن احتوى سجل تسليم فيُحفظ ولا يُحذف.
 
-## 13) سلوك الواجهة
-مفتاح «عبر البريد الإلكتروني» يصبح فعّالاً وتُضاف تحته ملاحظة صريحة بأنواع الأحداث المشمولة حالياً. مفاتيح تذكيرات الجلسات/المهل تبقى موجودة مع وسم «قيد التفعيل — المرحلة 2» دون حذفها.
+## 6. الخلاصة النهائية
 
-## 14) نقطة اندماج المرحلة 2
-دالة واحدة `createUserNotification()` تكتب في `notifications` ثم تستدعي `enqueueNotificationEmail()`. محرك التذكيرات في المرحلة 2 يستدعي نفس الدالة فيحصل على البريد تلقائياً بمجرد إضافة النوع لقائمة السماح وقالبه ومفتاح تفضيله.
+```text
+MIGRATION_FOUNDATION: FIX_REQUIRED
+CRON_WOULD_ACTIVATE_ON_APPLY: YES
+CRON_SPLIT_REQUIRED: YES
+FOUNDATION_CAN_APPLY_WITH_CRON_OFF: YES (بعد فصل الـ Cron)
+QUEUE_TABLE: PASS
+RLS: PASS
+DIRECT_BROWSER_ACCESS: NO
+CLAIM_CONCURRENCY: PASS
+STALE_PROCESSING_RECOVERY: FIX_REQUIRED (تعليق عند آخر محاولة)
+RETRY_MODEL: PASS
+DB_IDEMPOTENCY: PASS
+SEND_APP_EMAIL_SUPPORTS_IDEMPOTENCY: YES
+PROVIDER_IDEMPOTENCY_IMPLEMENTED: YES
+RESIDUAL_DUPLICATE_RISK: LOW (قبول المزوّد ثم انقطاع قبل الإقرار ⇒ إعادة محاولة بنفس المفتاح؛ لا نزعم تسليماً مرة واحدة بالضبط)
+SEND_TIME_REVALIDATION: PASS
+STALE_EMAIL_PROTECTION: PASS
+EVENT_ALLOWLIST: FIX_REQUIRED (support_new_reply غير مدرج)
+PRODUCER_COVERAGE: FIX_REQUIRED (الردود غير مغطاة فعلياً)
+FAILURE_ISOLATION: PASS
+TEMPLATES: PASS
+EXISTING_SYSTEMS_UNCHANGED: PASS
+CONTROLLED_SINGLE_TEST_READY: YES (بعد الإصلاحات الثلاثة)
+ROLLBACK: READY
+FOUNDATION_BLAST_RADIUS: LOW
+FINAL_APPLY_VERDICT: FIX_REQUIRED
+```
 
-## 15) ملفات متوقعة (بعد الاعتماد)
-`src/lib/notifications/email-channel.shared.ts` (قائمة السماح + خريطة القوالب) · `email-channel.server.ts` (الإدراج) · `email-worker.server.ts` (السحب والإرسال) · 3 قوالب في `src/lib/email-templates/` · `src/routes/api/public/hooks/notification-emails.ts` · تعديل مواضع إنشاء الإشعارات (`invitations.server.ts`, `support/notify.server.ts`) لتمر بالدالة الموحّدة · ملاحظة الواجهة في `settings.tsx` · `scripts/notification-email.test.ts` · هجرة واحدة (جدول + RPC السحب).
+## 7. نطاق التنفيذ عند الاعتماد
 
-## 16) خطة اختبار مستهدفة
-التفضيل مغلق = صفر إدراج · إدراج مزدوج لنفس الإشعار = صف واحد (23505) · نوع غير مسموح = لا إدراج · مستخدم بلا بريد = لا إدراج · عضو مكتب آخر = مرفوض · إعادة سحب بعد `processing` = لا بريد ثانٍ · تراجع المحاولات ثم `failed` عند استنفادها · `recipient_suppressed` = فشل نهائي فوري · تحقق أن القوالب لا تحتوي بيانات قضايا/عملاء.
-
----
-### الخلاصة
-RECOMMENDED_ARCHITECTURE: **B — طابور بريد تنبيهات مخصص + عامل دوري + `sendAppEmail`**
-QUEUE_REQUIRED: **YES** · REUSE_EMAIL_OUTBOX: **NO** · NEW_TABLE_REQUIRED: **YES** (`notification_email_queue`)
-IDEMPOTENCY_MODEL: `unique(notification_id)` + `idempotencyKey = notif-email:{id}`
-PREFERENCE_ENFORCEMENT: `email_enabled` مفتاح رئيسي خادمي (الافتراضي مفعّل عند غياب الصف)
-RECIPIENT_RESOLUTION: `notification.user_id` + عضوية نشطة + `profiles.email` — خادمي بالكامل
-TENANT_ISOLATION: **PASS** · SEND_APP_EMAIL_REUSED: **YES** · MIGRATION_REQUIRED: **YES** (لم تُنشأ)
-EVENT_EMAIL_V1: 3 أنواع (انضمام عضو، رد دعم، إنشاء تذكرة) — البث والطلبات مستثناة
-FINAL_VERDICT: **READY_FOR_BUILD**
+- تعديل هجرة الأساس: إزالة بلوك الـ Cron، وإضافة خطوة تحويل الصفوف العالقة المستنفدة إلى `failed` داخل `claim_notification_email_batch`.
+- إنشاء ملف هجرة تنشيط الـ Cron منفصلاً، لا يُطبَّق في هذه الدفعة.
+- إضافة `support_new_reply` إلى قائمة السماح في `src/lib/notifications/email-channel.shared.ts` مع الإبقاء على `support_reply`.
+- لا تغيير في القوالب ولا في المنتجين ولا في أي نظام بريد قائم.
