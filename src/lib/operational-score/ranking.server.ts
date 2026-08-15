@@ -8,6 +8,13 @@
  */
 
 import {
+  OPT_IN_SNOOZE_DAYS,
+  PROMPT_MARK_MIN_INTERVAL_MS,
+  evaluatePromptEligibility,
+  snoozeUntil,
+  type PromptEligibility,
+} from "./optin.shared";
+import {
   PUBLIC_MINIMUM_SCORE,
   PUBLIC_RESULTS_COUNT,
   OPERATIONAL_SCORE_FORMULA_VERSION,
@@ -37,6 +44,10 @@ export type RankingSettings = {
   optedInAt: string | null;
   platformExcluded: boolean;
   exclusionReason: string | null;
+  /** آخر لحظة عُرضت فيها الدعوة لمستخدم مخوّل. */
+  optInPromptedAt: string | null;
+  /** نهاية تأجيل الدعوة (30 يوماً). */
+  optInSnoozedUntil: string | null;
 };
 
 /** المفتاح العام لتشغيل الميزة: غياب المفتاح أو أي خطأ = معطّلة (Fail closed). */
@@ -53,6 +64,23 @@ export async function isRankingFeatureEnabled(adminSupabase: Client): Promise<bo
   } catch {
     return false;
   }
+}
+
+/** يثبت أن المستخدم مدير مكتب (owner/admin) بعضوية نشطة قبل أي تغيير إعداد. */
+export async function isOrganizationManager(
+  supabase: Client,
+  organizationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error || !data) return false;
+  return ["owner", "admin"].includes(String(data.role));
 }
 
 /** يثبت أن المستخدم مدير مكتب (owner/admin) بعضوية نشطة قبل أي تغيير إعداد. */
@@ -80,7 +108,9 @@ export async function getRankingSettings(
 ): Promise<RankingSettings> {
   const { data, error } = await supabase
     .from(RANKING_SETTINGS_TABLE)
-    .select("organization_id, public_opt_in, opted_in_at, platform_excluded, exclusion_reason")
+    .select(
+      "organization_id, public_opt_in, opted_in_at, platform_excluded, exclusion_reason, opt_in_prompted_at, opt_in_snoozed_until",
+    )
     .eq("organization_id", organizationId)
     .maybeSingle();
   if (error) throw new RankingAccessError("تعذّر قراءة إعدادات الظهور العام.");
@@ -90,6 +120,8 @@ export async function getRankingSettings(
     optedInAt: (data?.opted_in_at as string | null) ?? null,
     platformExcluded: data?.platform_excluded === true,
     exclusionReason: (data?.exclusion_reason as string | null) ?? null,
+    optInPromptedAt: (data?.opt_in_prompted_at as string | null) ?? null,
+    optInSnoozedUntil: (data?.opt_in_snoozed_until as string | null) ?? null,
   };
 }
 
@@ -254,7 +286,7 @@ export async function latestSnapshotsByOrganization(
 }
 
 /** حالة اشتراك فعّالة للظهور العام: نشط أو تجريبي غير موقوف ولم ينته. */
-async function activeSubscriptionOrganizations(
+export async function activeSubscriptionOrganizations(
   adminSupabase: Client,
   organizationIds: string[],
 ): Promise<Set<string>> {
@@ -277,7 +309,7 @@ async function activeSubscriptionOrganizations(
 }
 
 /** الاسم العام المعتمد = اسم المكتب في الصفحة العامة المنشورة فقط. */
-async function approvedPublicNames(
+export async function approvedPublicNames(
   adminSupabase: Client,
   organizationIds: string[],
 ): Promise<Map<string, string>> {
