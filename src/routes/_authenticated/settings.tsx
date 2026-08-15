@@ -8,6 +8,7 @@ import { useAuth, canManage } from "@/hooks/use-auth";
 import { FormField, inputCls, Btn, LoadingBlock } from "@/lib/list-utils";
 import { SecurityTab } from "@/components/security/security-tab";
 import { UsageAnalyticsCard } from "@/components/settings/usage-analytics-card";
+import { PublicRankingConsentCard } from "@/components/settings/public-ranking-consent-card";
 import type { TablesInsert, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -64,7 +65,12 @@ function Page() {
       {tab === "organization" && <OrgTab orgId={activeOrgId} canManage={canManage(activeRole)} />}
       {tab === "notifications" && <NotifTab orgId={activeOrgId} userId={user?.id} />}
       {tab === "security" && <SecurityTab orgId={activeOrgId} isOrgAdmin={canManage(activeRole)} />}
-      {tab === "privacy" && <UsageAnalyticsCard />}
+      {tab === "privacy" && (
+        <div className="space-y-5">
+          <UsageAnalyticsCard />
+          <PublicRankingConsentCard orgId={activeOrgId} />
+        </div>
+      )}
     </DashboardShell>
   );
 }

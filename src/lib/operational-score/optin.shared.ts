@@ -108,3 +108,102 @@ export function resolveOptInMetadata(args: {
 export function snoozeUntil(now: string | number | Date = new Date()): string {
   return new Date(new Date(now).getTime() + OPT_IN_SNOOZE_MS).toISOString();
 }
+
+/* ==========================================================================
+ * إعداد الظهور العام الدائم في إعدادات المكتب (Consent Control)
+ * مصدر الحقيقة للموافقة هو `public_opt_in` نفسه — لا حالة موافقة موازية،
+ * ولا يمكن للإعداد تجاوز الأهلية أو بوابة النزاهة (Fail closed).
+ * ========================================================================== */
+
+export const CONSENT_SECTION_TITLE = "الظهور في مؤشر الإنجاز";
+export const CONSENT_SECTION_BODY = [
+  "يمكن للمكاتب المؤهلة السماح بإظهار اسم المكتب المعتمد وشعاره ومؤشر الإنجاز التشغيلي وترتيبه ضمن قائمة الأكثر إنجازاً على مِهلة.",
+  "لن تظهر بيانات العملاء أو القضايا أو المستندات أو الموظفين أو أي بيانات قانونية أو مالية خاصة.",
+] as const;
+export const CONSENT_PUBLIC_FIELDS = [
+  "اسم المكتب المعتمد",
+  "الشعار",
+  "مؤشر الإنجاز التشغيلي",
+  "الترتيب",
+] as const;
+export const CONSENT_TOGGLE_LABEL = "السماح بالظهور العام";
+export const CONSENT_DISCLAIMER = OPT_IN_PROMPT_DISCLAIMER;
+export const CONSENT_ENABLE_TOAST = OPT_IN_ACCEPT_TOAST;
+export const CONSENT_DISABLE_TOAST = "تم إيقاف الظهور العام لمكتبك";
+export const CONSENT_MANAGER_ONLY_NOTE = "إدارة الظهور العام متاحة لمدير المكتب فقط.";
+
+/** حالة الظهور العام كما تُعرض للمكتب — بلا أي سبب تقني لبوابة منع التلاعب. */
+export type ConsentStatus = "enabled" | "under_review" | "eligible_off" | "not_eligible";
+
+export const CONSENT_STATUS_LABELS: Record<ConsentStatus, string> = {
+  enabled: "الظهور العام مفعّل",
+  under_review: "الظهور العام قيد المراجعة.",
+  eligible_off: "مؤهل — الظهور العام غير مفعّل",
+  not_eligible: "غير مؤهل للظهور العام حالياً",
+};
+
+export const CONSENT_STATUS_HINTS: Record<ConsentStatus, string> = {
+  enabled:
+    "قد يظهر اسم المكتب المعتمد وشعاره ومؤشر الإنجاز التشغيلي وترتيبه ضمن قائمة الأكثر إنجازاً على مِهلة.",
+  under_review: "سنعيد تقييم الظهور العام تلقائياً بعد اكتمال المراجعة.",
+  eligible_off: "يمكنك تفعيل الظهور العام في أي وقت، وإيقافه لاحقاً بلا أثر على بيانات مكتبك.",
+  not_eligible: "يتطلب التأهل توفر بيانات تشغيلية كافية واستيفاء شروط مؤشر الإنجاز.",
+};
+
+export type ConsentEvaluationInput = {
+  /** هل المستخدم مدير مكتب (owner/admin) بعضوية نشطة. */
+  isManager: boolean;
+  publicOptIn: boolean;
+  scoreEligible: boolean;
+  score: number | null;
+  minimumScore: number;
+  /** بوابة منع التلاعب: `pass` فقط تسمح بالتفعيل. */
+  integrityStatus: "pass" | "review_required" | "ineligible";
+  organizationActive: boolean;
+  subscriptionActive: boolean;
+  platformExcluded: boolean;
+  publicNameApproved: boolean;
+  /** مفتاح الميزة على مستوى المنصة. */
+  featureEnabled: boolean;
+};
+
+export type ConsentEvaluation = {
+  status: ConsentStatus;
+  /** هل تتحقق كل شروط الظهور الفعلي الآن (بغض النظر عن الموافقة). */
+  eligible: boolean;
+  canEnable: boolean;
+  canDisable: boolean;
+  isManager: boolean;
+  publicOptIn: boolean;
+};
+
+/** قرار نقي لحالة الظهور العام في الإعدادات — لا يعدل النتيجة ولا حدود البوابة. */
+export function evaluateConsentState(input: ConsentEvaluationInput): ConsentEvaluation {
+  const eligible =
+    input.featureEnabled &&
+    input.scoreEligible &&
+    input.score !== null &&
+    input.score >= input.minimumScore &&
+    input.integrityStatus === "pass" &&
+    input.organizationActive &&
+    input.subscriptionActive &&
+    !input.platformExcluded &&
+    input.publicNameApproved;
+
+  const status: ConsentStatus = input.publicOptIn
+    ? "enabled"
+    : eligible
+      ? "eligible_off"
+      : input.integrityStatus === "review_required"
+        ? "under_review"
+        : "not_eligible";
+
+  return {
+    status,
+    eligible,
+    canEnable: input.isManager && eligible && !input.publicOptIn,
+    canDisable: input.isManager && input.publicOptIn,
+    isManager: input.isManager,
+    publicOptIn: input.publicOptIn,
+  };
+}

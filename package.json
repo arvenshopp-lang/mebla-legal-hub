@@ -35,6 +35,7 @@
     "score:test": "bun scripts/operational-score.test.ts",
     "score:ranking:test": "bun scripts/operational-score-ranking.test.ts",
     "score:optin:test": "bun scripts/operational-score-optin.test.ts",
+    "score:consent:test": "bun scripts/operational-score-consent.test.ts",
     "score:integrity:test": "bun scripts/operational-score-integrity.test.ts",
     "score:integrity:dryrun": "bun scripts/operational-score-integrity-dryrun.ts"
   },
