@@ -10,10 +10,7 @@ import { NotificationSupportReplyEmail } from "@/lib/email-templates/notificatio
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
 import { sendAppEmail } from "@/lib/email/app-email.server";
-import {
-  isEmailPreferenceEnabled,
-  resolveNotificationRecipient,
-} from "./email-channel.server";
+import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import {
   CANCEL_REASON,
   isEmailEnabledEvent,
@@ -49,6 +46,8 @@ export type WorkerReport = {
   retried: number;
   failed: number;
   cancelled: number;
+  /** نجح المزوّد لكن تعذّر الإنهاء الذري: الصف يبقى قابلاً للاسترداد. */
+  deferred: number;
 };
 
 type TemplateDefinition = {
@@ -88,29 +87,47 @@ export function idempotencyKeyFor(notificationId: string): string {
   return `notif-email:${notificationId}`;
 }
 
-async function cancel(db: Db, item: QueueItem, reason: CancelReason): Promise<void> {
-  await db
-    .from("notification_email_queue")
-    .update({
-      status: "cancelled",
-      last_error_code: reason,
-      last_error_message: null,
-      failed_at: new Date().toISOString(),
-    })
-    .eq("id", item.id);
+export type FinalizeOutcome =
+  | "FINALIZED"
+  | "ALREADY_FINALIZED"
+  | "QUEUE_ROW_NOT_FOUND"
+  | "INVALID_FINAL_STATUS"
+  | "INVALID_QUEUE_STATE";
+
+/** نتائج الإنهاء التي تعني أن الطابور وسجل التسليم متوافقان فعلاً. */
+export function isFinalizedOutcome(outcome: string): boolean {
+  return outcome === "FINALIZED" || outcome === "ALREADY_FINALIZED";
 }
 
+/**
+ * الإنهاء الذري الوحيد: تحديث الطابور وإدراج سجل التسليم الدائم في معاملة
+ * واحدة داخل القاعدة. لا يكتب العامل سجل التسليم بأي مسار منفصل.
+ */
+async function finalize(
+  db: Db,
+  item: QueueItem,
+  finalStatus: "sent" | "failed" | "cancelled",
+  errorCode: string | null,
+): Promise<FinalizeOutcome> {
+  const { data, error } = await db.rpc("finalize_notification_email_delivery", {
+    _queue_id: item.id,
+    _final_status: finalStatus,
+    _provider_reference: finalStatus === "sent" ? idempotencyKeyFor(item.notification_id) : null,
+    _error_code: errorCode,
+    _recipient_masked: maskEmailForLog(item.recipient_email),
+  });
+  if (error) throw new Error((error as { message: string }).message);
+  return (data as FinalizeOutcome | null) ?? "INVALID_QUEUE_STATE";
+}
+
+async function cancel(db: Db, item: QueueItem, reason: CancelReason): Promise<void> {
+  await finalize(db, item, "cancelled", reason);
+}
+
+/** يرمي عند تعذّر الإنهاء بعد نجاح المزوّد: لا تُعلن الحالة sent خارج الدالة. */
 async function markSent(db: Db, item: QueueItem): Promise<void> {
-  await db
-    .from("notification_email_queue")
-    .update({
-      status: "sent",
-      sent_at: new Date().toISOString(),
-      provider_reference: idempotencyKeyFor(item.notification_id),
-      last_error_code: null,
-      last_error_message: null,
-    })
-    .eq("id", item.id);
+  const outcome = await finalize(db, item, "sent", null);
+  if (!isFinalizedOutcome(outcome)) throw new Error(`FINALIZE_${outcome}`);
 }
 
 /** فشل: إعادة جدولة إن كان قابلاً للإعادة والمحاولات لم تُستنفد، وإلا فشل نهائي. */
@@ -131,19 +148,16 @@ async function markFailure(
         scheduled_at: new Date(Date.now() + retryDelayMs(item.attempts)).toISOString(),
         last_error_code: code,
         last_error_message: safeMessage,
+        processing_started_at: null,
       })
       .eq("id", item.id);
     return "retried";
   }
   await db
     .from("notification_email_queue")
-    .update({
-      status: "failed",
-      failed_at: new Date().toISOString(),
-      last_error_code: retryable ? "MAX_ATTEMPTS" : code,
-      last_error_message: safeMessage,
-    })
+    .update({ last_error_message: safeMessage })
     .eq("id", item.id);
+  await finalize(db, item, "failed", retryable ? "MAX_ATTEMPTS" : code);
   return "failed";
 }
 
@@ -157,6 +171,7 @@ async function reschedule(db: Db, item: QueueItem, code: string, delayMs: number
       scheduled_at: new Date(Date.now() + delayMs).toISOString(),
       last_error_code: code,
       last_error_message: null,
+      processing_started_at: null,
     })
     .eq("id", item.id);
 }
@@ -169,7 +184,14 @@ export async function processNotificationEmailBatch(
   db: Db,
   limit = BATCH_SIZE,
 ): Promise<WorkerReport> {
-  const report: WorkerReport = { claimed: 0, sent: 0, retried: 0, failed: 0, cancelled: 0 };
+  const report: WorkerReport = {
+    claimed: 0,
+    sent: 0,
+    retried: 0,
+    failed: 0,
+    cancelled: 0,
+    deferred: 0,
+  };
 
   const { data, error } = await db.rpc("claim_notification_email_batch", {
     _limit: Math.max(1, Math.min(limit, 100)),
@@ -254,8 +276,24 @@ export async function processNotificationEmailBatch(
       });
 
       if (result.sent) {
-        await markSent(db, item);
-        report.sent += 1;
+        try {
+          await markSent(db, item);
+          report.sent += 1;
+        } catch (finalizeError) {
+          // المزوّد قبل الرسالة لكن تعذّر الإنهاء الذري: لا نعلن sent ولا نفشل
+          // الصف. يبقى processing ليستعيده مسار الاسترداد بنفس مفتاح التفرّد.
+          report.deferred += 1;
+          const { logFailure } = await import("@/lib/observability/failure-log.server");
+          await logFailure({
+            surface: "email",
+            action: "notification_email_finalize",
+            error: finalizeError,
+            errorCode: "finalize_failed",
+            organizationId: notification.organization_id,
+            userId: notification.user_id,
+            metadata: { template_key: templateKey, recipient: maskEmailForLog(recipient.email) },
+          });
+        }
         continue;
       }
 
