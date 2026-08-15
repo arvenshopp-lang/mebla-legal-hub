@@ -107,6 +107,7 @@ import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/w
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
 import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
 import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
+import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
@@ -612,6 +613,12 @@ const ApiPublicOfficeEventRoute = ApiPublicOfficeEventRouteImport.update({
   path: '/api/public/office/event',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksOperationalScoreRoute =
+  ApiPublicHooksOperationalScoreRouteImport.update({
+    id: '/api/public/hooks/operational-score',
+    path: '/api/public/hooks/operational-score',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNotificationsDispatchRoute =
   ApiPublicHooksNotificationsDispatchRouteImport.update({
     id: '/api/public/hooks/notifications-dispatch',
@@ -750,6 +757,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -855,6 +863,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -963,6 +972,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -1071,6 +1081,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1176,6 +1187,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1283,6 +1295,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1336,6 +1349,7 @@ export interface RootRouteChildren {
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
+  ApiPublicHooksOperationalScoreRoute: typeof ApiPublicHooksOperationalScoreRoute
   ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
   ApiPublicOfficeLeadRoute: typeof ApiPublicOfficeLeadRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
@@ -2034,6 +2048,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/operational-score': {
+      id: '/api/public/hooks/operational-score'
+      path: '/api/public/hooks/operational-score'
+      fullPath: '/api/public/hooks/operational-score'
+      preLoaderRoute: typeof ApiPublicHooksOperationalScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/notifications-dispatch': {
       id: '/api/public/hooks/notifications-dispatch'
       path: '/api/public/hooks/notifications-dispatch'
@@ -2284,6 +2305,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
   ApiPublicHooksNotificationsDispatchRoute:
     ApiPublicHooksNotificationsDispatchRoute,
+  ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
   ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
   ApiPublicOfficeLeadRoute: ApiPublicOfficeLeadRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
