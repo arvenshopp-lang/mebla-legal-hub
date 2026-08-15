@@ -327,13 +327,20 @@ export async function acceptInvitation(
       .select("full_name")
       .eq("id", userId)
       .maybeSingle();
-    await supabaseAdmin.from("notifications").insert({
-      organization_id: row.organization_id,
-      user_id: row.invited_by,
-      type: "team_member_joined",
-      title: "انضمام عضو جديد للفريق",
-      message: `${profile?.full_name ?? row.email} قبل الدعوة وانضم إلى المكتب.`,
-    });
+    // الإشعار داخل التطبيق أولاً، ثم قناة البريد بشكل معزول: فشل البريد
+    // لا يجوز أن يُبطل قبول الدعوة.
+    const { createUserNotification } = await import("@/lib/notifications/email-channel.server");
+    try {
+      await createUserNotification(supabaseAdmin, {
+        organizationId: row.organization_id,
+        userId: row.invited_by,
+        type: "team_member_joined",
+        title: "انضمام عضو جديد للفريق",
+        message: `${profile?.full_name ?? row.email} قبل الدعوة وانضم إلى المكتب.`,
+      });
+    } catch {
+      // متجاهَل عن قصد: الانضمام نجح فعلاً.
+    }
   }
 
   return {

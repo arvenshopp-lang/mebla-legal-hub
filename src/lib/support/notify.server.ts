@@ -6,6 +6,7 @@
  * كل إشعار يحمل مفتاح تفرّد فلا يُكرَّر عند إعادة المحاولة أو تكرار الحدث.
  */
 import { queueMessage } from "@/lib/email/workspace.server";
+import { createUserNotification } from "@/lib/notifications/email-channel.server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -89,17 +90,23 @@ export async function notifyOffice(
     .maybeSingle();
   if (existing) return { sent: false, duplicate: true };
 
-  const { error } = await db.from("notifications").insert({
-    organization_id: ticket.organization_id,
-    user_id: ticket.user_id,
-    type: `support_${event}`,
-    title: copy.title,
-    message: copy.message(ticketRef(ticket)),
-    dedup_key: dedupKey,
-    sent_at: new Date().toISOString(),
-  });
-  if (error && String(error.code) === "23505") return { sent: false, duplicate: true };
-  return { sent: !error, duplicate: false };
+  // إنشاء الإشعار داخل التطبيق ثم محاولة إدراجه في قناة البريد؛ فشل البريد
+  // معزول تماماً ولا يُبطل الإشعار ولا العملية الأصلية.
+  try {
+    const result = await createUserNotification(db, {
+      organizationId: ticket.organization_id,
+      userId: ticket.user_id,
+      type: `support_${event}`,
+      title: copy.title,
+      message: copy.message(ticketRef(ticket)),
+      dedupKey,
+      sentAt: new Date().toISOString(),
+    });
+    if (result.duplicate) return { sent: false, duplicate: true };
+    return { sent: result.notificationId !== null, duplicate: false };
+  } catch {
+    return { sent: false, duplicate: false };
+  }
 }
 
 /** بريد تنبيه لموظف الدعم عبر محرك البريد القائم (صندوق الدعم). */
