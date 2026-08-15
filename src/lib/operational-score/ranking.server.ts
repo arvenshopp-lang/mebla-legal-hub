@@ -111,8 +111,6 @@ export async function setRankingOptIn(
     {
       organization_id: organizationId,
       public_opt_in: optIn,
-      opted_in_at: optIn ? new Date().toISOString() : null,
-      opted_in_by: optIn ? userId : null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "organization_id" },
@@ -130,7 +128,8 @@ export async function setRankingOptIn(
     metadata: { previous_opt_in: before.publicOptIn, new_opt_in: optIn },
   });
 
-  return { ...before, publicOptIn: optIn, optedInAt: optIn ? new Date().toISOString() : null };
+  // القيمة المُعادة تُقرأ من القاعدة: توثيق الموافقة تُحدده القاعدة لا العميل.
+  return getRankingSettings(supabase, organizationId);
 }
 
 /** استثناء/إعادة مكتب من الترتيب العام — عملية منصة فقط (تُستدعى بعد حرس الصلاحيات). */
@@ -201,28 +200,54 @@ export async function listRankingStatus(
 
 type LatestSnapshot = { score: number | null; eligible: boolean; computedAt: string };
 
-/** أحدث لقطة لكل مكتب داخل استعلام واحد مقيّد (بلا N+1). */
+/** عدد استعلامات اللقطة المتزامنة: يحدّ الضغط على القاعدة بلا تسلسل بطيء. */
+const SNAPSHOT_LOOKUP_CONCURRENCY = 8;
+
+/**
+ * أحدث لقطة **لكل مكتب** بشكل حتمي: استعلام مفهرس واحد لكل مكتب مقيّد بـ`limit(1)`
+ * على مفتاح `(organization_id, computed_at DESC)`، ومقيّد بالنافذة المعتمدة
+ * وبإصدار المعادلة الحالي فقط. لا يوجد سقف عالمي مشترك، فلا يمكن لمكتب كثير
+ * اللقطات أن يُقصي مكتباً آخر من النتيجة، ولا يمكن لإصدار قديم أن يظهر.
+ */
+async function latestSnapshotForOrganization(
+  client: Client,
+  organizationId: string,
+): Promise<LatestSnapshot | null> {
+  const { data, error } = await client
+    .from(SNAPSHOTS_TABLE)
+    .select("score, eligible, computed_at")
+    .eq("organization_id", organizationId)
+    .eq("window_kind", SNAPSHOT_WINDOW_KIND)
+    .eq("formula_version", OPERATIONAL_SCORE_FORMULA_VERSION)
+    .order("computed_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as Record<string, unknown>;
+  return {
+    score: row["score"] === null || row["score"] === undefined ? null : Number(row["score"]),
+    eligible: row["eligible"] === true,
+    computedAt: String(row["computed_at"]),
+  };
+}
+
+/** أحدث لقطة لكل مكتب — دفعات متزامنة محدودة، والنتيجة مفتاحها معرّف المكتب. */
 export async function latestSnapshotsByOrganization(
   adminSupabase: Client,
   organizationIds: string[],
 ): Promise<Map<string, LatestSnapshot>> {
   const result = new Map<string, LatestSnapshot>();
   if (organizationIds.length === 0) return result;
-  const { data, error } = await adminSupabase
-    .from(SNAPSHOTS_TABLE)
-    .select("organization_id, score, eligible, computed_at")
-    .eq("window_kind", SNAPSHOT_WINDOW_KIND)
-    .in("organization_id", organizationIds)
-    .order("computed_at", { ascending: false })
-    .limit(organizationIds.length * 8);
-  if (error) return result;
-  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
-    const id = String(row["organization_id"]);
-    if (result.has(id)) continue; // الأحدث أولاً بحكم الترتيب
-    result.set(id, {
-      score: row["score"] === null ? null : Number(row["score"]),
-      eligible: row["eligible"] === true,
-      computedAt: String(row["computed_at"]),
+  const unique = Array.from(new Set(organizationIds));
+  for (let index = 0; index < unique.length; index += SNAPSHOT_LOOKUP_CONCURRENCY) {
+    const batch = unique.slice(index, index + SNAPSHOT_LOOKUP_CONCURRENCY);
+    const snapshots = await Promise.all(
+      batch.map((organizationId) => latestSnapshotForOrganization(adminSupabase, organizationId)),
+    );
+    batch.forEach((organizationId, position) => {
+      const snapshot = snapshots[position];
+      if (snapshot) result.set(organizationId, snapshot);
     });
   }
   return result;
