@@ -43,10 +43,7 @@ const jobNameCount = (activationSql.match(/mehla-notification-emails/g) ?? []).l
 check("cron.schedule مرة واحدة", scheduleCount === 1, scheduleCount);
 check("اسم المهمة مذكور مرتين فقط (إنشاء + حماية التكرار)", jobNameCount === 2, jobNameCount);
 check("كل 5 دقائق", activationSql.includes("'*/5 * * * *'"));
-check(
-  "المسار المحمي الصحيح",
-  activationSql.includes("/api/public/hooks/notification-emails"),
-);
+check("المسار المحمي الصحيح", activationSql.includes("/api/public/hooks/notification-emails"));
 check("سر التشغيل القائم", activationSql.includes("ops.cron_secret()"));
 check(
   "لا تعديل هيكلي في هجرة التنشيط",
@@ -54,7 +51,9 @@ check(
 );
 
 console.log("\n3) هجرة التنشيط أحدث زمنياً من الأساس ولم تُطبَّق");
-const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+const files = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .sort();
 const foundationName = FOUNDATION.split("/").pop()!;
 const activationName = ACTIVATION.split("/").pop()!;
 check(
@@ -66,7 +65,9 @@ check(
   "لا مهمة دورية في أي هجرة أخرى",
   files
     .filter((f) => f !== activationName)
-    .every((f) => !readFileSync(`${MIGRATIONS_DIR}/${f}`, "utf8").includes("mehla-notification-emails")),
+    .every(
+      (f) => !readFileSync(`${MIGRATIONS_DIR}/${f}`, "utf8").includes("mehla-notification-emails"),
+    ),
 );
 
 console.log("\n4-7) قائمة السماح وخرائط القوالب");
@@ -98,7 +99,10 @@ for (const excluded of [
   "case_inactive",
   "office_lead",
 ]) {
-  check(`${excluded} غير مؤهل للطابور`, !isEmailEnabledEvent(excluded) && templateKeyForEvent(excluded) === null);
+  check(
+    `${excluded} غير مؤهل للطابور`,
+    !isEmailEnabledEvent(excluded) && templateKeyForEvent(excluded) === null,
+  );
 }
 
 console.log("\n8-13) سياسة استرجاع الصفوف العالقة كما في دالة السحب");
@@ -112,7 +116,9 @@ check(
 );
 check(
   "تصفير processing_started_at للعالق المستنفد",
-  /last_error_code = 'STALE_MAX_ATTEMPTS',[\s\S]{0,120}processing_started_at = NULL/.test(foundationSql),
+  /last_error_code = 'STALE_MAX_ATTEMPTS',[\s\S]{0,120}processing_started_at = NULL/.test(
+    foundationSql,
+  ),
 );
 check(
   "إنهاء العالق يسبق السحب",
@@ -141,10 +147,15 @@ type Row = {
   maxAttempts: number;
   staleMinutes: number;
 };
-type Outcome = { status: Row["status"]; attempts: number; errorCode: string | null; claimed: boolean };
+type Outcome = {
+  status: Row["status"];
+  attempts: number;
+  errorCode: string | null;
+  claimed: boolean;
+};
 function claimRun(row: Row): Outcome {
   let { status, attempts } = row;
-  let errorCode: string | null = null;
+  const errorCode: string | null = null;
   const stale = status === "processing" && row.staleMinutes > 15;
   if (stale && attempts >= row.maxAttempts) {
     return { status: "failed", attempts, errorCode: "STALE_MAX_ATTEMPTS", claimed: false };
@@ -191,7 +202,10 @@ const sent = claimRun({ status: "sent", attempts: 1, maxAttempts: 4, staleMinute
 check("المُرسل لا يُسحب", !sent.claimed && sent.status === "sent");
 
 console.log("\n14) اختبارات المرحلة 1 القائمة");
-check("تراجع أُسّي 2د/10د/60د", retryDelayMs(1) === 120_000 && retryDelayMs(2) === 600_000 && retryDelayMs(3) === 3_600_000);
+check(
+  "تراجع أُسّي 2د/10د/60د",
+  retryDelayMs(1) === 120_000 && retryDelayMs(2) === 600_000 && retryDelayMs(3) === 3_600_000,
+);
 check("التراجع لا يتجاوز 60د", retryDelayMs(9) === 3_600_000);
 check("العنوان الموقوف نهائي", !isRetryableFailure("recipient_suppressed"));
 check("خطأ الشبكة قابل للإعادة", isRetryableFailure("http_502"));
