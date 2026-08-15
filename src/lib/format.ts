@@ -131,8 +131,10 @@ export const riyadhDayStart = (v: string | number | Date): Date => {
 };
 
 /** عدد أيام الرياض الكاملة بين لحظتين (حدود يوم لا فروق ساعات). */
-export const riyadhDaysBetween = (from: string | number | Date, to: string | number | Date): number =>
-  Math.round((riyadhDayStart(to).getTime() - riyadhDayStart(from).getTime()) / DAY_MS);
+export const riyadhDaysBetween = (
+  from: string | number | Date,
+  to: string | number | Date,
+): number => Math.round((riyadhDayStart(to).getTime() - riyadhDayStart(from).getTime()) / DAY_MS);
 
 const DASH = "—";
 

@@ -99,9 +99,11 @@ check("1. Perfect score = 100", perfect.score === 100 && perfect.eligible, Strin
 const win = resolveScoreWindow(NOW);
 const riyadhHourOf = (v: string): number =>
   Number(
-    new Intl.DateTimeFormat("en-CA", { hour: "2-digit", hour12: false, timeZone: RIYADH_TZ }).format(
-      new Date(v),
-    ),
+    new Intl.DateTimeFormat("en-CA", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: RIYADH_TZ,
+    }).format(new Date(v)),
   ) % 24;
 check(
   "2. Riyadh window via central timezone policy",
@@ -226,7 +228,8 @@ check(
 // 10..13 — دلالات الجلسات على الحالة الحالية فقط
 const winStartMs = new Date(win.windowStart).getTime();
 const winEndMs = new Date(win.windowEnd).getTime();
-const hs = (status: string) => assessHearing(hearing(`h-${status}`, 30, status), winStartMs, winEndMs);
+const hs = (status: string) =>
+  assessHearing(hearing(`h-${status}`, 30, status), winStartMs, winEndMs);
 check("10. Hearing completed = followed up", hs("completed").counted && hs("completed").followedUp);
 check("11. Hearing postponed = followed up", hs("postponed").counted && hs("postponed").followedUp);
 check(
