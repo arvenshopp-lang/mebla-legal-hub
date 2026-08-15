@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
+import { OperationalScoreCard } from "@/components/dashboard/operational-score-card";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { ChevronLeft } from "lucide-react";
@@ -157,6 +158,8 @@ function DashboardHome() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <OperationalScoreCard organizationId={activeOrgId ?? null} />
+
             <SectionCard
               title="الجلسات القادمة"
               actions={
