@@ -22,6 +22,10 @@ import {
   type PublicOperationalRanking,
   type PublicOperationalRankingItem,
 } from "./score.shared";
+import {
+  readSnapshotIntegrityStatus,
+  type PublicIntegrityStatus,
+} from "./integrity.shared";
 
 /*
  * الجداول الجديدة (organization_ranking_settings / operational_score_snapshots)
@@ -225,12 +229,19 @@ export async function listRankingStatus(
       platformExcluded: r["platform_excluded"] === true,
       exclusionReason: (r["exclusion_reason"] as string | null) ?? null,
       latestScore: snap?.score ?? null,
+      integrityStatus: snap?.integrityStatus ?? null,
       latestComputedAt: snap?.computedAt ?? null,
     };
   });
 }
 
-type LatestSnapshot = { score: number | null; eligible: boolean; computedAt: string };
+type LatestSnapshot = {
+  score: number | null;
+  eligible: boolean;
+  computedAt: string;
+  /** حالة بوابة النزاهة المخزّنة في اللقطة — `null` عند الغياب أو إصدار مختلف. */
+  integrityStatus: PublicIntegrityStatus | null;
+};
 
 /** عدد استعلامات اللقطة المتزامنة: يحدّ الضغط على القاعدة بلا تسلسل بطيء. */
 const SNAPSHOT_LOOKUP_CONCURRENCY = 8;
@@ -247,7 +258,7 @@ async function latestSnapshotForOrganization(
 ): Promise<LatestSnapshot | null> {
   const { data, error } = await client
     .from(SNAPSHOTS_TABLE)
-    .select("score, eligible, computed_at")
+    .select("score, eligible, computed_at, dimensions")
     .eq("organization_id", organizationId)
     .eq("window_kind", SNAPSHOT_WINDOW_KIND)
     .eq("formula_version", OPERATIONAL_SCORE_FORMULA_VERSION)
@@ -261,6 +272,7 @@ async function latestSnapshotForOrganization(
     score: row["score"] === null || row["score"] === undefined ? null : Number(row["score"]),
     eligible: row["eligible"] === true,
     computedAt: String(row["computed_at"]),
+    integrityStatus: readSnapshotIntegrityStatus(row["dimensions"]),
   };
 }
 
