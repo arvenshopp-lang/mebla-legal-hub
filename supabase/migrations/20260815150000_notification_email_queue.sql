@@ -64,6 +64,7 @@ CREATE TRIGGER trg_notification_email_queue_updated
 -- ============================================================================
 -- سحب دفعة بقفل آمن: يمنع معالجة نفس الصف من عاملين، ويستعيد الصفوف
 -- العالقة في processing بعد 15 دقيقة (تعطل عامل) دون فقدان عدّاد المحاولات.
+-- الصفوف العالقة التي استنفدت محاولاتها تُنهى إلى failed قبل السحب.
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.claim_notification_email_batch(_limit integer)
 RETURNS SETOF public.notification_email_queue
@@ -74,6 +75,18 @@ AS $$
 DECLARE
   v_limit integer := GREATEST(1, LEAST(COALESCE(_limit, 25), 100));
 BEGIN
+  -- إنهاء الصفوف العالقة في processing التي استنفدت محاولاتها: تصبح failed
+  -- نهائياً بلا زيادة أي محاولة، فلا يبقى أي صف في processing للأبد.
+  UPDATE public.notification_email_queue q
+     SET status = 'failed',
+         failed_at = now(),
+         last_error_code = 'STALE_MAX_ATTEMPTS',
+         processing_started_at = NULL,
+         updated_at = now()
+   WHERE q.status = 'processing'
+     AND q.processing_started_at < now() - interval '15 minutes'
+     AND q.attempts >= q.max_attempts;
+
   RETURN QUERY
   WITH due AS (
     SELECT q.id
@@ -102,17 +115,5 @@ REVOKE ALL ON FUNCTION public.claim_notification_email_batch(integer) FROM anon;
 REVOKE ALL ON FUNCTION public.claim_notification_email_batch(integer) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_notification_email_batch(integer) TO service_role;
 
--- المهمة الدورية: تصريف طابور بريد التنبيهات كل دقيقة عبر المسار المحمي
--- بسر التشغيل نفسه المستخدم في بقية المهام (ops.cron_secret()).
-SELECT cron.schedule(
-  'mehla-notification-emails',
-  '* * * * *',
-  $cron$
-  SELECT net.http_post(
-    url := 'https://project--0ac4f813-8ba3-4f48-9bc7-432613df3dae.lovable.app/api/public/hooks/notification-emails',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'x-mehla-cron-secret', ops.cron_secret()),
-    body := '{}'::jsonb
-  ) AS request_id;
-  $cron$
-)
-WHERE NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'mehla-notification-emails');
+-- لا جدولة دورية في هجرة الأساس: تنشيط المهمة يتم عبر هجرة تنشيط منفصلة
+-- بعد نجاح اختبار الإرسال المفرد المضبوط.
