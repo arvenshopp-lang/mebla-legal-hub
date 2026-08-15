@@ -667,7 +667,7 @@ export const getCompanyDetail = createServerFn({ method: "POST" })
         .select("id, kind, title, status, total, currency, created_at")
         .eq("company_id", data.id)
         .order("created_at", { ascending: false });
-      documents = docs ?? [];
+      documents = await excludeDiscardedDrafts(db, docs ?? []);
     }
     void staffCtx;
     return {
@@ -1113,7 +1113,7 @@ export const getDealDetail = createServerFn({ method: "POST" })
         .select("id, kind, title, status, total, currency, created_at")
         .eq("deal_id", data.id)
         .order("created_at", { ascending: false });
-      documents = docs ?? [];
+      documents = await excludeDiscardedDrafts(db, docs ?? []);
     }
     return {
       deal: {
