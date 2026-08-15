@@ -51,6 +51,52 @@ export const MIN_DEADLINES_OR_HEARINGS = 5;
 export const PUBLIC_MINIMUM_SCORE = 78;
 export const PUBLIC_RESULTS_COUNT = 5;
 export const PUBLIC_SECTION_TITLE = "الأكثر إنجازاً على مِهلة";
+export const PUBLIC_SECTION_INTRO =
+  "مكاتب تحقق مستويات مرتفعة من الالتزام والإنجاز التشغيلي باستخدام مِهلة.";
+export const PUBLIC_RANKING_DISCLAIMER =
+  "يعكس المؤشر مستوى الإنجاز التشغيلي داخل مِهلة ولا يمثل تقييماً لجودة الخدمات القانونية أو نتائج القضايا.";
+
+/** العقد العام للترتيب — لا يحتوي على أي معرّف داخلي أو بيانات حساسة. */
+export type PublicOperationalRankingItem = {
+  rank: number;
+  publicName: string;
+  score: number;
+  badge?: string | null;
+  logoUrl?: string | null;
+};
+
+export type PublicOperationalRanking = {
+  enabled: boolean;
+  computedAt: string | null;
+  items: PublicOperationalRankingItem[];
+};
+
+/**
+ * تطبيع قائمة عامة قبل عرضها:
+ * - تُعرض أول 5 عناصر فقط.
+ * - يُتجاهر أي عنصر ناقص الاسم أو الترتيب.
+ * - تُقصّ الدرجة إلى 0–100.
+ */
+export function sanitizePublicRankingItems(
+  items: PublicOperationalRankingItem[],
+): PublicOperationalRankingItem[] {
+  return items
+    .filter(
+      (item): item is PublicOperationalRankingItem & { publicName: string } =>
+        typeof item.publicName === "string" &&
+        item.publicName.trim().length > 0 &&
+        Number.isFinite(item.rank) &&
+        item.rank >= 1 &&
+        item.rank <= PUBLIC_RESULTS_COUNT,
+    )
+    .slice(0, PUBLIC_RESULTS_COUNT)
+    .map((item) => ({
+      ...item,
+      score: Math.max(0, Math.min(100, Number(item.score) || 0)),
+      badge: item.badge ?? null,
+      logoUrl: item.logoUrl ?? null,
+    }));
+}
 
 /** مهمة أُنشئت وأُنجزت خلال أقل من ساعة تُستبعد من البسط والمقام (منع المهام الصورية). */
 export const SHORT_LIVED_TASK_MS = 60 * 60 * 1000;
