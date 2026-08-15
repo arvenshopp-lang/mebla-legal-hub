@@ -1,38 +1,73 @@
-# MEHLA OPERATIONAL SCORE — FINAL B1/B2 ACCEPTANCE (READ-ONLY)
+# MEHLA OPERATIONAL SCORE — PRE-APPLY MIGRATION REVIEW
 
-نطاق هذا التقرير: نقطتان فقط (تفويض المكتب النشط + عقد الخصوصية). لم تُعَد مراجعة الصيغة أو المنطقة الزمنية أو النزاهة أو الجلسات أو أداء الاستعلامات.
+مراجعة قراءة فقط. لم يُعدَّل أي ملف ولم تُطبَّق أي Migration.
+النطاق: `20260815014500_operational_score_ranking.sql` + `ranking.server.ts` + `ranking.functions.ts` + `snapshot.server.ts` + `api/public/hooks/operational-score.ts`.
 
-## 1. ACTIVE ORGANIZATION AUTHORIZATION
+## 1. MIGRATION SAFETY
+تحققت من التبعيات على الإنتاج الحالي: `private.is_platform_staff`, `private.has_platform_permission` (كلتاهما SECURITY DEFINER, search_path=public), `public.set_updated_at`, `public.deny_update` — كلها موجودة. الجدولان غير موجودين، ولا تعارض أسماء Triggers/Indexes. الأعمدة المرجعية موجودة: `organizations.is_active/suspended_at`, `organization_members.role/status` (enum), `office_public_pages.status/published/suspended_by_platform`, `subscriptions.status/ends_at/suspended_at`, `platform_settings.key/value`.
+FK/NOT NULL/defaults/timestamps/indexes/RLS/GRANT سليمة. لا عبارة SQL متوقعة الفشل.
 
-**هل العميل يرسل organization_id؟** نعم. `src/lib/operational-score/score.functions.ts` يستقبل `{ organizationId: uuid }` من الواجهة، ويمرره لـ `computeOrganizationScore` بعد الحارس.
+## 2. OPT-IN FIELD PROTECTION
+- `private.ranking_settings_guard`: SECURITY DEFINER = YES، fixed search_path = YES (`public, private`)، owner/execute exposure = SAFE (دالة Trigger؛ الاستدعاء المباشر يفشل بلا سياق Trigger).
+- الحقول `platform_excluded / exclusion_reason / excluded_at / excluded_by` محمية عبر Direct Data API: أي UPDATE من مستخدم غير موظف منصة يرفع استثناءً.
+- **ملاحظة MEDIUM (ليست حاجزاً):** `GRANT UPDATE` ممنوح على كل الأعمدة، فمدير المكتب يستطيع كتابة `opted_in_at` / `opted_in_by` بقيم من عنده (تلويث حقول التوثيق فقط، بلا أثر على الأهلية).
 
-**الحارس الفعلي:** `requireActiveMembership(context.supabase, organizationId, context.userId)` — استعلام على `organization_members` بـ `organization_id = X` و `user_id = auth.uid()` و `status = 'active'`، ويُرفَض الطلب إن لم يوجد صف. يعمل بجلسة المستخدم (RLS سارية) لا بالدور الإداري، ودالة الخادم محمية بـ `requireSupabaseAuth` (JWT حقيقي)، وكل استعلامات القياس مقيّدة بـ `.eq("organization_id", organizationId)`. قراءة `work_item_events` إدارية لكنها تحدث **بعد** الحارس ومقيّدة بنفس المكتب.
+## 3. SNAPSHOT WRITE SECURITY
+`anon` بلا أي منح. `authenticated` لديه SELECT فقط وسياسة SELECT تقصره على موظفي المنصة → أعضاء المكتب لا يقرؤون الجدول مباشرة. لا INSERT/UPDATE/DELETE لأي دور غير `service_role`. الكتابة من `snapshot.server.ts` عبر `supabaseAdmin` فقط.
+**SNAPSHOT_WRITE_BOUNDARY: PASS**
 
-**الشرط الحالي هو:** `user is an active member of organization X` — وليس `X = current active organization`.
+## 4. APPEND-ONLY SEMANTICS
+UPDATE ممنوع بـ Trigger `deny_update` لكل الأدوار بما فيها `service_role`. DELETE غير ممنوح لأي دور مطبَّق عليه RLS. إعادة الحساب تُدرج صفاً جديداً (`insert`) ولا تعدّل التاريخ.
+**APPEND_ONLY: PASS** (تحسين اختياري لاحقاً: Trigger `deny_hard_delete` لسدّ مسار الحذف بمفتاح الخدمة).
 
-**قراءة المعمارية:** «المكتب النشط» في مِهلة مفهوم واجهة فقط: `src/hooks/use-auth.tsx` يبني `activeOrgId` من عضويات المستخدم النشطة ويخزّنه في `localStorage` (`mehla_active_org`)، فلا وجود لمكتب نشط خادمي يمكن التحقق منه. وهذا هو النمط الموحد في كل الدوال المستأجَرة (`subscription.functions.ts`, `pii.functions.ts`, `document-ai.functions.ts`): `organizationId` جزء موثّق من Context الطلب، والحماية = عضوية نشطة (+ دور/استحقاق عند الحاجة). لذلك إرسال معرّف مكتب آخر يملك المستخدم فيه عضوية نشطة يعرض **نتيجته الخاصة بذلك المكتب** فقط، وهو سلوك مقصود لا تصعيد صلاحيات ولا اختراق عزل مستأجرين.
+## 5. LATEST SNAPSHOT CORRECTNESS — المشكلة الحاسمة
+المنطق الحالي في `latestSnapshotsByOrganization`: استعلام واحد `order computed_at desc` مع `limit organizationIds.length * 8`، ثم أول صف لكل مكتب داخل Map.
+- لا تكرار لمكتب، ولا تفضيل لقطة قديمة على أحدث (لأن الترتيب تنازلي عالمياً) — سليم عند تجاوب متساوٍ.
+- لكن السقف عالمي لا لكل مكتب: مكتب توقف حسابه لأيام (أو مكتب أنتج لقطات مكررة) يخرج من النافذة تماماً فيُحذف بصمت من الترتيب، ومع نمو التكرار قد تُقصّ مكاتب مؤهلة.
+**LATEST_SNAPSHOT_PER_ORG: FAIL** (صحيح بالحظ لا بالتصميم)
+**CURRENT_FORMULA_VERSION_FILTER: NO** — لا تصفية لـ `formula_version`، فأي لقطة بمعادلة قديمة قد تظهر عامّاً. نعم: يجب قصر Public v1 على `formula_version = 'v1'` (`OPERATIONAL_SCORE_FORMULA_VERSION`).
 
-**ACTIVE_ORG_ENFORCEMENT:** NOT_APPLICABLE_BY_CURRENT_ARCHITECTURE (لا مفهوم خادمي لمكتب نشط؛ المستوى المطبَّق هو عضوية نشطة مثبتة خادمياً — مطابق للمعمارية المعتمدة، ولم يُعدَّل شيء).
+ROOT_CAUSE: انتقاء "الأحدث لكل مكتب" مُنفَّذ في الذاكرة على نتيجة استعلام مقصوصة عالمياً، بلا تصفية إصدار المعادلة.
+MINIMAL_FIX: دالة SQL (`DISTINCT ON (organization_id) ... WHERE window_kind='rolling_90' AND formula_version='v1' ORDER BY organization_id, computed_at DESC`) تُستدعى من الخادم، أو استعلام لكل مكتب بـ `limit 1` مع `eq('formula_version','v1')`.
+EXACT_FILES: `src/lib/operational-score/ranking.server.ts` (+ Migration لدالة SQL إن اختير هذا الطريق).
 
-**AUTHORIZATION_PATTERN:** `requireSupabaseAuth` (JWT) → `requireActiveMembership` (صف عضوية `status = active` بجلسة المستخدم فوق RLS) → كل استعلام مقيّد بـ `organization_id` → قراءة إدارية واحدة للأحداث بعد الحارس ومقيّدة بنفس المكتب.
+## 6. PUBLIC ELIGIBILITY
+كل الشروط خادمية في `getPublicRanking`: مفتاح الميزة (Fail-closed)، `public_opt_in = true`، `platform_excluded = false`، مكتب نشط وغير موقوف، اشتراك `active` غير موقوف ولم ينته، صفحة عامة `published` غير موقوفة باسم معتمد غير فارغ، أهلية اللقطة، والنتيجة ≥ 78. لا شرط Client-side.
+**PUBLIC_ELIGIBILITY: PASS** — مع تنبيه توثيقي: التعليق يذكر "تجريبي" بينما الشرط يقبل `active` فقط؛ السلوك أضيق من التعليق (آمن).
 
-## 2. FINAL CONTRACT CHECK
+## 7. PUBLIC RESPONSE
+`sanitizePublicRankingItems` تُعيد `rank / publicName / score / badge / logoUrl` فقط؛ لا `organizationId` ولا أبعاد ولا أعداد ولا اشتراك ولا أسباب داخلية. الدالة العامة بلا وسائط (لا سطح تعداد).
+**PUBLIC_DATA_MINIMIZATION: PASS**
 
-شكل الاستجابة `OperationalScoreResult` (`score.shared.ts`) يحتوي حصراً: `score`, `formulaVersion`, `windowStart`, `windowEnd`, `computedAt`, `eligible`, `eligibilityReason`, `eligibilityMessage`, `eligibleItems`, `deadlinesAndHearings`, `trackingDays`, `integrityFactor`, و`dimensions` (مفتاح، عنوان بعد ثابت، نسبة، وزن، applied، quality، sampleSize).
+## 8. TIE BREAK
+الحالي: `score DESC`, `computed_at ASC`, ثم الاسم. `computed_at ASC` استُخدم كفاصل قطعي، لكنه بعد اختيار "أحدث لقطة لكل مكتب" يمنح أفضلية لمن حُسب أولاً في دورة الـ Cron — أفضلية غير منطقية ومتغيرة بترتيب المعالجة، كما يعرّض توقيت الحساب كعامل ترتيب عام.
+اقتراح (بلا تنفيذ): `score DESC` ثم `publicName.localeCompare(name, 'ar')` فقط — قطعي، مستقر، ولا يعتمد على بيانات داخلية.
+**TIE_BREAK: NEEDS_FIX** — EXACT_FILES: `src/lib/operational-score/ranking.server.ts`.
 
-- لا بيانات عملاء ولا قضايا ولا مستندات ولا عناوين/أوصاف مهام أو مهل — الأعمدة المقروءة أصلاً هي Metadata فقط (`id, created_at, due_date, completed_at, status`, و`hearing_date, status, created_at`).
-- لا معرّفات أعمال ولا معرّفات مكاتب ولا أي محتوى قانوني خام في المخرجات؛ المعرّفات تبقى داخل المحرك ولا تُسرَّب.
-- لا أي بيانات عن مكاتب أخرى ولا مقارنة ولا ترتيب.
+## 9. CRON IDEMPOTENCY
+المسار Insert-only بلا تعديل يدوي للنتيجة وبلا قفل. تشغيلان متقاربان يُنتجان لقطتين شبه متطابقتين لنفس المكتب: لا إفساد بيانات ولا تعديل تاريخ، لكن تكرار الصفوف يستهلك نافذة القصّ في البند 5 ويزيد احتمال اختفاء مكاتب من الترتيب.
+**CRON_CONCURRENCY_RISK: MEDIUM** (يهبط إلى LOW بعد إصلاح البند 5، ويُغلق تماماً بقفل استشاري أو فريد على (organization_id, window_kind, فترة زمنية)).
 
-**PRIVATE_RESPONSE_PRIVACY:** PASS
+## 10. ROLLBACK PLAN (وصف فقط)
+1. تعطيل فوري بلا DDL: إيقاف مفتاح `platform_settings.operational_score` (`enabled=false`) → الترتيب العام يعود فارغاً ومعطّلاً، وإيقاف نداء الـ Cron.
+2. رجوع جزئي: `DROP TRIGGER` الثلاثة، ثم `DROP FUNCTION private.ranking_settings_guard()`.
+3. رجوع كامل: `DROP TABLE public.operational_score_snapshots;` ثم `DROP TABLE public.organization_ranking_settings;` (لا جدول آخر يعتمد عليهما؛ الحذف لا يمس بيانات إنتاج قائمة).
+4. ملاحظة: `activity_logs` قد يحتوي أحداث `ranking.opt_in` — لا تُحذف (سجل تدقيق).
+**ROLLBACK_PLAN: READY**
 
-عند `eligible = false`: المحرك يعيد `score: eligible ? score : null` (`score.engine.ts`)، فلا نسبة إجمالية تُنقل عبر الشبكة أصلاً. والواجهة (`operational-score-card.tsx`) تعرض «بيانات غير كافية» بدل النسبة الإجمالية، وتُخفي نسب الأبعاد كذلك عندما `eligible = false`.
+## OUTPUT
+- MIGRATION_SQL: PASS
+- RLS: PASS
+- RANKING_SETTINGS_GUARD: PASS (ملاحظة MEDIUM على أعمدة opted_in_*)
+- SNAPSHOT_WRITE_BOUNDARY: PASS
+- APPEND_ONLY: PASS
+- LATEST_SNAPSHOT_PER_ORG: FAIL
+- FORMULA_VERSION_FILTER: NEEDS_FIX
+- PUBLIC_ELIGIBILITY: PASS
+- PUBLIC_DATA_MINIMIZATION: PASS
+- TIE_BREAK: NEEDS_FIX
+- CRON_CONCURRENCY_RISK: MEDIUM
+- ROLLBACK_PLAN: READY
 
-**INELIGIBLE_SCORE_EXPOSURE:** PASS
-
-## 3. الحكم
-
-- **SOURCE_CHANGED_SINCE_CORRECTION:** NO (المصادر المفحوصة مطابقة لحالة ما بعد Correction Batch: 26 اختباراً ناجحاً، TypeCheck وESLint نظيفان).
-- **FINAL_B1_B2_VERDICT:** READY_FOR_PREVIEW_QA
-
-لم يُعدَّل أي كود، ولا Deploy، ولا Migration.
+**PRE_APPLY_VERDICT: FIX_REQUIRED_BEFORE_APPLY**
+السبب محصور في الكود الخادمي (البنود 5 و8) لا في SQL: Migration نفسها آمنة للتطبيق، لكن الترتيب العام لا يجب تشغيله قبل إصلاح انتقاء أحدث لقطة + تصفية إصدار المعادلة + الفاصل القطعي.
