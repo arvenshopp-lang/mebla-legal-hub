@@ -38,6 +38,7 @@ export type PromptBlockReason =
   | "platform_excluded"
   | "already_opted_in"
   | "public_name_missing"
+  | "integrity_not_pass"
   | "snoozed";
 
 export type PromptEligibilityInput = {
@@ -46,6 +47,8 @@ export type PromptEligibilityInput = {
   scoreEligible: boolean;
   score: number | null;
   minimumScore: number;
+  /** بوابة نزاهة الظهور العام: الدعوة لا تُعرض إلا عند `pass`. */
+  integrityPass: boolean;
   organizationActive: boolean;
   subscriptionActive: boolean;
   platformExcluded: boolean;
@@ -71,6 +74,7 @@ export function evaluatePromptEligibility(input: PromptEligibilityInput): Prompt
   if (!input.scoreEligible || input.score === null)
     return { visible: false, reason: "score_not_eligible" };
   if (input.score < input.minimumScore) return { visible: false, reason: "score_below_threshold" };
+  if (!input.integrityPass) return { visible: false, reason: "integrity_not_pass" };
   if (!input.publicNameApproved) return { visible: false, reason: "public_name_missing" };
   const now = new Date(input.now).getTime();
   if (input.snoozedUntil !== null && new Date(input.snoozedUntil).getTime() > now)
