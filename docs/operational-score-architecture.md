@@ -81,3 +81,22 @@ score = clamp(round(raw × 100 × integrityFactor), 0, 100)
 PUBLIC TOP 5 NOT IMPLEMENTED YET — BLOCKED_BY_RECOVERY_GATE.
 
 غير مُنفَّذ حالياً ويحتاج Migration واعتماداً لاحقاً: `organization_ranking_settings` (الموافقة Default OFF)، `operational_score_snapshots`، Cron الحساب الدوري، نقطة API عامة، قسم «الأكثر إنجازاً على مِهلة» (5 نتائج، حد أدنى 78)، إدارة الترتيب في لوحة المنصة، والترتيب الشهري (`DEFERRED_AFTER_V1`).
+## بوابة نزاهة الظهور العام (Public Ranking Anti-Gaming Gate — v1)
+
+طبقة مستقلة تمامًا عن المؤشر الداخلي: **لا تُعدّل النتيجة ولا الأوزان ولا `integrityFactor`**،
+وتقتصر مخرجاتها على `PUBLIC_RANKING_INTEGRITY_STATUS`.
+
+- الملفات: `src/lib/operational-score/integrity.shared.ts` (العقود والحدود)،
+  `integrity.engine.ts` (دالة نقية `assessPublicIntegrity`).
+- الحالات: `pass` | `review_required` | `ineligible`.
+- `ineligible` موضوعية فقط: `INSUFFICIENT_ACTIVITY_SPREAD` (أيام نشطة < 12 في نافذة 90 يومًا
+  بتوقيت الرياض) أو عدم تحقق الأهلية الأساسية.
+- الأنماط الإحصائية (إنشاء بعد الموعد، تمديد متأخر، عناصر قصيرة العمر، تركيز نشاط،
+  جلسات مُنشأة بعد تاريخها، نمط ترحيل بيانات) تنتج `review_required` فقط — لا اتهام ولا حجب صلب.
+- الجلسات المُنشأة بعد تاريخها لا تُحتسب دليلًا إيجابيًا في تقييم الأهلية العامة.
+- التخزين بلا Migration: `operational_score_snapshots.dimensions.integrity`
+  (`status`, `reasonCodes`, `signals`, `activeDays`, `evaluatedAt`, `modelVersion`).
+- القراءة **Fail closed**: غياب المفتاح أو اختلاف `modelVersion` ⇒ `null` ⇒ لا ظهور عام.
+- الظهور في Top 5 ودعوة الموافقة (Opt-in Prompt) يتطلبان `status === "pass"`.
+- المعايرة: `bun run score:integrity:dryrun` (قراءة فقط، تقرير مجمّع بلا معرّفات).
+- الاختبارات: `bun run score:integrity:test`.
