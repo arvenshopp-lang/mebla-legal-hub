@@ -1,138 +1,103 @@
-# PUBLIC RANKING ANTI-GAMING GATE — v1 (تصميم / بدون تنفيذ)
+# تنبيهات البريد — معمارية المرحلة 1 (أحداث الإشعارات القائمة → بريد)
 
-طبقة مستقلة تُقرر **الأهلية للظهور العام فقط**. لا تلمس المؤشر الداخلي ولا تعدّل نتيجة أي مكتب.
+## 1) القرار المعماري
+**الموصى به: الخيار (B)** — جدول طابور مخصص `notification_email_queue` + عامل دوري يستدعي `sendAppEmail`.
 
-## CURRENT_ANTI_GAMING_CAPABILITIES
-- استبعاد المهام قصيرة العمر (< ساعة بين الإنشاء والإنجاز) من البسط والمقام (`SHORT_LIVED_TASK_MS`).
-- تصحيح الموعد المعتمد بأحداث `due_changed` المثبتة مع منع العقوبة المزدوجة (`resolveEffectiveDue`).
-- `integrityFactor = 1.00` محايد ومحفوظ في العقد واللقطة (`integrity_factor`) بلا استخدام فعلي.
-- بوابة أهلية أساسية: عمر 45 يوماً، تتبع 30 يوماً، 25 عملاً مؤهلاً، 5 مهل/جلسات.
-- الجلسات `self_reported`، المهل والمهام `audited`.
+- (A) الإرسال المباشر داخل مسار الحدث يربط نجاح العملية التجارية بزمن استجابة مزوّد البريد، ولا يوفّر إعادة محاولة ولا سجل تسليم ولا تفرّد على مستوى القاعدة.
+- (C) إعادة استخدام `email_outbox` مرفوضة: دلالتها مراسلات بشرية من صندوق المكتب عبر SMTP وبها مرفقات وخيوط محادثة و`email-dispatch` كل دقيقة؛ خلط تنبيهات النظام بها يفسد التقارير ويعرّض التنبيهات لمسار نقل مختلف ولمشكلات الحجب البشري.
+- محرك واتساب (`notification_events` → `notification_queue`) يبقى كما هو دون لمس؛ لا تجريد قناة مشترك في المرحلة 1.
 
-## DATA AVAILABILITY AUDIT (متحقق فعلياً)
-- `tasks` / `deadlines`: `created_at, due_date, completed_at, status`.
-- `hearings`: `hearing_date, status, created_at` فقط — **لا سجل أحداث إطلاقاً** (تأكيد: لا يوجد أي صف بـ `item_type='hearing'` في `work_item_events`).
-- `work_item_events` المتاحة فعلاً لـ task/deadline: `created, due_changed, completed, deleted, reopened, assigned, baseline` مع `occurred_at, from_due_date, to_due_date, seq`.
-- `organizations.created_at` لعمر المكتب.
-- لا قراءة لأي عنوان أو اسم عميل أو مستند أو محتوى قانوني.
+## 2) مصدر الحقيقة
+`public.notifications` يبقى سجل الإشعار داخل التطبيق فقط (بلا أي حقول مزوّد). حالة تسليم البريد تعيش في الجدول الجديد وحده.
 
-## TASK_GAMING_SIGNALS (نِسَب لا أعداد خام)
-- `SHORT_LIVED_TASK_RATIO`: مهام عمرها < 24 ساعة من إجمالي المستحقة.
-- `SAME_DAY_CREATE_COMPLETE_RATIO`: أُنشئت وأُنجزت في نفس يوم الرياض.
-- `POST_DUE_CREATION_RATIO`: أُنشئت بعد موعدها المعتمد.
-- `PRE_QUALIFICATION_BURST`: نسبة العناصر المؤهلة المنشأة في آخر 7 أيام من النافذة.
-- `SINGLE_DIMENSION_DEPENDENCE`: النتيجة تعتمد فعلياً على بعد واحد.
+## 3) الجدول المقترح (تصميم فقط — بلا Migration الآن)
+`public.notification_email_queue`
+- `id uuid pk`
+- `notification_id uuid not null references public.notifications(id) on delete cascade`
+- `organization_id uuid not null references public.organizations(id)`
+- `user_id uuid not null` (نفس مستهدف الإشعار)
+- `event_type text not null`
+- `template_key text not null`
+- `recipient_email text not null` (لقطة وقت الإدراج)
+- `status text not null default 'queued'` ∈ (`queued`,`processing`,`sent`,`failed`,`cancelled`)
+- `attempts int not null default 0`، `max_attempts int not null default 4`
+- `scheduled_at timestamptz not null default now()`
+- `provider_reference text`، `last_error_code text`، `last_error_message text` (مقتطع 400 حرف، رمز آمن فقط)
+- `created_at`, `updated_at`, `processing_started_at`, `sent_at`, `failed_at`
+- **قيد التفرّد:** `unique (notification_id)` — قناة البريد واحدة لكل إشعار.
+- فهارس: `(status, scheduled_at)`، `(organization_id, created_at desc)`، `(event_type, status)`.
+- الأمان: `ENABLE ROW LEVEL SECURITY`؛ `GRANT ALL ... TO service_role` فقط (بلا `anon` وبلا `authenticated`) — الجدول تشغيلي خادمي، ولا يُقرأ من المتصفح. القراءة الإدارية تمر عبر دالة خادمية بصلاحية موظف.
+- لا يُخزَّن نص قانوني: العنوان والملخص يُبنى وقت الإرسال من `notifications` + القالب.
 
-## DEADLINE_GAMING_SIGNALS (الوزن 45% — أعلى حساسية)
-- `SHORT_LIVED_DEADLINE_RATIO`: مهل أُنشئت وأُكملت خلال < 24 ساعة.
-- `POST_DUE_DEADLINE_CREATION_RATIO`: أُنشئت بعد/قرب موعدها ثم أُغلقت مباشرة.
-- `LATE_DUE_EXTENSION_ON_EXPIRED`: `due_changed` بعد انقضاء الموعد الأصلي (دليل مثبت من السجل).
-- `DEADLINE_DELETION_AFTER_DUE_RATIO`: أحداث `deleted` لمهل بعد استحقاقها داخل النافذة.
-- حماية الترحيل: تركّز المهل ذات مواعيد قديمة أو في أول 14 يوماً من الاستخدام = `ONBOARDING_IMPORT` ويُعالَج REVIEW لا HARD_BLOCK.
+## 4) نموذج التفرّد
+مفتاح حتمي على مستويين:
+1. قيد `unique(notification_id)` يمنع أكثر من صف بريد لأي إشعار.
+2. `idempotencyKey = notif-email:{notification_id}` يُمرَّر إلى `sendAppEmail`، فتمنع خدمة البريد التكرار حتى لو أُعيد سحب الصف بعد انقطاع الشبكة أو إعادة تشغيل الخادم.
+سحب الدفعة يتم بـ RPC على نمط `claim_notification_batch` القائم (`FOR UPDATE SKIP LOCKED` + نقل إلى `processing`) فلا يعالج عاملان الصف نفسه.
 
-## HEARING_GAMING_SIGNALS
-لا يمكن إثبات واقعية الجلسة داخل مِهلة: لا سجل أحداث ولا timestamp موثوق لتغيّر الحالة (`updated_at` يتغير بأي تعديل). لذلك v1 تحفّظي فقط:
-- استبعاد أي جلسة أُنشئت **بعد** `hearing_date` من بُعد الجلسات لأغراض الظهور العام.
-- `MIN_HEARING_AGE`: تُحتسب للترتيب العام فقط إذا أُنشئت قبل موعدها بـ ≥ 24 ساعة.
-- `HEARING_CONTRIBUTION_CAP`: لا تمنح الجلسات وحدها أهلية عامة عندما تكون أبعاد المهل/المهام غير مطبقة.
-- تصنيف ثقة أدنى يُذكر داخلياً في لوحة المنصة فقط.
+## 5) فرض التفضيلات (المفتاح الرئيسي حقيقي)
+عند إدراج أي إشعار مؤهّل للبريد يقرأ الخادم `user_notification_preferences` للمستخدم + المكتب:
+- لا يوجد صف تفضيلات → الافتراضي `email_enabled = true` (كما DEFAULT في القاعدة).
+- `email_enabled = false` → **لا إدراج إطلاقاً** (لا صف مُلغى ولا ضجيج).
+- `email_enabled = true` + نوع الحدث داخل قائمة السماح → إدراج.
+- مفاتيح الأحداث التفصيلية (الجلسات/المهل/المهام) لا تُقرأ في المرحلة 1 لعدم وجود أحداثها.
 
-## UNPROVABLE_SIGNALS (بصراحة)
-- واقعية الجلسة قضائياً، ونية إنشاء المهمة أو المهلة.
-- تعديل موعد غير مسجَّل في سجل الأحداث.
-- حذف عناصر بلا حدث `deleted`.
-- أي حكم على الجلسات مبني على وقت تغيير الحالة.
+## 6) مصفوفة أحداث المرحلة 1
+| EVENT_TYPE | IN_APP | EMAIL_V1 | PREFERENCE_KEY | TEMPLATE | السبب |
+|---|---|---|---|---|---|
+| `team_member_joined` | نعم | **نعم** | `email_enabled` | `notif-team-member-joined` | حدث إداري يهم المدير ولا يحمل بيانات قضايا |
+| `support_reply` | نعم | **نعم** | `email_enabled` | `notif-support-reply` | المكتب ينتظر رداً؛ بريد بلا نص الرد + رابط التذكرة |
+| `support_ticket_created` | نعم | **نعم** | `email_enabled` | `notif-support-ticket-created` | تأكيد استلام لطلب أنشأه المستخدم نفسه |
+| `platform_broadcast` | نعم | **لا** | — | — | إعلان جماعي = تسويق/بث؛ خارج نطاق بريد المعاملات |
+| إشعار طلب استشارة (office lead) | نعم | **لا** في هذه الطبقة | — | — | له بريد مباشر عامل بالفعل (`sendOfficeLeadEmail`)؛ إضافته هنا تعني بريدين |
+| تذكيرات الجلسات/المهل/المهام | لا يوجد حدث اليوم | لا | مؤجّل | — | المرحلة 2 |
 
-## RECOMMENDED_ACTIVITY_SPREAD_RULE
-`MIN_ACTIVE_DAYS_IN_90 = 12`، واليوم النشط = يوم رياض فيه عنصر مؤهل واحد على الأقل (إنشاء أو إنجاز أو جلسة منقضية). المنطق: 25 عملاً موزعة على ≥ 12 يوماً = إيقاع تشغيلي أسبوعي حقيقي، ويستبعد «25 عنصراً في يومين» دون معاقبة المكتب الصغير المنتظم. الرقم يُعاد تقييمه على بيانات حقيقية بعد أول جولة لقطات.
+## 7) القوالب المطلوبة
+ثلاثة قوالب React Email عربية RTL بهوية مِهلة (أخضر #123C32، خلفية الجسم #ffffff، خط النظام):
+`notif-team-member-joined` · `notif-support-reply` · `notif-support-ticket-created`
+كل قالب: عنوان واضح + سطر ملخص آمن + زر «فتح في مِهلة» يشير إلى المسار الداخلي. **بلا** أسماء عملاء أو أرقام قضايا أو نص رسائل أو مرفقات. القالب المفقود لنوع مسموح = عدم إدراج (وليس فشل إرسال).
 
-## RECOMMENDED_CATEGORY_DIVERSITY
-لا إلزام بالجلسات (يظلم مكاتب الاستشارات والتحكيم الكتابي). للترتيب العام:
-- ≥ 25 عملاً مؤهلاً (كما هو)، و
-- ≥ 2 أبعاد مطبَّقة فعلياً، أو بعد واحد مع ≥ 8 مهل مستحقة مؤهلة، و
-- ≥ 5 مهل/جلسات مع اشتراط ألا تكون كلها جلسات مُنشأة بعد موعدها.
+## 8) استنتاج المستلم وعزل المكاتب
+المستلم يُستنتج خادمياً من `notification.user_id` + `notification.organization_id` حصراً:
+1. عضوية نشطة في نفس المكتب (`organization_members.status = 'active'`) — أو موظف منصة للتذاكر الداخلية.
+2. `profiles.email` موجود وغير فارغ.
+3. التفضيل مفعّل.
+أي فحص فاشل = عدم إدراج. لا يُقبل بريد أو معرّف مستلم من المتصفح إطلاقاً، فيستحيل أن يخرج إشعار مكتب A إلى عضو مكتب B.
 
-## BURST_DETECTION_MODEL (مفسَّر — لا ML)
-- `TOP3_DAY_CONCENTRATION` = عناصر أكثر 3 أيام ÷ إجمالي المؤهلة؛ REVIEW عند > 0.60.
-- `LAST7_PRE_QUALIFICATION_SHARE`؛ REVIEW عند > 0.50.
-- كل مؤشر نسبة قابلة للعرض والشرح، ويُحسب من نفس الصفوف المحمّلة.
+## 9) العامل الدوري
+- مسار جديد `POST /api/public/hooks/notification-emails` محمي بـ `guardCronRequest` (نفس نمط المهام القائمة)، ومهمة `pg_cron` واحدة كل 5 دقائق.
+- دفعة 25 صفاً، سحب بقفل `SKIP LOCKED`، إعادة محاولة تراجعية 2د/10د/60د، `max_attempts = 4`، ثم `failed` نهائي (Dead-letter منطقي عبر الحالة + رمز الخطأ).
+- الأخطاء على مستوى المستلم (`recipient_suppressed`, `invalid_recipient`) نهائية بلا إعادة محاولة. `429` يؤجّل الصف دون استهلاك محاولة.
+- لا خلط مع عامل واتساب ولا مع `email-dispatch`.
 
-## HARD_BLOCK_SIGNALS (دليل مثبت أو بوابة أدلة)
-- `LATE_DUE_EXTENSION_ON_EXPIRED` ≥ 3 عناصر داخل النافذة.
-- `POST_DUE_DEADLINE_CREATION_RATIO` > 0.40.
-- `SHORT_LIVED_DEADLINE_RATIO` > 0.40.
-- `DEADLINE_DELETION_AFTER_DUE_RATIO` > 0.25.
-- `INSUFFICIENT_ACTIVITY_SPREAD` (< 12 يوماً نشطاً).
+## 10) المزوّد والمرسل
+`sendAppEmail` كما هو (الخدمة المُدارة، `mail.mehlalex.com`، المرسل `MEHLA <noreply@mehlalex.com>`). لا علاقة لصندوق Hostinger البشري.
 
-## REVIEW_ONLY_SIGNALS
-تركيز 3 أيام، Burst آخر 7 أيام، الاعتماد على بعد واحد، ارتفاع نسبة المهام قصيرة العمر، نمط ترحيل بيانات، اعتماد كبير على جلسات حديثة الإنشاء. أي إشارة إحصائية وحدها ليست Hard Block.
+## 11) عزل الفشل
+الحدث التجاري ثم الإشعار داخل التطبيق ينجحان أولاً؛ الإدراج في طابور البريد يجري بعدهما ولا يرمي أبداً (فشله يُسجَّل في سجل الأعطال القائم). فشل الإرسال لا يلمس `notifications` ولا يعيد أي عملية.
 
-## FALSE_POSITIVE_PROTECTIONS
-- نِسَب وتوزيع بدل الأعداد الخام: لا عقوبة على الحجم.
-- استثناء نمط الترحيل من Hard Block.
-- الموسمية: نافذة 90 يوماً + شرط أيام نشطة (لا انتظام يومي).
-- المكتب قليل الجلسات: لا إلزام جلسات.
-- كل حجب يخرج مع `reasonCodes` قابلة للتفسير، وبلا أي نص اتهامي في واجهة المكتب.
+## 12) الرصد
+عدّادات فقط: `queued/processing/sent/failed` لكل `event_type` و`template_key`، متوسط زمن التسليم، أقدم صف معلّق، ورموز الأخطاء. تُعرض في لوحة الإدارة كأرقام مجمّعة. لا تسجيل لنص الرسالة ولا لأسماء العملاء ولا لعناوين كاملة (تقنيع `z***@domain.com`).
 
-## RECOMMENDED_INTEGRITY_GATE + السلسلة
-```text
-Operational Score (لا تتغير)
-  -> Base Eligibility (45d / 30d / 25 items / 5 D+H)
-  -> Anti-Gaming Integrity Gate (PASS | REVIEW_REQUIRED | INELIGIBLE)
-  -> Opt-in
-  -> Public Ranking Eligibility (score >= 78 + اسم عام منشور + اشتراك نشط)
-  -> Top 5
-```
-نؤكد صحة هذا التسلسل. الظهور العام يتطلب `PASS` فقط، و`REVIEW_REQUIRED` = لا ظهور مع بقاء النتيجة الداخلية كما هي.
+## 13) سلوك الواجهة
+مفتاح «عبر البريد الإلكتروني» يصبح فعّالاً وتُضاف تحته ملاحظة صريحة بأنواع الأحداث المشمولة حالياً. مفاتيح تذكيرات الجلسات/المهل تبقى موجودة مع وسم «قيد التفعيل — المرحلة 2» دون حذفها.
 
-## PUBLIC_INTEGRITY_STATUS_MODEL
-```ts
-type PublicIntegrityStatus = "pass" | "review_required" | "ineligible";
-type PublicIntegrityAssessment = {
-  status: PublicIntegrityStatus;
-  reasonCodes: string[];            // رموز فقط، لا محتوى
-  signals: Record<string, number>;  // نِسَب 0–1 وأعداد إشارات
-  evaluatedAt: string;
-};
-```
+## 14) نقطة اندماج المرحلة 2
+دالة واحدة `createUserNotification()` تكتب في `notifications` ثم تستدعي `enqueueNotificationEmail()`. محرك التذكيرات في المرحلة 2 يستدعي نفس الدالة فيحصل على البريد تلقائياً بمجرد إضافة النوع لقائمة السماح وقالبه ومفتاح تفضيله.
 
-## DATABASE_MIGRATION_REQUIRED
-**NO** — يُحسب وقت توليد اللقطة ويُخزَّن في `operational_score_snapshots.dimensions` (jsonb قائم) تحت مفتاح مستقل `integrity`، مع بقاء `integrity_factor = 1.00` كما هو. لا حقول جديدة ولا حل هش: الحقل jsonb مخصص أصلاً لبيانات اللقطة، والقراءة العامة خادمية فقط.
+## 15) ملفات متوقعة (بعد الاعتماد)
+`src/lib/notifications/email-channel.shared.ts` (قائمة السماح + خريطة القوالب) · `email-channel.server.ts` (الإدراج) · `email-worker.server.ts` (السحب والإرسال) · 3 قوالب في `src/lib/email-templates/` · `src/routes/api/public/hooks/notification-emails.ts` · تعديل مواضع إنشاء الإشعارات (`invitations.server.ts`, `support/notify.server.ts`) لتمر بالدالة الموحّدة · ملاحظة الواجهة في `settings.tsx` · `scripts/notification-email.test.ts` · هجرة واحدة (جدول + RPC السحب).
 
-## SNAPSHOT_STORAGE_MODEL
-`dimensions = { deadlines, tasks, hearings, integrity }`. اختيار أحدث لقطة لكل مكتب واستبعاد ما ليس `pass` يحدث في `ranking.server.ts`، ولا يُسرَّب أي `reasonCode` للعامة.
+## 16) خطة اختبار مستهدفة
+التفضيل مغلق = صفر إدراج · إدراج مزدوج لنفس الإشعار = صف واحد (23505) · نوع غير مسموح = لا إدراج · مستخدم بلا بريد = لا إدراج · عضو مكتب آخر = مرفوض · إعادة سحب بعد `processing` = لا بريد ثانٍ · تراجع المحاولات ثم `failed` عند استنفادها · `recipient_suppressed` = فشل نهائي فوري · تحقق أن القوالب لا تحتوي بيانات قضايا/عملاء.
 
-## PERFORMANCE_IMPACT
-**LOW** — كل الإشارات من نفس الصفوف المحمّلة في `score.server.ts` بمرور واحد إضافي في الذاكرة. لا استعلام إضافي، لا N+1، لا تغيير في حدود الصفوف.
-
-## EXACT_FILES_EXPECTED (عند البناء)
-- `src/lib/operational-score/integrity.shared.ts` (جديد): العتبات والأنواع ورموز الأسباب والنصوص المحايدة.
-- `src/lib/operational-score/integrity.engine.ts` (جديد): `assessPublicIntegrity(input)` دالة نقية قطعية.
-- `src/lib/operational-score/score.server.ts`: تمرير نفس الصفوف للمحرك بلا تغيير النتيجة.
-- `src/lib/operational-score/snapshot.server.ts`: كتابة `dimensions.integrity`.
-- `src/lib/operational-score/ranking.server.ts`: اشتراط `pass` + سبب أهلية محايد.
-- `scripts/operational-score-integrity.test.ts` (جديد).
-- `docs/operational-score.md`: توثيق البوابة.
-
-## OFFICE UX (نص محايد فقط)
-- غير مؤهل: «يتطلب التأهل للظهور العام توفر نشاط تشغيلي منتظم وبيانات كافية عبر فترة القياس.»
-- قيد المراجعة: «الظهور العام قيد المراجعة.»
-- لا إشارة إلى تلاعب أو اشتباه في أي واجهة مكتب.
-
-## PLATFORM ADMIN
-قراءة فقط: النتيجة، الأهلية الأساسية، حالة النزاهة، `reasonCodes`، ملخص الإشارات الرقمية، تاريخ اللقطة. لا محتوى قضايا أو مهام، ولا تعديل يدوي للنتيجة.
-
-## TARGETED_TEST_CASES
-1. مكتب صغير منتظم (28 عنصراً على 20 يوماً) = PASS.
-2. مكتب كبير (400 عنصر على 70 يوماً) = PASS.
-3. 25 عنصراً في يومين = INELIGIBLE (`INSUFFICIENT_ACTIVITY_SPREAD`).
-4. 60% من المهل أُنشئت بعد موعدها ثم أُكملت = INELIGIBLE.
-5. تمديد 4 مواعيد بعد انقضائها = INELIGIBLE.
-6. ترحيل بيانات عند البدء = REVIEW_REQUIRED لا INELIGIBLE.
-7. مكتب بلا جلسات = PASS.
-8. كل الجلسات أُنشئت بعد موعدها = مستبعدة من البعد + REVIEW.
-9. ذروة موسمية داخل 90 يوماً = PASS.
-10. تركيز 70% في 3 أيام = REVIEW_REQUIRED.
-
-## FINAL_VERDICT
-**READY_FOR_BUILD** (v1، NO_MIGRATION، والميزة العامة تبقى DISABLED حتى مرحلة تالية).
+---
+### الخلاصة
+RECOMMENDED_ARCHITECTURE: **B — طابور بريد تنبيهات مخصص + عامل دوري + `sendAppEmail`**
+QUEUE_REQUIRED: **YES** · REUSE_EMAIL_OUTBOX: **NO** · NEW_TABLE_REQUIRED: **YES** (`notification_email_queue`)
+IDEMPOTENCY_MODEL: `unique(notification_id)` + `idempotencyKey = notif-email:{id}`
+PREFERENCE_ENFORCEMENT: `email_enabled` مفتاح رئيسي خادمي (الافتراضي مفعّل عند غياب الصف)
+RECIPIENT_RESOLUTION: `notification.user_id` + عضوية نشطة + `profiles.email` — خادمي بالكامل
+TENANT_ISOLATION: **PASS** · SEND_APP_EMAIL_REUSED: **YES** · MIGRATION_REQUIRED: **YES** (لم تُنشأ)
+EVENT_EMAIL_V1: 3 أنواع (انضمام عضو، رد دعم، إنشاء تذكرة) — البث والطلبات مستثناة
+FINAL_VERDICT: **READY_FOR_BUILD**
