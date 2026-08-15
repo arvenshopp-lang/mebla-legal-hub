@@ -61,7 +61,7 @@ export const SHORT_LIVED_TASK_MS = 60 * 60 * 1000;
 export const INTEGRITY_FACTOR_NEUTRAL = 1;
 
 /** سياسة الوقت المركزية: حدود يوم الرياض تُشتق من `src/lib/format.ts` فقط. */
-export { DAY_MS, RIYADH_TZ, riyadhDayStart, riyadhDaysBetween } from "@/lib/format";
+export { DAY_MS, RIYADH_TZ, riyadhDayStart, riyadhDaysBetween };
 
 export type EligibilityReason =
   | "eligible"
@@ -81,14 +81,6 @@ export const ELIGIBILITY_MESSAGES: Record<EligibilityReason, string> = {
 };
 
 export const INSUFFICIENT_DATA_LABEL = "بيانات غير كافية";
-
-/** بداية اليوم بتوقيت الرياض للحظة معطاة. */
-export function riyadhDayStart(at: Date | string | number): Date {
-  const ms = new Date(at).getTime() + RIYADH_OFFSET_MS;
-  const shifted = new Date(ms);
-  shifted.setUTCHours(0, 0, 0, 0);
-  return new Date(shifted.getTime() - RIYADH_OFFSET_MS);
-}
 
 /** نافذة القياس: 90 يوماً رياضياً كاملة تنتهي عند لحظة الحساب. */
 export function resolveScoreWindow(now: Date | string | number = new Date()): {
