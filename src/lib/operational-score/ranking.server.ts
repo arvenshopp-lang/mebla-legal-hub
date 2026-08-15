@@ -10,8 +10,10 @@
 import {
   OPT_IN_SNOOZE_DAYS,
   PROMPT_MARK_MIN_INTERVAL_MS,
+  evaluateConsentState,
   evaluatePromptEligibility,
   snoozeUntil,
+  type ConsentEvaluation,
   type PromptEligibility,
 } from "./optin.shared";
 import {
@@ -595,4 +597,84 @@ export async function acceptOptInFromPrompt(
     throw new RankingAccessError("مكتبك غير مؤهل حالياً للظهور في قائمة الأكثر إنجازاً.");
   }
   return setRankingOptIn(supabase, organizationId, userId, true);
+}
+
+/* ==========================================================================
+ * إعداد الظهور العام الدائم في إعدادات المكتب — يقرأ نفس مصدر الحقيقة
+ * (`public_opt_in`) ويعيد التحقق من كل شروط الظهور خادمياً قبل أي تفعيل.
+ * لا يكتب طوابع الدعوة (لا يستهلك التأجيل) ولا يمس النتيجة ولا اللقطات.
+ * ========================================================================== */
+
+export type RankingConsentState = ConsentEvaluation & {
+  score: number | null;
+  minimumScore: number;
+};
+
+export async function evaluateRankingConsent(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+  userId: string,
+): Promise<RankingConsentState> {
+  const isManager = await isOrganizationManager(supabase, organizationId, userId);
+  const settings = await getRankingSettings(supabase, organizationId);
+  const [orgActive, subscribed, names, featureEnabled] = await Promise.all([
+    organizationIsActive(supabase, organizationId),
+    activeSubscriptionOrganizations(adminSupabase, [organizationId]),
+    approvedPublicNames(adminSupabase, [organizationId]),
+    isRankingFeatureEnabled(adminSupabase),
+  ]);
+
+  const { computeOrganizationScoreWithIntegrity } = await import("./score.server");
+  const { result, integrity } = await computeOrganizationScoreWithIntegrity(
+    supabase,
+    adminSupabase,
+    organizationId,
+  );
+
+  const evaluation = evaluateConsentState({
+    isManager,
+    publicOptIn: settings.publicOptIn,
+    scoreEligible: result.eligible,
+    score: result.eligible ? result.score : null,
+    minimumScore: PUBLIC_MINIMUM_SCORE,
+    integrityStatus: integrity.status,
+    organizationActive: orgActive,
+    subscriptionActive: subscribed.has(organizationId),
+    platformExcluded: settings.platformExcluded,
+    publicNameApproved: names.has(organizationId),
+    featureEnabled,
+  });
+
+  // لا تُعاد النتيجة الرقمية إلا للمدير المخوّل، وبلا أي مكوّنات خام.
+  return {
+    ...evaluation,
+    score: isManager && result.eligible ? result.score : null,
+    minimumScore: PUBLIC_MINIMUM_SCORE,
+  };
+}
+
+/**
+ * تغيير الموافقة من صفحة الإعدادات: التفعيل يمرّ ببوابة أهلية خادمية كاملة
+ * (نتيجة + نزاهة + اشتراك + اسم عام + مفتاح المنصة)، والإيقاف متاح دائماً للمدير
+ * ولا يحذف نتيجة ولا لقطة ولا سجلاً.
+ */
+export async function setRankingConsent(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+  userId: string,
+  optIn: boolean,
+): Promise<RankingConsentState> {
+  const state = await evaluateRankingConsent(supabase, adminSupabase, organizationId, userId);
+  if (!state.isManager) {
+    throw new RankingAccessError("لا تملك الصلاحية لتعديل إعدادات الظهور العام لهذا المكتب.");
+  }
+  if (optIn && state.publicOptIn) return state;
+  if (!optIn && !state.publicOptIn) return state;
+  if (optIn && !state.canEnable) {
+    throw new RankingAccessError("مكتبك غير مؤهل حالياً للظهور في قائمة الأكثر إنجازاً.");
+  }
+  await setRankingOptIn(supabase, organizationId, userId, optIn);
+  return evaluateRankingConsent(supabase, adminSupabase, organizationId, userId);
 }
