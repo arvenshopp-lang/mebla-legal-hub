@@ -417,3 +417,161 @@ export async function getPublicRanking(adminSupabase: Client): Promise<PublicOpe
 
   return { enabled: true, computedAt, items };
 }
+
+/* ==========================================================================
+ * B3C — دعوة الظهور العام (Eligibility Prompt)
+ * الخصوصية: كل ما يُعاد هو حالة المكتب نفسه ونتيجته فقط. لا أسماء مكاتب أخرى
+ * ولا نتائجها ولا تفاصيل Top 5 ولا أي بيانات عملاء/قضايا/مستندات/موظفين/مالية.
+ * ========================================================================== */
+
+export type OptInPromptState = PromptEligibility & {
+  score: number | null;
+  minimumScore: number;
+  snoozeDays: number;
+  publicOptIn: boolean;
+};
+
+async function organizationIsActive(client: Client, organizationId: string): Promise<boolean> {
+  const { data, error } = await client
+    .from("organizations")
+    .select("is_active, suspended_at")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (error || !data) return false;
+  return data.is_active === true && !data.suspended_at;
+}
+
+/**
+ * قرار عرض الدعوة — يُحسب خادمياً بالكامل. أي شرط يمنع الظهور الفعلي يمنع الدعوة،
+ * فلا يُقال للمكتب إنه «مؤهل للظهور» ثم لا يظهر.
+ */
+export async function evaluateOptInPrompt(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+  userId: string,
+): Promise<OptInPromptState> {
+  const base = {
+    score: null as number | null,
+    minimumScore: PUBLIC_MINIMUM_SCORE,
+    snoozeDays: OPT_IN_SNOOZE_DAYS,
+    publicOptIn: false,
+  };
+
+  const isManager = await isOrganizationManager(supabase, organizationId, userId);
+  if (!isManager) return { ...base, visible: false, reason: "not_authorized" };
+
+  const settings = await getRankingSettings(supabase, organizationId);
+  const [orgActive, subscribed, names, featureEnabled] = await Promise.all([
+    organizationIsActive(supabase, organizationId),
+    activeSubscriptionOrganizations(adminSupabase, [organizationId]),
+    approvedPublicNames(adminSupabase, [organizationId]),
+    isRankingFeatureEnabled(adminSupabase),
+  ]);
+
+  // الميزة معطّلة على مستوى المنصة = لا ظهور فعلي = لا دعوة (Fail closed).
+  if (!featureEnabled) {
+    return {
+      ...base,
+      publicOptIn: settings.publicOptIn,
+      visible: false,
+      reason: "platform_excluded",
+    };
+  }
+
+  const { computeOrganizationScore } = await import("./score.server");
+  const result = await computeOrganizationScore(supabase, adminSupabase, organizationId);
+
+  const decision = evaluatePromptEligibility({
+    isManager,
+    scoreEligible: result.eligible,
+    score: result.score,
+    minimumScore: PUBLIC_MINIMUM_SCORE,
+    organizationActive: orgActive,
+    subscriptionActive: subscribed.has(organizationId),
+    platformExcluded: settings.platformExcluded,
+    publicOptIn: settings.publicOptIn,
+    publicNameApproved: names.has(organizationId),
+    snoozedUntil: settings.optInSnoozedUntil,
+    now: new Date().toISOString(),
+  });
+
+  if (decision.visible) {
+    await markPromptShown(supabase, organizationId, settings.optInPromptedAt);
+  }
+
+  return {
+    ...decision,
+    score: result.eligible ? result.score : null,
+    minimumScore: PUBLIC_MINIMUM_SCORE,
+    snoozeDays: OPT_IN_SNOOZE_DAYS,
+    publicOptIn: settings.publicOptIn,
+  };
+}
+
+/**
+ * طابع ظهور الدعوة: كتابة واحدة لكل نافذة 24 ساعة كحد أقصى، فلا ينتج عن إعادة
+ * الرسم أو تحديث الصفحة عشرات عمليات الكتابة.
+ */
+export async function markPromptShown(
+  supabase: Client,
+  organizationId: string,
+  promptedAt: string | null,
+): Promise<void> {
+  const now = Date.now();
+  if (promptedAt && now - new Date(promptedAt).getTime() < PROMPT_MARK_MIN_INTERVAL_MS) return;
+  await supabase.from(RANKING_SETTINGS_TABLE).upsert(
+    {
+      organization_id: organizationId,
+      opt_in_prompted_at: new Date(now).toISOString(),
+      updated_at: new Date(now).toISOString(),
+    },
+    { onConflict: "organization_id" },
+  );
+}
+
+/**
+ * «ليس الآن» أو الإغلاق بلا اختيار: لا يمس الموافقة أبداً، ويؤجل الدعوة 30 يوماً
+ * خادمياً (ليس حالة عميل مؤقتة).
+ */
+export async function snoozeOptInPrompt(
+  supabase: Client,
+  organizationId: string,
+  userId: string,
+): Promise<RankingSettings> {
+  await requireOrganizationManager(supabase, organizationId, userId);
+  const nowIso = new Date().toISOString();
+  const { error } = await supabase.from(RANKING_SETTINGS_TABLE).upsert(
+    {
+      organization_id: organizationId,
+      opt_in_prompted_at: nowIso,
+      opt_in_snoozed_until: snoozeUntil(nowIso),
+      updated_at: nowIso,
+    },
+    { onConflict: "organization_id" },
+  );
+  if (error) throw new RankingAccessError("تعذّر تأجيل الدعوة حالياً.");
+  return getRankingSettings(supabase, organizationId);
+}
+
+/**
+ * قبول الدعوة: يعيد التحقق من الأهلية خادمياً قبل تفعيل الموافقة، ثم يمرّ على
+ * نفس مسار `setRankingOptIn` (حرس الأدوار + سجل التدقيق)، وتوثيق الموافقة تحدده
+ * قاعدة البيانات لا العميل.
+ */
+export async function acceptOptInFromPrompt(
+  supabase: Client,
+  adminSupabase: Client,
+  organizationId: string,
+  userId: string,
+): Promise<RankingSettings> {
+  const state = await evaluateOptInPrompt(supabase, adminSupabase, organizationId, userId);
+  if (state.reason === "not_authorized") {
+    throw new RankingAccessError("لا تملك الصلاحية لتعديل إعدادات الظهور العام لهذا المكتب.");
+  }
+  if (state.publicOptIn) return getRankingSettings(supabase, organizationId);
+  if (!state.visible && state.reason !== "snoozed") {
+    throw new RankingAccessError("مكتبك غير مؤهل حالياً للظهور في قائمة الأكثر إنجازاً.");
+  }
+  return setRankingOptIn(supabase, organizationId, userId, true);
+}
