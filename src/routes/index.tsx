@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
+import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query";
+import { TopOffices } from "@/components/marketing/top-offices";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
@@ -14,7 +16,12 @@ const DESCRIPTION =
 
 export const Route = createFileRoute("/")({
   component: MehlaLanding,
-  loader: ({ context }) => context.queryClient.prefetchQuery(publicPlansQueryOptions()),
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.prefetchQuery(publicPlansQueryOptions()),
+      context.queryClient.prefetchQuery(publicRankingQueryOptions()),
+    ]);
+  },
   head: () => ({
     meta: [
       { title: TITLE },
