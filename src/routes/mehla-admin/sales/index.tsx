@@ -66,19 +66,16 @@ function SalesPage() {
   const exportFn = useServerFn(salesExportCsv);
 
   const [search, setSearch] = useState("");
-  const DISCARDED_OPTION = "__discarded" as const;
-  const [status, setStatus] = useState<"" | SalesDocStatus | typeof DISCARDED_OPTION>("");
+  const [status, setStatus] = useState<"" | SalesDocStatus>("");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const debounced = useDebounced(search);
 
   const kind = tab === "all" || tab === "templates" ? null : tab;
-  const showingDiscarded = status === DISCARDED_OPTION;
   const filters = {
     search: debounced || null,
     kind,
-    status: showingDiscarded ? null : status || null,
-    discarded: showingDiscarded ? ("only" as const) : ("exclude" as const),
+    status: status || null,
     page,
     pageSize: PAGE_SIZE,
   };
@@ -177,7 +174,7 @@ function SalesPage() {
                 aria-label="تصفية بالحالة"
                 value={status}
                 onChange={(e) => {
-                  setStatus(e.target.value as SalesDocStatus | "" | typeof DISCARDED_OPTION);
+                  setStatus(e.target.value as SalesDocStatus | "");
                   setPage(1);
                 }}
               >
@@ -187,7 +184,6 @@ function SalesPage() {
                     {STATUS_LABELS[key]}
                   </option>
                 ))}
-                <option value={DISCARDED_OPTION}>مسودات ملغاة</option>
               </select>
             }
           />
