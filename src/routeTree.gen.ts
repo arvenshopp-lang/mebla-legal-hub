@@ -109,6 +109,7 @@ import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/off
 import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
 import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
+import { Route as ApiPublicHooksNotificationEmailsRouteImport } from './routes/api/public/hooks/notification-emails'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
@@ -625,6 +626,12 @@ const ApiPublicHooksNotificationsDispatchRoute =
     path: '/api/public/hooks/notifications-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksNotificationEmailsRoute =
+  ApiPublicHooksNotificationEmailsRouteImport.update({
+    id: '/api/public/hooks/notification-emails',
+    path: '/api/public/hooks/notification-emails',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMailSyncRoute = ApiPublicHooksMailSyncRouteImport.update({
   id: '/api/public/hooks/mail-sync',
   path: '/api/public/hooks/mail-sync',
@@ -756,6 +763,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
@@ -862,6 +870,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
@@ -971,6 +980,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
+  '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
@@ -1080,6 +1090,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
@@ -1186,6 +1197,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
@@ -1294,6 +1306,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
+    | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
@@ -1348,6 +1361,7 @@ export interface RootRouteChildren {
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
+  ApiPublicHooksNotificationEmailsRoute: typeof ApiPublicHooksNotificationEmailsRoute
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
   ApiPublicHooksOperationalScoreRoute: typeof ApiPublicHooksOperationalScoreRoute
   ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
@@ -2062,6 +2076,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksNotificationsDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/notification-emails': {
+      id: '/api/public/hooks/notification-emails'
+      path: '/api/public/hooks/notification-emails'
+      fullPath: '/api/public/hooks/notification-emails'
+      preLoaderRoute: typeof ApiPublicHooksNotificationEmailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/mail-sync': {
       id: '/api/public/hooks/mail-sync'
       path: '/api/public/hooks/mail-sync'
@@ -2303,6 +2324,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEmailDispatchRoute: ApiPublicHooksEmailDispatchRoute,
   ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
+  ApiPublicHooksNotificationEmailsRoute: ApiPublicHooksNotificationEmailsRoute,
   ApiPublicHooksNotificationsDispatchRoute:
     ApiPublicHooksNotificationsDispatchRoute,
   ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
