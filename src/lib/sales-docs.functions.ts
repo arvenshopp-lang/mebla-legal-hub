@@ -97,7 +97,7 @@ export const salesSaveDraft = createServerFn({ method: "POST" })
     return { id };
   });
 
-export const salesDeleteDraft = createServerFn({ method: "POST" })
+export const salesCancelDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => deleteSchema.parse(input))
   .handler(async ({ data, context }) => {
@@ -106,7 +106,7 @@ export const salesDeleteDraft = createServerFn({ method: "POST" })
       import("@/lib/sales-docs.server"),
     ]);
     const staff = await g.requireStaff(context.supabase, context.userId, "sales_docs.delete");
-    await engine.deleteDraft({ staff }, data.id);
+    await engine.cancelDraft({ staff }, data.id);
     return { ok: true };
   });
 

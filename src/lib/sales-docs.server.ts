@@ -88,6 +88,12 @@ export type ListFilters = {
   companyId?: string | null;
   from?: string | null;
   to?: string | null;
+  /**
+   * سلوك المسودات الملغاة (draft → cancelled عبر مسار «إلغاء المسودة»).
+   * exclude = الافتراضي: تُستبعد من قائمة العمل. only = عرضها وحدها.
+   * include = بلا استثناء (يُستخدم عند طلب حالة صريحة).
+   */
+  discarded?: "exclude" | "only" | "include" | null;
   page: number;
   pageSize: number;
 };
@@ -135,6 +141,22 @@ function mapRow(row: AnyClient): SalesDocRow {
   };
 }
 
+/**
+ * مُميِّز المسودات الملغاة: حدث `DISCARD_EVENT` في سجل الأحداث غير القابل للحذف.
+ * لا يُستخدم `status='cancelled' AND number IS NULL` وحده لأنه قد يلتقط إلغاءات
+ * تجارية صحيحة لمستندات لم تُرقَّم، فالحدث هو المصدر الموثوق الوحيد بلا Migration.
+ */
+export const DISCARD_EVENT = "draft_discarded";
+
+export async function discardedDraftIds(client?: AnyClient): Promise<string[]> {
+  const c = client ?? (await db());
+  const { data } = await c
+    .from("sales_document_events")
+    .select("document_id")
+    .eq("event", DISCARD_EVENT);
+  return [...new Set(((data ?? []) as { document_id: string }[]).map((r) => r.document_id))];
+}
+
 export async function listDocuments(
   filters: ListFilters,
 ): Promise<{ rows: SalesDocRow[]; total: number }> {
@@ -152,6 +174,17 @@ export async function listDocuments(
   if (filters.search) {
     const s = filters.search.replace(/[%,]/g, "");
     query = query.or(`title.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+
+  const mode = filters.discarded ?? "exclude";
+  if (mode !== "include") {
+    const ids = await discardedDraftIds(client);
+    if (mode === "only") {
+      if (ids.length === 0) return { rows: [], total: 0 };
+      query = query.in("id", ids);
+    } else if (ids.length > 0) {
+      query = query.not("id", "in", `(${ids.join(",")})`);
+    }
   }
 
   const fromIdx = (filters.page - 1) * filters.pageSize;
@@ -349,22 +382,61 @@ export async function saveDraft(ctx: SalesCtx, input: DraftInput): Promise<strin
   return documentId as string;
 }
 
-export async function deleteDraft(ctx: SalesCtx, id: string): Promise<void> {
+/**
+ * إلغاء مسودة غير مُرسلة — عملية غير مدمّرة.
+ *
+ * لا حذف صلب: سجل الأحداث `sales_document_events` جدول Append-Only محمي، وأي
+ * حذف للمستند يُسقِط أحداثه بالتتابع ويُرفض. لذا الانتقال هو draft → cancelled
+ * مع حدث `draft_discarded` يميّز إلغاء المستخدم عن الإلغاء التجاري.
+ *
+ * الشروط الخادمية: status=draft، number IS NULL، لا توقيعات، والصلاحية
+ * sales_docs.delete (لا تُستخدم sales_docs.decide حتى لا تُمنح صلاحية قرار تجاري).
+ */
+export async function cancelDraft(ctx: SalesCtx, id: string): Promise<void> {
   const client = await db();
   const { data: doc } = await client
     .from("sales_documents")
-    .select("status")
+    .select("id, kind, status, number, locked")
     .eq("id", id)
     .maybeSingle();
   if (!doc) throw new Error("المستند غير موجود.");
-  if (doc.status !== "draft") throw new Error("لا يمكن حذف إلا مسودة لم تُرسل بعد.");
-  const { error } = await client.from("sales_documents").delete().eq("id", id);
-  if (error) fail(error, "تعذّر حذف المسودة.");
+  if (doc.status !== "draft" || doc.locked)
+    throw new Error("لا يمكن إلغاء إلا مسودة لم تُرسل ولم تُقفل بعد.");
+  if (doc.number) throw new Error("هذا المستند يحمل رقماً رسمياً ولا يمكن إلغاؤه كمسودة.");
+
+  const { data: signatures } = await client
+    .from("sales_document_signatures")
+    .select("id")
+    .eq("document_id", id)
+    .limit(1);
+  if ((signatures ?? []).length > 0)
+    throw new Error("لا يمكن إلغاء مستند يحمل توقيعاً إلكترونياً.");
+
+  assertTransition(doc.status as SalesDocStatus, "cancelled");
+
+  const { error } = await client
+    .from("sales_documents")
+    .update({ status: "cancelled", updated_by: ctx.staff.user_id })
+    .eq("id", id)
+    .eq("status", "draft");
+  if (error) fail(error, "تعذّر إلغاء المسودة.");
+
+  await logEvent(
+    client,
+    id,
+    DISCARD_EVENT,
+    "draft",
+    "cancelled",
+    ctx.staff.email,
+    "إلغاء مسودة غير مُرسلة بطلب المستخدم.",
+    { reason: "draft discarded by user", kind: doc.kind },
+  );
   await writeAudit(client, ctx.staff, {
-    action: "sales_docs.delete_draft",
+    action: "sales_docs.cancel_draft",
     entity_type: "sales_document",
     entity_id: id,
-    description: "حذف مسودة",
+    description: "إلغاء مسودة غير مُرسلة",
+    metadata: { from_status: "draft", to_status: "cancelled", event: DISCARD_EVENT },
   });
 }
 

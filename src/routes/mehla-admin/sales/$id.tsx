@@ -26,7 +26,7 @@ import {
   salesConvertToInvoice,
   salesConvertToSubscription,
   salesDecideApproval,
-  salesDeleteDraft,
+  salesCancelDraft,
   salesDetail,
   salesDocumentPdf,
   salesOptions,
@@ -88,7 +88,7 @@ function SalesDocumentPage() {
   const terminateFn = useServerFn(salesTerminate);
   const invoiceFn = useServerFn(salesConvertToInvoice);
   const subscriptionFn = useServerFn(salesConvertToSubscription);
-  const deleteFn = useServerFn(salesDeleteDraft);
+  const cancelDraftFn = useServerFn(salesCancelDraft);
 
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -540,7 +540,7 @@ function SalesDocumentPage() {
               )}
               {status === "draft" && can("sales_docs.delete") && (
                 <Btn variant="danger" onClick={() => setConfirmDelete(true)}>
-                  حذف المسودة
+                  إلغاء المسودة
                 </Btn>
               )}
             </div>
@@ -875,19 +875,19 @@ function SalesDocumentPage() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="حذف المسودة"
-        message="سيُحذف هذا المستند نهائياً. لا يمكن حذف مستند أُرسل للعميل."
-        confirmLabel="حذف"
+        title="إلغاء المسودة"
+        message="ستُلغى هذه المسودة وتُستبعد من قائمة العمل، مع بقاء سجلها وأحداثها للتدقيق. لا يمكن إلغاء مستند أُرسل للعميل أو يحمل توقيعاً."
+        confirmLabel="إلغاء المسودة"
         loading={runner.isPending}
         onClose={() => setConfirmDelete(false)}
         onConfirm={() =>
           runner.mutate({
             run: async () => {
-              await deleteFn({ data: { id } });
+              await cancelDraftFn({ data: { id } });
               void navigate({ to: "/mehla-admin/sales" } as never);
             },
-            success: "تم حذف المسودة.",
-            fallback: "تعذّر حذف المسودة.",
+            success: "تم إلغاء المسودة.",
+            fallback: "تعذّر إلغاء المسودة.",
           })
         }
       />
