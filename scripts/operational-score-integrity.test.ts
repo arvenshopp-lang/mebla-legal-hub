@@ -176,7 +176,7 @@ console.log("\n6) نمط ترحيل بيانات عند بدء الاستخدا�
 const onboarding = assess({
   organizationCreatedAt: iso(60),
   tasks: [
-    ...Array.from({ length: 20 }, (_, i) =>
+    ...Array.from({ length: 30 }, (_, i) =>
       item("task", `ot-${i}`, { dueOffset: 55, createdOffset: 58, completedOffset: 54 }),
     ),
     ...spreadItems("task", 14, 13, "otn"),
@@ -222,20 +222,10 @@ check("PASS", seasonal.status === "pass", seasonal.reasonCodes);
 console.log("\n10) 70% من النشاط في 3 أيام = REVIEW_REQUIRED");
 const concentrated = assess({
   tasks: [
-    ...Array.from({ length: 30 }, (_, i) =>
-      item("task", `ct-${i}`, {
-        dueOffset: 3 + (i % 3) * 30,
-        createdOffset: 3 + (i % 3) * 30 + 5,
-        completedOffset: 3 + (i % 3) * 30,
-      }),
+    ...Array.from({ length: 36 }, (_, i) =>
+      item("task", `ct-${i}`, { dueOffset: 10, createdOffset: 11, completedOffset: 10 }),
     ),
-    ...Array.from({ length: 12 }, (_, i) =>
-      item("task", `cn-${i}`, {
-        dueOffset: 10 + i * 5,
-        completedOffset: null,
-        createdOffset: 20 + i * 5,
-      }),
-    ),
+    ...spreadItems("task", 8, 8, "cn"),
   ],
   deadlines: spreadItems("deadline", 6, 6, "cd"),
 });
