@@ -220,13 +220,12 @@ const run = async () => {
       "B1 ineligible snapshot",
       {
         operational_score_snapshots: [
-          {
-            organization_id: ORG,
+          snapshot({
+            organizationId: ORG,
             score: null,
             eligible: false,
-            computed_at: "2026-08-15T00:00:00.000Z",
-            window_kind: "rolling_90",
-          },
+            computedAt: "2026-08-15T00:00:00.000Z",
+          }),
         ],
       },
     ],
@@ -234,13 +233,33 @@ const run = async () => {
       "score below minimum",
       {
         operational_score_snapshots: [
-          {
-            organization_id: ORG,
+          snapshot({
+            organizationId: ORG,
             score: PUBLIC_MINIMUM_SCORE - 1,
             eligible: true,
-            computed_at: "2026-08-15T00:00:00.000Z",
-            window_kind: "rolling_90",
-          },
+            computedAt: "2026-08-15T00:00:00.000Z",
+          }),
+        ],
+      },
+    ],
+    [
+      "only a foreign formula version snapshot",
+      {
+        operational_score_snapshots: [
+          snapshot({
+            organizationId: ORG,
+            score: 95,
+            eligible: true,
+            computedAt: "2026-08-15T00:00:00.000Z",
+            formulaVersion: "v0",
+          }),
+          snapshot({
+            organizationId: ORG,
+            score: 97,
+            eligible: true,
+            computedAt: "2026-08-16T00:00:00.000Z",
+            formulaVersion: "v2",
+          }),
         ],
       },
     ],
@@ -250,58 +269,154 @@ const run = async () => {
     check(`excluded: ${name}`, res.items.length === 0);
   }
 
-  // تعادل النتيجة ⇒ ترتيب قطعي بالأقدم حساباً.
-  const tie = await getPublicRanking(
+  // (1) مكتب بتاريخ لقطات طويل ومكتب بلقطة واحدة: كلاهما بأحدث لقطة صحيحة.
+  const dense: Array<Record<string, unknown>> = [];
+  for (let day = 1; day <= 30; day += 1) {
+    dense.push(
+      snapshot({
+        organizationId: ORG,
+        score: 80 + (day % 5),
+        eligible: true,
+        computedAt: `2026-07-${String(day).padStart(2, "0")}T00:00:00.000Z`,
+      }),
+    );
+  }
+  dense.push(
+    snapshot({
+      organizationId: ORG,
+      score: 99,
+      eligible: true,
+      computedAt: "2026-08-14T00:00:00.000Z",
+    }),
+  );
+  dense.push(
+    snapshot({
+      organizationId: ORG2,
+      score: 88,
+      eligible: true,
+      computedAt: "2026-08-13T00:00:00.000Z",
+    }),
+  );
+  const denseResult = await getPublicRanking(
+    fakeClient(twoOfficeRows("مكتب الأول", "مكتب الثاني", dense)),
+  );
+  check(
+    "latest snapshot per organization (30 vs 1)",
+    denseResult.items.length === 2 &&
+      denseResult.items[0]?.publicName === "مكتب الأول" &&
+      denseResult.items[0]?.score === 99 &&
+      denseResult.items[1]?.score === 88,
+    JSON.stringify(denseResult.items),
+  );
+  check(
+    "organization appears once only",
+    new Set(denseResult.items.map((i) => i.publicName)).size === denseResult.items.length,
+  );
+
+  // (2) أحدث v0 + أقدم v1 ⇒ يُستخدم أحدث v1 فقط.
+  const mixedVersions = await getPublicRanking(
     fakeClient(
       baseRows({
-        organization_ranking_settings: [
-          { organization_id: ORG, public_opt_in: true, platform_excluded: false },
-          { organization_id: ORG2, public_opt_in: true, platform_excluded: false },
-        ],
-        organizations: [
-          { id: ORG, is_active: true, suspended_at: null },
-          { id: ORG2, is_active: true, suspended_at: null },
-        ],
-        subscriptions: [
-          { organization_id: ORG, status: "active", ends_at: null },
-          { organization_id: ORG2, status: "active", ends_at: null },
-        ],
-        office_public_pages: [
-          {
-            organization_id: ORG,
-            status: "published",
-            suspended_by_platform: false,
-            published: { office_name: "مكتب الأول" },
-          },
-          {
-            organization_id: ORG2,
-            status: "published",
-            suspended_by_platform: false,
-            published: { office_name: "مكتب الثاني" },
-          },
-        ],
         operational_score_snapshots: [
-          {
-            organization_id: ORG,
-            score: 90,
+          snapshot({
+            organizationId: ORG,
+            score: 100,
             eligible: true,
-            computed_at: "2026-08-15T00:00:00.000Z",
-            window_kind: "rolling_90",
-          },
-          {
-            organization_id: ORG2,
-            score: 90,
+            computedAt: "2026-08-16T00:00:00.000Z",
+            formulaVersion: "v0",
+          }),
+          snapshot({
+            organizationId: ORG,
+            score: 84,
             eligible: true,
-            computed_at: "2026-08-14T00:00:00.000Z",
-            window_kind: "rolling_90",
-          },
+            computedAt: "2026-08-10T00:00:00.000Z",
+          }),
         ],
       }),
     ),
   );
   check(
-    "deterministic tie-break by computed_at",
-    tie.items.length === 2 && tie.items[0]?.publicName === "مكتب الثاني",
+    "formula version filter uses current v1 snapshot",
+    mixedVersions.items.length === 1 && mixedVersions.items[0]?.score === 84,
+    JSON.stringify(mixedVersions.items),
+  );
+
+  // (3) أحدث v1 غير مؤهلة ⇒ لا رجوع إلى لقطة قديمة مؤهلة.
+  const staleEligible = await getPublicRanking(
+    fakeClient(
+      baseRows({
+        operational_score_snapshots: [
+          snapshot({
+            organizationId: ORG,
+            score: null,
+            eligible: false,
+            computedAt: "2026-08-16T00:00:00.000Z",
+          }),
+          snapshot({
+            organizationId: ORG,
+            score: 95,
+            eligible: true,
+            computedAt: "2026-08-10T00:00:00.000Z",
+          }),
+        ],
+      }),
+    ),
+  );
+  check("latest ineligible snapshot wins over older eligible", staleEligible.items.length === 0);
+
+  // (4) تعادل النتيجة ⇒ الترتيب بالاسم لا بوقت الحساب.
+  const tie = await getPublicRanking(
+    fakeClient(
+      twoOfficeRows("مكتب الألف", "مكتب الباء", [
+        snapshot({
+          organizationId: ORG,
+          score: 90,
+          eligible: true,
+          computedAt: "2026-08-15T00:00:00.000Z",
+        }),
+        snapshot({
+          organizationId: ORG2,
+          score: 90,
+          eligible: true,
+          computedAt: "2026-08-10T00:00:00.000Z",
+        }),
+      ]),
+    ),
+  );
+  check(
+    "tie-break ignores computed_at",
+    tie.items.length === 2 &&
+      tie.items[0]?.publicName === "مكتب الألف" &&
+      tie.items[1]?.publicName === "مكتب الباء",
+    JSON.stringify(tie.items),
+  );
+
+  // (5) نفس النتيجة ونفس الاسم ⇒ ترتيب قطعي ثابت بين التشغيلات.
+  const duplicateNames = twoOfficeRows("مكتب مِهلة", "مكتب مِهلة", [
+    snapshot({
+      organizationId: ORG,
+      score: 91,
+      eligible: true,
+      computedAt: "2026-08-15T00:00:00.000Z",
+    }),
+    snapshot({
+      organizationId: ORG2,
+      score: 91,
+      eligible: true,
+      computedAt: "2026-08-09T00:00:00.000Z",
+    }),
+  ]);
+  const firstRun = await getPublicRanking(fakeClient(duplicateNames));
+  const secondRun = await getPublicRanking(fakeClient(duplicateNames));
+  check(
+    "duplicate public names order deterministically",
+    firstRun.items.length === 2 &&
+      JSON.stringify(firstRun.items) === JSON.stringify(secondRun.items),
+    JSON.stringify(firstRun.items),
+  );
+  check(
+    "public response never leaks organization ids",
+    !JSON.stringify(firstRun).includes(ORG) && !JSON.stringify(firstRun).includes(ORG2),
   );
 
   console.log(`\n${pass} passed, ${failures.length} failed`);
