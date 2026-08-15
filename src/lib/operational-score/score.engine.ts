@@ -197,11 +197,7 @@ export function assessHearing(
   return { id: hearing.id, counted: true, followedUp: false };
 }
 
-function dimension(
-  key: ScoreDimensionKey,
-  numerator: number,
-  denominator: number,
-): ScoreDimension {
+function dimension(key: ScoreDimensionKey, numerator: number, denominator: number): ScoreDimension {
   const applied = denominator > 0;
   return {
     key,
@@ -263,9 +259,7 @@ export function computeOperationalScore(input: ScoreEngineInput): OperationalSco
   const windowStartMs = new Date(windowStart).getTime();
   const windowEndMs = new Date(windowEnd).getTime();
 
-  const deadlineAssessments = input.deadlines.map((d) =>
-    assessItem(d, windowStartMs, windowEndMs),
-  );
+  const deadlineAssessments = input.deadlines.map((d) => assessItem(d, windowStartMs, windowEndMs));
   const taskAssessments = input.tasks.map((t) => assessItem(t, windowStartMs, windowEndMs));
   const hearingAssessments = input.hearings.map((h) =>
     assessHearing(h, windowStartMs, windowEndMs),
@@ -289,8 +283,7 @@ export function computeOperationalScore(input: ScoreEngineInput): OperationalSco
     ),
   };
 
-  const countedItems =
-    countedDeadlines.length + countedTasks.length + countedHearings.length;
+  const countedItems = countedDeadlines.length + countedTasks.length + countedHearings.length;
   const itemsWithProvenSignals = [...countedDeadlines, ...countedTasks].filter(
     (a) => a.provenSignals.length > 0,
   ).length;

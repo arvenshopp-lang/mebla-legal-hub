@@ -70,9 +70,7 @@ export function OperationalScoreCard({ organizationId }: { organizationId: strin
               {data.eligible && data.score !== null ? (
                 <p className="text-[34px] leading-none font-bold tabular-nums">{data.score}%</p>
               ) : (
-                <p className="text-[18px] leading-tight font-semibold">
-                  {INSUFFICIENT_DATA_LABEL}
-                </p>
+                <p className="text-[18px] leading-tight font-semibold">{INSUFFICIENT_DATA_LABEL}</p>
               )}
               <p className="text-caption mt-2">{data.eligibilityMessage}</p>
             </div>

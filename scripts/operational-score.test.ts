@@ -112,7 +112,11 @@ const mixed = computeOperationalScore({
   now: NOW,
 });
 const mixedExpected = Math.round(((0.6 * 0.45 + 1 * 0.35) / 0.8) * 100);
-check("2. Mixed score calculation", mixed.score === mixedExpected, `${mixed.score} vs ${mixedExpected}`);
+check(
+  "2. Mixed score calculation",
+  mixed.score === mixedExpected,
+  `${mixed.score} vs ${mixedExpected}`,
+);
 
 // 3 — إعادة توزيع الأوزان عند N/A
 check(
@@ -174,7 +178,11 @@ const shortLived = computeOperationalScore({
   organizationCreatedAt: ORG_OLD,
   tasks: [
     ...onTimeTasks,
-    task("short", { dueDaysAgo: 9, completedOffsetMs: -30 * 60 * 1000, createdOffsetMs: 15 * 60 * 1000 }),
+    task("short", {
+      dueDaysAgo: 9,
+      completedOffsetMs: -30 * 60 * 1000,
+      createdOffsetMs: 15 * 60 * 1000,
+    }),
   ],
   deadlines: onTimeDeadlines,
   hearings: [],
@@ -273,8 +281,7 @@ check(
 // 12 — أرضية معامل النزاهة
 check(
   "12. Integrity factor floor = 0.85",
-  computeIntegrityFactor(30, 30) === INTEGRITY_FACTOR_FLOOR &&
-    computeIntegrityFactor(0, 30) === 1,
+  computeIntegrityFactor(30, 30) === INTEGRITY_FACTOR_FLOOR && computeIntegrityFactor(0, 30) === 1,
   `${computeIntegrityFactor(30, 30)}`,
 );
 
