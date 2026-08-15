@@ -88,6 +88,12 @@ export type ListFilters = {
   companyId?: string | null;
   from?: string | null;
   to?: string | null;
+  /**
+   * سلوك المسودات الملغاة (draft → cancelled عبر مسار «إلغاء المسودة»).
+   * exclude = الافتراضي: تُستبعد من قائمة العمل. only = عرضها وحدها.
+   * include = بلا استثناء (يُستخدم عند طلب حالة صريحة).
+   */
+  discarded?: "exclude" | "only" | "include" | null;
   page: number;
   pageSize: number;
 };
@@ -135,6 +141,22 @@ function mapRow(row: AnyClient): SalesDocRow {
   };
 }
 
+/**
+ * مُميِّز المسودات الملغاة: حدث `DISCARD_EVENT` في سجل الأحداث غير القابل للحذف.
+ * لا يُستخدم `status='cancelled' AND number IS NULL` وحده لأنه قد يلتقط إلغاءات
+ * تجارية صحيحة لمستندات لم تُرقَّم، فالحدث هو المصدر الموثوق الوحيد بلا Migration.
+ */
+export const DISCARD_EVENT = "draft_discarded";
+
+export async function discardedDraftIds(client?: AnyClient): Promise<string[]> {
+  const c = client ?? (await db());
+  const { data } = await c
+    .from("sales_document_events")
+    .select("document_id")
+    .eq("event", DISCARD_EVENT);
+  return [...new Set(((data ?? []) as { document_id: string }[]).map((r) => r.document_id))];
+}
+
 export async function listDocuments(
   filters: ListFilters,
 ): Promise<{ rows: SalesDocRow[]; total: number }> {
@@ -152,6 +174,17 @@ export async function listDocuments(
   if (filters.search) {
     const s = filters.search.replace(/[%,]/g, "");
     query = query.or(`title.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+
+  const mode = filters.discarded ?? "exclude";
+  if (mode !== "include") {
+    const ids = await discardedDraftIds(client);
+    if (mode === "only") {
+      if (ids.length === 0) return { rows: [], total: 0 };
+      query = query.in("id", ids);
+    } else if (ids.length > 0) {
+      query = query.not("id", "in", `(${ids.join(",")})`);
+    }
   }
 
   const fromIdx = (filters.page - 1) * filters.pageSize;
