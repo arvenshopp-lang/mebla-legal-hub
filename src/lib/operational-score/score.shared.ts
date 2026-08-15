@@ -75,7 +75,7 @@ export type EligibilityReason =
 
 export const ELIGIBILITY_MESSAGES: Record<EligibilityReason, string> = {
   eligible: "المؤشر محتسب على آخر 90 يوماً.",
-  organization_too_new: "يبدأ احتساب المؤشر بعد 45 يوماً من إنشاء المكتب.",
+  organization_too_new: "يتطلب احتساب المؤشر مرور 45 يوماً على إنشاء المكتب وتوفر نشاط تشغيلي كافٍ.",
   tracking_period_too_short: "يلزم 30 يوماً من بيانات التتبع لاحتساب المؤشر.",
   insufficient_items: "يلزم 25 عملاً مؤهلاً داخل آخر 90 يوماً لاحتساب المؤشر.",
   insufficient_deadlines_or_hearings: "يلزم 5 مهل أو جلسات مستحقة داخل آخر 90 يوماً.",
