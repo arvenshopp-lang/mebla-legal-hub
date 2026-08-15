@@ -1,73 +1,87 @@
-# MEHLA OPERATIONAL SCORE — PRE-APPLY MIGRATION REVIEW
+# MEHLA OPERATIONAL SCORE — FINAL MIGRATION APPLY REVIEW (READ-ONLY)
 
-مراجعة قراءة فقط. لم يُعدَّل أي ملف ولم تُطبَّق أي Migration.
-النطاق: `20260815014500_operational_score_ranking.sql` + `ranking.server.ts` + `ranking.functions.ts` + `snapshot.server.ts` + `api/public/hooks/operational-score.ts`.
+نطاق المراجعة: ملفا الهجرة فقط + الاعتماديات المباشرة. لا تطبيق، لا نشر.
 
-## 1. MIGRATION SAFETY
-تحققت من التبعيات على الإنتاج الحالي: `private.is_platform_staff`, `private.has_platform_permission` (كلتاهما SECURITY DEFINER, search_path=public), `public.set_updated_at`, `public.deny_update` — كلها موجودة. الجدولان غير موجودين، ولا تعارض أسماء Triggers/Indexes. الأعمدة المرجعية موجودة: `organizations.is_active/suspended_at`, `organization_members.role/status` (enum), `office_public_pages.status/published/suspended_by_platform`, `subscriptions.status/ends_at/suspended_at`, `platform_settings.key/value`.
-FK/NOT NULL/defaults/timestamps/indexes/RLS/GRANT سليمة. لا عبارة SQL متوقعة الفشل.
+## 1. ORDER / DEPENDENCIES
 
-## 2. OPT-IN FIELD PROTECTION
-- `private.ranking_settings_guard`: SECURITY DEFINER = YES، fixed search_path = YES (`public, private`)، owner/execute exposure = SAFE (دالة Trigger؛ الاستدعاء المباشر يفشل بلا سياق Trigger).
-- الحقول `platform_excluded / exclusion_reason / excluded_at / excluded_by` محمية عبر Direct Data API: أي UPDATE من مستخدم غير موظف منصة يرفع استثناءً.
-- **ملاحظة MEDIUM (ليست حاجزاً):** `GRANT UPDATE` ممنوح على كل الأعمدة، فمدير المكتب يستطيع كتابة `opted_in_at` / `opted_in_by` بقيم من عنده (تلويث حقول التوثيق فقط، بلا أثر على الأهلية).
+- الحالة الفعلية في الإنتاج: الجدولان `organization_ranking_settings` و`operational_score_snapshots` **غير موجودين**، ودالة `private.ranking_settings_guard` **غير موجودة** — أي أن الهجرتين لم تُطبَّقا بعد.
+- الاعتماديات المطلوبة موجودة مسبقاً في الإنتاج: `private.is_platform_staff`، `private.has_platform_permission`، `public.set_updated_at`، `public.deny_update`، وجداول `organizations` و`profiles` و`organization_members` (بأعمدة `status` و`role`).
+- الهجرة 2 تعتمد على `public.organization_ranking_settings` (تنشئها الهجرة 1) وعلى `CREATE OR REPLACE` لدالة الحارس نفسها. لا Object في الهجرة 2 غير موجود بعد الهجرة 1.
+- الترتيب الصحيح والملزم: `20260815014500_operational_score_ranking.sql` ثم `20260815131500_operational_score_optin_metadata.sql` (مطابق للترتيب الزمني للأسماء).
 
-## 3. SNAPSHOT WRITE SECURITY
-`anon` بلا أي منح. `authenticated` لديه SELECT فقط وسياسة SELECT تقصره على موظفي المنصة → أعضاء المكتب لا يقرؤون الجدول مباشرة. لا INSERT/UPDATE/DELETE لأي دور غير `service_role`. الكتابة من `snapshot.server.ts` عبر `supabaseAdmin` فقط.
-**SNAPSHOT_WRITE_BOUNDARY: PASS**
+## 2. SQL SAFETY
 
-## 4. APPEND-ONLY SEMANTICS
-UPDATE ممنوع بـ Trigger `deny_update` لكل الأدوار بما فيها `service_role`. DELETE غير ممنوح لأي دور مطبَّق عليه RLS. إعادة الحساب تُدرج صفاً جديداً (`insert`) ولا تعدّل التاريخ.
-**APPEND_ONLY: PASS** (تحسين اختياري لاحقاً: Trigger `deny_hard_delete` لسدّ مسار الحذف بمفتاح الخدمة).
+- `CREATE TABLE` لجدولين جديدين فقط — لا تعارض في الأسماء مع Production schema.
+- GRANTS صريحة موجودة: `authenticated` (قراءة/إدراج/تحديث للإعدادات، قراءة فقط للقطات) و`service_role` كامل. لا منح لـ `anon` على أي من الجدولين → لا وصول عام مباشر.
+- RLS مفعّلة على الجدولين مع سياسات: قراءة الإعدادات لأعضاء المكتب النشطين أو موظفي المنصة، والإنشاء/التحديث لأدوار owner/admin أو صلاحية `organizations.update`؛ اللقطات قراءتها لموظفي المنصة فقط.
+- Triggers: حارس الحقول المنصية + `set_updated_at` على الإعدادات، و`deny_update` على اللقطات (سجل غير قابل للتعديل).
+- Indexes على `(organization_id, computed_at DESC)` و`(window_kind, computed_at DESC)` — تدعم اختيار أحدث لقطة لكل مكتب.
+- FKs إلى `organizations(id)` بـ `ON DELETE CASCADE` وإلى `profiles(id)` بـ `ON DELETE SET NULL`. CHECKs ثابتة (لا `now()`) فلا مخاطر استعادة.
+- الهجرة 2 تستخدم `ADD COLUMN IF NOT EXISTS` لعمودين nullable بلا DEFAULT — عملية Metadata-only.
 
-## 5. LATEST SNAPSHOT CORRECTNESS — المشكلة الحاسمة
-المنطق الحالي في `latestSnapshotsByOrganization`: استعلام واحد `order computed_at desc` مع `limit organizationIds.length * 8`، ثم أول صف لكل مكتب داخل Map.
-- لا تكرار لمكتب، ولا تفضيل لقطة قديمة على أحدث (لأن الترتيب تنازلي عالمياً) — سليم عند تجاوب متساوٍ.
-- لكن السقف عالمي لا لكل مكتب: مكتب توقف حسابه لأيام (أو مكتب أنتج لقطات مكررة) يخرج من النافذة تماماً فيُحذف بصمت من الترتيب، ومع نمو التكرار قد تُقصّ مكاتب مؤهلة.
-**LATEST_SNAPSHOT_PER_ORG: FAIL** (صحيح بالحظ لا بالتصميم)
-**CURRENT_FORMULA_VERSION_FILTER: NO** — لا تصفية لـ `formula_version`، فأي لقطة بمعادلة قديمة قد تظهر عامّاً. نعم: يجب قصر Public v1 على `formula_version = 'v1'` (`OPERATIONAL_SCORE_FORMULA_VERSION`).
+## 3. EXISTING DATA SAFETY
 
-ROOT_CAUSE: انتقاء "الأحدث لكل مكتب" مُنفَّذ في الذاكرة على نتيجة استعلام مقصوصة عالمياً، بلا تصفية إصدار المعادلة.
-MINIMAL_FIX: دالة SQL (`DISTINCT ON (organization_id) ... WHERE window_kind='rolling_90' AND formula_version='v1' ORDER BY organization_id, computed_at DESC`) تُستدعى من الخادم، أو استعلام لكل مكتب بـ `limit 1` مع `eq('formula_version','v1')`.
-EXACT_FILES: `src/lib/operational-score/ranking.server.ts` (+ Migration لدالة SQL إن اختير هذا الطريق).
+- لا يوجد أي `UPDATE` أو `DELETE` أو `INSERT` في الهجرتين على أي جدول قائم. لا مساس بـ tasks / deadlines / hearings / cases / clients / documents / billing / subscriptions.
+- لا تغيير على جداول قائمة إطلاقاً باستثناء `ALTER TABLE ... ADD COLUMN` على الجدول الجديد نفسه الذي أنشأته الهجرة 1.
+- `public_opt_in boolean NOT NULL DEFAULT false` → أي صف يُنشأ لاحقاً يبدأ بلا ظهور عام.
 
-## 6. PUBLIC ELIGIBILITY
-كل الشروط خادمية في `getPublicRanking`: مفتاح الميزة (Fail-closed)، `public_opt_in = true`، `platform_excluded = false`، مكتب نشط وغير موقوف، اشتراك `active` غير موقوف ولم ينته، صفحة عامة `published` غير موقوفة باسم معتمد غير فارغ، أهلية اللقطة، والنتيجة ≥ 78. لا شرط Client-side.
-**PUBLIC_ELIGIBILITY: PASS** — مع تنبيه توثيقي: التعليق يذكر "تجريبي" بينما الشرط يقبل `active` فقط؛ السلوك أضيق من التعليق (آمن).
+## 4. EXISTING ORGANIZATIONS
 
-## 7. PUBLIC RESPONSE
-`sanitizePublicRankingItems` تُعيد `rank / publicName / score / badge / logoUrl` فقط؛ لا `organizationId` ولا أبعاد ولا أعداد ولا اشتراك ولا أسباب داخلية. الدالة العامة بلا وسائط (لا سطح تعداد).
-**PUBLIC_DATA_MINIMIZATION: PASS**
+- لا Backfill ولا إنشاء صفوف تلقائي: المكاتب القائمة لا يُنشأ لها صف في `organization_ranking_settings` عند التطبيق. الصف يُنشأ عند أول استخدام (موافقة/تأجيل/عرض دعوة) عبر كود الخادم، وهو النمط الذي يدعمه `ranking.server.ts`.
+- النتيجة: غياب الصف = لا ظهور عام، ووجود الصف الجديد = `false` افتراضاً. لا مكتب يظهر عاماً تلقائياً في الحالتين.
 
-## 8. TIE BREAK
-الحالي: `score DESC`, `computed_at ASC`, ثم الاسم. `computed_at ASC` استُخدم كفاصل قطعي، لكنه بعد اختيار "أحدث لقطة لكل مكتب" يمنح أفضلية لمن حُسب أولاً في دورة الـ Cron — أفضلية غير منطقية ومتغيرة بترتيب المعالجة، كما يعرّض توقيت الحساب كعامل ترتيب عام.
-اقتراح (بلا تنفيذ): `score DESC` ثم `publicName.localeCompare(name, 'ar')` فقط — قطعي، مستقر، ولا يعتمد على بيانات داخلية.
-**TIE_BREAK: NEEDS_FIX** — EXACT_FILES: `src/lib/operational-score/ranking.server.ts`.
+## 5. OPT-IN GUARD (بعد الهجرة 2)
 
-## 9. CRON IDEMPOTENCY
-المسار Insert-only بلا تعديل يدوي للنتيجة وبلا قفل. تشغيلان متقاربان يُنتجان لقطتين شبه متطابقتين لنفس المكتب: لا إفساد بيانات ولا تعديل تاريخ، لكن تكرار الصفوف يستهلك نافذة القصّ في البند 5 ويزيد احتمال اختفاء مكاتب من الترتيب.
-**CRON_CONCURRENCY_RISK: MEDIUM** (يهبط إلى LOW بعد إصلاح البند 5، ويُغلق تماماً بقفل استشاري أو فريد على (organization_id, window_kind, فترة زمنية)).
+- `false → true`: الحارس يفرض `opted_in_at := now()` و`opted_in_by := auth.uid()`.
+- `true → true`: يُعاد فرض قيم `OLD` — لا يستطيع العميل تعديل التوثيق.
+- `true → false` (وأي حالة بلا موافقة): يُفرَّغ الحقلان إلى `NULL`.
+- `INSERT` مع `public_opt_in = true` يُوثَّق من القاعدة؛ وإلا `NULL`.
+- أي قيمة يرسلها العميل عبر Data API لهذين الحقلين تُستبدل داخل `BEFORE INSERT OR UPDATE` → لا إمكانية لتزوير التوثيق.
+- حقول الاستثناء المنصية (`platform_excluded` وما يتبعها) محجوبة عن أي دور مكتب عبر استثناء صريح.
 
-## 10. ROLLBACK PLAN (وصف فقط)
-1. تعطيل فوري بلا DDL: إيقاف مفتاح `platform_settings.operational_score` (`enabled=false`) → الترتيب العام يعود فارغاً ومعطّلاً، وإيقاف نداء الـ Cron.
-2. رجوع جزئي: `DROP TRIGGER` الثلاثة، ثم `DROP FUNCTION private.ranking_settings_guard()`.
-3. رجوع كامل: `DROP TABLE public.operational_score_snapshots;` ثم `DROP TABLE public.organization_ranking_settings;` (لا جدول آخر يعتمد عليهما؛ الحذف لا يمس بيانات إنتاج قائمة).
-4. ملاحظة: `activity_logs` قد يحتوي أحداث `ranking.opt_in` — لا تُحذف (سجل تدقيق).
-**ROLLBACK_PLAN: READY**
+## 6. PROMPT FIELDS
+
+- `opt_in_prompted_at` و`opt_in_snoozed_until` كلاهما `timestamptz` nullable بلا `NOT NULL` وبلا DEFAULT → لا يعطلان صفوفاً قائمة (ولا توجد صفوف أصلاً عند التطبيق) ولا يحتاجان Backfill.
+
+## 7. SNAPSHOT SAFETY
+
+- `operational_score_snapshots` تُنشأ فارغة. لا `INSERT` في الهجرة، ولا Trigger يولّد لقطات.
+- التوليد يحصل فقط عبر تشغيل صريح لمسار `/api/public/hooks/operational-score` (محمي بسر التشغيل). فحص `cron.job` الحالي يُظهر 4 مهام فقط (cleanup / email-dispatch / mail-sync / notifications-dispatch) — **لا مهمة دورية لمؤشر الإنجاز**.
+
+## 8. PUBLIC SAFETY AFTER APPLY
+
+- `PUBLIC_FEATURE_AFTER_MIGRATION_ONLY: DISABLED` — بثلاث طبقات مستقلة:
+  1. مكوّن `src/components/marketing/top-offices.tsx` غير مستورد في أي صفحة (لا وجود له في الصفحة الرئيسية).
+  2. لا لقطات في القاعدة ولا مهمة Cron لتوليدها.
+  3. لا `GRANT` لدور `anon` على أي من الجدولين، ولا سياسة قراءة عامة.
+
+## 9. ROLLBACK
+
+- فشل الهجرة 1: لا شيء لاسترجاعه (كل عبارة داخل معاملة الهجرة).
+- نجاح 1 وفشل 2: الوضع آمن وقابل للبقاء — الجدولان موجودان، `public_opt_in = false` افتراضاً، بلا صفوف وبلا لقطات وبلا ظهور عام. الخيارات: إصلاح الهجرة 2 وإعادة تطبيقها لاحقاً، أو التراجع بـ
+  `DROP TABLE public.operational_score_snapshots; DROP TABLE public.organization_ranking_settings; DROP FUNCTION private.ranking_settings_guard();`
+  (آمن لأن الجدولين لا يحتويان بيانات إنتاج).
+- نجاح كامل وفشل QA الخادمي: التعطيل بلا حذف بيانات — أولاً عدم إضافة مهمة Cron / إيقافها إن أُضيفت، وعدم ربط مكوّن الترتيب بأي صفحة عامة. ثم عند الحاجة تصفير الظهور عبر أداة الإدارة أو تعيين `platform_excluded = true` للمكاتب المعنية بصلاحية منصة. الحذف الهيكلي آخر خيار.
+
+## 10. APPLY BLAST RADIUS
+
+- **LOW**: إنشاء جدولين جديدين + عمودين جديدين على أحدهما فقط، بلا لمس أي بيانات أو جداول إنتاج، بلا قفل على جداول مزدحمة، بلا Backfill، والميزة العامة معطّلة بعد التطبيق.
 
 ## OUTPUT
-- MIGRATION_SQL: PASS
-- RLS: PASS
-- RANKING_SETTINGS_GUARD: PASS (ملاحظة MEDIUM على أعمدة opted_in_*)
-- SNAPSHOT_WRITE_BOUNDARY: PASS
-- APPEND_ONLY: PASS
-- LATEST_SNAPSHOT_PER_ORG: FAIL
-- FORMULA_VERSION_FILTER: NEEDS_FIX
-- PUBLIC_ELIGIBILITY: PASS
-- PUBLIC_DATA_MINIMIZATION: PASS
-- TIE_BREAK: NEEDS_FIX
-- CRON_CONCURRENCY_RISK: MEDIUM
-- ROLLBACK_PLAN: READY
 
-**PRE_APPLY_VERDICT: FIX_REQUIRED_BEFORE_APPLY**
-السبب محصور في الكود الخادمي (البنود 5 و8) لا في SQL: Migration نفسها آمنة للتطبيق، لكن الترتيب العام لا يجب تشغيله قبل إصلاح انتقاء أحدث لقطة + تصفية إصدار المعادلة + الفاصل القطعي.
+- MIGRATION_1: PASS
+- MIGRATION_2: PASS
+- MIGRATION_ORDER: PASS
+- DEPENDENCIES: PASS
+- EXISTING_DATA_SAFETY: PASS
+- PUBLIC_OPT_IN_DEFAULT_FALSE: PASS
+- EXISTING_ORGS_SAFE: PASS
+- OPT_IN_GUARD_AFTER_APPLY: PASS
+- PROMPT_FIELDS_SAFE: PASS
+- SNAPSHOT_TABLE_STARTS_EMPTY: YES
+- PUBLIC_FEATURE_AFTER_MIGRATION_ONLY: DISABLED
+- ROLLBACK: READY
+- BLAST_RADIUS: LOW
+- FINAL_APPLY_VERDICT: **READY_TO_APPLY**
+
+STOP — لا تطبيق ولا نشر في هذه الجولة.
