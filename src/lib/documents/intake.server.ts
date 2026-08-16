@@ -158,6 +158,26 @@ export async function verifyUploadedObject(input: {
     await removeOrphanObject(path);
     throw new IntakeRejection(verdict.reason);
   }
+
+  // فحص البرمجيات الضارة والتوقيعات التنفيذية المحظورة (Malware & Executable Inspection)
+  const { scanDocumentBytes } = await import("./malware-scan.server");
+  try {
+    await scanDocumentBytes(bytes.buffer, {
+      fileName: input.fileName,
+      fileSize: bytes.length,
+      mimeType: verdict.file.mime,
+      organizationId: input.prefix.replace("/", ""),
+      userId: "",
+    });
+  } catch (scanError) {
+    await removeOrphanObject(path);
+    throw new IntakeRejection(
+      scanError instanceof Error
+        ? scanError.message
+        : "تم حظر الملف بواسطة نظام فحص البرمجيات الضارة.",
+    );
+  }
+
   return { ...verdict.file, path };
 }
 
