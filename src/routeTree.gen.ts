@@ -102,6 +102,7 @@ import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sale
 import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
+import { Route as ApiPublicHooksDocumentScanRouteImport } from './routes/api/public/hooks/document-scan'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
@@ -590,6 +591,12 @@ const ApiPublicHooksCleanupSecureArtifactsRoute =
     path: '/api/public/hooks/cleanup-secure-artifacts',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksDocumentScanRoute =
+  ApiPublicHooksDocumentScanRouteImport.update({
+    id: '/api/public/hooks/document-scan',
+    path: '/api/public/hooks/document-scan',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksEmailDispatchRoute =
   ApiPublicHooksEmailDispatchRouteImport.update({
     id: '/api/public/hooks/email-dispatch',
@@ -767,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/document-scan': typeof ApiPublicHooksDocumentScanRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
@@ -875,6 +883,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/document-scan': typeof ApiPublicHooksDocumentScanRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
@@ -986,6 +995,7 @@ export interface FileRoutesById {
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  '/api/public/hooks/document-scan': typeof ApiPublicHooksDocumentScanRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
   '/api/public/hooks/email-inbound': typeof ApiPublicHooksEmailInboundRoute
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
@@ -1097,6 +1107,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/sales/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/document-scan'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
@@ -1205,6 +1216,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/sales'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/document-scan'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
@@ -1315,6 +1327,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/sales/'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
+    | '/api/public/hooks/document-scan'
     | '/api/public/hooks/email-dispatch'
     | '/api/public/hooks/email-inbound'
     | '/api/public/hooks/mail-sync'
@@ -1371,6 +1384,7 @@ export interface RootRouteChildren {
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
+  ApiPublicHooksDocumentScanRoute: typeof ApiPublicHooksDocumentScanRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
   ApiPublicHooksEmailInboundRoute: typeof ApiPublicHooksEmailInboundRoute
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
@@ -2041,6 +2055,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCleanupSecureArtifactsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/document-scan': {
+      id: '/api/public/hooks/document-scan'
+      path: '/api/public/hooks/document-scan'
+      fullPath: '/api/public/hooks/document-scan'
+      preLoaderRoute: typeof ApiPublicHooksDocumentScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/email-dispatch': {
       id: '/api/public/hooks/email-dispatch'
       path: '/api/public/hooks/email-dispatch'
@@ -2342,6 +2363,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
+  ApiPublicHooksDocumentScanRoute: ApiPublicHooksDocumentScanRoute,
   ApiPublicHooksEmailDispatchRoute: ApiPublicHooksEmailDispatchRoute,
   ApiPublicHooksEmailInboundRoute: ApiPublicHooksEmailInboundRoute,
   ApiPublicHooksMailSyncRoute: ApiPublicHooksMailSyncRoute,
