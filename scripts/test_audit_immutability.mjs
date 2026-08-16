@@ -104,7 +104,8 @@ async function runAuditImmutabilitySuite() {
   assert.match(sql, /CREATE TRIGGER pii_access_logs_no_delete/);
   assert.match(sql, /BEFORE DELETE ON public\.pii_access_logs/);
   assert.match(sql, /EXECUTE FUNCTION public\.deny_hard_delete\(\)/);
-  console.log("  -> PASS: Migration 20260817000200 correctly defines immutable triggers.");
+  assert.match(sql, /REVOKE UPDATE, DELETE ON public\.pii_access_logs FROM authenticated, service_role;/);
+  console.log("  -> PASS: Migration 20260817000200 correctly defines immutable triggers and defense-in-depth revoke.");
 
   console.log("==================================================================");
   console.log("ALL 5 PII & AUDIT IMMUTABILITY TESTS PASSED (100% GREEN)!");
