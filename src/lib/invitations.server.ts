@@ -143,8 +143,8 @@ export async function createTeamInvitation(input: {
     to: email,
     subject: `دعوة للانضمام إلى ${org?.name ?? "مكتب المحاماة"} — مِهلة`,
     label: "team-invite",
-    // دعوة فريق: هوية الدعم لأن رد المستلم على الدعوة استفسار تشغيلي.
-    identity: "support",
+    // دعوة فريق: هوية النظام (noreply) مع Reply-To إلى الدعم حسب سياسة الهويات.
+    identity: "system",
     idempotencyKey: `team-invite-${created.id}`,
     organizationId: input.organizationId,
     userId: input.userId,

@@ -14,6 +14,7 @@ import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import {
   CANCEL_REASON,
+  identityForNotificationEvent,
   isEmailEnabledEvent,
   isRetryableFailure,
   maskEmailForLog,
