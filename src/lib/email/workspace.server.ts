@@ -4,13 +4,8 @@ import type { Database, Json } from "@/integrations/supabase/types";
  * محرك مركز البريد — خادمي فقط. كل الجداول مغلقة أمام العميل، والوصول يمر
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
  */
-import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { requestMeta } from "@/lib/admin-guard.server";
-import {
-  buildAttachmentSection,
-  quarantineInboundAttachment,
-  storeAttachment,
-} from "@/lib/email/attachments.server";
+import { quarantineInboundAttachment, storeAttachment } from "@/lib/email/attachments.server";
 import { sanitizeInboundHtml } from "@/lib/email/sanitize.shared";
 import {
   previewOf,
@@ -24,11 +19,8 @@ import {
 
 type Db = SupabaseDb;
 
-const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";
 export const ATTACHMENT_BUCKET = "email-attachments";
-/** صلاحية روابط تنزيل المرفقات المُرسلة للمستلم الخارجي (7 أيام). */
-const OUTBOUND_ATTACHMENT_TTL = 7 * 24 * 60 * 60;
 
 /* --------------------------------------------------------------- الصناديق */
 
@@ -559,67 +551,15 @@ export async function discardDraft(db: Db, messageId: string): Promise<void> {
   if ((count ?? 0) === 0) await db.from("email_threads").delete().eq("id", row.thread_id);
 }
 
-/* --------------------------------------------------------------- المزوّد */
+/* ----------------------------------------------------------------- النقل */
 
-/** إرسال فعلي عبر خدمة البريد المُدارة. لا يرمي؛ يعيد نتيجة موصوفة. */
-async function providerSend(input: {
-  from: string;
-  fromName: string;
-  to: string[];
-  cc: string[];
-  bcc: string[];
-  subject: string;
-  html: string;
-  text: string;
-  idempotencyKey: string;
-}): Promise<
+/**
+ * نتيجة إرسال موحّدة داخل مركز البريد. المزوّد الوحيد هو Hostinger SMTP:
+ * لا مسار احتياطي لأي خدمة بريد مُدارة، و`ok = true` تعني قبول SMTP فعلياً.
+ */
+type TransportResult =
   | { ok: true; ref: string | null }
-  | { ok: false; code: string; message: string; status: number | null }
-> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) {
-    return {
-      ok: false,
-      code: "email_not_configured",
-      message: "خدمة البريد غير مهيأة على الخادم.",
-      status: null,
-    };
-  }
-  try {
-    const response = await sendLovableEmail(
-      {
-        to: input.to.join(", "),
-        cc: input.cc.length ? input.cc.join(", ") : undefined,
-        bcc: input.bcc.length ? input.bcc.join(", ") : undefined,
-        from: `${input.fromName} <${input.from}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-        purpose: "transactional",
-        idempotency_key: input.idempotencyKey,
-        label: "email_workspace",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-      { apiKey, sendUrl: process.env["LOVABLE_SEND_URL"], idempotencyKey: input.idempotencyKey },
-    );
-    if (response.success === true) return { ok: true, ref: response.workflow_id ?? null };
-    return {
-      ok: false,
-      code: "send_not_accepted",
-      message: "رفضت خدمة البريد الرسالة.",
-      status: typeof response.status === "number" ? response.status : null,
-    };
-  } catch (error) {
-    const apiError = error instanceof EmailAPIError ? error : null;
-    return {
-      ok: false,
-      code: apiError?.code ?? "send_failed",
-      message: apiError?.message ?? (error instanceof Error ? error.message : String(error)),
-      status: apiError?.status ?? null,
-    };
-  }
-}
+  | { ok: false; code: string; message: string; status: number | null; smtpCode: number | null };
 
 type OutboxRow = {
   id: string;
@@ -630,41 +570,27 @@ type OutboxRow = {
 };
 
 /**
- * أخطاء نهائية لا تُصلحها إعادة المحاولة: مستلم موقوف أو عنوان غير صالح أو
- * خدمة غير مهيأة. تُعلَّم الرسالة فوراً كفاشلة برسالة عربية واضحة بدل تكرار
- * الإرسال حتى استنفاد المحاولات وتضخيم سجل الأعطال.
+ * أخطاء نهائية لا تُصلحها إعادة المحاولة: رفض نهائي للمستلم أو للمُرسل أو
+ * لمحتوى الرسالة من مزوّد المستلم. تُعلَّم الرسالة فوراً كفاشلة برسالة عربية
+ * واضحة بدل تكرار الإرسال حتى استنفاد المحاولات وتضخيم سجل الأعطال.
  */
-const PERMANENT_SEND_CODES = new Set([
-  "recipient_suppressed",
-  "invalid_recipient",
-  "invalid_sender",
-  "email_not_configured",
-  "domain_not_verified",
-]);
-
-/**
- * أخطاء تعني أن "التشغيل" السابق لنفس مفتاح التفرّد فشل عند المزوّد، والإعادة
- * تتطلب مفتاحاً جديداً فقط. تُعامل كأخطاء مؤقتة لأن `attemptIdempotencyKey`
- * يولّد مفتاحاً مختلفاً لكل محاولة.
- */
-const RETRYABLE_SEND_CODES = new Set(["run_failed", "idempotency_conflict"]);
+const PERMANENT_SEND_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
 
 /**
  * رفض على مستوى المستلم لا على مستوى المنصة: عنوان موقوف أو غير صالح. الحالة
  * تُحفظ على الرسالة وتظهر للمستخدم، لكنها **ليست** عطل نظام فلا تُسجَّل في سجل
  * الأعطال حتى لا يُشوَّش على فريق التشغيل بأعطال ليست من مسؤوليته.
  */
-const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
-
-/** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
-function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
-  return `${baseKey}:a${attemptNumber}`;
-}
+const RECIPIENT_DENY_CODES = new Set([
+  "recipient_suppressed",
+  "invalid_recipient",
+  "smtp_rejected_recipient",
+]);
 
 /**
- * أعطال نقل SMTP سببها الإعداد لا الرسالة (بيانات دخول خاطئة أو تعذّر الاتصال).
- * في هذه الحالة لا يُترك بريد المكاتب معلّقاً: تُعاد المحاولة فوراً عبر خدمة
- * البريد المُدارة في نفس الدورة، ويُسجَّل عطل الإعداد لفريق المنصة.
+ * أعطال نقل SMTP سببها الإعداد أو البيئة لا الرسالة (سرّ ناقص، بيانات دخول
+ * خاطئة، تعذّر اتصال، مهلة، مرفق غير متاح). لا يوجد مزوّد بديل، فلا تُحرق
+ * الرسالة: تبقى في قائمة الإرسال بمهلة إعادة قصيرة ويُسجَّل عطل التشغيل.
  */
 const SMTP_CONFIG_ERROR_CODES = new Set([
   "smtp_not_configured",
@@ -674,28 +600,46 @@ const SMTP_CONFIG_ERROR_CODES = new Set([
   "attachment_unavailable",
 ]);
 
-function classifySendFailure(result: { code: string; status: number | null }): {
+/** مهلة إعادة ثابتة قصيرة لأعطال الإعداد: وقت كافٍ لإصلاح تشغيلي. */
+const CONFIG_RETRY_DELAY_MINUTES = 5;
+
+function classifySendFailure(result: { code: string; smtpCode: number | null }): {
   permanent: boolean;
+  configuration: boolean;
   reason: string | null;
 } {
+  if (SMTP_CONFIG_ERROR_CODES.has(result.code)) {
+    return {
+      permanent: false,
+      configuration: true,
+      reason:
+        result.code === "smtp_not_configured"
+          ? "إعداد بريد Hostinger غير مكتمل لهذا الصندوق؛ الرسالة محفوظة وستُعاد المحاولة بعد الإصلاح."
+          : "تعذّر الاتصال بخدمة بريد Hostinger؛ الرسالة محفوظة وستُعاد المحاولة تلقائياً.",
+    };
+  }
   if (PERMANENT_SEND_CODES.has(result.code)) {
-    const reason =
-      result.code === "recipient_suppressed"
-        ? "عنوان المستلم موقوف عن الاستقبال (ارتداد أو شكوى أو إلغاء اشتراك سابق)، فلن تُعاد المحاولة."
-        : result.code === "email_not_configured"
-          ? "خدمة البريد غير مهيأة على الخادم."
-          : "عنوان البريد غير مقبول من خدمة الإرسال.";
-    return { permanent: true, reason };
+    return {
+      permanent: true,
+      configuration: false,
+      reason:
+        result.code === "recipient_suppressed"
+          ? "عنوان المستلم محجوب عن الاستقبال (ارتداد أو شكوى أو إلغاء اشتراك سابق)، فلن تُعاد المحاولة."
+          : "عنوان البريد غير مقبول.",
+    };
   }
-  if (RETRYABLE_SEND_CODES.has(result.code) || result.status === 409) {
-    return { permanent: false, reason: null };
+  // رفض نهائي (5xx) من مزوّد المستلم: لا تُصلحه الإعادة. 4xx مؤقت بطبيعته.
+  if (result.smtpCode !== null && result.smtpCode >= 500 && result.smtpCode < 600) {
+    return {
+      permanent: true,
+      configuration: false,
+      reason:
+        result.code === "smtp_rejected_recipient"
+          ? "رفض مزوّد المستلم العنوان نهائياً."
+          : "رُفضت الرسالة نهائياً من مزوّد المستلم.",
+    };
   }
-  // أخطاء العميل (٤xx) نهائية، ما عدا المهلة وتجاوز الحد فهما قابلان للإعادة.
-  if (result.status !== null && result.status >= 400 && result.status < 500) {
-    if (result.status === 408 || result.status === 429) return { permanent: false, reason: null };
-    return { permanent: true, reason: "رفضت خدمة البريد الرسالة نهائياً." };
-  }
-  return { permanent: false, reason: null };
+  return { permanent: false, configuration: false, reason: null };
 }
 
 /** إرسال رسالة واحدة من قائمة الإرسال. */
@@ -774,88 +718,39 @@ export async function dispatchOne(
   const baseHtml = message.html ?? "";
   const baseText = message.body_text ?? stripHtml(baseHtml);
 
-  // مسار Hostinger (SMTP) هو الأساس عند توفر الأسرار لأنه يدعم مرفقات MIME
-  // الفعلية. عند غيابها يعود المسار إلى خدمة البريد المُدارة مع روابط موقّعة.
-  const { transportConfigured } = await import("@/lib/email/transport/config.server");
-  const useSmtp = transportConfigured(message.from_address);
-
-  let result: Awaited<ReturnType<typeof providerSend>>;
-  let smtpFallbackCode: string | null = null;
-  let transportUsed: "smtp_hostinger" | "lovable_managed" = useSmtp
-    ? "smtp_hostinger"
-    : "lovable_managed";
-  let smtpDetail: { smtpCode: number; envelopeFrom: string; headerFrom: string } | null = null;
-  if (useSmtp) {
-    const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
-    const smtp = await sendViaHostinger(db, {
-      messageId,
-      mailboxAddress: message.from_address,
-      fromName: message.from_name ?? "MEHLA",
-      to: message.to_addresses,
-      cc: message.cc_addresses,
-      bcc: message.bcc_addresses,
-      subject: message.subject,
-      html: baseHtml,
-      text: baseText,
-      providerMessageId: message.message_id ?? newMessageId(),
-      inReplyTo: message.in_reply_to,
-      references: message.reference_ids ?? [],
-    });
-    if (smtp.ok) {
-      result = { ok: true, ref: smtp.ref };
-      smtpDetail = {
-        smtpCode: smtp.smtpCode,
-        envelopeFrom: smtp.envelopeFrom,
-        headerFrom: smtp.headerFrom,
+  // مسار النقل الوحيد لبريد المكاتب: Hostinger SMTP بمرفقات MIME فعلية. لا
+  // مسار احتياطي لأي خدمة بريد مُدارة — عطل الإعداد يُبقي الرسالة في القائمة.
+  const transportUsed = "smtp_hostinger" as const;
+  const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
+  const smtp = await sendViaHostinger(db, {
+    messageId,
+    mailboxAddress: message.from_address,
+    fromName: message.from_name ?? "MEHLA",
+    to: message.to_addresses,
+    cc: message.cc_addresses,
+    bcc: message.bcc_addresses,
+    subject: message.subject,
+    html: baseHtml,
+    text: baseText,
+    providerMessageId: message.message_id ?? newMessageId(),
+    inReplyTo: message.in_reply_to,
+    references: message.reference_ids ?? [],
+  });
+  const result: TransportResult = smtp.ok
+    ? { ok: true, ref: smtp.ref }
+    : {
+        ok: false,
+        code: smtp.code,
+        message: smtp.message,
+        status: null,
+        smtpCode: smtp.smtpCode ?? null,
       };
-    } else {
-      result = { ok: false, code: smtp.code, message: smtp.message, status: null };
-    }
-    // عطل إعداد في مسار SMTP: لا تُحتجز الرسالة — أكمل عبر خدمة البريد المُدارة.
-    if (!smtp.ok && SMTP_CONFIG_ERROR_CODES.has(smtp.code)) {
-      smtpFallbackCode = smtp.code;
-      transportUsed = "lovable_managed";
-      const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
-      result = await providerSend({
-        from: message.from_address,
-        fromName: message.from_name ?? "MEHLA",
-        to: message.to_addresses,
-        cc: message.cc_addresses,
-        bcc: message.bcc_addresses,
-        subject: message.subject,
-        html: `${baseHtml}${section.html}`,
-        text: `${baseText}${section.text}`,
-        idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
-      });
-    }
-  } else {
-    const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
-    result = await providerSend({
-      from: message.from_address,
-      fromName: message.from_name ?? "MEHLA",
-      to: message.to_addresses,
-      cc: message.cc_addresses,
-      bcc: message.bcc_addresses,
-      subject: message.subject,
-      html: `${baseHtml}${section.html}`,
-      text: `${baseText}${section.text}`,
-      idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
-    });
-  }
+  const smtpDetail = smtp.ok
+    ? { smtpCode: smtp.smtpCode, envelopeFrom: smtp.envelopeFrom, headerFrom: smtp.headerFrom }
+    : null;
 
   if (result.ok) {
     const now = new Date().toISOString();
-    if (smtpFallbackCode) {
-      const { logFailure } = await import("@/lib/observability/failure-log.server");
-      await logFailure({
-        surface: "email",
-        action: "email_smtp_transport_unavailable",
-        error: "تعذّر استخدام مسار SMTP لصندوق المكتب، فأُرسلت الرسالة عبر خدمة البريد المُدارة.",
-        errorCode: smtpFallbackCode,
-        organizationId: message.organization_id ?? null,
-        metadata: { message_id: messageId, mailbox: message.from_address },
-      });
-    }
     await db
       .from("email_messages")
       .update({
@@ -886,9 +781,24 @@ export async function dispatchOne(
     return { sent: true };
   }
 
-  const attempts = job.attempts + 1;
   const classification = classifySendFailure(result);
-  const exhausted = classification.permanent || attempts >= job.max_attempts;
+  // عطل الإعداد ليس محاولة إرسال فعلية: لا يُستهلك رصيد المحاولات حتى لا تُحرق
+  // رسالة صحيحة بسبب نقص سرّ على الخادم.
+  const attempts = classification.configuration ? job.attempts : job.attempts + 1;
+  const exhausted =
+    classification.permanent || (!classification.configuration && attempts >= job.max_attempts);
+  // ارتداد صلب مؤكَّد: يُسجَّل في حجب مِهلة كي لا يُعاد الإرسال لهذا العنوان.
+  if (!result.ok) {
+    const { captureHardBounce } = await import("@/lib/email/suppression.server");
+    for (const address of message.to_addresses) {
+      await captureHardBounce({
+        address,
+        errorCode: result.code,
+        smtpCode: result.smtpCode,
+        source: "email_workspace_send",
+      });
+    }
+  }
   let failureRef: string | null = null;
   if (!RECIPIENT_DENY_CODES.has(result.code)) {
     const { logFailure } = await import("@/lib/observability/failure-log.server");
@@ -897,7 +807,7 @@ export async function dispatchOne(
       action: "email_workspace_send",
       error: classification.reason ?? result.message,
       errorCode: result.code,
-      httpStatus: result.status,
+      ...(result.status !== null ? { httpStatus: result.status } : {}),
       organizationId: message.organization_id ?? null,
       metadata: {
         message_id: messageId,
@@ -905,11 +815,15 @@ export async function dispatchOne(
         transport: transportUsed,
         recipients: message.to_addresses.length,
         permanent: classification.permanent,
+        configuration_failure: classification.configuration,
+        ...(result.smtpCode !== null ? { smtp_code: result.smtpCode } : {}),
         provider_message: result.message.slice(0, 300),
       },
     });
   }
-  const backoffMinutes = Math.min(2 ** attempts, 60);
+  const backoffMinutes = classification.configuration
+    ? CONFIG_RETRY_DELAY_MINUTES
+    : Math.min(2 ** attempts, 60);
   await db
     .from("email_outbox")
     .update({

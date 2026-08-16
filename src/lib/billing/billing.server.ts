@@ -1547,6 +1547,8 @@ export async function notifyBillingEvent(
     const result = await sendAppEmail({
       to: invoice.customer_email as string,
       subject: billingSubject(event, invoice.number as string),
+      // بريد فواتير ومدفوعات: هوية الفوترة كي يصل رد العميل لقسم الفوترة.
+      identity: "billing",
       element: BillingEventEmail({
         event,
         invoiceNumber: invoice.number as string,

@@ -189,10 +189,7 @@ export async function createUserNotification(
 }
 
 /** إدراج بلا رمي: عزل فشل البريد عن العملية التجارية والإشعار. */
-export async function safeEnqueue(
-  db: Db,
-  notificationId: string,
-): Promise<EnqueueOutcome | null> {
+export async function safeEnqueue(db: Db, notificationId: string): Promise<EnqueueOutcome | null> {
   try {
     return await enqueueNotificationEmail(db, notificationId);
   } catch (thrown) {
