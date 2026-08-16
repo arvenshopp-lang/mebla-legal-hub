@@ -3688,6 +3688,135 @@ export type Database = {
           },
         ]
       }
+      notification_email_deliveries: {
+        Row: {
+          attempts: number
+          created_at: string
+          delivery_status: string
+          error_code: string | null
+          event_type: string
+          finalized_at: string
+          id: string
+          notification_id: string
+          organization_id: string | null
+          provider_reference: string | null
+          recipient_masked: string | null
+          template_key: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          delivery_status: string
+          error_code?: string | null
+          event_type: string
+          finalized_at?: string
+          id?: string
+          notification_id: string
+          organization_id?: string | null
+          provider_reference?: string | null
+          recipient_masked?: string | null
+          template_key: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          delivery_status?: string
+          error_code?: string | null
+          event_type?: string
+          finalized_at?: string
+          id?: string
+          notification_id?: string
+          organization_id?: string | null
+          provider_reference?: string | null
+          recipient_masked?: string | null
+          template_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string
+          failed_at: string | null
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          max_attempts: number
+          notification_id: string
+          organization_id: string
+          processing_started_at: string | null
+          provider_reference: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type: string
+          failed_at?: string | null
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          max_attempts?: number
+          notification_id: string
+          organization_id: string
+          processing_started_at?: string | null
+          provider_reference?: string | null
+          recipient_email: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          template_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          failed_at?: string | null
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          max_attempts?: number
+          notification_id?: string
+          organization_id?: string
+          processing_started_at?: string | null
+          provider_reference?: string | null
+          recipient_email?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          template_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_email_queue_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: true
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_email_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_events: {
         Row: {
           actor_user_id: string | null
@@ -9535,6 +9664,36 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_notification_email_batch: {
+        Args: { _limit: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          event_type: string
+          failed_at: string | null
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          max_attempts: number
+          notification_id: string
+          organization_id: string
+          processing_started_at: string | null
+          provider_reference: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_email_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       consume_ocr_pages: {
         Args: { _organization_id: string; _pages: number }
         Returns: {
@@ -9558,6 +9717,16 @@ export type Database = {
           already_exists: boolean
           organization_id: string
         }[]
+      }
+      finalize_notification_email_delivery: {
+        Args: {
+          _error_code?: string
+          _final_status: string
+          _provider_reference?: string
+          _queue_id: string
+          _recipient_masked?: string
+        }
+        Returns: string
       }
       my_case_party_permissions: {
         Args: { _organization_id: string }
