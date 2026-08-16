@@ -577,31 +577,22 @@ type OutboxRow = {
 };
 
 /**
- * أخطاء نهائية لا تُصلحها إعادة المحاولة: مستلم موقوف أو عنوان غير صالح أو
- * خدمة غير مهيأة. تُعلَّم الرسالة فوراً كفاشلة برسالة عربية واضحة بدل تكرار
- * الإرسال حتى استنفاد المحاولات وتضخيم سجل الأعطال.
+ * أخطاء نهائية لا تُصلحها إعادة المحاولة: رفض نهائي للمستلم أو للمُرسل أو
+ * لمحتوى الرسالة من مزوّد المستلم. تُعلَّم الرسالة فوراً كفاشلة برسالة عربية
+ * واضحة بدل تكرار الإرسال حتى استنفاد المحاولات وتضخيم سجل الأعطال.
  */
-const PERMANENT_SEND_CODES = new Set([
-  "recipient_suppressed",
-  "invalid_recipient",
-  "invalid_sender",
-  "email_not_configured",
-  "domain_not_verified",
-]);
-
-/**
- * أخطاء تعني أن "التشغيل" السابق لنفس مفتاح التفرّد فشل عند المزوّد، والإعادة
- * تتطلب مفتاحاً جديداً فقط. تُعامل كأخطاء مؤقتة لأن `attemptIdempotencyKey`
- * يولّد مفتاحاً مختلفاً لكل محاولة.
- */
-const RETRYABLE_SEND_CODES = new Set(["run_failed", "idempotency_conflict"]);
+const PERMANENT_SEND_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
 
 /**
  * رفض على مستوى المستلم لا على مستوى المنصة: عنوان موقوف أو غير صالح. الحالة
  * تُحفظ على الرسالة وتظهر للمستخدم، لكنها **ليست** عطل نظام فلا تُسجَّل في سجل
  * الأعطال حتى لا يُشوَّش على فريق التشغيل بأعطال ليست من مسؤوليته.
  */
-const RECIPIENT_DENY_CODES = new Set(["recipient_suppressed", "invalid_recipient"]);
+const RECIPIENT_DENY_CODES = new Set([
+  "recipient_suppressed",
+  "invalid_recipient",
+  "smtp_rejected_recipient",
+]);
 
 /** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
 function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
@@ -609,9 +600,9 @@ function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
 }
 
 /**
- * أعطال نقل SMTP سببها الإعداد لا الرسالة (بيانات دخول خاطئة أو تعذّر الاتصال).
- * في هذه الحالة لا يُترك بريد المكاتب معلّقاً: تُعاد المحاولة فوراً عبر خدمة
- * البريد المُدارة في نفس الدورة، ويُسجَّل عطل الإعداد لفريق المنصة.
+ * أعطال نقل SMTP سببها الإعداد أو البيئة لا الرسالة (سرّ ناقص، بيانات دخول
+ * خاطئة، تعذّر اتصال، مهلة، مرفق غير متاح). لا يوجد مزوّد بديل، فلا تُحرق
+ * الرسالة: تبقى في قائمة الإرسال بمهلة إعادة قصيرة ويُسجَّل عطل التشغيل.
  */
 const SMTP_CONFIG_ERROR_CODES = new Set([
   "smtp_not_configured",
@@ -621,28 +612,45 @@ const SMTP_CONFIG_ERROR_CODES = new Set([
   "attachment_unavailable",
 ]);
 
-function classifySendFailure(result: { code: string; status: number | null }): {
-  permanent: boolean;
-  reason: string | null;
-} {
+/** مهلة إعادة ثابتة قصيرة لأعطال الإعداد: وقت كافٍ لإصلاح تشغيلي. */
+const CONFIG_RETRY_DELAY_MINUTES = 5;
+
+function classifySendFailure(result: {
+  code: string;
+  smtpCode: number | null;
+}): { permanent: boolean; configuration: boolean; reason: string | null } {
+  if (SMTP_CONFIG_ERROR_CODES.has(result.code)) {
+    return {
+      permanent: false,
+      configuration: true,
+      reason:
+        result.code === "smtp_not_configured"
+          ? "إعداد بريد Hostinger غير مكتمل لهذا الصندوق؛ الرسالة محفوظة وستُعاد المحاولة بعد الإصلاح."
+          : "تعذّر الاتصال بخدمة بريد Hostinger؛ الرسالة محفوظة وستُعاد المحاولة تلقائياً.",
+    };
+  }
   if (PERMANENT_SEND_CODES.has(result.code)) {
-    const reason =
-      result.code === "recipient_suppressed"
-        ? "عنوان المستلم موقوف عن الاستقبال (ارتداد أو شكوى أو إلغاء اشتراك سابق)، فلن تُعاد المحاولة."
-        : result.code === "email_not_configured"
-          ? "خدمة البريد غير مهيأة على الخادم."
-          : "عنوان البريد غير مقبول من خدمة الإرسال.";
-    return { permanent: true, reason };
+    return {
+      permanent: true,
+      configuration: false,
+      reason:
+        result.code === "recipient_suppressed"
+          ? "عنوان المستلم محجوب عن الاستقبال (ارتداد أو شكوى أو إلغاء اشتراك سابق)، فلن تُعاد المحاولة."
+          : "عنوان البريد غير مقبول.",
+    };
   }
-  if (RETRYABLE_SEND_CODES.has(result.code) || result.status === 409) {
-    return { permanent: false, reason: null };
+  // رفض نهائي (5xx) من مزوّد المستلم: لا تُصلحه الإعادة. 4xx مؤقت بطبيعته.
+  if (result.smtpCode !== null && result.smtpCode >= 500 && result.smtpCode < 600) {
+    return {
+      permanent: true,
+      configuration: false,
+      reason:
+        result.code === "smtp_rejected_recipient"
+          ? "رفض مزوّد المستلم العنوان نهائياً."
+          : "رُفضت الرسالة نهائياً من مزوّد المستلم.",
+    };
   }
-  // أخطاء العميل (٤xx) نهائية، ما عدا المهلة وتجاوز الحد فهما قابلان للإعادة.
-  if (result.status !== null && result.status >= 400 && result.status < 500) {
-    if (result.status === 408 || result.status === 429) return { permanent: false, reason: null };
-    return { permanent: true, reason: "رفضت خدمة البريد الرسالة نهائياً." };
-  }
-  return { permanent: false, reason: null };
+  return { permanent: false, configuration: false, reason: null };
 }
 
 /** إرسال رسالة واحدة من قائمة الإرسال. */
