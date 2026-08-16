@@ -85,20 +85,21 @@ export function newTraceRef(prefix = "MS"): string {
   return `${prefix}-${body}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Claims = Record<string, any> | null | undefined;
+export type Claims = Record<string, any> | null | undefined;
 
 /** مستوى تحقق الجلسة كما يصرّح به الرمز الموقّع من Supabase Auth. */
 export function assuranceLevel(claims: Claims): "aal1" | "aal2" | "unknown" {
-  const aal = claims?.["aal"];
-  if (aal === "aal2" || aal === "aal1") return aal;
-  const amr = claims?.["amr"];
+  if (!claims) return "unknown";
+  const aal = claims["aal"];
+  if (aal === "aal2") return "aal2";
+  const amr = claims["amr"];
   if (
     Array.isArray(amr) &&
     amr.some((entry) => entry?.method === "totp" || entry?.method === "mfa/totp")
   ) {
     return "aal2";
   }
+  if (aal === "aal1") return "aal1";
   return "unknown";
 }
 
@@ -161,7 +162,13 @@ export async function requireSensitiveAccess(
     throw new Error("دورك في المكتب لا يسمح بتنفيذ هذه العملية.");
   }
 
-  // التحقق بخطوتين اختياري: يُسجَّل مستوى الجلسة في سجل التدقيق فقط ولا يمنع العملية.
-  const aal = assuranceLevel(input.claims);
+  // فرض التحقق بخطوتين (AAL2) للعمليات الحساسة
+  const aal = input.claims ? assuranceLevel(input.claims) : assuranceLevelFromRequest();
+  if (input.operation === "pii_reveal" && aal !== "aal2") {
+    throw new Error(
+      "تتطلب هذه العملية جلسة مصادقة ثنائية نشطة (AAL2). يُرجى إكمال التحقق بخطوتين للمتابعة.",
+    );
+  }
+
   return { role, traceRef: newTraceRef(), meta: requestSecurityMeta(), aal };
 }

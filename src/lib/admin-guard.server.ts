@@ -8,6 +8,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AdminPermission } from "@/lib/admin-permissions";
 import { expandPermissions } from "@/lib/admin-permissions";
 import type { Database, Json } from "@/integrations/supabase/types";
+import {
+  assuranceLevel,
+  assuranceLevelFromRequest,
+  type Claims,
+} from "@/lib/security/sensitive-guard.server";
 
 export type StaffRow = {
   id: string;
@@ -28,6 +33,7 @@ export async function requireStaff(
   supabase: AnyClient,
   userId: string,
   permission: AdminPermission,
+  claims?: Claims,
 ): Promise<StaffRow> {
   const db = supabase as AnyClient;
   const { data, error } = await db
@@ -40,6 +46,15 @@ export async function requireStaff(
   if (error) throw new Error("تعذّر التحقق من صلاحياتك.");
   const staff = data as StaffRow | null;
   if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
+
+  // فرض التحقق الثنائي (AAL2) خادمياً للوصول إلى لوحة إدارة المنصة
+  const aal = claims ? assuranceLevel(claims) : assuranceLevelFromRequest();
+  if (aal !== "aal2") {
+    throw new Error(
+      "يتطلب الوصول إلى لوحة إدارة المنصة جلسة مصادقة ثنائية نشطة (AAL2). يُرجى إكمال التحقق بخطوتين للمتابعة.",
+    );
+  }
+
   if (staff.role === "super_admin") return staff;
   const all = expandPermissions([
     ...(staff.permissions ?? []),
@@ -50,7 +65,11 @@ export async function requireStaff(
 }
 
 /** موظف نشط بأي صلاحية — للصفحات القراءة العامة مثل لوحة المؤشرات. */
-export async function requireActiveStaff(supabase: AnyClient, userId: string): Promise<StaffRow> {
+export async function requireActiveStaff(
+  supabase: AnyClient,
+  userId: string,
+  claims?: Claims,
+): Promise<StaffRow> {
   const { data } = await supabase
     .from("platform_staff")
     .select(
@@ -60,6 +79,15 @@ export async function requireActiveStaff(supabase: AnyClient, userId: string): P
     .maybeSingle();
   const staff = data as StaffRow | null;
   if (!staff || staff.status !== "active") throw new Error("ليس لديك وصول إلى لوحة إدارة المنصة.");
+
+  // فرض التحقق الثنائي (AAL2) خادمياً
+  const aal = claims ? assuranceLevel(claims) : assuranceLevelFromRequest();
+  if (aal !== "aal2") {
+    throw new Error(
+      "يتطلب الوصول إلى لوحة إدارة المنصة جلسة مصادقة ثنائية نشطة (AAL2). يُرجى إكمال التحقق بخطوتين للمتابعة.",
+    );
+  }
+
   return staff;
 }
 
@@ -113,12 +141,50 @@ export async function admin() {
   return supabaseAdmin;
 }
 
-/** أصل الطلب الحقيقي لبناء روابط البريد (تفعيل / إعادة تعيين). */
-export function siteOrigin(path = ""): string {
+const TRUSTED_HOST_PATTERN =
+  /^(?:(?:[a-z0-9-]+\.)*mehlalex\.com|(?:[a-z0-9-]+\.)*lovable\.(?:app|dev)|localhost(?::\d+)?)$/i;
+const DEFAULT_SITE_ORIGIN = "https://app.mehlalex.com";
+
+export function isTrustedOrigin(originOrUrl: string): boolean {
+  if (!originOrUrl) return false;
   try {
-    const url = new URL(getRequest().url);
-    return `${url.origin}${path}`;
+    const parsed = new URL(
+      originOrUrl.startsWith("http://") || originOrUrl.startsWith("https://")
+        ? originOrUrl
+        : `https://${originOrUrl}`,
+    );
+    const host = parsed.host.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_HOST_PATTERN.test(host) || TRUSTED_HOST_PATTERN.test(hostname);
   } catch {
-    return `https://app.mehlalex.com${path}`;
+    return false;
   }
+}
+
+export function sanitizeSiteOrigin(originOrUrl: string): string {
+  if (!originOrUrl) return DEFAULT_SITE_ORIGIN;
+  try {
+    const parsed = new URL(originOrUrl);
+    const host = parsed.host.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+    if (TRUSTED_HOST_PATTERN.test(host) || TRUSTED_HOST_PATTERN.test(hostname)) {
+      return `${parsed.protocol}//${parsed.host}`;
+    }
+    return DEFAULT_SITE_ORIGIN;
+  } catch {
+    return DEFAULT_SITE_ORIGIN;
+  }
+}
+
+/** أصل الطلب الموثوق لبناء روابط البريد (تفعيل / إعادة تعيين كلمة المرور) لمنع Host Header Injection. */
+export function siteOrigin(path = ""): string {
+  let candidate = "";
+  try {
+    candidate = getRequest().url;
+  } catch {
+    candidate = "";
+  }
+  const cleanPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
+  const origin = sanitizeSiteOrigin(candidate);
+  return `${origin}${cleanPath}`;
 }

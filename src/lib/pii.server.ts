@@ -165,7 +165,7 @@ export async function revealPiiValue(
   },
 ): Promise<string> {
   const traceRef = newTraceRef("MR");
-  const aal = assuranceLevel(input.claims ?? null);
+  const aal = input.claims ? assuranceLevel(input.claims) : assuranceLevelFromRequest();
   const reason = (input.reason ?? "").trim();
 
   const deny = async (outcome: RevealOutcome, message: string): Promise<never> => {
@@ -186,6 +186,14 @@ export async function revealPiiValue(
     }
     throw new Error(`${message} (مرجع: ${traceRef})`);
   };
+
+  // فرض التحقق بخطوتين (AAL2) خادمياً لكشف الهوية أو السجل التجاري
+  if (aal !== "aal2") {
+    return deny(
+      "denied",
+      "يتطلب كشف البيانات الحساسة جلسة مصادقة ثنائية نشطة (AAL2). يُرجى إكمال التحقق بخطوتين للمتابعة.",
+    );
+  }
 
   const role = await requireMemberRole(supabase, input.organizationId, userId);
   if (!REVEAL_ROLES.includes(role as (typeof REVEAL_ROLES)[number])) {
