@@ -214,6 +214,10 @@ export async function smtpSend(
           code: "smtp_rejected_recipient",
           message: "رفض الخادم أحد المستلمين.",
           latencyMs: Date.now() - started,
+          // رمز الاستجابة الفعلي يميّز الرفض المؤقت (4xx) من النهائي (5xx).
+          smtpCode: rcpt.code,
+          envelopeFrom,
+          headerFrom: message.from,
         };
       }
     }
@@ -226,6 +230,9 @@ export async function smtpSend(
         code: "smtp_protocol_error",
         message: "رفض الخادم بدء نقل المحتوى.",
         latencyMs: Date.now() - started,
+        smtpCode: dataReply.code,
+        envelopeFrom,
+        headerFrom: message.from,
       };
     }
 
