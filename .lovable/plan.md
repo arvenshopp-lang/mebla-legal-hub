@@ -1,146 +1,76 @@
-# MEHLA — HOSTINGER CANONICAL EMAIL TRANSPORT
-## تدقيق معماري نهائي (قراءة فقط) + خطة البناء
+# BATCH A — أساس نقل البريد الكنسي عبر Hostinger
 
-لم يُعدَّل أي كود، ولم تُطبَّق أي هجرة، ولم يُرسل أي بريد.
+هدف الدفعة: بناء طبقة إرسال واحدة مملوكة لمِهلة تعتمد Hostinger SMTP فقط، دون تحويل `sendAppEmail` ودون ترحيل أي مسار عمل ودون أي هجرة أو بريد إنتاجي.
 
----
+## نموذج الحساب المعتمد
 
-## 1. النقل الحالي عبر Hostinger (مُثبت من المصدر)
+- الصندوق الأساسي المُصادق عليه: `noreply@mehlalex.com`.
+- أسماء مستعارة بلا بيانات دخول: `info@`, `support@`, `legal@`, `sales@`, `billing@`.
+- المصادقة دائماً بالحساب الأساسي، وترويسة `From` تحمل هوية القسم — وهذا هو الفصل القائم فعلاً في `senderIdentity` (المظروف = الحساب المُصادق، الترويسة = العنوان الظاهر).
 
-المسار الفعلي: `email_outbox` → `dispatchDue`/`dispatchOne` (`src/lib/email/workspace.server.ts`) → `sendViaHostinger` (`transport/hostinger.server.ts`) → `smtpSend` (`transport/smtp.server.ts`) → `connectMailSocket` (`transport/socket.server.ts`).
+ملاحظة تحقّق: قيم الأسرار غير مقروءة من الأدوات (مشفّرة)، فحالة المطابقة تُحسم برمجياً في وقت التشغيل عبر دالة حالة تُعيد `match / mismatch / unverified` دون طبع أي قيمة، ولا يُطبع اسم مستخدم ولا كلمة مرور.
 
-- مكتبة SMTP: لا توجد مكتبة خارجية — عميل SMTP بروتوكولي مكتوب داخلياً (`EHLO` → `AUTH LOGIN` → `MAIL FROM` → `RCPT TO` → `DATA`)، وبناء MIME داخلي في `mime.server.ts` (نص + HTML + مرفقات فعلية).
-- بيئة التشغيل: عامل حوسبة طرفية عبر `cloudflare:sockets`، وفي التطوير `node:tls`. التحقق من الشهادة إلزامي بلا أي خيار لتعطيله.
-- الخادم/المنفذ/التشفير: `SMTP_HOST` افتراضياً `smtp.hostinger.com`، `SMTP_PORT` افتراضياً `465`، `SMTP_SECURE` افتراضياً `true` (TLS ضمني). لا يوجد مسار STARTTLS.
-- المصادقة: `MAIL_USER` + `MAIL_PASSWORD` (أو مفاتيح لكل صندوق `MAIL_USER_<ALIAS>` إن وُجدت) — تُقرأ داخل الدوال فقط، ولا تُعاد ولا تُسجَّل.
-- From: فصل صحيح بين المظروف والترويسة — `MAIL FROM` = الحساب المُصادق عليه (`envelopeFrom`)، وترويسة `From` = عنوان القسم/الاسم المستعار.
-- Reply-To: عنوان القسم نفسه، وصندوق النظام (`noreply@`) يُحوّل الرد إلى `MAIL_SYSTEM_REPLY_TO` أو `support@` مع ترويسة `Auto-Submitted`.
-- المهلة: 20 ثانية لكل عملية قراءة/اتصال (`mail_socket_timeout`).
-- استجابة المزوّد: رمز SMTP الحقيقي (250 للقبول) + `Message-ID` الذي نولّده نحن؛ لا يوجد معرّف مزوّد مستقل.
-- تصنيف الأخطاء القائم: `smtp_not_configured`, `smtp_connect_failed`, `smtp_auth_failed`, `smtp_rejected_sender`, `smtp_rejected_recipient`, `smtp_rejected_data`, `smtp_protocol_error`, `smtp_timeout` — وكل نص خطأ يمر عبر `redactTransportError`.
+## 1) ملف جديد: `src/lib/email/transport/mehla-mailer.server.ts`
 
-إثبات تشغيلي من الإنتاج: 6 رسائل صادرة بحالة `sent` و`provider = smtp_hostinger`.
-
-## 2. `sendAppEmail` الحالي
-
-`src/lib/email/app-email.server.ts` يستدعي `sendLovableEmail` من `@lovable.dev/email-js` مع `LOVABLE_API_KEY` و`sender_domain: mail.mehlalex.com` و`from: MEHLA <noreply@mehlalex.com>` و`purpose: transactional` و`idempotency_key`. لا أثر لـ SMTP فيه إطلاقاً.
-
-تبعيات Lovable: حزمة `@lovable.dev/email-js` (+ `EmailAPIError`)، السر `LOVABLE_API_KEY`، المتغير `LOVABLE_SEND_URL`، نطاق الإرسال `mail.mehlalex.com` المُدار، وأكواد الرفض `recipient_suppressed`/`invalid_recipient` القادمة من طبقة الإيقاف عند Lovable. إضافةً إلى مسار الرجوع (fallback) في `workspace.server.ts` الذي يعود إلى الخدمة المُدارة عند عطل إعداد SMTP.
-
-## 3. توافق البيئة
-
-عامل الإشعارات يعمل داخل نفس مسار الخادم (`src/routes/api/public/hooks/notification-emails.ts`) وبنفس بيئة `email-dispatch` تماماً، وطبقة المقبس نفسها مثبتة عملياً في الإنتاج. النقل قابل لإعادة الاستخدام كما هو، مع تحفظ واحد: `sendViaHostinger` مرتبط بجداول المرفقات ويطلب `db`، لذا الإشعارات ستستخدم `smtpSend` مباشرة عبر مُحوِّل موحّد بلا مرفقات.
-
-## 4. طبقة النقل الموحّدة المقترحة
-
-ملف جديد `src/lib/email/transport/mehla-mailer.server.ts`:
+عقد مُنمّط واحد:
 
 ```text
-sendMehlaEmail({ to, fromIdentity, replyTo, subject, html, text, messageId, metadata })
-  → senderIdentity(fromIdentity)   // مظروف مُصادق + ترويسة القسم
-  → buildMimeMessage               // نص + HTML
-  → smtpSend                       // Hostinger فقط
-  → { ok, smtpCode, messageId } | { ok:false, code, class }
+sendMehlaEmail({
+  to, identity, replyTo?, subject, html, text, messageId?, fromName?, metadata?
+}) → MehlaSendResult
 ```
 
-- مزوّد واحد: Hostinger SMTP. لا استيراد لـ `@lovable.dev/email-js` في هذا المسار.
-- `app-email.server.ts` يبقى بنفس التوقيع الخارجي (`sendAppEmail`) لكنه يرندر React Email ثم يفوّض إلى `sendMehlaEmail`، فلا يتغير أي نداء أعلى.
+- المزوّد: Hostinger SMTP فقط. لا استيراد لـ `@lovable.dev/email-js`، ولا استخدام لـ `LOVABLE_API_KEY` أو `LOVABLE_SEND_URL`.
+- إعادة استخدام المكدّس القائم كما هو: `smtpSend` + `buildMimeMessage` + `senderIdentity` + طبقة المقبس/TLS. لا عميل SMTP ثانٍ، ولا باني MIME ثانٍ، ولا طبقة Hostinger موازية.
+- بلا مرفقات في هذه النسخة (HTML + نص فقط)؛ مرفقات البريد البشري في `email_outbox` تبقى كما هي بلا لمس.
 
-## 5. الطوابير تبقى منفصلة
+تُصدَّر أيضاً (نقية وقابلة للاختبار):
 
-`email_outbox` (مراسلات بشرية) و`notification_email_queue` (إشعارات نظام) يبقيان طابورين مستقلين بأعمال مختلفة، ويتشاركان مُحوِّل النقل فقط. لا دمج، ولا تعديل على نموذج إعادة المحاولة أو الإنهاء الذري أو القوالب أو التفضيلات أو عزل المكاتب.
+- `MEHLA_IDENTITIES`: `system → noreply@`, `info → info@`, `support → support@`, `legal → legal@`, `sales → sales@`, `billing → billing@`.
+- `identityAddress(identity)` و`identityReplyTo(identity)`.
+- `canonicalAccountStatus()`: يقارن الحساب المُصادق عليه بالصندوق الكنسي `noreply@mehlalex.com` ويعيد الحالة فقط.
+- `classifyTransportFailure(code, smtpCode, message)`.
+- `notificationMessageId(notificationId)` → `<notif-{notification_id}@mehlalex.com>`.
 
-## 6. جرد نداءات بريد التطبيق الفعلية
+النتيجة المُطبَّعة (محايدة تجاه المزوّد): `ok`, `smtpCode`, `messageId`, `errorCode`, `errorClass`, `latencyMs`, `headerFrom`, `envelopeFrom`, `replyTo`. لا رد مصادقة خام، ولا ترويسات أسرار، وكل نص خطأ يمر عبر `redactTransportError` القائم.
 
-| FLOW | الملف | CURRENT_PROVIDER | TARGET | FROM | REPLY-TO | التعقيد |
-|---|---|---|---|---|---|---|
-| دعوات الفريق | `src/lib/invitations.server.ts` | Lovable Managed | Hostinger | `noreply@` | `support@` | منخفض |
-| الفوترة | `src/lib/billing/billing.server.ts:1542` | Lovable Managed | Hostinger | `billing@` | `billing@` | منخفض |
-| العروض/العقود | `src/lib/sales-docs.server.ts:496` | Lovable Managed | Hostinger | `sales@` | `sales@` | منخفض |
-| عملاء المكاتب | `src/lib/office-lead-email.server.ts` | Lovable Managed | Hostinger | `info@` | `info@` | منخفض |
-| إشعارات النظام (المرحلة 1) | `src/lib/notifications/email-worker.server.ts:268` | Lovable Managed | Hostinger | `noreply@` | `support@` | منخفض |
-| المراسلات البشرية | `workspace.server.ts` | Hostinger + رجوع مُدار | Hostinger فقط | صندوق القسم | نفس القسم | متوسط (إزالة الرجوع) |
-| رسائل المصادقة | Supabase Auth | خارج نطاق هذه الجولة | — | — | — | — |
+## 2) سياسة Reply-To و`MAIL_SYSTEM_REPLY_TO`
 
-الهدف: `LOVABLE_MANAGED_EMAIL_CALLS = 0` بعد الدفعة C.
+- `system` → `Reply-To = MAIL_SYSTEM_REPLY_TO`. إن لم يكن مُهيّأً، لا يُختلق صندوق: يُعاد `errorCode = mail_system_reply_to_not_configured` بصنف `SYSTEM_CONFIGURATION_FAILURE` مع تسجيل عطل نظام، ولا تُستهلك محاولة إرسال.
+- الأقسام: `Reply-To` = العنوان نفسه (`support@`, `billing@`, `sales@`, `legal@`, `info@`).
+- `Auto-Submitted: auto-generated` لهوية `system` فقط (السلوك القائم في باني MIME)، ولا يُطبَّق على المراسلات البشرية.
+- سيُضبط `MAIL_SYSTEM_REPLY_TO = support@mehlalex.com` كإعداد خادمي صريح (ليس رجوعاً خفياً في الكود).
 
-## 7. هويات المُرسل عبر Hostinger
+## 3) تفصيل أخطاء SMTP في `smtp.server.ts` (تعديل محدود)
 
-الأسرار الموجودة فعلاً: `MAIL_USER` و`MAIL_PASSWORD` فقط — أي حساب حقيقي واحد بلا بيانات دخول لأي اسم مستعار (لا `MAIL_USER_SUPPORT` ولا غيره). الصناديق المسجلة: `info@`, `support@`, `legal@`, `sales@`, `billing@` (نوع human) و`noreply@` (نوع system).
+المسارَان الوحيدان المعدَّلان: رفض `RCPT TO` ورفض بدء `DATA` — يُعاد فيهما `smtpCode` الفعلي مع `envelopeFrom`/`headerFrom`، تماماً كما يفعل مسار رفض المُرسل حالياً. لا تغيير في سلوك التعقيم ولا في أي رمز خطأ قائم ولا في مسار النجاح.
 
-- كلها قابلة للإرسال كترويسة `From` لأن المظروف يبقى الحساب المُصادق عليه، وهذا ما يحفظ SPF.
-- `noreply@mehlalex.com` مسجّل في المنصة كصندوق نظام ومدعوم في طبقة الهوية، لكن كونه مُنشأً فعلاً كصندوق/اسم مستعار في لوحة Hostinger لم يُتحقق منه من داخل الكود، ولا يوجد سجل إرسال حقيقي منه عبر SMTP.
+## 4) تصنيف الأخطاء المركزي
 
-`NOREPLY_HOSTINGER_READY: NEEDS_CONFIGURATION` — يلزم تأكيد وجود `noreply@mehlalex.com` في حساب Hostinger (صندوق أو Alias مُسلَّم للحساب الرئيسي) قبل الدفعة B، ويلزم ضبط `MAIL_SYSTEM_REPLY_TO` صراحةً.
+- RETRYABLE: `smtp_timeout`, `smtp_connect_failed` (شبكي)، أي رمز 4xx، رفض مستلم/محتوى/بروتوكول بـ 4xx أو برمز غير معروف.
+- PERMANENT: رفض مستلم أو محتوى برمز 5xx قاطع.
+- SYSTEM_CONFIGURATION_FAILURE: `smtp_not_configured`, `smtp_auth_failed`, `smtp_rejected_sender`, فشل TLS/الشهادة، و`mail_system_reply_to_not_configured` — لا تُستهلك محاولات المستلم عليها.
 
-## 8. سياسة المُرسل المستهدفة
+## 5) التفرّد و Message-ID
 
-إشعارات آلية → `noreply@` ‏· دعم بشري → `support@` ‏· فوترة → `billing@` ‏· مبيعات/عروض/عقود → `sales@` ‏· قانوني → `legal@` ‏· عام وعملاء المكاتب → `info@`. المصادقة دائماً بالحساب الرئيسي الواحد.
+لا تفرّد أصلي في SMTP ولن يُدَّعى. الضمانات المستقبلية تبقى على طبقتنا: `UNIQUE(notification_id)`، السحب الذرّي، الإنهاء الذرّي، سجل التسليم غير القابل للتعديل، و`Message-ID` حتمي. المعرّف الذي يمرّره المُنادي يُستخدم حرفياً بلا تعديل، للتتبع وثبات إعادة المحاولة فقط — بلا وعد بإلغاء تكرار عند المستلم. لا ادّعاء exactly-once.
 
-## 9. سياسة Reply-To
+## 6) ما لا يتغير في هذه الدفعة
 
-- إشعارات آلية من `noreply@`: `Reply-To = support@` + `Auto-Submitted: auto-generated` — فلا يذهب رد المستخدم إلى صندوق غير مُتابع.
-- بريد الدعم الآلي: `Reply-To = support@` (مدعوم فعلاً ومُستقبل نشط).
-- بقية الأقسام: `Reply-To` = عنوان القسم نفسه.
+`app-email.server.ts` كما هو (لا تحويل)، ولا ترحيل للدعوات أو الفوترة أو العروض أو عملاء المكاتب أو عامل الإشعارات أو مسار الرجوع في `workspace.server.ts`. مسار البريد البشري (`email_outbox` → Hostinger، الأسماء المستعارة، Reply-To، المرفقات، الـ threading) يبقى بلا أي تغيير سلوكي. الهجرتان المعلّقتان لا تُعدَّلان ولا تُطبَّقان، والكرون يبقى مُعطلاً، ولا يُرسل أي بريد إنتاجي.
 
-## 10. تفرّد SMTP
+## 7) اختبارات مستهدفة (بلا شبكة)
 
-`HOSTINGER_SMTP_NATIVE_IDEMPOTENCY: NO` — SMTP بروتوكول تسليم بلا مفتاح تفرّد؛ إعادة نفس الرسالة تُقبل مرة ثانية.
+ملف جديد `scripts/mehla-mailer.test.ts` + سكربت `mail:transport:test`، يغطي المحاور الـ23 المطلوبة: خلو المُرسل الكنسي من مكتبة Lovable، اختيار مسار Hostinger، تحقق الهويات الستّ، المظروف بالحساب الكنسي، الأسماء المستعارة بلا بيانات دخول، Reply-To لكل هوية، `MAIL_SYSTEM_REPLY_TO`، `Auto-Submitted`، تصنيف 4xx/5xx للمستلم والمحتوى، أخطاء المصادقة/المُرسل/TLS كعطل إعداد، حفظ `smtpCode`، حفظ `Message-ID` حرفياً، عدم ادّعاء تفرّد المزوّد، خلو النتائج والأخطاء من أي سرّ (بفحص التعقيم)، وانحدار البريد البشري.
 
-الضمانات تعتمد كلياً على طبقتنا: `UNIQUE(notification_id)` في الطابور وسجل التسليم، السحب الذرّي (`claim` → `processing`)، الإنهاء الذرّي، و`Message-ID` حتمي.
+## 8) التحقق
 
-الخطر المتبقي: لو قَبِل الخادم `DATA` (250) ثم انقطع الاتصال قبل قراءتنا للرد، أو نجح القبول وفشل الإنهاء الذرّي، فقد تُسلَّم الرسالة مرتين عند إعادة المحاولة. `RESIDUAL_DUPLICATE_RISK: LOW` (نسخة مكررة نادرة، بلا حالة تجارية مزدوجة). لا ندّعي exactly-once — الضمان هو at-least-once مع تكرار نادر مُقلَّل.
+`mail:transport:test` + `notif-email:test` + فحص الأنواع + ESLint على الملفات المتأثرة + حرّاس الأمان. بلا Browser E2E، بلا بريد إنتاجي، بلا هجرة، بلا تنشيط كرون، وبلا أي تعديل على قاعدة الإنتاج.
 
-## 11. Message-ID الحتمي
+## الملفات
 
-`DETERMINISTIC_MESSAGE_ID_RECOMMENDED: YES` — `<notif-{notification_id}@mehlalex.com>` لإشعارات النظام: يجعل إعادة المحاولة تحمل نفس المعرّف، ويسهّل التتبع، وقد يجعل بعض الخوادم المستلمة تتجاهل النسخة المكررة — دون أي وعد بإلغاء التكرار.
-
-## 12. تصنيف أخطاء Hostinger
-
-- RETRYABLE: `smtp_timeout`, `smtp_connect_failed`, `smtp_protocol_error`, وأي رمز 4xx (421/450/451/452)، ورفض المحتوى بـ 4xx.
-- PERMANENT: 5xx عامة (550/552/554)، `smtp_rejected_recipient` بـ 5xx (مستلم غير صالح)، `smtp_rejected_data` بـ 5xx.
-- SYSTEM_CONFIGURATION_FAILURE: `smtp_not_configured`, `smtp_auth_failed`, `smtp_rejected_sender`, فشل TLS/الشهادة. لا تُستهلك محاولات المستخدم عليها، وتُسجَّل كعطل نظام يحتاج تدخلاً إدارياً.
-
-ملاحظة تنفيذية: عميل SMTP الحالي يعيد رمزاً مُصنَّفاً بلا فصل 4xx/5xx في حالتي المستلم والمحتوى، لذا الدفعة A ستُرجِع `smtpCode` في هذين المسارين لتُبنى القرارية عليه.
-
-## 13. الأسرار
-
-`MAIL_USER`, `MAIL_PASSWORD` موجودة، و`SMTP_HOST`/`SMTP_PORT`/`SMTP_SECURE` لها افتراضيات قابلة للتجاوز — وكلها بأسماء محايدة وقابلة للنقل خارج Lovable. تبقى أسرار خادم فقط: لا في المستودع، ولا الواجهة، ولا جداول القاعدة، ولا السجلات (`redactTransportError`)، ولا القوالب. لن تُطبع أي قيمة.
-
-## 14. أثر هجرة الأساس
-
-`FOUNDATION_MIGRATION_CAN_REMAIN: YES` — مخطط `notification_email_queue` و`notification_email_deliveries` محايد تجاه المزوّد: `provider_reference` نص حر يقبل `Message-ID`، والحالات والمحاولات والإنهاء الذرّي لا تفترض أي مزوّد. `NOTIFICATION_QUEUE_SCHEMA_CHANGE_REQUIRED: NO`.
-
-## 15. الطرح المطلوب
-
-A. بناء `mehla-mailer.server.ts` + إرجاع `smtpCode` من مسارَي المستلم/المحتوى.
-B. تحويل `sendAppEmail` إلى Hostinger، فيتحول عامل الإشعارات تلقائياً، مع خريطة أخطاء SMTP في `email-channel.shared.ts`، وتأكيد `noreply@` و`MAIL_SYSTEM_REPLY_TO` قبلها.
-C. ترحيل نداءات الأقسام (دعوات، فوترة، عروض، عملاء) إلى هويات القسم، ثم إزالة مسار الرجوع المُدار في `workspace.server.ts` والتحقق من صفر تبعية Lovable.
-D. اختبارات مستهدفة موسّعة في `scripts/notification-emails.test.ts`.
-E. مراجعة تطبيق نهائية للأساس.
-F. تطبيق الأساس.
-G. الكرون يبقى مُعطلاً.
-H. إشعار واحد مُتحكَّم عبر Hostinger.
-I. التحقق: استلام + صف الطابور + سجل التسليم + لا تكرار.
-J. تنشيط الكرون.
-K. إغلاق المرحلة 1. L. المرحلة 2 (التذكيرات).
-
----
-
-## الخلاصة النهائية
-
-- CURRENT_HUMAN_MAIL_PROVIDER: Hostinger SMTP (مع رجوع مُدار قائم يجب إزالته)
-- CURRENT_APP_EMAIL_PROVIDER / SEND_APP_EMAIL_PROVIDER: LOVABLE_MANAGED
-- HOSTINGER_SMTP_IMPLEMENTATION: عميل SMTP داخلي + MIME داخلي فوق `cloudflare:sockets` / `node:tls`، منفذ 465 TLS ضمني
-- HOSTINGER_TRANSPORT_REUSABLE: YES
-- NOTIFICATION_WORKER_CAN_USE_HOSTINGER_SMTP: YES · RUNTIME_COMPATIBILITY: PASS
-- RECOMMENDED_TRANSPORT_ABSTRACTION: `sendMehlaEmail` في `mehla-mailer.server.ts`
-- CURRENT_SEND_APP_EMAIL_CALL_SITES: 5 (دعوات، فوترة، عروض/عقود، عملاء المكاتب، عامل الإشعارات)
-- HOSTINGER_VALID_SENDERS: info, support, legal, sales, billing (+ noreply بانتظار التأكيد)
-- NOREPLY_HOSTINGER_READY: NEEDS_CONFIGURATION
-- HOSTINGER_SMTP_NATIVE_IDEMPOTENCY: NO · DETERMINISTIC_MESSAGE_ID_RECOMMENDED: YES · RESIDUAL_DUPLICATE_RISK: LOW
-- FOUNDATION_MIGRATION_CAN_REMAIN: YES · NOTIFICATION_QUEUE_SCHEMA_CHANGE_REQUIRED: NO
-- LOVABLE_MANAGED_EMAIL_DEPENDENCIES: `@lovable.dev/email-js`، `LOVABLE_API_KEY`، `LOVABLE_SEND_URL`، نطاق `mail.mehlalex.com`، مسار الرجوع في `workspace.server.ts`
-- LOVABLE_EXIT_EMAIL_READINESS: NEEDS_CHANGES (تنفيذ الدفعات A–C + تأكيد `noreply@`)
-- EXACT_FILES_TO_CHANGE: `src/lib/email/transport/mehla-mailer.server.ts` (جديد)، `src/lib/email/transport/smtp.server.ts`، `src/lib/email/app-email.server.ts`، `src/lib/notifications/email-channel.shared.ts`، `src/lib/notifications/email-worker.server.ts`، `src/lib/email/workspace.server.ts`، `src/lib/invitations.server.ts`، `src/lib/billing/billing.server.ts`، `src/lib/sales-docs.server.ts`، `src/lib/office-lead-email.server.ts`، `scripts/notification-emails.test.ts`
-- FINAL_VERDICT: READY_FOR_HOSTINGER_TRANSPORT_BUILD (بشرط تأكيد هوية `noreply@` في Hostinger قبل الدفعة B)
+- جديد: `src/lib/email/transport/mehla-mailer.server.ts`
+- جديد: `scripts/mehla-mailer.test.ts`
+- تعديل محدود: `src/lib/email/transport/smtp.server.ts` (إرجاع `smtpCode` في مسارَي RCPT/DATA)
+- تعديل: `package.json` (سكربت الاختبار)
+- إعداد خادمي: `MAIL_SYSTEM_REPLY_TO`
