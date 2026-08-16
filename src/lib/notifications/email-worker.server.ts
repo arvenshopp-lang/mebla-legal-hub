@@ -6,12 +6,14 @@
  * كل صف معزول: فشل صف لا يُسقط الدفعة، ولا يُسجَّل أي محتوى أو بريد كامل.
  */
 import React from "react";
+import { NotificationReminderEmail } from "@/lib/email-templates/notification-reminder";
 import { NotificationSupportReplyEmail } from "@/lib/email-templates/notification-support-reply";
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
 import { sendAppEmail } from "@/lib/email/app-email.server";
 import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server";
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
+import { REMINDER_COPY } from "./reminders.shared";
 import {
   CANCEL_REASON,
   identityForNotificationEvent,
@@ -60,6 +62,7 @@ type TemplateDefinition = {
 
 /** القوالب المعتمدة: عنوان + مسار داخلي + عرض. ملخّص آمن فقط بلا محتوى. */
 const TEMPLATES: Record<NotificationTemplateKey, TemplateDefinition> = {
+  ...reminderTemplates(),
   "notif-team-member-joined": {
     subject: "انضمام عضو جديد لفريق مكتبك — مِهلة",
     path: "/team",
