@@ -2552,6 +2552,48 @@ export type Database = {
           },
         ]
       }
+      email_suppressions: {
+        Row: {
+          address: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lifted_at: string | null
+          lifted_by: string | null
+          normalized_address: string
+          note: string | null
+          reason: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lifted_at?: string | null
+          lifted_by?: string | null
+          normalized_address: string
+          note?: string | null
+          reason: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lifted_at?: string | null
+          lifted_by?: string | null
+          normalized_address?: string
+          note?: string | null
+          reason?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_sync_runs: {
         Row: {
           created_at: string
