@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # مراقبة أمان وتحديثات GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "03:00"
+      timezone: "Asia/Riyadh"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(security)"
+      include: "scope"
+
+  # مراقبة أمان حزم npm وسلسلة التوريد
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "03:30"
+      timezone: "Asia/Riyadh"
+    open-pull-requests-limit: 5
+    # حصر التحديثات الآلية بالترقيعات الأمنية وتجنب التحديثات الجذرية العشوائية
+    versioning-strategy: "increase-if-necessary"
+    commit-message:
+      prefix: "deps(security)"
+      include: "scope"

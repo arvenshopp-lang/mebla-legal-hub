@@ -9,33 +9,38 @@ concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# تقييد الصلاحيات لأدنى حد ممكن دفاعياً لمنع حقن المهام أو تسريب التوكنات
 permissions:
   contents: read
 
 jobs:
   code-guardrails:
-    name: فحص طبقة الكود (security:check)
+    name: فحص طبقة الكود والأسرار (security:check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24e6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - name: تثبيت الحزم
         run: bun install --frozen-lockfile
-      - name: حرّاس الأمان — الكود
+      - name: حرّاس الأمان — الكود والأسرار
         run: bun run security:check
       - name: مصفوفة صلاحيات لوحة الإدارة
         run: bun run rbac:matrix
       - name: اتساق بوابة العرض مع سجل التنقل
         run: bun run rbac:nav
+      - name: حارس المسارات التشخيصية والمؤقتة
+        run: bun run routes:guardrails
+      - name: حارس سلامة إدخال المستندات
+        run: bun run documents:guardrails
 
   dependency-audit:
-    name: فحص سلسلة التوريد
+    name: فحص سلسلة التوريد وثغرات الحزم
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24e6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - name: تثبيت الحزم
@@ -47,8 +52,8 @@ jobs:
     name: فحص طبقة قاعدة البيانات (security-guardrails.sql)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24e6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - name: تثبيت الحزم
