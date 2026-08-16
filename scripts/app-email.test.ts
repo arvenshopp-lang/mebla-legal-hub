@@ -139,7 +139,7 @@ const serialized = JSON.stringify([badRecipient, misconfigured]);
 check("لا كلمة مرور", !/MAIL_PASSWORD|password/i.test(serialized));
 check("لا بيانات مصادقة", !serialized.includes("AUTH"));
 check("مسار email_outbox البشري كما هو", WORKSPACE_SRC.includes("sendViaHostinger"));
-check("رجوع Lovable البشري لم يُحذف بعد", WORKSPACE_SRC.includes("sendLovableEmail"));
+check("رجوع Lovable البشري محذوف (C1)", !WORKSPACE_SRC.includes("sendLovableEmail"));
 
 console.log("\n7) مستدعو sendAppEmail بلا تغيير في عقدهم");
 for (const file of [
