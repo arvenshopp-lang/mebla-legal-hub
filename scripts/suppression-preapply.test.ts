@@ -3,6 +3,7 @@
  * لا اتصال بقاعدة بيانات، ولا إرسال بريد، ولا تطبيق هجرة.
  */
 import { readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 import {
   blocksCategory,
   qualifiesAsHardBounce,
