@@ -232,17 +232,16 @@ check("لا كلمة مرور في النتائج", !serialized.includes(secret)
 check("لا اسم مستخدم مع كلمة مرور خام في النصوص", !serialized.includes("AUTH"));
 check("التعقيم مُستخدم في المُرسل", MAILER_SRC.includes("redactTransportError"));
 
-console.log("\n14) انحدار البريد البشري وعدم تحويل sendAppEmail");
+console.log("\n14) انحدار البريد البشري وتحويل sendAppEmail");
 check("مسار Hostinger البشري كما هو", WORKSPACE_SRC.includes("sendViaHostinger"));
 check(
   "المرفقات البشرية كما هي",
   HOSTINGER_SRC.includes("attachments") || WORKSPACE_SRC.includes("buildAttachmentSection"),
 );
 check("لا استخدام للمُرسل الكنسي في مسار email_outbox", !WORKSPACE_SRC.includes("mehla-mailer"));
-check(
-  "sendAppEmail لم يُحوَّل بعد",
-  readFileSync("src/lib/email/app-email.server.ts", "utf8").includes("@lovable.dev"),
-);
+const APP_EMAIL_SRC = readFileSync("src/lib/email/app-email.server.ts", "utf8");
+check("sendAppEmail مُحوَّل إلى المُرسل الكنسي", APP_EMAIL_SRC.includes("sendMehlaEmail("));
+check("sendAppEmail بلا مزوّد مُدار", !APP_EMAIL_SRC.includes("@lovable.dev"));
 
 console.log(
   failures === 0 ? "\nالنتيجة: نجحت جميع الفحوص ✅\n" : `\nالنتيجة: ${failures} فحص فاشل ❌\n`,
