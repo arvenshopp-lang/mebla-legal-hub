@@ -112,9 +112,32 @@ check(
 );
 
 console.log("\n5) بريد المصادقة بلا تغيير");
+// بريد المصادقة يُدار خارج المستودع (قوالب مُدارة)، فالفحص أن لا مسار مصادقة
+// في الكود يستهلك نموذج الحجب إطلاقاً.
+const AUTH_CONSUMERS = execSync(
+  "rg -l 'suppression.server|isRecipientBlocked|recipientStates' src || true",
+  { encoding: "utf8" },
+)
+  .split("\n")
+  .filter(Boolean);
 check(
-  "لا فحص حجب في مسار بريد المصادقة",
-  !/suppression|isRecipientBlocked/.test(read("src/lib/email/auth-emails.server.ts")),
+  "لا مسار مصادقة يستخدم نموذج الحجب",
+  AUTH_CONSUMERS.every((file) => !/auth|signup|password|magic|reauth/i.test(file)),
+);
+check(
+  "مستهلكو الحجب هم المسارات المعتمدة فقط",
+  AUTH_CONSUMERS.every((file) =>
+    [
+      "src/lib/email/suppression.server.ts",
+      "src/lib/email/email.functions.ts",
+      "src/lib/email/app-email.server.ts",
+      "src/lib/email/workspace.server.ts",
+      "src/lib/invitations.server.ts",
+      "src/lib/billing/billing.server.ts",
+      "src/lib/sales-docs.server.ts",
+      "src/lib/notifications/email-worker.server.ts",
+    ].includes(file),
+  ),
 );
 
 console.log(
