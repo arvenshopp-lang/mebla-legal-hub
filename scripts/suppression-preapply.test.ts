@@ -18,7 +18,11 @@ function check(label: string, ok: boolean): void {
 const read = (path: string): string => readFileSync(path, "utf8");
 
 console.log("1) الهجرة المعتمدة للتطبيق (Fix A)");
-const SQL = read("docs/migrations/email-suppressions-apply.sql");
+const SQL_RAW = read("docs/migrations/email-suppressions-apply.sql");
+// التعليقات تُستثنى: الفحص يخص SQL التنفيذي فقط.
+const SQL = SQL_RAW.split("\n")
+  .filter((line) => !line.trimStart().startsWith("--"))
+  .join("\n");
 check("created_by بلا مرجع أجنبي", /created_by uuid,/.test(SQL));
 check("lifted_by بلا مرجع أجنبي", /lifted_by uuid,/.test(SQL));
 check("لا أي مرجع إلى auth.users", !SQL.includes("auth.users"));
