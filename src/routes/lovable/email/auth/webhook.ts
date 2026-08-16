@@ -17,8 +17,14 @@ const SITE_URL = `https://${ROOT_DOMAIN}`;
 
 // The SDK handler owns verification, dispatch, and retry semantics; this file
 // owns only the email decisions: subjects, templates, and per-type props.
-const handler = createAuthEmailHandler({
-  apiKey: process.env["LOVABLE_API_KEY"]!,
+// يُبنى عند أول طلب فقط: قراءة المفتاح في نطاق الوحدة تُعطّل شجرة المسارات بالكامل.
+type AuthEmailHandler = ReturnType<typeof createAuthEmailHandler>;
+let handler: AuthEmailHandler | null = null;
+
+function getHandler(): AuthEmailHandler {
+  if (handler) return handler;
+  handler = createAuthEmailHandler({
+    apiKey: process.env["LOVABLE_API_KEY"]!,
   // اسم المُرسل يبقى بحروف لاتينية لضمان التوافق مع كل عملاء البريد
   from: `MEHLA <noreply@${FROM_DOMAIN}>`,
   senderDomain: SENDER_DOMAIN,
@@ -71,16 +77,18 @@ const handler = createAuthEmailHandler({
         }),
     },
     reauthentication: {
-      subject: "رمز التحقق — مِهلة",
-      render: (data) => React.createElement(ReauthenticationEmail, { token: data.token ?? "" }),
+        subject: "رمز التحقق — مِهلة",
+        render: (data) => React.createElement(ReauthenticationEmail, { token: data.token ?? "" }),
+      },
     },
-  },
-});
+  });
+  return handler;
+}
 
 export const Route = createFileRoute("/lovable/email/auth/webhook")({
   server: {
     handlers: {
-      POST: ({ request }) => handler(request),
+      POST: ({ request }) => getHandler()(request),
     },
   },
 });
