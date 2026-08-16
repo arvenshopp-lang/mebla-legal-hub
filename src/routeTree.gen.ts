@@ -774,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
@@ -881,6 +882,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
@@ -991,6 +993,7 @@ export interface FileRoutesById {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
   '/api/public/webhooks/$slug': typeof ApiPublicWebhooksSlugRoute
@@ -1101,6 +1104,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
@@ -1208,6 +1212,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
@@ -1317,6 +1322,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
     | '/api/public/webhooks/$slug'
@@ -2069,7 +2075,8 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/office/event'
       preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
       parentRoute: typeof rootRouteImport
-    }    '/api/public/hooks/operational-score': {
+    }
+    '/api/public/hooks/operational-score': {
       id: '/api/public/hooks/operational-score'
       path: '/api/public/hooks/operational-score'
       fullPath: '/api/public/hooks/operational-score'
@@ -2344,7 +2351,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksOperationalRemindersRoute:
     ApiPublicHooksOperationalRemindersRoute,
   ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
-      ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
+  ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
   ApiPublicOfficeLeadRoute: ApiPublicOfficeLeadRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,
   ApiPublicWebhooksSlugRoute: ApiPublicWebhooksSlugRoute,
