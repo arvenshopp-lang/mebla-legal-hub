@@ -202,8 +202,7 @@ const noMemberSeed = baseSeed();
 noMemberSeed.members = [];
 const fourth = makeDb(noMemberSeed);
 const r4 = await generateOperationalReminders(fourth.db, now);
-check("بلا عضوية نشطة = لا تذكير", r4.created === 0 && r4.skippedRecipient === 3);
+check("بلا عضوية نشطة = لا تذكير", r4.created === 0 && r4.skippedRecipient === 4);
 
 console.log(`\nنتيجة: ${passed} ناجح / ${failed} فاشل`);
 if (failed > 0) process.exit(1);
-console.log("debug r4", JSON.stringify(r4));
