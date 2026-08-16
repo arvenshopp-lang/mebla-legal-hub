@@ -408,6 +408,11 @@ export async function loadDocumentForStamp(documentId: string) {
     .maybeSingle();
   if (error || !data) throw new Error("المستند غير موجود.");
   assertOrgScopedStoragePath(data.file_path, data.organization_id);
+
+  // بوابة فحص البرمجيات الضارة والعزل الصحي (Fail-Closed)
+  const { assertDocumentClean } = await import("@/lib/documents/quarantine.server");
+  assertDocumentClean(data);
+
   return data;
 }
 
