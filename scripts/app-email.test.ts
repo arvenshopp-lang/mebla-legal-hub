@@ -38,7 +38,7 @@ check("لا LOVABLE_API_KEY", !APP_EMAIL_SRC.includes("LOVABLE_API_KEY"));
 check("لا LOVABLE_SEND_URL", !APP_EMAIL_SRC.includes("LOVABLE_SEND_URL"));
 check("لا sender_domain", !APP_EMAIL_SRC.includes("sender_domain"));
 check("تفويض للمُرسل الكنسي", APP_EMAIL_SRC.includes("sendMehlaEmail("));
-check("المزوّد المعلن Hostinger", APP_EMAIL_PROVIDER === "hostinger_smtp");
+check("المزوّد المعلن نقل HTTP", APP_EMAIL_PROVIDER === "resend_http");
 
 console.log("\n2) الهوية الافتراضية والمُرسل وعنوان الرد");
 check("الهوية الافتراضية system", DEFAULT_APP_EMAIL_IDENTITY === "system");

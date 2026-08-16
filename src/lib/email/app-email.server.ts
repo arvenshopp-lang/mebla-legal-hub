@@ -18,8 +18,8 @@ import {
 export const SITE_NAME = "مِهلة | MEHLA";
 export const SITE_URL = "https://mehlalex.com";
 
-/** المزوّد الفعلي بعد تحويل الدفعة B — لا مزوّد مُدار ولا مسار احتياطي. */
-export const APP_EMAIL_PROVIDER = "hostinger_smtp" as const;
+/** المزوّد الفعلي لرسائل التطبيق: نقل HTTP متوافق مع بيئة التشغيل، بلا مسار احتياطي. */
+export const APP_EMAIL_PROVIDER = "resend_http" as const;
 
 /** الهوية الافتراضية للتوافق الخلفي: صندوق النظام الحقيقي. */
 export const DEFAULT_APP_EMAIL_IDENTITY: MehlaIdentity = "system";
@@ -39,7 +39,10 @@ export type AppEmailResult = {
  * وليس عطل نظام، فلا يُسجَّل في سجل الأعطال.
  */
 function isRecipientDeny(errorCode: string, errorClass: MehlaErrorClass): boolean {
-  return errorClass === "PERMANENT" && errorCode === "smtp_rejected_recipient";
+  return (
+    errorClass === "PERMANENT" &&
+    (errorCode === "smtp_rejected_recipient" || errorCode === "mail_http_rejected_recipient")
+  );
 }
 
 /**
