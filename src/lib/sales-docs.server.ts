@@ -515,6 +515,8 @@ export async function sendDocument(
       subject: `${label} ${number} من مِهلة`,
       element,
       label: "sales_document_send",
+      // عروض ومقترحات: هوية المبيعات كي يصل رد العميل لقسم المبيعات.
+      identity: "sales",
       idempotencyKey: `sales-doc-${id}-${number}`,
       organizationId: (doc.organization_id as string) ?? null,
     });
