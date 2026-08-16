@@ -88,9 +88,14 @@ console.log("\n9) هجرة الحجب (مصدر فقط)");
 const MIGRATION = read("supabase/migrations/20260816021500_email_suppressions.sql");
 check("RLS مفعّل", MIGRATION.includes("ENABLE ROW LEVEL SECURITY"));
 check("لا صلاحية للمتصفح", !/GRANT[^;]*TO\s+(anon|authenticated)/i.test(MIGRATION));
-check("صلاحية دور الخدمة", /GRANT ALL ON public\.email_suppressions TO service_role/.test(MIGRATION));
+check(
+  "صلاحية دور الخدمة",
+  /GRANT ALL ON public\.email_suppressions TO service_role/.test(MIGRATION),
+);
 check("الحذف ممنوع بمشغّل", MIGRATION.includes("الحذف ممنوع"));
 check("حجب فعّال واحد لكل سبب", MIGRATION.includes("email_suppressions_active_unique"));
 
-console.log(failures === 0 ? "\nالنتيجة: نجحت جميع الفحوص ✅\n" : `\nالنتيجة: ${failures} فحص فاشل ❌\n`);
+console.log(
+  failures === 0 ? "\nالنتيجة: نجحت جميع الفحوص ✅\n" : `\nالنتيجة: ${failures} فحص فاشل ❌\n`,
+);
 process.exit(failures === 0 ? 0 : 1);
