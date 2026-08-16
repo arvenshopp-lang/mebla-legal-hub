@@ -558,67 +558,15 @@ export async function discardDraft(db: Db, messageId: string): Promise<void> {
   if ((count ?? 0) === 0) await db.from("email_threads").delete().eq("id", row.thread_id);
 }
 
-/* --------------------------------------------------------------- المزوّد */
+/* ----------------------------------------------------------------- النقل */
 
-/** إرسال فعلي عبر خدمة البريد المُدارة. لا يرمي؛ يعيد نتيجة موصوفة. */
-async function providerSend(input: {
-  from: string;
-  fromName: string;
-  to: string[];
-  cc: string[];
-  bcc: string[];
-  subject: string;
-  html: string;
-  text: string;
-  idempotencyKey: string;
-}): Promise<
+/**
+ * نتيجة إرسال موحّدة داخل مركز البريد. المزوّد الوحيد هو Hostinger SMTP:
+ * لا مسار احتياطي لأي خدمة بريد مُدارة، و`ok = true` تعني قبول SMTP فعلياً.
+ */
+type TransportResult =
   | { ok: true; ref: string | null }
-  | { ok: false; code: string; message: string; status: number | null }
-> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) {
-    return {
-      ok: false,
-      code: "email_not_configured",
-      message: "خدمة البريد غير مهيأة على الخادم.",
-      status: null,
-    };
-  }
-  try {
-    const response = await sendLovableEmail(
-      {
-        to: input.to.join(", "),
-        cc: input.cc.length ? input.cc.join(", ") : undefined,
-        bcc: input.bcc.length ? input.bcc.join(", ") : undefined,
-        from: `${input.fromName} <${input.from}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-        purpose: "transactional",
-        idempotency_key: input.idempotencyKey,
-        label: "email_workspace",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-      { apiKey, sendUrl: process.env["LOVABLE_SEND_URL"], idempotencyKey: input.idempotencyKey },
-    );
-    if (response.success === true) return { ok: true, ref: response.workflow_id ?? null };
-    return {
-      ok: false,
-      code: "send_not_accepted",
-      message: "رفضت خدمة البريد الرسالة.",
-      status: typeof response.status === "number" ? response.status : null,
-    };
-  } catch (error) {
-    const apiError = error instanceof EmailAPIError ? error : null;
-    return {
-      ok: false,
-      code: apiError?.code ?? "send_failed",
-      message: apiError?.message ?? (error instanceof Error ? error.message : String(error)),
-      status: apiError?.status ?? null,
-    };
-  }
-}
+  | { ok: false; code: string; message: string; status: number | null; smtpCode: number | null };
 
 type OutboxRow = {
   id: string;
