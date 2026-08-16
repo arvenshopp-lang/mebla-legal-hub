@@ -23,14 +23,23 @@ function check(name: string, ok: boolean) {
 }
 
 check("guarded by cron secret", src.includes("guardCronRequest"));
-check("guard before transport import", src.indexOf("guardCronRequest") < src.indexOf("await import("));
-check("POST only handler", /handlers:\s*\{\s*POST:/.test(src) && !/\b(GET|PUT|PATCH|DELETE):/.test(src));
+check(
+  "guard before transport import",
+  src.indexOf("guardCronRequest") < src.indexOf("await import("),
+);
+check(
+  "POST only handler",
+  /handlers:\s*\{\s*POST:/.test(src) && !/\b(GET|PUT|PATCH|DELETE):/.test(src),
+);
 check("recipient hardcoded", src.includes('FIXED_RECIPIENT = "ziad.emb@gmail.com"'));
 check("recipient not from request", !/request\.(json|text|formData|url)/.test(src));
 check("no query parsing", !/searchParams|URLSearchParams/.test(src));
 check("sender fixed via system identity", /identity:\s*"system"/.test(src) && !/from:/.test(src));
 check("reply-to not settable by caller", !/replyTo/.test(src));
-check("subject/body fixed constants", src.includes("subject: FIXED_SUBJECT") && src.includes("text: FIXED_TEXT"));
+check(
+  "subject/body fixed constants",
+  src.includes("subject: FIXED_SUBJECT") && src.includes("text: FIXED_TEXT"),
+);
 check("uses mail abstraction", src.includes("sendMehlaEmail"));
 check("no direct provider api call", !/api\.resend\.com|httpMailSend|fetch\(/.test(src));
 check("no raw smtp", !/smtpSend|smtp\.server/.test(src));

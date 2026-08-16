@@ -12,8 +12,7 @@ import { guardCronRequest } from "@/lib/security/cron-auth.server";
 /** الحمولة المعتمدة الثابتة — لا بيانات عمل ولا بيانات عملاء. */
 const FIXED_RECIPIENT = "ziad.emb@gmail.com";
 const FIXED_SUBJECT = "MEHLA — Resend Transport Verification";
-const FIXED_TEXT =
-  "اختبار تقني لإرسال البريد النظامي عبر مهلة.\nلا يلزم اتخاذ أي إجراء.";
+const FIXED_TEXT = "اختبار تقني لإرسال البريد النظامي عبر مهلة.\nلا يلزم اتخاذ أي إجراء.";
 const FIXED_HTML =
   '<div dir="rtl" style="font-family:system-ui,sans-serif;line-height:1.9">' +
   "<p>اختبار تقني لإرسال البريد النظامي عبر مهلة.</p>" +
@@ -35,9 +34,8 @@ export const Route = createFileRoute("/api/public/hooks/resend-system-test")({
         if (denied) return denied;
 
         try {
-          const { sendMehlaEmail, MEHLA_TRANSPORT_PROVIDER } = await import(
-            "@/lib/email/transport/mehla-mailer.server"
-          );
+          const { sendMehlaEmail, MEHLA_TRANSPORT_PROVIDER } =
+            await import("@/lib/email/transport/mehla-mailer.server");
 
           const result = await sendMehlaEmail({
             to: FIXED_RECIPIENT,
