@@ -1,105 +1,89 @@
-# استبدال طبقة النقل الفاشلة بنقل HTTP — خطة قرار قصيرة
+# خطة إعداد Resend لبريد مِهلة الآلي
 
-## HTTP_TRANSPORT_PLAN
+## نطاق الخطة فقط
+إعداد Resend HTTP API لرسائل النظام والتنبيهات الآلية، مع الحفاظ الكامل على بريد Hostinger البشري/الموظفين دون أي تغيير.
 
-الهدف الوحيد: استبدال `smtpSend` (مقبس SMTP 465) بنقل HTTP واحد داخل نفس الحدود، مع بقاء الطابور والعامل والقوالب والهويات والتفرّد والحجب والسجل دون تغيير.
+## حالة مُتحقَّقة من المصدر الحد الأدنى
 
-## HOSTINGER_HTTP_SEND_AVAILABLE
+### STEP 1 — عقد نقل HTTP الحالي
+| البند | القيمة المُتحقَّقة |
+|---|---|
+| HTTP_API_ENDPOINT | `https://api.resend.com/emails` (افتراضي)؛ يمكن تجاوزه بـ `RESEND_API_URL` |
+| API_KEY_ENV_NAME | `RESEND_API_KEY` |
+| FROM_DOMAIN_EXPECTATION | `mehlalex.com` (مُعرَّف في `MEHLA_MAIL_DOMAIN`) |
+| IDEMPOTENCY_HEADER | `Idempotency-Key` مشتق من `Message-ID` عبر `stableRequestKey()` |
+| REPLY_TO_SUPPORTED_BY_CURRENT_CODE | YES — يُمرَّر كـ `reply_to` في JSON body |
+| ADDITIONAL_RESEND_ENV_REQUIRED | `RESEND_API_KEY` فقط؛ `RESEND_API_URL` اختياري |
 
-NOT_PROVABLE — الحالة المخزّنة للتكامل (`email_agentic_mail`) تُظهر: `enabled=false`، `tools` المكتشفة 6 أدوات عامة فقط (`email_list_operations`, `email_describe_operation`, `email_api_docs`, `email_call_api_read/write/delete`)، و`operations.sendMessage` مربوطة عبر وكيل REST عام لا عبر أداة إرسال معلنة، و`checks.test_send.ok=false`، و`counters.sent=0`. أي إرسال HTTP فعلي عبر Hostinger لم يُنفَّذ ولا مرة واحدة.
+### STEP 2 — نطاق المُرسل الآلي المُقترَح
+| البند | القيمة |
+|---|---|
+| RECOMMENDED_SYSTEM_DOMAIN | `notify.mehlalex.com` |
+| TARGET_NOTIFICATION_FROM | `MEHLA <noreply@notify.mehlalex.com>` |
+| TARGET_NOTIFICATION_REPLY_TO | `support@mehlalex.com` |
+| CURRENT_NOTIFICATION_FROM | `noreply@mehlalex.com` (مُعرَّف في `MEHLA_IDENTITIES.system`) |
+| SOURCE_CHANGE_REQUIRED_FOR_TARGET_FROM | YES — يتطلَّب تعديل `MEHLA_MAIL_DOMAIN` أو جعله قابلاً للتهيئة لمسار النظام فقط |
 
-## HOSTINGER_HTTP_SEND_SUITABLE
+### STEP 3 — سلوك Reply-To الحالي
+دالة `identityReplyTo("system")` تقرأ `MAIL_SYSTEM_REPLY_TO` من بيئة الخادم. إذا كانت القيمة `support@mehlalex.com` فلا حاجة لتعديل إضافي لسلوك الرد؛ أما عنوان المُرسل فلا يزال يحتاج تعديل النطاق.
 
-NO لنقل الإنتاج الآن — لأن دلالات الإرسال الصادرة من الأسماء المستعارة غير مُثبتة، والمسار يعتمد على وكيل REST عام + تفعيل تكامل + قاطع دائرة، وهذا احتمال فشل أعلى من مزوّد بريد معاملات مخصّص. (يبقى قناة إضافية كما هو مصمم.)
+## قائمة التعديلات اليدوية المطلوبة من المستخدم
 
-## CANDIDATES
+A. تسجيل الدخول إلى Resend (إنشاء حساب جديد إذا لزم).
+B. إضافة نطاق مُرسل جديد: `notify.mehlalex.com`.
+C. نسخ سجلات DNS التي يُولِّدها Resend للنطاق.
+D. إضافة تلك السجلات فقط في مدير DNS للنطاق الرئيسي `mehlalex.com` (سجلات فرعية للنطاق الفرعي `notify`).
+E. الانتظار حتى يظهر حالة النطاق في Resend: **VERIFIED**.
+F. إنشاء مفتاح API للإرسال فقط (Sending API Key) بأقل صلاحية إرسال ممكنة.
+G. عدم لصق المفتاح في الدردشة أبداً.
+H. إضافة المفتاح إلى أسرار بيئة التشغيل في Lovable باسم: `RESEND_API_KEY`.
 
-**1) Hostinger Agentic Mail HTTP (قائم)**
-- EDGE_HTTP_COMPATIBLE: YES (fetch فقط)
-- CUSTOM_DOMAIN: YES (نفس الصناديق الحالية)
-- MULTIPLE_FROM_IDENTITIES: NOT_PROVEN (الأسماء المستعارة بلا بيانات دخول)
-- REPLY_TO: NOT_PROVEN
-- DELIVERY_WEBHOOKS: NO
-- EXPECTED_CODE_CHANGE: صغير
-- NEW_SECRET_REQUIRED: NO
-- DNS_CHANGE_REQUIRED: NO
-- COST_LEVEL: صفر إضافي
-- LOCK_IN_LEVEL: منخفض
-- PROS: لا مزوّد جديد، لا DNS، السر موجود.
-- CONS: قدرة الإرسال غير مثبتة، لا Webhooks، تصنيف أخطاء غير مستقر.
+## سجلات DNS المطلوبة (فئات فقط، بدون قيم مُختلقة)
 
-**2) Resend HTTP API**
-- EDGE_HTTP_COMPATIBLE: YES
-- CUSTOM_DOMAIN: YES (نطاق فرعي مُتحقَّق)
-- MULTIPLE_FROM_IDENTITIES: YES (أي عنوان على النطاق المتحقَّق)
-- REPLY_TO: YES
-- DELIVERY_WEBHOOKS: YES
-- EXPECTED_CODE_CHANGE: ملف نقل واحد + تصنيف أخطاء
-- NEW_SECRET_REQUIRED: YES
-- DNS_CHANGE_REQUIRED: YES (SPF/DKIM على نطاق فرعي مستقل)
-- COST_LEVEL: منخفض
-- LOCK_IN_LEVEL: منخفض
-- PROS: أبسط عقد إرسال، أخطاء مصنَّفة بوضوح، Idempotency-Key مدعوم.
-- CONS: مزوّد جديد + سجلات DNS.
+| النوع | الغرض | المصدر |
+|---|---|---|
+| DKIM | توقيع البريد | قيمة من Resend dashboard |
+| SPF / MAIL FROM | مصادقة المصدر | قيمة من Resend dashboard |
+| DMARC (اختياري مُستحسَن) | سياسة التسليم والتقارير | يمكن إضافته لاحقاً عند الاستقرار |
 
-**3) Brevo (Sendinblue) Transactional HTTP API**
-- EDGE_HTTP_COMPATIBLE: YES
-- CUSTOM_DOMAIN: YES
-- MULTIPLE_FROM_IDENTITIES: YES
-- REPLY_TO: YES
-- DELIVERY_WEBHOOKS: YES
-- EXPECTED_CODE_CHANGE: مماثل
-- NEW_SECRET_REQUIRED: YES
-- DNS_CHANGE_REQUIRED: YES
-- COST_LEVEL: منخفض
-- LOCK_IN_LEVEL: منخفض
-- PROS: طبقة مجانية أوسع.
-- CONS: واجهة أثقل وميول تسويقية، تصنيف أخطاء أقل نقاءً.
+**ملاحظة أمان:** لا تُمسح ولا تُستبدل سجلات Hostinger MX/SPF/DKIM للبريد البشري على `mehlalex.com`.
 
-## RECOMMENDED_PROVIDER
+## تأكيد عدم المساس بالبريد البشري
 
-Resend
+| البند | الحالة |
+|---|---|
+| HUMAN_MAIL_PROVIDER | Hostinger |
+| HOSTINGER_HUMAN_MAIL_CHANGED | NO |
+| HOSTINGER_MX_CHANGED | NO |
+| HOSTINGER_IMAP_CHANGED | NO |
+| EMPLOYEE_EMAIL_ADDRESSES_CHANGED | NO |
 
-## RECOMMENDED_TRANSPORT
+## التعديل المصدري المطلوب قبل النشر
 
-`sendMehlaEmail` يستدعي طبقة نقل HTTP جديدة `http-mail.server.ts` بدل `smtpSend`، بنفس الدخل والخرج.
+تغيير `MEHLA_MAIL_DOMAIN` في `src/lib/email/transport/mehla-mailer.server.ts` من `"mehlalex.com"` إلى `"notify.mehlalex.com"` لمسار النظام الآلي فقط، أو جعله قابلاً للتهيئة عبر متغير بيئة (مثلاً `MEHLA_NOTIFICATION_MAIL_DOMAIN`) مع الاحتفاظ بـ `mehlalex.com` للبريد البشري. هذا التعديل ليس جزءاً من هذه الخطوة؛ يُترك لخطوة التحقق من الإعدادات.
 
-## WHY_THIS_ONE
+## حالة الإجراءات غير المسموح بها في هذه الخطوة
 
-الأقرب لعقد `smtpSend` الحالي (رسالة واحدة → مستلم واحد → نتيجة مصنّفة)، يدعم From لأي هوية على النطاق المتحقَّق مع Reply-To، متوافق مع بيئة الحافة بـ fetch وحده، وقابليته للاستبدال لاحقاً منخفضة الكلفة. Hostinger كان الأولوية الأولى لكن قدرة الإرسال لديه غير مُثبتة، والدليل المخزّن يقول صفر إرسال.
+| الإجراء | الحالة |
+|---|---|
+| SECRET_CREATED | NO |
+| DNS_CHANGED | NO |
+| CODE_CHANGED | NO |
+| DEPLOY | NO |
+| REAL_EMAIL_SENT | NO |
+| FAILED_13_ROWS_TOUCHED | NO |
 
-## القرارات الثابتة
+## البوابة التالية
 
-- SEND_MEHLA_EMAIL_INTERFACE_CAN_REMAIN: YES (نفس `MehlaSendInput`/`MehlaSendResult`؛ يبقى `smtpCode` كحقل رمز مزوّد رقمي = HTTP status)
-- QUEUE_CHANGED: NO
-- WORKER_ORCHESTRATION_CHANGED: NO
-- TEMPLATES_CHANGED: NO
-- IDENTITIES_CHANGED: NO
-- SUPPRESSION_CHANGED: NO
-- RETRY_MODEL_COMPATIBLE: YES — 401/403 و422 → `SYSTEM_CONFIGURATION_FAILURE`، مستلم غير صالح/مرفوض → PERMANENT، 429 و5xx وانقطاع الشبكة → RETRYABLE؛ نفس `classifyTransportFailure` بمدخلات HTTP
-- NEW_SECRET_REQUIRED: YES (مفتاح مزوّد واحد)
-- DNS_CHANGE_REQUIRED: YES (نطاق فرعي للإرسال، بلا مساس بسجلات صناديق Hostinger الحالية)
-- FAILED_13_RECOVERABLE: YES
-- ESTIMATED_IMPLEMENTATION_RISK: LOW
-- ESTIMATED_CHANGE_SIZE: SMALL
-- RECOMMENDED_NEXT_STEP: ONE_BUILD_TRANSPORT_SWAP
-- FILES_CHANGED: NONE
-- DB_WRITES: NO
-- REAL_EMAIL_SENT: NO
-- FINAL_STATUS: PLAN_READY
+بعد تأكيد المستخدم يدوياً من:
+- `RESEND_DOMAIN_VERIFIED`
+- `RESEND_API_KEY_ADDED`
 
-## CODE_CHANGE_SCOPE (عند التفويض لاحقاً)
+الخطوة التالية هي:
+`RESEND CONFIG VERIFICATION` → `DEPLOY` → `ONE CONTROLLED SYSTEM EMAIL` → `ONE FAILED REMINDER RECOVERY` → remaining recovery → FINAL CLOSURE
 
-1. جديد: `src/lib/email/transport/http-mail.server.ts` — بناء الحمولة من `OutgoingMessage` القائم، طلب واحد بلا Retry داخلي، مهلة، تعقيم الأخطاء، تحويل الاستجابة إلى نفس شكل نتيجة النقل.
-2. تعديل محصور: `src/lib/email/transport/mehla-mailer.server.ts` — سطر النداء `smtpSend(...)` → النقل الجديد، وتوسيع اتحاد `MehlaErrorCode` بأصناف HTTP، وتحديث وسم `provider`.
-3. `smtp.server.ts` و`socket.server.ts` و`imap.server.ts`: تبقى كما هي بلا حذف — SMTP يظل مستخدماً لمركز البريد البشري/IMAP، وليس كوداً ميتاً.
-4. سرّ واحد جديد + سجلات DNS للنطاق الفرعي.
-5. حارس: فحص ثابت يمنع رجوع مسار المقبس داخل مسار التنبيهات.
+## النتيجة النهائية
 
-## FAILED_13_RECOVERY_PLAN (بعد إصلاح النقل فقط)
+FINAL_STATUS: READY_FOR_MANUAL_RESEND_SETUP
 
-- يمكن إعادتها للطابور بأمان: كل صف يحمل `notification_id` ومعرّف رسالة حتمياً (`<notif-…@mehlalex.com>`)، فلا تتغير هوية الرسالة عند إعادة الإرسال.
-- إعادة الطابور تكون بتحديث الحالة إلى `queued` مع `scheduled_at` فوري، دون إنشاء صفوف جديدة (لا صفوف مكرّرة، ولا مساس بمفتاح التفرّد).
-- تصفير المحاولات: نعم، لأن الفشل كان عطل بيئة نقل لا رفض مستلم — يُصفَّر `attempts` مع تسجيل سبب التصحيح في سجل التدقيق.
-- منع التكرار: المعرّف الحتمي يبقى كما هو، و`finalize_notification_email_delivery` تظل البوابة الذرّية الوحيدة؛ لا إرسال إلا لصف حالته `queued` تم التقاطه مرة واحدة.
-- التنفيذ على دفعة تحقق واحدة أولاً (صف واحد) ثم البقية بعد إثبات وصول فعلي.
+STOP.
