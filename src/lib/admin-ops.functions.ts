@@ -395,8 +395,10 @@ export const listAuditLogs = createServerFn({ method: "POST" })
       )
       .order("created_at", { ascending: false })
       .range((data.page - 1) * data.pageSize, data.page * data.pageSize - 1);
-    if (data.search)
-      q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
+    if (data.search) {
+      const clean = data.search.replace(/[%_\\,()]/g, (c) => "\\" + c);
+      q = q.or(`description.ilike.%${clean}%,entity_type.ilike.%${clean}%`);
+    }
     if (data.action) q = q.eq("action", data.action);
     if (data.entity) q = q.eq("entity_type", data.entity);
     if (data.actor) q = q.ilike("actor_email", `%${data.actor}%`);
@@ -472,8 +474,10 @@ export const exportAuditLogs = createServerFn({ method: "POST" })
       )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
-    if (data.search)
-      q = q.or(`description.ilike.%${data.search}%,entity_type.ilike.%${data.search}%`);
+    if (data.search) {
+      const clean = data.search.replace(/[%_\\,()]/g, (c) => "\\" + c);
+      q = q.or(`description.ilike.%${clean}%,entity_type.ilike.%${clean}%`);
+    }
     if (data.action) q = q.eq("action", data.action);
     if (data.entity) q = q.eq("entity_type", data.entity);
     if (data.actor) q = q.ilike("actor_email", `%${data.actor}%`);
