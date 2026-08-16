@@ -1539,6 +1539,11 @@ export async function notifyBillingEvent(
       .maybeSingle();
     if (!invoice?.customer_email) return false;
 
+    // فحص الحجب قبل أي محاولة إرسال: فئة الفوترة تُمنع بالارتداد الصلب
+    // والشكوى والحجب اليدوي، ولا تُمنع بإلغاء اشتراك اختياري.
+    const { isRecipientBlocked } = await import("@/lib/email/suppression.server");
+    if (await isRecipientBlocked(invoice.customer_email as string, "billing")) return false;
+
     const [{ sendAppEmail }, { BillingEventEmail, billingSubject }] = await Promise.all([
       import("@/lib/email/app-email.server"),
       import("@/lib/email-templates/billing-event"),
