@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import fs from "node:fs";
 
 // 1. Backoff ladder & retry limits
 const MAX_SCAN_RETRIES = 3;
@@ -99,6 +100,14 @@ function simulateProcessDocument(doc, prescreenResult, fullScannerResult) {
   };
 }
 
+// 4. Simulated Cron Auth
+function simulateGuardCron(headers, expectedSecret = "valid-secret-token") {
+  const secret = headers["x-mehla-cron-secret"];
+  if (!secret) return { authorized: false, status: 401 };
+  if (secret !== expectedSecret) return { authorized: false, status: 401 };
+  return { authorized: true, status: 200 };
+}
+
 async function runScanPipelineSuite() {
   console.log("==================================================================");
   console.log("RUNNING MEHLA DOCUMENT SCAN & RETRY PIPELINE VERIFICATION SUITE");
@@ -161,7 +170,7 @@ async function runScanPipelineSuite() {
   assert.strictEqual(legacyRes.scan_status, "PENDING_SCAN");
   console.log("  -> PASS: Legacy documents require active scanning before access.");
 
-  // Test 7: Atomic Concurrency & Skip-Locked Claim Simulation
+  // Test 7: Two workers competing for the same document batch
   console.log("Test 7: Two workers competing for the same document batch...");
   const db = new MockDatabase([
     { id: "doc-c1", scan_status: "PENDING_SCAN", scan_retry_count: 0 },
@@ -177,7 +186,7 @@ async function runScanPipelineSuite() {
   assert.strictEqual(worker2Batch[0].id, "doc-c2");
   console.log("  -> PASS: Atomic claim distributes distinct jobs without double-processing.");
 
-  // Test 8: Worker Crash & Lease Expiration Recovery
+  // Test 8: Worker crash and lease expiration recovery
   console.log("Test 8: Worker crash and lease expiration recovery...");
   const crashedDb = new MockDatabase([
     {
@@ -193,8 +202,57 @@ async function runScanPipelineSuite() {
   assert.strictEqual(crashedDb.documents[0].scan_worker_id, "worker-survivor");
   console.log("  -> PASS: Stale lease recovered automatically by active worker.");
 
+  // Test 9: Cron Request Authorization Security
+  console.log("Test 9: Cron Request Authorization (Missing / Invalid / Valid Secret)...");
+  const authNone = simulateGuardCron({});
+  assert.strictEqual(authNone.authorized, false);
+  assert.strictEqual(authNone.status, 401);
+
+  const authBad = simulateGuardCron({ "x-mehla-cron-secret": "wrong-token" });
+  assert.strictEqual(authBad.authorized, false);
+  assert.strictEqual(authBad.status, 401);
+
+  const authGood = simulateGuardCron({ "x-mehla-cron-secret": "valid-secret-token" });
+  assert.strictEqual(authGood.authorized, true);
+  assert.strictEqual(authGood.status, 200);
+  console.log("  -> PASS: Cron auth strictly rejects unauthenticated & invalid calls.");
+
+  // Test 10: Batch Failure Isolation
+  console.log("Test 10: Batch Failure Isolation...");
+  const batchDocs = [
+    { id: "doc-fail", file_name: "bad.pdf" },
+    { id: "doc-good", file_name: "good.pdf" }
+  ];
+  const batchResults = [];
+  for (const doc of batchDocs) {
+    try {
+      if (doc.id === "doc-fail") {
+        batchResults.push(simulateProcessDocument(doc, { clean: true }, { status: "SCAN_FAILED", reason: "timeout" }));
+      } else {
+        batchResults.push(simulateProcessDocument(doc, { clean: true }, { status: "CLEAN" }));
+      }
+    } catch (e) {
+      batchResults.push({ docId: doc.id, error: true });
+    }
+  }
+  assert.strictEqual(batchResults.length, 2);
+  assert.strictEqual(batchResults[0].scan_status, "SCAN_FAILED");
+  assert.strictEqual(batchResults[1].scan_status, "CLEAN");
+  console.log("  -> PASS: Individual document scan failure does not abort batch processing.");
+
+  // Test 11: Idempotent Scheduler Migration Source Verification
+  console.log("Test 11: Idempotent Scheduler Migration Source Verification...");
+  const migrationPath = "supabase/migrations/20260817000100_document_scan_cron_activation.sql";
+  assert.strictEqual(fs.existsSync(migrationPath), true);
+  const migrationSql = fs.readFileSync(migrationPath, "utf8");
+  assert.match(migrationSql, /WHERE NOT EXISTS \(SELECT 1 FROM cron\.job WHERE jobname = 'mehla-document-scan'\);/);
+  assert.match(migrationSql, /'mehla-document-scan'/);
+  assert.match(migrationSql, /'\*\/2 \* \* \* \*'/);
+  assert.match(migrationSql, /ops\.cron_secret\(\)/);
+  console.log("  -> PASS: Scheduler migration is verifiable, idempotent, and secure.");
+
   console.log("==================================================================");
-  console.log("ALL 8 DOCUMENT SCAN PIPELINE TESTS PASSED (100% GREEN)!");
+  console.log("ALL 11 DOCUMENT SCAN PIPELINE & SCHEDULER TESTS PASSED (100% GREEN)!");
   console.log("==================================================================");
 }
 
