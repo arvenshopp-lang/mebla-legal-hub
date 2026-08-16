@@ -143,7 +143,7 @@ export async function admin() {
 
 const TRUSTED_HOST_PATTERN =
   /^(?:(?:[a-z0-9-]+\.)*mehlalex\.com|(?:[a-z0-9-]+\.)*lovable\.(?:app|dev)|localhost(?::\d+)?)$/i;
-const DEFAULT_SITE_ORIGIN = "https://app.mehlalex.com";
+const DEFAULT_SITE_ORIGIN = "https://mehlalex.com";
 
 export function isTrustedOrigin(originOrUrl: string): boolean {
   if (!originOrUrl) return false;

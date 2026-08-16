@@ -7,7 +7,7 @@ TRUSTED_HOST_PATTERN = re.compile(
     r"^(?:(?:[a-z0-9-]+\.)*mehlalex\.com|(?:[a-z0-9-]+\.)*lovable\.(?:app|dev)|localhost(?::\d+)?)$",
     re.IGNORECASE
 )
-DEFAULT_SITE_ORIGIN = "https://app.mehlalex.com"
+DEFAULT_SITE_ORIGIN = "https://mehlalex.com"
 
 def is_trusted_origin(origin_or_url: str) -> bool:
     if not origin_or_url:
@@ -73,12 +73,12 @@ class TestP0SecurityHardening(unittest.TestCase):
 
     def test_site_origin_sanitization_and_fallback(self):
         # Malicious Host header fallback to default production origin
-        self.assertEqual(site_origin("https://evil-phishing.com/reset", "/reset-password"), "https://app.mehlalex.com/reset-password")
-        self.assertEqual(site_origin("https://attacker.com", "auth/callback"), "https://app.mehlalex.com/auth/callback")
+        self.assertEqual(site_origin("https://evil-phishing.com/reset", "/reset-password"), "https://mehlalex.com/reset-password")
+        self.assertEqual(site_origin("https://attacker.com", "auth/callback"), "https://mehlalex.com/auth/callback")
         # Legitimate origins preserved
-        self.assertEqual(site_origin("https://app.mehlalex.com/some/path", "/reset-password"), "https://app.mehlalex.com/reset-password")
+        self.assertEqual(site_origin("https://mehlalex.com/some/path", "/reset-password"), "https://mehlalex.com/reset-password")
         self.assertEqual(site_origin("https://branch.lovable.app", "/reset-password"), "https://branch.lovable.app/reset-password")
-        self.assertEqual(site_origin("", "/reset-password"), "https://app.mehlalex.com/reset-password")
+        self.assertEqual(site_origin("", "/reset-password"), "https://mehlalex.com/reset-password")
 
     def test_assurance_level_checks(self):
         # AAL1

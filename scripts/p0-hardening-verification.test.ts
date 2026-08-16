@@ -21,9 +21,9 @@ describe("P0 Hardening — Trusted Origin (siteOrigin)", () => {
   });
 
   it("sanitizes untrusted URLs by falling back to default production origin", () => {
-    expect(sanitizeSiteOrigin("https://evil-phishing.com/steal-token")).toBe("https://app.mehlalex.com");
-    expect(sanitizeSiteOrigin("https://app.mehlalex.com/some/path")).toBe("https://app.mehlalex.com");
-    expect(sanitizeSiteOrigin("")).toBe("https://app.mehlalex.com");
+    expect(sanitizeSiteOrigin("https://evil-phishing.com/steal-token")).toBe("https://mehlalex.com");
+    expect(sanitizeSiteOrigin("https://mehlalex.com/some/path")).toBe("https://mehlalex.com");
+    expect(sanitizeSiteOrigin("")).toBe("https://mehlalex.com");
   });
 });
 
