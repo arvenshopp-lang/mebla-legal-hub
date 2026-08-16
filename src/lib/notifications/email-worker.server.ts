@@ -10,6 +10,7 @@ import { NotificationSupportReplyEmail } from "@/lib/email-templates/notificatio
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
 import { sendAppEmail } from "@/lib/email/app-email.server";
+import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server";
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import {
   CANCEL_REASON,
@@ -136,8 +137,9 @@ async function markFailure(
   item: QueueItem,
   code: string,
   message: string,
+  retryableOverride?: boolean,
 ): Promise<"retried" | "failed"> {
-  const retryable = isRetryableFailure(code);
+  const retryable = retryableOverride ?? isRetryableFailure(code);
   const canRetry = retryable && item.attempts < item.max_attempts;
   const safeMessage = message.slice(0, 400);
   if (canRetry) {
@@ -271,6 +273,8 @@ export async function processNotificationEmailBatch(
         element: template.render(`${APP_ORIGIN}${template.path}`),
         label: templateKey,
         idempotencyKey: idempotencyKeyFor(item.notification_id),
+        // معرّف حتمي واحد للتنبيه: لا يتغيّر عبر إعادة المحاولات.
+        messageId: notificationMessageId(item.notification_id),
         organizationId: notification.organization_id,
         userId: notification.user_id,
       });
@@ -298,12 +302,14 @@ export async function processNotificationEmailBatch(
       }
 
       const code = result.reason ?? "send_failed";
-      if (code === "http_429" || code === "rate_limited") {
-        await reschedule(db, item, code, 60_000);
+      // عطل إعداد النظام ليس رفض مستلم: يؤجَّل بلا استهلاك محاولة.
+      if (result.errorClass === "SYSTEM_CONFIGURATION_FAILURE") {
+        await reschedule(db, item, code, 300_000);
         report.retried += 1;
         continue;
       }
-      const outcome = await markFailure(db, item, code, `رفض الإرسال (${code})`);
+      const retryable = result.errorClass ? result.errorClass === "RETRYABLE" : undefined;
+      const outcome = await markFailure(db, item, code, `رفض الإرسال (${code})`, retryable);
       report[outcome === "retried" ? "retried" : "failed"] += 1;
     } catch (thrown) {
       // عزل الصف: أي استثناء غير متوقع يُعالج على مستوى الصف فقط.
