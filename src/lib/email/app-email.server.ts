@@ -93,6 +93,14 @@ export async function sendAppEmail(options: {
     if (result.ok) return { sent: true, messageId: result.messageId };
 
     if (isRecipientDeny(result.errorCode, result.errorClass)) {
+      // رفض نهائي للمستلم = ارتداد صلب: يُسجَّل في حجب مِهلة كي لا يُعاد إليه.
+      const { captureHardBounce } = await import("@/lib/email/suppression.server");
+      await captureHardBounce({
+        address: options.to,
+        errorCode: result.errorCode,
+        smtpCode: result.smtpCode,
+        source: action,
+      });
       return {
         sent: false,
         reason: result.errorCode,
