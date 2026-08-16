@@ -729,88 +729,39 @@ export async function dispatchOne(
   const baseHtml = message.html ?? "";
   const baseText = message.body_text ?? stripHtml(baseHtml);
 
-  // مسار Hostinger (SMTP) هو الأساس عند توفر الأسرار لأنه يدعم مرفقات MIME
-  // الفعلية. عند غيابها يعود المسار إلى خدمة البريد المُدارة مع روابط موقّعة.
-  const { transportConfigured } = await import("@/lib/email/transport/config.server");
-  const useSmtp = transportConfigured(message.from_address);
-
-  let result: Awaited<ReturnType<typeof providerSend>>;
-  let smtpFallbackCode: string | null = null;
-  let transportUsed: "smtp_hostinger" | "lovable_managed" = useSmtp
-    ? "smtp_hostinger"
-    : "lovable_managed";
-  let smtpDetail: { smtpCode: number; envelopeFrom: string; headerFrom: string } | null = null;
-  if (useSmtp) {
-    const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
-    const smtp = await sendViaHostinger(db, {
-      messageId,
-      mailboxAddress: message.from_address,
-      fromName: message.from_name ?? "MEHLA",
-      to: message.to_addresses,
-      cc: message.cc_addresses,
-      bcc: message.bcc_addresses,
-      subject: message.subject,
-      html: baseHtml,
-      text: baseText,
-      providerMessageId: message.message_id ?? newMessageId(),
-      inReplyTo: message.in_reply_to,
-      references: message.reference_ids ?? [],
-    });
-    if (smtp.ok) {
-      result = { ok: true, ref: smtp.ref };
-      smtpDetail = {
-        smtpCode: smtp.smtpCode,
-        envelopeFrom: smtp.envelopeFrom,
-        headerFrom: smtp.headerFrom,
+  // مسار النقل الوحيد لبريد المكاتب: Hostinger SMTP بمرفقات MIME فعلية. لا
+  // مسار احتياطي لأي خدمة بريد مُدارة — عطل الإعداد يُبقي الرسالة في القائمة.
+  const transportUsed = "smtp_hostinger" as const;
+  const { sendViaHostinger } = await import("@/lib/email/transport/hostinger.server");
+  const smtp = await sendViaHostinger(db, {
+    messageId,
+    mailboxAddress: message.from_address,
+    fromName: message.from_name ?? "MEHLA",
+    to: message.to_addresses,
+    cc: message.cc_addresses,
+    bcc: message.bcc_addresses,
+    subject: message.subject,
+    html: baseHtml,
+    text: baseText,
+    providerMessageId: message.message_id ?? newMessageId(),
+    inReplyTo: message.in_reply_to,
+    references: message.reference_ids ?? [],
+  });
+  const result: TransportResult = smtp.ok
+    ? { ok: true, ref: smtp.ref }
+    : {
+        ok: false,
+        code: smtp.code,
+        message: smtp.message,
+        status: null,
+        smtpCode: smtp.smtpCode ?? null,
       };
-    } else {
-      result = { ok: false, code: smtp.code, message: smtp.message, status: null };
-    }
-    // عطل إعداد في مسار SMTP: لا تُحتجز الرسالة — أكمل عبر خدمة البريد المُدارة.
-    if (!smtp.ok && SMTP_CONFIG_ERROR_CODES.has(smtp.code)) {
-      smtpFallbackCode = smtp.code;
-      transportUsed = "lovable_managed";
-      const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
-      result = await providerSend({
-        from: message.from_address,
-        fromName: message.from_name ?? "MEHLA",
-        to: message.to_addresses,
-        cc: message.cc_addresses,
-        bcc: message.bcc_addresses,
-        subject: message.subject,
-        html: `${baseHtml}${section.html}`,
-        text: `${baseText}${section.text}`,
-        idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
-      });
-    }
-  } else {
-    const section = await buildAttachmentSection(db, messageId, OUTBOUND_ATTACHMENT_TTL);
-    result = await providerSend({
-      from: message.from_address,
-      fromName: message.from_name ?? "MEHLA",
-      to: message.to_addresses,
-      cc: message.cc_addresses,
-      bcc: message.bcc_addresses,
-      subject: message.subject,
-      html: `${baseHtml}${section.html}`,
-      text: `${baseText}${section.text}`,
-      idempotencyKey: attemptIdempotencyKey(job.idempotency_key, job.attempts + 1),
-    });
-  }
+  const smtpDetail = smtp.ok
+    ? { smtpCode: smtp.smtpCode, envelopeFrom: smtp.envelopeFrom, headerFrom: smtp.headerFrom }
+    : null;
 
   if (result.ok) {
     const now = new Date().toISOString();
-    if (smtpFallbackCode) {
-      const { logFailure } = await import("@/lib/observability/failure-log.server");
-      await logFailure({
-        surface: "email",
-        action: "email_smtp_transport_unavailable",
-        error: "تعذّر استخدام مسار SMTP لصندوق المكتب، فأُرسلت الرسالة عبر خدمة البريد المُدارة.",
-        errorCode: smtpFallbackCode,
-        organizationId: message.organization_id ?? null,
-        metadata: { message_id: messageId, mailbox: message.from_address },
-      });
-    }
     await db
       .from("email_messages")
       .update({
@@ -841,9 +792,22 @@ export async function dispatchOne(
     return { sent: true };
   }
 
-  const attempts = job.attempts + 1;
   const classification = classifySendFailure(result);
-  const exhausted = classification.permanent || attempts >= job.max_attempts;
+  // عطل الإعداد ليس محاولة إرسال فعلية: لا يُستهلك رصيد المحاولات حتى لا تُحرق
+  // رسالة صحيحة بسبب نقص سرّ على الخادم.
+  const attempts = classification.configuration ? job.attempts : job.attempts + 1;
+  const exhausted =
+    classification.permanent || (!classification.configuration && attempts >= job.max_attempts);
+  // ارتداد صلب مؤكَّد: يُسجَّل في حجب مِهلة كي لا يُعاد الإرسال لهذا العنوان.
+  if (!smtp.ok) {
+    const { captureHardBounce } = await import("@/lib/email/suppression.server");
+    await captureHardBounce({
+      addresses: message.to_addresses,
+      errorCode: result.code,
+      smtpCode: result.smtpCode,
+      detail: result.message,
+    });
+  }
   let failureRef: string | null = null;
   if (!RECIPIENT_DENY_CODES.has(result.code)) {
     const { logFailure } = await import("@/lib/observability/failure-log.server");
@@ -852,7 +816,7 @@ export async function dispatchOne(
       action: "email_workspace_send",
       error: classification.reason ?? result.message,
       errorCode: result.code,
-      httpStatus: result.status,
+      ...(result.status !== null ? { httpStatus: result.status } : {}),
       organizationId: message.organization_id ?? null,
       metadata: {
         message_id: messageId,
@@ -860,11 +824,15 @@ export async function dispatchOne(
         transport: transportUsed,
         recipients: message.to_addresses.length,
         permanent: classification.permanent,
+        configuration_failure: classification.configuration,
+        ...(result.smtpCode !== null ? { smtp_code: result.smtpCode } : {}),
         provider_message: result.message.slice(0, 300),
       },
     });
   }
-  const backoffMinutes = Math.min(2 ** attempts, 60);
+  const backoffMinutes = classification.configuration
+    ? CONFIG_RETRY_DELAY_MINUTES
+    : Math.min(2 ** attempts, 60);
   await db
     .from("email_outbox")
     .update({
