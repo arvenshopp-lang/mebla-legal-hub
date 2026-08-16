@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import { fmtDateTime } from "@/lib/enums";
 import {
   isInAppNotificationsEnabled,
+  notificationsQueryKey,
+  notificationsRealtimeChannelName,
+  notificationsRealtimeFilter,
+  shouldQueryNotifications,
   type InAppPreferenceRow,
 } from "@/lib/notifications/in-app-preference";
 
@@ -43,7 +47,7 @@ export function NotificationBell() {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const queryKey = useMemo(
-    () => ["notifications", user?.id ?? "anon", activeOrgId ?? "no-org"],
+    () => notificationsQueryKey(user?.id, activeOrgId),
     [user?.id, activeOrgId],
   );
 
@@ -67,11 +71,17 @@ export function NotificationBell() {
 
   const { data, isLoading } = useQuery({
     queryKey,
-    enabled: !!user?.id && !prefLoading && inAppEnabled,
+    enabled: shouldQueryNotifications({
+      userId: user?.id,
+      activeOrgId,
+      preferenceLoading: prefLoading,
+      inAppEnabled,
+    }),
     queryFn: async (): Promise<NotificationRow[]> => {
       const { data: rows, error } = await supabase
         .from("notifications")
         .select("id, type, title, message, is_read, created_at")
+        .eq("organization_id", activeOrgId!)
         .order("created_at", { ascending: false })
         .limit(30);
       if (error) throw error;
@@ -80,19 +90,24 @@ export function NotificationBell() {
   });
 
   useEffect(() => {
-    if (!user?.id || !inAppEnabled) return;
+    if (!user?.id || !activeOrgId || !inAppEnabled) return;
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(notificationsRealtimeChannelName(user.id, activeOrgId))
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: notificationsRealtimeFilter(activeOrgId),
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, qc, queryKey, inAppEnabled]);
+  }, [user?.id, activeOrgId, qc, queryKey, inAppEnabled]);
 
   useEffect(() => {
     if (!open) return;
