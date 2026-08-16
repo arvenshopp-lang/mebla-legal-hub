@@ -41,13 +41,19 @@ check(
     new RegExp(`NEW\\.${field} <> OLD\\.${field}`).test(SQL),
   ),
 );
-check("مسار الرفع مسموح (lifted_at/lifted_by ليست في قائمة المنع)", !/NEW\.lifted_by <> OLD\.lifted_by/.test(SQL));
+check(
+  "مسار الرفع مسموح (lifted_at/lifted_by ليست في قائمة المنع)",
+  !/NEW\.lifted_by <> OLD\.lifted_by/.test(SQL),
+);
 check("لا يُلغى رفع مُسجَّل", /OLD\.lifted_at IS NOT NULL AND NEW\.lifted_at IS NULL/.test(SQL));
 check(
   "تفرّد الحجب الفعّال قائم",
   /email_suppressions_active_unique[\s\S]*WHERE lifted_at IS NULL/.test(SQL),
 );
-check("RLS مفعّل وبلا صلاحيات للمتصفح", SQL.includes("ENABLE ROW LEVEL SECURITY") && !/GRANT[^;]*TO\s+(anon|authenticated)/i.test(SQL));
+check(
+  "RLS مفعّل وبلا صلاحيات للمتصفح",
+  SQL.includes("ENABLE ROW LEVEL SECURITY") && !/GRANT[^;]*TO\s+(anon|authenticated)/i.test(SQL),
+);
 
 console.log("\n2) سياسة الفئات (المصدر المشترك الوحيد)");
 check("إلغاء الاشتراك لا يمنع دعوة الفريق", !blocksCategory("unsubscribe", "team_invitation"));
@@ -62,7 +68,10 @@ check("أسباب الحجب أربعة فقط", SUPPRESSION_REASONS.length === 
 
 console.log("\n3) مواضع الفحص قبل الإرسال");
 const INVITES = read("src/lib/invitations.server.ts");
-check('الدعوات تستخدم فئة team_invitation', INVITES.includes('recipientStates([email], "team_invitation")'));
+check(
+  "الدعوات تستخدم فئة team_invitation",
+  INVITES.includes('recipientStates([email], "team_invitation")'),
+);
 const BILLING = read("src/lib/billing/billing.server.ts");
 check(
   "الفوترة تفحص فئة billing قبل الإرسال",
@@ -81,13 +90,17 @@ check(
 check("التفضيل ما زال شرطاً مستقلاً", WORKER.includes("isEmailPreferenceEnabled("));
 check(
   "تفضيل معطّل يمنع الإرسال قبل فحص الحجب",
-  WORKER.indexOf("isEmailPreferenceEnabled(") < WORKER.indexOf('isRecipientBlocked(recipient.email'),
+  WORKER.indexOf("isEmailPreferenceEnabled(") <
+    WORKER.indexOf("isRecipientBlocked(recipient.email"),
 );
 check(
   "المستلم المحجوب يُنهى بسبب دائم بلا إعادة محاولة",
   WORKER.includes('"recipient_suppressed"'),
 );
-check("الهوية لا تتغير في هذه الدفعة", WORKER.includes("identityForNotificationEvent(notification.type)"));
+check(
+  "الهوية لا تتغير في هذه الدفعة",
+  WORKER.includes("identityForNotificationEvent(notification.type)"),
+);
 
 console.log("\n4) الارتداد الصلب بلا انحراف");
 check(
@@ -98,7 +111,10 @@ check(
   "4xx لا يُنتج حجباً",
   !qualifiesAsHardBounce({ errorCode: "smtp_rejected_recipient", smtpCode: 451 }),
 );
-check("المهلة لا تُنتج حجباً", !qualifiesAsHardBounce({ errorCode: "smtp_timeout", smtpCode: null }));
+check(
+  "المهلة لا تُنتج حجباً",
+  !qualifiesAsHardBounce({ errorCode: "smtp_timeout", smtpCode: null }),
+);
 check(
   "عطل الاتصال لا يُنتج حجباً",
   !qualifiesAsHardBounce({ errorCode: "smtp_connect_failed", smtpCode: null }),
