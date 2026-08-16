@@ -100,8 +100,8 @@ function reminderTemplates(): Record<string, TemplateDefinition> {
 }
 
 /** القوالب المعتمدة: عنوان + مسار داخلي + عرض. ملخّص آمن فقط بلا محتوى. */
-const TEMPLATES = {
-  ...reminderTemplates(),
+const TEMPLATES: Record<NotificationTemplateKey, TemplateDefinition> = {
+  ...(reminderTemplates() as Record<NotificationTemplateKey, TemplateDefinition>),
   "notif-team-member-joined": {
     subject: "انضمام عضو جديد لفريق مكتبك — مِهلة",
     path: "/team",
