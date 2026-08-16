@@ -10,17 +10,12 @@ import { render } from "@react-email/render";
 
 process.env["MAIL_SYSTEM_REPLY_TO"] = "support@mehlalex.com";
 
-const {
-  sendAppEmail,
-  deterministicMessageId,
-  APP_EMAIL_PROVIDER,
-  DEFAULT_APP_EMAIL_IDENTITY,
-} = await import("@/lib/email/app-email.server");
+const { sendAppEmail, deterministicMessageId, APP_EMAIL_PROVIDER, DEFAULT_APP_EMAIL_IDENTITY } =
+  await import("@/lib/email/app-email.server");
 const { buildMehlaOutgoingMessage, identityReplyTo, identityAddress, notificationMessageId } =
   await import("@/lib/email/transport/mehla-mailer.server");
-const { NotificationTeamMemberJoinedEmail } = await import(
-  "@/lib/email-templates/notification-team-member-joined"
-);
+const { NotificationTeamMemberJoinedEmail } =
+  await import("@/lib/email-templates/notification-team-member-joined");
 
 let failures = 0;
 function check(name: string, condition: boolean, detail?: unknown): void {
@@ -63,15 +58,22 @@ check("ترويسة Reply-To للنظام", built.replyTo === "support@mehlalex.
 
 console.log("\n3) عرض قوالب React Email ما زال يعمل بلا تكرار منطق");
 const html = await render(
-  React.createElement(NotificationTeamMemberJoinedEmail, { actionUrl: "https://app.mehlalex.com/team" }),
+  React.createElement(NotificationTeamMemberJoinedEmail, {
+    actionUrl: "https://app.mehlalex.com/team",
+  }),
 );
 const text = await render(
-  React.createElement(NotificationTeamMemberJoinedEmail, { actionUrl: "https://app.mehlalex.com/team" }),
+  React.createElement(NotificationTeamMemberJoinedEmail, {
+    actionUrl: "https://app.mehlalex.com/team",
+  }),
   { plainText: true },
 );
 check("HTML مُولّد", html.includes("<html") || html.includes("<!DOCTYPE"));
 check("نص بديل مُولّد", text.trim().length > 0);
-check("العرض مرة واحدة فقط داخل sendAppEmail", (APP_EMAIL_SRC.match(/render\(/g) ?? []).length === 2);
+check(
+  "العرض مرة واحدة فقط داخل sendAppEmail",
+  (APP_EMAIL_SRC.match(/render\(/g) ?? []).length === 2,
+);
 
 console.log("\n4) معرّف الرسالة");
 const idA = await deterministicMessageId("notif-email:abc");
@@ -87,7 +89,9 @@ check(
 check("صيغة معرّف التنبيه محفوظة", notificationMessageId("n1") === "<notif-n1@mehlalex.com>");
 
 console.log("\n5) تصنيف الأعطال عبر sendAppEmail (بلا شبكة)");
-const element = React.createElement(NotificationTeamMemberJoinedEmail, { actionUrl: "https://app.mehlalex.com/team" });
+const element = React.createElement(NotificationTeamMemberJoinedEmail, {
+  actionUrl: "https://app.mehlalex.com/team",
+});
 const badRecipient = await sendAppEmail({
   to: "not-an-email",
   subject: "س",
@@ -124,10 +128,7 @@ check(
   WORKER_SRC.includes('result.errorClass === "SYSTEM_CONFIGURATION_FAILURE"') &&
     WORKER_SRC.includes("reschedule(db, item, code, 300_000)"),
 );
-check(
-  "العامل يقرر الإعادة من صنف العطل",
-  WORKER_SRC.includes('result.errorClass === "RETRYABLE"'),
-);
+check("العامل يقرر الإعادة من صنف العطل", WORKER_SRC.includes('result.errorClass === "RETRYABLE"'));
 check(
   "لا رموز مزوّد مُختلقة في مسار التطبيق",
   !APP_EMAIL_SRC.includes("recipient_suppressed") && !APP_EMAIL_SRC.includes("emails_disabled"),
