@@ -208,8 +208,8 @@ export function buildMehlaOutgoingMessage(
 }
 
 /**
- * الإرسال الكنسي: Hostinger SMTP فقط. قبول SMTP يعني «قُبلت للتسليم» لا تسليماً
- * نهائياً، ولا يوفّر المزوّد أي تفرّد أصلي — التفرّد يبقى على طبقة مِهلة.
+ * الإرسال الكنسي عبر واجهة HTTP فقط. قبول المزوّد يعني «قُبلت للتسليم» لا تسليماً
+ * نهائياً، والتفرّد يبقى على طبقة مِهلة عبر معرّف الرسالة الحتمي.
  */
 export async function sendMehlaEmail(input: MehlaSendInput): Promise<MehlaSendResult> {
   const started = Date.now();
@@ -225,7 +225,7 @@ export async function sendMehlaEmail(input: MehlaSendInput): Promise<MehlaSendRe
     if (!resolved.ok) {
       return {
         ok: false,
-        provider: "hostinger_smtp",
+        provider: MEHLA_TRANSPORT_PROVIDER,
         errorCode: resolved.errorCode,
         errorClass: "SYSTEM_CONFIGURATION_FAILURE",
         smtpCode: null,
@@ -242,7 +242,7 @@ export async function sendMehlaEmail(input: MehlaSendInput): Promise<MehlaSendRe
   if (!isValidEmailAddress(input.to)) {
     return {
       ok: false,
-      provider: "hostinger_smtp",
+      provider: MEHLA_TRANSPORT_PROVIDER,
       errorCode: "smtp_rejected_recipient",
       errorClass: "PERMANENT",
       smtpCode: null,
@@ -255,14 +255,14 @@ export async function sendMehlaEmail(input: MehlaSendInput): Promise<MehlaSendRe
   }
 
   const message = buildMehlaOutgoingMessage(input, replyTo, messageId);
-  // المصادقة دائماً بالصندوق الحقيقي، لا باسم مستعار لا يملك بيانات دخول.
-  const result = await smtpSend(message, CANONICAL_SMTP_MAILBOX);
+  // طلب HTTP واحد بلا إعادة محاولة داخلية؛ الطابور هو صاحب سلطة الإعادة.
+  const result = await httpMailSend(message);
 
   if (result.ok) {
     return {
       ok: true,
-      provider: "hostinger_smtp",
-      smtpCode: result.smtpCode,
+      provider: MEHLA_TRANSPORT_PROVIDER,
+      smtpCode: result.status,
       messageId,
       envelopeFrom: result.envelopeFrom ?? CANONICAL_SMTP_MAILBOX,
       headerFrom: result.headerFrom ?? headerFrom,
@@ -274,10 +274,10 @@ export async function sendMehlaEmail(input: MehlaSendInput): Promise<MehlaSendRe
   const safeMessage = redactTransportError(result.message, CANONICAL_SMTP_MAILBOX);
   return {
     ok: false,
-    provider: "hostinger_smtp",
+    provider: MEHLA_TRANSPORT_PROVIDER,
     errorCode: result.code,
-    errorClass: classifyTransportFailure(result.code, result.smtpCode ?? null, safeMessage),
-    smtpCode: result.smtpCode ?? null,
+    errorClass: classifyTransportFailure(result.code, result.status ?? null, safeMessage),
+    smtpCode: result.status ?? null,
     message: safeMessage,
     messageId,
     envelopeFrom: result.envelopeFrom ?? null,
