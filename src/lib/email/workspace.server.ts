@@ -603,10 +603,11 @@ const SMTP_CONFIG_ERROR_CODES = new Set([
 /** مهلة إعادة ثابتة قصيرة لأعطال الإعداد: وقت كافٍ لإصلاح تشغيلي. */
 const CONFIG_RETRY_DELAY_MINUTES = 5;
 
-function classifySendFailure(result: {
-  code: string;
-  smtpCode: number | null;
-}): { permanent: boolean; configuration: boolean; reason: string | null } {
+function classifySendFailure(result: { code: string; smtpCode: number | null }): {
+  permanent: boolean;
+  configuration: boolean;
+  reason: string | null;
+} {
   if (SMTP_CONFIG_ERROR_CODES.has(result.code)) {
     return {
       permanent: false,

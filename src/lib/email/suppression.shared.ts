@@ -6,12 +6,7 @@
  */
 
 /** أسباب الحجب المسموح بها — مطابقة تماماً لقيد CHECK في القاعدة. */
-export const SUPPRESSION_REASONS = [
-  "bounce_hard",
-  "complaint",
-  "manual",
-  "unsubscribe",
-] as const;
+export const SUPPRESSION_REASONS = ["bounce_hard", "complaint", "manual", "unsubscribe"] as const;
 export type SuppressionReason = (typeof SUPPRESSION_REASONS)[number];
 
 export function isSuppressionReason(value: string): value is SuppressionReason {
