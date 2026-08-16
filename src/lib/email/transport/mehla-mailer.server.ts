@@ -1,11 +1,13 @@
 /**
- * المُرسل الكنسي لمِهلة — طبقة نقل مستقلة عن أي مزوّد مُدار، عبر Hostinger SMTP فقط.
+ * المُرسل الكنسي لمِهلة — طبقة نقل واحدة لرسائل النظام والتنبيهات عبر واجهة HTTP.
  *
- * لا استيراد لأي مكتبة بريد خارجية مُدارة، ولا مفاتيح منصات، ولا مسار احتياطي خفي.
- * يعيد استخدام المكدّس القائم كما هو: `smtpSend` + `buildMimeMessage` + `senderIdentity`.
- * المصادقة دائماً بالصندوق الحقيقي `noreply@mehlalex.com`، وترويسة From تحمل هوية القسم.
+ * مقبس SMTP الخام غير متاح في بيئة تشغيل الإنتاج، لذا يعتمد هذا المسار `httpMailSend`
+ * وحده بلا مسار احتياطي. بقية المنظومة كما هي: نفس العقد الخارجي، نفس الهويات،
+ * نفس تصنيف الأعطال، ونفس معرّفات الرسائل الحتمية. مسار البريد البشري وIMAP
+ * يبقيان على SMTP دون تغيير.
  */
-import { smtpSend, type SmtpErrorCode } from "./smtp.server";
+import type { SmtpErrorCode } from "./smtp.server";
+import { httpMailSend, type HttpMailErrorCode } from "./http-mail.server";
 import type { OutgoingMessage } from "./mime.server";
 import { primaryMailboxAddress, redactTransportError } from "./config.server";
 
@@ -41,12 +43,18 @@ export const MEHLA_ALIAS_IDENTITIES: readonly MehlaIdentity[] = [
 /** أصناف الفشل: تحدد هل تُعاد المحاولة، أم تُوقف نهائياً، أم هي عطل إعداد نظام. */
 export type MehlaErrorClass = "RETRYABLE" | "PERMANENT" | "SYSTEM_CONFIGURATION_FAILURE";
 
-export type MehlaErrorCode = SmtpErrorCode | "mail_system_reply_to_not_configured";
+export type MehlaErrorCode =
+  | SmtpErrorCode
+  | HttpMailErrorCode
+  | "mail_system_reply_to_not_configured";
+
+/** وسم المزوّد الفعلي لمسار رسائل النظام والتنبيهات. */
+export const MEHLA_TRANSPORT_PROVIDER = "resend_http" as const;
 
 export type MehlaSendResult =
   | {
       ok: true;
-      provider: "hostinger_smtp";
+      provider: typeof MEHLA_TRANSPORT_PROVIDER;
       smtpCode: number;
       messageId: string;
       envelopeFrom: string;
@@ -56,10 +64,10 @@ export type MehlaSendResult =
     }
   | {
       ok: false;
-      provider: "hostinger_smtp";
+      provider: typeof MEHLA_TRANSPORT_PROVIDER;
       errorCode: MehlaErrorCode;
       errorClass: MehlaErrorClass;
-      /** رمز استجابة SMTP الفعلي عند توفره — لا يُختلق. */
+      /** رمز المزوّد الرقمي الفعلي عند توفره (حالة HTTP) — لا يُختلق. */
       smtpCode: number | null;
       message: string;
       messageId: string;
@@ -134,6 +142,17 @@ const CONFIGURATION_FAILURES = new Set<MehlaErrorCode>([
   "smtp_auth_failed",
   "smtp_rejected_sender",
   "mail_system_reply_to_not_configured",
+  "mail_http_not_configured",
+  "mail_http_auth_failed",
+  "mail_http_invalid_request",
+]);
+
+/** أعطال نقل HTTP العابرة: تُعاد المحاولة عبر الطابور، لا داخل طبقة النقل. */
+const HTTP_RETRYABLE: ReadonlySet<MehlaErrorCode> = new Set<MehlaErrorCode>([
+  "mail_http_network_failed",
+  "mail_http_timeout",
+  "mail_http_rate_limited",
+  "mail_http_provider_error",
 ]);
 
 function looksLikeTlsFailure(message: string): boolean {
@@ -147,6 +166,8 @@ export function classifyTransportFailure(
   message = "",
 ): MehlaErrorClass {
   if (CONFIGURATION_FAILURES.has(code)) return "SYSTEM_CONFIGURATION_FAILURE";
+  if (code === "mail_http_rejected_recipient") return "PERMANENT";
+  if (HTTP_RETRYABLE.has(code)) return "RETRYABLE";
   if (code === "smtp_connect_failed" && looksLikeTlsFailure(message)) {
     return "SYSTEM_CONFIGURATION_FAILURE";
   }
