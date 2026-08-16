@@ -14,6 +14,7 @@ import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import {
   CANCEL_REASON,
+  identityForNotificationEvent,
   isEmailEnabledEvent,
   isRetryableFailure,
   maskEmailForLog,
@@ -272,6 +273,8 @@ export async function processNotificationEmailBatch(
         subject: template.subject,
         element: template.render(`${APP_ORIGIN}${template.path}`),
         label: templateKey,
+        // هوية المُرسل حسب سياسة الهويات: ردود الدعم من support، والباقي system.
+        identity: identityForNotificationEvent(notification.type),
         idempotencyKey: idempotencyKeyFor(item.notification_id),
         // معرّف حتمي واحد للتنبيه: لا يتغيّر عبر إعادة المحاولات.
         messageId: notificationMessageId(item.notification_id),

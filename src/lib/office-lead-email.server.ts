@@ -25,8 +25,8 @@ export async function sendOfficeLeadEmail(options: {
       serviceKey: options.serviceKey,
     }),
     label: "office_lead_created",
-    // إشعار طلب استشارة للمكتب: هوية المبيعات هي القناة التجارية الصحيحة.
-    identity: "sales",
+    // طلب استشارة/عميل محتمل: هوية info حسب سياسة الهويات المعتمدة.
+    identity: "info",
     idempotencyKey: options.idempotencyKey,
     organizationId: options.organizationId,
   });

@@ -81,8 +81,8 @@ const identityOf = (path: string, identity: string): boolean =>
   new RegExp(`identity:\\s*"${identity}"`).test(read(path));
 check("الفوترة تستخدم هوية billing", identityOf("src/lib/billing/billing.server.ts", "billing"));
 check("المبيعات تستخدم هوية sales", identityOf("src/lib/sales-docs.server.ts", "sales"));
-check("طلبات الاستشارة هوية sales", identityOf("src/lib/office-lead-email.server.ts", "sales"));
-check("دعوات الفريق هوية support", identityOf("src/lib/invitations.server.ts", "support"));
+check("طلبات الاستشارة هوية info", identityOf("src/lib/office-lead-email.server.ts", "info"));
+check("دعوات الفريق هوية system", identityOf("src/lib/invitations.server.ts", "system"));
 
 console.log("\n9) هجرة الحجب (مصدر فقط)");
 const MIGRATION = read("supabase/migrations/20260816021500_email_suppressions.sql");
