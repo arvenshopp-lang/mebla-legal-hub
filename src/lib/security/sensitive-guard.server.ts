@@ -164,7 +164,7 @@ export async function requireSensitiveAccess(
 
   // فرض التحقق بخطوتين (AAL2) للعمليات الحساسة
   const aal = input.claims ? assuranceLevel(input.claims) : assuranceLevelFromRequest();
-  if (input.operation === "pii_reveal" && aal !== "aal2") {
+  if (input.operation === "pii.reveal" && aal !== "aal2") {
     throw new Error(
       "تتطلب هذه العملية جلسة مصادقة ثنائية نشطة (AAL2). يُرجى إكمال التحقق بخطوتين للمتابعة.",
     );

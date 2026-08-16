@@ -7,6 +7,7 @@ import { maskPiiValue, type PiiField } from "./crypto/pii.shared";
 import { PII_REVEAL_LIMITS } from "./security/security-policy";
 import {
   assuranceLevel,
+  assuranceLevelFromRequest,
   newTraceRef,
   requestSecurityMeta,
   requireSensitiveAccess,
