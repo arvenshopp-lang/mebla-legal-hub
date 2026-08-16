@@ -63,6 +63,7 @@ export const Route = createFileRoute("/api/public/hooks/resend-system-test")({
             provider_message_id: result.messageId,
             error_code: result.errorCode,
             safe_error_class: result.errorClass,
+            safe_message: result.message,
             latency_ms: result.latencyMs,
           });
         } catch {

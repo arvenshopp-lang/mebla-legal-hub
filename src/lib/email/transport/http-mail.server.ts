@@ -139,12 +139,13 @@ export async function httpMailSend(message: OutgoingMessage): Promise<HttpMailRe
   if (message.bcc.length > 0) payload["bcc"] = message.bcc;
   if (message.replyTo) payload["reply_to"] = message.replyTo;
 
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+
   let response: Response;
   try {
     response = await fetch(endpoint(), {
       method: "POST",
-      redirect: "error",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         authorization: `Bearer ${key}`,
         "content-type": "application/json",
@@ -152,8 +153,10 @@ export async function httpMailSend(message: OutgoingMessage): Promise<HttpMailRe
         "Idempotency-Key": stableRequestKey(message.messageId),
       },
       body: JSON.stringify(payload),
+      ...(controller ? { signal: controller.signal } : {}),
     });
   } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
     const raw = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     const timedOut = /abort|timeout/i.test(raw);
     return {
@@ -167,6 +170,8 @@ export async function httpMailSend(message: OutgoingMessage): Promise<HttpMailRe
       envelopeFrom: null,
       headerFrom,
     };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 
   let bodyText = "";
