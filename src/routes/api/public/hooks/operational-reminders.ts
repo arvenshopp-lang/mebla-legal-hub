@@ -22,9 +22,8 @@ export const Route = createFileRoute("/api/public/hooks/operational-reminders")(
 
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { generateOperationalReminders } = await import(
-            "@/lib/notifications/reminder-generator.server"
-          );
+          const { generateOperationalReminders } =
+            await import("@/lib/notifications/reminder-generator.server");
           const report = await generateOperationalReminders(supabaseAdmin);
           return json({ ok: true, ...report });
         } catch (error) {

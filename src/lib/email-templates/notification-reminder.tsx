@@ -1,5 +1,15 @@
 import React from "react";
-import { Body, Button, Container, Head, Heading, Hr, Html, Preview, Text } from "@react-email/components";
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Hr,
+  Html,
+  Preview,
+  Text,
+} from "@react-email/components";
 import { styles } from "./brand";
 
 export interface NotificationReminderProps {
