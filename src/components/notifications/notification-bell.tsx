@@ -126,7 +126,6 @@ export function NotificationBell() {
   });
 
   if (!user?.id) return null;
-  if (!inAppEnabled) return null;
 
   return (
     <div className="relative" ref={wrapRef}>
