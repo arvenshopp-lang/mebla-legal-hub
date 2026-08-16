@@ -26,6 +26,11 @@ import type {
 
 /* --------------------------------------------------------------- أدوات مشتركة */
 
+/** يُحيّد محارف PostgREST و ILIKE الخاصة لمنع التلاعب بالقواعد النحوية للاستعلام */
+export function escapeLikeTerm(term: string): string {
+  return term.replace(/[%_\\,()]/g, (c) => `\\${c}`);
+}
+
 const optionalTrimmed = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
 const nullify = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
 const emailOrEmpty = z
@@ -208,10 +213,12 @@ export const listLeads = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_leads").select("*", { count: "exact" });
-    if (data.search)
+    if (data.search) {
+      const s = escapeLikeTerm(data.search);
       q = q.or(
-        `full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%,company_name.ilike.%${data.search}%`,
+        `full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%,company_name.ilike.%${s}%`,
       );
+    }
     if (data.status !== "all") q = q.eq("status", data.status);
     if (data.source) q = q.eq("source", data.source);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
@@ -601,10 +608,12 @@ export const listCompanies = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_companies").select("*", { count: "exact" });
-    if (data.search)
+    if (data.search) {
+      const s = escapeLikeTerm(data.search);
       q = q.or(
-        `name.ilike.%${data.search}%,legal_name.ilike.%${data.search}%,email.ilike.%${data.search}%,city.ilike.%${data.search}%`,
+        `name.ilike.%${s}%,legal_name.ilike.%${s}%,email.ilike.%${s}%,city.ilike.%${s}%`,
       );
+    }
     if (data.status) q = q.eq("status", data.status);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     const from = (data.page - 1) * data.pageSize;
@@ -867,10 +876,12 @@ export const listContacts = createServerFn({ method: "POST" })
     await g.requireStaff(context.supabase, context.userId, "crm.read");
     const db = await g.admin();
     let q = db.from("crm_contacts").select("*", { count: "exact" });
-    if (data.search)
+    if (data.search) {
+      const s = escapeLikeTerm(data.search);
       q = q.or(
-        `full_name.ilike.%${data.search}%,email.ilike.%${data.search}%,phone.ilike.%${data.search}%`,
+        `full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`,
       );
+    }
     if (data.companyId) q = q.eq("company_id", data.companyId);
     if (data.ownerStaffId) q = q.eq("owner_staff_id", data.ownerStaffId);
     const from = (data.page - 1) * data.pageSize;
