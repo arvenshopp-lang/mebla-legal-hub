@@ -17,6 +17,15 @@ export const MEHLA_MAIL_DOMAIN = "mehlalex.com";
 /** الصندوق الوحيد الذي يملك بيانات دخول SMTP — ليس اسماً مستعاراً. */
 export const CANONICAL_SMTP_MAILBOX = `noreply@${MEHLA_MAIL_DOMAIN}`;
 
+/**
+ * نطاق الإرسال الآلي المعتمد (Resend) — معزول تماماً عن نطاق بريد الموظفين
+ * البشري على Hostinger. يُستخدم لهوية `system` فقط.
+ */
+export const MEHLA_NOTIFY_MAIL_DOMAIN = "notify.mehlalex.com";
+
+/** عنوان المُرسل الآلي لرسائل النظام والتنبيهات. */
+export const SYSTEM_SENDER_ADDRESS = `noreply@${MEHLA_NOTIFY_MAIL_DOMAIN}`;
+
 /** الاسم الظاهر الافتراضي للمُرسل. */
 export const DEFAULT_FROM_NAME = "مِهلة | MEHLA";
 
@@ -24,7 +33,7 @@ export type MehlaIdentity = "system" | "info" | "support" | "legal" | "sales" | 
 
 /** خريطة الهويات: `system` هو الصندوق الحقيقي، والبقية أسماء مستعارة بلا بيانات دخول. */
 export const MEHLA_IDENTITIES: Record<MehlaIdentity, string> = {
-  system: CANONICAL_SMTP_MAILBOX,
+  system: SYSTEM_SENDER_ADDRESS,
   info: `info@${MEHLA_MAIL_DOMAIN}`,
   support: `support@${MEHLA_MAIL_DOMAIN}`,
   legal: `legal@${MEHLA_MAIL_DOMAIN}`,
