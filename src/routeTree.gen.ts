@@ -108,6 +108,7 @@ import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/publ
 import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
 import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
 import { Route as ApiPublicHooksSmtpConnectivityCheckRouteImport } from './routes/api/public/hooks/smtp-connectivity-check'
+import { Route as ApiPublicHooksResendSystemTestRouteImport } from './routes/api/public/hooks/resend-system-test'
 import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
 import { Route as ApiPublicHooksOperationalRemindersRouteImport } from './routes/api/public/hooks/operational-reminders'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
@@ -622,6 +623,12 @@ const ApiPublicHooksSmtpConnectivityCheckRoute =
     path: '/api/public/hooks/smtp-connectivity-check',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksResendSystemTestRoute =
+  ApiPublicHooksResendSystemTestRouteImport.update({
+    id: '/api/public/hooks/resend-system-test',
+    path: '/api/public/hooks/resend-system-test',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksOperationalScoreRoute =
   ApiPublicHooksOperationalScoreRouteImport.update({
     id: '/api/public/hooks/operational-score',
@@ -781,6 +788,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/resend-system-test': typeof ApiPublicHooksResendSystemTestRoute
   '/api/public/hooks/smtp-connectivity-check': typeof ApiPublicHooksSmtpConnectivityCheckRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -890,6 +898,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/resend-system-test': typeof ApiPublicHooksResendSystemTestRoute
   '/api/public/hooks/smtp-connectivity-check': typeof ApiPublicHooksSmtpConnectivityCheckRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -1002,6 +1011,7 @@ export interface FileRoutesById {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/resend-system-test': typeof ApiPublicHooksResendSystemTestRoute
   '/api/public/hooks/smtp-connectivity-check': typeof ApiPublicHooksSmtpConnectivityCheckRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -1114,6 +1124,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/resend-system-test'
     | '/api/public/hooks/smtp-connectivity-check'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1223,6 +1234,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/resend-system-test'
     | '/api/public/hooks/smtp-connectivity-check'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1334,6 +1346,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/resend-system-test'
     | '/api/public/hooks/smtp-connectivity-check'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1391,6 +1404,7 @@ export interface RootRouteChildren {
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
   ApiPublicHooksOperationalRemindersRoute: typeof ApiPublicHooksOperationalRemindersRoute
   ApiPublicHooksOperationalScoreRoute: typeof ApiPublicHooksOperationalScoreRoute
+  ApiPublicHooksResendSystemTestRoute: typeof ApiPublicHooksResendSystemTestRoute
   ApiPublicHooksSmtpConnectivityCheckRoute: typeof ApiPublicHooksSmtpConnectivityCheckRoute
   ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
   ApiPublicOfficeLeadRoute: typeof ApiPublicOfficeLeadRoute
@@ -2097,6 +2111,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSmtpConnectivityCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/resend-system-test': {
+      id: '/api/public/hooks/resend-system-test'
+      path: '/api/public/hooks/resend-system-test'
+      fullPath: '/api/public/hooks/resend-system-test'
+      preLoaderRoute: typeof ApiPublicHooksResendSystemTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/operational-score': {
       id: '/api/public/hooks/operational-score'
       path: '/api/public/hooks/operational-score'
@@ -2372,6 +2393,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksOperationalRemindersRoute:
     ApiPublicHooksOperationalRemindersRoute,
   ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
+  ApiPublicHooksResendSystemTestRoute: ApiPublicHooksResendSystemTestRoute,
   ApiPublicHooksSmtpConnectivityCheckRoute:
     ApiPublicHooksSmtpConnectivityCheckRoute,
   ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
