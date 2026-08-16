@@ -40,7 +40,8 @@
     "score:integrity:dryrun": "bun scripts/operational-score-integrity-dryrun.ts",
     "score:public-ui:test": "bun scripts/operational-score-public-ui.test.ts",
     "notif-email:test": "bun scripts/notification-emails.test.ts",
-    "mail:transport:test": "bun scripts/mehla-mailer.test.ts"
+    "mail:transport:test": "bun scripts/mehla-mailer.test.ts",
+    "app-email:test": "bun scripts/app-email.test.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
