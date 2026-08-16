@@ -267,6 +267,20 @@ export async function processNotificationEmailBatch(
         continue;
       }
 
+      // 4) أهلية التسليم: التفضيل يعبّر عن رغبة المستخدم، والحجب يعبّر عن سلامة
+      // التسليم — الشرطان مطلوبان معاً قبل أي إرسال، والفحص قبل SMTP دائماً.
+      const { isRecipientBlocked } = await import("@/lib/email/suppression.server");
+      if (await isRecipientBlocked(recipient.email, "notification")) {
+        await markFailure(
+          db,
+          item,
+          "recipient_suppressed",
+          "العنوان محجوب عن استقبال بريد المنصة.",
+        );
+        report.failed += 1;
+        continue;
+      }
+
       // العنوان المُخزَّن لقطة تدقيق؛ الإرسال يستخدم العنوان المصرّح الحالي فقط.
       const result = await sendAppEmail({
         to: recipient.email,

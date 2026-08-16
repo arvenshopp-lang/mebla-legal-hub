@@ -129,7 +129,9 @@ export async function createTeamInvitation(input: {
   // قبل الإرسال ونُعيد سبباً صريحاً بدل عطل صامت في السجل. الدعوة نفسها تبقى
   // صالحة لأنها لا تعتمد على البريد.
   const { recipientStates } = await import("@/lib/email/suppression.server");
-  const [state] = await recipientStates([email]);
+  // فئة الدعوة المعتمدة: الارتداد الصلب والشكوى والحجب اليدوي تمنع، وإلغاء
+  // الاشتراك الاختياري لا يمنع دعوة فريق مطلوبة تشغيلياً.
+  const [state] = await recipientStates([email], "team_invitation");
   if (state?.blocked) {
     return {
       token: created.token,

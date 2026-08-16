@@ -510,6 +510,10 @@ export async function sendDocument(
       ),
       React.createElement("p", null, `الإجمالي: ${fmtDecimal(Number(doc.total))} ${doc.currency}`),
     );
+    // فحص الحجب قبل الإرسال بفئة المبيعات (تُمنع بإلغاء الاشتراك أيضاً).
+    const { isRecipientBlocked } = await import("@/lib/email/suppression.server");
+    if (await isRecipientBlocked(toEmail, "sales")) return { number: number as string };
+
     await sendAppEmail({
       to: toEmail,
       subject: `${label} ${number} من مِهلة`,
