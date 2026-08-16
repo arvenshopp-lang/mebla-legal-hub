@@ -29,15 +29,20 @@ check(
 );
 
 console.log("\n2) هويات تنبيهات البريد");
-const { identityForNotificationEvent } = await import(
-  "../src/lib/notifications/email-channel.shared"
+const { identityForNotificationEvent } =
+  await import("../src/lib/notifications/email-channel.shared");
+check(
+  "GENERIC_NOTIFICATION_IDENTITY = system",
+  identityForNotificationEvent("team_member_joined") === "system",
 );
-check("GENERIC_NOTIFICATION_IDENTITY = system", identityForNotificationEvent("team_member_joined") === "system");
 check(
   "تنبيه إنشاء التذكرة = system",
   identityForNotificationEvent("support_ticket_created") === "system",
 );
-check("SUPPORT_REPLY_IDENTITY = support", identityForNotificationEvent("support_reply") === "support");
+check(
+  "SUPPORT_REPLY_IDENTITY = support",
+  identityForNotificationEvent("support_reply") === "support",
+);
 check(
   "support_new_reply = support",
   identityForNotificationEvent("support_new_reply") === "support",
@@ -52,12 +57,12 @@ check(
 console.log("\n3) المصادقة بالصندوق الكنسي");
 const MAILER = read("src/lib/email/transport/mehla-mailer.server.ts");
 check("الصندوق الكنسي noreply@mehlalex.com", MAILER.includes("`noreply@${MEHLA_MAIL_DOMAIN}`"));
-check("كل إرسال يصادق بالصندوق الكنسي", MAILER.includes("smtpSend(message, CANONICAL_SMTP_MAILBOX)"));
-check("لا مصادقة بأي اسم مستعار", !/smtpSend\(message,\s*identityAddress/.test(MAILER));
 check(
-  "المظروف بالصندوق الكنسي",
-  MAILER.includes("result.envelopeFrom ?? CANONICAL_SMTP_MAILBOX"),
+  "كل إرسال يصادق بالصندوق الكنسي",
+  MAILER.includes("smtpSend(message, CANONICAL_SMTP_MAILBOX)"),
 );
+check("لا مصادقة بأي اسم مستعار", !/smtpSend\(message,\s*identityAddress/.test(MAILER));
+check("المظروف بالصندوق الكنسي", MAILER.includes("result.envelopeFrom ?? CANONICAL_SMTP_MAILBOX"));
 
 console.log(
   failures === 0 ? "\nالنتيجة: نجحت جميع الفحوص ✅\n" : `\nالنتيجة: ${failures} فحص فاشل ❌\n`,
