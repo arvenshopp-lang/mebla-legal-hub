@@ -303,7 +303,7 @@ export const checkMailRecipients = createServerFn({ method: "POST" })
       data,
       context,
     }): Promise<{
-      transport: "smtp" | "managed";
+      transport: "smtp";
       blocked: string[];
       unknown: string[];
     }> => {
@@ -320,13 +320,12 @@ export const checkMailRecipients = createServerFn({ method: "POST" })
       const address = (box as { address: string } | null)?.address;
       if (!address) throw new Error("صندوق البريد غير موجود.");
 
-      const { transportConfigured } = await import("@/lib/email/transport/config.server");
-      if (transportConfigured(address)) return { transport: "smtp", blocked: [], unknown: [] };
-
+      // الحجب مملوك لمِهلة ومستقل عن المزوّد، فيُفحص دائماً — لا يُتخطّى بحجة
+      // أن نقل SMTP مهيأ، وإلا أُرسل بريد لعنوان مرتدّ أو صاحب شكوى.
       const { recipientStates } = await import("@/lib/email/suppression.server");
-      const states = await recipientStates(data.addresses);
+      const states = await recipientStates(data.addresses, "human_mail");
       return {
-        transport: "managed",
+        transport: "smtp",
         blocked: states.filter((s) => s.blocked).map((s) => s.address),
         unknown: states.filter((s) => s.unknown).map((s) => s.address),
       };
