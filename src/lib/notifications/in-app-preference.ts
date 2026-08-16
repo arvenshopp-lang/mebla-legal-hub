@@ -34,7 +34,5 @@ export function shouldQueryNotifications(args: {
   preferenceLoading: boolean;
   inAppEnabled: boolean;
 }): boolean {
-  return (
-    !!args.userId && !!args.activeOrgId && !args.preferenceLoading && args.inAppEnabled
-  );
+  return !!args.userId && !!args.activeOrgId && !args.preferenceLoading && args.inAppEnabled;
 }
