@@ -6,6 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { fmtDateTime } from "@/lib/enums";
+import {
+  isInAppNotificationsEnabled,
+  type InAppPreferenceRow,
+} from "@/lib/notifications/in-app-preference";
 
 type NotificationRow = {
   id: string;
@@ -33,16 +37,37 @@ function linkFor(type: string): string | null {
 }
 
 export function NotificationBell() {
-  const { user } = useAuth();
+  const { user, activeOrgId } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const queryKey = useMemo(() => ["notifications", user?.id ?? "anon"], [user?.id]);
+  const queryKey = useMemo(
+    () => ["notifications", user?.id ?? "anon", activeOrgId ?? "no-org"],
+    [user?.id, activeOrgId],
+  );
+
+  // تفضيل «داخل التطبيق» للمكتب النشط — لا يؤثر على قناة البريد.
+  const { data: inAppPref, isLoading: prefLoading } = useQuery({
+    queryKey: ["notif-prefs", "in-app", user?.id ?? "anon", activeOrgId ?? "no-org"],
+    enabled: !!user?.id && !!activeOrgId,
+    queryFn: async (): Promise<InAppPreferenceRow> => {
+      const { data: row, error } = await supabase
+        .from("user_notification_preferences")
+        .select("in_app_enabled")
+        .eq("organization_id", activeOrgId!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return row ?? null;
+    },
+  });
+
+  const inAppEnabled = isInAppNotificationsEnabled(inAppPref);
 
   const { data, isLoading } = useQuery({
     queryKey,
-    enabled: !!user?.id,
+    enabled: !!user?.id && !prefLoading && inAppEnabled,
     queryFn: async (): Promise<NotificationRow[]> => {
       const { data: rows, error } = await supabase
         .from("notifications")
@@ -55,7 +80,7 @@ export function NotificationBell() {
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !inAppEnabled) return;
     const channel = supabase
       .channel(`notifications-${user.id}`)
       .on(
@@ -67,7 +92,7 @@ export function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, qc, queryKey]);
+  }, [user?.id, qc, queryKey, inAppEnabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -85,7 +110,7 @@ export function NotificationBell() {
     };
   }, [open]);
 
-  const items = data ?? [];
+  const items = inAppEnabled ? (data ?? []) : [];
   const unread = items.filter((n) => !n.is_read);
 
   const markRead = useMutation({
@@ -101,6 +126,7 @@ export function NotificationBell() {
   });
 
   if (!user?.id) return null;
+  if (!inAppEnabled) return null;
 
   return (
     <div className="relative" ref={wrapRef}>
