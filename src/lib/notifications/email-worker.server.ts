@@ -6,12 +6,14 @@
  * كل صف معزول: فشل صف لا يُسقط الدفعة، ولا يُسجَّل أي محتوى أو بريد كامل.
  */
 import React from "react";
+import { NotificationReminderEmail } from "@/lib/email-templates/notification-reminder";
 import { NotificationSupportReplyEmail } from "@/lib/email-templates/notification-support-reply";
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
 import { sendAppEmail } from "@/lib/email/app-email.server";
 import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server";
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
+import { REMINDER_COPY } from "./reminders.shared";
 import {
   CANCEL_REASON,
   identityForNotificationEvent,
@@ -58,8 +60,48 @@ type TemplateDefinition = {
   render: (actionUrl: string) => React.ReactElement;
 };
 
+/**
+ * قوالب التذكيرات التشغيلية (المرحلة 2) — قالب واحد مشترك مع نصوص معتمدة
+ * من `REMINDER_COPY`، فلا تكرار تصميم ولا محتوى حساس.
+ */
+function reminderTemplates(): Record<string, TemplateDefinition> {
+  const build = (
+    templateKey: string,
+    event: keyof typeof REMINDER_COPY,
+    path: string,
+  ): [string, TemplateDefinition] => {
+    const copy = REMINDER_COPY[event];
+    return [
+      templateKey,
+      {
+        subject: `${copy.title} — مِهلة`,
+        path,
+        render: (actionUrl) =>
+          React.createElement(NotificationReminderEmail, {
+            actionUrl,
+            heading: copy.title,
+            body: copy.message,
+          }),
+      },
+    ];
+  };
+
+  return Object.fromEntries([
+    build("notif-hearing-reminder-7d", "hearing_reminder_7d", "/hearings"),
+    build("notif-hearing-reminder-3d", "hearing_reminder_3d", "/hearings"),
+    build("notif-hearing-reminder-1d", "hearing_reminder_1d", "/hearings"),
+    build("notif-hearing-reminder-same-day", "hearing_reminder_same_day", "/hearings"),
+    build("notif-deadline-reminder-7d", "deadline_reminder_7d", "/deadlines"),
+    build("notif-deadline-reminder-3d", "deadline_reminder_3d", "/deadlines"),
+    build("notif-deadline-reminder-1d", "deadline_reminder_1d", "/deadlines"),
+    build("notif-deadline-reminder-same-day", "deadline_reminder_same_day", "/deadlines"),
+    build("notif-task-overdue", "task_overdue", "/tasks"),
+  ]);
+}
+
 /** القوالب المعتمدة: عنوان + مسار داخلي + عرض. ملخّص آمن فقط بلا محتوى. */
 const TEMPLATES: Record<NotificationTemplateKey, TemplateDefinition> = {
+  ...(reminderTemplates() as Record<NotificationTemplateKey, TemplateDefinition>),
   "notif-team-member-joined": {
     subject: "انضمام عضو جديد لفريق مكتبك — مِهلة",
     path: "/team",

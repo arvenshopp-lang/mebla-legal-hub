@@ -24,6 +24,16 @@ export const EMAIL_ENABLED_EVENTS = {
   support_new_reply: "notif-support-reply",
   support_reply: "notif-support-reply",
   support_ticket_created: "notif-support-ticket-created",
+  /* المرحلة 2 — التذكيرات التشغيلية: ملخّص آمن بلا تفاصيل قضية أو عميل. */
+  hearing_reminder_7d: "notif-hearing-reminder-7d",
+  hearing_reminder_3d: "notif-hearing-reminder-3d",
+  hearing_reminder_1d: "notif-hearing-reminder-1d",
+  hearing_reminder_same_day: "notif-hearing-reminder-same-day",
+  deadline_reminder_7d: "notif-deadline-reminder-7d",
+  deadline_reminder_3d: "notif-deadline-reminder-3d",
+  deadline_reminder_1d: "notif-deadline-reminder-1d",
+  deadline_reminder_same_day: "notif-deadline-reminder-same-day",
+  task_overdue: "notif-task-overdue",
 } as const;
 
 export type EmailEnabledEvent = keyof typeof EMAIL_ENABLED_EVENTS;
@@ -47,6 +57,15 @@ const EVENT_IDENTITY: Record<EmailEnabledEvent, "system" | "support"> = {
   support_new_reply: "support",
   support_reply: "support",
   support_ticket_created: "system",
+  hearing_reminder_7d: "system",
+  hearing_reminder_3d: "system",
+  hearing_reminder_1d: "system",
+  hearing_reminder_same_day: "system",
+  deadline_reminder_7d: "system",
+  deadline_reminder_3d: "system",
+  deadline_reminder_1d: "system",
+  deadline_reminder_same_day: "system",
+  task_overdue: "system",
 };
 
 export function identityForNotificationEvent(eventType: string): "system" | "support" {

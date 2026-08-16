@@ -108,6 +108,7 @@ import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/publ
 import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
 import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
 import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
+import { Route as ApiPublicHooksOperationalRemindersRouteImport } from './routes/api/public/hooks/operational-reminders'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
 import { Route as ApiPublicHooksNotificationEmailsRouteImport } from './routes/api/public/hooks/notification-emails'
 import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
@@ -620,6 +621,12 @@ const ApiPublicHooksOperationalScoreRoute =
     path: '/api/public/hooks/operational-score',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksOperationalRemindersRoute =
+  ApiPublicHooksOperationalRemindersRouteImport.update({
+    id: '/api/public/hooks/operational-reminders',
+    path: '/api/public/hooks/operational-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNotificationsDispatchRoute =
   ApiPublicHooksNotificationsDispatchRouteImport.update({
     id: '/api/public/hooks/notifications-dispatch',
@@ -765,6 +772,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -872,6 +880,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -982,6 +991,7 @@ export interface FileRoutesById {
   '/api/public/hooks/mail-sync': typeof ApiPublicHooksMailSyncRoute
   '/api/public/hooks/notification-emails': typeof ApiPublicHooksNotificationEmailsRoute
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
+  '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
@@ -1092,6 +1102,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1199,6 +1210,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1308,6 +1320,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/mail-sync'
     | '/api/public/hooks/notification-emails'
     | '/api/public/hooks/notifications-dispatch'
+    | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
     | '/api/public/office/event'
     | '/api/public/office/lead'
@@ -1363,6 +1376,7 @@ export interface RootRouteChildren {
   ApiPublicHooksMailSyncRoute: typeof ApiPublicHooksMailSyncRoute
   ApiPublicHooksNotificationEmailsRoute: typeof ApiPublicHooksNotificationEmailsRoute
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
+  ApiPublicHooksOperationalRemindersRoute: typeof ApiPublicHooksOperationalRemindersRoute
   ApiPublicHooksOperationalScoreRoute: typeof ApiPublicHooksOperationalScoreRoute
   ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
   ApiPublicOfficeLeadRoute: typeof ApiPublicOfficeLeadRoute
@@ -2069,6 +2083,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksOperationalScoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/operational-reminders': {
+      id: '/api/public/hooks/operational-reminders'
+      path: '/api/public/hooks/operational-reminders'
+      fullPath: '/api/public/hooks/operational-reminders'
+      preLoaderRoute: typeof ApiPublicHooksOperationalRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/notifications-dispatch': {
       id: '/api/public/hooks/notifications-dispatch'
       path: '/api/public/hooks/notifications-dispatch'
@@ -2327,6 +2348,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksNotificationEmailsRoute: ApiPublicHooksNotificationEmailsRoute,
   ApiPublicHooksNotificationsDispatchRoute:
     ApiPublicHooksNotificationsDispatchRoute,
+  ApiPublicHooksOperationalRemindersRoute:
+    ApiPublicHooksOperationalRemindersRoute,
   ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
   ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
   ApiPublicOfficeLeadRoute: ApiPublicOfficeLeadRoute,
