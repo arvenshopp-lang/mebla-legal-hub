@@ -8,10 +8,37 @@ function scanBackoffMs(retryCount) {
   return ladder[idx] ?? 900_000;
 }
 
-// 2. Simulated Pipeline Transitions
-function simulateProcessDocument(doc, prescreenResult, fullScannerResult) {
-  const now = new Date();
+// 2. In-Memory Simulated Database with FOR UPDATE SKIP LOCKED & Leases
+class MockDatabase {
+  constructor(initialDocs = []) {
+    this.documents = JSON.parse(JSON.stringify(initialDocs));
+  }
 
+  // Simulates claim_document_scan_batch RPC
+  claimBatch(limit = 10, workerId = "worker-1", leaseSeconds = 300, now = new Date()) {
+    const claimed = [];
+    for (const doc of this.documents) {
+      if (claimed.length >= limit) break;
+
+      const leaseExpired = !doc.scan_lease_expires_at || new Date(doc.scan_lease_expires_at) < now;
+      const retryDue = !doc.next_retry_at || new Date(doc.next_retry_at) <= now;
+
+      const isPending = doc.scan_status === "PENDING_SCAN" && leaseExpired;
+      const isRetryableFail = doc.scan_status === "SCAN_FAILED" && (doc.scan_retry_count || 0) < MAX_SCAN_RETRIES && retryDue && leaseExpired;
+
+      if (isPending || isRetryableFail) {
+        doc.scan_worker_id = workerId;
+        doc.scan_started_at = now.toISOString();
+        doc.scan_lease_expires_at = new Date(now.getTime() + leaseSeconds * 1000).toISOString();
+        claimed.push({ ...doc });
+      }
+    }
+    return claimed;
+  }
+}
+
+// 3. Simulated Pipeline Transitions
+function simulateProcessDocument(doc, prescreenResult, fullScannerResult) {
   // Step A: Pre-Screen
   if (!prescreenResult.clean) {
     return {
@@ -77,7 +104,7 @@ async function runScanPipelineSuite() {
   console.log("RUNNING MEHLA DOCUMENT SCAN & RETRY PIPELINE VERIFICATION SUITE");
   console.log("==================================================================");
 
-  // Test 1: Structural Pre-Screen cannot grant CLEAN
+  // Test 1: Invariant — Pre-Screen pass does NOT produce CLEAN
   console.log("Test 1: Invariant — Pre-Screen pass does NOT produce CLEAN...");
   const doc1 = { id: "doc-1", file_name: "contract.pdf", scan_status: "PENDING_SCAN", scan_retry_count: 0 };
   const res1 = simulateProcessDocument(doc1, { clean: true }, null);
@@ -85,7 +112,7 @@ async function runScanPipelineSuite() {
   assert.strictEqual(res1.file_status, "PENDING");
   console.log("  -> PASS: Unscanned document safely remains PENDING_SCAN (No Auto-CLEAN).");
 
-  // Test 2: Full Scanner Clean -> CLEAN & AVAILABLE
+  // Test 2: Full Antivirus Scanner pass -> CLEAN & AVAILABLE
   console.log("Test 2: Full Antivirus Scanner pass -> CLEAN & AVAILABLE...");
   const res2 = simulateProcessDocument(doc1, { clean: true }, { status: "CLEAN" });
   assert.strictEqual(res2.scan_status, "CLEAN");
@@ -110,20 +137,17 @@ async function runScanPipelineSuite() {
 
   // Test 5: Scanner Failure with Bounded Exponential Backoff
   console.log("Test 5: Scanner Failure with Bounded Retry (Attempts 1, 2, 3)...");
-  // Attempt 1:
   const attempt1 = simulateProcessDocument({ id: "doc-retry", scan_retry_count: 0 }, { clean: true }, { status: "SCAN_FAILED" });
   assert.strictEqual(attempt1.scan_status, "SCAN_FAILED");
   assert.strictEqual(attempt1.scan_retry_count, 1);
   assert.strictEqual(attempt1.can_retry, true);
   assert.strictEqual(attempt1.next_retry_in_ms, 60_000); // 1 min
 
-  // Attempt 2:
   const attempt2 = simulateProcessDocument({ id: "doc-retry", scan_retry_count: 1 }, { clean: true }, { status: "SCAN_FAILED" });
   assert.strictEqual(attempt2.scan_retry_count, 2);
   assert.strictEqual(attempt2.can_retry, true);
   assert.strictEqual(attempt2.next_retry_in_ms, 300_000); // 5 min
 
-  // Attempt 3:
   const attempt3 = simulateProcessDocument({ id: "doc-retry", scan_retry_count: 2 }, { clean: true }, { status: "SCAN_FAILED" });
   assert.strictEqual(attempt3.scan_retry_count, 3);
   assert.strictEqual(attempt3.can_retry, false); // Exhausted!
@@ -137,8 +161,40 @@ async function runScanPipelineSuite() {
   assert.strictEqual(legacyRes.scan_status, "PENDING_SCAN");
   console.log("  -> PASS: Legacy documents require active scanning before access.");
 
+  // Test 7: Atomic Concurrency & Skip-Locked Claim Simulation
+  console.log("Test 7: Two workers competing for the same document batch...");
+  const db = new MockDatabase([
+    { id: "doc-c1", scan_status: "PENDING_SCAN", scan_retry_count: 0 },
+    { id: "doc-c2", scan_status: "PENDING_SCAN", scan_retry_count: 0 }
+  ]);
+  const now = new Date();
+  const worker1Batch = db.claimBatch(1, "worker-1", 300, now);
+  const worker2Batch = db.claimBatch(1, "worker-2", 300, now);
+
+  assert.strictEqual(worker1Batch.length, 1);
+  assert.strictEqual(worker1Batch[0].id, "doc-c1");
+  assert.strictEqual(worker2Batch.length, 1);
+  assert.strictEqual(worker2Batch[0].id, "doc-c2");
+  console.log("  -> PASS: Atomic claim distributes distinct jobs without double-processing.");
+
+  // Test 8: Worker Crash & Lease Expiration Recovery
+  console.log("Test 8: Worker crash and lease expiration recovery...");
+  const crashedDb = new MockDatabase([
+    {
+      id: "doc-crashed",
+      scan_status: "PENDING_SCAN",
+      scan_worker_id: "worker-dead",
+      scan_lease_expires_at: new Date(now.getTime() - 1000).toISOString() // Expired lease
+    }
+  ]);
+  const recoveryBatch = crashedDb.claimBatch(1, "worker-survivor", 300, now);
+  assert.strictEqual(recoveryBatch.length, 1);
+  assert.strictEqual(recoveryBatch[0].id, "doc-crashed");
+  assert.strictEqual(crashedDb.documents[0].scan_worker_id, "worker-survivor");
+  console.log("  -> PASS: Stale lease recovered automatically by active worker.");
+
   console.log("==================================================================");
-  console.log("ALL 6 DOCUMENT SCAN PIPELINE TESTS PASSED (100% GREEN)!");
+  console.log("ALL 8 DOCUMENT SCAN PIPELINE TESTS PASSED (100% GREEN)!");
   console.log("==================================================================");
 }
 

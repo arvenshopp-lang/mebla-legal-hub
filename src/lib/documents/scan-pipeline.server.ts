@@ -56,19 +56,44 @@ export type PipelineBatchResult = {
 };
 
 /**
- * حجز دفعة مستندات معلقة للفحص الأمني بشكل ذري (Atomic Claim)
+ * حجز دفعة مستندات معلقة للفحص الأمني بشكل ذري (Atomic Claim via FOR UPDATE SKIP LOCKED)
  */
 export async function claimPendingScanBatch(
   supabaseAdmin: Client,
   options: {
     limit?: number;
     workerId?: string;
+    leaseSeconds?: number;
     organizationId?: string;
   } = {},
 ): Promise<ScanQueueItem[]> {
   const limit = Math.min(options.limit ?? 10, 50);
-  const now = new Date().toISOString();
+  const workerId = options.workerId ?? `worker-${Math.random().toString(36).slice(2, 9)}`;
+  const leaseSeconds = options.leaseSeconds ?? 300;
 
+  try {
+    // 1. المحاولة عبر دالة الحجز الذري (PostgreSQL RPC)
+    const { data: rpcData, error: rpcError } = await (supabaseAdmin as any).rpc(
+      "claim_document_scan_batch",
+      {
+        p_limit: limit,
+        p_worker_id: workerId,
+        p_lease_seconds: leaseSeconds,
+      },
+    );
+
+    if (!rpcError && Array.isArray(rpcData)) {
+      if (options.organizationId) {
+        return rpcData.filter((d: any) => d.organization_id === options.organizationId) as ScanQueueItem[];
+      }
+      return rpcData as ScanQueueItem[];
+    }
+  } catch {
+    // fallback if RPC not yet deployed
+  }
+
+  // 2. مسار احتياطي استعلامي مباشر
+  const now = new Date().toISOString();
   let query = (supabaseAdmin as any)
     .from("documents")
     .select("id, organization_id, file_path, file_name, file_size, mime_type, scan_status, scan_retry_count, next_retry_at")
