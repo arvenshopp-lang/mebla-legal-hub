@@ -37,6 +37,22 @@ export function templateKeyForEvent(eventType: string): NotificationTemplateKey 
   return isEmailEnabledEvent(eventType) ? EMAIL_ENABLED_EVENTS[eventType] : null;
 }
 
+/**
+ * هوية المُرسل لكل حدث تنبيه — سياسة الهويات المعتمدة:
+ * تنبيهات ردود الدعم تُرسل من صندوق الدعم (رد المستلم يعود للدعم)،
+ * وبقية التنبيهات العامة من هوية النظام (noreply + Reply-To: support).
+ */
+const EVENT_IDENTITY: Record<EmailEnabledEvent, "system" | "support"> = {
+  team_member_joined: "system",
+  support_new_reply: "support",
+  support_reply: "support",
+  support_ticket_created: "system",
+};
+
+export function identityForNotificationEvent(eventType: string): "system" | "support" {
+  return isEmailEnabledEvent(eventType) ? EVENT_IDENTITY[eventType] : "system";
+}
+
 /** أسباب عدم الإدراج — رموز آمنة للتسجيل التشغيلي بلا أي محتوى. */
 export const ENQUEUE_SKIP_REASON = {
   NOTIFICATION_NOT_FOUND: "NOTIFICATION_NOT_FOUND",
