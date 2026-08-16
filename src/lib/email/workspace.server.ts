@@ -5,11 +5,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
  */
 import { requestMeta } from "@/lib/admin-guard.server";
-import {
-  buildAttachmentSection,
-  quarantineInboundAttachment,
-  storeAttachment,
-} from "@/lib/email/attachments.server";
+import { quarantineInboundAttachment, storeAttachment } from "@/lib/email/attachments.server";
 import { sanitizeInboundHtml } from "@/lib/email/sanitize.shared";
 import {
   previewOf,
@@ -23,11 +19,8 @@ import {
 
 type Db = SupabaseDb;
 
-const SENDER_DOMAIN = "mail.mehlalex.com";
 const ROOT_DOMAIN = "mehlalex.com";
 export const ATTACHMENT_BUCKET = "email-attachments";
-/** صلاحية روابط تنزيل المرفقات المُرسلة للمستلم الخارجي (7 أيام). */
-const OUTBOUND_ATTACHMENT_TTL = 7 * 24 * 60 * 60;
 
 /* --------------------------------------------------------------- الصناديق */
 
@@ -594,11 +587,6 @@ const RECIPIENT_DENY_CODES = new Set([
   "smtp_rejected_recipient",
 ]);
 
-/** مفتاح تفرّد فريد لكل محاولة: يمنع التكرار داخل المحاولة ولا يحجب الإعادة. */
-function attemptIdempotencyKey(baseKey: string, attemptNumber: number): string {
-  return `${baseKey}:a${attemptNumber}`;
-}
-
 /**
  * أعطال نقل SMTP سببها الإعداد أو البيئة لا الرسالة (سرّ ناقص، بيانات دخول
  * خاطئة، تعذّر اتصال، مهلة، مرفق غير متاح). لا يوجد مزوّد بديل، فلا تُحرق
@@ -799,14 +787,16 @@ export async function dispatchOne(
   const exhausted =
     classification.permanent || (!classification.configuration && attempts >= job.max_attempts);
   // ارتداد صلب مؤكَّد: يُسجَّل في حجب مِهلة كي لا يُعاد الإرسال لهذا العنوان.
-  if (!smtp.ok) {
+  if (!result.ok) {
     const { captureHardBounce } = await import("@/lib/email/suppression.server");
-    await captureHardBounce({
-      addresses: message.to_addresses,
-      errorCode: result.code,
-      smtpCode: result.smtpCode,
-      detail: result.message,
-    });
+    for (const address of message.to_addresses) {
+      await captureHardBounce({
+        address,
+        errorCode: result.code,
+        smtpCode: result.smtpCode,
+        source: "email_workspace_send",
+      });
+    }
   }
   let failureRef: string | null = null;
   if (!RECIPIENT_DENY_CODES.has(result.code)) {
