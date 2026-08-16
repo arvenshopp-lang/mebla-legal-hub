@@ -4,7 +4,6 @@ import type { Database, Json } from "@/integrations/supabase/types";
  * محرك مركز البريد — خادمي فقط. كل الجداول مغلقة أمام العميل، والوصول يمر
  * من هنا بعد فحص صلاحية الموظف في دوال الخادم.
  */
-import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { requestMeta } from "@/lib/admin-guard.server";
 import {
   buildAttachmentSection,
