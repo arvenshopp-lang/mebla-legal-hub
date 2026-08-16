@@ -168,7 +168,18 @@ export function NotificationBell() {
           </div>
 
           <div className="max-h-[380px] overflow-y-auto">
-            {isLoading ? (
+            {!inAppEnabled ? (
+              <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+                <p>تنبيهات «داخل التطبيق» موقوفة من إعداداتك.</p>
+                <Link
+                  to="/settings"
+                  className="mt-2 inline-block text-primary hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  تعديل تفضيلات التنبيه
+                </Link>
+              </div>
+            ) : isLoading || prefLoading ? (
               <div className="space-y-2 p-4" aria-busy>
                 {[0, 1, 2].map((i) => (
                   <div
