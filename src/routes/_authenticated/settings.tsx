@@ -350,7 +350,6 @@ function NotifTab({ orgId, userId }: { orgId: string | null; userId?: string }) 
         <h3 className="mb-2 text-sm font-bold">تنبيهات أخرى</h3>
         <div className="grid gap-2 md:grid-cols-2">
           <Tog k="task_overdue" l="مهام متأخرة" />
-          <Tog k="inactive_cases" l="قضايا خاملة" />
         </div>
       </div>
       <div className="flex justify-end">
