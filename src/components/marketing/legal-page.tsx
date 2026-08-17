@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { SiteFooter } from "@/components/marketing/site-footer";
 
 export type LegalSection = { heading: string; paragraphs: string[]; items?: string[] };
 
@@ -15,7 +16,7 @@ export function LegalPage({
   sections: LegalSection[];
 }) {
   return (
-    <div dir="rtl" className="min-h-dvh bg-background text-foreground">
+    <div dir="rtl" className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="border-b border-border bg-surface">
         <div className="container-page flex h-16 items-center justify-between gap-4">
           <a href="/" className="text-[17px] font-bold tracking-tight">
@@ -31,7 +32,7 @@ export function LegalPage({
         </div>
       </header>
 
-      <main className="container-page max-w-3xl py-12 md:py-16">
+      <main className="container-page max-w-3xl flex-1 py-12 md:py-16">
         <h1 className="text-h1">{title}</h1>
         <p className="mt-2 text-caption">آخر تحديث: {updatedAt}</p>
         <p className="mt-5 text-body-lg text-muted-foreground">{intro}</p>
