@@ -32,6 +32,7 @@ import {
 } from "@/lib/list-utils";
 import { CaseDialog } from "./cases.index";
 import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
+import { CaseFinancialCard } from "@/components/office-billing/case-financial-card";
 import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { saveCasePartySecure } from "@/lib/pii.functions";
@@ -521,6 +522,12 @@ function Page() {
       </section>
 
       <DocumentRequestsSection caseId={id} />
+
+      {activeOrgId ? (
+        <div className="mt-4">
+          <CaseFinancialCard organizationId={activeOrgId} caseId={id} />
+        </div>
+      ) : null}
 
       <UpdateDialog
         open={updateOpen}
