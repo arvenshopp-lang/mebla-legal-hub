@@ -232,78 +232,118 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   );
 }
 
-/** معاينة واقعية لواجهة النظام — مبنية بعناصر حقيقية لا برسوم زخرفية. */
+/** معاينة واقعية تفاعلية لواجهة النظام — تبرز القضايا والجلسات والمطالبات المالية. */
 function AppPreview() {
   return (
-    <div className="surface-card overflow-hidden shadow-lg">
-      <div className="flex items-center justify-between border-b border-border bg-surface-muted/70 px-4 py-2.5">
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span className="h-2 w-2 rounded-full bg-border-strong" aria-hidden />
-          <span className="h-2 w-2 rounded-full bg-border-strong" aria-hidden />
-          <span className="h-2 w-2 rounded-full bg-border-strong" aria-hidden />
-          <span className="mr-2">app.mehlalex.com — لوحة التحكم</span>
+    <div className="surface-card overflow-hidden rounded-[var(--radius-l)] border border-border shadow-xl">
+      <div className="flex items-center justify-between border-b border-border bg-surface-muted/80 px-4 py-3">
+        <div className="flex items-center gap-2 text-[12.5px] font-medium text-muted-foreground">
+          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
+          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
+          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
+          <span className="mr-2 font-mono text-[11.5px]">app.mehlalex.com · مساحة عمل المكتب</span>
         </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> متصل ومؤمن
+        </span>
       </div>
-      <div className="grid grid-cols-[1fr] md:grid-cols-[190px_1fr]" dir="rtl">
-        <aside className="hidden border-l border-border p-3 md:block">
-          {["الرئيسية", "القضايا", "الجلسات", "المهل", "المهام", "العملاء", "المستندات"].map(
-            (l, i) => (
-              <div
-                key={l}
-                className={cn(
-                  "mb-1 flex items-center gap-2 rounded-[var(--radius-s)] px-3 py-2 text-[12.5px]",
-                  i === 0 ? "bg-primary-soft font-semibold text-primary" : "text-muted-foreground",
-                )}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" aria-hidden />
-                {l}
-              </div>
-            ),
-          )}
+      <div className="grid grid-cols-[1fr] md:grid-cols-[200px_1fr]" dir="rtl">
+        <aside className="hidden border-l border-border bg-surface-muted/30 p-3 md:block">
+          {[
+            { l: "الرئيسية", active: true },
+            { l: "القضايا", count: "24" },
+            { l: "الجلسات", count: "3" },
+            { l: "المهل النظامية", count: "6" },
+            { l: "المهام", count: "12" },
+            { l: "المستندات والـ OCR", count: "48" },
+            { l: "الأتعاب والمطالبات", count: "8" },
+          ].map((item) => (
+            <div
+              key={item.l}
+              className={cn(
+                "mb-1 flex items-center justify-between rounded-[var(--radius-m)] px-3 py-2 text-[13px] transition",
+                item.active
+                  ? "bg-primary font-semibold text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+              )}
+            >
+              <span>{item.l}</span>
+              {item.count && (
+                <span className="rounded-full bg-border px-1.5 py-0.2 text-[11px] font-medium tabular-nums text-muted-foreground">
+                  {item.count}
+                </span>
+              )}
+            </div>
+          ))}
         </aside>
-        <div className="p-4 sm:p-5">
-          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <div className="p-4 sm:p-6 bg-surface">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              ["قضايا مفتوحة", "34"],
-              ["جلسات اليوم", "3"],
-              ["مهل خلال 7 أيام", "6"],
-              ["مهام متأخرة", "2"],
-            ].map(([l, v], i) => (
+              ["قضايا منظورة", "24 قضية", "bg-primary", "text-primary"],
+              ["جلسات اليوم", "3 جلسات", "bg-emerald-500", "text-emerald-600 dark:text-emerald-400"],
+              ["مهل خلال 7 أيام", "6 مهل", "bg-amber-500", "text-amber-600 dark:text-amber-400"],
+              ["أتعاب محصلة (الشهر)", "48,500 ر.س", "bg-sky-500", "text-sky-600 dark:text-sky-400"],
+            ].map(([l, v, barColor, txtColor]) => (
               <div
                 key={l}
-                className="relative overflow-hidden rounded-[var(--radius-m)] border border-border p-3"
+                className="relative overflow-hidden rounded-[var(--radius-m)] border border-border bg-background p-3.5 shadow-2xs"
               >
-                <span
-                  className={cn(
-                    "absolute inset-y-0 right-0 w-[3px]",
-                    ["bg-border-strong", "bg-primary", "bg-warning", "bg-danger"][i],
-                  )}
-                  aria-hidden
-                />
-                <p className="text-[11px] text-muted-foreground">{l}</p>
-                <p className="mt-1 text-[20px] font-bold tabular-nums">{v}</p>
+                <span className={cn("absolute inset-y-0 right-0 w-[3.5px]", barColor)} aria-hidden />
+                <p className="text-[11.5px] font-medium text-muted-foreground">{l}</p>
+                <p className={cn("mt-1.5 text-[18px] font-bold tabular-nums", txtColor)}>{v}</p>
               </div>
             ))}
           </div>
-          <div className="mt-4 rounded-[var(--radius-m)] border border-border">
-            <div className="border-b border-border px-4 py-2.5 text-[12.5px] font-semibold">
-              الجلسات القادمة
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[var(--radius-m)] border border-border bg-background">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3 text-[13px] font-bold">
+                <span>الجلسات القادمة</span>
+                <span className="text-[11px] text-muted-foreground">هذا الأسبوع</span>
+              </div>
+              <ul className="divide-y divide-border">
+                {[
+                  ["مطالبة تجارية — شركة الأفق", "المحكمة التجارية بالرياض", "الأحد ٠٩:٣٠ ص"],
+                  ["نزاع عمالي — م. القحطاني", "المحكمة العمالية بجدة", "الاثنين ١١:٠٠ ص"],
+                  ["لائحة اعتراض استئناف", "محكمة الاستئناف", "الأربعاء ١٠:١٥ ص"],
+                ].map(([t, c, d]) => (
+                  <li key={t} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold text-foreground">{t}</span>
+                      <span className="block truncate text-[11.5px] text-muted-foreground">{c}</span>
+                    </span>
+                    <span className="shrink-0 rounded bg-surface-muted px-2 py-0.5 text-[11.5px] font-medium text-muted-foreground">
+                      {d}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="divide-y divide-border">
-              {[
-                ["مطالبة مالية — شركة الأفق", "المحكمة التجارية بالرياض", "الأحد ٠٩:٣٠"],
-                ["نزاع عمالي — م. القحطاني", "المحكمة العمالية بجدة", "الاثنين ١١:٠٠"],
-                ["اعتراض على حكم", "محكمة الاستئناف", "الأربعاء ١٠:١٥"],
-              ].map(([t, c, d]) => (
-                <li key={t} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <span className="min-w-0">
-                    <span className="block truncate text-[12.5px] font-semibold">{t}</span>
-                    <span className="block truncate text-[11px] text-muted-foreground">{c}</span>
-                  </span>
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{d}</span>
-                </li>
-              ))}
-            </ul>
+
+            <div className="rounded-[var(--radius-m)] border border-border bg-background">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3 text-[13px] font-bold">
+                <span>أحدث مطالبات الأتعاب</span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">مسددة</span>
+              </div>
+              <ul className="divide-y divide-border">
+                {[
+                  ["مطالبة أتعاب صياغة لائحة", "CLM-2026-8374", "7,000 ر.س", "مسددة"],
+                  ["عرض أتعاب تمثيل قضائي", "QTE-2026-0042", "15,000 ر.س", "سارية"],
+                  ["إشعار مطالبة أتعاب وساطة", "CLM-2026-8210", "4,500 ر.س", "مسددة"],
+                ].map(([t, ref, amount, status]) => (
+                  <li key={ref} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold text-foreground">{t}</span>
+                      <span className="block truncate text-[11px] font-mono text-muted-foreground">{ref}</span>
+                    </span>
+                    <div className="text-left shrink-0">
+                      <span className="block text-[13px] font-bold tabular-nums text-foreground">{amount}</span>
+                      <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">{status}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -313,49 +353,52 @@ function AppPreview() {
 
 function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   return (
-    <section className="relative overflow-hidden border-b border-border">
-      <div className="grid-lines pointer-events-none absolute inset-0 opacity-60" aria-hidden />
-      <div className="container-page relative pb-14 pt-16 md:pb-20 md:pt-24">
-        <div className="reveal measure">
-          <p className="text-[12.5px] font-semibold tracking-wide text-muted-foreground">
-            منصة سعودية لإدارة الممارسة القانونية
-          </p>
-          <h1 className="text-display mt-4">
+    <section className="relative overflow-hidden border-b border-border ambient-hero-bg">
+      <div className="container-page relative pb-16 pt-16 md:pb-24 md:pt-24">
+        <div className="measure mx-auto text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1 text-[13px] font-semibold text-primary">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            المنصة السحابية المتكاملة لمكاتب المحاماة السعودية
+          </div>
+
+          <h1 className="text-display mt-6 tracking-tight">
             إدارة قانونية أوضح.
             <br />
-            متابعة أدق للمهل والجلسات.
+            متابعة دقيقة للمهل والجلسات والأتعاب.
           </h1>
-          <p className="mt-5 text-body-lg text-muted-foreground">
-            مِهلة تجمع القضايا والعملاء والجلسات والمستندات في مساحة عمل واحدة منظمة، لتعرف في كل
-            لحظة ما الذي يحتاج إجراءً اليوم وما الذي يقترب موعده.
+
+          <p className="mt-5 text-body-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات الذكية ومطالبات الأتعاب في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+
+          <div className="mt-8 flex flex-col justify-center items-center gap-3.5 sm:flex-row">
             <a
               href={registerHref}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-6 text-[15px] font-semibold text-primary-foreground shadow-xs transition hover:bg-primary-hover"
+              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-7 text-[15px] font-bold text-primary-foreground shadow-md transition hover:bg-primary-hover"
             >
-              ابدأ الاستخدام <ArrowLeft className="h-4 w-4" aria-hidden />
+              ابدأ الاستخدام مجاناً <ArrowLeft className="h-4 w-4" aria-hidden />
             </a>
             <a
               href={trackHref}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted"
+              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted shadow-2xs"
             >
-              <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
-              متابعة القضية
+              <SearchCheck className="h-4 w-4 text-primary" aria-hidden />
+              متابعة قضية برمز
             </a>
             <a
               href={loginHref}
-              className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium transition hover:border-border-strong"
+              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium text-foreground transition hover:border-border-strong"
             >
-              لدي حساب بالفعل
+              تسجيل الدخول
             </a>
           </div>
+
           <p className="mt-4 text-[13px] text-muted-foreground">
-            عميل لدى أحد المكاتب؟ تابع قضيتك برمز مكوّن من 10 أرقام دون إنشاء حساب.
+            لا يتطلب إدخال بطاقة دفع · تفعيل فوري خلال دقيقة واحدة · متوافق مع الأنظمة السعودية
           </p>
         </div>
 
-        <div className="reveal mt-12 md:mt-16">
+        <div className="mt-12 md:mt-16 max-w-5xl mx-auto">
           <AppPreview />
         </div>
       </div>
@@ -366,55 +409,85 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
 const CAPABILITIES = [
   {
     title: "مساحة عمل لكل قضية",
-    body: "بيانات القضية والأطراف والجلسات والمستندات والمهام وسجل النشاط في صفحة واحدة، دون تنقل بين أدوات متفرقة.",
+    body: "بيانات القضية والأطراف والجلسات والمستندات والمهام والملخص المالي وسجل النشاط في صفحة واحدة، دون تشتت بين أدوات متفرقة.",
     points: [
-      "تصنيف حسب النوع والحالة والمحكمة",
-      "خط زمني للتحديثات",
-      "ربط العميل والمستندات مباشرة",
+      "تصنيف حسب المحكمة والدائرة والحالة",
+      "خط زمني تفاعلي لتحديثات القضية",
+      "بطاقة مالية مدمجة للأتعاب والمطالبات",
     ],
   },
   {
-    title: "متابعة المهل والجلسات",
-    body: "تتبّع المواعيد النظامية والجلسات القادمة بترتيب زمني واضح، مع إبراز ما تجاوز موعده وما يقترب.",
-    points: ["مهل نظامية بحالات محددة", "جلسات مجدولة ومنجزة", "تنبيه بصري للمتأخر"],
+    title: "حساب المهل والجلسات القضائية",
+    body: "تتبّع دقيق للمواعيد النظامية والجلسات القادمة بترتيب زمني، مع تنبيهات استباقية قبل انتهاء مهل الاعتراض والاستئناف.",
+    points: [
+      "حساب تلقائي لمدد المهل القضائية",
+      "تذكيرات مجدولة قبل الجلسات",
+      "تمييز بصري فوري للمهل الحرجة",
+    ],
   },
   {
-    title: "مستندات منظمة وآمنة",
-    body: "رفع المستندات وحفظها في تخزين خاص مع روابط مؤقتة، وربط كل مستند بقضيته وعميله.",
-    points: ["تخزين خاص غير عام", "روابط تحميل مؤقتة", "طلب مستندات من العميل برابط خاص"],
+    title: "خزينة المستندات وقراءة الـ OCR",
+    body: "مستودع وثائق مشفر مع استخراج النصوص وفهرستها والبحث داخل اللوائح والصكوك والمستندات الممسوحة ضوئياً.",
+    points: [
+      "تخزين خاص مشفر بروابط مؤقتة",
+      "قراءة ضوئية OCR عالية الدقة للوثائق",
+      "علامة مائية آلية لحماية سرية الأوراق",
+    ],
   },
   {
-    title: "بوابة العميل",
-    body: "يتابع العميل حالة قضيته برمز مكوّن من عشرة أرقام، ويرى فقط التحديثات التي تسمح أنت بإظهارها.",
-    points: ["رمز متابعة بدون تسجيل", "تحكم كامل بما يُعرض", "رفع مستندات برابط مؤقت"],
+    title: "عروض الأسعار ومطالبات الأتعاب",
+    body: "إصدار عروض أتعاب مهنية وإشعارات مطالبات وسندات قبض بصيغة PDF أنيقة تحمل هوية وشعار وبيانات مكتبك.",
+    points: [
+      "عروض أسعار ومطالبات أتعاب مرقمة",
+      "تصدير PDF فاخر بهوية وشعار المكتب",
+      "تسجيل الدفعات وسندات القبض الفورية",
+    ],
+  },
+  {
+    title: "بوابة العميل والتتبع بالرمز",
+    body: "يتابع الموكل مستجدات قضيته برمز سري مكوّن من عشرة أرقام دون تسجيل دخول، ويرى فقط ما تسمح به إدارة المكتب.",
+    points: [
+      "تتبع فوري برمز آمن دون إنشاء حساب",
+      "تحكم كامل في مستوى سرية المنشورات",
+      "استقبال طلبات الاستشارات العامة",
+    ],
+  },
+  {
+    title: "الأمان وعزل المستأجرين (RBAC)",
+    body: "حماية تامة وسرية مطلقة للبيانات مع عزل صارم بين المكاتب وتشفير الهويات الوطنية والسجلات التجارية.",
+    points: [
+      "مصفوفة صلاحيات دقيقة للمحامين والمساعدين",
+      "عزل تام على مستوى قاعدة البيانات (RLS)",
+      "سجل تدقيق غير قابل للتعديل لكافة العمليات",
+    ],
   },
 ];
 
 function Capabilities() {
   return (
-    <section id="capabilities" className="section-y border-b border-border">
+    <section id="capabilities" className="section-y border-b border-border bg-surface">
       <div className="container-page">
-        <div className="reveal measure">
-          <h2 className="text-h2">مبني على ما يحتاجه المكتب فعلاً</h2>
+        <div className="measure mx-auto text-center">
+          <h2 className="text-h2">كل ما يحتاجه المحامي السعودي في منصة واحدة</h2>
           <p className="mt-3 text-body text-muted-foreground">
-            أربعة أنظمة أساسية تغطي دورة العمل القانونية من فتح القضية حتى إبلاغ العميل.
+            ستة أنظمة مترابطة تغطي دورة العمل القانونية كاملة من فتح ملف القضية حتى التحصيل وإبلاغ الموكل.
           </p>
         </div>
-        <div className="mt-10 grid gap-px overflow-hidden rounded-[var(--radius-l)] border border-border bg-border md:grid-cols-2">
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {CAPABILITIES.map((c) => (
-            <article key={c.title} className="reveal bg-surface p-6 md:p-8">
-              <h3 className="text-h3">{c.title}</h3>
-              <p className="mt-3 text-body-sm text-muted-foreground">{c.body}</p>
-              <ul className="mt-5 space-y-2">
+            <article
+              key={c.title}
+              className="rounded-[var(--radius-l)] border border-border bg-background p-6 md:p-7 shadow-2xs transition hover:border-primary/40 hover:shadow-xs"
+            >
+              <h3 className="text-h3 text-foreground font-bold">{c.title}</h3>
+              <p className="mt-3 text-body-sm text-muted-foreground leading-relaxed">{c.body}</p>
+              <ul className="mt-5 space-y-2.5 border-t border-border pt-4">
                 {c.points.map((p) => (
                   <li
                     key={p}
-                    className="flex items-start gap-2.5 text-[13.5px] text-muted-foreground"
+                    className="flex items-center gap-2.5 text-[13.5px] text-muted-foreground font-medium"
                   >
-                    <span
-                      className="mt-2 h-1 w-4 shrink-0 rounded-full bg-border-strong"
-                      aria-hidden
-                    />
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
                     {p}
                   </li>
                 ))}

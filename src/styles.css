@@ -439,28 +439,20 @@
   padding-block: clamp(3.5rem, 2rem + 6vw, 6.5rem);
 }
 
-/* خطوط هندسية هادئة تُستخدم كخلفية بدل الزخارف */
-@utility grid-lines {
-  background-image:
-    linear-gradient(to left, var(--border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+/* خلفية هادئة ناعمة مخصصة للمجال القانوني */
+@utility ambient-hero-bg {
+  background: radial-gradient(circle at 50% 0%, oklch(0.97 0.01 170 / 0.8), transparent 70%);
 }
 
 /* ==========================================================================
-   Motion
+   Motion — العناصر ظاهرة افتراضياً لمنع أي وميض أو اختفاء
    ========================================================================== */
 @utility reveal {
-  opacity: 0;
-  transform: translateY(16px);
+  opacity: 1;
+  transform: none;
   transition:
-    opacity 600ms var(--ease-out),
-    transform 600ms var(--ease-out);
-  &.is-visible {
-    opacity: 1;
-    transform: none;
-  }
+    opacity 500ms var(--ease-out),
+    transform 500ms var(--ease-out);
 }
 
 /* ==========================================================================
