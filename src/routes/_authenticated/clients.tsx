@@ -36,7 +36,6 @@ import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import type { Enums } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
-import { getClientStatement } from "@/lib/office-billing/billing.functions";
 import { clientStatementPdf } from "@/lib/office-billing/pdf.functions";
 import { downloadPdfPayload } from "@/lib/billing/download-pdf";
 import { can as canBilling } from "@/lib/office-billing/permissions";
