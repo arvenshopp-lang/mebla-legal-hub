@@ -68,7 +68,7 @@ const keyLikePattern = new RegExp(`${PUBLISHABLE_PREFIX}|${SECRET_PREFIX}|eyJ[A-
 check("helper: no hardcoded secret", !keyLikePattern.test(helper));
 
 // 3) رفض المفاتيح العامة والترويسات الناقصة (بدون أي نداء شبكي)
-const url = "https://app.mehlalex.com/api/public/hooks/email-dispatch";
+const url = "https://mehlalex.com/api/public/hooks/email-dispatch";
 // قيمة اختبار محايدة: لا تشبه ولا تنسخ أي مفتاح مشروع حقيقي.
 const publishable = "test-public-key-not-a-real-project-key";
 

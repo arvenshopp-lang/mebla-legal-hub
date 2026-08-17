@@ -59,12 +59,12 @@ check("ترويسة Reply-To للنظام", built.replyTo === "support@mehlalex.
 console.log("\n3) عرض قوالب React Email ما زال يعمل بلا تكرار منطق");
 const html = await render(
   React.createElement(NotificationTeamMemberJoinedEmail, {
-    actionUrl: "https://app.mehlalex.com/team",
+    actionUrl: "https://mehlalex.com/team",
   }),
 );
 const text = await render(
   React.createElement(NotificationTeamMemberJoinedEmail, {
-    actionUrl: "https://app.mehlalex.com/team",
+    actionUrl: "https://mehlalex.com/team",
   }),
   { plainText: true },
 );
@@ -90,7 +90,7 @@ check("صيغة معرّف التنبيه محفوظة", notificationMessageId("
 
 console.log("\n5) تصنيف الأعطال عبر sendAppEmail (بلا شبكة)");
 const element = React.createElement(NotificationTeamMemberJoinedEmail, {
-  actionUrl: "https://app.mehlalex.com/team",
+  actionUrl: "https://mehlalex.com/team",
 });
 const badRecipient = await sendAppEmail({
   to: "not-an-email",

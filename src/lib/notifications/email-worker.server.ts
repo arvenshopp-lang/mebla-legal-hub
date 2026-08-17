@@ -10,7 +10,7 @@ import { NotificationReminderEmail } from "@/lib/email-templates/notification-re
 import { NotificationSupportReplyEmail } from "@/lib/email-templates/notification-support-reply";
 import { NotificationSupportTicketCreatedEmail } from "@/lib/email-templates/notification-support-ticket-created";
 import { NotificationTeamMemberJoinedEmail } from "@/lib/email-templates/notification-team-member-joined";
-import { sendAppEmail } from "@/lib/email/app-email.server";
+import { SITE_URL, sendAppEmail } from "@/lib/email/app-email.server";
 import { notificationMessageId } from "@/lib/email/transport/mehla-mailer.server";
 import { isEmailPreferenceEnabled, resolveNotificationRecipient } from "./email-channel.server";
 import { REMINDER_COPY } from "./reminders.shared";
@@ -29,7 +29,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
-const APP_ORIGIN = "https://app.mehlalex.com";
+const APP_ORIGIN = SITE_URL;
 export const BATCH_SIZE = 25;
 
 export type QueueItem = {

@@ -119,6 +119,6 @@ export function siteOrigin(path = ""): string {
     const url = new URL(getRequest().url);
     return `${url.origin}${path}`;
   } catch {
-    return `https://app.mehlalex.com${path}`;
+    return `https://mehlalex.com${path}`;
   }
 }
