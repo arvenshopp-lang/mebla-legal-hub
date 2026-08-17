@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   Globe,
   BarChart3,
+  Sparkles,
 } from "lucide-react";
 import type { AppRole } from "@/hooks/use-auth";
 
@@ -34,6 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/dashboard", label: "الرئيسية", Icon: LayoutDashboard },
       { to: "/cases", label: "القضايا", Icon: Briefcase },
+      { to: "/bayan", label: "المحامية بيان ✨", Icon: Sparkles },
       { to: "/hearings", label: "الجلسات", Icon: Gavel },
       { to: "/deadlines", label: "المهل", Icon: Clock },
       { to: "/tasks", label: "المهام", Icon: ListChecks },

@@ -9,6 +9,7 @@ import { PrintGuard } from "@/components/print/print-guard";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceTopbar } from "./workspace-topbar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
+import { GlobalBayanAssistant } from "@/components/cases/global-bayan-assistant";
 
 const COLLAPSE_KEY = "mehla_sidebar_collapsed";
 
@@ -95,6 +96,7 @@ export function AppShell({
       </div>
 
       <WorkspaceMobileNav pathname={pathname} onSignOut={onSignOut} />
+      <GlobalBayanAssistant />
     </div>
   );
 }

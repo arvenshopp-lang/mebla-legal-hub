@@ -32,6 +32,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrackRouteImport } from './routes/track'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
@@ -93,6 +94,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
+import { Route as ApiAiBayanChatRouteImport } from './routes/api/ai/bayan-chat'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
@@ -235,6 +237,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
+  id: '/bayan',
+  path: '/bayan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
@@ -544,6 +551,11 @@ const AuthenticatedTeamPerformanceMemberIdRoute =
     path: '/$memberId',
     getParentRoute: () => AuthenticatedTeamPerformanceRoute,
   } as any)
+const ApiAiBayanChatRoute = ApiAiBayanChatRouteImport.update({
+  id: '/api/ai/bayan-chat',
+  path: '/api/ai/bayan-chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -703,6 +715,7 @@ export interface FileRoutesByFullPath {
   '/track': typeof TrackRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/bayan': typeof AuthenticatedBayanRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -763,6 +776,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
+  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -812,6 +826,7 @@ export interface FileRoutesByTo {
   '/track': typeof TrackRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/bayan': typeof AuthenticatedBayanRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -872,6 +887,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
+  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -924,6 +940,7 @@ export interface FileRoutesById {
   '/track': typeof TrackRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/bayan': typeof AuthenticatedBayanRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -984,6 +1001,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/_authenticated/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
+  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -1036,6 +1054,7 @@ export interface FileRouteTypes {
     | '/track'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/bayan'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -1096,6 +1115,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/team-performance/$memberId'
+    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1145,6 +1165,7 @@ export interface FileRouteTypes {
     | '/track'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/bayan'
     | '/clients'
     | '/dashboard'
     | '/deadlines'
@@ -1205,6 +1226,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/team-performance/$memberId'
+    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1256,6 +1278,7 @@ export interface FileRouteTypes {
     | '/track'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/bayan'
     | '/_authenticated/clients'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -1316,6 +1339,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cases/$id'
     | '/_authenticated/team-performance/$memberId'
+    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1378,6 +1402,7 @@ export interface RootRouteChildren {
   UploadIndexRoute: typeof UploadIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiAiBayanChatRoute: typeof ApiAiBayanChatRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
@@ -1562,6 +1587,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.well-known/oauth-protected-resource'
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/bayan': {
+      id: '/_authenticated/bayan'
+      path: '/bayan'
+      fullPath: '/bayan'
+      preLoaderRoute: typeof AuthenticatedBayanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clients': {
       id: '/_authenticated/clients'
@@ -1990,6 +2022,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamPerformanceMemberIdRouteImport
       parentRoute: typeof AuthenticatedTeamPerformanceRoute
     }
+    '/api/ai/bayan-chat': {
+      id: '/api/ai/bayan-chat'
+      path: '/api/ai/bayan-chat'
+      fullPath: '/api/ai/bayan-chat'
+      preLoaderRoute: typeof ApiAiBayanChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -2184,6 +2223,7 @@ const AuthenticatedTeamPerformanceRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBayanRoute: typeof AuthenticatedBayanRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
@@ -2204,6 +2244,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBayanRoute: AuthenticatedBayanRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
@@ -2357,6 +2398,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadIndexRoute: UploadIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiAiBayanChatRoute: ApiAiBayanChatRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,

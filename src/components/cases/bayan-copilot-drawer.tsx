@@ -20,6 +20,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { LegalMarkdown } from "@/components/ui/legal-markdown";
+import { useAuth } from "@/hooks/use-auth";
 
 interface BayanCitation {
   sourceType: "statute" | "document" | "hearing" | "precedent";
@@ -57,6 +59,7 @@ export function BayanCopilotDrawer({
   isOpen,
   onClose,
 }: BayanCopilotDrawerProps) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,7 +74,7 @@ export function BayanCopilotDrawer({
     let mounted = true;
     async function loadHistory() {
       try {
-        const res = await fetch(`/api/ai/bayan-chat?caseId=${caseId}&orgId=${orgId}`);
+        const res = await fetch(`/api/ai/bayan-chat?caseId=${caseId}&orgId=${orgId}&userId=${user?.id || ""}`);
         if (res.ok) {
           const data = await res.json();
           if (mounted) {
@@ -110,7 +113,7 @@ export function BayanCopilotDrawer({
     return () => {
       mounted = false;
     };
-  }, [isOpen, caseId, orgId, caseTitle]);
+  }, [isOpen, caseId, orgId, caseTitle, user?.id]);
 
   // التمرير لأسفل المحادثة
   useEffect(() => {
@@ -135,6 +138,7 @@ export function BayanCopilotDrawer({
         body: JSON.stringify({
           caseId,
           orgId,
+          userId: user?.id,
           conversationId,
           message: text,
         }),
@@ -252,10 +256,8 @@ export function BayanCopilotDrawer({
                   </div>
                 )}
 
-                {/* نص الرسالة */}
-                <div className="whitespace-pre-wrap leading-relaxed space-y-2">
-                  {msg.content}
-                </div>
+                {/* نص الرسالة المنسق بالماركداون القانوني */}
+                <LegalMarkdown content={msg.content} />
 
                 {/* الأسانيد والأنظمة المستشهد بها */}
                 {msg.citations && msg.citations.length > 0 && (

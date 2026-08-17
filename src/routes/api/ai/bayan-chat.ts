@@ -1,7 +1,7 @@
 /**
  * ==============================================================================
  * MEHLA LEGAL PLATFORM — BAYAN AI CHAT API ROUTE
- * مسار المحادثة الذكية مع المحامية بيان مع حفظ المحادثات وعزل الصلاحيات
+ * مسار المحادثة الذكية مع المحامية بيان مع مصفوفة الصلاحيات (RBAC) وعزل القضايا
  * ==============================================================================
  */
 import { createFileRoute } from "@tanstack/react-router";
@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   buildCaseContext,
   generateBayanResponse,
+  checkCaseAccess,
 } from "@/lib/ai/bayan-copilot.server";
 
 function json(body: unknown, status = 200) {
@@ -21,51 +22,60 @@ function json(body: unknown, status = 200) {
 export const Route = createFileRoute("/api/ai/bayan-chat")({
   server: {
     handlers: {
-      // 1. جلب سجل محادثة القضية
+      // 1. جلب سجل محادثة القضية أو المحادثة العامة للمكتب
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const caseId = url.searchParams.get("caseId");
         const orgId = url.searchParams.get("orgId");
+        const userId = url.searchParams.get("userId") || undefined;
 
-        if (!caseId || !orgId) {
-          return json({ error: "معرف القضية والمكتب مطلوبان." }, 400);
+        if (!orgId) {
+          return json({ error: "معرف المنظمة مطلوب." }, 400);
         }
 
         try {
-          // جلب أو إنشاء جلسة المحادثة
-          let { data: conversation } = await supabaseAdmin
-            .from("case_ai_conversations")
-            .select("id")
-            .eq("case_id", caseId)
-            .eq("organization_id", orgId)
-            .maybeSingle();
-
-          if (!conversation) {
-            const { data: newConv } = await supabaseAdmin
+          // في حال كانت محادثة لقضية محددة
+          if (caseId && caseId !== "global") {
+            let { data: conversation } = await supabaseAdmin
               .from("case_ai_conversations")
-              .insert({
-                case_id: caseId,
-                organization_id: orgId,
-                title: "استشارة مع المحامية بيان",
-              })
               .select("id")
-              .single();
-            conversation = newConv;
+              .eq("case_id", caseId)
+              .eq("organization_id", orgId)
+              .maybeSingle();
+
+            if (!conversation) {
+              const { data: newConv } = await supabaseAdmin
+                .from("case_ai_conversations")
+                .insert({
+                  case_id: caseId,
+                  organization_id: orgId,
+                  title: "استشارة مع المحامية بيان",
+                })
+                .select("id")
+                .single();
+              conversation = newConv;
+            }
+
+            if (!conversation) {
+              return json({ messages: [] });
+            }
+
+            const { data: messages } = await supabaseAdmin
+              .from("case_ai_messages")
+              .select("id, sender, content, citations, created_at")
+              .eq("conversation_id", conversation.id)
+              .order("created_at", { ascending: true });
+
+            return json({
+              conversationId: conversation.id,
+              messages: messages ?? [],
+            });
           }
 
-          if (!conversation) {
-            return json({ messages: [] });
-          }
-
-          const { data: messages } = await supabaseAdmin
-            .from("case_ai_messages")
-            .select("id, sender, content, citations, created_at")
-            .eq("conversation_id", conversation.id)
-            .order("created_at", { ascending: true });
-
+          // محادثة عامة على مستوى المكتب
           return json({
-            conversationId: conversation.id,
-            messages: messages ?? [],
+            conversationId: "global-session",
+            messages: [],
           });
         } catch (err) {
           console.error("[Bayan Chat GET] Error:", err);
@@ -77,15 +87,29 @@ export const Route = createFileRoute("/api/ai/bayan-chat")({
       POST: async ({ request }) => {
         try {
           const body = await request.json();
-          const { caseId, orgId, message, conversationId } = body;
+          const { caseId, orgId, userId, message, conversationId } = body;
 
-          if (!caseId || !orgId || !message?.trim()) {
+          if (!orgId || !message?.trim()) {
             return json({ error: "بيانات الاستفسار غير مكتملة." }, 400);
           }
 
-          // 1. التأكد من وجود جلسة المحادثة
+          const isSpecificCase = Boolean(caseId && caseId !== "global");
+
+          // 1. التحقق من مصفوفة الصلاحيات (RBAC)
+          if (userId && isSpecificCase) {
+            const access = await checkCaseAccess(userId, orgId, caseId);
+            if (!access.allowed) {
+              return json({
+                ok: true,
+                reply: access.reason || "عذراً زميلي الكريم، لستَ مخولاً بالاطلاع على بيانات هذه القضية وفق مصفوفة صلاحيات المكتب؛ حيث إن صلاحياتك مقتصرة على القضايا المسندة إليك فقط. يرجى مراجعة إدارة المكتب لمنحك الصلاحية.",
+                citations: [],
+              });
+            }
+          }
+
+          // 2. التأكد من وجود جلسة المحادثة للقضية المحددة
           let activeConvId = conversationId;
-          if (!activeConvId) {
+          if (isSpecificCase && !activeConvId) {
             const { data: conv } = await supabaseAdmin
               .from("case_ai_conversations")
               .select("id")
@@ -109,8 +133,8 @@ export const Route = createFileRoute("/api/ai/bayan-chat")({
             }
           }
 
-          // 2. حفظ رسالة المستخدم في السجل
-          if (activeConvId) {
+          // 3. حفظ رسالة المستخدم في السجل للقضايا المحددة
+          if (activeConvId && isSpecificCase) {
             await supabaseAdmin.from("case_ai_messages").insert({
               conversation_id: activeConvId,
               case_id: caseId,
@@ -120,12 +144,12 @@ export const Route = createFileRoute("/api/ai/bayan-chat")({
             });
           }
 
-          // 3. جلب سياق القضية بالكامل
-          const caseContext = await buildCaseContext(caseId, orgId);
+          // 4. جلب سياق القضية أو سياق المكتب الشامل
+          const caseContext = await buildCaseContext(caseId, orgId, userId);
 
-          // 4. جلب الرسائل السابقة لتغذية الذاكرة
+          // 5. جلب الرسائل السابقة لتغذية الذاكرة
           let previousMessages: Array<{ sender: "user" | "assistant"; content: string }> = [];
-          if (activeConvId) {
+          if (activeConvId && isSpecificCase) {
             const { data: prev } = await supabaseAdmin
               .from("case_ai_messages")
               .select("sender, content")
@@ -135,11 +159,11 @@ export const Route = createFileRoute("/api/ai/bayan-chat")({
             previousMessages = (prev ?? []) as Array<{ sender: "user" | "assistant"; content: string }>;
           }
 
-          // 5. توليد استجابة المحامية بيان
+          // 6. توليد استجابة المحامية بيان
           const response = await generateBayanResponse(message, previousMessages, caseContext);
 
-          // 6. حفظ رد المحامية بيان في السجل
-          if (activeConvId) {
+          // 7. حفظ رد المحامية بيان في السجل
+          if (activeConvId && isSpecificCase) {
             await supabaseAdmin.from("case_ai_messages").insert({
               conversation_id: activeConvId,
               case_id: caseId,

@@ -2,8 +2,10 @@
  * ==============================================================================
  * MEHLA LEGAL PLATFORM — BAYAN LEGAL AI COPILOT ENGINE
  * محرك المستشارة القانونية والباحثة الرقمية «المحامية بيان»
+ * يشمل: درع تعمية الهويات (PII Masking) + مصفوفة الصلاحيات (RBAC) + الاستشارة الشاملة
  * ==============================================================================
  */
+
 // Dynamic supabaseAdmin loader for universal Node/Vite execution
 async function getSupabaseAdmin() {
   try {
@@ -46,7 +48,10 @@ export function redactSaudiPii(text: string | null | undefined): string {
 }
 
 export type CaseContextData = {
-  caseInfo: {
+  isGlobal?: boolean;
+  userRole?: string;
+  accessibleCasesCount?: number;
+  caseInfo?: {
     id: string;
     case_title: string;
     case_number: string | null;
@@ -56,30 +61,108 @@ export type CaseContextData = {
     claim_amount: number | null;
     client_name?: string | null;
     description: string | null;
+    assigned_lawyer_id?: string | null;
   };
-  hearings: Array<{ date: string; title: string; decision?: string | null }>;
-  deadlines: Array<{ due_date: string; title: string; status: string }>;
+  hearings: Array<{ date: string; title: string; decision?: string | null; case_title?: string }>;
+  deadlines: Array<{ due_date: string; title: string; status: string; case_title?: string }>;
   documents: Array<{ title: string; category?: string; extractedSnippet?: string }>;
+  casesSummary?: Array<{ id: string; title: string; number: string | null; status: string; court: string | null }>;
 };
+
+/**
+ * التحقق من صلاحيات المستخدم في المنظمة وعلى القضية (RBAC)
+ */
+export async function checkCaseAccess(
+  userId: string,
+  orgId: string,
+  caseId?: string | null,
+): Promise<{ allowed: boolean; role: string; reason?: string }> {
+  const supabaseAdmin = await getSupabaseAdmin();
+
+  // 1. التحقق من عضوية ودور المستخدم في المنظمة
+  const { data: member, error: memberErr } = await supabaseAdmin
+    .from("organization_members")
+    .select("role, status")
+    .eq("user_id", userId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  // إذا لم يكن مسجلاً في organization_members أو كان المالك الأول
+  let userRole = member?.role || "lawyer";
+  if (!member) {
+    const { data: org } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    if (!org) {
+      return { allowed: false, role: "none", reason: "المكتب غير موجود أو ليس لديك صلاحية وصول." };
+    }
+  }
+
+  // المالك والمدير (Owner & Admin) يملكان صلاحية مطلقة على جميع قضايا المكتب
+  if (userRole === "owner" || userRole === "admin") {
+    return { allowed: true, role: userRole };
+  }
+
+  // في حال الاستشارة العامة عن قضايا المكتب المسندة له
+  if (!caseId || caseId === "global") {
+    return { allowed: true, role: userRole };
+  }
+
+  // بالنسبة للمحامي أو الموظف، نتحقق من إسناد القضية إليه
+  const { data: caseRow } = await supabaseAdmin
+    .from("cases")
+    .select("id, assigned_lawyer_id, organization_id")
+    .eq("id", caseId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!caseRow) {
+    return { allowed: false, role: userRole, reason: "القضية غير موجودة في هذا المكتب." };
+  }
+
+  // إذا كانت القضية مسندة له أو لم يتم تقييدها
+  if (caseRow.assigned_lawyer_id === userId || !caseRow.assigned_lawyer_id) {
+    return { allowed: true, role: userRole };
+  }
+
+  return {
+    allowed: false,
+    role: userRole,
+    reason: "عذراً زميلي الكريم، لستَ مخولاً بالاطلاع على بيانات هذه القضية وفق مصفوفة صلاحيات المكتب؛ حيث إن صلاحياتك مقتصرة على القضايا المسندة إليك فقط. يرجى مراجعة إدارة المكتب لمنحك الصلاحية.",
+  };
+}
 
 /**
  * بناء وتجميع سياق القضية بالكامل من قاعدة البيانات
  */
-export async function buildCaseContext(caseId: string, orgId: string): Promise<CaseContextData> {
+export async function buildCaseContext(
+  caseId: string,
+  orgId: string,
+  userId?: string,
+): Promise<CaseContextData> {
   const supabaseAdmin = await getSupabaseAdmin();
 
-  // 1. جلب بيانات القضية والعميل
+  // وضع الاستشارة العامة على مستوى المنصة
+  if (!caseId || caseId === "global") {
+    return buildOfficeWideContext(orgId, userId);
+  }
+
+  // 1. جلب بيانات القضية والعميل مع تصحيح أسماء الحقول
   const { data: caseRow, error: caseErr } = await supabaseAdmin
     .from("cases")
     .select(`
-      id, case_title, case_number, court_name, circuit, status, claim_amount, description,
-      clients ( name )
+      id, case_title, case_number, court_name, judicial_circuit, status, claim_amount, description, assigned_lawyer_id,
+      client:clients ( id, full_name )
     `)
     .eq("id", caseId)
     .eq("organization_id", orgId)
-    .single();
+    .maybeSingle();
 
   if (caseErr || !caseRow) {
+    console.error("[Bayan Engine] Case fetch error:", caseErr);
     throw new Error("القضية غير موجودة أو ليس لديك صلاحية الوصول إليها.");
   }
 
@@ -136,16 +219,18 @@ export async function buildCaseContext(caseId: string, orgId: string): Promise<C
   }
 
   return {
+    isGlobal: false,
     caseInfo: {
       id: caseRow.id,
       case_title: caseRow.case_title,
       case_number: caseRow.case_number,
       court_name: caseRow.court_name,
-      circuit: caseRow.circuit,
+      circuit: caseRow.judicial_circuit,
       status: caseRow.status,
       claim_amount: caseRow.claim_amount,
-      client_name: redactSaudiPii((caseRow.clients as unknown as { name: string })?.name ?? null),
+      client_name: redactSaudiPii((caseRow.client as unknown as { full_name: string })?.full_name ?? null),
       description: redactSaudiPii(caseRow.description),
+      assigned_lawyer_id: caseRow.assigned_lawyer_id,
     },
     hearings: (hearings ?? []).map((h) => ({
       date: h.hearing_date,
@@ -162,11 +247,113 @@ export async function buildCaseContext(caseId: string, orgId: string): Promise<C
 }
 
 /**
+ * بناء سياق المكتب الشامل للاستشارات العامة في جميع قضايا المنصة وفق الصلاحيات
+ */
+export async function buildOfficeWideContext(
+  orgId: string,
+  userId?: string,
+): Promise<CaseContextData> {
+  const supabaseAdmin = await getSupabaseAdmin();
+
+  // 1. جلب دور المستخدم
+  let role = "owner";
+  if (userId) {
+    const { data: member } = await supabaseAdmin
+      .from("organization_members")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    if (member) role = member.role;
+  }
+
+  // 2. جلب القضايا المتاحة للمستخدم (الكل للمالك/المدير، أو المسندة فقط للمحامي)
+  let casesQuery = supabaseAdmin
+    .from("cases")
+    .select("id, case_title, case_number, status, court_name, assigned_lawyer_id")
+    .eq("organization_id", orgId)
+    .limit(30);
+
+  if (role !== "owner" && role !== "admin" && userId) {
+    casesQuery = casesQuery.or(`assigned_lawyer_id.eq.${userId},assigned_lawyer_id.is.null`);
+  }
+
+  const { data: casesList } = await casesQuery;
+
+  // 3. جلب الجلسات القادمة
+  const { data: upcomingHearings } = await supabaseAdmin
+    .from("hearings")
+    .select("hearing_date, title, decision, cases(case_title)")
+    .eq("organization_id", orgId)
+    .order("hearing_date", { ascending: true })
+    .limit(10);
+
+  // 4. جلب المهل العاجلة
+  const { data: activeDeadlines } = await supabaseAdmin
+    .from("deadlines")
+    .select("due_date, title, status, cases(case_title)")
+    .eq("organization_id", orgId)
+    .eq("status", "pending")
+    .order("due_date", { ascending: true })
+    .limit(10);
+
+  return {
+    isGlobal: true,
+    userRole: role,
+    accessibleCasesCount: (casesList ?? []).length,
+    casesSummary: (casesList ?? []).map((c) => ({
+      id: c.id,
+      title: c.case_title,
+      number: c.case_number,
+      status: c.status,
+      court: c.court_name,
+    })),
+    hearings: (upcomingHearings ?? []).map((h) => ({
+      date: h.hearing_date,
+      title: h.title,
+      decision: redactSaudiPii(h.decision),
+      case_title: (h.cases as unknown as { case_title: string })?.case_title,
+    })),
+    deadlines: (activeDeadlines ?? []).map((d) => ({
+      due_date: d.due_date,
+      title: d.title,
+      status: d.status,
+      case_title: (d.cases as unknown as { case_title: string })?.case_title,
+    })),
+    documents: [],
+  };
+}
+
+/**
  * هندسة البرومبت المحكم للمحامية «بيان»
  */
 export function buildBayanSystemPrompt(context: CaseContextData): string {
-  const { caseInfo, hearings, deadlines, documents } = context;
+  const { isGlobal, caseInfo, hearings, deadlines, documents, casesSummary, userRole, accessibleCasesCount } = context;
 
+  if (isGlobal) {
+    return `أنتِ «المحامية بيان»، مستشارة قانونية وباحثة قضائية سعودية مؤهلة، والعقل الاستشاري الرقمي الذكي لكافة أعمال ومكتب منصة «مِهلة».
+
+### ⚖️ هويتك وصفتك المهنية (المحامية بيان):
+1. **أنتِ أنثى**، وتتحدثين بصيغة المتكلم المؤنث الوقور والمحترم («قمتُ بمراجعة السجلات»، «يسرّني تقديم المشورة»، «يتبيّن لي من واقع ملفات القضايا»، «أوصي بالإجراء النظامي...»).
+2. أنتِ في وضع «المساعد القانوني العام للمكتب»، وتملكين رؤية شاملة على القضايا والجلسات والمهل المتاحة لهذا المستخدم (بصلاحية: ${userRole === "owner" ? "مالك المكتب (صلاحيات كاملة على كافة القضايا)" : userRole === "admin" ? "مدير النظام" : "محامي/موظف (القضايا المسندة لملفه فقط)"}).
+3. عدد القضايا المخول له الاطلاع عليها: (${accessibleCasesCount || 0} قضية).
+
+### 📋 قائمة القضايا المتاحة في سجل المكتب:
+${casesSummary && casesSummary.length > 0 ? casesSummary.map((c) => `* [${c.title}] - رقم: (${c.number || "غير محدد"}) - المحكمة: (${c.court || "عامة"}) - الحالة: (${c.status})`).join("\n") : "* لا توجد قضايا مقيدة حالياً."}
+
+### 📅 الجلسات والمواعيد القادمة في المكتب:
+${hearings.length > 0 ? hearings.map((h) => `* [${h.case_title || "قضية"}]: جلسة (${h.date}) — ${h.title}`).join("\n") : "* لا توجد جلسات مجدولة قريباً."}
+
+### ⏱️ المهل والإجراءات المستحقة:
+${deadlines.length > 0 ? deadlines.map((d) => `* [${d.case_title || "قضية"}]: مهلة (${d.due_date}) — ${d.title}`).join("\n") : "* لا توجد مهل عاجلة."}
+
+### 🔒 مصفوفة الصلاحيات والأمان:
+- إذا سأل المستخدم عن قضية غير موجودة في القائمة المتاحة أعلاه وهو ليس مالكاً للمكتب، وضّحي بأدب:
+  «عذراً زميلي الكريم، هذه القضية غير مسندة لملفك وفق مصفوفة صلاحيات المكتب، ويرجى مراجعة إدارة المكتب لمنحك الصلاحية.»
+- ردودك مبنية بدقة على الأنظمة السعودية (المعاملات المدنية، الإثبات، المرافعات، المحاكم التجارية، العمل، التنفيذ).`;
+  }
+
+  // برومبت القضية المحددة
   return `أنتِ «المحامية بيان»، مستشارة قانونية وباحثة قضائية سعودية مؤهلة تأهيلاً رفيعاً، والعقل الاستشاري القانوني الذكي لمنصة «مِهلة» للمحاماة في المملكة العربية السعودية.
 
 ### ⚖️ هويتك وصفتك المهنية (المحامية بيان):
@@ -177,12 +364,12 @@ export function buildBayanSystemPrompt(context: CaseContextData): string {
 
 ### 🔒 حدود السياق والأمان الصارم (Strict Isolation):
 1. أنتِ مخصصة بالكامل وبشكل حصري لهذه القضية المحددة فقط:
-   - **عنوان القضية:** ${caseInfo.case_title}
-   - **رقم القضية:** ${caseInfo.case_number || "غير محدد"}
-   - **المحكمة والدائرة:** ${caseInfo.court_name || "غير محدد"} — ${caseInfo.circuit || "غير محدد"}
-   - **الموكل:** ${caseInfo.client_name || "غير محدد"}
-   - **قيمة المطالبة:** ${caseInfo.claim_amount ? `${caseInfo.claim_amount} ر.س` : "غير محددة"}
-   - **ملخص الوقائع:** ${caseInfo.description || "لا يوجد ملخص مضاف"}
+   - **عنوان القضية:** ${caseInfo?.case_title || "غير محدد"}
+   - **رقم القضية:** ${caseInfo?.case_number || "غير محدد"}
+   - **المحكمة والدائرة:** ${caseInfo?.court_name || "غير محدد"} — ${caseInfo?.circuit || "غير محدد"}
+   - **الموكل:** ${caseInfo?.client_name || "غير محدد"}
+   - **قيمة المطالبة:** ${caseInfo?.claim_amount ? `${caseInfo.claim_amount} ر.س` : "غير محددة"}
+   - **ملخص الوقائع:** ${caseInfo?.description || "لا يوجد ملخص مضاف"}
 
 2. **سجل الجلسات والمواعيد:**
 ${hearings.length > 0 ? hearings.map((h) => `   * جلسة (${h.date}): ${h.title} ${h.decision ? `— القرار: ${h.decision}` : ""}`).join("\n") : "   * لا توجد جلسات مسجلة حالياً."}
@@ -196,7 +383,7 @@ ${documents.length > 0 ? documents.map((doc) => `   * مستند [${doc.title} (
 ### ⛔ المحظورات الصارمة:
 - لا تتحدثي إطلاقاً عن أي مواضيع عامة خارج نطاق هذه القضية والقانون السعودي.
 - إذا سُئلت عن أي شيء خارج هذه القضية أو عن قضايا أخرى، اعتذري بلباقة قائلة:
-  «أنا مخصصة فقط لدراسة وقائع ومستندات قضية (${caseInfo.case_title}) والأنظمة السعودية المنطبقة عليها. كيف يمكنني إفادتك في مجريات هذه القضية؟»
+  «أنا مخصصة فقط لدراسة وقائع ومستندات قضية (${caseInfo?.case_title}) والأنظمة السعودية المنطبقة عليها. كيف يمكنني إفادتك في مجريات هذه القضية؟»
 - لا تؤلفي أو تخمني نصوص مواد وهمية؛ إذا لم تكوني متأكدة من نص مادة معينة، وجّهي بالبحث في النظام المختص.`;
 }
 
@@ -284,9 +471,37 @@ function extractCitations(text: string, context: CaseContextData): BayanCitation
 }
 
 function generateRuleBasedLegalResponse(query: string, context: CaseContextData): string {
-  const { caseInfo, hearings, deadlines } = context;
+  const { isGlobal, caseInfo, hearings, deadlines, casesSummary } = context;
   const q = query.toLowerCase();
 
+  // الردود في الوضع العام للمكتب
+  if (isGlobal) {
+    if (q.includes("جلسات") || q.includes("مواعيد")) {
+      return `بصفتي **المحامية بيان**، يسرّني استعراض جدول الجلسات القضائية القادمة في المكتب:
+
+${hearings.length > 0 ? hearings.map((h) => `* 🏛️ **[${h.case_title || "قضية"}]:** موعد الجلسة (${h.date}) — *${h.title}*`).join("\n") : "* لا توجد جلسات قادمة مسجلة في النظام حالياً."}
+
+💡 **التوجيه النظامي:** نوصي بمراجعة مذكرات الدفاع والتأكد من إيداع أصول المستندات قبل موعد الجلسة بـ (3) أيام على الأقل.`;
+    }
+
+    if (q.includes("قضايا") || q.includes("حصر") || q.includes("عدد")) {
+      return `معك **المحامية بيان**، بناءً على صلاحياتك في المكتب، يبلغ إجمالي القضايا المتاحة في سجلك **(${casesSummary?.length || 0}) قضية**:
+
+${casesSummary && casesSummary.length > 0 ? casesSummary.slice(0, 8).map((c) => `* 📁 **${c.title}** (رقم: ${c.number || "غير مقيد"}) — *${c.court || "المحكمة المختصة"}*`).join("\n") : "* لا توجد قضايا مقيدة حالياً."}
+
+يمكنك سؤالي عن أي قضية بالاسم أو الرقم لتزويدك بتقرير وتكييف قانوني تفصيلي.`;
+    }
+
+    return `السلام عليكم ورحمة الله. معك **المحامية بيان**، المستشارة القانونية لمنصة «مِهلة».
+
+أنا معك لمساندتك في كافة أعمال المكتب القضائية:
+* 🔹 الاستفسار عن تفاصيل ووقائع أي قضية في المكتب.
+* 🔹 استعراض الجلسات القضائية القادمة ومتابعة قرارات الدوائر.
+* 🔹 متابعة المهل النظامية ومواعيد الاعتراض والاستئناف.
+* 🔹 الاستشارة والبحث في الأنظمة السعودية (المعاملات المدنية، الإثبات، المرافعات، والشركات).`;
+  }
+
+  // الردود في وضع القضية المحددة
   if (
     q.includes("لخص") ||
     q.includes("تلخيص") ||
@@ -295,18 +510,18 @@ function generateRuleBasedLegalResponse(query: string, context: CaseContextData)
     q.includes("موقف") ||
     q.includes("تقرير")
   ) {
-    return `بصفتي **المحامية بيان**، يسعدني تقديم تلخيص قانوني ومحكم لمسار دعوى **«${caseInfo.case_title}»**:
+    return `بصفتي **المحامية بيان**، يسعدني تقديم تلخيص قانوني ومحكم لمسار دعوى **«${caseInfo?.case_title}»**:
 
-* **بيانات الدعوى:** مقيدة برقم (${caseInfo.case_number || "قيد التحديد"}) لدى ${caseInfo.court_name || "المحكمة المختصة"} — ${caseInfo.circuit || "الدائرة القضائية المختصة"}.
-* **الموكل الممثل:** ${caseInfo.client_name || "الطرف الممثل"}.
-* **موضوع النزاع والمطالبة:** ${caseInfo.description || "مطالبة حقوقية/تجارية قائمة"}${caseInfo.claim_amount ? ` بقيمة إجمالية قدرها ${caseInfo.claim_amount.toLocaleString()} ريال سعودي.` : "."}
+* **بيانات الدعوى:** مقيدة برقم (${caseInfo?.case_number || "قيد التحديد"}) لدى ${caseInfo?.court_name || "المحكمة المختصة"} — ${caseInfo?.circuit || "الدائرة القضائية المختصة"}.
+* **الموكل الممثل:** ${caseInfo?.client_name || "الطرف الممثل"}.
+* **موضوع النزاع والمطالبة:** ${caseInfo?.description || "مطالبة حقوقية/تجارية قائمة"}${caseInfo?.claim_amount ? ` بقيمة إجمالية قدرها ${caseInfo.claim_amount.toLocaleString()} ريال سعودي.` : "."}
 * **الموقف الإجرائي الحالي:** ${hearings.length > 0 ? `عُقدت آخر جلسة بتاريخ ${hearings[0].date} (${hearings[0].title}).` : "لا توجد جلسات سابقة مسجلة."}
 
 💡 **التوجيه النظامي والتوصية:** أوصي بمراجعة المذكرات المتبادلة واستكمال إيداع حصر أسانيد الإثبات قبل موعد الجلسة القادمة تفادياً لسقوط الحق في الدفع.`;
   }
 
   if (q.includes("دفوع") || q.includes("قوة") || q.includes("ضعف") || q.includes("تحليل")) {
-    return `بعد دراستي المتأنية لوقائع قضية **«${caseInfo.case_title}»** ومطابقتها مع الأنظمة القضائية السعودية، أرفع إليكم الرأي والتحليل التالي:
+    return `بعد دراستي المتأنية لوقائع قضية **«${caseInfo?.case_title}»** ومطابقتها مع الأنظمة القضائية السعودية، أرفع إليكم الرأي والتحليل التالي:
 
 1. **الدفوع الشكلية الأولية:**
    * التحقق من الاختصاص النوعي والمكاني للدائرة وفقاً لأحكام نظام المرافعات الشرعية ونظام المحاكم التجارية.
@@ -321,7 +536,7 @@ function generateRuleBasedLegalResponse(query: string, context: CaseContextData)
   }
 
   if (q.includes("مهل") || q.includes("اعتراض") || q.includes("استئناف") || q.includes("موعد")) {
-    return `بشأن المهل والمواعيد الإجرائية المرتبطة بدعوى **«${caseInfo.case_title}»**، يسرّني إحاطتكم بالقواعد النظامية السارية:
+    return `بشأن المهل والمواعيد الإجرائية المرتبطة بدعوى **«${caseInfo?.case_title}»**، يسرّني إحاطتكم بالقواعد النظامية السارية:
 
 * **المهل المسجلة حالياً في ملف القضية:** ${deadlines.length > 0 ? deadlines.map((d) => `[${d.title} — تاريخ الاستحقاق: ${d.due_date}]`).join("، ") : "لا توجد مهل عاجلة مقيدة حالياً."}
 * **القواعد العامة للمهل وفق النظام القضائي السعودي:**
@@ -329,7 +544,7 @@ function generateRuleBasedLegalResponse(query: string, context: CaseContextData)
   * يبدأ سريان المهلة من اليوم التالي لتسليم صورة صك الحكم أو إيداعه في البوابة القضائية (ناجز/معين).`;
   }
 
-  return `السلام عليكم ورحمة الله. معك **المحامية بيان**، أتابع معك ملف قضية **«${caseInfo.case_title}»**.
+  return `السلام عليكم ورحمة الله. معك **المحامية بيان**، أتابع معك ملف قضية **«${caseInfo?.case_title}»**.
 
 لقد اطلعتُ على كامل وقائع الدعوى وبيانات الأطراف والمستندات المسجلة. كيف تفضل أن أباشر مساندتك اليوم؟
 * 🔹 صياغة ومراجعة الدفوع القانونية والمذكرات الجوابية.
