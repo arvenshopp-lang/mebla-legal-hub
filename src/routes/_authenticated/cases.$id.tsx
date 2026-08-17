@@ -33,7 +33,8 @@ import {
 import { CaseDialog } from "./cases.index";
 import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
 import { CaseFinancialCard } from "@/components/office-billing/case-financial-card";
-import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { BayanCopilotDrawer } from "@/components/cases/bayan-copilot-drawer";
+import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { saveCasePartySecure } from "@/lib/pii.functions";
 import { deleteCaseParty, getMyCasePartyPermissions } from "@/lib/case-parties.functions";
@@ -78,6 +79,7 @@ function Page() {
   const [editingParty, setEditingParty] = useState<CaseParty | null>(null);
   const [deletingParty, setDeletingParty] = useState<CaseParty | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [bayanOpen, setBayanOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["case", id],
@@ -255,6 +257,13 @@ function Page() {
           <ArrowRight className="h-4 w-4" /> عودة للقضايا
         </Link>
         <div className="flex-1" />
+        <Btn
+          onClick={() => setBayanOpen(true)}
+          className="flex min-h-[44px] items-center gap-1.5 bg-gradient-to-r from-[#123C32] to-[#1E5648] text-white hover:brightness-110 shadow-xs border-0 sm:min-h-0"
+        >
+          <Sparkles className="h-4 w-4 text-[#C9A961]" />
+          المحامية بيان
+        </Btn>
         <PrintButton
           variant="button"
           label="طباعة ملف القضية"
@@ -559,6 +568,15 @@ function Page() {
         title="حذف الطرف"
         message={`سيتم حذف "${deletingParty?.party_name}".`}
       />
+      {data && activeOrgId && (
+        <BayanCopilotDrawer
+          caseId={data.id}
+          caseTitle={data.case_title}
+          orgId={activeOrgId}
+          isOpen={bayanOpen}
+          onClose={() => setBayanOpen(false)}
+        />
+      )}
     </DashboardShell>
   );
 }
