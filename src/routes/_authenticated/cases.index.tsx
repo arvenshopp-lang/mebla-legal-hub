@@ -244,7 +244,11 @@ function Page() {
       header: "المسؤول",
       cell: (c) => c.lawyer?.full_name ?? <span className="text-muted-foreground">غير مُسند</span>,
     },
-    { id: "activity", header: "آخر نشاط", cell: (c) => fmtDate(c.last_activity_at) },
+    {
+      id: "activity",
+      header: "آخر نشاط",
+      cell: (c) => <span className="whitespace-nowrap tabular-nums">{fmtDate(c.last_activity_at)}</span>,
+    },
     {
       id: "actions",
       header: " ",

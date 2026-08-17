@@ -177,7 +177,11 @@ function Page() {
       header: "النوع",
       cell: (d) => DEADLINE_TYPE[d.deadline_type] ?? d.deadline_type,
     },
-    { id: "due", header: "الاستحقاق", cell: (d) => fmtDate(d.due_date) },
+    {
+      id: "due",
+      header: "الاستحقاق",
+      cell: (d) => <span className="whitespace-nowrap tabular-nums">{fmtDate(d.due_date)}</span>,
+    },
     {
       id: "remaining",
       header: "الأيام المتبقية",

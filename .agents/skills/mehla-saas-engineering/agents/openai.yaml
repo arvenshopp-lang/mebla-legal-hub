@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mehla SaaS Engineering"
+  short_description: "Build, test, secure, and review Mehla SaaS"
+  default_prompt: "Use $mehla-saas-engineering to inspect, build, test, and review the Mehla SaaS platform safely."

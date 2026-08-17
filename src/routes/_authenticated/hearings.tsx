@@ -155,7 +155,11 @@ function Page() {
     { id: "title", header: "العنوان", mobile: "title", wrap: true, cell: (h) => h.title },
     { id: "case", header: "القضية", cell: (h) => h.case?.case_title ?? "—" },
     { id: "client", header: "العميل", cell: (h) => h.case?.client?.full_name ?? "—" },
-    { id: "date", header: "التاريخ والوقت", cell: (h) => fmtDateTime(h.hearing_date) },
+    {
+      id: "date",
+      header: "التاريخ والوقت",
+      cell: (h) => <span className="whitespace-nowrap tabular-nums">{fmtDateTime(h.hearing_date)}</span>,
+    },
     { id: "court", header: "المحكمة", cell: (h) => h.court_name ?? "—" },
     {
       id: "status",

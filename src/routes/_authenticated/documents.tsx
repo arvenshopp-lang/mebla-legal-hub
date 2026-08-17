@@ -184,7 +184,11 @@ function Page() {
       ),
     },
     { id: "size", header: "الحجم", cell: (d) => fmtSize(d.file_size) },
-    { id: "date", header: "التاريخ", cell: (d) => fmtDate(d.created_at) },
+    {
+      id: "date",
+      header: "التاريخ",
+      cell: (d) => <span className="whitespace-nowrap tabular-nums">{fmtDate(d.created_at)}</span>,
+    },
     { id: "uploader", header: "الرافع", cell: (d) => d.uploader?.full_name ?? "—" },
     {
       id: "actions",

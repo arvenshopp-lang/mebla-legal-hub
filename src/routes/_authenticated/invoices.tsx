@@ -317,7 +317,7 @@ function Page() {
       id: "due",
       header: "الاستحقاق",
       mobileLabel: "الاستحقاق",
-      cell: (r) => (r.due_date ? fmtDate(r.due_date) : "—"),
+      cell: (r) => (r.due_date ? <span className="whitespace-nowrap tabular-nums">{fmtDate(r.due_date)}</span> : "—"),
     },
     {
       id: "total",

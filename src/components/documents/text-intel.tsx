@@ -303,9 +303,11 @@ export function ExtractedTextDialog({
             dir="auto"
             rows={14}
             readOnly={!mayEdit}
+            spellCheck={false}
             value={draft ?? current?.extracted_text ?? ""}
             onChange={(e) => setDraft(e.target.value)}
-            className={`${inputCls} font-normal leading-7`}
+            className={`${inputCls} font-sans text-[15px] font-normal leading-relaxed tracking-normal selection:bg-primary-soft`}
+            style={{ unicodeBidi: "plaintext" }}
           />
 
           {current?.original_text && (
