@@ -56,7 +56,9 @@ export async function loadOfficeBrand(
 ): Promise<{ brand: PdfBrand; office: OfficeProfile; showSignature: boolean }> {
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, legal_name, commercial_registration, tax_number, phone, email, city, address")
+    .select(
+      "id, name, legal_name, commercial_registration, tax_number, phone, email, city, address",
+    )
     .eq("id", organizationId)
     .maybeSingle();
   if (error || !data) throw new Error("تعذّر تحميل بيانات المكتب.");
@@ -85,17 +87,13 @@ export async function loadOfficeBrand(
   };
 }
 
-function signatureSlots(
-  brand: PdfBrand,
-  enabled: boolean,
-): PdfDocumentModel["signatureSlots"] {
+function signatureSlots(brand: PdfBrand, enabled: boolean): PdfDocumentModel["signatureSlots"] {
   if (!enabled) return [];
   return [
     {
       label: "عن المكتب",
       caption:
-        [brand.signatoryName, brand.signatoryTitle].filter(Boolean).join(" — ") ||
-        "الاسم والتوقيع",
+        [brand.signatoryName, brand.signatoryTitle].filter(Boolean).join(" — ") || "الاسم والتوقيع",
     },
     { label: "عن العميل", caption: "الاسم والتوقيع والتاريخ" },
   ];
@@ -216,7 +214,9 @@ export async function renderInvoicePdf(
           .join("  ·  "),
       ],
     },
-    tables: paymentsTable ? [invoiceItemsTable(detail), paymentsTable] : [invoiceItemsTable(detail)],
+    tables: paymentsTable
+      ? [invoiceItemsTable(detail), paymentsTable]
+      : [invoiceItemsTable(detail)],
     totals: invoiceTotals(detail),
     blocks,
     signatureSlots: signatureSlots(brand, showSignature),

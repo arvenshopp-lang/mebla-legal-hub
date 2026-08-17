@@ -103,9 +103,7 @@ export const saveInvoiceBranding = createServerFn({ method: "POST" })
 export const uploadInvoiceBrandingLogo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({ organizationId: orgId, base64: z.string().min(16).max(4_000_000) })
-      .parse(d),
+    z.object({ organizationId: orgId, base64: z.string().min(16).max(4_000_000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { requireBillingAccess } = await import("./billing.server");

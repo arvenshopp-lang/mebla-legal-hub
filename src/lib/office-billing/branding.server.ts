@@ -118,7 +118,8 @@ export async function uploadInvoiceLogo(
   bytes: Uint8Array,
 ): Promise<InvoiceBranding> {
   if (bytes.byteLength === 0) throw new Error("الملف فارغ.");
-  if (bytes.byteLength > LOGO_MAX_BYTES) throw new Error("حجم الشعار يجب أن يكون أقل من 2 ميجابايت.");
+  if (bytes.byteLength > LOGO_MAX_BYTES)
+    throw new Error("حجم الشعار يجب أن يكون أقل من 2 ميجابايت.");
   const mime = detectImageMime(bytes);
   if (!mime) throw new Error("صيغة الشعار غير مدعومة. استخدم PNG أو JPEG.");
 
@@ -130,10 +131,11 @@ export async function uploadInvoiceLogo(
     .upload(path, bytes as unknown as ArrayBuffer, { contentType: mime, upsert: true });
   if (uploadError) throw new Error("تعذّر رفع الشعار. أعد المحاولة.");
 
-  const { error } = await supabase.from("office_invoice_branding").upsert(
-    { organization_id: organizationId, logo_path: path, logo_mime: mime } as never,
-    { onConflict: "organization_id" },
-  );
+  const { error } = await supabase
+    .from("office_invoice_branding")
+    .upsert({ organization_id: organizationId, logo_path: path, logo_mime: mime } as never, {
+      onConflict: "organization_id",
+    });
   if (error) {
     await supabaseAdmin.storage.from(PUBLIC_BUCKET).remove([path]);
     throw new Error("تعذّر حفظ الشعار. أعد المحاولة.");
@@ -170,7 +172,9 @@ export async function loadInvoiceLogoBytes(
   // حارس إضافي: لا نقرأ إلا مساراً يقع داخل مجلد المكتب نفسه.
   if (!branding.logoPath.startsWith(`${organizationId}/${LOGO_PREFIX}/`)) return null;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.storage.from(PUBLIC_BUCKET).download(branding.logoPath);
+  const { data, error } = await supabaseAdmin.storage
+    .from(PUBLIC_BUCKET)
+    .download(branding.logoPath);
   if (error || !data) return null;
   return {
     bytes: new Uint8Array(await data.arrayBuffer()),

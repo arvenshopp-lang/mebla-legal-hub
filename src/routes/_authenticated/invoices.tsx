@@ -278,7 +278,9 @@ function Page() {
           await fetchStatement({ data: { organizationId: activeOrgId!, clientId } }),
         );
       } else {
-        downloadPdfPayload(await statementPdfFn({ data: { organizationId: activeOrgId!, clientId } }));
+        downloadPdfPayload(
+          await statementPdfFn({ data: { organizationId: activeOrgId!, clientId } }),
+        );
       }
     } catch (e) {
       toast.error(errMsg(e));
