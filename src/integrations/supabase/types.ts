@@ -4247,6 +4247,53 @@ export type Database = {
           },
         ]
       }
+      office_invoice_branding: {
+        Row: {
+          bank_details: string | null
+          created_at: string
+          footer_note: string | null
+          logo_mime: string | null
+          logo_path: string | null
+          organization_id: string
+          show_signature: boolean
+          signatory_name: string | null
+          signatory_title: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_details?: string | null
+          created_at?: string
+          footer_note?: string | null
+          logo_mime?: string | null
+          logo_path?: string | null
+          organization_id: string
+          show_signature?: boolean
+          signatory_name?: string | null
+          signatory_title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_details?: string | null
+          created_at?: string
+          footer_note?: string | null
+          logo_mime?: string | null
+          logo_path?: string | null
+          organization_id?: string
+          show_signature?: boolean
+          signatory_name?: string | null
+          signatory_title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_invoice_branding_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       office_invoice_counters: {
         Row: {
           created_at: string
