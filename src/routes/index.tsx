@@ -9,6 +9,7 @@ import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { TopOffices } from "@/components/marketing/top-offices";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { Riyal } from "@/components/ui/riyal";
 import { headerBtn, heroBtn, sheetBtn, publicBtnIcon } from "@/components/marketing/public-buttons";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
@@ -286,7 +287,7 @@ function AppPreview() {
               ["قضايا منظورة", "24 قضية", "bg-primary", "text-primary"],
               ["جلسات اليوم", "3 جلسات", "bg-emerald-500", "text-emerald-600 dark:text-emerald-400"],
               ["مهل خلال 7 أيام", "6 مهل", "bg-amber-500", "text-amber-600 dark:text-amber-400"],
-              ["أتعاب محصلة (الشهر)", "48,500 ر.س", "bg-sky-500", "text-sky-600 dark:text-sky-400"],
+              ["أتعاب محصلة (الشهر)", "48,500", "bg-sky-500", "text-sky-600 dark:text-sky-400"],
             ].map(([l, v, barColor, txtColor]) => (
               <div
                 key={l}
@@ -294,7 +295,17 @@ function AppPreview() {
               >
                 <span className={cn("absolute inset-y-0 right-0 w-[3.5px]", barColor)} aria-hidden />
                 <p className="text-[11.5px] font-medium text-muted-foreground">{l}</p>
-                <p className={cn("mt-1.5 text-[18px] font-bold tabular-nums", txtColor)}>{v}</p>
+                <p className={cn("mt-1.5 text-[18px] font-bold tabular-nums", txtColor)}>
+                  {l === "أتعاب محصلة (الشهر)" ? (
+                    <span className="inline-flex items-center gap-1" dir="ltr">
+                      {v}
+                      <Riyal />
+                      <span className="sr-only">ريال سعودي</span>
+                    </span>
+                  ) : (
+                    v
+                  )}
+                </p>
               </div>
             ))}
           </div>
@@ -331,9 +342,9 @@ function AppPreview() {
               </div>
               <ul className="divide-y divide-border">
                 {[
-                  ["مطالبة أتعاب صياغة لائحة", "CLM-2026-8374", "7,000 ر.س", "مسددة"],
-                  ["عرض أتعاب تمثيل قضائي", "QTE-2026-0042", "15,000 ر.س", "سارية"],
-                  ["إشعار مطالبة أتعاب وساطة", "CLM-2026-8210", "4,500 ر.س", "مسددة"],
+                  ["مطالبة أتعاب صياغة لائحة", "CLM-2026-8374", "7,000", "مسددة"],
+                  ["عرض أتعاب تمثيل قضائي", "QTE-2026-0042", "15,000", "سارية"],
+                  ["إشعار مطالبة أتعاب وساطة", "CLM-2026-8210", "4,500", "مسددة"],
                 ].map(([t, ref, amount, status]) => (
                   <li key={ref} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <span className="min-w-0">
@@ -341,7 +352,11 @@ function AppPreview() {
                       <span className="block truncate text-[11px] font-mono text-muted-foreground">{ref}</span>
                     </span>
                     <div className="text-left shrink-0">
-                      <span className="block text-[13px] font-bold tabular-nums text-foreground">{amount}</span>
+                      <span className="flex items-center justify-end gap-1 text-[13px] font-bold tabular-nums text-foreground" dir="ltr">
+                        {amount}
+                        <Riyal />
+                        <span className="sr-only">ريال سعودي</span>
+                      </span>
                       <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">{status}</span>
                     </div>
                   </li>
@@ -891,10 +906,14 @@ function PricingTeaser() {
               >
                 <p className="text-h4">{plan.name_ar}</p>
                 <p className="mt-4 flex flex-wrap items-baseline gap-1.5">
-                  <span className="text-[26px] font-bold tabular-nums leading-none" dir="ltr">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[26px] font-bold leading-none tabular-nums"
+                    dir="ltr"
+                  >
                     {fmtNumber(Math.round(plan.price_monthly))}
+                    <Riyal className="text-muted-foreground" />
+                    <span className="sr-only">ريال سعودي</span>
                   </span>
-                  <span className="text-[13px] font-semibold text-muted-foreground">ريال</span>
                   <span className="text-[12.5px] text-text-muted">/ شهرياً</span>
                 </p>
                 <p className="mt-3 text-body-sm text-muted-foreground">

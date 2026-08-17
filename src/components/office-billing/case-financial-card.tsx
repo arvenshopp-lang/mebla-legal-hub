@@ -2,8 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronLeft } from "lucide-react";
+import type { ReactNode } from "react";
 import { EmptyState, SectionCard, SectionLoader } from "@/lib/list-utils";
-import { fmtMoney } from "@/lib/format";
+import { Money } from "@/components/ui/money";
 import { getOfficeBillingSummary } from "@/lib/office-billing/billing.functions";
 import { can } from "@/lib/office-billing/permissions";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,17 +54,17 @@ export function CaseFinancialCard({
         />
       ) : (
         <dl className="grid grid-cols-2 gap-3">
-          <Cell label="إجمالي الأتعاب" value={fmtMoney(data.invoiced)} />
-          <Cell label="المبالغ المحصلة" value={fmtMoney(data.collected)} />
-          <Cell label="الأتعاب المستحقة" value={fmtMoney(data.outstanding)} />
-          <Cell label="متأخرات السداد" value={fmtMoney(data.overdue)} tone="danger" />
+          <Cell label="إجمالي الأتعاب" value={<Money value={data.invoiced} />} />
+          <Cell label="المبالغ المحصلة" value={<Money value={data.collected} />} />
+          <Cell label="الأتعاب المستحقة" value={<Money value={data.outstanding} />} />
+          <Cell label="متأخرات السداد" value={<Money value={data.overdue} />} tone="danger" />
         </dl>
       )}
     </SectionCard>
   );
 }
 
-function Cell({ label, value, tone }: { label: string; value: string; tone?: "danger" }) {
+function Cell({ label, value, tone }: { label: string; value: ReactNode; tone?: "danger" }) {
   return (
     <div className="rounded-[var(--radius-m)] bg-surface-muted p-3">
       <dt className="text-caption">{label}</dt>

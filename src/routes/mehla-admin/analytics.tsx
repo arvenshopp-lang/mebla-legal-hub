@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Building2, FileText, TrendingUp, Users } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { Money } from "@/components/ui/money";
 import {
   Badge,
   Btn,
@@ -127,7 +128,7 @@ function AnalyticsPage() {
               label="قضايا ومستندات"
               value={`${fmtNumber(totals.cases)} / ${fmtNumber(totals.documents)}`}
             />
-            <Tile Icon={TrendingUp} label="إيرادات الفترة" value={fmtMoney(totals.revenue)} />
+            <Tile Icon={TrendingUp} label="إيرادات الفترة" value={<Money value={totals.revenue} />} />
           </div>
 
           <SectionCard
@@ -252,8 +253,8 @@ function Tile({
 }: {
   Icon: typeof Users;
   label: string;
-  value: string;
-  hint?: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
 }) {
   return (
     <div className="surface-card p-5">

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Btn, FormField, IconBtn, Modal, inputCls } from "@/lib/list-utils";
-import { fmtMoney } from "@/lib/format";
+import { Money } from "@/components/ui/money";
 import {
   createOfficeInvoice,
   updateOfficeInvoiceDraft,
@@ -345,9 +345,10 @@ export function InvoiceDialog({
                   />
                 </FormField>
                 <div className="flex items-center justify-between gap-2 sm:pb-1">
-                  <span className="text-body-sm tabular-nums text-muted-foreground sm:hidden">
-                    {fmtMoney(parsedItems[index]?.quantity * (parsedItems[index]?.unitPrice ?? 0))}
-                  </span>
+                  <Money
+                    className="text-body-sm text-muted-foreground sm:hidden"
+                    value={(parsedItems[index]?.quantity ?? 0) * (parsedItems[index]?.unitPrice ?? 0)}
+                  />
                   <IconBtn
                     tone="danger"
                     aria-label={`حذف البند ${index + 1}`}
@@ -429,10 +430,17 @@ export function InvoiceDialog({
         </div>
 
         <dl className="grid gap-1.5 rounded-[var(--radius-m)] bg-surface-muted p-4 text-body-sm">
-          <Row label="إجمالي الأتعاب" value={fmtMoney(totals.subtotal)} />
-          {totals.discountTotal > 0 && <Row label="الخصم الممنوح" value={fmtMoney(totals.discountTotal)} />}
-          {Number(taxRate) > 0 && <Row label={`الضريبة (${Number(taxRate) || 0}%)`} value={fmtMoney(totals.taxTotal)} />}
-          <Row label="صافي الأتعاب المطلوبة" value={fmtMoney(totals.total)} strong />
+          <Row label="إجمالي الأتعاب" value={<Money value={totals.subtotal} />} />
+          {totals.discountTotal > 0 && (
+            <Row label="الخصم الممنوح" value={<Money value={totals.discountTotal} />} />
+          )}
+          {Number(taxRate) > 0 && (
+            <Row
+              label={`الضريبة (${Number(taxRate) || 0}%)`}
+              value={<Money value={totals.taxTotal} />}
+            />
+          )}
+          <Row label="صافي الأتعاب المطلوبة" value={<Money value={totals.total} />} strong />
         </dl>
         <p className="text-caption">هذه معاينة حسابية للمطالبة؛ القيم النهائية تُحفظ وتُوثق خادمياً.</p>
 
@@ -455,7 +463,7 @@ export function InvoiceDialog({
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Row({ label, value, strong }: { label: string; value: ReactNode; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <dt className={strong ? "font-semibold" : "text-muted-foreground"}>{label}</dt>

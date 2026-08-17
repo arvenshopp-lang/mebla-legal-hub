@@ -1,5 +1,5 @@
 import { StatCard } from "@/components/dashboard/shell";
-import { fmtMoney } from "@/lib/format";
+import { Money } from "@/components/ui/money";
 import type { BillingSummary } from "@/lib/office-billing/billing.server";
 
 /** مؤشرات مالية موحّدة تُستخدم في صفحة الفواتير ولوحة المكتب معاً. */
@@ -15,24 +15,24 @@ export function BillingSummaryCards({
       <StatCard
         label="إجمالي المطالبات الصادرة"
         loading={loading}
-        value={fmtMoney(summary?.invoiced ?? 0)}
+        value={<Money value={summary?.invoiced ?? 0} />}
       />
       <StatCard
         label="المبالغ المحصلة"
         loading={loading}
-        value={fmtMoney(summary?.collected ?? 0)}
+        value={<Money value={summary?.collected ?? 0} />}
         tone="success"
       />
       <StatCard
         label="الأتعاب المستحقة"
         loading={loading}
-        value={fmtMoney(summary?.outstanding ?? 0)}
+        value={<Money value={summary?.outstanding ?? 0} />}
         tone="gold"
       />
       <StatCard
         label="متأخرات السداد"
         loading={loading}
-        value={fmtMoney(summary?.overdue ?? 0)}
+        value={<Money value={summary?.overdue ?? 0} />}
         tone="danger"
         hint={
           summary && summary.overdueCount > 0 ? `${summary.overdueCount} مطالبة متأخرة` : undefined

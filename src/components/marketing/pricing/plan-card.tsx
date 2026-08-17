@@ -1,4 +1,5 @@
 import { ArrowLeft, Check, Clock3, Minus } from "lucide-react";
+import { Riyal } from "@/components/ui/riyal";
 import { cn } from "@/lib/utils";
 import { fmtNumber } from "@/lib/format";
 import {
@@ -55,15 +56,25 @@ export function PlanCard({
       )}
 
       <p className="mt-5 flex flex-wrap items-baseline gap-1.5">
-        <span className="text-[30px] font-bold tabular-nums leading-none" dir="ltr">
+        <span
+          className="inline-flex items-center gap-1.5 text-[30px] font-bold leading-none tabular-nums"
+          dir="ltr"
+        >
           {priceLabel(plan, cycle)}
+          <Riyal className="text-muted-foreground" />
+          <span className="sr-only">ريال سعودي</span>
         </span>
-        <span className="text-[13.5px] font-semibold text-muted-foreground">ريال</span>
         <span className="text-[13px] text-text-muted">{cycleSuffix(cycle)}</span>
       </p>
       {cycle === "yearly" && plan.price_yearly > 0 && (
         <p className="mt-1.5 text-[12.5px] text-text-muted">
-          ما يعادل {fmtNumber(Math.round(monthlyEquivalent(plan)))} ريال شهرياً
+          ما يعادل{" "}
+          <span className="inline-flex items-center gap-1 tabular-nums" dir="ltr">
+            {fmtNumber(Math.round(monthlyEquivalent(plan)))}
+            <Riyal />
+            <span className="sr-only">ريال سعودي</span>
+          </span>{" "}
+          شهرياً
         </p>
       )}
 

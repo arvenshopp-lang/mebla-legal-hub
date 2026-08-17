@@ -1,3 +1,4 @@
+import { Money as RiyalMoney } from "@/components/ui/money";
 import { Badge } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime, fmtDecimal } from "@/lib/format";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/lib/sales-docs.shared";
 
 export function Money({ value, currency = "SAR" }: { value: number; currency?: string }) {
+  if (currency.toUpperCase() === "SAR") return <RiyalMoney value={value} />;
   return (
     <span className="tabular-nums">
       {fmtDecimal(value)} {currency}

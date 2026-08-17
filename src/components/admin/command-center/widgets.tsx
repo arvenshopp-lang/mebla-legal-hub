@@ -84,8 +84,8 @@ export function Kpi({
   to,
 }: {
   label: string;
-  value: string;
-  hint?: string;
+  value: ReactNode;
+  hint?: ReactNode;
   Icon: LucideIcon;
   tone?: KpiTone;
   to?: string;
@@ -292,7 +292,7 @@ export function SummaryRows({
   to,
   cta,
 }: {
-  rows: { label: string; value: string; tone?: KpiTone }[];
+  rows: { label: string; value: ReactNode; tone?: KpiTone }[];
   to: string;
   cta: string;
 }) {

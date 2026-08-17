@@ -1,4 +1,5 @@
 import { Check, Clock3, Minus } from "lucide-react";
+import { Riyal } from "@/components/ui/riyal";
 import {
   cycleSuffix,
   planFeatureCells,
@@ -47,8 +48,12 @@ export function CompareTable({ plans, cycle }: { plans: PublicPlan[]; cycle: Bil
       key: "price",
       label: "السعر",
       cells: plans.map((plan) => (
-        <span key={plan.code} className="font-semibold tabular-nums">
-          {priceLabel(plan, cycle)} ريال{" "}
+        <span key={plan.code} className="font-semibold">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums" dir="ltr">
+            {priceLabel(plan, cycle)}
+            <Riyal />
+            <span className="sr-only">ريال سعودي</span>
+          </span>{" "}
           <span className="text-[12px] font-normal text-text-muted">{cycleSuffix(cycle)}</span>
         </span>
       )),

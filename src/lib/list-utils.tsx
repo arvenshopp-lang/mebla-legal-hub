@@ -498,7 +498,7 @@ export function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
-  description?: string;
+  description?: ReactNode;
   children: ReactNode;
   size?: "md" | "lg";
   /** يعرض طبقة انتظار داخل النافذة أثناء جلب بياناتها أو حفظها */
@@ -597,7 +597,7 @@ export function FormField({
   required,
   optional,
 }: {
-  label: string;
+  label: ReactNode;
   children: ReactNode;
   hint?: string;
   error?: string;

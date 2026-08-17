@@ -26,6 +26,8 @@ import {
   inputCls,
   useDebounced,
 } from "@/lib/list-utils";
+import { Money } from "@/components/ui/money";
+import { Riyal } from "@/components/ui/riyal";
 import { fmtDate, fmtMoney, isoToRiyadhLocalInput, riyadhLocalToIso } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/office-billing/permissions";
@@ -324,14 +326,14 @@ function Page() {
       header: "الإجمالي",
       width: "num",
       mobileLabel: "الإجمالي",
-      cell: (r) => <span className="tabular-nums">{fmtMoney(r.total)}</span>,
+      cell: (r) => <Money value={r.total} />,
     },
     {
       id: "balance",
       header: "المتبقي",
       width: "num",
       mobileLabel: "المتبقي",
-      cell: (r) => <span className="tabular-nums">{fmtMoney(r.balance)}</span>,
+      cell: (r) => <Money value={r.balance} />,
     },
     {
       id: "actions",
@@ -537,13 +539,24 @@ function Page() {
         onClose={() => setPaying(null)}
         title="تسجيل دفعة"
         description={
-          paying
-            ? `المتبقي على الفاتورة ${paying.invoice_number ?? ""}: ${fmtMoney(paying.balance)}`
-            : undefined
+          paying ? (
+            <>
+              المتبقي على الفاتورة {paying.invoice_number ?? ""}:{" "}
+              <Money value={paying.balance} className="font-semibold text-foreground" />
+            </>
+          ) : undefined
         }
       >
         <div className="grid gap-4">
-          <FormField label="المبلغ (ر.س)" required hint="لا يمكن أن يتجاوز المتبقي على الفاتورة.">
+          <FormField
+            label={
+              <>
+                المبلغ (<Riyal />)
+              </>
+            }
+            required
+            hint="لا يمكن أن يتجاوز المتبقي على الفاتورة."
+          >
             <input
               type="number"
               min="0.01"
