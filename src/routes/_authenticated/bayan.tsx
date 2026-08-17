@@ -1,7 +1,7 @@
 /**
  * ==============================================================================
- * MEHLA LEGAL PLATFORM — BAYAN LEGAL WORKBENCH PAGE (OPTIMIZED UI/UX)
- * صفحة استشارات ومساعد المحامية بيان بتصميم محادثة ثابت بدون تمرير للصفحة
+ * MEHLA LEGAL PLATFORM — BAYAN LEGAL WORKBENCH PAGE (OPTIMIZED MOBILE & DESKTOP)
+ * صفحة استشارات ومساعد المحامية بيان بتصميم متجاوب 100% مع الجوال والتابلت وسطح المكتب
  * ==============================================================================
  */
 import { createFileRoute } from "@tanstack/react-router";
@@ -134,7 +134,7 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
     ]);
   }, [selectedCaseId, availableCases]);
 
-  // التمرير التلقائي السلس لأسفل عند وصول رد جديد
+  // التمرير التلقائي السلس لأسفل
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -202,10 +202,10 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
       title="المحامية بيان ⚖️"
       description="المستشارة القانونية الذكية لمنصة مِهلة — مدربة بالمواد الرسمية للأنظمة السعودية وتوزيع مهام المكتب."
     >
-      {/* حاوية رئيسية بارتفاع ثابت يتناسب مع الشاشة بدون تمرير خارجي */}
-      <div className="h-[calc(100dvh-175px)] min-h-[500px] max-h-[860px] grid gap-4 lg:grid-cols-4 overflow-hidden">
+      {/* حاوية رئيسية بارتفاع متجاوب وبدون تمرير خارجي */}
+      <div className="h-[calc(100dvh-200px)] lg:h-[calc(100dvh-175px)] min-h-[460px] max-h-[860px] grid gap-4 lg:grid-cols-4 overflow-hidden pb-12 lg:pb-0">
         
-        {/* اللوحة الجانبية لاختيار النطاق وهوية بيان */}
+        {/* اللوحة الجانبية لاختيار النطاق وهوية بيان (تظهر في الشاشات الكبيرة) */}
         <div className="hidden lg:flex lg:col-span-1 flex-col gap-3 h-full overflow-hidden">
           
           {/* بطاقة هوية المحامية بيان */}
@@ -228,7 +228,7 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
             </p>
           </div>
 
-          {/* محدد نطاق القضايا */}
+          {/* محدد نطاق القضايا لسطح المكتب */}
           <div className="surface-card p-3 rounded-2xl border border-border flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="flex items-center justify-between gap-1 mb-2 pb-1.5 border-b border-border shrink-0">
               <span className="text-xs font-bold text-foreground flex items-center gap-1">
@@ -273,29 +273,49 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
           </div>
         </div>
 
-        {/* مساحة المحادثة الرئيسية المستقرة بارتفاع ثابت */}
+        {/* مساحة المحادثة الرئيسية */}
         <div className="lg:col-span-3 surface-card rounded-2xl border border-border flex flex-col h-full overflow-hidden min-h-0 shadow-sm">
           
           {/* شريط الأمان العلوي */}
-          <div className="flex items-center justify-between border-b border-border bg-surface-muted px-4 py-2.5 text-xs text-muted-foreground shrink-0">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>استشارة مشفرة ومؤصلة بالمواد النظامية مع درع حجب البيانات الشخصية (Saudi PII Shield).</span>
+          <div className="flex items-center justify-between border-b border-border bg-surface-muted px-3.5 py-2 text-xs text-muted-foreground shrink-0">
+            <div className="flex items-center gap-1.5 truncate">
+              <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="truncate">استشارة مشفرة ومؤصلة بالمواد النظامية (Saudi PII Shield).</span>
             </div>
-            <span className="text-[11px] font-semibold text-primary">
-              {selectedCaseId === "global" ? "نطاق عام للمكتب" : "نطاق قضية مخصصة"}
+            <span className="text-[10.5px] font-semibold text-primary shrink-0 mr-2">
+              {selectedCaseId === "global" ? "نطاق عام" : "نطاق قضية"}
             </span>
           </div>
 
+          {/* شريط اختيار النطاق المخصص للجوال والتابلت */}
+          <div className="flex lg:hidden items-center justify-between gap-2 border-b border-border bg-surface-muted/80 px-3 py-1.5 shrink-0">
+            <span className="text-[11px] font-semibold text-foreground flex items-center gap-1 shrink-0">
+              <Briefcase className="h-3.5 w-3.5 text-primary" />
+              النطاق:
+            </span>
+            <select
+              value={selectedCaseId}
+              onChange={(e) => setSelectedCaseId(e.target.value)}
+              className="flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-foreground focus:outline-none truncate"
+            >
+              <option value="global">🌐 عام (كافة قضايا ومواعيد المكتب)</option>
+              {availableCases.map((c) => (
+                <option key={c.id} value={c.id}>
+                  📁 {c.case_title} {c.case_number ? `(${c.case_number})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* منطقة الرسائل (التمرير الداخلي فقط) */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar min-h-0">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 custom-scrollbar min-h-0">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[88%] rounded-2xl p-4 text-sm leading-relaxed ${
+                  className={`max-w-[92%] sm:max-w-[88%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed ${
                     msg.sender === "user"
                       ? "bg-primary text-primary-foreground rounded-br-xs shadow-xs"
                       : "bg-surface text-foreground border border-border rounded-bl-xs shadow-xs"
@@ -309,7 +329,7 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
                       </span>
                       <button
                         onClick={() => handleCopy(msg.content, idx)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1"
                         title="نسخ الاستشارة"
                       >
                         {copiedIndex === idx ? (
@@ -326,15 +346,15 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
 
                   {/* الأسانيد والأنظمة المستشهد بها */}
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-border">
-                      <span className="text-[10.5px] font-semibold text-muted-foreground block mb-1">
+                    <div className="mt-2.5 pt-2 border-t border-border">
+                      <span className="text-[10px] font-semibold text-muted-foreground block mb-1">
                         الأسانيد والأنظمة المرجعية:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {msg.citations.map((cite, cIdx) => (
                           <span
                             key={cIdx}
-                            className="inline-flex items-center gap-1 rounded-md bg-surface-muted px-2 py-0.5 text-[10px] text-primary dark:text-gold border border-border"
+                            className="inline-flex items-center gap-1 rounded-md bg-surface-muted px-2 py-0.5 text-[9.5px] text-primary dark:text-gold border border-border"
                           >
                             <BookOpen className="h-2.5 w-2.5" />
                             {cite.title}
@@ -357,17 +377,17 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
 
           {/* الاقتراحات السريعة المثبتة فوق صندوق الإدخال */}
           {messages.length <= 2 && !loading && (
-            <div className="px-3.5 py-2 border-t border-border bg-surface-muted/60 shrink-0">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="px-3 py-1.5 border-t border-border bg-surface-muted/60 shrink-0">
+              <div className="grid grid-cols-2 gap-1">
                 {QUICK_ACTIONS.map((item, qIdx) => {
                   const Icon = item.icon;
                   return (
                     <button
                       key={qIdx}
                       onClick={() => handleSend(item.text)}
-                      className="flex items-start gap-1.5 p-2 rounded-xl bg-surface hover:bg-surface-elevated text-right text-[11px] text-foreground border border-border transition-colors"
+                      className="flex items-start gap-1 p-1.5 rounded-xl bg-surface hover:bg-surface-elevated text-right text-[10px] sm:text-[11px] text-foreground border border-border transition-colors"
                     >
-                      <Icon className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <Icon className="h-3 w-3 text-primary shrink-0 mt-0.5" />
                       <span className="line-clamp-1 leading-tight">{item.text}</span>
                     </button>
                   );
@@ -377,13 +397,13 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
           )}
 
           {/* صندوق إدخال الاستفسار المثبت في أسفل البطاقة */}
-          <div className="p-3 border-t border-border bg-surface shrink-0">
+          <div className="p-2.5 sm:p-3 border-t border-border bg-surface shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-end gap-2"
+              className="flex items-end gap-1.5"
             >
               <textarea
                 value={input}
@@ -396,12 +416,12 @@ ${selectedCaseId === "global" ? "أنت الآن في وضع **الاستشار�
                 }}
                 placeholder="اسأل بيان عن أي قضية، موظف بالمكتب، مادة نظامية، صياغة دفوع، أو مهلة..."
                 rows={2}
-                className="flex-1 resize-none rounded-xl border border-border bg-surface-muted p-2.5 text-xs sm:text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="flex-1 resize-none rounded-xl border border-border bg-surface-muted p-2 text-xs sm:text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="flex h-10 sm:h-11 w-10 sm:w-11 items-center justify-center rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition-colors shadow-xs shrink-0"
+                className="flex h-9 sm:h-10 w-9 sm:w-10 items-center justify-center rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition-colors shadow-xs shrink-0"
               >
                 <Send className="h-4 w-4" />
               </button>
