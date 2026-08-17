@@ -70,14 +70,22 @@ export function maskAddress(address: string): string {
 }
 
 /**
- * هل رفض SMTP يستوجب حجباً صلباً؟ فقط رفض نهائي للمستلم برمز 5xx.
- * المهل الزمنية وأعطال الاتصال والمصادقة و4xx المؤقتة لا تُنتج حجباً إطلاقاً.
+ * هل رفض النقل يستوجب حجباً صلباً؟ فقط رفض نهائي خاص بالمستلم:
+ * - SMTP: رمز 5xx مع رفض المستلم.
+ * - HTTP: رفض المزوّد للمستلم برمز 400 أو 422 (رد فعلي من المزوّد).
+ * المهل الزمنية وأعطال الاتصال والمصادقة و4xx المؤقتة لا تُنتج حجباً إطلاقاً،
+ * وكذلك غياب المستلم محلياً (بلا رد من المزوّد) لا يُنتج حجباً.
  */
 export function qualifiesAsHardBounce(input: {
   errorCode: string;
   smtpCode: number | null | undefined;
 }): boolean {
-  if (input.errorCode !== "smtp_rejected_recipient") return false;
   const code = input.smtpCode;
-  return typeof code === "number" && code >= 500 && code < 600;
+  if (input.errorCode === "smtp_rejected_recipient") {
+    return typeof code === "number" && code >= 500 && code < 600;
+  }
+  if (input.errorCode === "mail_http_rejected_recipient") {
+    return code === 400 || code === 422;
+  }
+  return false;
 }
