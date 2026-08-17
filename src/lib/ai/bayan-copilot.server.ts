@@ -22,6 +22,29 @@ export type BayanCitation = {
   snippet?: string;
 };
 
+/**
+ * دالة تعمية وحجب البيانات الشخصية الحساسة (Saudi PII Anonymization)
+ * تضمن عدم إرسال أي هوية وطنية أو رقم هاتف أو آيبان بنكي لأي نموذج ذكاء اصطناعي
+ */
+export function redactSaudiPii(text: string | null | undefined): string {
+  if (!text) return "";
+  let sanitized = String(text);
+
+  // 1. تعمية أرقام الهويات الوطنية والإقامات السعودية (10 أرقام تبدأ بـ 1 أو 2)
+  sanitized = sanitized.replace(/\b([12])\d{7}(\d{2})\b/g, "$1*******$2 [هوية محجوبة]");
+
+  // 2. تعمية أرقام الجوالات السعودية
+  sanitized = sanitized.replace(/\b(\+?966|0)?5\d{6}(\d{2})\b/g, "05******$2 [جوال محجوب]");
+
+  // 3. تعمية أرقام الآيبان والحسابات البنكية (SA...)
+  sanitized = sanitized.replace(/\bSA\d{2}[A-Za-z0-9]{16}(\d{4})\b/gi, "SA****************$1 [آيبان محجوب]");
+
+  // 4. تعمية عناوين البريد الإلكتروني الشخصية
+  sanitized = sanitized.replace(/([a-zA-Z0-9_.+-])[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)/g, "$1***@$2 [بريد محجوب]");
+
+  return sanitized;
+}
+
 export type CaseContextData = {
   caseInfo: {
     id: string;
@@ -96,11 +119,13 @@ export async function buildCaseContext(caseId: string, orgId: string): Promise<C
         .order("page_number", { ascending: true })
         .limit(2);
 
-      const combinedText = (pages ?? [])
-        .map((p) => p.extracted_text)
-        .filter(Boolean)
-        .join(" ")
-        .slice(0, 800);
+      const combinedText = redactSaudiPii(
+        (pages ?? [])
+          .map((p) => p.extracted_text)
+          .filter(Boolean)
+          .join(" ")
+          .slice(0, 800)
+      );
 
       documentSnippets.push({
         title: doc.title,
@@ -119,13 +144,13 @@ export async function buildCaseContext(caseId: string, orgId: string): Promise<C
       circuit: caseRow.circuit,
       status: caseRow.status,
       claim_amount: caseRow.claim_amount,
-      client_name: (caseRow.clients as unknown as { name: string })?.name ?? null,
-      description: caseRow.description,
+      client_name: redactSaudiPii((caseRow.clients as unknown as { name: string })?.name ?? null),
+      description: redactSaudiPii(caseRow.description),
     },
     hearings: (hearings ?? []).map((h) => ({
       date: h.hearing_date,
       title: h.title,
-      decision: h.decision,
+      decision: redactSaudiPii(h.decision),
     })),
     deadlines: (deadlines ?? []).map((d) => ({
       due_date: d.due_date,

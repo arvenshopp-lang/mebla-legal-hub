@@ -103,8 +103,29 @@ async function runBayanTest() {
     console.log("  ✓ Bayan accurately explained Saudi objection timelines and deadlines!");
   }
 
+  // 5. فحص حجب وتعمية البيانات الشخصية الحساسة (Saudi PII Shielding)
+  console.log("\n[TEST 5] Testing Saudi PII Redaction & Privacy Shield...");
+  const { redactSaudiPii } = await import("../src/lib/ai/bayan-copilot.server.ts");
+  const rawTextWithPii = "الموكل رقم هويته 1087654321 ورقم جواله 0551234567 وحسابه البنكي SA0380000000608010167519 وبريده client.lawyer@firm.sa";
+  const sanitizedText = redactSaudiPii(rawTextWithPii);
+  console.log("  -> Raw Text:", rawTextWithPii);
+  console.log("  -> Sanitized Text:", sanitizedText);
+
+  if (
+    !sanitizedText.includes("1087654321") &&
+    !sanitizedText.includes("0551234567") &&
+    !sanitizedText.includes("SA0380000000608010167519") &&
+    !sanitizedText.includes("client.lawyer@firm.sa") &&
+    sanitizedText.includes("[هوية محجوبة]") &&
+    sanitizedText.includes("[جوال محجوب]")
+  ) {
+    console.log("  ✓ All Saudi PII successfully redacted & masked before sending to AI!");
+  } else {
+    throw new Error("PII Redaction failed to mask sensitive identity data.");
+  }
+
   console.log("\n================================================================================");
-  console.log("🎉 ALL BAYAN LEGAL AI COPILOT TESTS PASSED WITH 100% SUCCESS!");
+  console.log("🎉 ALL BAYAN LEGAL AI COPILOT & PRIVACY SHIELD TESTS PASSED WITH 100% SUCCESS!");
   console.log("================================================================================");
 }
 
