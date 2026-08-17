@@ -2,10 +2,14 @@
  * Minimal Arabic presentation-form shaper.
  *
  * pdf-lib draws raw glyphs with no OpenType shaping, so Arabic text must be
- * converted to its contextual presentation forms and reordered right-to-left
- * before it is written into a PDF. Only the watermark needs this (office name
- * and user name), so the shaper covers the standard Arabic block plus the
- * lam-alef ligatures — no bidi algorithm beyond keeping Latin/digit runs LTR.
+ * converted to its contextual presentation forms before it is written into a
+ * PDF. Ordering is NOT handled here: fontkit applies the bidi reordering for
+ * right-to-left runs when pdf-lib lays the text out, so the shaper returns the
+ * presentation forms in logical order. Reversing them here would cancel that
+ * reordering and render the line back-to-front.
+ *
+ * Coverage: the standard Arabic block plus the lam-alef ligatures, which is all
+ * the watermark needs (office name, viewer name, timestamp).
  */
 
 type Forms = [number, number?, number?, number?]; // isolated, final, initial, medial
@@ -87,7 +91,9 @@ function connectsBackward(code: number): boolean {
   return !!forms && forms.length >= 2;
 }
 
-/** محرف لاتيني قوي الاتجاه (أرقام وحروف لاتينية). */
+/**
+ * محرف لاتيني قوي الاتجاه (أرقام وحروف لاتينية).
+ */
 function isLtr(code: number): boolean {
   return (
     (code >= 0x0030 && code <= 0x0039) ||
@@ -96,20 +102,12 @@ function isLtr(code: number): boolean {
   );
 }
 
-/** محرف عربي قوي الاتجاه (النطاق العربي + أشكال العرض). */
-function isRtlChar(code: number): boolean {
-  return (code >= 0x0590 && code <= 0x08ff) || (code >= 0xfb50 && code <= 0xfeff);
-}
-
 /**
- * علامات محايدة تُلحق بمقطع لاتيني إذا كانت محصورة بين محرفين لاتينيين،
- * مثل فواصل الأرقام وشرطات المعرّفات وفواصل التواريخ والمسافة الفاصلة
- * بين المبلغ ورمز العملة أو بين التاريخ والوقت.
+ * علامات محايدة تُلحق بمقطع لاتيني إذا كانت محصورة بين محرفين لاتينيين، مثل
+ * فواصل التواريخ والأوقات والمعرّفات والمسافة بين المبلغ ورمز العملة.
  */
 const NEUTRAL_JOINERS = new Set<number>(
-  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "=", " "].map(
-    (ch) => ch.codePointAt(0)!,
-  ),
+  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "="].map((ch) => ch.codePointAt(0)!),
 );
 
 const MIRRORED: Record<number, number> = {
@@ -123,23 +121,17 @@ const MIRRORED: Record<number, number> = {
   0x003e: 0x003c,
 };
 
-type Dir = "rtl" | "ltr";
-
 /**
- * ترتيب بصري مبسّط باتجاه أساسي RTL:
- *  1) تُصنَّف المحارف إلى مقاطع لاتينية ومقاطع عربية، والمحايدات تُلحق بالمقطع
- *     اللاتيني فقط إذا كانت محصورة بين محرفين لاتينيين (أرقام، تواريخ، معرّفات).
- *  2) تُرتَّب المقاطع من آخر المقطع منطقياً إلى أوّله (لأن الاتجاه الأساسي RTL).
- *  3) المقاطع العربية تُعكس داخلياً وتُقلَب أقواسها، واللاتينية تبقى كما هي.
+ * fontkit يعكس تسلسل المحارف بالكامل عند تخطيط مقطع عربي في PDF، ولا يفصل
+ * مقاطع الأرقام واللاتينية عن ذلك العكس. لذلك نعكس هذه المقاطع مسبقاً كي
+ * يُعيدها عكس fontkit إلى ترتيبها الصحيح (17/08/2026 وليس 6202/80/71)،
+ * ونقلب الأقواس الواقعة في السياق العربي لأنها تُرسم بعد العكس.
  */
-function toVisualOrder(shaped: number[]): number[] {
-  const dirs: Dir[] = shaped.map((code) => (isLtr(code) ? "ltr" : "rtl"));
+function prepareForRtlLayout(shaped: number[]): number[] {
+  const isLtrRun = shaped.map((code) => isLtr(code));
 
   for (let i = 0; i < shaped.length; i += 1) {
-    if (dirs[i] === "ltr") continue;
-    const code = shaped[i]!;
-    if (isRtlChar(code) || !NEUTRAL_JOINERS.has(code)) continue;
-    // محايد قابل للإلحاق: نبحث عن محرف لاتيني قوي على الجانبين مع تجاوز المحايدات.
+    if (isLtrRun[i] || !NEUTRAL_JOINERS.has(shaped[i]!)) continue;
     let before = i - 1;
     while (before >= 0 && !isLtr(shaped[before]!) && NEUTRAL_JOINERS.has(shaped[before]!))
       before -= 1;
@@ -147,36 +139,31 @@ function toVisualOrder(shaped: number[]): number[] {
     while (after < shaped.length && !isLtr(shaped[after]!) && NEUTRAL_JOINERS.has(shaped[after]!))
       after += 1;
     if (before >= 0 && after < shaped.length && isLtr(shaped[before]!) && isLtr(shaped[after]!)) {
-      for (let k = before + 1; k < after; k += 1) dirs[k] = "ltr";
+      for (let k = before + 1; k < after; k += 1) isLtrRun[k] = true;
     }
   }
 
-  const runs: Array<{ dir: Dir; codes: number[] }> = [];
-  for (let i = 0; i < shaped.length; i += 1) {
-    const dir = dirs[i]!;
-    const last = runs[runs.length - 1];
-    if (last && last.dir === dir) last.codes.push(shaped[i]!);
-    else runs.push({ dir, codes: [shaped[i]!] });
-  }
-
-  const visual: number[] = [];
-  for (let i = runs.length - 1; i >= 0; i -= 1) {
-    const run = runs[i]!;
-    if (run.dir === "ltr") {
-      visual.push(...run.codes);
+  const out: number[] = [];
+  let index = 0;
+  while (index < shaped.length) {
+    if (!isLtrRun[index]) {
+      const code = shaped[index]!;
+      out.push(MIRRORED[code] ?? code);
+      index += 1;
       continue;
     }
-    for (let k = run.codes.length - 1; k >= 0; k -= 1) {
-      const code = run.codes[k]!;
-      visual.push(MIRRORED[code] ?? code);
-    }
+    let end = index;
+    while (end < shaped.length && isLtrRun[end]) end += 1;
+    for (let k = end - 1; k >= index; k -= 1) out.push(shaped[k]!);
+    index = end;
   }
-  return visual;
+  return out;
 }
 
 /**
- * يحوّل نصاً عربياً إلى تسلسل جاهز للرسم في PDF: أشكال متصلة + ترتيب بصري
- * من اليمين إلى اليسار، مع الحفاظ على مقاطع الأرقام والحروف اللاتينية كما هي.
+ * يحوّل نصاً عربياً إلى أشكال العرض المتصلة مع الحفاظ على الترتيب المنطقي
+ * للقراءة، ثم يهيّئ مقاطع الأرقام واللاتينية لعكس fontkit. النتيجة سطر عربي
+ * متصل وطبيعي القراءة داخل PDF مع أرقام وتواريخ بترتيبها الصحيح.
  */
 export function shapeArabic(input: string): string {
   const codes = Array.from(input)
@@ -222,7 +209,7 @@ export function shapeArabic(input: string): string {
     shaped.push(form);
   }
 
-  return toVisualOrder(shaped)
+  return prepareForRtlLayout(shaped)
     .map((code) => String.fromCodePoint(code))
     .join("");
 }
