@@ -46,7 +46,13 @@ import {
   listOfficeInvoices,
   recordOfficePayment,
 } from "@/lib/office-billing/billing.functions";
-import { downloadStatementCsv, printInvoice, printStatement } from "@/lib/office-billing/export";
+import { downloadStatementCsv } from "@/lib/office-billing/export";
+import {
+  clientStatementPdf,
+  invoicePdf,
+  paymentReceiptPdf,
+} from "@/lib/office-billing/pdf.functions";
+import { downloadPdfPayload } from "@/lib/billing/download-pdf";
 
 export const Route = createFileRoute("/_authenticated/invoices")({
   component: Page,
@@ -92,6 +98,10 @@ function Page() {
   const cancelFn = useServerFn(cancelOfficeInvoice);
   const deleteFn = useServerFn(deleteOfficeInvoiceDraft);
   const payFn = useServerFn(recordOfficePayment);
+  const invoicePdfFn = useServerFn(invoicePdf);
+  const statementPdfFn = useServerFn(clientStatementPdf);
+  const receiptPdfFn = useServerFn(paymentReceiptPdf);
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -187,8 +197,17 @@ function Page() {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       toast.success("تم تسجيل الدفعة وتحديث حالة الفاتورة.");
+      const invoiceId = paying?.id;
+      if (invoiceId) {
+        toast("هل تريد إيصال الدفعة؟", {
+          action: {
+            label: "تنزيل الإيصال PDF",
+            onClick: () => void downloadReceipt(invoiceId, created.id),
+          },
+        });
+      }
       setPaying(null);
       setPayAmount("");
       setPayRef("");
@@ -226,45 +245,41 @@ function Page() {
     }
   }
 
-  async function print(row: Row) {
+  /** تنزيل الفاتورة PDF بهوية المكتب — التوليد والتحقق على الخادم. */
+  async function downloadInvoice(row: Row) {
+    setPdfBusy(row.id);
     try {
-      const detail = await fetchInvoice({
-        data: { organizationId: activeOrgId!, invoiceId: row.id },
-      });
-      printInvoice({
-        invoice_number: detail.invoice.invoice_number,
-        title: detail.invoice.title,
-        status: detail.invoice.status,
-        issue_date: detail.invoice.issue_date,
-        due_date: detail.invoice.due_date,
-        subtotal: detail.invoice.subtotal,
-        discount_total: detail.invoice.discount_total,
-        tax_total: detail.invoice.tax_total,
-        tax_rate: detail.invoice.tax_rate,
-        total: detail.invoice.total,
-        paid_total: detail.invoice.paid_total,
-        balance: detail.invoice.balance,
-        notes: detail.invoice.notes,
-        payment_terms: detail.invoice.payment_terms,
-        clientName: detail.invoice.client?.full_name ?? "—",
-        caseTitle: detail.invoice.case?.case_title ?? null,
-        organizationName: detail.organization?.name ?? "مكتب المحاماة",
-        taxNumber: detail.organization?.tax_number ?? null,
-        items: detail.items,
-      });
+      downloadPdfPayload(
+        await invoicePdfFn({ data: { organizationId: activeOrgId!, invoiceId: row.id } }),
+      );
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setPdfBusy(null);
+    }
+  }
+
+  async function downloadReceipt(invoiceId: string, paymentId: string) {
+    try {
+      downloadPdfPayload(
+        await receiptPdfFn({ data: { organizationId: activeOrgId!, invoiceId, paymentId } }),
+      );
     } catch (e) {
       toast.error(errMsg(e));
     }
   }
 
-  async function statement(row: Row, mode: "print" | "csv") {
+  async function statement(row: Row, mode: "pdf" | "csv") {
     if (!row.client) return;
+    const clientId = row.client.id;
     try {
-      const data = await fetchStatement({
-        data: { organizationId: activeOrgId!, clientId: row.client.id },
-      });
-      if (mode === "csv") downloadStatementCsv(data);
-      else printStatement(data);
+      if (mode === "csv") {
+        downloadStatementCsv(
+          await fetchStatement({ data: { organizationId: activeOrgId!, clientId } }),
+        );
+      } else {
+        downloadPdfPayload(await statementPdfFn({ data: { organizationId: activeOrgId!, clientId } }));
+      }
     } catch (e) {
       toast.error(errMsg(e));
     }
@@ -322,10 +337,15 @@ function Page() {
       mobile: "actions",
       cell: (r) => (
         <div className="flex flex-wrap items-center gap-1">
-          <IconBtn aria-label="طباعة الفاتورة" onClick={() => void print(r)}>
+          <IconBtn
+            aria-label="تنزيل الفاتورة PDF"
+            title="تنزيل الفاتورة PDF"
+            loading={pdfBusy === r.id}
+            onClick={() => void downloadInvoice(r)}
+          >
             <Printer className="h-4 w-4" aria-hidden />
           </IconBtn>
-          <IconBtn aria-label="كشف حساب العميل" onClick={() => void statement(r, "print")}>
+          <IconBtn aria-label="كشف حساب العميل PDF" onClick={() => void statement(r, "pdf")}>
             <FileText className="h-4 w-4" aria-hidden />
           </IconBtn>
           {canManage && r.status === "draft" && (
