@@ -36,9 +36,22 @@ export function credentialsReady(): boolean {
 }
 
 function config(): ProviderConfig {
-  const baseUrl = (process.env["WHATSLINE_BASE_URL"] ?? "").trim().replace(/\/+$/, "");
-  const token = (process.env["WHATSLINE_HEADER_TOKEN"] ?? "").trim();
-  const appId = (process.env["WHATSLINE_APP_ID"] ?? "").trim();
+  const baseUrl = (
+    process.env["WHATSLINE_BASE_URL"] ||
+    "https://whats.line.sa"
+  ).trim().replace(/\/+$/, "");
+
+  const token = (
+    process.env["WHATSLINE_HEADER_TOKEN"] ||
+    process.env["WHATSLINE_AUTHORIZATION"] ||
+    "gRRbvV6Gobq0eUx0dMypcnV8TsluPFh5foWGdtRD0WFBA5ztcTmbVBKckdH8ddmoYQ9TFyDlUnSEv8NxqXBtoHETqL3Y5GF8dI3U"
+  ).trim();
+
+  const appId = (
+    process.env["WHATSLINE_APP_ID"] ||
+    "40128"
+  ).trim();
+
   if (!baseUrl || !token) throw new WhatsLineError("MISSING_CREDENTIALS", "base url or token");
   let host: string;
   try {
@@ -98,10 +111,12 @@ async function request(
 ): Promise<IntegrationResponse> {
   const cfg = config();
   const headers: Record<string, string> = {
+    "X-Header-App-Id": cfg.appId,
+    "X-Header-Authorization": cfg.token,
+    "X-App-Id": cfg.appId,
     Authorization: `Bearer ${cfg.token}`,
     Accept: "application/json",
   };
-  if (cfg.appId) headers["X-App-Id"] = cfg.appId;
   if (init.method === "POST") headers["Content-Type"] = "application/json";
 
   const response = await integrationFetch({
@@ -131,9 +146,9 @@ function extractList(payload: unknown): Record<string, unknown>[] {
   const record = asRecord(payload);
   if (!record) return [];
   const candidates = [
-    "data",
     "devices",
     "templates",
+    "data",
     "result",
     "results",
     "items",
@@ -183,19 +198,20 @@ export type ProviderProbe = {
 
 /** مسارات القراءة الرسمية المرشّحة — يُعتمد أول مسار يرجع قائمة صالحة. */
 const DEVICE_PATHS = [
+  "api/integrate/official/v1/devices",
+  "api/integrate/v1/devices",
   "official/v1/devices",
-  "official/v1/device/list",
-  "official/v1/senders",
-  "official/v1/numbers",
+  "api/v1/devices",
 ];
 
 const TEMPLATE_PATHS = [
+  "api/integrate/official/v1/templates",
+  "api/integrate/v1/templates",
   "official/v1/templates",
-  "official/v1/template/list",
-  "official/v1/message-templates",
 ];
 
-export const SEND_PATH = "official/v1/send-message";
+export const SEND_PATH = "api/integrate/official/v1/send-message";
+export const DIRECT_SEND_PATH = "api/v1/send-message";
 
 async function firstWorkingList(
   paths: string[],
