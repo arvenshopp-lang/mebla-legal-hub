@@ -116,8 +116,8 @@ export function InvoiceBrandingSettings({ orgId }: { orgId: string | null }) {
     <section className="rounded-xl border border-border bg-card p-5">
       <h2 className="text-base font-semibold">هوية مستندات الفوترة</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        تصدر الفواتير وكشوف الحسابات وإيصالات الدفع باسم مكتبك وشعاره. هذه الإعدادات لا تظهر
-        للعملاء إلا داخل المستندات الصادرة.
+        تصدر الفواتير وكشوف الحسابات وإيصالات الدفع باسم مكتبك وشعاره. هذه الإعدادات لا تظهر للعملاء
+        إلا داخل المستندات الصادرة.
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-4">
