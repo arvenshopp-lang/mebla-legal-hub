@@ -16,8 +16,16 @@ const invoiceInput = z.object({
   clientId: z.string().uuid("اختر العميل"),
   caseId: z.string().uuid().nullable().optional(),
   title: z.string().trim().max(200).nullable().optional(),
-  issueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  issueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   discountType: z.enum(["amount", "percent"]),
   discountValue: money,
   taxRate: z.number().finite().min(0).max(100),

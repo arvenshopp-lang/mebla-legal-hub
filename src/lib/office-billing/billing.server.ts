@@ -403,7 +403,9 @@ export async function clientStatement(
       .order("created_at", { ascending: false }),
     supabase
       .from("office_payments")
-      .select("id, amount, method, paid_at, reference_number, invoice:office_invoices(invoice_number)")
+      .select(
+        "id, amount, method, paid_at, reference_number, invoice:office_invoices(invoice_number)",
+      )
       .eq("organization_id", organizationId)
       .eq("client_id", clientId)
       .is("voided_at", null)

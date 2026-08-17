@@ -63,15 +63,7 @@ export function CaseFinancialCard({
   );
 }
 
-function Cell({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "danger";
-}) {
+function Cell({ label, value, tone }: { label: string; value: string; tone?: "danger" }) {
   return (
     <div className="rounded-[var(--radius-m)] bg-surface-muted p-3">
       <dt className="text-caption">{label}</dt>

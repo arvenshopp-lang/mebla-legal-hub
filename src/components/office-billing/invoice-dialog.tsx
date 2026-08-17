@@ -306,7 +306,9 @@ export function InvoiceDialog({
                     maxLength={300}
                     onChange={(e) =>
                       setItems((prev) =>
-                        prev.map((r, i) => (i === index ? { ...r, description: e.target.value } : r)),
+                        prev.map((r, i) =>
+                          i === index ? { ...r, description: e.target.value } : r,
+                        ),
                       )
                     }
                     placeholder="أتعاب إعداد مذكرة جوابية"
@@ -432,9 +434,7 @@ export function InvoiceDialog({
           <Row label={`الضريبة (${Number(taxRate) || 0}%)`} value={fmtMoney(totals.taxTotal)} />
           <Row label="الإجمالي المستحق" value={fmtMoney(totals.total)} strong />
         </dl>
-        <p className="text-caption">
-          هذه معاينة حسابية؛ القيم النهائية تُحسب في الخادم عند الحفظ.
-        </p>
+        <p className="text-caption">هذه معاينة حسابية؛ القيم النهائية تُحسب في الخادم عند الحفظ.</p>
 
         {fieldError && (
           <p role="alert" className="text-body-sm text-danger">

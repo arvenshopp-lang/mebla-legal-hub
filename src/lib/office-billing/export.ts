@@ -5,7 +5,11 @@
 import { buildCsv } from "@/lib/csv";
 import { fmtDate, fmtDateTime, fmtMoney, RIYADH_TZ_HINT } from "@/lib/format";
 import type { ClientStatement } from "./billing.server";
-import { OFFICE_INVOICE_DISPLAY_LABELS, PAYMENT_METHOD_LABELS, type PaymentMethod } from "./billing.shared";
+import {
+  OFFICE_INVOICE_DISPLAY_LABELS,
+  PAYMENT_METHOD_LABELS,
+  type PaymentMethod,
+} from "./billing.shared";
 
 function download(content: string, fileName: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -22,7 +26,16 @@ const methodLabel = (m: string) => PAYMENT_METHOD_LABELS[m as PaymentMethod] ?? 
 
 export function downloadStatementCsv(statement: ClientStatement): void {
   const csv = buildCsv(
-    ["رقم الفاتورة", "القضية", "الحالة", "تاريخ الإصدار", "تاريخ الاستحقاق", "الإجمالي", "المحصل", "الرصيد"],
+    [
+      "رقم الفاتورة",
+      "القضية",
+      "الحالة",
+      "تاريخ الإصدار",
+      "تاريخ الاستحقاق",
+      "الإجمالي",
+      "المحصل",
+      "الرصيد",
+    ],
     statement.invoices.map((i) => [
       i.invoice_number ?? "مسودة",
       i.case_title ?? "—",

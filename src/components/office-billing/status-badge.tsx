@@ -17,5 +17,7 @@ const TONE_MAP: Record<
 };
 
 export function InvoiceStatusBadge({ status }: { status: OfficeInvoiceDisplayStatus }) {
-  return <Badge tone={TONE_MAP[STATUS_TONE[status]]}>{OFFICE_INVOICE_DISPLAY_LABELS[status]}</Badge>;
+  return (
+    <Badge tone={TONE_MAP[STATUS_TONE[status]]}>{OFFICE_INVOICE_DISPLAY_LABELS[status]}</Badge>
+  );
 }

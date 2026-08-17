@@ -139,7 +139,8 @@ function Page() {
   };
 
   const issue = useMutation({
-    mutationFn: (row: Row) => issueFn({ data: { organizationId: activeOrgId!, invoiceId: row.id } }),
+    mutationFn: (row: Row) =>
+      issueFn({ data: { organizationId: activeOrgId!, invoiceId: row.id } }),
     onSuccess: (res) => {
       toast.success(`تم إصدار الفاتورة ${res.invoice_number ?? ""}`.trim());
       setIssuing(null);
