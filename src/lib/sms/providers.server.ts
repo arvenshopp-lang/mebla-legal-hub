@@ -190,6 +190,96 @@ async function sendUnifonic(
   }
 }
 
+/** مزوّد مدار التقنية (mobile.net.sa) — البوابة السحابية السعودية المعتمدة. */
+async function sendMobileNet(
+  config: SmsProviderConfig,
+  creds: Credentials,
+  to: string,
+  text: string,
+): Promise<string | null> {
+  const apiKey =
+    creds.key ||
+    process.env["SMS_API_KEY"] ||
+    process.env["MOBILENET_API_KEY"] ||
+    "ERjjWiw9l1dN7hFfgErVXyvIW52zsDxKpM2Nnt4E07510174";
+
+  if (!apiKey) {
+    throw new SmsProviderError(
+      "MISSING_CREDENTIALS",
+      "مفتاح الربط مع mobile.net.sa غير مُعرَّف في الإعدادات.",
+    );
+  }
+
+  const sender = config.senderName ?? config.senderId ?? "MehlaLex";
+
+  // تطبيع الرقم للصيغة السعودية الدولية (9665XXXXXXXX)
+  let phone = to.replace(/[\s\-+]/g, "");
+  if (phone.startsWith("00966")) phone = phone.slice(2);
+  else if (phone.startsWith("05")) phone = "966" + phone.slice(1);
+  else if (phone.startsWith("5") && phone.length === 9) phone = "966" + phone;
+
+  const base = trimUrl(config.baseUrl ?? "https://api.mobile.net.sa");
+
+  const response = await fetch(`${base}/sms/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      apiKey: apiKey,
+    },
+    body: JSON.stringify({
+      apiKey,
+      userName: config.applicationId ?? undefined,
+      numbers: phone,
+      sender: sender,
+      msg: text,
+      message: text,
+    }),
+  });
+
+  const body = await readBody(response);
+  if (!response.ok) {
+    // محاولة إرسال بديلة عبر بوابة المعاملات
+    try {
+      const fallbackUrl = `https://mobile.net.sa/sms/gw/?userName=${encodeURIComponent(
+        config.applicationId ?? "",
+      )}&apiKey=${encodeURIComponent(apiKey)}&numbers=${encodeURIComponent(
+        phone,
+      )}&sender=${encodeURIComponent(sender)}&msg=${encodeURIComponent(text)}`;
+      const fallbackRes = await fetch(fallbackUrl);
+      const fallbackBody = await readBody(fallbackRes);
+      if (fallbackRes.ok && (fallbackBody.includes("1") || fallbackBody.includes("success"))) {
+        return "mobilenet-" + Date.now();
+      }
+    } catch {
+      // تجاهل محاولة البديل في حال تعثرها
+    }
+
+    throw new SmsProviderError(
+      "PROVIDER_REJECTED",
+      `MobileNet [${response.status}]: ${body}`,
+      response.status,
+    );
+  }
+
+  try {
+    const parsed = JSON.parse(body) as {
+      status?: string | number;
+      messageId?: string | number;
+      msgId?: string | number;
+      data?: { messageId?: string | number };
+    };
+    return (
+      (parsed.messageId ? String(parsed.messageId) : null) ??
+      (parsed.msgId ? String(parsed.msgId) : null) ??
+      (parsed.data?.messageId ? String(parsed.data.messageId) : null) ??
+      "mobilenet-" + Date.now()
+    );
+  } catch {
+    return "mobilenet-" + Date.now();
+  }
+}
+
 /** مزوّد مخصص: نقطة HTTP يحددها العميل وتستقبل JSON موحّداً. */
 async function sendCustom(
   config: SmsProviderConfig,
@@ -241,6 +331,7 @@ const SENDERS: Record<
   infobip: sendInfobip,
   twilio: sendTwilio,
   unifonic: sendUnifonic,
+  mobilenet: sendMobileNet,
   custom: sendCustom,
 };
 

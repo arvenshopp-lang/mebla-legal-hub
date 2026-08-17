@@ -86,6 +86,7 @@ import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admi
 import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
 import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as OfficeSlugRouteImport } from './routes/office.$slug'
+import { Route as PortalSlugRouteImport } from './routes/portal.$slug'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
@@ -509,6 +510,11 @@ const OfficeSlugRoute = OfficeSlugRouteImport.update({
   path: '/office/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalSlugRoute = PortalSlugRouteImport.update({
+  id: '/portal/$slug',
+  path: '/portal/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
@@ -768,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/office/$slug': typeof OfficeSlugRoute
+  '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
@@ -879,6 +886,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/office/$slug': typeof OfficeSlugRoute
+  '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
@@ -993,6 +1001,7 @@ export interface FileRoutesById {
   '/mehla-admin/support': typeof MehlaAdminSupportRouteWithChildren
   '/mehla-admin/users': typeof MehlaAdminUsersRoute
   '/office/$slug': typeof OfficeSlugRoute
+  '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
@@ -1107,6 +1116,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/support'
     | '/mehla-admin/users'
     | '/office/$slug'
+    | '/portal/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
@@ -1218,6 +1228,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/support'
     | '/mehla-admin/users'
     | '/office/$slug'
+    | '/portal/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin'
@@ -1331,6 +1342,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/support'
     | '/mehla-admin/users'
     | '/office/$slug'
+    | '/portal/$slug'
     | '/share/$token'
     | '/upload/$token'
     | '/mehla-admin/'
@@ -1397,6 +1409,7 @@ export interface RootRouteChildren {
   AuthVerifiedRoute: typeof AuthVerifiedRoute
   InviteTokenRoute: typeof InviteTokenRoute
   OfficeSlugRoute: typeof OfficeSlugRoute
+  PortalSlugRoute: typeof PortalSlugRoute
   ShareTokenRoute: typeof ShareTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
@@ -1966,6 +1979,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OfficeSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/$slug': {
+      id: '/portal/$slug'
+      path: '/portal/$slug'
+      fullPath: '/portal/$slug'
+      preLoaderRoute: typeof PortalSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/share/$token': {
       id: '/share/$token'
       path: '/share/$token'
@@ -2393,6 +2413,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthVerifiedRoute: AuthVerifiedRoute,
   InviteTokenRoute: InviteTokenRoute,
   OfficeSlugRoute: OfficeSlugRoute,
+  PortalSlugRoute: PortalSlugRoute,
   ShareTokenRoute: ShareTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,

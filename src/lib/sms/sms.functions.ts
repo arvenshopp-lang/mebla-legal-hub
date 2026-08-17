@@ -9,7 +9,7 @@ const purposeSchema = z.enum(["signup", "phone_verification", "login_mfa", "phon
 
 const settingsSchema = z.object({
   enabled: z.boolean(),
-  active_provider: z.enum(["infobip", "twilio", "unifonic", "custom"]),
+  active_provider: z.enum(["infobip", "twilio", "unifonic", "mobilenet", "custom"]),
   provider_label: z.string().trim().max(80).nullable(),
   base_url: z.string().trim().max(300).nullable(),
   application_id: z.string().trim().max(200).nullable(),

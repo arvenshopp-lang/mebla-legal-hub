@@ -8,12 +8,14 @@ import type { OtpProviderConnector } from "./base.server";
 import { InfobipOtpConnector } from "./infobip.server";
 import { TwilioVerifyConnector } from "./twilio.server";
 import { UnifonicOtpConnector } from "./unifonic.server";
+import { MobileNetOtpConnector } from "./mobilenet.server";
 import { CustomRestOtpConnector } from "./custom-rest.server";
 
 const CONNECTORS: Record<AdapterType, OtpProviderConnector> = {
   infobip: new InfobipOtpConnector(),
   twilio: new TwilioVerifyConnector(),
   unifonic: new UnifonicOtpConnector(),
+  mobilenet: new MobileNetOtpConnector(),
   custom_rest: new CustomRestOtpConnector(),
 };
 

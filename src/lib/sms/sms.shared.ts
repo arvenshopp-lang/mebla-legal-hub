@@ -5,12 +5,13 @@
  * التحقق بخطوتين، والعكس صحيح. المزوّد قابل للتغيير من لوحة الإدارة دون أي تعديل برمجي.
  */
 
-export type SmsProvider = "infobip" | "twilio" | "unifonic" | "custom";
+export type SmsProvider = "infobip" | "twilio" | "unifonic" | "mobilenet" | "custom";
 
 export const SMS_PROVIDER_LABELS: Record<SmsProvider, string> = {
   infobip: "Infobip",
   twilio: "Twilio",
   unifonic: "Unifonic",
+  mobilenet: "مدار التقنية (Mobile.net.sa)",
   custom: "مزوّد مخصص (Webhook)",
 };
 

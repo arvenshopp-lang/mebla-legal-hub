@@ -8,7 +8,7 @@
 
 export type IntegrationCategory = "otp";
 
-export type AdapterType = "infobip" | "twilio" | "unifonic" | "custom_rest";
+export type AdapterType = "infobip" | "twilio" | "unifonic" | "mobilenet" | "custom_rest";
 
 export type IntegrationEnvironment = "sandbox" | "production";
 
