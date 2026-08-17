@@ -9,6 +9,7 @@ import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { TopOffices } from "@/components/marketing/top-offices";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { headerBtn, heroBtn, sheetBtn, publicBtnIcon } from "@/components/marketing/public-buttons";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
@@ -165,20 +166,20 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
         <div className="hidden items-center gap-2 md:flex">
           <a
             href={trackHref}
-            className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-m)] border border-border px-4 text-[13.5px] font-medium text-foreground transition hover:border-border-strong hover:bg-surface-muted"
+            className={headerBtn.secondary}
           >
-            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+            <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
             متابعة القضية
           </a>
           <a
             href={loginHref}
-            className="inline-flex h-10 items-center rounded-[var(--radius-m)] px-4 text-[13.5px] font-medium text-foreground transition hover:bg-surface-muted"
+            className={headerBtn.tertiary}
           >
             تسجيل الدخول
           </a>
           <a
             href={registerHref}
-            className="inline-flex h-10 items-center rounded-[var(--radius-m)] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground shadow-xs transition hover:bg-primary-hover"
+            className={headerBtn.primary}
           >
             ابدأ الآن
           </a>
@@ -210,20 +211,20 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             <div className="mt-3 grid gap-2">
               <a
                 href={trackHref}
-                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong text-[14px] font-semibold"
+                className={sheetBtn.secondary}
               >
-                <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
+                <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
                 متابعة القضية
               </a>
               <a
                 href={loginHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] border border-border text-[14px] font-medium"
+                className={sheetBtn.tertiary}
               >
                 تسجيل الدخول
               </a>
               <a
                 href={registerHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] bg-primary text-[14px] font-semibold text-primary-foreground"
+                className={sheetBtn.primary}
               >
                 ابدأ الآن
               </a>
@@ -373,24 +374,27 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           <p className="mt-5 text-body-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات الذكية ومطالبات الأتعاب في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
           </p>
+        </div>
 
-          <div className="mt-8 flex flex-col justify-center items-center gap-3.5 sm:flex-row">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3.5">
             <a
               href={registerHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-7 text-[15px] font-bold text-primary-foreground shadow-md transition hover:bg-primary-hover"
+              className={heroBtn.primary}
             >
-              ابدأ الاستخدام مجاناً <ArrowLeft className="h-4 w-4" aria-hidden />
+              ابدأ الاستخدام مجاناً
+              <ArrowLeft className={publicBtnIcon} aria-hidden />
             </a>
             <a
               href={trackHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted shadow-2xs"
+              className={heroBtn.secondary}
             >
-              <SearchCheck className="h-4 w-4 text-primary" aria-hidden />
+              <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
               متابعة قضية برمز
             </a>
             <a
               href={loginHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium text-foreground transition hover:border-border-strong"
+              className={heroBtn.tertiary}
             >
               تسجيل الدخول
             </a>
