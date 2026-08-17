@@ -202,7 +202,7 @@ export async function renderInvoicePdf(
           : null,
     meta: invoiceMeta(detail),
     recipient: {
-      title: "موجّهة إلى",
+      title: "إلى",
       lines: [
         inv.client?.full_name ?? dash,
         inv.case?.case_title ? `القضية: ${inv.case.case_title}` : "",
@@ -353,7 +353,7 @@ export async function renderReceiptPdf(
       { label: "الرقم المرجعي", value: label(payment.reference_number) },
     ],
     recipient: {
-      title: "استُلم من",
+      title: "المستلم منه",
       lines: [
         inv.client?.full_name ?? dash,
         [

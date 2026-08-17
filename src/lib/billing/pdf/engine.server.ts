@@ -365,8 +365,8 @@ async function embedLogo(doc: PDFDocument, brand: PdfBrand): Promise<EmbeddedLog
     const image = /png/i.test(logo.mime)
       ? await doc.embedPng(logo.bytes)
       : await doc.embedJpg(logo.bytes);
-    const maxHeight = 44;
-    const maxWidth = 120;
+    const maxHeight = 40;
+    const maxWidth = 96;
     const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
     return { image, width: image.width * scale, height: image.height * scale };
   } catch {
