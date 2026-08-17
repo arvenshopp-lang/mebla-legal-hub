@@ -104,6 +104,22 @@ function Page() {
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const q = useDebounced(search);
   const piiSearch = useServerFn(searchClientsByPii);
+  const fetchStatement = useServerFn(getClientStatement);
+  const [statementFor, setStatementFor] = useState<string | null>(null);
+
+  /** طباعة كشف حساب العميل — البيانات والصلاحية يتحقق منها الخادم. */
+  async function openStatement(clientId: string) {
+    if (!activeOrgId) return;
+    setStatementFor(clientId);
+    try {
+      const statement = await fetchStatement({ data: { organizationId: activeOrgId, clientId } });
+      printStatement(statement);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setStatementFor(null);
+    }
+  }
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
