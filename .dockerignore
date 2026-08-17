@@ -1,0 +1,16 @@
+node_modules
+.git
+.github
+.output
+dist
+.env
+.env.*
+!.env.production.example
+*.log
+.gemini
+reports
+scratch
+*.png
+*.jpg
+*.jpeg
+*.pdf
