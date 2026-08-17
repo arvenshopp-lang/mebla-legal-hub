@@ -13,6 +13,8 @@ import { Riyal } from "@/components/ui/riyal";
 import { headerBtn, heroBtn, sheetBtn, publicBtnIcon } from "@/components/marketing/public-buttons";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
+import { PublicBayanCopilot } from "@/components/public/public-bayan-copilot";
+import { BayanHeroShowcase } from "@/components/marketing/bayan-hero-showcase";
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
 const DESCRIPTION =
@@ -947,6 +949,7 @@ function TopOfficesSection() {
 
 function MehlaLanding() {
   useReveal();
+  const [bayanOpen, setBayanOpen] = useState(false);
   const loginHref = useSurfaceHref("/login");
   const registerHref = useSurfaceHref("/register");
   const trackHref = useSurfaceHref("/track");
@@ -957,6 +960,7 @@ function MehlaLanding() {
       <Header {...links} />
       <main id="product">
         <Hero {...links} />
+        <BayanHeroShowcase onOpenChat={() => setBayanOpen(true)} />
         <Capabilities />
         <HowItWorks />
         <Workflow />
@@ -966,6 +970,7 @@ function MehlaLanding() {
         <CTA registerHref={registerHref} trackHref={trackHref} />
       </main>
       <SiteFooter />
+      <PublicBayanCopilot initialOpen={bayanOpen} onCloseExternal={() => setBayanOpen(false)} />
     </div>
   );
 }
