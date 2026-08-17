@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Money } from "@/components/ui/money";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -49,7 +50,12 @@ export const Route = createFileRoute("/_authenticated/subscription")({
   component: SubscriptionPage,
 });
 
-const SAR = (v: number, currency = "SAR") => `${v.toLocaleString("ar-SA-u-nu-latn")} ${currency}`;
+const SAR = (v: number, currency = "SAR") =>
+  currency.toUpperCase() === "SAR" ? (
+    <Money value={v} decimals={false} />
+  ) : (
+    <span className="tabular-nums">{`${v.toLocaleString("ar-SA-u-nu-latn")} ${currency}`}</span>
+  );
 
 const HISTORY_TONE: Record<string, "green" | "red" | "muted" | "info" | "warn"> = {
   active: "green",
