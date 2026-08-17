@@ -9,12 +9,12 @@ import { watermarkFontBytes } from "./watermark-font";
  * carries the diagonal office/user mark, and only that copy is streamed out.
  */
 
-const ANGLE = -35;
-const OPACITY = 0.12;
-const TILE_X = 260;
-const TILE_Y = 190;
+const ANGLE = -30;
+const OPACITY = 0.08;
+const TILE_X = 380;
+const TILE_Y = 240;
 const FONT_SIZE = 11;
-const LINE_GAP = 15;
+const LINE_GAP = 18;
 const INK = rgb(0.07, 0.24, 0.2);
 const A4 = { width: 595.28, height: 841.89 };
 
