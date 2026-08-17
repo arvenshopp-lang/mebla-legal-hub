@@ -58,7 +58,7 @@ export const TOKEN_MAX_USES: Record<SecureTokenKind, number> = {
   share: 50,
 };
 
-/** سطرا العلامة المائية: اسم المكتب ثم من فتح الملف. */
+/** سطرا العلامة المائية: اسم المكتب ثم من فتح الملف وتاريخ المعاينة. */
 export function watermarkLinesFor(
   officeName: string,
   userName: string,
@@ -67,8 +67,7 @@ export function watermarkLinesFor(
 ): [string, string] {
   const office = officeName.trim() || "مِهلة للمحاماة";
   const user = userName.trim() || "مستخدم غير معروف";
-  const prefix = kind === "share" ? "تمت المشاركة بواسطة" : "فتح بواسطة";
-  const email = detail.email?.trim() ? ` | ${detail.email.trim()}` : "";
+  const prefix = kind === "share" ? "مشاركة" : "معاينة";
   const openedAt = (detail.openedAt ?? new Date()).toLocaleString("en-GB", {
     timeZone: "Asia/Riyadh",
     year: "numeric",
@@ -76,13 +75,9 @@ export function watermarkLinesFor(
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
     hour12: false,
   });
-  const session = detail.sessionId?.trim()
-    ? ` | Session: ${detail.sessionId.trim().slice(0, 36)}`
-    : "";
-  return [office, `${prefix}: ${user}${email} | ${openedAt}${session}`];
+  return [office, `${prefix}: ${user} — ${openedAt}`];
 }
 
 export function classificationOf(
