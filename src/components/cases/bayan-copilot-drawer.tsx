@@ -183,8 +183,8 @@ export function BayanCopilotDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
-      <div className="flex h-full w-full max-w-xl flex-col bg-[#FAF9F6] dark:bg-[#121816] shadow-2xl border-r border-[#E6E2D8] dark:border-[#2A3632] animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+      <div className="flex h-full w-full max-w-md flex-col bg-[#FAF9F6] dark:bg-[#121816] shadow-2xl border-r border-[#E6E2D8] dark:border-[#2A3632] animate-in slide-in-from-right duration-300">
         
         {/* الترويسة العلوية */}
         <div className="flex items-center justify-between border-b border-[#E6E2D8] dark:border-[#2A3632] bg-white dark:bg-[#17201D] px-5 py-4">

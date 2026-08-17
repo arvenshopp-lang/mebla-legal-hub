@@ -210,21 +210,13 @@ export function GlobalBayanAssistant() {
         </button>
       )}
 
-      {/* خلفية معتمة للجوال عند فتح النافذة لمنع التفاعل العرضي */}
-      {isOpen && !isMinimized && (
-        <div
-          className="fixed inset-0 z-45 bg-black/40 backdrop-blur-xs sm:hidden transition-opacity"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* النافذة العائمة المتنقلة — شيت كامل في الجوال مع مساحة آمنة */}
+      {/* النافذة العائمة المتنقلة — حجم ربع الشاشة الأنيق والعملي (Compact Floating Widget) */}
       {isOpen && (
         <div
           className={`fixed z-50 transition-all duration-300 ${
             isMinimized
               ? "bottom-20 left-4 sm:bottom-6 sm:left-6 w-72 sm:w-80 rounded-2xl shadow-2xl bg-white dark:bg-[#17201D] border border-[#E6E2D8] dark:border-[#2A3632]"
-              : "inset-x-0 bottom-0 top-10 sm:top-auto sm:bottom-6 sm:left-6 sm:w-[480px] sm:h-[620px] rounded-t-3xl sm:rounded-2xl shadow-2xl bg-[#FAF9F6] dark:bg-[#121816] border border-[#E6E2D8] dark:border-[#2A3632] flex flex-col overflow-hidden"
+              : "inset-x-3 bottom-18 sm:inset-x-auto sm:bottom-6 sm:left-6 sm:w-[380px] h-[460px] sm:h-[500px] max-h-[70vh] sm:max-h-[80vh] rounded-2xl shadow-2xl bg-[#FAF9F6] dark:bg-[#121816] border border-[#E6E2D8] dark:border-[#2A3632] flex flex-col overflow-hidden"
           }`}
         >
           {/* الترويسة العلوية للنافذة */}

@@ -251,9 +251,9 @@ export function PublicBayanCopilot({
         </button>
       )}
 
-      {/* نافذة المحادثة العامة */}
+      {/* نافذة المحادثة العامة بحجم ربع الشاشة الأنيق */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:left-6 z-50 sm:w-[480px] sm:h-[640px] rounded-none sm:rounded-2xl shadow-2xl bg-[#FAF9F6] dark:bg-[#121816] border border-[#E6E2D8] dark:border-[#2A3632] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-x-3 bottom-6 sm:inset-x-auto sm:bottom-6 sm:left-6 sm:w-[380px] h-[480px] sm:h-[520px] max-h-[75vh] sm:max-h-[85vh] z-50 rounded-2xl shadow-2xl bg-[#FAF9F6] dark:bg-[#121816] border border-[#E6E2D8] dark:border-[#2A3632] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           
           {/* الترويسة الفاخرة */}
           <div className="flex items-center justify-between border-b border-[#E6E2D8] dark:border-[#2A3632] bg-white dark:bg-[#17201D] px-4 py-3 shrink-0">
