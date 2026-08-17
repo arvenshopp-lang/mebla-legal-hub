@@ -1,89 +1,29 @@
-# خطة إعداد Resend لبريد مِهلة الآلي
+# ضبط محرك العلامة المائية في عارض المستندات
 
-## نطاق الخطة فقط
-إعداد Resend HTTP API لرسائل النظام والتنبيهات الآلية، مع الحفاظ الكامل على بريد Hostinger البشري/الموظفين دون أي تغيير.
+## الوضع الحالي (تم فحصه فعلياً)
 
-## حالة مُتحقَّقة من المصدر الحد الأدنى
+فحص الملفات الثلاثة يُظهر أن أغلب ما طُلب **منفَّذ بالفعل** في الكود الحالي:
 
-### STEP 1 — عقد نقل HTTP الحالي
-| البند | القيمة المُتحقَّقة |
-|---|---|
-| HTTP_API_ENDPOINT | `https://api.resend.com/emails` (افتراضي)؛ يمكن تجاوزه بـ `RESEND_API_URL` |
-| API_KEY_ENV_NAME | `RESEND_API_KEY` |
-| FROM_DOMAIN_EXPECTATION | `mehlalex.com` (مُعرَّف في `MEHLA_MAIL_DOMAIN`) |
-| IDEMPOTENCY_HEADER | `Idempotency-Key` مشتق من `Message-ID` عبر `stableRequestKey()` |
-| REPLY_TO_SUPPORTED_BY_CURRENT_CODE | YES — يُمرَّر كـ `reply_to` في JSON body |
-| ADDITIONAL_RESEND_ENV_REQUIRED | `RESEND_API_KEY` فقط؛ `RESEND_API_URL` اختياري |
+- `secure-view.shared.ts` → `watermarkLinesFor` تُعيد سطرين فقط: اسم المكتب، ثم `معاينة: [الاسم] — [التاريخ/الوقت بتوقيت الرياض]`. لا يوجد معرّف جلسة ولا بريد إلكتروني في السطور القطرية.
+- `stamp.server.ts` → القيم الحالية بالفعل: `TILE_X = 380`، `TILE_Y = 240`، `OPACITY = 0.08`، `ANGLE = -30`، `LINE_GAP = 18`.
+- `arabic-shaper.ts` → يحوّل الحروف إلى أشكال العرض المتصلة (Presentation Forms) مع ليغاتورة لام-ألف، ثم يعيد الترتيب بصرياً لأن `pdf-lib` يرسم الحروف كما هي دون تشكيل.
 
-### STEP 2 — نطاق المُرسل الآلي المُقترَح
-| البند | القيمة |
-|---|---|
-| RECOMMENDED_SYSTEM_DOMAIN | `notify.mehlalex.com` |
-| TARGET_NOTIFICATION_FROM | `MEHLA <noreply@notify.mehlalex.com>` |
-| TARGET_NOTIFICATION_REPLY_TO | `support@mehlalex.com` |
-| CURRENT_NOTIFICATION_FROM | `noreply@mehlalex.com` (مُعرَّف في `MEHLA_IDENTITIES.system`) |
-| SOURCE_CHANGE_REQUIRED_FOR_TARGET_FROM | YES — يتطلَّب تعديل `MEHLA_MAIL_DOMAIN` أو جعله قابلاً للتهيئة لمسار النظام فقط |
+أي أن البنود 1 و2 لا تحتاج تعديلاً. البند المتبقي هو **إثبات شكل العلامة المائية فعلياً في PDF ناتج**، لأن سبب ظهور الحروف مفككة/مقلوبة غير مؤكد حتى الآن ولا أستطيع الجزم به قبل معاينة مخرج حقيقي.
 
-### STEP 3 — سلوك Reply-To الحالي
-دالة `identityReplyTo("system")` تقرأ `MAIL_SYSTEM_REPLY_TO` من بيئة الخادم. إذا كانت القيمة `support@mehlalex.com` فلا حاجة لتعديل إضافي لسلوك الرد؛ أما عنوان المُرسل فلا يزال يحتاج تعديل النطاق.
+ملاحظة مهمة: إعادة الترتيب البصري (عكس مقاطع RTL) **مطلوبة** لرسم عربي صحيح في `pdf-lib`. لذلك عند نسخ النص من الـPDF أو استخراجه بأداة نصية سيظهر معكوساً حتى لو كان العرض البصري سليماً تماماً. لذلك الحكم يجب أن يكون من صورة مرئية، لا من نص مستخرج.
 
-## قائمة التعديلات اليدوية المطلوبة من المستخدم
+## الخطوات
 
-A. تسجيل الدخول إلى Resend (إنشاء حساب جديد إذا لزم).
-B. إضافة نطاق مُرسل جديد: `notify.mehlalex.com`.
-C. نسخ سجلات DNS التي يُولِّدها Resend للنطاق.
-D. إضافة تلك السجلات فقط في مدير DNS للنطاق الرئيسي `mehlalex.com` (سجلات فرعية للنطاق الفرعي `notify`).
-E. الانتظار حتى يظهر حالة النطاق في Resend: **VERIFIED**.
-F. إنشاء مفتاح API للإرسال فقط (Sending API Key) بأقل صلاحية إرسال ممكنة.
-G. عدم لصق المفتاح في الدردشة أبداً.
-H. إضافة المفتاح إلى أسرار بيئة التشغيل في Lovable باسم: `RESEND_API_KEY`.
+1. **إنتاج نموذج إثبات**: تشغيل سكربت تحقق (خارج مسار الإنتاج) يبني PDF عبر `buildWatermarkedPdf` بنفس بيانات المثال — `مكتب صالح الحويل` و`معاينة: زياد عيسى — 17/08/2026 14:30` — ثم تحويله لصور وفحصها بصرياً.
+2. **تحديد الحالة**:
+   - إن ظهرت الكلمات متصلة وصحيحة الاتجاه: لا يُعدَّل الشكل، وتُوثَّق النتيجة بالصور، مع إغلاق الطلب كـ"مطابق للمواصفة".
+   - إن ظهر خلل حقيقي، يُصلَح سببه الجذري داخل `arabic-shaper.ts` فقط، مع أمثلة الاختبار التالية: `مكتب صالح الحويل`، `معاينة: زياد عيسى — 17/08/2026 14:30`، ونص مختلط عربي/أرقام/لاتيني.
+3. **فحص السطر السفلي والنسخة النصية**: التأكد أن `drawFooter` و`buildTextPdf` (مسار الملفات غير القابلة للختم) يعرضان النص العربي بنفس الجودة، لأنهما يستخدمان المشكِّل نفسه.
+4. **اختبار الرجعة**: تشغيل `scripts/test_watermark_generation.py` وفحص الأنواع، للتأكد من عدم كسر أي مسار قائم.
 
-## سجلات DNS المطلوبة (فئات فقط، بدون قيم مُختلقة)
+## تفاصيل تقنية
 
-| النوع | الغرض | المصدر |
-|---|---|---|
-| DKIM | توقيع البريد | قيمة من Resend dashboard |
-| SPF / MAIL FROM | مصادقة المصدر | قيمة من Resend dashboard |
-| DMARC (اختياري مُستحسَن) | سياسة التسليم والتقارير | يمكن إضافته لاحقاً عند الاستقرار |
-
-**ملاحظة أمان:** لا تُمسح ولا تُستبدل سجلات Hostinger MX/SPF/DKIM للبريد البشري على `mehlalex.com`.
-
-## تأكيد عدم المساس بالبريد البشري
-
-| البند | الحالة |
-|---|---|
-| HUMAN_MAIL_PROVIDER | Hostinger |
-| HOSTINGER_HUMAN_MAIL_CHANGED | NO |
-| HOSTINGER_MX_CHANGED | NO |
-| HOSTINGER_IMAP_CHANGED | NO |
-| EMPLOYEE_EMAIL_ADDRESSES_CHANGED | NO |
-
-## التعديل المصدري المطلوب قبل النشر
-
-تغيير `MEHLA_MAIL_DOMAIN` في `src/lib/email/transport/mehla-mailer.server.ts` من `"mehlalex.com"` إلى `"notify.mehlalex.com"` لمسار النظام الآلي فقط، أو جعله قابلاً للتهيئة عبر متغير بيئة (مثلاً `MEHLA_NOTIFICATION_MAIL_DOMAIN`) مع الاحتفاظ بـ `mehlalex.com` للبريد البشري. هذا التعديل ليس جزءاً من هذه الخطوة؛ يُترك لخطوة التحقق من الإعدادات.
-
-## حالة الإجراءات غير المسموح بها في هذه الخطوة
-
-| الإجراء | الحالة |
-|---|---|
-| SECRET_CREATED | NO |
-| DNS_CHANGED | NO |
-| CODE_CHANGED | NO |
-| DEPLOY | NO |
-| REAL_EMAIL_SENT | NO |
-| FAILED_13_ROWS_TOUCHED | NO |
-
-## البوابة التالية
-
-بعد تأكيد المستخدم يدوياً من:
-- `RESEND_DOMAIN_VERIFIED`
-- `RESEND_API_KEY_ADDED`
-
-الخطوة التالية هي:
-`RESEND CONFIG VERIFICATION` → `DEPLOY` → `ONE CONTROLLED SYSTEM EMAIL` → `ONE FAILED REMINDER RECOVERY` → remaining recovery → FINAL CLOSURE
-
-## النتيجة النهائية
-
-FINAL_STATUS: READY_FOR_MANUAL_RESEND_SETUP
-
-STOP.
+- الملفات المسموح تعديلها: `src/lib/secure-view/arabic-shaper.ts` (وفقط عند إثبات خلل)، و`src/lib/secure-view/stamp.server.ts` إن تبيّن أن التباعد يحجب المحتوى فعلياً على مستند حقيقي.
+- لا تغيير في المصادقة، ولا في التذاكر (`TOKEN_TTL_SECONDS` / `TOKEN_MAX_USES`)، ولا في سجل التدقيق، ولا في أي مسار خادمي آخر.
+- الخط المستخدم هو IBM Plex Sans Arabic المضمّن محلياً في `watermark-font.ts` — سيتم التأكد أن مجموعة الجليفات تحتوي أشكال العرض المطلوبة (FB50–FEFF)، لأن نقص جليف في النسخة المصغّرة يظهر كحرف مفكك أو مربع فارغ.
+- إثبات النتيجة يكون بصور من `pdftoppm` مرفقة في التقرير النهائي، لا بمجرد نجاح البناء.
