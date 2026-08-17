@@ -24,6 +24,7 @@ import {
   getServiceHealth,
 } from "@/lib/admin-console.functions";
 import { fmtMoney, fmtNumber } from "@/lib/admin-console.shared";
+import { Money } from "@/components/ui/money";
 import { Btn, FormField, inputCls, SectionCard, StatsSkeleton } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { METRIC_RANGES, resolveRange, type MetricRangeId } from "@/lib/admin-metrics.shared";
@@ -260,7 +261,7 @@ function AdminDashboard() {
                 <>
                   <Kpi
                     label="الإيراد الشهري المتكرر MRR"
-                    value={fmtMoney(m.revenue.mrr)}
+                    value={<Money value={m.revenue.mrr} />}
                     hint={`${fmtNumber(m.revenue.paying_organizations)} مكتب مدفوع`}
                     Icon={TrendingUp}
                     tone="success"
@@ -268,8 +269,8 @@ function AdminDashboard() {
                   />
                   <Kpi
                     label="الإيراد السنوي المتوقع ARR"
-                    value={fmtMoney(m.revenue.arr)}
-                    hint={`إيراد النطاق: ${fmtMoney(m.revenue.in_range)}`}
+                    value={<Money value={m.revenue.arr} />}
+                    hint={<>إيراد النطاق: <Money value={m.revenue.in_range} /></>}
                     Icon={TrendingUp}
                     tone="success"
                     to="/mehla-admin/revenue"
@@ -277,7 +278,7 @@ function AdminDashboard() {
                   <Kpi
                     label="فواتير متأخرة"
                     value={fmtNumber(m.revenue.invoices.overdue)}
-                    hint={`مستحق غير مسدّد: ${fmtMoney(m.revenue.invoices.outstanding_amount)}`}
+                    hint={<>مستحق غير مسدّد: <Money value={m.revenue.invoices.outstanding_amount} /></>}
                     Icon={Receipt}
                     tone={m.revenue.invoices.overdue > 0 ? "danger" : "success"}
                     to="/mehla-admin/billing"
@@ -484,12 +485,12 @@ function AdminDashboard() {
                   to="/mehla-admin/billing"
                   cta="فتح المركز المالي"
                   rows={[
-                    { label: "MRR", value: fmtMoney(m.revenue.mrr), tone: "success" },
-                    { label: "ARR", value: fmtMoney(m.revenue.arr) },
-                    { label: "إيراد النطاق", value: fmtMoney(m.revenue.in_range) },
+                    { label: "MRR", value: <Money value={m.revenue.mrr} />, tone: "success" as const },
+                    { label: "ARR", value: <Money value={m.revenue.arr} /> },
+                    { label: "إيراد النطاق", value: <Money value={m.revenue.in_range} /> },
                     {
                       label: "مستحق غير مسدّد",
-                      value: fmtMoney(m.revenue.invoices.outstanding_amount),
+                      value: <Money value={m.revenue.invoices.outstanding_amount} />,
                       tone: m.revenue.invoices.outstanding_amount > 0 ? "warning" : "default",
                     },
                     {

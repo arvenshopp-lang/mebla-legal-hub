@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { Money as RiyalMoney } from "@/components/ui/money";
 import { Badge } from "@/lib/list-utils";
 import { exportCrmCsv } from "@/lib/crm.functions";
 import { fmtDecimal } from "@/lib/format";
@@ -51,9 +52,11 @@ export function ActivityKindBadge({ kind }: { kind: CrmActivityKind }) {
 }
 
 export function Money({ value, currency = "SAR" }: { value: number; currency?: string | null }) {
+  const code = (currency || "SAR").toUpperCase();
+  if (code === "SAR") return <RiyalMoney value={value} />;
   return (
     <span className="tabular-nums">
-      {fmtDecimal(Number(value))} {currency || "SAR"}
+      {fmtDecimal(Number(value))} {code}
     </span>
   );
 }

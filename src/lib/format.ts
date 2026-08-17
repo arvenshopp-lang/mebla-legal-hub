@@ -151,8 +151,14 @@ export const fmtNumber = (n: number | null | undefined): string => numberFmt.for
 export const fmtDecimal = (n: number | null | undefined): string =>
   decimalFmt.format(Number(n ?? 0));
 
-/** مبلغ مالي مع العملة (الافتراضي الريال السعودي). */
-export const fmtMoney = (n: number | null | undefined, currency = "ر.س"): string =>
+/** المبلغ رقماً فقط بمنزلتين — يُستخدم مع مكوّن `<Money />` الذي يرسم رمز الريال. */
+export const fmtAmount = (n: number | null | undefined): string => decimalFmt.format(Number(n ?? 0));
+
+/**
+ * مبلغ مالي نصي مع رمز العملة — للسياقات النصية البحتة فقط
+ * (التنبيهات، عناوين النوافذ، البريد، التصدير) حيث لا يمكن رسم رمز متجهي.
+ */
+export const fmtMoney = (n: number | null | undefined, currency = "SAR"): string =>
   `${fmtDecimal(n)} ${currency}`;
 
 /** نسبة مئوية بأرقام إنجليزية. */

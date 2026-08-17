@@ -31,6 +31,7 @@ import {
 } from "@/lib/billing/billing.functions";
 import { formatDate, formatDateTime, type BillingRow } from "@/lib/billing/billing.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { fmtMoney } from "@/lib/format";
 import { Money } from "./shared";
 
 const PAGE_SIZE = 20;
@@ -514,7 +515,7 @@ export function ReconciliationPanel() {
                 const joined = row["platform_invoices"] as { number?: string } | null;
                 return (
                   <option key={row["id"] as string} value={row["id"] as string}>
-                    {joined?.number ?? "—"} · {Number(row["amount"] ?? 0).toFixed(2)} ريال
+                    {joined?.number ?? "—"} · {fmtMoney(Number(row["amount"] ?? 0))}
                   </option>
                 );
               })}

@@ -16,6 +16,7 @@ import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from "pdf-lib";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { shapeArabicRun } from "./arabic.server";
+import { drawRiyalGlyph, riyalAdvance } from "./riyal-glyph";
 
 /* ------------------------------------------------------------- نموذج المستند */
 
@@ -227,9 +228,35 @@ export function formatPdfDateTime(value: string | null | undefined): string {
 
 /* ------------------------------------------------------------ أدوات الرسم */
 
+/**
+ * يقسّم مقطعاً إلى أجزاء نصية وأجزاء «رمز ريال» متجهية، فيُرسم الرمز الرسمي
+ * بدل كتابة «SAR» نصاً، مع الحفاظ على القياسات والمحاذاة.
+ */
+type Segment = { text: string; riyal: boolean };
+
+function segmentsOf(glyphs: string): Segment[] {
+  const parts = glyphs.split(/\s?SAR\b/);
+  if (parts.length === 1) return [{ text: glyphs, riyal: false }];
+  const segments: Segment[] = [];
+  parts.forEach((part, index) => {
+    if (part.length > 0) segments.push({ text: part, riyal: false });
+    if (index < parts.length - 1) segments.push({ text: "", riyal: true });
+  });
+  return segments;
+}
+
+function segmentWidth(font: PDFFont, segment: Segment, size: number): number {
+  return segment.riyal ? riyalAdvance(size) : font.widthOfTextAtSize(segment.text, size);
+}
+
 function widthOf(ctx: Ctx, text: string, size: number): number {
   return splitDirectionalRuns(text).reduce(
-    (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, size),
+    (total, run) =>
+      total +
+      segmentsOf(run.glyphs).reduce(
+        (sum, segment) => sum + segmentWidth(ctx.font, segment, size),
+        0,
+      ),
     0,
   );
 }
@@ -250,14 +277,24 @@ function drawLine(
 ): void {
   let cursor = leftX;
   const runs = splitDirectionalRuns(text);
-  const widths = runs.map((run) => font.widthOfTextAtSize(run.glyphs, size));
+  const segmented = runs.map((run) => segmentsOf(run.glyphs));
+  const widths = segmented.map((segments) =>
+    segments.reduce((sum, segment) => sum + segmentWidth(font, segment, size), 0),
+  );
   const total = widths.reduce((sum, width) => sum + width, 0);
   cursor = leftX + total;
-  runs.forEach((run, index) => {
+  segmented.forEach((segments, index) => {
     cursor -= widths[index] ?? 0;
-    if (run.glyphs.trim().length > 0) {
-      page.drawText(run.glyphs, { x: cursor, y, size, font, color });
-    }
+    let inner = cursor;
+    segments.forEach((segment) => {
+      const width = segmentWidth(font, segment, size);
+      if (segment.riyal) {
+        drawRiyalGlyph(page, inner, y, size, color);
+      } else if (segment.text.trim().length > 0) {
+        page.drawText(segment.text, { x: inner, y, size, font, color });
+      }
+      inner += width;
+    });
   });
 }
 

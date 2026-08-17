@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/lib/list-utils";
+import { Money as RiyalMoney } from "@/components/ui/money";
 import {
   INVOICE_STATUS_LABELS,
   INVOICE_STATUS_TONES,
@@ -19,6 +20,7 @@ export function Money({
   value: number | string | null | undefined;
   currency?: string;
 }) {
+  if (currency.toUpperCase() === "SAR") return <RiyalMoney value={value} />;
   return <span className="tabular-nums">{formatMoney(value, currency)}</span>;
 }
 

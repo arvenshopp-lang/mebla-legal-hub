@@ -12,7 +12,7 @@ import {
   Th,
 } from "@/lib/list-utils";
 import { getRevenueSummary } from "@/lib/admin.functions";
-import { fmtMoney } from "@/lib/format";
+import { Money } from "@/components/ui/money";
 
 export const Route = createFileRoute("/mehla-admin/revenue")({
   head: () => ({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/mehla-admin/revenue")({
   component: RevenuePage,
 });
 
-const money = (n: number) => fmtMoney(Number(n ?? 0));
+const money = (n: number) => <Money value={n} />;
 const MONTHS = [
   "يناير",
   "فبراير",
@@ -69,7 +69,7 @@ function RevenuePage() {
             <Stat
               label="اشتراكات نشطة"
               value={String(data.active_count)}
-              hint={`الإجمالي التراكمي ${money(data.total)}`}
+              hint={<>الإجمالي التراكمي {money(data.total)}</>}
             />
           </div>
 
@@ -162,7 +162,15 @@ function RevenuePage() {
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+}) {
   return (
     <div className="surface-card p-5">
       <p className="text-caption">{label}</p>

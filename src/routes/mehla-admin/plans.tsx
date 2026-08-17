@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { Money } from "@/components/ui/money";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtNumber } from "@/lib/format";
 import {
@@ -203,11 +204,11 @@ function PlansPage() {
                 {p.ai_enabled && <Badge tone="gold">ذكاء اصطناعي</Badge>}
               </div>
               <p className="mt-3 text-[20px] font-bold tabular-nums">
-                {fmtNumber(Number(p.price_monthly))}{" "}
-                <span className="text-[12px] font-normal text-muted-foreground">ريال / شهر</span>
+                <Money value={Number(p.price_monthly)} decimals={false} />{" "}
+                <span className="text-[12px] font-normal text-muted-foreground">/ شهر</span>
               </p>
               <p className="text-[12px] text-muted-foreground">
-                سنوياً: {fmtNumber(Number(p.price_yearly))} ريال
+                سنوياً: <Money value={Number(p.price_yearly)} decimals={false} />
               </p>
               <ul className="mt-3 space-y-1 text-[12px] text-muted-foreground">
                 <li>المستخدمون: {p.max_users ?? "بلا حد"}</li>

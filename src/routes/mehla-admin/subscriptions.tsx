@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Ban, Eye, PauseCircle, PlayCircle, Plus, RefreshCcw } from "lucide-react";
 import { AdminShell } from "@/components/admin/shell";
+import { Riyal } from "@/components/ui/riyal";
 import { supabase } from "@/integrations/supabase/client";
 import {
   activateSubscription,
@@ -616,7 +617,7 @@ function ActivateDialogInner({ open, onClose }: { open: boolean; onClose: () => 
           </FormField>
         )}
 
-        <FormField label="قيمة الاشتراك (ريال)" required hint="يمكن إدخال أي مبلغ دون قيود.">
+        <FormField label={<>قيمة الاشتراك (<Riyal />)</>} required hint="يمكن إدخال أي مبلغ دون قيود.">
           <input
             type="number"
             min={0}

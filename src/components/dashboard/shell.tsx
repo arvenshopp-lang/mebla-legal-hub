@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/app/app-shell";
 
@@ -15,8 +16,8 @@ export function StatCard({
   loading = false,
 }: {
   label: string;
-  value: number | string;
-  hint?: string;
+  value: ReactNode;
+  hint?: ReactNode;
   tone?: "default" | "warn" | "danger" | "gold" | "success";
   loading?: boolean;
 }) {
