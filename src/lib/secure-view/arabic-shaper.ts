@@ -107,9 +107,7 @@ function isLtr(code: number): boolean {
  * فواصل التواريخ والأوقات والمعرّفات والمسافة بين المبلغ ورمز العملة.
  */
 const NEUTRAL_JOINERS = new Set<number>(
-  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "="].map(
-    (ch) => ch.codePointAt(0)!,
-  ),
+  [".", ",", "-", "/", ":", "+", "_", "@", "#", "%", "&", "*", "="].map((ch) => ch.codePointAt(0)!),
 );
 
 const MIRRORED: Record<number, number> = {
