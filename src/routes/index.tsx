@@ -374,8 +374,10 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           <p className="mt-5 text-body-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات الذكية ومطالبات الأتعاب في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
           </p>
+        </div>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3.5">
             <a
               href={registerHref}
               className={heroBtn.primary}
