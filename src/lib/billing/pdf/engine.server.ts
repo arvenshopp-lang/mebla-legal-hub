@@ -13,7 +13,7 @@
  * التصاق رمز العملة بالمبلغ.
  */
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from "pdf-lib";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { shapeArabicRun } from "./arabic.server";
 
@@ -55,6 +55,10 @@ export type PdfBrand = {
   signatoryName?: string | null;
   signatoryTitle?: string | null;
   documentFooterNote?: string | null;
+  /** شعار الجهة المُصدرة (اختياري): يُرسم في رأس المستند بجوار اسمها. */
+  logo?: { bytes: Uint8Array; mime: string } | null;
+  /** سطر رمادي دقيق أسفل التذييل (اختياري) — لا يحلّ محل تذييل الجهة. */
+  footerFineNote?: string | null;
 };
 
 export type PdfDocumentModel = {
