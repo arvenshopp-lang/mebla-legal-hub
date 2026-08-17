@@ -70,6 +70,9 @@ export function applySecurityHeaders(response: Response) {
   headers.set("permissions-policy", PERMISSIONS_POLICY);
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("x-permitted-cross-domain-policies", "none");
+  if (isBinaryDocument(response)) {
+    headers.set("x-robots-tag", "noindex, nofollow, noarchive, nosnippet");
+  }
   if (isSecureRequest()) {
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   }
