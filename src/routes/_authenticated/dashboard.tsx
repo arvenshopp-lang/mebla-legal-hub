@@ -149,6 +149,33 @@ function DashboardHome() {
       ) : (
         <>
           <OperationalScorePrompt organizationId={activeOrgId ?? null} />
+          
+          {/* شريط الإجراءات السريعة للمكتب */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Link to="/cases">
+              <Btn variant="primary" size="sm" className="min-h-10 text-[13px] font-bold">
+                + قضية جديدة
+              </Btn>
+            </Link>
+            <Link to="/hearings">
+              <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
+                + جدولة جلسة
+              </Btn>
+            </Link>
+            <Link to="/deadlines">
+              <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
+                + تسجيل مهلة
+              </Btn>
+            </Link>
+            {canViewBilling && (
+              <Link to="/invoices">
+                <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
+                  + مطالبة / عرض أتعاب
+                </Btn>
+              </Link>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="قضايا مفتوحة" loading={isLoading} value={stats?.openCases ?? 0} />
             <StatCard
@@ -175,11 +202,11 @@ function DashboardHome() {
             <section className="mt-6" aria-labelledby="dashboard-billing-heading">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 id="dashboard-billing-heading" className="font-display text-[18px] font-bold">
-                  الفواتير والأتعاب
+                  الأتعاب والمطالبات المالية
                 </h2>
                 <Link to="/invoices">
                   <Btn variant="ghost" size="sm" className="min-h-11">
-                    إدارة الفواتير <ChevronLeft className="h-4 w-4" aria-hidden />
+                    إدارة الأتعاب <ChevronLeft className="h-4 w-4" aria-hidden />
                   </Btn>
                 </Link>
               </div>
