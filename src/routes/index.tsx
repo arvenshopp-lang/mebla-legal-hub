@@ -9,6 +9,7 @@ import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { TopOffices } from "@/components/marketing/top-offices";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { headerBtn, heroBtn, sheetBtn, publicBtnIcon } from "@/components/marketing/public-buttons";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
