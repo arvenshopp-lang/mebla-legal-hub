@@ -216,15 +216,36 @@ function MailWorkspacePage() {
   const send = useMutation({
     mutationFn: (payload: ComposePayload) => sendFn({ data: withDraft(payload) }),
     onSuccess: (result) => {
-      if (result.sent) toast.success("تم إرسال الرسالة.");
-      else if (result.failureRef)
-        toast.error(`تعذّر الإرسال الآن — سنعيد المحاولة تلقائياً. المرجع ${result.failureRef}`);
-      else toast.success("تمت جدولة الرسالة في قائمة الإرسال.");
+      if (result.sent) {
+        toast.success("تم إرسال الرسالة.");
+      } else if (result.failureRef) {
+        toast.info(
+          `تمت إضافة الرسالة لقائمة الإرسال — ستتم محاولة التسليم تلقائياً. المرجع: ${result.failureRef}`,
+        );
+      } else {
+        toast.success("تمت جدولة الرسالة في قائمة الإرسال.");
+      }
       closeCompose();
       setThreadId(result.threadId);
       refreshLists();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      const msg = e.message || "";
+      const isNetworkUncertainty =
+        /failed to fetch|networkerror|load failed|timeout|abort/i.test(msg) ||
+        e.name === "TypeError" ||
+        e.name === "AbortError";
+
+      if (isNetworkUncertainty) {
+        toast.warning("جاري التحقق من حالة الإرسال", {
+          description:
+            "تعذّر تأكيد الاستجابة الفورية من الشبكة؛ يرجى مراجعة صندوق الصادر للتأكد من حالة الرسالة.",
+        });
+      } else {
+        toast.error("تعذّر الإرسال", { description: msg });
+      }
+      refreshLists();
+    },
   });
 
   const saveDraft = useMutation({
