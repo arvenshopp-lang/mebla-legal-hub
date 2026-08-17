@@ -23,6 +23,8 @@ const TRUST_LINKS = [
   { to: "/terms", label: "الشروط والأحكام" },
 ] as const;
 
+const HELP_LINKS = [{ to: "/docs", label: "مركز المساعدة" }] as const;
+
 const linkCls =
   "inline-flex min-h-9 items-center text-[13.5px] text-muted-foreground transition hover:text-foreground";
 
@@ -31,6 +33,8 @@ export function SiteFooter() {
   const { data: info } = useSuspenseQuery(publicSiteQueryOptions());
   const loginHref = useSurfaceHref("/login");
   const registerHref = useSurfaceHref("/register");
+  const trackHref = useSurfaceHref("/track");
+  const uploadHref = useSurfaceHref("/upload");
   const socials = activeSocialLinks(info);
   const publicEmail = publicContactEmail(info);
   const supportEmail = supportContactEmail(info);
@@ -38,7 +42,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="container-page py-12 md:py-14">
-        <div className="grid gap-9 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <p className="text-[17px] font-bold tracking-tight">
               مِهلة <span className="text-text-muted">·</span>{" "}
@@ -78,6 +82,31 @@ export function SiteFooter() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </nav>
+
+          <nav aria-labelledby="footer-help">
+            <h2 id="footer-help" className="text-[13px] font-bold">
+              الخدمات والمساعدة
+            </h2>
+            <ul className="mt-3 space-y-1">
+              {HELP_LINKS.map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} className={linkCls}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <a href={trackHref} className={linkCls}>
+                  متابعة القضية
+                </a>
+              </li>
+              <li>
+                <a href={uploadHref} className={linkCls}>
+                  رفع مستند
+                </a>
+              </li>
             </ul>
           </nav>
 
@@ -189,8 +218,11 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-[12.5px] text-text-muted sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} مِهلة. جميع الحقوق محفوظة.</p>
-          {info.legal_name && <p>{info.legal_name}</p>}
+          <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+            {info.legal_name && <p>{info.legal_name}</p>}
+            <p dir="ltr">mehlalex.com</p>
+          </div>
         </div>
       </div>
     </footer>

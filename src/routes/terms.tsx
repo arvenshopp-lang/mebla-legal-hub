@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, type LegalSection } from "@/components/marketing/legal-page";
+import { publicSiteQueryOptions } from "@/lib/public-site.query";
 
 const TITLE = "الشروط والأحكام — مِهلة";
 const DESCRIPTION =
   "شروط استخدام منصة مِهلة لإدارة الممارسة القانونية: الاشتراك، مسؤوليات المكتب، الاستخدام المقبول، وحدود المسؤولية.";
 
 export const Route = createFileRoute("/terms")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({
     meta: [
       { title: TITLE },

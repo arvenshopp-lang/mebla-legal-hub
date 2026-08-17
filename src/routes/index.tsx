@@ -6,7 +6,9 @@ import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
 import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query";
+import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { TopOffices } from "@/components/marketing/top-offices";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/")({
     await Promise.all([
       context.queryClient.prefetchQuery(publicPlansQueryOptions()),
       context.queryClient.prefetchQuery(publicRankingQueryOptions()),
+      context.queryClient.ensureQueryData(publicSiteQueryOptions()),
     ]);
   },
   head: () => ({
@@ -814,7 +817,7 @@ function Security() {
   );
 }
 
-function CTA({ registerHref }: { registerHref: string }) {
+function CTA({ registerHref, trackHref }: { registerHref: string; trackHref: string }) {
   return (
     <section className="section-y">
       <div className="container-page">
@@ -823,12 +826,21 @@ function CTA({ registerHref }: { registerHref: string }) {
           <p className="measure mt-3 text-body text-primary-foreground/80">
             أنشئ مكتبك خلال دقيقة، وابدأ بتسجيل أول قضية ومتابعة مهلها وجلساتها.
           </p>
-          <a
-            href={registerHref}
-            className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
-          >
-            إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
-          </a>
+          <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <a
+              href={registerHref}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
+            >
+              إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
+            </a>
+            <a
+              href={trackHref}
+              className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-primary-foreground/35 px-6 text-[15px] font-semibold text-primary-foreground transition hover:bg-primary-foreground/10"
+            >
+              <SearchCheck className="h-4 w-4" aria-hidden />
+              متابعة القضية
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -898,79 +910,6 @@ function PricingTeaser() {
   );
 }
 
-const FOOTER_LINKS: Array<{ href: string; label: string }> = [
-  { href: "#product", label: "المنتج" },
-  { href: "#capabilities", label: "المزايا" },
-  { href: "#security", label: "الأمان" },
-  { href: "/pricing", label: "الباقات والأسعار" },
-  { href: "/docs", label: "مركز المساعدة" },
-  { href: "/privacy", label: "سياسة الخصوصية" },
-  { href: "/terms", label: "الشروط والأحكام" },
-  { href: "mailto:support@mehlalex.com", label: "تواصل معنا" },
-];
-
-function Footer({ loginHref, registerHref, trackHref }: SurfaceLinks) {
-  return (
-    <footer className="border-t border-border bg-surface">
-      <div className="container-page flex flex-col items-center gap-7 py-12 text-center">
-        <div className="max-w-xl">
-          <p className="text-[17px] font-bold">
-            مِهلة <span className="text-text-muted">·</span> MEHLA
-          </p>
-          <p className="mx-auto mt-3 max-w-lg text-body-sm text-muted-foreground">
-            منصة سعودية لإدارة الممارسة القانونية: القضايا، الجلسات، المهل، المستندات، ومتابعة
-            العملاء.
-          </p>
-        </div>
-
-        <div className="flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row">
-          <a
-            href={trackHref}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted sm:w-auto"
-          >
-            <SearchCheck className="h-4 w-4 text-text-muted" aria-hidden />
-            متابعة القضية
-          </a>
-          <a
-            href={registerHref}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition hover:bg-primary-hover sm:w-auto"
-          >
-            إنشاء حساب المكتب
-          </a>
-          <a
-            href={loginHref}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-m)] px-5 text-[14px] font-medium text-muted-foreground transition hover:text-foreground sm:w-auto"
-          >
-            تسجيل الدخول
-          </a>
-        </div>
-
-        <nav aria-label="روابط الفوتر" className="w-full">
-          <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-body-sm text-muted-foreground">
-            {FOOTER_LINKS.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className="inline-flex min-h-11 items-center transition hover:text-foreground"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-
-      <div className="border-t border-border">
-        <div className="container-page flex flex-col items-center gap-1 py-5 text-center text-[12.5px] text-muted-foreground">
-          <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
-          <p dir="ltr">mehlalex.com</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 /* --------------------------------------------------------------------- page */
 
 /**
@@ -1001,9 +940,9 @@ function MehlaLanding() {
         <Security />
         <TopOfficesSection />
         <PricingTeaser />
-        <CTA registerHref={registerHref} />
+        <CTA registerHref={registerHref} trackHref={trackHref} />
       </main>
-      <Footer {...links} />
+      <SiteFooter />
     </div>
   );
 }
