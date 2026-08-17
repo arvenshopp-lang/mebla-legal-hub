@@ -345,8 +345,9 @@ function tokenize(text: string): string[] {
  * قصّ على حدود الكلمات فقط، فلا يُقطع مبلغ عن عملته ولا تاريخ ولا مرجع مستند
  * في منتصفه. عند تعذّر ذلك (كلمة واحدة أطول من العرض) نقصّ الحروف كحل أخير.
  */
-function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): string {
-  const value = text.replace(/\s+/g, " ").trim();
+function truncate(ctx: Ctx, text: string | null | undefined, maxWidth: number, size: number): string {
+  const value = (text ?? "").replace(/\s+/g, " ").trim();
+  if (!value) return "";
   if (widthOf(ctx, value, size) <= maxWidth) return value;
 
   const words = tokenize(value);
@@ -363,8 +364,8 @@ function truncate(ctx: Ctx, text: string, maxWidth: number, size: number): strin
 }
 
 /** تقسيم نص طويل إلى أسطر تناسب العرض المتاح. */
-function wrap(ctx: Ctx, text: string, maxWidth: number, size: number, maxLines = 6): string[] {
-  const words = tokenize(text);
+function wrap(ctx: Ctx, text: string | null | undefined, maxWidth: number, size: number, maxLines = 6): string[] {
+  const words = tokenize(text ?? "");
   const lines: string[] = [];
   let current = "";
   for (const word of words) {

@@ -6,6 +6,7 @@ import {
   Clock,
   ListChecks,
   FileText,
+  FileSignature,
   Settings,
   UsersRound,
   CreditCard,
@@ -45,6 +46,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "السجلات",
     items: [
       { to: "/clients", label: "العملاء", Icon: Users },
+      { to: "/contracts", label: "العقود والاتفاقيات", Icon: FileSignature },
       { to: "/documents", label: "المستندات", Icon: FileText },
       { to: "/search", label: "البحث في المستندات", Icon: FileSearch },
     ],

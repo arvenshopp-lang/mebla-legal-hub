@@ -34,6 +34,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedContractsRouteImport } from './routes/_authenticated/contracts'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
@@ -88,6 +89,7 @@ import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
 import { Route as OfficeSlugRouteImport } from './routes/office.$slug'
 import { Route as PortalSlugRouteImport } from './routes/portal.$slug'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as SignTokenRouteImport } from './routes/sign.$token'
 import { Route as UploadIndexRouteImport } from './routes/upload.index'
 import { Route as UploadTokenRouteImport } from './routes/upload.$token'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -246,6 +248,11 @@ const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedContractsRoute = AuthenticatedContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -520,6 +527,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignTokenRoute = SignTokenRouteImport.update({
+  id: '/sign/$token',
+  path: '/sign/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UploadIndexRoute = UploadIndexRouteImport.update({
   id: '/upload/',
   path: '/upload/',
@@ -723,6 +735,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
@@ -776,6 +789,7 @@ export interface FileRoutesByFullPath {
   '/office/$slug': typeof OfficeSlugRoute
   '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
+  '/sign/$token': typeof SignTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
@@ -835,6 +849,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
@@ -888,6 +903,7 @@ export interface FileRoutesByTo {
   '/office/$slug': typeof OfficeSlugRoute
   '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
+  '/sign/$token': typeof SignTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin': typeof MehlaAdminIndexRoute
   '/upload': typeof UploadIndexRoute
@@ -950,6 +966,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/bayan': typeof AuthenticatedBayanRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
+  '/_authenticated/contracts': typeof AuthenticatedContractsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
@@ -1003,6 +1020,7 @@ export interface FileRoutesById {
   '/office/$slug': typeof OfficeSlugRoute
   '/portal/$slug': typeof PortalSlugRoute
   '/share/$token': typeof ShareTokenRoute
+  '/sign/$token': typeof SignTokenRoute
   '/upload/$token': typeof UploadTokenRoute
   '/mehla-admin/': typeof MehlaAdminIndexRoute
   '/upload/': typeof UploadIndexRoute
@@ -1065,6 +1083,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
     | '/clients'
+    | '/contracts'
     | '/dashboard'
     | '/deadlines'
     | '/documents'
@@ -1118,6 +1137,7 @@ export interface FileRouteTypes {
     | '/office/$slug'
     | '/portal/$slug'
     | '/share/$token'
+    | '/sign/$token'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
@@ -1177,6 +1197,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
     | '/clients'
+    | '/contracts'
     | '/dashboard'
     | '/deadlines'
     | '/documents'
@@ -1230,6 +1251,7 @@ export interface FileRouteTypes {
     | '/office/$slug'
     | '/portal/$slug'
     | '/share/$token'
+    | '/sign/$token'
     | '/upload/$token'
     | '/mehla-admin'
     | '/upload'
@@ -1291,6 +1313,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/bayan'
     | '/_authenticated/clients'
+    | '/_authenticated/contracts'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
     | '/_authenticated/documents'
@@ -1344,6 +1367,7 @@ export interface FileRouteTypes {
     | '/office/$slug'
     | '/portal/$slug'
     | '/share/$token'
+    | '/sign/$token'
     | '/upload/$token'
     | '/mehla-admin/'
     | '/upload/'
@@ -1411,6 +1435,7 @@ export interface RootRouteChildren {
   OfficeSlugRoute: typeof OfficeSlugRoute
   PortalSlugRoute: typeof PortalSlugRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  SignTokenRoute: typeof SignTokenRoute
   UploadTokenRoute: typeof UploadTokenRoute
   UploadIndexRoute: typeof UploadIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -1613,6 +1638,13 @@ declare module '@tanstack/react-router' {
       path: '/clients'
       fullPath: '/clients'
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contracts': {
+      id: '/_authenticated/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof AuthenticatedContractsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -1993,6 +2025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sign/$token': {
+      id: '/sign/$token'
+      path: '/sign/$token'
+      fullPath: '/sign/$token'
+      preLoaderRoute: typeof SignTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/upload/': {
       id: '/upload/'
       path: '/upload'
@@ -2245,6 +2284,7 @@ const AuthenticatedTeamPerformanceRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBayanRoute: typeof AuthenticatedBayanRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
+  AuthenticatedContractsRoute: typeof AuthenticatedContractsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
@@ -2266,6 +2306,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBayanRoute: AuthenticatedBayanRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
+  AuthenticatedContractsRoute: AuthenticatedContractsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
@@ -2415,6 +2456,7 @@ const rootRouteChildren: RootRouteChildren = {
   OfficeSlugRoute: OfficeSlugRoute,
   PortalSlugRoute: PortalSlugRoute,
   ShareTokenRoute: ShareTokenRoute,
+  SignTokenRoute: SignTokenRoute,
   UploadTokenRoute: UploadTokenRoute,
   UploadIndexRoute: UploadIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
