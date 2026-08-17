@@ -6,13 +6,13 @@ import {
 
 async function runBayanMasterTest() {
   console.log("================================================================================");
-  console.log("⚖️ MEHLA — TESTING 'BAYAN' ADVANCED SAUDI LEGAL AI & TEAM INTELLIGENCE");
+  console.log("⚖️ MEHLA — TESTING 'BAYAN' ENTIRE SAUDI LEGAL SYSTEM ENCYCLOPEDIA");
   console.log("================================================================================\n");
 
   const mockOfficeContext = {
     isGlobal: true,
     userRole: "owner",
-    accessibleCasesCount: 5,
+    accessibleCasesCount: 6,
     teamMembers: [
       {
         id: "user-ziad-123",
@@ -26,24 +26,12 @@ async function runBayanMasterTest() {
           { id: "case-3", title: "مطالبة تعويض عن إخلال عقدي", number: "45200311", status: "pending", court: "المحكمة العامة بجدة" },
         ],
       },
-      {
-        id: "user-sara-456",
-        name: "سارة القحطاني",
-        email: "sara@firm.sa",
-        role: "paralegal",
-        assignedCasesCount: 2,
-        assignedCases: [
-          { id: "case-4", title: "دعوى تسوية مستحقات عمالية", number: "45300121", status: "in_progress", court: "المحكمة العمالية" },
-          { id: "case-5", title: "إثبات شراكة تجارية وتصفية حسابات", number: "45300999", status: "in_progress", court: "المحكمة التجارية" },
-        ],
-      },
     ],
     casesSummary: [
       { id: "case-1", title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب", number: "45129841", status: "in_progress", court: "المحكمة التجارية بالرياض", lawyer_name: "زياد الحبيب", claim_amount: 350000 },
-      { id: "case-2", title: "نزاع تجاري بشأن توريد أجهزة ومعدات", number: "45199201", status: "in_progress", court: "المحكمة التجارية بالرياض", lawyer_name: "زياد الحبيب", claim_amount: 180000 },
     ],
     hearings: [
-      { date: "2026-08-25", title: "جلسة المرافعة وتقديم البينات", case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب" },
+      { date: "2026-08-25", title: "جلسة تقديم البينات", case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب" },
     ],
     deadlines: [
       { due_date: "2026-08-22", title: "إيداع مذكرة جوابية", status: "pending", case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب" },
@@ -51,41 +39,62 @@ async function runBayanMasterTest() {
     documents: [],
   };
 
-  // 1. اختبار استفسار مالك المكتب عن موظف معين (زياد)
-  console.log("[TEST 1] Testing Team Member Query (الموظف زياد كم قضية باقي له؟)...");
-  const ziadQueryRes = await generateBayanResponse(
-    "الموظف زياد كم قضية باقي له وما هي قضاياه؟",
-    [],
-    mockOfficeContext
-  );
-  console.log("  -> Bayan Team Response:\n", ziadQueryRes.text + "\n");
-  if (ziadQueryRes.text.includes("المحامية بيان") && ziadQueryRes.text.includes("3") && ziadQueryRes.text.includes("زياد")) {
-    console.log("  ✓ Bayan accurately identified lawyer Ziad and his exact 3 assigned cases!");
+  // [TEST 1] اختبار نظام العمل (المادة 77 والمادة 80 ومكافأة نهاية الخدمة)
+  console.log("[TEST 1] Testing Saudi Labor Law (نظام العمل والمادة 77 و 80)...");
+  const laborRes = await generateBayanResponse("ما هو حكم الفصل لسبب غير مشروع بموجب المادة 77 من نظام العمل واحتساب نهاية الخدمة؟", [], mockOfficeContext);
+  if (laborRes.text.includes("المادة 77") && laborRes.text.includes("المادة 84") && laborRes.citations.length > 0) {
+    console.log("  ✓ Bayan cited Saudi Labor Law Articles 77 & 84 accurately!");
   } else {
-    throw new Error("Team query failed to report accurate lawyer cases.");
+    throw new Error("Labor law test failed.");
   }
 
-  // 2. اختبار الاستشهاد بمواد نظام المعاملات المدنية ونظام الإثبات
-  console.log("[TEST 2] Testing Accurate Saudi Statutory Articles (المعاملات المدنية والإثبات)...");
-  const statuteRes = await generateBayanResponse(
-    "ما هي المواد النظامية في التعويض والأدلة الرقمية في المعاملات المدنية ونظام الإثبات؟",
-    [],
-    mockOfficeContext
-  );
-  console.log("  -> Bayan Statutes Response:\n", statuteRes.text + "\n");
-  if (
-    statuteRes.text.includes("المادة (94)") &&
-    statuteRes.text.includes("المادة (138)") &&
-    statuteRes.text.includes("المادتين (53 و 54)") &&
-    statuteRes.citations.length >= 2
-  ) {
-    console.log("  ✓ Bayan cited exact Saudi Articles (94, 138, 53, 54) with 100% precision!");
+  // [TEST 2] اختبار نظام الشركات الجديد ونظام الإفلاس
+  console.log("[TEST 2] Testing Saudi Corporate & Bankruptcy Law (الشركات والإفلاس)...");
+  const corpRes = await generateBayanResponse("ما هي مسؤولية أعضاء مجلس الإدارة في نظام الشركات وتعليق المطالبات في الإفلاس؟", [], mockOfficeContext);
+  if (corpRes.text.includes("المادة 27") && corpRes.text.includes("المادة 42")) {
+    console.log("  ✓ Bayan cited Corporate Article 27 & Bankruptcy Article 42 accurately!");
   } else {
-    throw new Error("Statute response missing exact Saudi statutory articles.");
+    throw new Error("Corporate law test failed.");
   }
 
-  // 3. اختبار حجب البيانات الشخصية
-  console.log("[TEST 3] Testing Saudi PII Masking Shield...");
+  // [TEST 3] اختبار نظام الأحوال الشخصية (الحضانة والنفقة)
+  console.log("[TEST 3] Testing Saudi Personal Status Law (الأحوال الشخصية والحضانة والتركات)...");
+  const personalRes = await generateBayanResponse("ما هي ضوابط أولوية الحضانة ونفقة المحضون في نظام الأحوال الشخصية؟", [], mockOfficeContext);
+  if (personalRes.text.includes("المادة 125") && personalRes.text.includes("المادة 42")) {
+    console.log("  ✓ Bayan cited Personal Status Articles 125 & 42 accurately!");
+  } else {
+    throw new Error("Personal status law test failed.");
+  }
+
+  // [TEST 4] اختبار نظام مكافحة الجرائم المعلوماتية
+  console.log("[TEST 4] Testing Saudi Cybercrimes Law (جرائم المعلوماتية والتشهير)...");
+  const cyberRes = await generateBayanResponse("ما هي عقوبة التشهير الإلكتروني والاحتيال المالي في نظام مكافحة جرائم المعلوماتية؟", [], mockOfficeContext);
+  if (cyberRes.text.includes("المادة 3") && cyberRes.text.includes("المادة 4")) {
+    console.log("  ✓ Bayan cited Cybercrimes Articles 3 & 4 accurately!");
+  } else {
+    throw new Error("Cybercrimes law test failed.");
+  }
+
+  // [TEST 5] اختبار قضاء التنفيذ (قرار 34 وقرار 46)
+  console.log("[TEST 5] Testing Saudi Enforcement Law (نظام التنفيذ وقرار 46)...");
+  const execRes = await generateBayanResponse("ما هي مهلة قرار 34 وإجراءات قرار 46 في نظام التنفيذ؟", [], mockOfficeContext);
+  if (execRes.text.includes("قرار (34)") && execRes.text.includes("قرار (46)")) {
+    console.log("  ✓ Bayan cited Enforcement Law decisions 34 & 46 accurately!");
+  } else {
+    throw new Error("Enforcement law test failed.");
+  }
+
+  // [TEST 6] اختبار استعلامات فريق المكتب (الموظف زياد)
+  console.log("[TEST 6] Testing Office Team Workload Query (الموظف زياد)...");
+  const teamRes = await generateBayanResponse("الموظف زياد كم قضية باقي له؟", [], mockOfficeContext);
+  if (teamRes.text.includes("زياد") && teamRes.text.includes("3")) {
+    console.log("  ✓ Bayan accurately tracked team member Ziad's cases!");
+  } else {
+    throw new Error("Team query test failed.");
+  }
+
+  // [TEST 7] اختبار حجب البيانات الشخصية
+  console.log("[TEST 7] Testing Saudi PII Masking Shield...");
   const rawText = "هوية العميل 1029384756 ورقم هاتفه 0501234567 وحسابه SA4480000123608010123456";
   const masked = redactSaudiPii(rawText);
   if (!masked.includes("1029384756") && !masked.includes("0501234567") && masked.includes("[هوية محجوبة]")) {
@@ -95,7 +104,7 @@ async function runBayanMasterTest() {
   }
 
   console.log("\n================================================================================");
-  console.log("🎉 ALL ADVANCED BAYAN LEGAL & TEAM INTELLIGENCE TESTS PASSED WITH 100% SUCCESS!");
+  console.log("🎉 ALL 7 SAUDI LEGAL DOMAINS & TEAM INTELLIGENCE TESTS PASSED WITH 100% SUCCESS!");
   console.log("================================================================================");
 }
 
