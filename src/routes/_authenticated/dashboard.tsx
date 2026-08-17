@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { OperationalScoreCard } from "@/components/dashboard/operational-score-card";
 import { OperationalScorePrompt } from "@/components/dashboard/operational-score-prompt";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
+import { BillingSummaryCards } from "@/components/office-billing/summary-cards";
+import { getOfficeBillingSummary } from "@/lib/office-billing/billing.functions";
+import { can } from "@/lib/office-billing/permissions";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { ChevronLeft } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -35,7 +39,15 @@ const dateTime = (v: string) => fmtDateTime(v);
 const dateOnly = (v: string) => fmtDate(v);
 
 function DashboardHome() {
-  const { activeOrgId } = useAuth();
+  const { activeOrgId, activeRole } = useAuth();
+  const fetchBillingSummary = useServerFn(getOfficeBillingSummary);
+  const canViewBilling = can(activeRole, "billing.view");
+
+  const { data: billing, isLoading: billingLoading } = useQuery({
+    queryKey: ["office-billing-summary", activeOrgId, "office"],
+    enabled: canViewBilling && !!activeOrgId,
+    queryFn: () => fetchBillingSummary({ data: { organizationId: activeOrgId! } }),
+  });
 
   const {
     data: stats,
@@ -158,6 +170,22 @@ function DashboardHome() {
               tone="danger"
             />
           </div>
+
+          {canViewBilling ? (
+            <section className="mt-6" aria-labelledby="dashboard-billing-heading">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 id="dashboard-billing-heading" className="font-display text-[18px] font-bold">
+                  الفواتير والأتعاب
+                </h2>
+                <Link to="/invoices">
+                  <Btn variant="ghost" size="sm" className="min-h-11">
+                    إدارة الفواتير <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </Btn>
+                </Link>
+              </div>
+              <BillingSummaryCards summary={billing} loading={billingLoading} />
+            </section>
+          ) : null}
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <OperationalScoreCard organizationId={activeOrgId ?? null} />

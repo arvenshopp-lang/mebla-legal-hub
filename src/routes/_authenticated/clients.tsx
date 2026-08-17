@@ -26,7 +26,7 @@ import {
   Pagination,
 } from "@/lib/list-utils";
 import { DataView, type Column } from "@/components/data/data-view";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Receipt } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
 import { useServerFn } from "@tanstack/react-start";
 import { saveClientSecure, searchClientsByPii } from "@/lib/pii.functions";
@@ -36,6 +36,9 @@ import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import type { Enums } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
+import { getClientStatement } from "@/lib/office-billing/billing.functions";
+import { printStatement } from "@/lib/office-billing/export";
+import { can as canBilling } from "@/lib/office-billing/permissions";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -101,6 +104,22 @@ function Page() {
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const q = useDebounced(search);
   const piiSearch = useServerFn(searchClientsByPii);
+  const fetchStatement = useServerFn(getClientStatement);
+  const [statementFor, setStatementFor] = useState<string | null>(null);
+
+  /** طباعة كشف حساب العميل — البيانات والصلاحية يتحقق منها الخادم. */
+  async function openStatement(clientId: string) {
+    if (!activeOrgId) return;
+    setStatementFor(clientId);
+    try {
+      const statement = await fetchStatement({ data: { organizationId: activeOrgId, clientId } });
+      printStatement(statement);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setStatementFor(null);
+    }
+  }
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
@@ -176,6 +195,16 @@ function Page() {
       mobile: "actions",
       cell: (c) => (
         <div className="flex justify-end gap-1">
+          {canBilling(activeRole, "billing.view") && (
+            <IconBtn
+              aria-label={`كشف حساب ${c.full_name}`}
+              title="كشف حساب العميل"
+              loading={statementFor === c.id}
+              onClick={() => void openStatement(c.id)}
+            >
+              <Receipt className="h-4 w-4" />
+            </IconBtn>
+          )}
           {canEdit(activeRole) && (
             <IconBtn
               aria-label="تعديل"
