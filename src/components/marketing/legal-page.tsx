@@ -78,6 +78,8 @@ export function LegalPage({
           .
         </p>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }
