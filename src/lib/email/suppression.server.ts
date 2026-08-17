@@ -255,7 +255,7 @@ export async function captureHardBounce(input: {
     address: input.address,
     reason: "bounce_hard",
     source: input.source,
-    note: `رفض نهائي من مزوّد المستلم (SMTP ${input.smtpCode}).`,
+    note: `رفض نهائي من مزوّد المستلم (${input.errorCode} / رمز ${input.smtpCode ?? "غير متوفر"}).`,
   });
   return { suppressed: result.recorded };
 }
