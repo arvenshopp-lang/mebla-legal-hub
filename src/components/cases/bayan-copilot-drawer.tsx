@@ -209,7 +209,8 @@ export function BayanCopilotDrawer({
 
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5F6B66] hover:bg-[#F5F3EE] dark:hover:bg-[#202C28] transition-colors"
+            aria-label="إغلاق النافذة"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[#5F6B66] hover:bg-[#F5F3EE] dark:hover:bg-[#202C28] transition-colors p-1"
           >
             <X className="h-5 w-5" />
           </button>
@@ -317,8 +318,8 @@ export function BayanCopilotDrawer({
           </div>
         )}
 
-        {/* صندوق إدخال الاستفسار */}
-        <div className="p-4 border-t border-[#E6E2D8] dark:border-[#2A3632] bg-white dark:bg-[#17201D]">
+        {/* صندوق إدخال الاستفسار مع مساحة آمنة للجوال */}
+        <div className="p-3 sm:p-4 border-t border-[#E6E2D8] dark:border-[#2A3632] bg-white dark:bg-[#17201D] pb-6 sm:pb-4 shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
