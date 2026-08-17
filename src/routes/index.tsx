@@ -375,23 +375,24 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات الذكية ومطالبات الأتعاب في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
           </p>
 
-          <div className="mt-8 flex flex-col justify-center items-center gap-3.5 sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
             <a
               href={registerHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-7 text-[15px] font-bold text-primary-foreground shadow-md transition hover:bg-primary-hover"
+              className={heroBtn.primary}
             >
-              ابدأ الاستخدام مجاناً <ArrowLeft className="h-4 w-4" aria-hidden />
+              ابدأ الاستخدام مجاناً
+              <ArrowLeft className={publicBtnIcon} aria-hidden />
             </a>
             <a
               href={trackHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong bg-surface px-6 text-[15px] font-semibold transition hover:bg-surface-muted shadow-2xs"
+              className={heroBtn.secondary}
             >
-              <SearchCheck className="h-4 w-4 text-primary" aria-hidden />
+              <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
               متابعة قضية برمز
             </a>
             <a
               href={loginHref}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-[var(--radius-m)] border border-border bg-surface px-6 text-[15px] font-medium text-foreground transition hover:border-border-strong"
+              className={heroBtn.tertiary}
             >
               تسجيل الدخول
             </a>
