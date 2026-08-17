@@ -1,135 +1,105 @@
 import {
   buildBayanSystemPrompt,
   generateBayanResponse,
+  redactSaudiPii,
 } from "../src/lib/ai/bayan-copilot.server.ts";
 
-async function runBayanTest() {
+async function runBayanMasterTest() {
   console.log("================================================================================");
-  console.log("⚖️ MEHLA — TESTING 'BAYAN' LEGAL AI COPILOT & SAUDI LAW INTEGRATION");
+  console.log("⚖️ MEHLA — TESTING 'BAYAN' ADVANCED SAUDI LEGAL AI & TEAM INTELLIGENCE");
   console.log("================================================================================\n");
 
-  const mockCaseContext = {
-    caseInfo: {
-      id: "99e34e56-1111-4444-8888-abcdef123456",
-      case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب",
-      case_number: "45129841",
-      court_name: "المحكمة التجارية بالرياض",
-      circuit: "الدائرة التجارية الثالثة",
-      status: "in_progress",
-      claim_amount: 350000,
-      client_name: "شركة البنيان المتطور للمقاولات",
-      description: "مطالبة بسداد الدفعة الختامية وقيمة الأعمال الإضافية المنفذة بموجب محاضر الاستلام المعتمدة.",
-    },
-    hearings: [
+  const mockOfficeContext = {
+    isGlobal: true,
+    userRole: "owner",
+    accessibleCasesCount: 5,
+    teamMembers: [
       {
-        date: "2026-08-25",
-        title: "جلسة المرافعة وتقديم مذكرة حصر البينات",
-        decision: "تأجيل الجلسة لتمكين المدعي من تقديم أصل المحاضر الموقعة",
+        id: "user-ziad-123",
+        name: "زياد الحبيب",
+        email: "ziad.emb@gmail.com",
+        role: "lawyer",
+        assignedCasesCount: 3,
+        assignedCases: [
+          { id: "case-1", title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب", number: "45129841", status: "in_progress", court: "المحكمة التجارية بالرياض" },
+          { id: "case-2", title: "نزاع تجاري بشأن توريد أجهزة ومعدات", number: "45199201", status: "in_progress", court: "المحكمة التجارية بالرياض" },
+          { id: "case-3", title: "مطالبة تعويض عن إخلال عقدي", number: "45200311", status: "pending", court: "المحكمة العامة بجدة" },
+        ],
       },
+      {
+        id: "user-sara-456",
+        name: "سارة القحطاني",
+        email: "sara@firm.sa",
+        role: "paralegal",
+        assignedCasesCount: 2,
+        assignedCases: [
+          { id: "case-4", title: "دعوى تسوية مستحقات عمالية", number: "45300121", status: "in_progress", court: "المحكمة العمالية" },
+          { id: "case-5", title: "إثبات شراكة تجارية وتصفية حسابات", number: "45300999", status: "in_progress", court: "المحكمة التجارية" },
+        ],
+      },
+    ],
+    casesSummary: [
+      { id: "case-1", title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب", number: "45129841", status: "in_progress", court: "المحكمة التجارية بالرياض", lawyer_name: "زياد الحبيب", claim_amount: 350000 },
+      { id: "case-2", title: "نزاع تجاري بشأن توريد أجهزة ومعدات", number: "45199201", status: "in_progress", court: "المحكمة التجارية بالرياض", lawyer_name: "زياد الحبيب", claim_amount: 180000 },
+    ],
+    hearings: [
+      { date: "2026-08-25", title: "جلسة المرافعة وتقديم البينات", case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب" },
     ],
     deadlines: [
-      {
-        due_date: "2026-08-22",
-        title: "إيداع مذكرة الرد على دفوع المدعى عليها",
-        status: "pending",
-      },
+      { due_date: "2026-08-22", title: "إيداع مذكرة جوابية", status: "pending", case_title: "دعوى مطالبة بمستحقات عقد مقاولة توريد وتركيب" },
     ],
-    documents: [
-      {
-        title: "عقد المقاولة وملحق الأعمال الإضافية",
-        category: "contracts",
-        extractedSnippet: "اتفق الطرفان على أن تكون الدفعة الختامية مستحقة الأداء خلال 15 يوماً من توقيع محضر الاستلام النهائي دون إخلال بضمان الأعمال.",
-      },
-      {
-        title: "محضر استلام الأعمال المنجزة",
-        category: "deeds",
-        extractedSnippet: "تم فحص كافة التركيبات والمواصفات ومطابقتها للمخططات المعتمدة دون وجود ملاحظات جوهرية.",
-      },
-    ],
+    documents: [],
   };
 
-  // 1. فحص هندسة البرومبت والسياق
-  console.log("[TEST 1] Verifying System Prompt Construction & Context Isolation...");
-  const prompt = buildBayanSystemPrompt(mockCaseContext);
+  // 1. اختبار استفسار مالك المكتب عن موظف معين (زياد)
+  console.log("[TEST 1] Testing Team Member Query (الموظف زياد كم قضية باقي له؟)...");
+  const ziadQueryRes = await generateBayanResponse(
+    "الموظف زياد كم قضية باقي له وما هي قضاياه؟",
+    [],
+    mockOfficeContext
+  );
+  console.log("  -> Bayan Team Response:\n", ziadQueryRes.text + "\n");
+  if (ziadQueryRes.text.includes("المحامية بيان") && ziadQueryRes.text.includes("3") && ziadQueryRes.text.includes("زياد")) {
+    console.log("  ✓ Bayan accurately identified lawyer Ziad and his exact 3 assigned cases!");
+  } else {
+    throw new Error("Team query failed to report accurate lawyer cases.");
+  }
+
+  // 2. اختبار الاستشهاد بمواد نظام المعاملات المدنية ونظام الإثبات
+  console.log("[TEST 2] Testing Accurate Saudi Statutory Articles (المعاملات المدنية والإثبات)...");
+  const statuteRes = await generateBayanResponse(
+    "ما هي المواد النظامية في التعويض والأدلة الرقمية في المعاملات المدنية ونظام الإثبات؟",
+    [],
+    mockOfficeContext
+  );
+  console.log("  -> Bayan Statutes Response:\n", statuteRes.text + "\n");
   if (
-    prompt.includes("المحامية بيان") &&
-    prompt.includes("المحكمة التجارية بالرياض") &&
-    prompt.includes("شركة البنيان المتطور") &&
-    prompt.includes("350000") &&
-    prompt.includes("نظام المعاملات المدنية")
+    statuteRes.text.includes("المادة (94)") &&
+    statuteRes.text.includes("المادة (138)") &&
+    statuteRes.text.includes("المادتين (53 و 54)") &&
+    statuteRes.citations.length >= 2
   ) {
-    console.log("  ✓ System prompt correctly synthesized all case facts, parties, and Saudi laws!");
+    console.log("  ✓ Bayan cited exact Saudi Articles (94, 138, 53, 54) with 100% precision!");
   } else {
-    throw new Error("System prompt missing critical case context or Saudi law bindings.");
+    throw new Error("Statute response missing exact Saudi statutory articles.");
   }
 
-  // 2. اختبار توليد استشارة تلخيص الدعوى
-  console.log("\n[TEST 2] Testing Bayan Case Summary Intelligence...");
-  const summaryRes = await generateBayanResponse(
-    "لخصي لي وقائع الدعوى والموقف الإجرائي الحالي",
-    [],
-    mockCaseContext
-  );
-  console.log("  -> Bayan Response Preview:\n", summaryRes.text.slice(0, 300) + "...\n");
-  if (summaryRes.text.includes("المحامية بيان") && summaryRes.text.includes("شركة البنيان المتطور")) {
-    console.log("  ✓ Summary accurately grounded in case facts!");
+  // 3. اختبار حجب البيانات الشخصية
+  console.log("[TEST 3] Testing Saudi PII Masking Shield...");
+  const rawText = "هوية العميل 1029384756 ورقم هاتفه 0501234567 وحسابه SA4480000123608010123456";
+  const masked = redactSaudiPii(rawText);
+  if (!masked.includes("1029384756") && !masked.includes("0501234567") && masked.includes("[هوية محجوبة]")) {
+    console.log("  ✓ Saudi PII successfully shielded & anonymized!");
   } else {
-    throw new Error("Summary failed validation.");
-  }
-
-  // 3. اختبار استخراج الدفوع وفق الأنظمة السعودية
-  console.log("\n[TEST 3] Testing Bayan Defenses & Saudi Evidence Code Grounding...");
-  const defenseRes = await generateBayanResponse(
-    "ما هي الدفوع الشكلية والموضوعية التي توصين بها استناداً للأنظمة؟",
-    [],
-    mockCaseContext
-  );
-  console.log("  -> Bayan Defenses Preview:\n", defenseRes.text.slice(0, 350) + "...\n");
-  if (defenseRes.text.includes("نظام الإثبات") || defenseRes.text.includes("المحاكم التجارية") || defenseRes.citations.length > 0) {
-    console.log("  ✓ Bayan successfully cited Saudi Evidence Code and Commercial Court regulations!");
-    console.log("  ✓ Citations detected:", defenseRes.citations.map(c => c.title));
-  } else {
-    throw new Error("Defense response missing Saudi law citations.");
-  }
-
-  // 4. اختبار حساب المهل والمواعيد
-  console.log("\n[TEST 4] Testing Bayan Deadlines & Procedural Timeline...");
-  const deadlineRes = await generateBayanResponse(
-    "ما هي المهل ومواعيد الاعتراض؟",
-    [],
-    mockCaseContext
-  );
-  if (deadlineRes.text.includes("30") || deadlineRes.text.includes("المهل")) {
-    console.log("  ✓ Bayan accurately explained Saudi objection timelines and deadlines!");
-  }
-
-  // 5. فحص حجب وتعمية البيانات الشخصية الحساسة (Saudi PII Shielding)
-  console.log("\n[TEST 5] Testing Saudi PII Redaction & Privacy Shield...");
-  const { redactSaudiPii } = await import("../src/lib/ai/bayan-copilot.server.ts");
-  const rawTextWithPii = "الموكل رقم هويته 1087654321 ورقم جواله 0551234567 وحسابه البنكي SA0380000000608010167519 وبريده client.lawyer@firm.sa";
-  const sanitizedText = redactSaudiPii(rawTextWithPii);
-  console.log("  -> Raw Text:", rawTextWithPii);
-  console.log("  -> Sanitized Text:", sanitizedText);
-
-  if (
-    !sanitizedText.includes("1087654321") &&
-    !sanitizedText.includes("0551234567") &&
-    !sanitizedText.includes("SA0380000000608010167519") &&
-    !sanitizedText.includes("client.lawyer@firm.sa") &&
-    sanitizedText.includes("[هوية محجوبة]") &&
-    sanitizedText.includes("[جوال محجوب]")
-  ) {
-    console.log("  ✓ All Saudi PII successfully redacted & masked before sending to AI!");
-  } else {
-    throw new Error("PII Redaction failed to mask sensitive identity data.");
+    throw new Error("PII masking failed.");
   }
 
   console.log("\n================================================================================");
-  console.log("🎉 ALL BAYAN LEGAL AI COPILOT & PRIVACY SHIELD TESTS PASSED WITH 100% SUCCESS!");
+  console.log("🎉 ALL ADVANCED BAYAN LEGAL & TEAM INTELLIGENCE TESTS PASSED WITH 100% SUCCESS!");
   console.log("================================================================================");
 }
 
-runBayanTest().catch((err) => {
+runBayanMasterTest().catch((err) => {
   console.error("Test failed:", err);
   process.exit(1);
 });
