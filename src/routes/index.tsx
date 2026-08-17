@@ -814,7 +814,7 @@ function Security() {
   );
 }
 
-function CTA({ registerHref }: { registerHref: string }) {
+function CTA({ registerHref, trackHref }: { registerHref: string; trackHref: string }) {
   return (
     <section className="section-y">
       <div className="container-page">
@@ -823,12 +823,21 @@ function CTA({ registerHref }: { registerHref: string }) {
           <p className="measure mt-3 text-body text-primary-foreground/80">
             أنشئ مكتبك خلال دقيقة، وابدأ بتسجيل أول قضية ومتابعة مهلها وجلساتها.
           </p>
-          <a
-            href={registerHref}
-            className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
-          >
-            إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
-          </a>
+          <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <a
+              href={registerHref}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-surface px-6 text-[15px] font-semibold text-primary transition hover:bg-surface-muted"
+            >
+              إنشاء حساب المكتب <ArrowLeft className="h-4 w-4" aria-hidden />
+            </a>
+            <a
+              href={trackHref}
+              className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-[var(--radius-m)] border border-primary-foreground/35 px-6 text-[15px] font-semibold text-primary-foreground transition hover:bg-primary-foreground/10"
+            >
+              <SearchCheck className="h-4 w-4" aria-hidden />
+              متابعة القضية
+            </a>
+          </div>
         </div>
       </div>
     </section>
