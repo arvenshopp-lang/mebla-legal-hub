@@ -355,12 +355,47 @@ function ensureSpace(ctx: Ctx, needed: number): void {
 
 /* -------------------------------------------------------------- الأقسام */
 
-function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
+/** شعار مُدمج مع أبعاده المحسوبة داخل حدود رأس المستند. */
+type EmbeddedLogo = { image: PDFImage; width: number; height: number };
+
+async function embedLogo(doc: PDFDocument, brand: PdfBrand): Promise<EmbeddedLogo | null> {
+  const logo = brand.logo;
+  if (!logo || logo.bytes.byteLength === 0) return null;
+  try {
+    const image = /png/i.test(logo.mime)
+      ? await doc.embedPng(logo.bytes)
+      : await doc.embedJpg(logo.bytes);
+    const maxHeight = 44;
+    const maxWidth = 120;
+    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+    return { image, width: image.width * scale, height: image.height * scale };
+  } catch {
+    // شعار تالف أو بصيغة غير مدعومة لا يجوز أن يعطّل إصدار المستند المالي.
+    return null;
+  }
+}
+
+function header(
+  ctx: Ctx,
+  model: PdfDocumentModel,
+  brand: PdfBrand,
+  logo: EmbeddedLogo | null,
+): void {
   const right = A4.width - MARGIN;
   const titleWidth = 196;
-  const brandWidth = USABLE - titleWidth - 16;
+  const logoSpace = logo ? logo.width + 14 : 0;
+  const brandWidth = USABLE - titleWidth - 16 - logoSpace;
+  const brandRight = right - logoSpace;
   ctx.page.drawRectangle({ x: 0, y: A4.height - 96, width: A4.width, height: 96, color: SURFACE });
   ctx.page.drawRectangle({ x: 0, y: A4.height - 99, width: A4.width, height: 3, color: GOLD });
+  if (logo) {
+    ctx.page.drawImage(logo.image, {
+      x: right - logo.width,
+      y: A4.height - 52 - logo.height / 2,
+      width: logo.width,
+      height: logo.height,
+    });
+  }
 
   // اسم البائع قد يكون طويلاً: نصغّر الحجم ثم نقصّ على حدود الكلمات حتى لا
   // يتجاوز المنطقة المخصصة له ولا يتراكب مع عنوان المستند على اليسار.
@@ -374,7 +409,7 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
   rightText(
     ctx,
     truncate(ctx, sellerName, brandWidth, sellerSize),
-    right,
+    brandRight,
     A4.height - 46,
     sellerSize,
   );
@@ -382,20 +417,20 @@ function header(ctx: Ctx, model: PdfDocumentModel, brand: PdfBrand): void {
     rightText(
       ctx,
       truncate(ctx, brand.sellerAddress, brandWidth, 8.5),
-      right,
+      brandRight,
       A4.height - 64,
       8.5,
       MUTED,
     );
   }
   if (brand.taxNumber) {
-    rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, right, A4.height - 78, 8.5, MUTED);
+    rightText(ctx, `الرقم الضريبي: ${brand.taxNumber}`, brandRight, A4.height - 78, 8.5, MUTED);
   }
   if (!brand.taxNumber && brand.commercialRegistration) {
     rightText(
       ctx,
       `السجل التجاري: ${brand.commercialRegistration}`,
-      right,
+      brandRight,
       A4.height - 78,
       8.5,
       MUTED,
