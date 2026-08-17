@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, type LegalSection } from "@/components/marketing/legal-page";
+import { publicSiteQueryOptions } from "@/lib/public-site.query";
 
 const TITLE = "سياسة الخصوصية — مِهلة";
 const DESCRIPTION =
   "كيف تجمع منصة مِهلة بيانات مكاتب المحاماة وعملائها وتحفظها وتحميها، وحقوقك في الوصول إليها وحذفها.";
 
 export const Route = createFileRoute("/privacy")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({
     meta: [
       { title: TITLE },
