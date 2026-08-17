@@ -36,8 +36,8 @@ import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import type { Enums } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
-import { getClientStatement } from "@/lib/office-billing/billing.functions";
-import { printStatement } from "@/lib/office-billing/export";
+import { clientStatementPdf } from "@/lib/office-billing/pdf.functions";
+import { downloadPdfPayload } from "@/lib/billing/download-pdf";
 import { can as canBilling } from "@/lib/office-billing/permissions";
 
 export const Route = createFileRoute("/_authenticated/clients")({
@@ -104,16 +104,15 @@ function Page() {
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const q = useDebounced(search);
   const piiSearch = useServerFn(searchClientsByPii);
-  const fetchStatement = useServerFn(getClientStatement);
+  const statementPdfFn = useServerFn(clientStatementPdf);
   const [statementFor, setStatementFor] = useState<string | null>(null);
 
-  /** طباعة كشف حساب العميل — البيانات والصلاحية يتحقق منها الخادم. */
+  /** كشف حساب العميل PDF بهوية المكتب — البيانات والصلاحية يتحقق منها الخادم. */
   async function openStatement(clientId: string) {
     if (!activeOrgId) return;
     setStatementFor(clientId);
     try {
-      const statement = await fetchStatement({ data: { organizationId: activeOrgId, clientId } });
-      printStatement(statement);
+      downloadPdfPayload(await statementPdfFn({ data: { organizationId: activeOrgId, clientId } }));
     } catch (e) {
       toast.error(errMsg(e));
     } finally {
