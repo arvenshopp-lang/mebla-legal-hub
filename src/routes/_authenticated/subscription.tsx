@@ -334,7 +334,7 @@ function SubscriptionPage() {
   );
 }
 
-function InfoCell({ label, value }: { label: string; value: string }) {
+function InfoCell({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-[var(--radius-m)] bg-surface-muted px-3 py-2.5">
       <dt className="text-[11.5px] text-text-muted">{label}</dt>
