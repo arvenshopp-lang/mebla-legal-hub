@@ -1,7 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-react";
+import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
+import { publicSiteQueryOptions } from "@/lib/public-site.query";
 
 export const Route = createFileRoute("/docs")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({
     meta: [
       { title: "مركز المساعدة — مِهلة" },
@@ -54,17 +57,14 @@ const SECTIONS = [
 
 function Page() {
   return (
-    <main dir="rtl" className="min-h-dvh bg-surface-muted px-4 py-10 text-foreground sm:py-16">
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="text-center">
-          <div className="text-xl font-extrabold tracking-tight">مِهلة</div>
-          <h1 className="mt-4 text-3xl font-bold">مركز المساعدة</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            نعمل على إثراء هذا المركز بالمحتوى الكامل. تجد أدناه أقسام الدعم الرسمية للمنصة.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+    <PublicShell>
+      <PageHeading
+        eyebrow="الدعم"
+        title="مركز المساعدة"
+        intro="نعمل على إثراء هذا المركز بالمحتوى الكامل. تجد أدناه أقسام الدعم الرسمية للمنصة."
+      />
+      <div className="container-page max-w-3xl py-10 md:py-14">
+        <div className="grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
             <section
               key={s.title}
@@ -79,13 +79,7 @@ function Page() {
             </section>
           ))}
         </div>
-
-        <div className="mt-8 text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
-            العودة للموقع الرئيسي
-          </Link>
-        </div>
       </div>
-    </main>
+    </PublicShell>
   );
 }
