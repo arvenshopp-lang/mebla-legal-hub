@@ -48,7 +48,7 @@ function Page() {
           {[
             { k: "profile", l: "حسابي" },
             { k: "organization", l: "المكتب" },
-            ...(showBilling ? [{ k: "billing", l: "هوية الفواتير" }] : []),
+            ...(showBilling ? [{ k: "billing", l: "هوية المستندات والأتعاب" }] : []),
             { k: "notifications", l: "التنبيهات" },
             { k: "security", l: "الأمان" },
             { k: "privacy", l: "الخصوصية" },

@@ -14,9 +14,9 @@ export type OfficeInvoiceStatus = (typeof OFFICE_INVOICE_STATUSES)[number];
 
 export const OFFICE_INVOICE_STATUS_LABELS: Record<OfficeInvoiceStatus, string> = {
   draft: "مسودة",
-  issued: "مُصدرة",
-  partially_paid: "مدفوعة جزئياً",
-  paid: "مدفوعة",
+  issued: "مطالب بها",
+  partially_paid: "مسددة جزئياً",
+  paid: "مسددة بالكامل",
   cancelled: "ملغاة",
 };
 
@@ -25,7 +25,7 @@ export type OfficeInvoiceDisplayStatus = OfficeInvoiceStatus | "overdue";
 
 export const OFFICE_INVOICE_DISPLAY_LABELS: Record<OfficeInvoiceDisplayStatus, string> = {
   ...OFFICE_INVOICE_STATUS_LABELS,
-  overdue: "متأخرة",
+  overdue: "متأخرة السداد",
 };
 
 export const PAYMENT_METHODS = ["cash", "bank_transfer", "card", "cheque", "other"] as const;
@@ -46,8 +46,8 @@ export const DISCOUNT_TYPE_LABELS: Record<DiscountType, string> = {
   percent: "نسبة مئوية (%)",
 };
 
-/** نسبة ضريبة القيمة المضافة الافتراضية في المملكة. */
-export const DEFAULT_TAX_RATE = 15;
+/** نسبة الضريبة الافتراضية (0% لمطالبات وعروض الأتعاب المباشرة). */
+export const DEFAULT_TAX_RATE = 0;
 
 export type InvoiceTotals = {
   subtotal: number;

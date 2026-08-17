@@ -36,7 +36,7 @@ export function CaseFinancialCard({
           to="/invoices"
           className="inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
         >
-          فواتير المكتب <ChevronLeft className="h-4 w-4" aria-hidden />
+          الأتعاب والمطالبات <ChevronLeft className="h-4 w-4" aria-hidden />
         </Link>
       }
     >
@@ -48,15 +48,15 @@ export function CaseFinancialCard({
         </p>
       ) : !data || data.invoiced === 0 ? (
         <EmptyState
-          title="لا توجد فواتير مُصدرة لهذه القضية"
-          hint="أنشئ فاتورة أتعاب من صفحة الفواتير وحدّد هذه القضية."
+          title="لا توجد مطالبات أتعاب مُصدرة لهذه القضية"
+          hint="أنشئ مطالبة أتعاب أو عرض سعر من صفحة الأتعاب وحدّد هذه القضية."
         />
       ) : (
         <dl className="grid grid-cols-2 gap-3">
-          <Cell label="إجمالي الفواتير" value={fmtMoney(data.invoiced)} />
-          <Cell label="المحصل" value={fmtMoney(data.collected)} />
-          <Cell label="الرصيد المستحق" value={fmtMoney(data.outstanding)} />
-          <Cell label="متأخر السداد" value={fmtMoney(data.overdue)} tone="danger" />
+          <Cell label="إجمالي الأتعاب" value={fmtMoney(data.invoiced)} />
+          <Cell label="المبالغ المحصلة" value={fmtMoney(data.collected)} />
+          <Cell label="الأتعاب المستحقة" value={fmtMoney(data.outstanding)} />
+          <Cell label="متأخرات السداد" value={fmtMoney(data.overdue)} tone="danger" />
         </dl>
       )}
     </SectionCard>

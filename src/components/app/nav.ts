@@ -60,7 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/office-page", label: "الصفحة العامة", Icon: Globe },
       {
         to: "/invoices",
-        label: "الفواتير والأتعاب",
+        label: "الأتعاب والمطالبات",
         Icon: Receipt,
         roles: ["owner", "admin", "lawyer"],
       },

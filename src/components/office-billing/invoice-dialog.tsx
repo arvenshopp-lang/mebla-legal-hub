@@ -394,7 +394,7 @@ export function InvoiceDialog({
               onChange={(e) => setDiscountValue(e.target.value)}
             />
           </FormField>
-          <FormField label="نسبة الضريبة %" hint="ضريبة القيمة المضافة 15% افتراضياً.">
+          <FormField label="نسبة الضريبة %" hint="اختياري (0% للمطالبات المباشرة غير الخاضعة للضريبة).">
             <input
               type="number"
               min="0"
@@ -409,16 +409,16 @@ export function InvoiceDialog({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="شروط الدفع" optional>
+          <FormField label="شروط وسداد الأتعاب" optional>
             <input
               className={inputCls}
               value={paymentTerms}
               maxLength={500}
               onChange={(e) => setPaymentTerms(e.target.value)}
-              placeholder="السداد خلال 14 يوماً من تاريخ الإصدار"
+              placeholder="السداد خلال 14 يوماً عبر التحويل البنكي"
             />
           </FormField>
-          <FormField label="ملاحظات" optional>
+          <FormField label="ملاحظات وتفاصيل إضافية" optional>
             <input
               className={inputCls}
               value={notes}
@@ -429,12 +429,12 @@ export function InvoiceDialog({
         </div>
 
         <dl className="grid gap-1.5 rounded-[var(--radius-m)] bg-surface-muted p-4 text-body-sm">
-          <Row label="الإجمالي قبل الضريبة" value={fmtMoney(totals.subtotal)} />
-          <Row label="الخصم" value={fmtMoney(totals.discountTotal)} />
-          <Row label={`الضريبة (${Number(taxRate) || 0}%)`} value={fmtMoney(totals.taxTotal)} />
-          <Row label="الإجمالي المستحق" value={fmtMoney(totals.total)} strong />
+          <Row label="إجمالي الأتعاب" value={fmtMoney(totals.subtotal)} />
+          {totals.discountTotal > 0 && <Row label="الخصم الممنوح" value={fmtMoney(totals.discountTotal)} />}
+          {Number(taxRate) > 0 && <Row label={`الضريبة (${Number(taxRate) || 0}%)`} value={fmtMoney(totals.taxTotal)} />}
+          <Row label="صافي الأتعاب المطلوبة" value={fmtMoney(totals.total)} strong />
         </dl>
-        <p className="text-caption">هذه معاينة حسابية؛ القيم النهائية تُحسب في الخادم عند الحفظ.</p>
+        <p className="text-caption">هذه معاينة حسابية للمطالبة؛ القيم النهائية تُحفظ وتُوثق خادمياً.</p>
 
         {fieldError && (
           <p role="alert" className="text-body-sm text-danger">

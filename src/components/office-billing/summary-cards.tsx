@@ -13,29 +13,29 @@ export function BillingSummaryCards({
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
-        label="إجمالي الفواتير المُصدرة"
+        label="إجمالي المطالبات الصادرة"
         loading={loading}
         value={fmtMoney(summary?.invoiced ?? 0)}
       />
       <StatCard
-        label="المحصل"
+        label="المبالغ المحصلة"
         loading={loading}
         value={fmtMoney(summary?.collected ?? 0)}
         tone="success"
       />
       <StatCard
-        label="الرصيد المستحق"
+        label="الأتعاب المستحقة"
         loading={loading}
         value={fmtMoney(summary?.outstanding ?? 0)}
         tone="gold"
       />
       <StatCard
-        label="متأخر السداد"
+        label="متأخرات السداد"
         loading={loading}
         value={fmtMoney(summary?.overdue ?? 0)}
         tone="danger"
         hint={
-          summary && summary.overdueCount > 0 ? `${summary.overdueCount} فاتورة متأخرة` : undefined
+          summary && summary.overdueCount > 0 ? `${summary.overdueCount} مطالبة متأخرة` : undefined
         }
       />
     </div>

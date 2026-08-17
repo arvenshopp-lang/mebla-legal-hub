@@ -109,7 +109,7 @@ function invoiceMeta(detail: InvoiceDetail): PdfMetaRow[] {
     { label: "الجوال", value: label(inv.client?.phone) },
     { label: "القضية", value: label(inv.case?.case_title) },
     { label: "رقم القضية", value: label(inv.case?.case_number) },
-    { label: "حالة الفاتورة", value: OFFICE_INVOICE_DISPLAY_LABELS[inv.displayStatus] },
+    { label: "حالة المطالبة", value: OFFICE_INVOICE_DISPLAY_LABELS[inv.displayStatus] },
     { label: "تاريخ الإصدار", value: inv.issue_date ? formatPdfDate(inv.issue_date) : dash },
     { label: "تاريخ الاستحقاق", value: inv.due_date ? formatPdfDate(inv.due_date) : dash },
     { label: "العملة", value: inv.currency },
@@ -162,17 +162,24 @@ function invoicePaymentsTable(detail: InvoiceDetail): PdfTable | null {
 function invoiceTotals(detail: InvoiceDetail): PdfTotalRow[] {
   const inv = detail.invoice;
   const currency = inv.currency;
-  return [
-    { label: "الإجمالي قبل الضريبة", value: formatPdfMoney(inv.subtotal, currency) },
-    { label: "الخصم", value: formatPdfMoney(inv.discount_total, currency) },
-    {
-      label: `ضريبة القيمة المضافة ${inv.tax_rate}%`,
-      value: formatPdfMoney(inv.tax_total, currency),
-    },
-    { label: "الإجمالي المستحق", value: formatPdfMoney(inv.total, currency), emphasis: true },
-    { label: "المحصل", value: formatPdfMoney(inv.paid_total, currency) },
-    { label: "المتبقي", value: formatPdfMoney(inv.balance, currency), emphasis: true },
+  const rows: PdfTotalRow[] = [
+    { label: "إجمالي الأتعاب", value: formatPdfMoney(inv.subtotal, currency) },
   ];
+  if (inv.discount_total > 0) {
+    rows.push({ label: "الخصم الممنوح", value: formatPdfMoney(inv.discount_total, currency) });
+  }
+  if (Number(inv.tax_rate) > 0 && inv.tax_total > 0) {
+    rows.push({
+      label: `ضريبة القيمة المضافة (${inv.tax_rate}%)`,
+      value: formatPdfMoney(inv.tax_total, currency),
+    });
+  }
+  rows.push(
+    { label: "صافي الأتعاب المطلوبة", value: formatPdfMoney(inv.total, currency), emphasis: true },
+    { label: "المبلغ المسدد", value: formatPdfMoney(inv.paid_total, currency) },
+    { label: "الرصيد المتبقي", value: formatPdfMoney(inv.balance, currency), emphasis: true },
+  );
+  return rows;
 }
 
 export async function renderInvoicePdf(
@@ -182,24 +189,26 @@ export async function renderInvoicePdf(
 ): Promise<PdfPayload> {
   const { brand, showSignature } = await loadOfficeBrand(supabase, organizationId);
   const inv = detail.invoice;
+  const isQuote = inv.status === "draft";
+  const docTitle = isQuote ? "عرض أتعاب قانونية" : "إشعار مطالبة أتعاب";
   const reference = inv.invoice_number ?? `مسودة-${inv.id.slice(0, 8)}`;
   const paymentsTable = invoicePaymentsTable(detail);
   const blocks: PdfDocumentModel["blocks"] = [];
-  if (inv.payment_terms) blocks.push({ title: "شروط الدفع", lines: inv.payment_terms.split("\n") });
-  if (inv.notes) blocks.push({ title: "ملاحظات", lines: inv.notes.split("\n") });
+  if (inv.payment_terms) blocks.push({ title: "شروط وسداد الأتعاب", lines: inv.payment_terms.split("\n") });
+  if (inv.notes) blocks.push({ title: "ملاحظات وتفاصيل", lines: inv.notes.split("\n") });
 
   const model: PdfDocumentModel = {
     kind: "invoice",
-    title: "فاتورة أتعاب",
+    title: docTitle,
     reference,
     subtitle: inv.title,
-    statusLine: `الحالة: ${OFFICE_INVOICE_DISPLAY_LABELS[inv.displayStatus]}`,
+    statusLine: `حالة المستند: ${OFFICE_INVOICE_DISPLAY_LABELS[inv.displayStatus]}`,
     notice:
       inv.status === "draft"
-        ? "هذه مسودة فاتورة لم تُصدر بعد ولا تُعد مطالبة بالسداد."
+        ? "هذا المستند يُعد عرض أتعاب مبدئي للخدمات والاستشارات القانونية الموضحة."
         : inv.status === "cancelled"
-          ? "هذه الفاتورة ملغاة ولا تُعد مطالبة بالسداد."
-          : null,
+          ? "هذه المطالبة ملغاة ولا يُعتد بها للسداد."
+          : "إشعار مطالبة بأتعاب الخدمات القانونية والتمثيل القضائي.",
     meta: invoiceMeta(detail),
     recipient: {
       title: "إلى",

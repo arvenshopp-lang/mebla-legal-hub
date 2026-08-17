@@ -355,7 +355,7 @@ function Page() {
               <IconBtn aria-label="تعديل المسودة" onClick={() => void openEdit(r)}>
                 <Pencil className="h-4 w-4" aria-hidden />
               </IconBtn>
-              <IconBtn aria-label="إصدار الفاتورة" onClick={() => setIssuing(r)}>
+              <IconBtn aria-label="إصدار المطالبة" onClick={() => setIssuing(r)}>
                 <Send className="h-4 w-4" aria-hidden />
               </IconBtn>
               <IconBtn tone="danger" aria-label="حذف المسودة" onClick={() => setDeleting(r)}>
@@ -376,7 +376,7 @@ function Page() {
               >
                 <Wallet className="h-4 w-4" aria-hidden />
               </IconBtn>
-              <IconBtn tone="danger" aria-label="إلغاء الفاتورة" onClick={() => setCancelling(r)}>
+              <IconBtn tone="danger" aria-label="إلغاء المطالبة" onClick={() => setCancelling(r)}>
                 <Ban className="h-4 w-4" aria-hidden />
               </IconBtn>
             </>
@@ -388,7 +388,7 @@ function Page() {
 
   if (!canView) {
     return (
-      <DashboardShell title="فواتير المكتب" description="أتعاب المكتب والدفعات">
+      <DashboardShell title="الأتعاب والمطالبات" description="أتعاب المكتب والدفعات">
         <EmptyState
           title="لا تملك صلاحية الاطلاع على البيانات المالية"
           hint="الوصول المالي متاح لمالك المكتب والمدير والمحامي. راجع مالك المكتب لتعديل دورك."
@@ -399,8 +399,8 @@ function Page() {
 
   return (
     <DashboardShell
-      title="فواتير المكتب والأتعاب"
-      description="إصدار الفواتير وتسجيل الدفعات ومتابعة الأرصدة"
+      title="الأتعاب والمطالبات المالية"
+      description="إدارة أتعاب القضايا وعروض الأسعار وإشعارات السداد ومتابعة الأرصدة"
     >
       <BillingSummaryCards summary={summary.data} loading={summary.isLoading} />
 
@@ -412,9 +412,9 @@ function Page() {
             setPage(1);
           }}
           searching={list.isFetching}
-          placeholder="بحث برقم الفاتورة أو وصفها…"
+          placeholder="بحث برقم المستند أو وصفه…"
           canAdd={canManage}
-          addLabel="فاتورة جديدة"
+          addLabel="مطالبة / عرض أتعاب"
           onAdd={() => {
             setEditing(null);
             setDialogOpen(true);
