@@ -688,6 +688,14 @@ function footer(ctx: Ctx, brand: PdfBrand): void {
     });
     drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
     drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
+    const fine = brand.footerFineNote?.trim();
+    if (fine) {
+      const fineWidth = splitDirectionalRuns(fine).reduce(
+        (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 6.5),
+        0,
+      );
+      drawLine(page, ctx.font, fine, A4.width - MARGIN - fineWidth, MARGIN - 4, 6.5, LINE);
+    }
     const contactWidth = contact
       ? splitDirectionalRuns(contact).reduce(
           (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
@@ -716,7 +724,7 @@ export async function renderBillingPdf(
 
   const ctx: Ctx = { doc, font, page: doc.addPage([A4.width, A4.height]), y: A4.height - MARGIN };
 
-  header(ctx, model, brand);
+  header(ctx, model, brand, await embedLogo(doc, brand));
   if (model.recipient) recipientCard(ctx, model.recipient);
   metaGrid(ctx, model.meta);
   model.tables.forEach((spec) => table(ctx, spec));
