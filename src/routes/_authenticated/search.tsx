@@ -133,22 +133,32 @@ function SearchPanel() {
       page,
     ],
     enabled: !!activeOrgId && q.trim().length >= 2,
+    retry: false,
     queryFn: async () => {
-      const result = await runSearch({
-        data: {
-          organizationId: activeOrgId!,
-          query: q.trim(),
-          caseId: caseId || null,
-          clientId: clientId || null,
-          fileType: fileType || null,
-          ocrOnly,
-          from: from || null,
-          to: to || null,
-          limit: PAGE_SIZE,
-          offset: (page - 1) * PAGE_SIZE,
-        },
-      });
-      return { rows: result.rows as Hit[], count: result.count };
+      try {
+        const result = await runSearch({
+          data: {
+            organizationId: activeOrgId!,
+            query: q.trim(),
+            caseId: caseId || null,
+            clientId: clientId || null,
+            fileType: fileType || null,
+            ocrOnly,
+            from: from || null,
+            to: to || null,
+            limit: PAGE_SIZE,
+            offset: (page - 1) * PAGE_SIZE,
+          },
+        });
+        return { rows: result.rows as Hit[], count: result.count };
+      } catch (err) {
+        // رسائل الخادم التقنية (مثل انتهاء الجلسة) تُحوَّل إلى عربية واضحة.
+        const raw = err instanceof Error ? err.message : "";
+        if (/unauthorized|authorization header/i.test(raw)) {
+          throw new Error("انتهت جلستك. أعد تسجيل الدخول للبحث في المستندات.");
+        }
+        throw new Error(describeMutationError(raw, "تعذّر تنفيذ البحث. أعد المحاولة."));
+      }
     },
   });
 
