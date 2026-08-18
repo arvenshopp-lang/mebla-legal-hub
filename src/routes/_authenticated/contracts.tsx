@@ -201,12 +201,26 @@ function ContractsPage() {
     }
   };
 
-  const handleCopySignLink = (contract: ContractModel) => {
-    const fullUrl = `${window.location.origin}${contract.signUrl}`;
-    navigator.clipboard.writeText(fullUrl);
-    setCopiedTokenId(contract.id);
-    toast.success("تم نسخ رابط التوقيع المخصص للموكل!");
-    setTimeout(() => setCopiedTokenId(null), 3000);
+  const handleCopySignLink = async (contract: ContractModel) => {
+    if (issuingLinkId) return;
+    setIssuingLinkId(contract.id);
+    try {
+      const { signUrl } = await issueContractSignLinkFn({ data: { contractId: contract.id } });
+      const fullUrl = `${window.location.origin}${signUrl}`;
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedTokenId(contract.id);
+      toast.success("تم إصدار رابط توقيع جديد ونسخه — صالح لمدة 14 يوماً.");
+      setTimeout(() => setCopiedTokenId(null), 3000);
+      await loadContracts();
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "تعذّر إصدار رابط التوقيع. حاول مرة أخرى.",
+      );
+    } finally {
+      setIssuingLinkId(null);
+    }
   };
 
   // KPIs
@@ -551,12 +565,13 @@ function ContractsPage() {
                       <td className="p-3.5">
                         <div className="flex items-center justify-center gap-1.5">
                           {/* Copy Sign Link */}
-                          {contract.signUrl && (
+                          {contract.status !== "signed" && contract.status !== "cancelled" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              title="نسخ رابط التوقيع للموكل"
-                              onClick={() => handleCopySignLink(contract)}
+                              title="إصدار ونسخ رابط التوقيع للموكل"
+                              disabled={issuingLinkId === contract.id}
+                              onClick={() => void handleCopySignLink(contract)}
                               className="h-8 px-2 text-xs gap-1"
                             >
                               {copiedTokenId === contract.id ? (
