@@ -183,61 +183,43 @@ function SubscriptionPage() {
             </ul>
           </SectionCard>
 
-          {/* Upgrade options */}
-          {overview.upgrade_plans.length > 0 && (
+          {/* Upgrade options — الباقات الأعلى من باقتك الحالية فقط */}
+          {higherPlans.length > 0 && (
             <SectionCard
-              title="الترقية"
-              description="اختر الباقة المناسبة وسيتواصل فريق مِهلة لإتمام التفعيل"
+              title="ترقية الباقة"
+              description="باقات أعلى من باقتك الحالية — تواصل مع فريق مِهلة لإتمام الترقية"
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {overview.upgrade_plans.map((p) => {
-                  const current = p.code === overview.plan.code;
-                  return (
-                    <div
-                      key={p.code}
-                      className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[14px] font-bold">{p.name_ar}</p>
-                        {current && <Badge tone="green">باقتك</Badge>}
-                      </div>
-                      <p className="mt-1.5 text-[13px] tabular-nums text-muted-foreground">
-                        {SAR(p.price_monthly)} / شهرياً
-                      </p>
-                      <p className="mt-2 text-[12px] text-text-muted">
-                        {p.max_users === null ? "مستخدمون بلا حد" : `حتى ${p.max_users} مستخدمين`} ·{" "}
-                        {p.max_cases === null ? "قضايا بلا حد" : `${p.max_cases} قضية`}
-                      </p>
-                      {!current && (
-                        <div className="mt-3">
-                          <Btn
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              toast.success("تم تسجيل طلب الترقية", {
-                                description: `سيتواصل فريق مِهلة معك بخصوص ${p.name_ar}.`,
-                              })
-                            }
-                          >
-                            طلب الترقية
-                          </Btn>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {higherPlans.map((p) => (
+                  <div
+                    key={p.code}
+                    className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
+                  >
+                    <p className="text-[14px] font-bold">{p.name_ar}</p>
+                    <p className="mt-1.5 text-[13px] tabular-nums text-muted-foreground">
+                      {SAR(p.price_monthly)} / شهرياً
+                    </p>
+                    <p className="mt-2 text-[12px] text-text-muted">
+                      {p.max_users === null ? "مستخدمون بلا حد" : `حتى ${p.max_users} مستخدمين`} ·{" "}
+                      {p.max_cases === null ? "قضايا بلا حد" : `${p.max_cases} قضية`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link to="/pricing">
+                  <Btn variant="ghost">مقارنة الباقات</Btn>
+                </Link>
+                <Link to="/contact">
+                  <Btn variant="ghost">تواصل مع مِهلة</Btn>
+                </Link>
               </div>
             </SectionCard>
           )}
 
-          {/* History */}
-          <SectionCard title="سجل الاشتراكات">
-            {overview.history.length === 0 ? (
-              <EmptyState
-                title="لا توجد اشتراكات سابقة"
-                hint="سيظهر هنا كل اشتراك يتم تفعيله لمكتبك."
-              />
-            ) : (
+          {/* History — يظهر فقط عند وجود سجل فعلي */}
+          {overview.history.length > 0 && (
+            <SectionCard title="سجل الاشتراكات">
               <DataCard>
                 <table className="w-full min-w-[620px] text-right">
                   <thead>
