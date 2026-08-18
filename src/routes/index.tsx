@@ -263,7 +263,7 @@ function AppPreview() {
             { l: "المهل النظامية", count: "6" },
             { l: "المهام", count: "12" },
             { l: "المستندات والـ OCR", count: "48" },
-            { l: "الأتعاب والمطالبات", count: "8" },
+            { l: "العقود الرقمية", count: "8" },
           ].map((item) => (
             <div
               key={item.l}
