@@ -80,9 +80,9 @@ function RevenuePage() {
               <ul className="space-y-3">
                 {data.by_month.map((m) => (
                   <li key={m.month}>
-                    <div className="mb-1 flex items-center justify-between text-body-sm">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-body-sm">
                       <span className="font-medium">{monthLabel(m.month)}</span>
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground tabular-nums">
                         {money(m.amount)} · {m.count} اشتراك
                       </span>
                     </div>
@@ -107,7 +107,7 @@ function RevenuePage() {
                 <EmptyState title="لا توجد بيانات" />
               ) : (
                 <DataCard>
-                  <table className="w-full text-right">
+                  <table className="w-full min-w-[36rem] text-right">
                     <thead>
                       <tr>
                         <Th>الباقة</Th>
@@ -134,7 +134,7 @@ function RevenuePage() {
                 <EmptyState title="لا توجد بيانات" />
               ) : (
                 <DataCard>
-                  <table className="w-full text-right">
+                  <table className="w-full min-w-[36rem] text-right">
                     <thead>
                       <tr>
                         <Th>المكتب</Th>
@@ -173,9 +173,9 @@ function Stat({
 }) {
   return (
     <div className="surface-card p-5">
-      <p className="text-caption">{label}</p>
-      <p className="mt-1.5 text-h3">{value}</p>
-      {hint && <p className="text-caption mt-1">{hint}</p>}
+      <p className="text-caption break-words">{label}</p>
+      <p className="mt-1.5 text-h3 break-words tabular-nums">{value}</p>
+      {hint && <p className="text-caption mt-1 break-words">{hint}</p>}
     </div>
   );
 }
