@@ -120,7 +120,6 @@ import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
-import { Route as ApiIntegrationsOnedriveCallbackRouteImport } from './routes/api/integrations/onedrive/callback'
 import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
 
 const TrackRoute = TrackRouteImport.update({
@@ -692,12 +691,6 @@ const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
   path: '/api/public/doc/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiIntegrationsOnedriveCallbackRoute =
-  ApiIntegrationsOnedriveCallbackRouteImport.update({
-    id: '/api/integrations/onedrive/callback',
-    path: '/api/integrations/onedrive/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicOfficeMediaSplatRoute =
   ApiPublicOfficeMediaSplatRouteImport.update({
     id: '/api/public/office/media/$',
@@ -800,7 +793,6 @@ export interface FileRoutesByFullPath {
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -913,7 +905,6 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -1029,7 +1020,6 @@ export interface FileRoutesById {
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -1145,7 +1135,6 @@ export interface FileRouteTypes {
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1258,7 +1247,6 @@ export interface FileRouteTypes {
     | '/cases'
     | '/mehla-admin/billing'
     | '/mehla-admin/sales'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1373,7 +1361,6 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1432,7 +1419,6 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
-  ApiIntegrationsOnedriveCallbackRoute: typeof ApiIntegrationsOnedriveCallbackRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
@@ -2231,13 +2217,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDocTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/integrations/onedrive/callback': {
-      id: '/api/integrations/onedrive/callback'
-      path: '/api/integrations/onedrive/callback'
-      fullPath: '/api/integrations/onedrive/callback'
-      preLoaderRoute: typeof ApiIntegrationsOnedriveCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/office/media/$': {
       id: '/api/public/office/media/$'
       path: '/api/public/office/media/$'
@@ -2444,7 +2423,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
-  ApiIntegrationsOnedriveCallbackRoute: ApiIntegrationsOnedriveCallbackRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
