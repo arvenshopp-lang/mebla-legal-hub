@@ -229,10 +229,14 @@ function PublicSignContractPage() {
                   <Building2 className="w-4 h-4" />
                   الطرف الأول: {contract.firstParty.name}
                 </div>
-                <div className="text-slate-600 dark:text-slate-400">
-                  السجل التجاري / الترخيص: {contract.firstParty.identifierNumber}
-                </div>
-                <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.firstParty.phone}</div>
+                {contract.firstParty.identifierNumber ? (
+                  <div className="text-slate-600 dark:text-slate-400">
+                    السجل التجاري / الترخيص: {contract.firstParty.identifierNumber}
+                  </div>
+                ) : null}
+                {contract.firstParty.phone ? (
+                  <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.firstParty.phone}</div>
+                ) : null}
               </div>
 
               <div className="p-4 rounded-xl border bg-slate-50/50 dark:bg-slate-900/30 space-y-1.5">
@@ -240,10 +244,14 @@ function PublicSignContractPage() {
                   <User className="w-4 h-4" />
                   الطرف الثاني: {contract.secondParty.name}
                 </div>
-                <div className="text-slate-600 dark:text-slate-400">
-                  الهوية / السجل: {contract.secondParty.identifierNumber}
-                </div>
-                <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.secondParty.phone}</div>
+                {contract.secondParty.identifierNumber ? (
+                  <div className="text-slate-600 dark:text-slate-400">
+                    الهوية / السجل: {contract.secondParty.identifierNumber}
+                  </div>
+                ) : null}
+                {contract.secondParty.phone ? (
+                  <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.secondParty.phone}</div>
+                ) : null}
               </div>
             </div>
 
