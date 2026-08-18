@@ -148,12 +148,12 @@ export async function saveContract(
   CONTRACTS_STORE.set(id, contract);
 
   // إذا تم توقيع العقد ننشئ له سجلاً في المستندات
-  if (contract.status === "signed") {
+  if (contract.status === "signed" && contract.caseId) {
     try {
       await supabaseAdmin.from("case_updates").insert({
         organization_id: organizationId,
         case_id: contract.caseId,
-        update_type: "general",
+        update_type: "note",
         title: `تم اعتماد وتوقيع العقد: ${contract.title}`,
         description: `تم توقيع العقد رقم (${contract.contractNumber}) إلكترونياً بنجاح.`,
         event_date: new Date().toISOString(),
@@ -348,7 +348,7 @@ export async function createCaseFromContract(
         phone: contract.secondParty.phone,
         email: contract.secondParty.email || null,
         city: contract.secondParty.city || "الرياض",
-        client_type: contract.secondParty.identifierType === "cr" ? "corporate" : "individual",
+        client_type: contract.secondParty.identifierType === "cr" ? "company" : "individual",
       })
       .select("id")
       .single();
@@ -367,7 +367,7 @@ export async function createCaseFromContract(
       title: contract.title,
       case_type: contract.contractType === "fee_agreement" ? "commercial" : "general",
       court: "المحكمة العامة / التجارية",
-      status: "active",
+      status: "open",
       claim_amount: contract.totalAmount || null,
       description: `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
       assigned_lawyer_id: lawyerId || null,
@@ -386,6 +386,9 @@ export async function createCaseFromContract(
 export async function createInvoiceFromContract(organizationId: string, contractId: string) {
   const contract = CONTRACTS_STORE.get(contractId);
   if (!contract) throw new Error("العقد غير موجود.");
+  if (!contract.clientId) {
+    throw new Error("لا يمكن إصدار فاتورة قبل ربط العقد بموكل في سجل العملاء.");
+  }
 
   const amount = contract.advanceAmount || contract.totalAmount || 10000;
   const vatAmount = Math.round(amount * 0.15 * 100) / 100;

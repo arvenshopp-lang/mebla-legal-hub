@@ -74,7 +74,11 @@ export async function uploadFileToGoogleDrive(
           delimiter +
           `Content-Type: ${options.contentType || "application/octet-stream"}\r\n\r\n`,
       ),
-      Buffer.from(options.fileContent),
+      Buffer.from(
+        options.fileContent instanceof Uint8Array
+          ? options.fileContent
+          : new Uint8Array(options.fileContent),
+      ),
       Buffer.from(closeDelimiter),
     ]);
 

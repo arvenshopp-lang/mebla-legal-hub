@@ -104,7 +104,10 @@ export async function integrationFetch(request: IntegrationRequest): Promise<Int
       const response = await fetch(url.toString(), {
         method: request.method,
         headers: request.headers,
-        body: request.method === "GET" ? undefined : (request.body ?? undefined),
+        body:
+          request.method === "GET"
+            ? undefined
+            : ((request.body ?? undefined) as BodyInit | undefined),
         redirect: "manual",
         signal: AbortSignal.timeout(Math.max(1000, Math.min(request.timeoutMs, 30_000))),
       });

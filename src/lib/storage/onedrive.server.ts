@@ -117,7 +117,10 @@ export async function uploadFileToOneDrive(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": options.contentType || "application/octet-stream",
       },
-      body: options.fileContent,
+      body:
+        options.fileContent instanceof Uint8Array
+          ? options.fileContent
+          : new Uint8Array(options.fileContent as ArrayBuffer),
     });
 
     if (!res.ok) {
