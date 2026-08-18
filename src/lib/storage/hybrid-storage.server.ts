@@ -173,9 +173,14 @@ export async function dispatchDocumentUpload(options: {
       ? await getHybridStorageSettings(options.organizationId, options.userId)
       : null;
 
-    if (settings?.onedrive?.connected && settings.onedrive.accessToken) {
+    const onedriveToken =
+      options.userId && settings?.onedrive?.isConnected
+        ? getCloudAccessToken(options.organizationId, options.userId, "onedrive")
+        : null;
+
+    if (onedriveToken) {
       // رفع حقيقي ومباشر إلى حساب مايكروسوفت ون درايف عبر Graph API
-      const odRes = await uploadFileToOneDrive(settings.onedrive.accessToken, {
+      const odRes = await uploadFileToOneDrive(onedriveToken, {
         folderPath: relativeFolderPath,
         fileName: options.fileName,
         fileContent: options.fileBuffer,
