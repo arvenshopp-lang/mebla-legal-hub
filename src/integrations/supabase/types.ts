@@ -740,6 +740,189 @@ export type Database = {
           },
         ]
       }
+      contract_events: {
+        Row: {
+          actor_label: string | null
+          actor_user_id: string | null
+          contract_id: string
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          organization_id: string
+          trace_ref: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          contract_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          organization_id: string
+          trace_ref?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          contract_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          organization_id?: string
+          trace_ref?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_number_counters: {
+        Row: {
+          last_number: number
+          organization_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          organization_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          organization_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_number_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          advance_amount: number | null
+          case_id: string | null
+          clauses: Json
+          client_id: string | null
+          client_signature: Json | null
+          contract_number: string
+          contract_type: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          final_amount: number | null
+          first_party: Json
+          id: string
+          lawyer_signature: Json | null
+          organization_id: string
+          second_party: Json
+          sign_token_hash: string | null
+          signed_at: string | null
+          status: string
+          title: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          advance_amount?: number | null
+          case_id?: string | null
+          clauses?: Json
+          client_id?: string | null
+          client_signature?: Json | null
+          contract_number: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          final_amount?: number | null
+          first_party?: Json
+          id?: string
+          lawyer_signature?: Json | null
+          organization_id: string
+          second_party?: Json
+          sign_token_hash?: string | null
+          signed_at?: string | null
+          status?: string
+          title: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          advance_amount?: number | null
+          case_id?: string | null
+          clauses?: Json
+          client_id?: string | null
+          client_signature?: Json | null
+          contract_number?: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          final_amount?: number | null
+          first_party?: Json
+          id?: string
+          lawyer_signature?: Json | null
+          organization_id?: string
+          second_party?: Json
+          sign_token_hash?: string | null
+          signed_at?: string | null
+          status?: string
+          title?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           body: string | null
@@ -10188,6 +10371,10 @@ export type Database = {
       my_subscription_overview: {
         Args: { _organization_id: string }
         Returns: Json
+      }
+      next_contract_number: {
+        Args: { _organization_id: string }
+        Returns: string
       }
       next_financial_number: { Args: { _kind: string }; Returns: string }
       normalize_ar: { Args: { _input: string }; Returns: string }
