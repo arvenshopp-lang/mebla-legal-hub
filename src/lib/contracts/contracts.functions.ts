@@ -14,7 +14,11 @@ import {
   issueSignLink,
 } from "./contracts.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertEntitlement } from "@/lib/subscription.server";
 import type { ContractType } from "./contracts.shared";
+
+/** بوابة التوقيع الإلكتروني: متاحة للباقة الاحترافية وباقة المؤسسات فقط. */
+const ESIGNATURE_GATE = { feature: "esignature_enabled", requireLive: true } as const;
 
 export const getContractsListFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -67,6 +71,10 @@ export const saveContractDraftFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { organizationId } = await resolveContractOrg(context.supabase, data.organizationId ?? null, true);
+    // الاعتماد على التوقيع الرقمي (توقيع المحامي أو إرسال العقد للتوقيع) ميزة مدفوعة.
+    if (data.lawyerSignature || data.status === "pending_signature" || data.status === "signed") {
+      await assertEntitlement(context.supabase, organizationId, ESIGNATURE_GATE);
+    }
     const contract = await saveContract(
       context.supabase,
       organizationId,
@@ -81,6 +89,7 @@ export const issueContractSignLinkFn = createServerFn({ method: "POST" })
   .validator((d: { contractId: string; organizationId?: string }) => d)
   .handler(async ({ data, context }) => {
     const { organizationId } = await resolveContractOrg(context.supabase, data.organizationId ?? null, true);
+    await assertEntitlement(context.supabase, organizationId, ESIGNATURE_GATE);
     const link = await issueSignLink(context.supabase, organizationId, data.contractId, {
       userId: context.userId,
     });

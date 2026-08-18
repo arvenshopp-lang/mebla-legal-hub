@@ -13,6 +13,7 @@ import {
   type InviteRole,
 } from "./invitations.shared";
 import { INVITE_VALID_DAYS } from "./invitations.shared";
+import { assertQuota } from "./subscription.server";
 
 type UserClient = SupabaseClient<Database>;
 
@@ -84,6 +85,9 @@ export async function createTeamInvitation(input: {
   ) {
     throw new Error("FORBIDDEN");
   }
+
+  // حد أعضاء الفريق يُفحص قبل إنشاء الدعوة، لا بعد إرسالها.
+  await assertQuota(input.supabase, input.organizationId, "users");
 
   await input.supabase
     .from("organization_invitations")

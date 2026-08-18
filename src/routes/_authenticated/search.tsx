@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { FileText, Search, ScanText } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { FeatureGate } from "@/components/subscription/feature-gate";
 import { supabase } from "@/integrations/supabase/client";
+import { searchDocumentPages } from "@/lib/documents/search.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import {
@@ -89,6 +91,7 @@ function Page() {
 
 function SearchPanel() {
   const { activeOrgId } = useAuth();
+  const runSearch = useServerFn(searchDocumentPages);
   const [term, setTerm] = useState("");
   const [caseId, setCaseId] = useState("");
   const [clientId, setClientId] = useState("");
@@ -131,20 +134,21 @@ function SearchPanel() {
     ],
     enabled: !!activeOrgId && q.trim().length >= 2,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("search_document_pages", {
-        _query: q.trim(),
-        _case_id: caseId || undefined,
-        _client_id: clientId || undefined,
-        _file_type: fileType || undefined,
-        _ocr_only: ocrOnly,
-        _from: from || undefined,
-        _to: to || undefined,
-        _limit: PAGE_SIZE,
-        _offset: (page - 1) * PAGE_SIZE,
+      const result = await runSearch({
+        data: {
+          organizationId: activeOrgId!,
+          query: q.trim(),
+          caseId: caseId || null,
+          clientId: clientId || null,
+          fileType: fileType || null,
+          ocrOnly,
+          from: from || null,
+          to: to || null,
+          limit: PAGE_SIZE,
+          offset: (page - 1) * PAGE_SIZE,
+        },
       });
-      if (error) throw error;
-      const rows = (data ?? []) as Hit[];
-      return { rows, count: rows[0]?.total_count ? Number(rows[0].total_count) : 0 };
+      return { rows: result.rows as Hit[], count: result.count };
     },
   });
 

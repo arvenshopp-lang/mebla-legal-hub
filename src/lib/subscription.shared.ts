@@ -279,6 +279,62 @@ export function hasFeature(
   return feature === "pdf_search_enabled" ? true : isLive(overview.state);
 }
 
+/* -------------------------------------------------------- quota gate ----- */
+
+export type QuotaMetric = "cases" | "clients" | "users" | "documents" | "storage";
+
+const QUOTA_UNITS: Record<QuotaMetric, { label: string; unit: (n: number) => string }> = {
+  cases: { label: "عدد القضايا", unit: (n) => `${NUM(n)} قضية` },
+  clients: { label: "عدد العملاء", unit: (n) => `${NUM(n)} عميل` },
+  users: { label: "عدد أعضاء الفريق", unit: (n) => `${NUM(n)} عضو` },
+  documents: { label: "عدد المستندات", unit: (n) => `${NUM(n)} مستند` },
+  storage: { label: "مساحة التخزين", unit: (n) => fmtGb(n) },
+};
+
+/** الحد الرقمي والاستخدام الحالي لمقياس واحد، بالوحدة الأصلية (بايت للتخزين). */
+export function quotaSnapshot(
+  overview: SubscriptionOverview,
+  metric: QuotaMetric,
+): { used: number; max: number | null } {
+  const { plan, usage } = overview;
+  switch (metric) {
+    case "cases":
+      return { used: usage.cases, max: plan.max_cases };
+    case "clients":
+      return { used: usage.clients, max: plan.max_clients };
+    case "users":
+      return { used: usage.users, max: plan.max_users };
+    case "documents":
+      return { used: usage.documents, max: plan.max_documents };
+    case "storage":
+      return {
+        used: usage.storage_bytes,
+        max: plan.storage_gb === null ? null : plan.storage_gb * GB,
+      };
+  }
+}
+
+/**
+ * رسالة المنع العربية عند تجاوز الحد، أو null إذا كانت العملية مسموحة.
+ * `amount` هو المقدار المطلوب إضافته (عدد صفوف، أو بايتات للتخزين).
+ */
+export function buildQuotaMessage(
+  overview: SubscriptionOverview,
+  metric: QuotaMetric,
+  amount = 1,
+): string | null {
+  const { used, max } = quotaSnapshot(overview, metric);
+  if (max === null) return null;
+  if (used + amount <= max) return null;
+
+  const { label, unit } = QUOTA_UNITS[metric];
+  const planName = overview.plan.name_ar;
+  if (metric === "storage") {
+    return `لقد بلغت الحد الأقصى لمساحة التخزين في ${planName} (${unit(max)}، المستخدم حالياً ${unit(used)}). يرجى ترقية الباقة أو حذف مستندات غير مطلوبة.`;
+  }
+  return `لقد بلغت الحد الأقصى لـ${label} المسموح به في ${planName} (${unit(max)}). يرجى ترقية الباقة لإضافة المزيد.`;
+}
+
 export const SUPPORT_LABELS: Record<string, string> = {
   community: "دعم عبر مركز المساعدة",
   standard: "دعم عادي",

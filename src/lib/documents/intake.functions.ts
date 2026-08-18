@@ -21,8 +21,15 @@ export const prepareDocumentUpload = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { MAX_UPLOAD_SIZE } = await import("@/lib/client-portal.shared");
     const { requireDocumentWriteRole, createUploadSlot } = await import("./intake.server");
+    const { assertQuota } = await import("@/lib/subscription.server");
     if (data.fileSize > MAX_UPLOAD_SIZE) throw new Error("حجم الملف يتجاوز 20 ميجابايت.");
     await requireDocumentWriteRole(context.supabase, context.userId, data.organizationId);
+    // فحص مسبق للحصص قبل بدء الرفع: عدد المستندات ثم مساحة التخزين بحجم الملف.
+    const overview = await assertQuota(context.supabase, data.organizationId, "documents");
+    await assertQuota(context.supabase, data.organizationId, "storage", {
+      amount: data.fileSize,
+      overview,
+    });
     const slot = await createUploadSlot(`${data.organizationId}/`, data.fileName);
     return slot;
   });

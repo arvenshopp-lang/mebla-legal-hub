@@ -68,6 +68,12 @@ export const saveClientSecure = createServerFn({ method: "POST" })
     const secure = await encryptedColumnsFor(data.organizationId, data.pii ?? {});
     const payload = { ...base, ...secure };
 
+    if (!data.id) {
+      // فحص مسبق لحد عدد العملاء برسالة تحمل رقم الباقة الحقيقي.
+      const { assertQuota } = await import("./subscription.server");
+      await assertQuota(context.supabase, data.organizationId, "clients");
+    }
+
     if (data.id) {
       const { data: row, error } = await context.supabase
         .from("clients")
@@ -89,7 +95,10 @@ export const saveClientSecure = createServerFn({ method: "POST" })
       } as never)
       .select("id, full_name, client_type, company_name, phone, email, city, status, created_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      const { describeMutationError } = await import("./subscription.shared");
+      throw new Error(describeMutationError(error.message, "تعذّر حفظ بيانات العميل."));
+    }
     return row;
   });
 
