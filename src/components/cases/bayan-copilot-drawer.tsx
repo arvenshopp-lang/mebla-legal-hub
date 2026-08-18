@@ -21,7 +21,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LegalMarkdown } from "@/components/ui/legal-markdown";
-import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { getBayanConversation, sendBayanMessage } from "@/lib/ai/bayan-chat.functions";
+import { bayanErrorMessage } from "@/lib/ai/bayan-error";
 
 interface BayanCitation {
   sourceType: "statute" | "document" | "hearing" | "precedent";
@@ -59,7 +61,8 @@ export function BayanCopilotDrawer({
   isOpen,
   onClose,
 }: BayanCopilotDrawerProps) {
-  const { user } = useAuth();
+  const loadConversationFn = useServerFn(getBayanConversation);
+  const sendMessageFn = useServerFn(sendBayanMessage);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,14 +77,12 @@ export function BayanCopilotDrawer({
     let mounted = true;
     async function loadHistory() {
       try {
-        const res = await fetch(`/api/ai/bayan-chat?caseId=${caseId}&orgId=${orgId}&userId=${user?.id || ""}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (mounted) {
-            setConversationId(data.conversationId || null);
-            if (data.messages && data.messages.length > 0) {
-              setMessages(data.messages);
-            } else {
+        const data = await loadConversationFn({ data: { caseId, organizationId: orgId } });
+        if (mounted) {
+          setConversationId(data.conversationId ?? null);
+          if (data.messages && data.messages.length > 0) {
+            setMessages(data.messages as unknown as Message[]);
+          } else {
               // رسالة ترحيبية أولية راقية من المحامية بيان
               setMessages([
                 {
@@ -101,11 +102,12 @@ export function BayanCopilotDrawer({
 تفضل بطرح استفسارك، أو اختر أحد المسارات المقترحة أدناه لنبدأ فوراً.`,
                 },
               ]);
-            }
           }
         }
       } catch (err) {
-        console.error("Failed to load Bayan chat history", err);
+        if (mounted) {
+          setMessages([{ sender: "assistant", content: bayanErrorMessage(err) }]);
+        }
       }
     }
 
@@ -113,7 +115,7 @@ export function BayanCopilotDrawer({
     return () => {
       mounted = false;
     };
-  }, [isOpen, caseId, orgId, caseTitle, user?.id]);
+  }, [isOpen, caseId, orgId, caseTitle, loadConversationFn]);
 
   // التمرير لأسفل المحادثة
   useEffect(() => {
@@ -132,25 +134,10 @@ export function BayanCopilotDrawer({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/ai/bayan-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caseId,
-          orgId,
-          userId: user?.id,
-          conversationId,
-          message: text,
-        }),
+      const data = await sendMessageFn({
+        data: { caseId, organizationId: orgId, conversationId, message: text },
       });
-
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "فشل الاتصال بالمحامية بيان");
-      }
-
-      const data = await res.json();
-      setConversationId(data.conversationId);
+      setConversationId(data.conversationId ?? null);
       setMessages((prev) => [
         ...prev,
         {
@@ -160,14 +147,9 @@ export function BayanCopilotDrawer({
         },
       ]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء معالجة الاستشارة");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "assistant",
-          content: "عذراً، حدث تعذر مؤقت في معالجة الاستشارة. يرجى المحاولة مجدداً.",
-        },
-      ]);
+      const msg = bayanErrorMessage(err);
+      toast.error(msg);
+      setMessages((prev) => [...prev, { sender: "assistant", content: msg }]);
     } finally {
       setLoading(false);
     }
