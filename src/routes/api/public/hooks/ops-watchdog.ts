@@ -1,7 +1,7 @@
 /**
- * مسار دوري لمولّد التذكيرات التشغيلية (جلسات، مهل، مهام متأخرة).
+ * مسار دوري لحارس التشغيل: يقيس نبضات المهام والطوابير ويفتح/يغلق الحوادث.
  * عام بحكم البادئة، لذا التوثيق بسر التشغيل الخاص فقط، والاستجابة عدّادات
- * مجمّعة لا مستلمين ولا محتوى. تكرار التشغيل آمن لأن منع التكرار حتمي.
+ * مجمّعة بلا أي معرّف مكتب أو محتوى.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { guardCronRequest } from "@/lib/security/cron-auth.server";
@@ -13,7 +13,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export const Route = createFileRoute("/api/public/hooks/operational-reminders")({
+export const Route = createFileRoute("/api/public/hooks/ops-watchdog")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -22,20 +22,18 @@ export const Route = createFileRoute("/api/public/hooks/operational-reminders")(
 
         try {
           const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
-          const report = await withJobHeartbeat("operational-reminders", async () => {
+          const report = await withJobHeartbeat("ops-watchdog", async () => {
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-            const { generateOperationalReminders } = await import(
-              "@/lib/notifications/reminder-generator.server"
-            );
-            return generateOperationalReminders(supabaseAdmin);
+            const { runWatchdog } = await import("@/lib/observability/watchdog.server");
+            return runWatchdog(supabaseAdmin);
           });
           return json({ ok: true, ...report });
         } catch (error) {
           console.error(
-            "[operational-reminders]",
+            "[ops-watchdog]",
             error instanceof Error ? error.message.slice(0, 200) : "unknown",
           );
-          return json({ ok: false, reason: "generation_failed" }, 500);
+          return json({ ok: false, reason: "watchdog_failed" }, 500);
         }
       },
     },

@@ -20,11 +20,14 @@ export const Route = createFileRoute("/api/public/hooks/notification-emails")({
         if (denied) return denied;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { processNotificationEmailBatch, BATCH_SIZE } = await import(
-            "@/lib/notifications/email-worker.server"
-          );
-          const report = await processNotificationEmailBatch(supabaseAdmin, BATCH_SIZE);
+          const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+          const report = await withJobHeartbeat("notification-emails", async () => {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { processNotificationEmailBatch, BATCH_SIZE } = await import(
+              "@/lib/notifications/email-worker.server"
+            );
+            return processNotificationEmailBatch(supabaseAdmin, BATCH_SIZE);
+          });
           return json({ ok: true, ...report });
         } catch (error) {
           console.error(

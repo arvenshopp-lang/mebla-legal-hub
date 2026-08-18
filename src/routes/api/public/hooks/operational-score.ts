@@ -21,10 +21,14 @@ export const Route = createFileRoute("/api/public/hooks/operational-score")({
         if (denied) return denied;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { generateOperationalScoreSnapshots } =
-            await import("@/lib/operational-score/snapshot.server");
-          const result = await generateOperationalScoreSnapshots(supabaseAdmin);
+          const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+          const result = await withJobHeartbeat("operational-score", async () => {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { generateOperationalScoreSnapshots } = await import(
+              "@/lib/operational-score/snapshot.server"
+            );
+            return generateOperationalScoreSnapshots(supabaseAdmin);
+          });
           return json({ ok: true, ...result });
         } catch (error) {
           console.error(

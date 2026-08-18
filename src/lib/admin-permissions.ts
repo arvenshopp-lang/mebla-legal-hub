@@ -78,6 +78,8 @@ export type AdminPermission =
   | "security.events.export"
   | "monitoring.read"
   | "monitoring.export"
+  | "operations.read"
+  | "operations.manage"
   | "backups.read"
   | "backups.manage"
   | "backups.restore"
@@ -561,6 +563,18 @@ export const ADMIN_PERMISSIONS: PermissionDef[] = [
     description: "تصدير مؤشرات الخدمات والمهام والأعطال.",
   },
   {
+    id: "operations.read",
+    label: "مشاهدة الحوادث التشغيلية",
+    group: "التشغيل",
+    description: "قراءة الحوادث ونبضات المهام الدورية وحالة الطوابير.",
+  },
+  {
+    id: "operations.manage",
+    label: "إدارة الحوادث التشغيلية",
+    group: "التشغيل",
+    description: "إسناد الحوادث وتغيير حالتها وإغلاقها وإضافة ملاحظات تشغيلية.",
+  },
+  {
     id: "backups.read",
     label: "مشاهدة النسخ الاحتياطية",
     group: "التشغيل",
@@ -968,6 +982,9 @@ const LEGACY_ALIASES: Record<string, AdminPermission[]> = {
   "integrations.activate": ["integrations.read"],
   "platform_settings.manage": ["platform_settings.read"],
   "backups.manage": ["backups.read"],
+  // مراقبة النظام الموروثة تمنح قراءة الحوادث فقط؛ الإدارة تُمنح صراحة.
+  "monitoring.read": ["operations.read"],
+  "operations.manage": ["operations.read"],
   "backups.restore": ["backups.read"],
   "staff.view": ["rbac.read"],
   // مركز الدعم: الصلاحيات القديمة تبقى مقبولة وتُخطَّط إلى الصلاحيات الحديثة.
