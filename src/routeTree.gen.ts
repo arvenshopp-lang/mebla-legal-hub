@@ -83,6 +83,7 @@ import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPrintLogRouteImport } from './routes/_authenticated/print-log'
 import { Route as AuthenticatedOfficePageRouteImport } from './routes/_authenticated/office-page'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
+import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedHearingsRouteImport } from './routes/_authenticated/hearings'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
@@ -499,6 +500,12 @@ const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
   path: '/invoices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIntegrationsRoute =
+  AuthenticatedIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHearingsRoute = AuthenticatedHearingsRouteImport.update({
   id: '/hearings',
   path: '/hearings',
@@ -768,6 +775,7 @@ export interface FileRoutesByFullPath {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/hearings': typeof AuthenticatedHearingsRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/office-page': typeof AuthenticatedOfficePageRoute
   '/print-log': typeof AuthenticatedPrintLogRoute
@@ -886,6 +894,7 @@ export interface FileRoutesByTo {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/hearings': typeof AuthenticatedHearingsRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/office-page': typeof AuthenticatedOfficePageRoute
   '/print-log': typeof AuthenticatedPrintLogRoute
@@ -1007,6 +1016,7 @@ export interface FileRoutesById {
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
   '/_authenticated/hearings': typeof AuthenticatedHearingsRoute
+  '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/office-page': typeof AuthenticatedOfficePageRoute
   '/_authenticated/print-log': typeof AuthenticatedPrintLogRoute
@@ -1128,6 +1138,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/documents'
     | '/hearings'
+    | '/integrations'
     | '/invoices'
     | '/office-page'
     | '/print-log'
@@ -1246,6 +1257,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/documents'
     | '/hearings'
+    | '/integrations'
     | '/invoices'
     | '/office-page'
     | '/print-log'
@@ -1366,6 +1378,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deadlines'
     | '/_authenticated/documents'
     | '/_authenticated/hearings'
+    | '/_authenticated/integrations'
     | '/_authenticated/invoices'
     | '/_authenticated/office-page'
     | '/_authenticated/print-log'
@@ -2037,6 +2050,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/integrations': {
+      id: '/_authenticated/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/hearings': {
       id: '/_authenticated/hearings'
       path: '/hearings'
@@ -2372,6 +2392,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
   AuthenticatedHearingsRoute: typeof AuthenticatedHearingsRoute
+  AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedOfficePageRoute: typeof AuthenticatedOfficePageRoute
   AuthenticatedPrintLogRoute: typeof AuthenticatedPrintLogRoute
@@ -2395,6 +2416,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
   AuthenticatedHearingsRoute: AuthenticatedHearingsRoute,
+  AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedOfficePageRoute: AuthenticatedOfficePageRoute,
   AuthenticatedPrintLogRoute: AuthenticatedPrintLogRoute,
