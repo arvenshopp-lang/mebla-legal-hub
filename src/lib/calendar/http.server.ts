@@ -22,7 +22,7 @@ export type CalendarFetchResult = {
 export async function calendarFetch(
   url: string,
   init: {
-    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+    method?: "GET" | "POST" | "PUT" | "PATCH";
     headers?: Record<string, string>;
     body?: string | URLSearchParams | null;
   } = {},
