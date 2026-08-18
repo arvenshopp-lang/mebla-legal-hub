@@ -16,17 +16,180 @@ import type {
   ContractSignature,
 } from "./contracts.shared";
 
-/** ذاكرة تخزين العقود لضمان العمل الفوري والسلس */
-const CONTRACTS_STORE = new Map<string, ContractModel>();
+/** عميل Supabase مُصادَق (يُمرَّر من دوال الخادم ويطبّق RLS بهوية المستخدم) */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AuthedClient = any;
 
-/** تجزئة آمنة للرمز */
-async function hashSignSecret(text: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text + ":mehla-contracts-secure-2026");
+/** الأدوار المسموح لها بإنشاء وتعديل العقود */
+const CONTRACT_WRITE_ROLES = ["owner", "admin", "lawyer", "legal_assistant"] as const;
+
+/** تجزئة آمنة (SHA-256) للنصوص والرموز */
+async function sha256Hex(text: string): Promise<string> {
+  const data = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/** بصمة رمز التوقيع — تُخزَّن في قاعدة البيانات بدل الرمز الصريح */
+function signTokenHash(token: string): Promise<string> {
+  return sha256Hex(`mehla-contract-sign-token:v1:${token}`);
+}
+
+/** توليد رمز توقيع عشوائي قوي (256 بت) */
+function generateSignToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export class ContractAccessError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ContractAccessError";
+  }
+}
+
+/**
+ * التحقق من عضوية المستخدم النشطة في المكتب المطلوب.
+ * عند عدم تمرير معرّف مكتب يُستخدم أول مكتب نشط للمستخدم.
+ */
+export async function resolveContractOrg(
+  client: AuthedClient,
+  requestedOrganizationId?: string | null,
+  requireWrite = false,
+): Promise<{ organizationId: string; role: string }> {
+  const { data, error } = await client
+    .from("organization_members")
+    .select("organization_id, role")
+    .eq("status", "active");
+
+  if (error) throw new ContractAccessError("تعذّر التحقق من عضويتك في المكتب.");
+
+  const rows = (data ?? []) as Array<{ organization_id: string; role: string }>;
+  if (rows.length === 0) throw new ContractAccessError("لا توجد لديك عضوية نشطة في أي مكتب.");
+
+  const membership = requestedOrganizationId
+    ? rows.find((r) => r.organization_id === requestedOrganizationId)
+    : rows[0];
+
+  if (!membership) throw new ContractAccessError("لا تملك صلاحية الوصول إلى عقود هذا المكتب.");
+
+  if (requireWrite && !CONTRACT_WRITE_ROLES.includes(membership.role as (typeof CONTRACT_WRITE_ROLES)[number])) {
+    throw new ContractAccessError("دورك الحالي لا يسمح بإنشاء أو تعديل العقود.");
+  }
+
+  return { organizationId: membership.organization_id, role: membership.role };
+}
+
+type ContractRow = {
+  id: string;
+  organization_id: string;
+  client_id: string | null;
+  case_id: string | null;
+  contract_number: string;
+  title: string;
+  contract_type: string;
+  status: string;
+  first_party: unknown;
+  second_party: unknown;
+  clauses: unknown;
+  total_amount: number | string | null;
+  advance_amount: number | string | null;
+  final_amount: number | string | null;
+  lawyer_signature: unknown;
+  client_signature: unknown;
+  expires_at: string | null;
+  signed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const FALLBACK_SECOND_PARTY: ContractParty = {
+  role: "second_party",
+  name: "اسم الموكل / المنشأة",
+  identifierType: "national_id",
+  identifierNumber: "—",
+  phone: "—",
+};
+
+function num(value: number | string | null): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** تحويل صف قاعدة البيانات إلى نموذج العقد المستخدم في الواجهة */
+function mapRow(row: ContractRow): ContractModel {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    clientId: row.client_id,
+    caseId: row.case_id,
+    contractNumber: row.contract_number,
+    title: row.title,
+    contractType: row.contract_type as ContractType,
+    status: row.status as ContractStatus,
+    firstParty: (row.first_party as ContractParty) ?? { ...FALLBACK_SECOND_PARTY, role: "first_party" },
+    secondParty: (row.second_party as ContractParty) ?? FALLBACK_SECOND_PARTY,
+    totalAmount: num(row.total_amount),
+    advanceAmount: num(row.advance_amount),
+    finalAmount: num(row.final_amount),
+    clauses: Array.isArray(row.clauses) ? (row.clauses as ContractClause[]) : [],
+    lawyerSignature: (row.lawyer_signature as ContractSignature | null) ?? null,
+    clientSignature: (row.client_signature as ContractSignature | null) ?? null,
+    signToken: null,
+    signUrl: null,
+    expiresAt: row.expires_at,
+    signedAt: row.signed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+const CONTRACT_COLUMNS =
+  "id, organization_id, client_id, case_id, contract_number, title, contract_type, status, first_party, second_party, clauses, total_amount, advance_amount, final_amount, lawyer_signature, client_signature, expires_at, signed_at, created_at, updated_at";
+
+/** كتابة حدث في سجل تدقيق العقود (غير قابل للتعديل أو الحذف) */
+export async function logContractEvent(entry: {
+  organizationId: string;
+  contractId: string;
+  eventType:
+    | "created"
+    | "updated"
+    | "sent_for_signature"
+    | "viewed_by_client"
+    | "signed_by_client"
+    | "signed_by_lawyer"
+    | "cancelled"
+    | "exported_pdf"
+    | "converted_to_case"
+    | "converted_to_invoice";
+  actorUserId?: string | null;
+  actorLabel?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  traceRef?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    await supabaseAdmin.from("contract_events").insert({
+      organization_id: entry.organizationId,
+      contract_id: entry.contractId,
+      event_type: entry.eventType,
+      actor_user_id: entry.actorUserId ?? null,
+      actor_label: entry.actorLabel ?? null,
+      ip_address: entry.ipAddress ?? null,
+      user_agent: entry.userAgent ? entry.userAgent.slice(0, 300) : null,
+      trace_ref: entry.traceRef ?? null,
+      metadata: entry.metadata ?? {},
+    });
+  } catch {
+    // سجل التدقيق لا يجب أن يُفشل العملية الأساسية
+  }
 }
 
 /** جلب بيانات المكتب لإدراجها كطرف أول في العقد */
