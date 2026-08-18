@@ -410,7 +410,7 @@ export async function buildOfficeWideContext(
     .from("deadlines")
     .select("due_date, title, status, cases(case_title)")
     .eq("organization_id", orgId)
-    .eq("status", "pending")
+    .eq("status", "active")
     .order("due_date", { ascending: true })
     .limit(10);
 
