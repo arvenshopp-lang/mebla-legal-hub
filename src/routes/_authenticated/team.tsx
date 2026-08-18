@@ -504,10 +504,9 @@ function InviteDialog({
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       toast.error("تعذّر الإرسال", {
-        description:
-          message.includes("QUOTA_EXCEEDED") || message.includes("SUBSCRIPTION")
-            ? describeMutationError(message)
-            : describeInviteError(message),
+        // بوابات الحصص والاستحقاقات ترجع رسالة عربية جاهزة؛ نعرضها كما هي
+        // ونرجع لمترجم أخطاء الدعوات عند أي سبب آخر.
+        description: describeMutationError(message, describeInviteError(message)),
       });
     } finally {
       setSaving(false);
