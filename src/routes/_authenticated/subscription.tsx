@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Money } from "@/components/ui/money";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
@@ -27,12 +27,13 @@ import {
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
-  SUPPORT_LABELS,
   buildFeatureRows,
   buildLimits,
   expiryNotice,
   remainingLabel,
   STATE_LABELS,
+  type FeatureRow,
+  type LimitRow,
   type SubscriptionState,
 } from "@/lib/subscription.shared";
 
@@ -63,6 +64,21 @@ const HISTORY_TONE: Record<string, "green" | "red" | "muted" | "info" | "warn"> 
   expired: "red",
   cancelled: "muted",
 };
+
+/** الأقرب للامتلاء أولاً؛ الحدود غير المحدودة في النهاية. */
+function sortLimits(rows: LimitRow[]): LimitRow[] {
+  return [...rows].sort((a, b) => {
+    if (a.percent === null && b.percent === null) return 0;
+    if (a.percent === null) return 1;
+    if (b.percent === null) return -1;
+    return b.percent - a.percent;
+  });
+}
+
+/** المميزات المتاحة أولاً مع الحفاظ على الترتيب داخل كل مجموعة. */
+function sortFeatures(rows: FeatureRow[]): FeatureRow[] {
+  return [...rows].sort((a, b) => Number(b.available) - Number(a.available));
+}
 
 function SubscriptionPage() {
   const { activeOrgId } = useAuth();
