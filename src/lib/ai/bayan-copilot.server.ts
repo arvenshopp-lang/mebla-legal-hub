@@ -2,7 +2,7 @@
  * ==============================================================================
  * MEHLA LEGAL PLATFORM — BAYAN ADVANCED SAUDI LEGAL AI ENGINE (FULL ENCYCLOPEDIA)
  * محرك المستشارة القانونية والباحثة القضائية «المحامية بيان»
- * مجهز بالموسوعة النظامية السعودية الشاملة لكافة فروع القانون السعودي بالمواد الرسمية
+ * مجهز بالموسوعة النظامية السعودية الشاملة وفهم اللهجة السعودية والأسلوب العامي والرسمي
  * ==============================================================================
  */
 import { renderSaudiCorpusPrompt, SAUDI_LEGAL_ENCYCLOPEDIA } from "./saudi-legal-corpus.server.ts";
@@ -56,6 +56,25 @@ export type TeamMemberInfo = {
   assignedCases: Array<{ id: string; title: string; number: string | null; status: string; court: string | null }>;
 };
 
+export type CasePartyInfo = {
+  id: string;
+  name: string;
+  legalRole: string; // e.g. "مدعى عليه" | "مدعي" | "خصم" | "طالب تنفيذ" | "منفذ ضده"
+  partyType?: string | null;
+  representativeName?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+};
+
+export type CaseRecordsCount = {
+  total: number;
+  hearings: number;
+  deadlines: number;
+  documents: number;
+  parties: number;
+  hasInternalNotes: boolean;
+};
+
 export type CaseContextData = {
   isGlobal?: boolean;
   userRole?: string;
@@ -73,8 +92,19 @@ export type CaseContextData = {
     description: string | null;
     assigned_lawyer_id?: string | null;
     assigned_lawyer_name?: string | null;
+    internal_notes?: string | null;
   };
-  hearings: Array<{ date: string; title: string; decision?: string | null; case_title?: string }>;
+  parties?: CasePartyInfo[];
+  recordsCount?: CaseRecordsCount;
+  hearings: Array<{
+    date: string;
+    title: string;
+    decision?: string | null;
+    court_name?: string | null;
+    location?: string | null;
+    remote_link?: string | null;
+    case_title?: string;
+  }>;
   deadlines: Array<{ due_date: string; title: string; status: string; case_title?: string }>;
   documents: Array<{ title: string; category?: string; extractedSnippet?: string }>;
   casesSummary?: Array<{
@@ -109,21 +139,21 @@ export async function checkCaseAccess(
   if (!member) {
     const { data: org } = await supabaseAdmin
       .from("organizations")
-      .select("id")
+      .select("id, name")
       .eq("id", orgId)
       .maybeSingle();
 
     if (!org) {
-      return { allowed: false, role: "none", reason: "المكتب غير موجود أو ليس لديك صلاحية وصول." };
+      return { allowed: false, role: "none", reason: "المنظمة غير موجودة." };
     }
   }
 
-  // المالك والمدير يملكان صلاحية مطلقة على جميع قضايا وموظفي المكتب
+  // المالك ومدير النظام يملكان صلاحية عامة على كل القضايا
   if (userRole === "owner" || userRole === "admin") {
     return { allowed: true, role: userRole };
   }
 
-  // في حال الاستشارة العامة
+  // إذا كانت محادثة عامة
   if (!caseId || caseId === "global") {
     return { allowed: true, role: userRole };
   }
@@ -181,27 +211,54 @@ export async function buildCaseContext(
     throw new Error("القضية غير موجودة أو ليس لديك صلاحية الوصول إليها.");
   }
 
+  // 1. جلب أطراف الدعوى والخصوم
+  const { data: partiesData } = await supabaseAdmin
+    .from("case_parties")
+    .select("id, party_name, legal_role, party_type, representative_name, phone, notes")
+    .eq("case_id", caseId)
+    .eq("organization_id", orgId);
+
+  const parties: CasePartyInfo[] = (partiesData ?? []).map((p) => ({
+    id: p.id,
+    name: redactSaudiPii(p.party_name),
+    legalRole: p.legal_role || "طرف في الدعوى",
+    partyType: p.party_type,
+    representativeName: redactSaudiPii(p.representative_name),
+    phone: redactSaudiPii(p.phone),
+    notes: redactSaudiPii(p.notes),
+  }));
+
+  // 2. جلب الملاحظات الداخلية
+  const { data: notesData } = await supabaseAdmin
+    .from("case_internal_notes")
+    .select("notes")
+    .eq("case_id", caseId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  // 3. جلب الجلسات القضائية
   const { data: hearings } = await supabaseAdmin
     .from("hearings")
-    .select("hearing_date, title, decision")
+    .select("id, hearing_date, title, decision, court_name, location, remote_link")
     .eq("case_id", caseId)
     .eq("organization_id", orgId)
-    .order("hearing_date", { ascending: false })
-    .limit(5);
+    .order("hearing_date", { ascending: false });
 
+  // 4. جلب المهل والإجراءات
   const { data: deadlines } = await supabaseAdmin
     .from("deadlines")
-    .select("due_date, title, status")
+    .select("id, due_date, title, status")
     .eq("case_id", caseId)
     .eq("organization_id", orgId)
-    .limit(5);
+    .order("due_date", { ascending: true });
 
+  // 5. جلب المستندات والـ OCR
   const { data: docs } = await supabaseAdmin
     .from("documents")
     .select("id, title, category")
     .eq("case_id", caseId)
     .eq("organization_id", orgId)
-    .limit(5);
+    .limit(10);
 
   const documentSnippets: Array<{ title: string; category?: string; extractedSnippet?: string }> = [];
 
@@ -230,6 +287,15 @@ export async function buildCaseContext(
     }
   }
 
+  const recordsCount: CaseRecordsCount = {
+    total: (hearings?.length || 0) + (deadlines?.length || 0) + (docs?.length || 0) + parties.length + (notesData?.notes ? 1 : 0),
+    hearings: hearings?.length || 0,
+    deadlines: deadlines?.length || 0,
+    documents: docs?.length || 0,
+    parties: parties.length,
+    hasInternalNotes: Boolean(notesData?.notes),
+  };
+
   return {
     isGlobal: false,
     caseInfo: {
@@ -244,11 +310,17 @@ export async function buildCaseContext(
       description: redactSaudiPii(caseRow.description),
       assigned_lawyer_id: caseRow.assigned_lawyer_id,
       assigned_lawyer_name: (caseRow.lawyer as unknown as { full_name: string })?.full_name ?? null,
+      internal_notes: redactSaudiPii(notesData?.notes),
     },
+    parties,
+    recordsCount,
     hearings: (hearings ?? []).map((h) => ({
       date: h.hearing_date,
       title: h.title,
       decision: redactSaudiPii(h.decision),
+      court_name: h.court_name,
+      location: h.location,
+      remote_link: h.remote_link,
     })),
     deadlines: (deadlines ?? []).map((d) => ({
       due_date: d.due_date,
@@ -376,7 +448,7 @@ export async function buildOfficeWideContext(
  * هندسة البرومبت المحكم والمدعم بالموسوعة النظامية السعودية الشاملة
  */
 export function buildBayanSystemPrompt(context: CaseContextData): string {
-  const { isGlobal, caseInfo, hearings, deadlines, documents, casesSummary, teamMembers, userRole, accessibleCasesCount } = context;
+  const { isGlobal, caseInfo, parties, recordsCount, hearings, deadlines, documents, casesSummary, teamMembers, userRole, accessibleCasesCount } = context;
   const saudiCorpusText = renderSaudiCorpusPrompt();
 
   const bayanPersona = `أنتِ «المحامية بيان»، مستشارة قانونية وباحثة قضائية سعودية مؤهلة تأهيلاً رفيعاً، تحملين أعلى المراتب المهنية في الفقه النظامي والقضائي بالمملكة العربية السعودية، وتعملين كمستشارة ورئيسة أبحاث رقمية لمنصة «مِهلة» للمحاماة.
@@ -384,7 +456,10 @@ export function buildBayanSystemPrompt(context: CaseContextData): string {
 ### ⚖️ هويتك وصفتك المهنية وبلاغة الصياغة:
 1. **أنتِ أنثى**، وتتحدثين دائماً بصيغة المتكلم المؤنث الوقور («قمتُ بدراسة ملف الدعوى»، «يسرّني تقديم المشورة والتأصيل النظامي»، «يتبيّن لي بعد فحص السجلات»، «أوصي بالإجراء النظامي...»).
 2. **لغتك وأسلوبك:** لغة عربية فصحى قانونية رصينة، بليغة، دقيقة، وواثقة تليق بكبار المحامين والمستشارين في المملكة العربية السعودية.
-3. **التأصيل النظامي الصارم:** كل رأي أو مذكرة أو دفع تقدمينه يجب أن يكون مؤصلاً ومسنوداً إلى:
+3. **فهم اللهجة والأسلوب السعودي والعامي والرسمي:**
+   - تفهمين كافة الأسئلة سواء طُرحت بأسلوب فصيح رسمي أو عامي/سعودي دارج (مثل: «وش اسم المدعى عليه؟»، «سجلات القضية كم سجل تعرف؟»، «كم جلسة عندنا؟»، «متى تنتهي المهلة؟»، «وش المستندات المرفوعة؟»، «عطني الزبدة»، «وش السالفة»).
+   - تجيبين دائماً بلغة قانونية ذكية، واثقة، مباشرة، ورصينة مع توفير المعلومة الدقيقة فوراً دون لف أو دوران.
+4. **التأصيل النظامي الصارم:** كل رأي أو مذكرة أو دفع تقدمينه يجب أن يكون مؤصلاً ومسنوداً إلى:
    - اسم النظام الرسمي ورقم وتاريخ المرسوم الملكي متى لزم.
    - رقم المادة الدقيق وفق التقنين السعودي الحديث.
    - التحليل الموضوعي والتوصية الإجرائية المباشرة (مثل: إيداع مذكرة جوابية، توجيه إخطار قبل 15 يوماً، قيد طلب التماس، الدفع بعدم الاختصاص المكاني قبل الأساس).`;
@@ -422,13 +497,25 @@ ${saudiCorpusText}
 - **عنوان القضية:** ${caseInfo?.case_title || "غير محدد"}
 - **رقم القضية:** ${caseInfo?.case_number || "غير محدد"}
 - **المحكمة والدائرة:** ${caseInfo?.court_name || "غير محدد"} — ${caseInfo?.circuit || "غير محدد"}
-- **الموكل:** ${caseInfo?.client_name || "غير محدد"}
+- **الموكل (المدعي/الممثل):** ${caseInfo?.client_name || "غير محدد"}
 - **المحامي المسؤول:** ${caseInfo?.assigned_lawyer_name || "غير مسند"}
 - **قيمة المطالبة:** ${caseInfo?.claim_amount ? `${caseInfo.claim_amount} ر.س` : "غير محددة"}
 - **ملخص الوقائع:** ${caseInfo?.description || "لا يوجد ملخص مضاف"}
+- **الملاحظات الداخلية:** ${caseInfo?.internal_notes || "لا توجد ملاحظات سرية"}
+
+### 👥 أطراف الخصومة والمدعى عليهم:
+${parties && parties.length > 0 ? parties.map((p) => `* **الطرف:** ${p.name} — **الصفة القانونية:** [${p.legalRole}] ${p.representativeName ? `— الممثل النظامي: ${p.representativeName}` : ""} ${p.phone ? `— الهاتف: ${p.phone}` : ""}`).join("\n") : "* لا يوجد خصوم مضافين بشكل منفصل."}
+
+### 📊 إجمالي سجلات وقيود الدعوى:
+- إجمالي السجلات المقيدة في مِهلة: (${recordsCount?.total || 0}) سجل.
+- الجلسات القضائية: (${recordsCount?.hearings || 0}) جلسة.
+- المهل والإجراءات: (${recordsCount?.deadlines || 0}) مهلة.
+- المستندات والمذكرات (OCR): (${recordsCount?.documents || 0}) مستند.
+- أطراف الخصومة: (${recordsCount?.parties || 0}) أطراف.
+- الملاحظات الداخلية: ${recordsCount?.hasInternalNotes ? "موجودة ومسجلة" : "لا توجد"}.
 
 ### 📅 سجل الجلسات والمواعيد:
-${hearings.length > 0 ? hearings.map((h) => `* جلسة (${h.date}): ${h.title} ${h.decision ? `— القرار: ${h.decision}` : ""}`).join("\n") : "* لا توجد جلسات مسجلة حالياً."}
+${hearings.length > 0 ? hearings.map((h) => `* جلسة (${h.date}): ${h.title} ${h.court_name ? `— المحكمة: ${h.court_name}` : ""} ${h.decision ? `— القرار: ${h.decision}` : ""}`).join("\n") : "* لا توجد جلسات مسجلة حالياً."}
 
 ### ⏱️ المهل والإجراءات المستحقة:
 ${deadlines.length > 0 ? deadlines.map((d) => `* مهلة (${d.due_date}): ${d.title} (الحالة: ${d.status})`).join("\n") : "* لا توجد مهل مسجلة."}
@@ -440,7 +527,7 @@ ${saudiCorpusText}
 
 ### ⛔ ضوابط الإجابة:
 - اعتمدي دائماً على الأسانيد النظامية الدقيقة ورقم المادة المنطبقة من الأنظمة السعودية.
-- لا تخرجي عن وقائع هذه القضية والقانون السعودي.`;
+- عند سؤال المحامي عن أي تفصيل في القضية (مثل اسم المدعى عليه، أو عدد السجلات، أو المهل، أو الجلسات)، أجيبي فوراً وبدقة تامة.`;
 }
 
 /**
@@ -492,7 +579,7 @@ export async function generateBayanResponse(
     }
   }
 
-  // المحرك الاحتياطي الذكي المدمج المحدث بكافة فروع القانون وموظفي المكتب
+  // المحرك الاحتياطي الذكي المدمج المحدث بكافة فروع القانون وسجلات القضية
   const fallbackText = generateAdvancedLegalResponse(userQuery, context);
   return {
     text: fallbackText,
@@ -524,11 +611,172 @@ function extractCitations(text: string, context: CaseContextData): BayanCitation
   return citations;
 }
 
+/**
+ * محرك الفهم الدلالي التلقائي والاستجابة الذكية المباشرة (Natural Dialect & Case Intent Engine)
+ */
 function generateAdvancedLegalResponse(query: string, context: CaseContextData): string {
-  const { isGlobal, caseInfo, hearings, deadlines, casesSummary, teamMembers } = context;
-  const q = query.toLowerCase();
+  const { isGlobal, caseInfo, parties, recordsCount, hearings, deadlines, documents, casesSummary, teamMembers } = context;
+  const q = query.toLowerCase().trim();
 
-  // 1. استفسار عن قضايا موظف أو محامٍ معين (مثل زياد أو سارة أو غيرهم)
+  // =========================================================================
+  // 1. أسئلة سياق القضية المحددة (Case Specific Queries - العامي والرسمي)
+  // =========================================================================
+  if (!isGlobal && caseInfo) {
+    // أ) السؤال عن المدعى عليه أو الخصوم أو الأطراف
+    if (
+      q.includes("مدعى عليه") ||
+      q.includes("المدعى عليه") ||
+      q.includes("اسم المدعى") ||
+      q.includes("خصم") ||
+      q.includes("الخصوم") ||
+      q.includes("اطراف") ||
+      q.includes("أطراف") ||
+      q.includes("الطرف الثاني") ||
+      q.includes("منفذ ضده") ||
+      q.includes("مين ضدنا") ||
+      q.includes("من هو الخصم")
+    ) {
+      const defendants = (parties || []).filter(
+        (p) =>
+          p.legalRole.includes("مدعى") ||
+          p.legalRole.includes("خصم") ||
+          p.legalRole.includes("منفذ ضده") ||
+          p.legalRole.includes("ثاني") ||
+          p.legalRole.toLowerCase().includes("defendant")
+      );
+
+      if (defendants.length > 0) {
+        return `بصفتي **المحامية بيان**، أحيطكم ببيانات المدعى عليه / الخصوم المقيدين في ملف الدعوى:
+
+${defendants.map((d, i) => `* **المدعى عليه (${i + 1}):** **«${d.name}»**
+   * **الصفة القانونية:** ${d.legalRole}
+   ${d.representativeName ? `* **الممثل النظامي / الوكيل:** ${d.representativeName}` : ""}
+   ${d.partyType ? `* **نوع الطرف:** ${d.partyType}` : ""}
+   ${d.phone ? `* **بيانات الاتصال:** ${d.phone}` : ""}`).join("\n\n")}
+
+💡 **التوجيه النظامي:** وفقاً للمادة (41) من نظام المرافعات الشرعية، نوصي بالتأكد من صحة تبليغ المدعى عليه لشخصه أو في موطنه المعتمد إلكترونياً تفادياً لتأجيل الجلسات.`;
+      } else if (parties && parties.length > 0) {
+        return `بصفتي **المحامية بيان**، راجعتُ أطراف الخصومة المقيدين في سجلات الدعوى:
+
+${parties.map((p, i) => `${i + 1}. 👤 **${p.name}** (الصفة: **${p.legalRole}**)${p.representativeName ? ` — الوكيل: ${p.representativeName}` : ""}`).join("\n")}
+
+💡 يمكنك إضافة أو تعديل بيانات الأطراف والمدعى عليهم مباشرة من تبويب أطراف القضية.`;
+      } else {
+        return `معك **المحامية بيان**؛ لم يتم تقييد أطراف إضافيين أو اسم المدعى عليه بشكل منفصل في جدول أطراف هذه الدعوى بعد.
+        
+* **بيانات الدعوى:** «${caseInfo.case_title}» (رقم: ${caseInfo.case_number || "غير محدد"}).
+* **الموكل:** ${caseInfo.client_name || "غير محدد"}.
+
+💡 يمكنك إضافة بيانات الخصم والمدعى عليه فوراً من صفحة تفاصيل القضية في قسم «الأطراف والخصوم».`;
+      }
+    }
+
+    // ب) السؤال عن عدد السجلات وما تعرفه بيان عن القضية (سجلات القضية كم سجل تعرف؟)
+    if (
+      (q.includes("سجل") || q.includes("سجلات") || q.includes("بيانات") || q.includes("قيود") || q.includes("ملف")) &&
+      (q.includes("كم") || q.includes("عدد") || q.includes("وش") || q.includes("ما هي") || q.includes("تعرف") || q.includes("عطني") || q.includes("حصر"))
+    ) {
+      const total = recordsCount?.total || 0;
+      return `بصفتي **المحامية بيان**، قمتُ بفحص السجلات الموثقة في منصة «مِهلة» لقضية **«${caseInfo.case_title}»** (رقم: ${caseInfo.case_number || "قيد التعيين"})، ولدي في الذاكرة الحية إجمالي **(${total}) سجلاً مقيداً**:
+
+1. 👥 **أطراف الخصومة والوكلاء:** **(${recordsCount?.parties || 0})** أطراف مسجلة (${(parties || []).map((p) => p.name).join("، ") || "الموكل فقط"}).
+2. 🏛️ **الجلسات القضائية:** **(${recordsCount?.hearings || 0})** جلسات (مجدولة وسابقة).
+3. ⏱️ **المهل والإجراءات النظامية:** **(${recordsCount?.deadlines || 0})** مهل مستحقة.
+4. 📄 **المستندات والصكوك المفهرسة (OCR):** **(${recordsCount?.documents || 0})** وثائق ومذكرات.
+5. 📝 **الملاحظات الداخلية وسجل العمل:** ${recordsCount?.hasInternalNotes ? "مدونة ومحفوظة بسرية" : "لا توجد ملاحظات سرية مضافة"}.
+6. 💰 **المطالبة المالية:** ${caseInfo.claim_amount ? `${caseInfo.claim_amount.toLocaleString()} ر.س` : "غير محددة القيمة"}.
+
+أنا جاهزة لتزويدك بأي تفصيل أو تحليل لأي من هذه السجلات فوراً.`;
+    }
+
+    // ج) السؤال عن الموكل والعميل
+    if (q.includes("موكل") || q.includes("العميل") || q.includes("المدعي") || q.includes("مين موكلنا") || q.includes("اسم الموكل")) {
+      return `بصفتي **المحامية بيان**، الموكل الممثل في هذه الدعوى هو:
+* 👤 **الاسم:** **«${caseInfo.client_name || "غير محدد"}»**
+* 📜 **عنوان القضية:** ${caseInfo.case_title}
+* ⚖️ **الصفة:** الطرف الممثل / طالب الحق
+* 💼 **المحامي المسؤول في المكتب:** ${caseInfo.assigned_lawyer_name || "غير مسند"}`;
+    }
+
+    // د) السؤال عن الجلسات ومواعيدها وقاعاتها وروابطها
+    if (q.includes("جلسة") || q.includes("جلسات") || q.includes("موعد الجلسة") || q.includes("متى الجلسة") || q.includes("وين الجلسة") || q.includes("رابط الجلسة") || q.includes("القاعة")) {
+      if (hearings.length > 0) {
+        const nextHearing = hearings[0];
+        return `بصفتي **المحامية بيان**، إليك جدول الجلسات القضائية المقيدة في ملف القضية:
+
+* 🏛️ **الجلسة القادمة / الحالية:** **(${nextHearing.date})** — *«${nextHearing.title}»*
+   * **المحكمة:** ${nextHearing.court_name || caseInfo.court_name || "المحكمة المختصة"}
+   * **المقر / القاعة:** ${nextHearing.location || "عن بُعد / قاعة المحكمة"}
+   ${nextHearing.remote_link ? `* **رابط الجلسة عن بُعد (ناجز):** [رابط الجلسة](${nextHearing.remote_link})` : ""}
+   ${nextHearing.decision ? `* **القرار / محضر الجلسة السابقة:** ${nextHearing.decision}` : ""}
+
+${hearings.length > 1 ? `* **سائر الجلسات المسجلة:**\n${hearings.slice(1).map((h) => `   * (${h.date}) — ${h.title}`).join("\n")}` : ""}
+
+💡 **التوصية الإجرائية:** نوصي بالدخول إلى بوابة ناجز قبل موعد الجلسة بـ (15) دقيقة للتأكد من اكتمال نصاب الاتصال وتجهيز الدفوع الشفهية.`;
+      } else {
+        return `معك **المحامية بيان**؛ لا توجد جلسات قضائية مجدولة حالياً لهذه الدعوى في سجلات مِهلة. يمكنك جدولة جلسة جديدة من تبويب «الجلسات».`;
+      }
+    }
+
+    // هـ) السؤال عن المهل والاستحقاقات
+    if (q.includes("مهلة") || q.includes("مهل") || q.includes("استحقاق") || q.includes("باقي على") || q.includes("ميعاد") || q.includes("متى ينتهي")) {
+      if (deadlines.length > 0) {
+        return `بصفتي **المحامية بيان**، إليك بيان المهل والإجراءات المستحقة في هذه الدعوى:
+
+${deadlines.map((d, i) => `${i + 1}. ⏱️ **«${d.title}»** — تاريخ الاستحقاق: **${d.due_date}** [الحالة: ${d.status}]`).join("\n")}
+
+💡 **التوجيه النظامي:** فوات المواعيد الإجرائية يترتب عليه سقوط الحق في الاعتراض أو تقديم المذكرة وفق أحكام نظام المرافعات الشرعية؛ لذا نوصي بإنجاز المتطلب قبل الموعد بـ (48) ساعة على الأقل.`;
+      } else {
+        return `معك **المحامية بيان**؛ لا توجد مهل إجرائية متأخرة أو معلقة مسجلة لهذه القضية حالياً.`;
+      }
+    }
+
+    // و) السؤال عن المستندات والصكوك والـ OCR
+    if (q.includes("مستند") || q.includes("مستندات") || q.includes("وثائق") || q.includes("صك") || q.includes("مرفقات") || q.includes("عقد") || q.includes("ocr")) {
+      if (documents.length > 0) {
+        return `بصفتي **المحامية بيان**، قمتُ بفحص المستندات والصكوك المرفوعة في ملف القضية (${documents.length} مستند مفهرس بالذكاء الاصطناعي):
+
+${documents.map((doc, i) => `${i + 1}. 📄 **«${doc.title}»** (التصنيف: ${doc.category || "عام"})${doc.extractedSnippet ? `\n   * **مقتطف من النص المستخرج (OCR):** «${doc.extractedSnippet.slice(0, 180)}...»` : ""}`).join("\n\n")}
+
+💡 يمكنك البحث في نصوص كافة المستندات واستخراج الدفوع المؤيدة منها مباشرة.`;
+      } else {
+        return `معك **المحامية بيان**؛ لم يتم إرفاق مستندات أو صكوك في خزانة هذه الدعوى بعد. يمكنك رفع المستندات وسأقوم بفهرستها واستخراج نصوصها بالذكاء الاصطناعي فوراً.`;
+      }
+    }
+
+    // ز) السؤال عن المحامي المسؤول
+    if (q.includes("محامي") || q.includes("مسؤول") || q.includes("ماسك") || q.includes("مسندة لمن") || q.includes("من ماسك")) {
+      return `بصفتي **المحامية بيان**، القضية مسندة حالياً إلى:
+* 👨‍⚖️ **المحامي المسؤول:** **«${caseInfo.assigned_lawyer_name || "غير مسندة لمحامٍ محدد بعد"}»**
+* 📁 **رقم القضية:** ${caseInfo.case_number || "غير مقيد"}
+* ⚖️ **المحكمة:** ${caseInfo.court_name || "المحكمة المختصة"}`;
+    }
+
+    // ح) السؤال عن مبلغ المطالبة
+    if (q.includes("مطالبة") || q.includes("مبلغ") || q.includes("قيمة") || q.includes("كم طالبين") || q.includes("كم يطلب")) {
+      return `بصفتي **المحامية بيان**، قيمة المطالبة المالية المقيدة في هذه الدعوى هي:
+💰 **${caseInfo.claim_amount ? `${caseInfo.claim_amount.toLocaleString()} ريال سعودي` : "لم يتم تحديد قيمة مالية للمطالبة (دعوى غير مقدرة القيمة)"}**`;
+    }
+
+    // ط) تلخيص وقائع الدعوى (وش السالفة؟ / عطني الزبدة / لخص)
+    if (q.includes("لخص") || q.includes("وقائع") || q.includes("وش السالفة") || q.includes("الزبدة") || q.includes("تقرير") || q.includes("وش وضع") || q.includes("موقفنا")) {
+      return `بصفتي **المحامية بيان**، يسعدني تقديم إيجاز تنفيذي شامل لدعوى **«${caseInfo.case_title}»**:
+
+* 📋 **بيانات القيد:** مقيدة برقم (${caseInfo.case_number || "قيد التعيين"}) لدى ${caseInfo.court_name || "المحكمة المختصة"} — ${caseInfo.circuit || "الدائرة المختصة"}.
+* 👤 **الموكل:** ${caseInfo.client_name || "غير محدد"}.
+* 👥 **المدعى عليه / الخصوم:** ${(parties || []).map((p) => `${p.name} (${p.legalRole})`).join("، ") || "لم يُحدد أطراف إضافيون"}.
+* 💰 **قيمة النزاع:** ${caseInfo.claim_amount ? `${caseInfo.claim_amount.toLocaleString()} ر.س` : "مطالبة حقوقية"}.
+* 📝 **موضوع النزاع:** ${caseInfo.description || "مطالبة قضائية قائمة"}.
+* 🏛️ **الموقف الإجرائي للجلسات:** ${hearings.length > 0 ? `الجلسة القادمة بتاريخ ${hearings[0].date} (${hearings[0].title}).` : "لا توجد جلسات سابقة مسجلة."}
+* ⏱️ **المهل القائمة:** ${deadlines.length > 0 ? `مهلة «${deadlines[0].title}» تستحق في (${deadlines[0].due_date}).` : "لا توجد مهل معلقة."}
+
+💡 **الرأي والتوجيه:** جاهزة لصياغة أي مذكرة جوابية أو دفع شكلي أو موضوعي استناداً للأنظمة القضائية السعودية الحديثة.`;
+    }
+  }
+
+  // =========================================================================
+  // 2. أسئلة سياق المكتب العام (Global Office Wide Queries)
+  // =========================================================================
   if (isGlobal && teamMembers && teamMembers.length > 0) {
     const matchedMember = teamMembers.find((m) => {
       const parts = m.name.toLowerCase().split(/\s+/).filter(Boolean);
@@ -547,8 +795,12 @@ ${matchedMember.assignedCases.length > 0 ? matchedMember.assignedCases.map((c, i
     }
   }
 
-  // 2. نظام العمل والمنازعات العمالية (المادة 77 والمادة 80 و 84)
-  if (q.includes("عمل") || q.includes("فصل") || q.includes("مكافأة نهاية الخدمة") || q.includes("مادة 77") || q.includes("مادة 80") || q.includes("استقالة")) {
+  // =========================================================================
+  // 3. الموسوعة النظامية السعودية (Saudi Legal Corpus Answers)
+  // =========================================================================
+
+  // أ) نظام العمل والمنازعات العمالية
+  if (q.includes("عمل") || q.includes("فصل") || q.includes("مكافأة نهاية الخدمة") || q.includes("مادة 77") || q.includes("مادة 80") || q.includes("استقالة") || q.includes("عمالي")) {
     return `بصفتي **المحامية بيان**، أرفع إليكم الرأي والتأصيل النظامي وفق **نظام العمل السعودي ولائحته التنفيذية**:
 
 1. **التعويض عن إنهاء العقد غير المشروع (المادة 77):**
@@ -562,8 +814,8 @@ ${matchedMember.assignedCases.length > 0 ? matchedMember.assignedCases.map((c, i
 💡 **التوصية الإجرائية:** وجوب التقدم بطلب التسوية الودية لدى منصة «وِدي» بوزارة الموارد البشرية كإجراء إلزامي قبل قيد الدعوى أمام المحكمة العمالية.`;
   }
 
-  // 3. نظام الشركات والإفلاس والمسؤولية
-  if (q.includes("شركات") || q.includes("شركة") || q.includes("شريك") || q.includes("مجلس إدارة") || q.includes("إفلاس") || q.includes("تصفية")) {
+  // ب) نظام الشركات والإفلاس
+  if (q.includes("شركات") || q.includes("شركة") || q.includes("شريك") || q.includes("مجلس إدارة") || q.includes("إفلاس") || q.includes("تصفية") || q.includes("مساهمة")) {
     return `بصفتي **المحامية بيان**، أحيطكم بالتكييف النظامي استناداً إلى **نظام الشركات الجديد (1443هـ)** و**نظام الإفلاس (1439هـ)**:
 
 1. **مسؤولية المديرين وأعضاء مجلس الإدارة (المادة 27 من نظام الشركات):**
@@ -574,42 +826,8 @@ ${matchedMember.assignedCases.length > 0 ? matchedMember.assignedCases.map((c, i
    * يترتب على قيد طلب افتتاح إجراء التسوية الوقائية أو إعادة التنظيم المالي تعليق كافة المطالبات والإجراءات التنفيذية ضد المدين.`;
   }
 
-  // 4. نظام الأحوال الشخصية والتركات والحضانة
-  if (q.includes("أحوال شخصية") || q.includes("حضانة") || q.includes("نفقة") || q.includes("طلاق") || q.includes("تركة") || q.includes("ورثة")) {
-    return `بصفتي **المحامية بيان**، أرفع إليكم التأصيل الشرعي والنظامي وفق **نظام الأحوال الشخصية (1443هـ)**:
-
-1. **أولوية الحضانة وضوابطها (المادة 125):**
-   * تثبت الحضانة للأم ثم الأب ثم أم الأم، وتستمر الحضانة حتى سن (18) عاماً، مع جعل مصلحة المحضون الفضلى هي المعيار الحاكم دائماً.
-2. **استحقاق النفقة الماضية والمستقبلية (المادة 42):**
-   * النفقة دين ممتاز في ذمة المنفق مقدم على سائر الديون العادية ولا تسقط بمضي المدة.
-3. **تصفية وقسمة التركات (المادة 198):**
-   * تصفى التركات رضائياً أو عبر دوائر التركات بالمحكمة العامة، وتُسدد الديون والوصايا وتُحصر التركة إلكترونياً قبل قسمة السهام الشرعية.`;
-  }
-
-  // 5. الجرائم المعلوماتية والإجراءات الجزائية
-  if (q.includes("جرائم معلوماتية") || q.includes("ابتزاز") || q.includes("تشهير") || q.includes("احتيال") || q.includes("جزائية") || q.includes("توقيف")) {
-    return `بصفتي **المحامية بيان**، أرفع إليكم الرأي النظامي وفق **نظام مكافحة جرائم المعلوماتية (1428هـ)** و**نظام الإجراءات الجزائية (1435هـ)**:
-
-1. **التشهير والدخول غير المشروع (المادة 3):**
-   * يعاقب بالسجن مدة تصل إلى سنة وبغرامة تصل إلى (500,000) ريال لكل من ارتكب التشهير أو المساس بالحياة الخاصة عبر التقنية.
-2. **الاحتيال المالي الإلكتروني (المادة 4):**
-   * السجن حتى (3) سنوات وغرامة حتى مليوني ريال لمن استولى على مال الغير بالاحتيال الرقمي أو انتحال الصفة.
-3. **ضمانات المتهم في التحقيق (المادة 4 من نظام الإجراءات الجزائية):**
-   * حق الاستعانة بمحامٍ مرخص أثناء التحقيق وسماع الأقوال لدى النيابة العامة.`;
-  }
-
-  // 6. التحكيم والوساطة وفض المنازعات
-  if (q.includes("تحكيم") || q.includes("شرط التحكيم") || q.includes("بطلان حكم التحكيم")) {
-    return `بصفتي **المحامية بيان**، أحيطكم بالقواعد السارية في **نظام التحكيم السعودي (1433هـ)**:
-
-1. **استقلالية شرط التحكيم (المادة 9):**
-   * يعد شرط التحكيم اتفاقاً مستقلاً تماماً عن شروط العقد، ولا يترتب على بطلان العقد الأصلي أو فسخه بطلان شرط التحكيم.
-2. **حالات دعوى بطلان حكم التحكيم (المادة 50):**
-   * لا يُقبل الطعن في أحكام المحكمين إلا بدعوى بطلان حصرية (عدم وجود اتفاق تحكيم، الإخلال بحق الدفاع، أو مخالفة الشريعة والنظام العام بالمملكة).`;
-  }
-
-  // 7. المعاملات المدنية والإثبات وعقود المقاولة والتعويض
-  if (q.includes("دفوع") || q.includes("إثبات") || q.includes("معاملات") || q.includes("عقد") || q.includes("مقاولة") || q.includes("تعويض") || q.includes("مادة 94") || q.includes("مادة 138")) {
+  // ج) المعاملات المدنية والإثبات وعقود المقاولة والتعويض
+  if (q.includes("دفوع") || q.includes("إثبات") || q.includes("معاملات") || q.includes("عقد") || q.includes("مقاولة") || q.includes("تعويض") || q.includes("مادة 94") || q.includes("مادة 138") || q.includes("بطلان")) {
     return `بعد دراستي للمسألة ومطابقتها مع الأنظمة القضائية السعودية الحديثة، أرفع إليكم الرأي والتأصيل النظامي التالي:
 
 1. **التأصيل بموجب نظام المعاملات المدنية (1444هـ):**
@@ -625,8 +843,42 @@ ${matchedMember.assignedCases.length > 0 ? matchedMember.assignedCases.map((c, i
    * صياغة مذكرة جوابية تفند ادعاءات الخصم بالاستناد إلى نصوص المواد أعلاه مع إرفاق المستندات كأدلة رقمية مفهرسة.`;
   }
 
-  // 8. المهل ومواعيد الاعتراض والاستئناف والتنفيذ
-  if (q.includes("مهل") || q.includes("اعتراض") || q.includes("استئناف") || q.includes("ميعاد") || q.includes("طعن") || q.includes("تنفيذ") || q.includes("قرار 46")) {
+  // د) الأحوال الشخصية والتركات والحضانة
+  if (q.includes("أحوال شخصية") || q.includes("حضانة") || q.includes("نفقة") || q.includes("طلاق") || q.includes("تركة") || q.includes("ورثة")) {
+    return `بصفتي **المحامية بيان**، أرفع إليكم التأصيل الشرعي والنظامي وفق **نظام الأحوال الشخصية (1443هـ)**:
+
+1. **أولوية الحضانة وضوابطها (المادة 125):**
+   * تثبت الحضانة للأم ثم الأب ثم أم الأم، وتستمر الحضانة حتى سن (18) عاماً، مع جعل مصلحة المحضون الفضلى هي المعيار الحاكم دائماً.
+2. **استحقاق النفقة الماضية والمستقبلية (المادة 42):**
+   * النفقة دين ممتاز في ذمة المنفق مقدم على سائر الديون العادية ولا تسقط بمضي المدة.
+3. **تصفية وقسمة التركات (المادة 198):**
+   * تصفى التركات رضائياً أو عبر دوائر التركات بالمحكمة العامة، وتُسدد الديون والوصايا وتُحصر التركة إلكترونياً قبل قسمة السهام الشرعية.`;
+  }
+
+  // هـ) الجرائم المعلوماتية والإجراءات الجزائية
+  if (q.includes("جرائم معلوماتية") || q.includes("ابتزاز") || q.includes("تشهير") || q.includes("احتيال") || q.includes("جزائية") || q.includes("توقيف") || q.includes("نيابة")) {
+    return `بصفتي **المحامية بيان**، أرفع إليكم الرأي النظامي وفق **نظام مكافحة جرائم المعلوماتية (1428هـ)** و**نظام الإجراءات الجزائية (1435هـ)**:
+
+1. **التشهير والدخول غير المشروع (المادة 3):**
+   * يعاقب بالسجن مدة تصل إلى سنة وبغرامة تصل إلى (500,000) ريال لكل من ارتكب التشهير أو المساس بالحياة الخاصة عبر التقنية.
+2. **الاحتيال المالي الإلكتروني (المادة 4):**
+   * السجن حتى (3) سنوات وغرامة حتى مليوني ريال لمن استولى على مال الغير بالاحتيال الرقمي أو انتحال الصفة.
+3. **ضمانات المتهم في التحقيق (المادة 4 من نظام الإجراءات الجزائية):**
+   * حق الاستعانة بمحامٍ مرخص أثناء التحقيق وسماع الأقوال لدى النيابة العامة.`;
+  }
+
+  // و) التحكيم والوساطة
+  if (q.includes("تحكيم") || q.includes("شرط التحكيم") || q.includes("بطلان حكم التحكيم")) {
+    return `بصفتي **المحامية بيان**، أحيطكم بالقواعد السارية في **نظام التحكيم السعودي (1433هـ)**:
+
+1. **استقلالية شرط التحكيم (المادة 9):**
+   * يعد شرط التحكيم اتفاقاً مستقلاً تماماً عن شروط العقد، ولا يترتب على بطلان العقد الأصلي أو فسخه بطلان شرط التحكيم.
+2. **حالات دعوى بطلان حكم التحكيم (المادة 50):**
+   * لا يُقبل الطعن في أحكام المحكمين إلا بدعوى بطلان حصرية (عدم وجود اتفاق تحكيم، الإخلال بحق الدفاع، أو مخالفة الشريعة والنظام العام بالمملكة).`;
+  }
+
+  // ز) المهل ومواعيد الاعتراض والاستئناف والتنفيذ
+  if (q.includes("مهل") || q.includes("اعتراض") || q.includes("استئناف") || q.includes("ميعاد") || q.includes("طعن") || q.includes("تنفيذ") || q.includes("قرار 46") || q.includes("قرار 34")) {
     return `بشأن المهل والمواعيد الإجرائية وفق النظام القضائي وقضاء التنفيذ، يسرّني إحاطتكم بالقواعد النظامية السارية:
 
 * **مواعيد الاستئناف (المادة 79 مرافعات شرعية والمادة 58 محاكم تجارية):**
@@ -639,7 +891,7 @@ ${matchedMember.assignedCases.length > 0 ? matchedMember.assignedCases.map((c, i
 ${deadlines.length > 0 ? `* **المهل المسجلة حالياً في النظام:**\n${deadlines.map((d) => `   * [${d.title} — تاريخ الاستحقاق: ${d.due_date}]`).join("\n")}` : ""}`;
   }
 
-  // 9. حصر القضايا والجلسات العامة
+  // ح) حصر القضايا والجلسات العامة في المكتب
   if (isGlobal && (q.includes("قضايا") || q.includes("حصر") || q.includes("عدد") || q.includes("تقرير") || q.includes("جلسات"))) {
     if (q.includes("جلسات")) {
       return `بصفتي **المحامية بيان**، يسرّني استعراض جدول الجلسات القضائية القادمة في المكتب:
@@ -656,25 +908,12 @@ ${casesSummary && casesSummary.length > 0 ? casesSummary.slice(0, 10).map((c, i)
 يمكنك سؤالي عن أي قضية بالاسم أو الرقم أو أي مسألة نظامية لتزويدك بتقرير وتكييف قانوني تفصيلي.`;
   }
 
-  // 10. تلخيص دعوى محددة
-  if (!isGlobal && caseInfo && (q.includes("لخص") || q.includes("وقائع") || q.includes("موقف") || q.includes("تقرير"))) {
-    return `بصفتي **المحامية بيان**، يسعدني تقديم تلخيص قانوني ومحكم لمسار دعوى **«${caseInfo.case_title}»**:
-
-* **بيانات الدعوى:** مقيدة برقم (${caseInfo.case_number || "قيد التحديد"}) لدى ${caseInfo.court_name || "المحكمة المختصة"} — ${caseInfo.circuit || "الدائرة القضائية المختصة"}.
-* **الموكل الممثل:** ${caseInfo.client_name || "الطرف الممثل"}.
-* **المحامي المسؤول:** ${caseInfo.assigned_lawyer_name || "غير مسند"}.
-* **موضوع النزاع والمطالبة:** ${caseInfo.description || "مطالبة حقوقية/تجارية قائمة"}${caseInfo.claim_amount ? ` بقيمة إجمالية قدرها ${caseInfo.claim_amount.toLocaleString()} ريال سعودي.` : "."}
-* **الموقف الإجرائي الحالي:** ${hearings.length > 0 ? `عُقدت آخر جلسة بتاريخ ${hearings[0].date} (${hearings[0].title}).` : "لا توجد جلسات سابقة مسجلة."}
-
-💡 **التوجيه النظامي والتوصية:** أوصي بمراجعة المذكرات المتبادلة واستكمال إيداع حصر أسانيد الإثبات قبل موعد الجلسة القادمة تفادياً لسقوط الحق في الدفع.`;
-  }
-
   // الرد العام الوقور
   return `السلام عليكم ورحمة الله وبركاته،
 
 أهلاً بك زميلي الكريم، معك **المحامية بيان** — المستشارة القانونية والباحثة القضائية لمنصة «مِهلة».
 
-أنا متصلة بمركز قيادة المكتب ومدرّبة على **كافة فروع الأنظمة السعودية الرسمية**:
+أنا متصلة بمركز قيادة المكتب ومدرّبة على **كافة فروع الأنظمة السعودية الرسمية وسجلات القضايا**:
 * 🏛️ **الأنظمة المدنية والعقود:** نظام المعاملات المدنية (1444هـ)، الوساطة والتسجيل العقاري.
 * 💼 **الأنظمة التجارية والشركات:** نظام الشركات الجديد (1443هـ)، المحاكم التجارية، ونظام الإفلاس.
 * 📜 **أنظمة الإثبات والمرافعات والقضاء:** نظام الإثبات (1443هـ)، المرافعات الشرعية، قضاء التنفيذ، وديوان المظالم.
@@ -683,5 +922,5 @@ ${casesSummary && casesSummary.length > 0 ? casesSummary.slice(0, 10).map((c, i)
 * 🔒 **الأنظمة الجزائية والمعلوماتية والتقنية:** نظام مكافحة الجرائم المعلوماتية، ونظام حماية البيانات الشخصية (PDPL).
 * 🤝 **التحكيم والوساطة:** نظام التحكيم السعودي وفض المنازعات البديلة.
 
-تفضل بطرح استفسارك أو موضوع قضيتك، وسأرفع إليك الرأي والتأصيل النظامي وصياغة الدفوع فوراً.`;
+تفخر بي المنصة للإجابة على كافة أسئلتك سواء بالأسلوب العامي الدارج أو الفصيح الرسمي حول ملفات قضاياك أو أي مسألة نظامية. تفضل بطرح استفسارك فوراً!`;
 }
