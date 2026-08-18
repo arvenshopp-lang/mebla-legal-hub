@@ -287,7 +287,7 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
 
     supabaseAdmin
       .from("cases")
-      .select("id, case_number, title, court, circuit, status, case_type, filing_date, next_action_date, created_at")
+      .select("id, case_number, case_title, court_name, judicial_circuit, status, case_type, opened_at, next_action_date, created_at")
       .eq("organization_id", orgId)
       .eq("client_id", clientId)
       .neq("status", "archived")
@@ -295,13 +295,13 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
 
     supabaseAdmin
       .from("hearings")
-      .select("id, case_id, hearing_date, circuit, court_room, status, decision, cases(title, case_number)")
+      .select("id, case_id, hearing_date, judicial_circuit, location, status, result, cases(case_title, case_number)")
       .eq("organization_id", orgId)
       .order("hearing_date", { ascending: true }),
 
     supabaseAdmin
       .from("documents")
-      .select("id, case_id, file_name, file_size, document_category, created_at, source, is_confidential, cases(title, case_number)")
+      .select("id, case_id, file_name, file_size, document_category, created_at, source, is_confidential, cases(case_title, case_number)")
       .eq("organization_id", orgId)
       .eq("client_id", clientId)
       .eq("is_confidential", false)
@@ -309,7 +309,7 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
 
     supabaseAdmin
       .from("office_invoices")
-      .select("id, invoice_number, total_amount, vat_amount, status, due_date, created_at, paid_at")
+      .select("id, invoice_number, total, tax_total, status, due_date, created_at, paid_at")
       .eq("organization_id", orgId)
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
@@ -325,30 +325,30 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
     cases: (cases ?? []).map((c) => ({
       id: c.id,
       caseNumber: c.case_number,
-      title: c.title,
-      court: c.court,
-      circuit: c.circuit,
+      title: c.case_title,
+      court: c.court_name,
+      circuit: c.judicial_circuit,
       status: c.status,
       caseType: c.case_type,
-      filingDate: c.filing_date,
+      filingDate: c.opened_at,
       nextActionDate: c.next_action_date,
       createdAt: c.created_at,
     })),
     hearings: filteredHearings.map((h: any) => ({
       id: h.id,
       caseId: h.case_id,
-      caseTitle: h.cases?.title || "قضية",
+      caseTitle: h.cases?.case_title || "قضية",
       caseNumber: h.cases?.case_number || "—",
       hearingDate: h.hearing_date,
-      circuit: h.circuit,
-      courtRoom: h.court_room,
+      circuit: h.judicial_circuit,
+      courtRoom: h.location,
       status: h.status,
-      decision: h.decision,
+      decision: h.result,
     })),
     documents: (documents ?? []).map((d: any) => ({
       id: d.id,
       caseId: d.case_id,
-      caseTitle: d.cases?.title || "عام",
+      caseTitle: d.cases?.case_title || "عام",
       caseNumber: d.cases?.case_number || "—",
       fileName: d.file_name,
       fileSize: d.file_size,
@@ -359,8 +359,8 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
     invoices: (invoices ?? []).map((inv) => ({
       id: inv.id,
       invoiceNumber: inv.invoice_number,
-      totalAmount: Number(inv.total_amount),
-      vatAmount: Number(inv.vat_amount),
+      totalAmount: Number(inv.total),
+      vatAmount: Number(inv.tax_total),
       status: inv.status,
       dueDate: inv.due_date,
       createdAt: inv.created_at,

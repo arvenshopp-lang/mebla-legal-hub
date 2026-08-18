@@ -115,7 +115,7 @@ function IntegrationsPage() {
         title="واتساب الرسمي (WABA)"
         actions={
           status ? (
-            <Badge tone={status.ready ? "green" : status.statusLabel === "اتصال متعطّل" ? "red" : "amber"}>
+            <Badge tone={status.ready ? "green" : status.statusLabel === "اتصال متعطّل" ? "red" : "warn"}>
               {status.statusLabel}
             </Badge>
           ) : null
