@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Money } from "@/components/ui/money";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Download, RefreshCw } from "lucide-react";
@@ -18,7 +18,6 @@ import {
   Badge,
   Btn,
   DataCard,
-  EmptyState,
   ErrorBlock,
   SectionCard,
   SectionLoader,
@@ -27,12 +26,13 @@ import {
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import {
-  SUPPORT_LABELS,
   buildFeatureRows,
   buildLimits,
   expiryNotice,
   remainingLabel,
   STATE_LABELS,
+  type FeatureRow,
+  type LimitRow,
   type SubscriptionState,
 } from "@/lib/subscription.shared";
 
@@ -64,9 +64,30 @@ const HISTORY_TONE: Record<string, "green" | "red" | "muted" | "info" | "warn"> 
   cancelled: "muted",
 };
 
+/** الأقرب للامتلاء أولاً؛ الحدود غير المحدودة في النهاية. */
+function sortLimits(rows: LimitRow[]): LimitRow[] {
+  return [...rows].sort((a, b) => {
+    if (a.percent === null && b.percent === null) return 0;
+    if (a.percent === null) return 1;
+    if (b.percent === null) return -1;
+    return b.percent - a.percent;
+  });
+}
+
+/** المميزات المتاحة أولاً مع الحفاظ على الترتيب داخل كل مجموعة. */
+function sortFeatures(rows: FeatureRow[]): FeatureRow[] {
+  return [...rows].sort((a, b) => Number(b.available) - Number(a.available));
+}
+
 function SubscriptionPage() {
   const { activeOrgId } = useAuth();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
+  const higherPlans = (overview?.upgrade_plans ?? [])
+    .filter(
+      (p) =>
+        p.code !== overview?.plan.code && p.price_monthly > (overview?.plan.price_monthly ?? 0),
+    )
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <DashboardShell
@@ -126,10 +147,12 @@ function SubscriptionPage() {
                     : "—"
                 }
               />
-              <InfoCell
-                label="التجديد التلقائي"
-                value={overview.subscription?.auto_renew ? "مفعّل" : "غير مفعّل"}
-              />
+              {overview.subscription && (
+                <InfoCell
+                  label="التجديد التلقائي"
+                  value={overview.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}
+                />
+              )}
             </dl>
 
             {overview.subscription?.suspension_reason && overview.state === "suspended" && (
@@ -142,101 +165,66 @@ function SubscriptionPage() {
           {/* Limits */}
           <SectionCard title="الحدود والاستخدام" description="أرقام فعلية محسوبة من بيانات مكتبك">
             <div className="grid gap-5 sm:grid-cols-2">
-              {buildLimits(overview.plan, overview.usage).map((row) => (
+              {sortLimits(buildLimits(overview.plan, overview.usage)).map((row) => (
                 <LimitBar key={row.key} row={row} />
               ))}
             </div>
           </SectionCard>
 
           {/* Features */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <SectionCard title="مميزات باقتك" description="ما تملكه وما لا تملكه بوضوح">
-              <ul className="divide-y divide-border">
-                {buildFeatureRows(overview).map((f) => (
-                  <FeatureLine
-                    key={f.key}
-                    label={f.label}
-                    available={f.available}
-                    requiredPlan={f.requiredPlan}
-                  />
-                ))}
-              </ul>
-            </SectionCard>
-
-            <SectionCard title="الدعم ومستوى الخدمة">
-              <ul className="divide-y divide-border">
+          <SectionCard title="مميزات باقتك" description="ما هو متاح لك الآن وما يحتاج ترقية">
+            <ul className="divide-y divide-border">
+              {sortFeatures(buildFeatureRows(overview)).map((f) => (
                 <FeatureLine
-                  label="مستوى الدعم"
-                  available
-                  value={SUPPORT_LABELS[overview.plan.support_level] ?? overview.plan.support_level}
+                  key={f.key}
+                  label={f.label}
+                  available={f.available}
+                  requiredPlan={f.requiredPlan}
                 />
-                <FeatureLine
-                  label="زمن الاستجابة (SLA)"
-                  available
-                  value={`${overview.plan.sla_hours} ساعة`}
-                />
-                {(overview.plan.features ?? []).map((extra) => (
-                  <FeatureLine key={extra} label={extra} available value="مشمولة" />
-                ))}
-              </ul>
-            </SectionCard>
-          </div>
+              ))}
+              {(overview.plan.features ?? []).map((extra) => (
+                <FeatureLine key={extra} label={extra} available value="مشمولة" />
+              ))}
+            </ul>
+          </SectionCard>
 
-          {/* Upgrade options */}
-          {overview.upgrade_plans.length > 0 && (
+          {/* Upgrade options — الباقات الأعلى من باقتك الحالية فقط */}
+          {higherPlans.length > 0 && (
             <SectionCard
-              title="الترقية"
-              description="اختر الباقة المناسبة وسيتواصل فريق مِهلة لإتمام التفعيل"
+              title="ترقية الباقة"
+              description="باقات أعلى من باقتك الحالية — تواصل مع فريق مِهلة لإتمام الترقية"
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {overview.upgrade_plans.map((p) => {
-                  const current = p.code === overview.plan.code;
-                  return (
-                    <div
-                      key={p.code}
-                      className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[14px] font-bold">{p.name_ar}</p>
-                        {current && <Badge tone="green">باقتك</Badge>}
-                      </div>
-                      <p className="mt-1.5 text-[13px] tabular-nums text-muted-foreground">
-                        {SAR(p.price_monthly)} / شهرياً
-                      </p>
-                      <p className="mt-2 text-[12px] text-text-muted">
-                        {p.max_users === null ? "مستخدمون بلا حد" : `حتى ${p.max_users} مستخدمين`} ·{" "}
-                        {p.max_cases === null ? "قضايا بلا حد" : `${p.max_cases} قضية`}
-                      </p>
-                      {!current && (
-                        <div className="mt-3">
-                          <Btn
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              toast.success("تم تسجيل طلب الترقية", {
-                                description: `سيتواصل فريق مِهلة معك بخصوص ${p.name_ar}.`,
-                              })
-                            }
-                          >
-                            طلب الترقية
-                          </Btn>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {higherPlans.map((p) => (
+                  <div
+                    key={p.code}
+                    className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
+                  >
+                    <p className="text-[14px] font-bold">{p.name_ar}</p>
+                    <p className="mt-1.5 text-[13px] tabular-nums text-muted-foreground">
+                      {SAR(p.price_monthly)} / شهرياً
+                    </p>
+                    <p className="mt-2 text-[12px] text-text-muted">
+                      {p.max_users === null ? "مستخدمون بلا حد" : `حتى ${p.max_users} مستخدمين`} ·{" "}
+                      {p.max_cases === null ? "قضايا بلا حد" : `${p.max_cases} قضية`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link to="/pricing">
+                  <Btn variant="ghost">مقارنة الباقات</Btn>
+                </Link>
+                <Link to="/contact">
+                  <Btn variant="ghost">تواصل مع مِهلة</Btn>
+                </Link>
               </div>
             </SectionCard>
           )}
 
-          {/* History */}
-          <SectionCard title="سجل الاشتراكات">
-            {overview.history.length === 0 ? (
-              <EmptyState
-                title="لا توجد اشتراكات سابقة"
-                hint="سيظهر هنا كل اشتراك يتم تفعيله لمكتبك."
-              />
-            ) : (
+          {/* History — يظهر فقط عند وجود سجل فعلي */}
+          {overview.history.length > 0 && (
+            <SectionCard title="سجل الاشتراكات">
               <DataCard>
                 <table className="w-full min-w-[620px] text-right">
                   <thead>
@@ -265,14 +253,12 @@ function SubscriptionPage() {
                   </tbody>
                 </table>
               </DataCard>
-            )}
-          </SectionCard>
+            </SectionCard>
+          )}
 
-          {/* Invoices */}
-          <SectionCard title="الفواتير" description="سجل المدفوعات الخاص بمكتبك">
-            {overview.invoices.length === 0 ? (
-              <EmptyState title="لا توجد فواتير" hint="ستظهر الفواتير بعد أول عملية دفع مسجّلة." />
-            ) : (
+          {/* Invoices — يظهر فقط عند وجود فواتير فعلية */}
+          {overview.invoices.length > 0 && (
+            <SectionCard title="فواتير الاشتراك" description="سجل مدفوعات اشتراك مكتبك في مِهلة">
               <DataCard>
                 <table className="w-full min-w-[680px] text-right">
                   <thead>
@@ -321,8 +307,8 @@ function SubscriptionPage() {
                   </tbody>
                 </table>
               </DataCard>
-            )}
-          </SectionCard>
+            </SectionCard>
+          )}
 
           <p className="flex items-center gap-2 text-[12px] text-text-muted">
             <CalendarDays className="h-3.5 w-3.5" aria-hidden />
