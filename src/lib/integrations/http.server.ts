@@ -84,7 +84,8 @@ export type IntegrationRequest = {
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
-  body?: string | null;
+  /** نص أو حمولة ثنائية (رفع ملفات إلى مزودي التخزين). */
+  body?: string | Uint8Array | null;
   timeoutMs: number;
   policy: UrlPolicy;
   /** عدد إعادة المحاولة عند أخطاء الشبكة أو 5xx فقط. */
@@ -103,7 +104,10 @@ export async function integrationFetch(request: IntegrationRequest): Promise<Int
       const response = await fetch(url.toString(), {
         method: request.method,
         headers: request.headers,
-        body: request.method === "GET" ? undefined : (request.body ?? undefined),
+        body:
+          request.method === "GET"
+            ? undefined
+            : ((request.body ?? undefined) as BodyInit | undefined),
         redirect: "manual",
         signal: AbortSignal.timeout(Math.max(1000, Math.min(request.timeoutMs, 30_000))),
       });

@@ -198,7 +198,7 @@ export async function buildCaseContext(
   const { data: caseRow, error: caseErr } = await supabaseAdmin
     .from("cases")
     .select(`
-      id, case_title, case_number, court_name, judicial_circuit, status, claim_amount, description, assigned_lawyer_id,
+      id, case_title, case_number, court_name, judicial_circuit, status, description, assigned_lawyer_id,
       client:clients ( id, full_name ),
       lawyer:profiles!cases_assigned_lawyer_id_fkey ( id, full_name )
     `)
@@ -239,7 +239,7 @@ export async function buildCaseContext(
   // 3. جلب الجلسات القضائية
   const { data: hearings } = await supabaseAdmin
     .from("hearings")
-    .select("id, hearing_date, title, decision, court_name, location, remote_link")
+    .select("id, hearing_date, title, result, notes, court_name, location, remote_link")
     .eq("case_id", caseId)
     .eq("organization_id", orgId)
     .order("hearing_date", { ascending: false });
@@ -255,7 +255,7 @@ export async function buildCaseContext(
   // 5. جلب المستندات والـ OCR
   const { data: docs } = await supabaseAdmin
     .from("documents")
-    .select("id, title, category")
+    .select("id, file_name, document_category")
     .eq("case_id", caseId)
     .eq("organization_id", orgId)
     .limit(10);
@@ -280,8 +280,8 @@ export async function buildCaseContext(
       );
 
       documentSnippets.push({
-        title: doc.title,
-        category: doc.category ?? undefined,
+        title: doc.file_name,
+        category: doc.document_category ?? undefined,
         extractedSnippet: combinedText || undefined,
       });
     }
@@ -305,7 +305,7 @@ export async function buildCaseContext(
       court_name: caseRow.court_name,
       circuit: caseRow.judicial_circuit,
       status: caseRow.status,
-      claim_amount: caseRow.claim_amount,
+      claim_amount: null,
       client_name: redactSaudiPii((caseRow.client as unknown as { full_name: string })?.full_name ?? null),
       description: redactSaudiPii(caseRow.description),
       assigned_lawyer_id: caseRow.assigned_lawyer_id,
@@ -317,7 +317,7 @@ export async function buildCaseContext(
     hearings: (hearings ?? []).map((h) => ({
       date: h.hearing_date,
       title: h.title,
-      decision: redactSaudiPii(h.decision),
+      decision: redactSaudiPii(h.result || h.notes),
       court_name: h.court_name,
       location: h.location,
       remote_link: h.remote_link,
@@ -362,7 +362,7 @@ export async function buildOfficeWideContext(
   let casesQuery = supabaseAdmin
     .from("cases")
     .select(`
-      id, case_title, case_number, status, court_name, claim_amount, assigned_lawyer_id,
+      id, case_title, case_number, status, court_name, assigned_lawyer_id,
       lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name)
     `)
     .eq("organization_id", orgId)
@@ -400,7 +400,7 @@ export async function buildOfficeWideContext(
   // 4. جلب الجلسات القادمة
   const { data: upcomingHearings } = await supabaseAdmin
     .from("hearings")
-    .select("hearing_date, title, decision, cases(case_title)")
+    .select("hearing_date, title, result, notes, cases(case_title)")
     .eq("organization_id", orgId)
     .order("hearing_date", { ascending: true })
     .limit(10);
@@ -425,13 +425,13 @@ export async function buildOfficeWideContext(
       number: c.case_number,
       status: c.status,
       court: c.court_name,
-      claim_amount: c.claim_amount,
+      claim_amount: null,
       lawyer_name: (c.lawyer as unknown as { full_name: string })?.full_name ?? null,
     })),
     hearings: (upcomingHearings ?? []).map((h) => ({
       date: h.hearing_date,
       title: h.title,
-      decision: redactSaudiPii(h.decision),
+      decision: redactSaudiPii(h.result || h.notes),
       case_title: (h.cases as unknown as { case_title: string })?.case_title,
     })),
     deadlines: (activeDeadlines ?? []).map((d) => ({

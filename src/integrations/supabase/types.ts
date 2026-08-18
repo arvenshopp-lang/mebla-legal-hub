@@ -131,6 +131,106 @@ export type Database = {
         }
         Relationships: []
       }
+      case_ai_conversations: {
+        Row: {
+          case_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_ai_conversations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_ai_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_ai_messages: {
+        Row: {
+          case_id: string
+          citations: Json
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender: string
+        }
+        Insert: {
+          case_id: string
+          citations?: Json
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          sender: string
+        }
+        Update: {
+          case_id?: string
+          citations?: Json
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_ai_messages_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "case_ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_ai_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_code_registry: {
         Row: {
           code: string

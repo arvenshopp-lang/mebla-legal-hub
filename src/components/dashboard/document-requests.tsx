@@ -161,7 +161,7 @@ export function DocumentRequestsSection({ caseId }: { caseId: string }) {
         </ul>
       )}
 
-      <CreateRequestDialog open={open} onClose={() => setOpen(false)} caseId={caseId} />
+      <CreateRequestModal open={open} onClose={() => setOpen(false)} caseId={caseId} />
       <ConfirmDialog
         open={!!revoking}
         onClose={() => setRevoking(null)}
