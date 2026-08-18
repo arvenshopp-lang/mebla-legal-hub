@@ -25,6 +25,7 @@ const createSchema = z.object({
   title: z.string().trim().min(2).max(150),
   message: z.string().trim().max(1000).optional().nullable(),
   items: z.array(z.string().trim().min(1).max(150)).max(20).default([]),
+  destination: z.enum(["vault", "onedrive", "both"]).default("vault"),
   expiresAt: z.string().datetime().optional().nullable(),
 });
 
@@ -78,10 +79,14 @@ export const createDocumentRequest = createServerFn({ method: "POST" })
       request_id: inserted.id,
       event: "created",
       actor_id: userId,
-      detail: { title: data.title, items: data.items.length },
+      detail: {
+        title: data.title,
+        items: data.items.length,
+        destination: data.destination,
+      },
     });
 
-    return { id: inserted.id, token };
+    return { id: inserted.id, token, destination: data.destination };
   });
 
 export const revokeDocumentRequest = createServerFn({ method: "POST" })

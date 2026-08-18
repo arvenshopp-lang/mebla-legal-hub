@@ -58,6 +58,8 @@ import {
 } from "@/components/documents/text-intel";
 import { extractableKind } from "@/lib/document-ai.shared";
 import { DocumentRepairButton } from "@/components/documents/repair-panel";
+import { StorageDestinationPicker } from "@/components/storage/storage-destination-picker";
+import type { StorageDestination } from "@/lib/storage/hybrid-storage.shared";
 import type { Tables } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
 
@@ -314,6 +316,7 @@ function UploadDialog({
   const [clientId, setClientId] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [destination, setDestination] = useState<StorageDestination>("vault");
   const [confidential, setConfidential] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -487,6 +490,13 @@ function UploadDialog({
             <span className="text-sm">تمييز كسرّي</span>
           </label>
         </FormField>
+        <div className="md:col-span-2">
+          <StorageDestinationPicker
+            value={destination}
+            onChange={setDestination}
+            label="وجهة حفظ المستند"
+          />
+        </div>
         <div className="md:col-span-2">
           <FormField label="الوصف">
             <textarea

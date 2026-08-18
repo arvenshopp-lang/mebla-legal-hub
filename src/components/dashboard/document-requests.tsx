@@ -20,6 +20,8 @@ import {
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
 import { describeMutationError } from "@/lib/subscription.shared";
+import { StorageDestinationPicker } from "@/components/storage/storage-destination-picker";
+import type { StorageDestination } from "@/lib/storage/hybrid-storage.shared";
 import type { Tables } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
 
@@ -218,20 +220,21 @@ function RequestLog({ requestId }: { requestId: string }) {
   );
 }
 
-function CreateRequestDialog({
+function CreateRequestModal({
+  caseId,
   open,
   onClose,
-  caseId,
 }: {
+  caseId: string;
   open: boolean;
   onClose: () => void;
-  caseId: string;
 }) {
   const qc = useQueryClient();
   const createFn = useServerFn(createDocumentRequest);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [itemsText, setItemsText] = useState("");
+  const [destination, setDestination] = useState<StorageDestination>("vault");
   const [expires, setExpires] = useState("");
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -240,6 +243,7 @@ function CreateRequestDialog({
     setTitle("");
     setMessage("");
     setItemsText("");
+    setDestination("vault");
     setExpires("");
     setLink(null);
   };
@@ -259,12 +263,13 @@ function CreateRequestDialog({
           title: title.trim(),
           message: message.trim() || null,
           items,
+          destination,
           expiresAt: expires ? new Date(expires).toISOString() : null,
         },
       });
       setLink(`${window.location.origin}/upload/${res.token}`);
       qc.invalidateQueries({ queryKey: ["doc-requests", caseId] });
-      toast.success("تم إنشاء الرابط");
+      toast.success("تم إنشاء الرابط وتحديد وجهة التخزين");
     } catch (e: unknown) {
       toast.error("تعذّر إنشاء الرابط", { description: describeMutationError(errMsg(e)) });
     } finally {
@@ -303,7 +308,7 @@ function CreateRequestDialog({
         reset();
         onClose();
       }}
-      title={link ? "الرابط جاهز" : "إنشاء طلب مستندات"}
+      title={link ? "الرابط جاهز" : "إنشاء طلب مستندات من العميل"}
       size="lg"
     >
       {link ? (
@@ -366,6 +371,13 @@ function CreateRequestDialog({
                 placeholder={"صورة الهوية\nالعقد\nالفواتير"}
               />
             </FormField>
+
+            <StorageDestinationPicker
+              value={destination}
+              onChange={setDestination}
+              label="أين ترغب بحفظ مستندات العميل عند إرسالها؟"
+            />
+
             <FormField label="تاريخ الانتهاء (اختياري)">
               <input
                 type="datetime-local"
