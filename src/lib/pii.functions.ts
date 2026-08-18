@@ -68,6 +68,12 @@ export const saveClientSecure = createServerFn({ method: "POST" })
     const secure = await encryptedColumnsFor(data.organizationId, data.pii ?? {});
     const payload = { ...base, ...secure };
 
+    if (!data.id) {
+      // فحص مسبق لحد عدد العملاء برسالة تحمل رقم الباقة الحقيقي.
+      const { assertQuota } = await import("./subscription.server");
+      await assertQuota(context.supabase, data.organizationId, "clients");
+    }
+
     if (data.id) {
       const { data: row, error } = await context.supabase
         .from("clients")
