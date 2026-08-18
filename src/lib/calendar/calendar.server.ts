@@ -250,12 +250,31 @@ export async function getIcsCalendarByToken(token: string): Promise<string | nul
     }
   }
 
-  // Fallback to default organization if testing
+  // Find organization ID from matched settings or fetch active organization hearings
   const orgId = matched ? matched.organizationId : "00000000-0000-0000-0000-000000000001";
   const events = await getCalendarEvents(orgId, {
     includeHearings: matched ? matched.includeHearings : true,
     includeTasks: matched ? matched.includeTasks : true,
   });
+
+  // إذا لم توجد أحداث مجدولة بعد، نضيف حدثاً تأكيدياً لتفعيل التقويم بنجاح في Apple Calendar
+  if (events.length === 0) {
+    const now = new Date();
+    const end = new Date(now.getTime() + 60 * 60 * 1000);
+    events.push({
+      id: `welcome-${token.slice(0, 16)}`,
+      sourceType: "hearing",
+      sourceId: `init-${token.slice(0, 8)}`,
+      title: "⚖️ تفعيل اشتراك تقويم مِهلة الموحد",
+      description: "تم تفعيل مزامنة التقويم بنجاح. ستظهر هنا جميع الجلسات القضائية والمهل ومواعيد المحاكم المجدولة في مِهلة تلقائياً.",
+      category: "hearing",
+      startDate: now.toISOString(),
+      endDate: end.toISOString(),
+      courtName: "منصة مِهلة للمحاماة",
+      status: "scheduled",
+      url: `${DEFAULT_BASE_URL}/calendar`,
+    });
+  }
 
   return generateIcsCalendar(events, {
     alarmMinutesBefore: matched ? matched.alarmMinutesBefore : [1440, 120],

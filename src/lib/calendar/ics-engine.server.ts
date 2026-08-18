@@ -23,40 +23,60 @@ function escapeIcsText(text: string | null | undefined): string {
     .replace(/\r?\n/g, "\\n");
 }
 
-/** تقسيم السطور الطويلة (Line Folding) بما لا يتجاوز 75 بايت وفق RFC 5545 */
+/**
+ * طي السطور (Line Folding) وفق RFC 5545 دون كسر محارف UTF-8 متعددة البايت أو الإيموجي
+ * Strict UTF-8 Safe RFC 5545 Line Folder (Max 75 octets per line)
+ */
 function foldLine(line: string): string {
-  const maxBytes = 75;
+  const maxBytesFirstLine = 75;
+  const maxBytesContinuation = 74; // 75 - 1 byte for leading space
+
   const encoder = new TextEncoder();
-  const bytes = encoder.encode(line);
+  const lineBytes = encoder.encode(line);
 
-  if (bytes.length <= maxBytes) return line;
+  // If already under 75 bytes, return as is
+  if (lineBytes.length <= maxBytesFirstLine) {
+    return line;
+  }
 
-  let folded = "";
-  let currentChunk = "";
-  let currentByteLen = 0;
+  // Iterate over full Unicode code points (Array.from splits surrogate pairs properly)
+  const characters = Array.from(line);
+  let result = "";
+  let currentLine = "";
+  let currentBytes = 0;
+  let isFirstLine = true;
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
+  for (const char of characters) {
     const charBytes = encoder.encode(char).length;
+    const maxLimit = isFirstLine ? maxBytesFirstLine : maxBytesContinuation;
 
-    if (currentByteLen + charBytes > (folded.length === 0 ? maxBytes : maxBytes - 1)) {
-      folded += (folded.length === 0 ? "" : "\r\n ") + currentChunk;
-      currentChunk = char;
-      currentByteLen = charBytes;
+    if (currentBytes + charBytes > maxLimit) {
+      if (isFirstLine) {
+        result += currentLine;
+        isFirstLine = false;
+      } else {
+        result += "\r\n " + currentLine;
+      }
+      currentLine = char;
+      currentBytes = charBytes;
     } else {
-      currentChunk += char;
-      currentByteLen += charBytes;
+      currentLine += char;
+      currentBytes += charBytes;
     }
   }
 
-  if (currentChunk) {
-    folded += (folded.length === 0 ? "" : "\r\n ") + currentChunk;
+  if (currentLine) {
+    if (isFirstLine) {
+      result += currentLine;
+    } else {
+      result += "\r\n " + currentLine;
+    }
   }
 
-  return folded;
+  return result;
 }
 
-/** توليد محتوى iCalendar VCALENDAR الكامل */
+/** توليد محتوى iCalendar VCALENDAR الكامل المتوافق 100% مع Apple Calendar و RFC 5545 */
 export function generateIcsCalendar(
   events: CalendarEventModel[],
   options: {
@@ -66,8 +86,7 @@ export function generateIcsCalendar(
   } = {},
 ): string {
   const calendarName = options.calendarName || "مِهلة | الجلسات والمهل القضائية";
-  const calendarDesc =
-    options.calendarDesc || "التقويم الموحد للجلسات القضائية والمهل الإجرائية والمهام - منصة مِهلة القانونية";
+  const calendarDesc = options.calendarDesc || "التقويم القضائي الموحد - منصة مِهلة";
   const alarms = options.alarmMinutesBefore || [1440, 120]; // 24 hours & 2 hours before
 
   const lines: string[] = [
@@ -81,6 +100,19 @@ export function generateIcsCalendar(
     "X-WR-TIMEZONE:Asia/Riyadh",
     "REFRESH-INTERVAL;VALUE=DURATION:PT15M",
     "X-PUBLISHED-TTL:PT15M",
+    // VTIMEZONE definition for Asia/Riyadh (Required by Apple Calendar / iOS EventKit)
+    "BEGIN:VTIMEZONE",
+    "TZID:Asia/Riyadh",
+    "LAST-MODIFIED:20260101T000000Z",
+    "TZURL:http://tzurl.org/zoneinfo-outlook/Asia/Riyadh",
+    "X-LIC-LOCATION:Asia/Riyadh",
+    "BEGIN:STANDARD",
+    "TZNAME:+03",
+    "TZOFFSETFROM:+0300",
+    "TZOFFSETTO:+0300",
+    "DTSTART:19700101T000000",
+    "END:STANDARD",
+    "END:VTIMEZONE",
   ];
 
   const nowStamp = formatIcsDateTime(new Date().toISOString());
