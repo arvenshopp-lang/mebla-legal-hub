@@ -23,36 +23,39 @@ export const Route = createFileRoute("/api/public/hooks/mail-sync")({
         if (denied) return denied;
 
         try {
-          const { admin } = await import("@/lib/admin-guard.server");
-          const db = await admin();
+          const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+          const body = await withJobHeartbeat("mail-sync", async () => {
+            const { admin } = await import("@/lib/admin-guard.server");
+            const db = await admin();
 
-          const { runScheduledAgenticSync } = await import("@/lib/email/agentic/scheduler.server");
-          const agentic = await runScheduledAgenticSync(db);
-
-          const { transportConfigured } = await import("@/lib/email/transport/config.server");
-          if (!transportConfigured(null)) {
-            return json({
-              ok: true,
-              imap: { skipped: "transport_not_configured" },
-              agentic: agentic.ran
-                ? { ran: true, ...agentic.outcome }
-                : { ran: false, reason: agentic.reason },
-            });
-          }
-
-          const { syncAllMailboxes } = await import("@/lib/email/transport/hostinger.server");
-          const outcomes = await syncAllMailboxes(db, "cron");
-          return json({
-            ok: true,
-            mailboxes: outcomes.length,
-            ingested: outcomes.reduce((sum, o) => sum + o.ingested, 0),
-            duplicates: outcomes.reduce((sum, o) => sum + o.duplicates, 0),
-            tickets: outcomes.reduce((sum, o) => sum + o.ticketsCreated, 0),
-            failed: outcomes.filter((o) => o.error).length,
-            agentic: agentic.ran
+            const { runScheduledAgenticSync } = await import(
+              "@/lib/email/agentic/scheduler.server"
+            );
+            const agentic = await runScheduledAgenticSync(db);
+            const agenticReport = agentic.ran
               ? { ran: true, ...agentic.outcome }
-              : { ran: false, reason: agentic.reason },
+              : { ran: false, reason: agentic.reason };
+
+            const { transportConfigured } = await import("@/lib/email/transport/config.server");
+            if (!transportConfigured(null)) {
+              return {
+                imap: { skipped: "transport_not_configured" },
+                agentic: agenticReport,
+              };
+            }
+
+            const { syncAllMailboxes } = await import("@/lib/email/transport/hostinger.server");
+            const outcomes = await syncAllMailboxes(db, "cron");
+            return {
+              mailboxes: outcomes.length,
+              ingested: outcomes.reduce((sum, o) => sum + o.ingested, 0),
+              duplicates: outcomes.reduce((sum, o) => sum + o.duplicates, 0),
+              tickets: outcomes.reduce((sum, o) => sum + o.ticketsCreated, 0),
+              failed: outcomes.filter((o) => o.error).length,
+              agentic: agenticReport,
+            };
           });
+          return json({ ok: true, ...body });
         } catch (error) {
           console.error(
             "[mail-sync]",
