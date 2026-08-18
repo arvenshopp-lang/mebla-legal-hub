@@ -17,7 +17,7 @@
 | `docs.mehlalex.com`   | مركز المساعدة            | `/docs`                                                                                                                                                                                                                | `/docs`                    |
 
 أي مسار يُطلب على نطاق لا يملكه → تحويل 302 إلى النطاق المالك.
-النطاقات المحجوزة (`billing`, `mail`, `calendar`, `files`, `ai`, `notifications`, `analytics`) مسجّلة مسبقاً بحالة `planned: true`.
+النطاقات المحجوزة (`billing`, `mail`, `files`, `ai`, `notifications`, `analytics`) مسجّلة مسبقاً بحالة `planned: true`. تم إلغاء نطاق `calendar` مع حذف ميزة التقويم الموحد.
 
 ## إضافة نطاق جديد مستقبلاً
 
