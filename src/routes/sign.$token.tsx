@@ -63,7 +63,6 @@ function PublicSignContractPage() {
       if (res.ok) {
         setIsSuccessfullySigned(true);
         toast.success("تم توقيع واعتماد العقد بنجاح!");
-        refetch();
       } else {
         toast.error(res.error || "تعذّر تسجيل التوقيع.");
       }
