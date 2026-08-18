@@ -29,6 +29,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouterState } from "@tanstack/react-router";
 import { LegalMarkdown } from "@/components/ui/legal-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { sendBayanMessage } from "@/lib/ai/bayan-chat.functions";
+import { bayanErrorMessage } from "@/lib/ai/bayan-error";
 
 interface BayanCitation {
   sourceType: "statute" | "document" | "hearing" | "precedent";
@@ -59,6 +62,7 @@ const GLOBAL_QUICK_PROMPTS = [
 export function GlobalBayanAssistant() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { activeOrgId, user, activeRole } = useAuth();
+  const sendMessageFn = useServerFn(sendBayanMessage);
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string>("global");
@@ -138,23 +142,13 @@ export function GlobalBayanAssistant() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/ai/bayan-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await sendMessageFn({
+        data: {
           caseId: selectedCaseId === "global" ? null : selectedCaseId,
-          orgId: activeOrgId,
-          userId: user?.id,
+          organizationId: activeOrgId,
           message: text,
-        }),
+        },
       });
-
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "فشل الاتصال بالمحامية بيان");
-      }
-
-      const data = await res.json();
       setMessages((prev) => [
         ...prev,
         {
@@ -164,14 +158,9 @@ export function GlobalBayanAssistant() {
         },
       ]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء معالجة الاستشارة");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "assistant",
-          content: "عذراً، حدث تعذر مؤقت في معالجة الاستشارة. يرجى المحاولة مجدداً.",
-        },
-      ]);
+      const msg = bayanErrorMessage(err);
+      toast.error(msg);
+      setMessages((prev) => [...prev, { sender: "assistant", content: msg }]);
     } finally {
       setLoading(false);
     }
