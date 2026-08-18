@@ -13,6 +13,32 @@ import type {
 
 const storageSettingsMap = new Map<string, HybridStorageSettings>();
 
+/**
+ * توكنات الوصول لمزودي السحابة — تُحفظ على الخادم فقط ولا تُعاد أبداً للعميل.
+ */
+const cloudAccessTokens = new Map<string, { onedrive?: string; googledrive?: string }>();
+
+export function setCloudAccessToken(
+  organizationId: string,
+  userId: string,
+  provider: "onedrive" | "googledrive",
+  accessToken: string,
+): void {
+  const key = `${organizationId}:${userId}`;
+  const current = cloudAccessTokens.get(key) || {};
+  current[provider] = accessToken;
+  cloudAccessTokens.set(key, current);
+}
+
+export function getCloudAccessToken(
+  organizationId: string,
+  userId: string,
+  provider: "onedrive" | "googledrive",
+): string | null {
+  const key = `${organizationId}:${userId}`;
+  return cloudAccessTokens.get(key)?.[provider] || null;
+}
+
 /** جلب إعدادات التخزين الهجين للمكتب والمحامي */
 export async function getHybridStorageSettings(
   organizationId: string,
