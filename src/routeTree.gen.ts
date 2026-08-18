@@ -33,6 +33,7 @@ import { Route as TrackRouteImport } from './routes/track'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
+import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedContractsRouteImport } from './routes/_authenticated/contracts'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -122,6 +123,7 @@ import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/w
 import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as ApiPublicCalendarFeedTokenRouteImport } from './routes/api/public/calendar/feed.$token'
 import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -243,6 +245,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
 const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
   id: '/bayan',
   path: '/bayan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
@@ -703,6 +710,12 @@ const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   path: '/lovable/email/auth/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCalendarFeedTokenRoute =
+  ApiPublicCalendarFeedTokenRouteImport.update({
+    id: '/api/public/calendar/feed/$token',
+    path: '/api/public/calendar/feed/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOfficeMediaSplatRoute =
   ApiPublicOfficeMediaSplatRouteImport.update({
     id: '/api/public/office/media/$',
@@ -734,6 +747,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
+  '/calendar': typeof AuthenticatedCalendarRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -823,6 +837,7 @@ export interface FileRoutesByFullPath {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesByTo {
@@ -848,6 +863,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
+  '/calendar': typeof AuthenticatedCalendarRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -937,6 +953,7 @@ export interface FileRoutesByTo {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesById {
@@ -965,6 +982,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/bayan': typeof AuthenticatedBayanRoute
+  '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/contracts': typeof AuthenticatedContractsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -1054,6 +1072,7 @@ export interface FileRoutesById {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRouteTypes {
@@ -1082,6 +1101,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
+    | '/calendar'
     | '/clients'
     | '/contracts'
     | '/dashboard'
@@ -1171,6 +1191,7 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1196,6 +1217,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
+    | '/calendar'
     | '/clients'
     | '/contracts'
     | '/dashboard'
@@ -1285,6 +1307,7 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   id:
     | '__root__'
@@ -1312,6 +1335,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/bayan'
+    | '/_authenticated/calendar'
     | '/_authenticated/clients'
     | '/_authenticated/contracts'
     | '/_authenticated/dashboard'
@@ -1401,6 +1425,7 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   fileRoutesById: FileRoutesById
 }
@@ -1460,6 +1485,7 @@ export interface RootRouteChildren {
   ApiPublicWhSlugRoute: typeof ApiPublicWhSlugRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
+  ApiPublicCalendarFeedTokenRoute: typeof ApiPublicCalendarFeedTokenRoute
   ApiPublicOfficeMediaSplatRoute: typeof ApiPublicOfficeMediaSplatRoute
 }
 
@@ -1631,6 +1657,13 @@ declare module '@tanstack/react-router' {
       path: '/bayan'
       fullPath: '/bayan'
       preLoaderRoute: typeof AuthenticatedBayanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/calendar': {
+      id: '/_authenticated/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clients': {
@@ -2256,6 +2289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/calendar/feed/$token': {
+      id: '/api/public/calendar/feed/$token'
+      path: '/api/public/calendar/feed/$token'
+      fullPath: '/api/public/calendar/feed/$token'
+      preLoaderRoute: typeof ApiPublicCalendarFeedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/office/media/$': {
       id: '/api/public/office/media/$'
       path: '/api/public/office/media/$'
@@ -2283,6 +2323,7 @@ const AuthenticatedTeamPerformanceRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBayanRoute: typeof AuthenticatedBayanRoute
+  AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedContractsRoute: typeof AuthenticatedContractsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -2305,6 +2346,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBayanRoute: AuthenticatedBayanRoute,
+  AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedContractsRoute: AuthenticatedContractsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -2484,6 +2526,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhSlugRoute: ApiPublicWhSlugRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
+  ApiPublicCalendarFeedTokenRoute: ApiPublicCalendarFeedTokenRoute,
   ApiPublicOfficeMediaSplatRoute: ApiPublicOfficeMediaSplatRoute,
 }
 export const routeTree = rootRouteImport

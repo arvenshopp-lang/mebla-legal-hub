@@ -4,6 +4,7 @@ import {
   Users,
   Gavel,
   Clock,
+  Calendar,
   ListChecks,
   FileText,
   FileSignature,
@@ -35,6 +36,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "العمل اليومي",
     items: [
       { to: "/dashboard", label: "الرئيسية", Icon: LayoutDashboard },
+      { to: "/calendar", label: "التقويم الموحد", Icon: Calendar },
       { to: "/cases", label: "القضايا", Icon: Briefcase },
       { to: "/bayan", label: "المحامية بيان ✨", Icon: Sparkles },
       { to: "/hearings", label: "الجلسات", Icon: Gavel },
