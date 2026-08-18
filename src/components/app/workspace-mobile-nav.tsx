@@ -33,22 +33,26 @@ export function WorkspaceMobileNav({
     <>
       <nav
         aria-label="التنقل السريع"
-        className="workspace-safe-bottom fixed inset-x-0 bottom-0 z-[var(--z-sidebar)] border-t border-nav-border bg-nav lg:hidden"
+        className="workspace-safe-bottom fixed inset-x-0 bottom-0 z-[var(--z-sidebar)] border-t border-nav-border/80 bg-nav/95 backdrop-blur-md lg:hidden shadow-lg"
       >
         <ul className="grid grid-cols-5">
           {primary.map(({ to, label, Icon }) => {
             const active = isNavActive(pathname, to);
+            const isBayan = to === "/bayan";
             return (
               <li key={to}>
                 <Link
                   to={to}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 pt-1.5 text-[10.5px] transition-colors",
-                    active ? "text-nav-accent" : "text-nav-muted",
+                    "flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 pt-1.5 text-[10.5px] transition-all duration-150 active:scale-95",
+                    isBayan && !active && "text-amber-400 font-bold",
+                    active ? "text-nav-accent font-bold" : "text-nav-muted hover:text-white",
                   )}
                 >
-                  <Icon className="h-5 w-5" aria-hidden />
+                  <div className={cn("relative p-1 rounded-lg transition", active && "bg-white/10")}>
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </div>
                   <span className="truncate">{label}</span>
                 </Link>
               </li>
@@ -59,11 +63,13 @@ export function WorkspaceMobileNav({
               onClick={() => setMoreOpen(true)}
               aria-expanded={moreOpen}
               className={cn(
-                "flex min-h-[56px] w-full flex-col items-center justify-center gap-1 px-1 pt-1.5 text-[10.5px] transition-colors",
-                moreActive ? "text-nav-accent" : "text-nav-muted",
+                "flex min-h-[56px] w-full flex-col items-center justify-center gap-1 px-1 pt-1.5 text-[10.5px] transition-all duration-150 active:scale-95",
+                moreActive ? "text-nav-accent font-bold" : "text-nav-muted hover:text-white",
               )}
             >
-              <MoreHorizontal className="h-5 w-5" aria-hidden />
+              <div className="p-1">
+                <MoreHorizontal className="h-4 w-4" aria-hidden />
+              </div>
               <span>المزيد</span>
             </button>
           </li>

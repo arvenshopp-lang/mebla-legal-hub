@@ -11,23 +11,37 @@ import { BillingSummaryCards } from "@/components/office-billing/summary-cards";
 import { getOfficeBillingSummary } from "@/lib/office-billing/billing.functions";
 import { can } from "@/lib/office-billing/permissions";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  Briefcase,
+  Gavel,
+  Clock,
+  FileSignature,
+  Calendar,
+  Receipt,
+  Sparkles,
+  ShieldCheck,
+  Plus,
+  ArrowUpRight,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardHome,
   head: () => ({
     meta: [
-      { title: "لوحة متابعة القضايا | مِهلة" },
+      { title: "لوحة التحكم الرئيسية | مِهلة" },
       {
         name: "description",
-        content: "لوحة متابعة يومية لقضايا المكتب وجلسات المحاكم والمهل النظامية والمهام المتأخرة.",
+        content: "لوحة متابعة قضايا المكتب وجلسات المحاكم والمهل النظامية والعقود ومطالبات الأتعاب.",
       },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "لوحة متابعة القضايا | مِهلة" },
+      { property: "og:title", content: "لوحة التحكم الرئيسية | مِهلة" },
       {
         property: "og:description",
-        content: "أولويات اليوم في مكتبك: الجلسات القادمة، المهل القريبة، والمهام المتأخرة.",
+        content: "أولويات اليوم في مكتبك: الجلسات القادمة، المهل القريبة، والعقود والمهام.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -39,9 +53,17 @@ const dateTime = (v: string) => fmtDateTime(v);
 const dateOnly = (v: string) => fmtDate(v);
 
 function DashboardHome() {
-  const { activeOrgId, activeRole } = useAuth();
+  const { activeOrgId, activeRole, memberships } = useAuth();
   const fetchBillingSummary = useServerFn(getOfficeBillingSummary);
   const canViewBilling = can(activeRole, "billing.view");
+  const activeOrg = memberships.find((m) => m.organization_id === activeOrgId);
+
+  const todayFormatted = new Intl.DateTimeFormat("ar-SA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
 
   const { data: billing, isLoading: billingLoading } = useQuery({
     queryKey: ["office-billing-summary", activeOrgId, "office"],
@@ -143,59 +165,193 @@ function DashboardHome() {
   });
 
   return (
-    <DashboardShell title="لوحة متابعة القضايا والجلسات" description="أولويات اليوم في مكتبك">
+    <DashboardShell title="الرئيسية" description="لوحة متابعة الأعمال اليومية">
       {error ? (
         <ErrorBlock message="حاول تحديث الصفحة." />
       ) : (
-        <>
+        <div className="space-y-6">
           <OperationalScorePrompt organizationId={activeOrgId ?? null} />
-          
-          {/* شريط الإجراءات السريعة للمكتب */}
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <Link to="/cases">
-              <Btn variant="primary" size="sm" className="min-h-10 text-[13px] font-bold">
-                + قضية جديدة
-              </Btn>
+
+          {/* Hero Welcome Banner */}
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-l from-slate-900 via-primary/95 to-slate-900 p-6 text-white shadow-lg">
+            <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>{activeOrg?.organization?.name || "منصة مِهلة للمحاماة"}</span>
+                  <span className="text-white/40">·</span>
+                  <span className="text-slate-200">{todayFormatted}</span>
+                </div>
+                <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
+                  مرحباً بك في مركز إدارة القضايا والمهام
+                </h1>
+                <p className="mt-1 max-w-2xl text-xs text-slate-200 leading-relaxed md:text-sm">
+                  تابع جلسات اليوم، المهل القضائية، صياغة وتوقيع العقود، واستشر المحامية بيان في وقائع قضاياك.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  to="/bayan"
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-95"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>المحامية بيان ✨</span>
+                </Link>
+                <Link
+                  to="/cases"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>قضية جديدة</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Action Grid (شريط الإجراءات السريعة للمكتب) */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+            <Link
+              to="/cases"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <Briefcase className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">القضايا</span>
+              <span className="text-[10px] text-muted-foreground">إضافة وملفات</span>
             </Link>
-            <Link to="/hearings">
-              <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
-                + جدولة جلسة
-              </Btn>
+
+            <Link
+              to="/hearings"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+                <Gavel className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">الجلسات</span>
+              <span className="text-[10px] text-muted-foreground">جدولة ومتابعة</span>
             </Link>
-            <Link to="/deadlines">
-              <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
-                + تسجيل مهلة
-              </Btn>
+
+            <Link
+              to="/calendar"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">التقويم الموحد</span>
+              <span className="text-[10px] text-muted-foreground">مزامنة Apple / Google</span>
             </Link>
-            {canViewBilling && (
-              <Link to="/invoices">
-                <Btn variant="outline" size="sm" className="min-h-10 text-[13px] font-medium">
-                  + مطالبة / عرض أتعاب
-                </Btn>
+
+            <Link
+              to="/contracts"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600">
+                <FileSignature className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">العقود الرقمية</span>
+              <span className="text-[10px] text-muted-foreground">صياغة وتوقيع</span>
+            </Link>
+
+            <Link
+              to="/deadlines"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-indigo-500/10 p-2 text-indigo-600">
+                <Clock className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">المهل النظامية</span>
+              <span className="text-[10px] text-muted-foreground">حساب مواعيد</span>
+            </Link>
+
+            {canViewBilling ? (
+              <Link
+                to="/invoices"
+                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+              >
+                <div className="rounded-lg bg-purple-500/10 p-2 text-purple-600">
+                  <Receipt className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-foreground">الأتعاب والفواتير</span>
+                <span className="text-[10px] text-muted-foreground">مطالبات وسداد</span>
+              </Link>
+            ) : (
+              <Link
+                to="/bayan"
+                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+              >
+                <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-foreground">المحامية بيان</span>
+                <span className="text-[10px] text-muted-foreground">استشارة فورية</span>
               </Link>
             )}
           </div>
 
+          {/* 4-Stat KPI Grid */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="قضايا مفتوحة" loading={isLoading} value={stats?.openCases ?? 0} />
-            <StatCard
-              label="جلسات اليوم"
-              loading={isLoading}
-              value={stats?.hearingsToday ?? 0}
-              tone="gold"
-            />
-            <StatCard
-              label="مهل خلال 7 أيام"
-              loading={isLoading}
-              value={stats?.deadlinesSoon ?? 0}
-              tone="warn"
-            />
-            <StatCard
-              label="مهام متأخرة"
-              loading={isLoading}
-              value={stats?.overdueTasks ?? 0}
-              tone="danger"
-            />
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">القضايا المفتوحة</span>
+                <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold tabular-nums text-foreground">
+                  {isLoading ? "—" : (stats?.openCases ?? 0)}
+                </span>
+                <span className="text-xs text-muted-foreground">قضية نشطة</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">جلسات اليوم</span>
+                <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+                  <Gavel className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold tabular-nums text-foreground">
+                  {isLoading ? "—" : (stats?.hearingsToday ?? 0)}
+                </span>
+                <span className="text-xs text-muted-foreground">جلسة اليوم</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">مهل خلال 7 أيام</span>
+                <div className="rounded-lg bg-indigo-500/10 p-2 text-indigo-600">
+                  <Clock className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold tabular-nums text-foreground">
+                  {isLoading ? "—" : (stats?.deadlinesSoon ?? 0)}
+                </span>
+                <span className="text-xs text-muted-foreground">مهلة قادمة</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">المهام المتأخرة</span>
+                <div className="rounded-lg bg-rose-500/10 p-2 text-rose-600">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold tabular-nums text-foreground">
+                  {isLoading ? "—" : (stats?.overdueTasks ?? 0)}
+                </span>
+                <span className="text-xs text-muted-foreground">مهمة متأخرة</span>
+              </div>
+            </div>
           </div>
 
           {canViewBilling ? (
@@ -328,7 +484,7 @@ function DashboardHome() {
               )}
             </SectionCard>
           </div>
-        </>
+        </div>
       )}
     </DashboardShell>
   );

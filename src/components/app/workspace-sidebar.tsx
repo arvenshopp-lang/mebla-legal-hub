@@ -28,52 +28,59 @@ export function WorkspaceSidebar({
   const groups = visibleGroups(activeRole);
 
   return (
-    <div className="flex h-full flex-col bg-nav text-nav-foreground">
-      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-nav-border px-4">
+    <div className="flex h-full flex-col bg-nav text-nav-foreground select-none">
+      {/* Brand Logo & Header */}
+      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-nav-border/80 px-4 bg-nav/95">
         <Link
           to="/dashboard"
           onClick={onNavigate}
-          className="inline-flex min-h-11 min-w-0 items-center gap-2 truncate text-[15px] font-bold tracking-tight text-nav-foreground"
+          className="inline-flex min-h-10 min-w-0 items-center gap-2.5 truncate text-sm font-bold tracking-tight text-nav-foreground group"
         >
-          <span
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--radius-m)] border border-nav-accent/40 text-[13px] font-bold text-nav-accent"
+          <div
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-nav-accent/50 bg-gradient-to-br from-nav-accent/20 to-primary/40 text-sm font-black text-nav-accent shadow-sm transition group-hover:scale-105"
             aria-hidden
           >
             م
-          </span>
-          {!mini && <span className="truncate">مِهلة · MEHLA</span>}
+          </div>
+          {!mini && (
+            <div className="flex flex-col">
+              <span className="truncate text-sm font-extrabold text-white">مِهلة · MEHLA</span>
+              <span className="text-[10px] font-medium text-nav-muted">المنصة القانونية الذكية</span>
+            </div>
+          )}
         </Link>
         {onClose && (
           <button
-            className="-m-2 rounded-[var(--radius-s)] p-2 text-nav-muted hover:bg-nav-elevated hover:text-nav-foreground"
+            className="-m-2 rounded-lg p-2 text-nav-muted hover:bg-nav-elevated hover:text-nav-foreground transition"
             onClick={onClose}
             aria-label="إغلاق القائمة"
           >
-            <X className="h-5 w-5" aria-hidden />
+            <X className="h-4 w-4" aria-hidden />
           </button>
         )}
       </div>
 
+      {/* Organization Switcher */}
       {!mini && (
-        <div className="border-b border-nav-border p-3">
+        <div className="border-b border-nav-border/60 p-3">
           <button
             onClick={() => setOrgOpen((v) => !v)}
             aria-expanded={orgOpen}
             disabled={memberships.length < 2}
-            className="flex w-full items-center justify-between gap-2 rounded-[var(--radius-m)] border border-nav-border bg-nav-elevated px-3 py-2.5 text-right transition hover:border-nav-accent/40 disabled:cursor-default"
+            className="flex w-full items-center justify-between gap-2 rounded-xl border border-nav-border/80 bg-nav-elevated/70 px-3 py-2 text-right transition hover:border-nav-accent/40 hover:bg-nav-elevated disabled:cursor-default"
           >
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-semibold text-nav-foreground">
+              <span className="block truncate text-xs font-bold text-nav-foreground">
                 {active?.organization?.name ?? "—"}
               </span>
-              <span className="block text-[11px] text-nav-muted">
+              <span className="block text-[10px] text-nav-accent font-medium mt-0.5">
                 {activeRole ? ROLE_LABELS[activeRole] : ""}
               </span>
             </span>
             {memberships.length > 1 && (
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 shrink-0 text-nav-muted transition",
+                  "h-3.5 w-3.5 shrink-0 text-nav-muted transition duration-200",
                   orgOpen && "rotate-180",
                 )}
                 aria-hidden
@@ -81,7 +88,7 @@ export function WorkspaceSidebar({
             )}
           </button>
           {orgOpen && memberships.length > 1 && (
-            <ul className="mt-1.5 space-y-0.5">
+            <ul className="mt-1.5 space-y-0.5 rounded-xl border border-nav-border/80 bg-nav-elevated p-1 shadow-lg">
               {memberships.map((m) => (
                 <li key={m.organization_id}>
                   <button
@@ -90,9 +97,9 @@ export function WorkspaceSidebar({
                       setOrgOpen(false);
                     }}
                     className={cn(
-                      "block w-full rounded-[var(--radius-s)] px-3 py-2 text-right text-[13px] text-nav-muted hover:bg-nav-elevated hover:text-nav-foreground",
+                      "block w-full rounded-lg px-2.5 py-1.5 text-right text-xs text-nav-muted transition hover:bg-white/10 hover:text-nav-foreground",
                       m.organization_id === activeOrgId &&
-                        "bg-nav-elevated font-semibold text-nav-foreground",
+                        "bg-white/15 font-bold text-white",
                     )}
                   >
                     {m.organization?.name}
@@ -104,17 +111,19 @@ export function WorkspaceSidebar({
         </div>
       )}
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="التنقل الرئيسي">
+      {/* Navigation Groups */}
+      <nav className="flex-1 overflow-y-auto px-2.5 py-3" aria-label="التنقل الرئيسي">
         {groups.map((group) => (
-          <div key={group.label} className="mb-5 last:mb-0">
+          <div key={group.label} className="mb-4 last:mb-0">
             {!mini && (
-              <p className="px-3 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-nav-muted">
+              <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-nav-muted/80">
                 {group.label}
               </p>
             )}
             <ul className="space-y-0.5">
               {group.items.map(({ to, label, Icon }) => {
                 const activeItem = isNavActive(pathname, to);
+                const isBayan = to === "/bayan";
                 return (
                   <li key={to}>
                     <Link
@@ -123,20 +132,27 @@ export function WorkspaceSidebar({
                       title={mini ? label : undefined}
                       aria-current={activeItem ? "page" : undefined}
                       className={cn(
-                        "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
+                        "relative flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-xs transition duration-150 ease-out active:scale-[0.98]",
                         mini && "justify-center px-0",
+                        isBayan && !activeItem && "text-amber-300 hover:bg-amber-500/15 hover:text-amber-200 font-semibold",
                         activeItem
-                          ? "bg-nav-active font-semibold text-nav-foreground"
+                          ? "bg-nav-active font-bold text-white shadow-xs"
                           : "text-nav-muted hover:bg-nav-elevated hover:text-nav-foreground",
                       )}
                     >
                       {activeItem && (
                         <span
-                          className="absolute inset-y-2 right-0 w-[3px] rounded-full bg-nav-accent"
+                          className="absolute inset-y-1.5 right-0 w-1 rounded-full bg-nav-accent shadow-sm"
                           aria-hidden
                         />
                       )}
-                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 shrink-0 transition",
+                          isBayan ? "text-amber-400" : activeItem ? "text-nav-accent" : "text-nav-muted group-hover:text-white"
+                        )}
+                        aria-hidden
+                      />
                       {!mini && <span className="truncate">{label}</span>}
                     </Link>
                   </li>
@@ -147,17 +163,18 @@ export function WorkspaceSidebar({
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-nav-border p-3">
-        {!mini && <p className="mb-1.5 truncate px-3 text-[11px] text-nav-muted">{user?.email}</p>}
+      {/* Footer User & Logout */}
+      <div className="shrink-0 border-t border-nav-border/60 p-2.5 bg-nav/95">
+        {!mini && <p className="mb-1 truncate px-2 text-[10px] text-nav-muted">{user?.email}</p>}
         <button
           onClick={onSignOut}
           title={mini ? "تسجيل الخروج" : undefined}
           className={cn(
-            "flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-m)] px-3 text-[13.5px] text-nav-muted transition hover:bg-nav-elevated hover:text-nav-foreground",
+            "flex min-h-9 w-full items-center gap-2.5 rounded-xl px-2.5 text-xs text-nav-muted transition hover:bg-rose-500/20 hover:text-rose-300",
             mini && "justify-center px-0",
           )}
         >
-          <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden />
+          <LogOut className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {!mini && "تسجيل الخروج"}
         </button>
       </div>
