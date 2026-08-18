@@ -94,11 +94,11 @@ export const DESIGN_PAGES: DesignPage[] = [
     match: ["/tasks"],
   },
   {
-    key: "calendar",
-    label: "الجلسات والمواعيد",
+    key: "hearings",
+    label: "الجلسات والمهل",
     group: "منصة المشتركين",
-    previewPath: "/calendar",
-    match: ["/calendar", "/hearings", "/deadlines"],
+    previewPath: "/hearings",
+    match: ["/hearings", "/deadlines"],
   },
   { key: "team", label: "الفريق", group: "منصة المشتركين", previewPath: "/team", match: ["/team"] },
   {
