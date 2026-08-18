@@ -7,9 +7,6 @@ import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { OperationalScoreCard } from "@/components/dashboard/operational-score-card";
 import { OperationalScorePrompt } from "@/components/dashboard/operational-score-prompt";
 import { Badge, Btn, EmptyState, ErrorBlock, SectionCard, SectionLoader } from "@/lib/list-utils";
-import { BillingSummaryCards } from "@/components/office-billing/summary-cards";
-import { getOfficeBillingSummary } from "@/lib/office-billing/billing.functions";
-import { can } from "@/lib/office-billing/permissions";
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import {
   ChevronLeft,
@@ -17,7 +14,6 @@ import {
   Gavel,
   Clock,
   FileSignature,
-  Receipt,
   Sparkles,
   ShieldCheck,
   Plus,
@@ -53,8 +49,6 @@ const dateOnly = (v: string) => fmtDate(v);
 
 function DashboardHome() {
   const { activeOrgId, activeRole, memberships } = useAuth();
-  const fetchBillingSummary = useServerFn(getOfficeBillingSummary);
-  const canViewBilling = can(activeRole, "billing.view");
   const activeOrg = memberships.find((m) => m.organization_id === activeOrgId);
 
   const todayFormatted = new Intl.DateTimeFormat("ar-SA", {
@@ -63,12 +57,6 @@ function DashboardHome() {
     month: "long",
     day: "numeric",
   }).format(new Date());
-
-  const { data: billing, isLoading: billingLoading } = useQuery({
-    queryKey: ["office-billing-summary", activeOrgId, "office"],
-    enabled: canViewBilling && !!activeOrgId,
-    queryFn: () => fetchBillingSummary({ data: { organizationId: activeOrgId! } }),
-  });
 
   const {
     data: stats,
@@ -254,29 +242,16 @@ function DashboardHome() {
               <span className="text-[10px] text-muted-foreground">حساب مواعيد</span>
             </Link>
 
-            {canViewBilling ? (
-              <Link
-                to="/invoices"
-                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
-              >
-                <div className="rounded-lg bg-purple-500/10 p-2 text-purple-600">
-                  <Receipt className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-foreground">الأتعاب والفواتير</span>
-                <span className="text-[10px] text-muted-foreground">مطالبات وسداد</span>
-              </Link>
-            ) : (
-              <Link
-                to="/bayan"
-                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
-              >
-                <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-foreground">المحامية بيان</span>
-                <span className="text-[10px] text-muted-foreground">استشارة فورية</span>
-              </Link>
-            )}
+            <Link
+              to="/bayan"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
+            >
+              <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-foreground">المحامية بيان</span>
+              <span className="text-[10px] text-muted-foreground">استشارة فورية</span>
+            </Link>
           </div>
 
           {/* 4-Stat KPI Grid */}
@@ -341,22 +316,6 @@ function DashboardHome() {
               </div>
             </div>
           </div>
-
-          {canViewBilling ? (
-            <section className="mt-6" aria-labelledby="dashboard-billing-heading">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 id="dashboard-billing-heading" className="font-display text-[18px] font-bold">
-                  الأتعاب والمطالبات المالية
-                </h2>
-                <Link to="/invoices">
-                  <Btn variant="ghost" size="sm" className="min-h-11">
-                    إدارة الأتعاب <ChevronLeft className="h-4 w-4" aria-hidden />
-                  </Btn>
-                </Link>
-              </div>
-              <BillingSummaryCards summary={billing} loading={billingLoading} />
-            </section>
-          ) : null}
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <OperationalScoreCard organizationId={activeOrgId ?? null} />

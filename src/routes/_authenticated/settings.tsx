@@ -9,8 +9,6 @@ import { FormField, inputCls, Btn, LoadingBlock } from "@/lib/list-utils";
 import { SecurityTab } from "@/components/security/security-tab";
 import { UsageAnalyticsCard } from "@/components/settings/usage-analytics-card";
 import { PublicRankingConsentCard } from "@/components/settings/public-ranking-consent-card";
-import { InvoiceBrandingSettings } from "@/components/office-billing/branding-settings";
-import { can as canBilling } from "@/lib/office-billing/permissions";
 import type { TablesInsert, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -39,7 +37,6 @@ function Page() {
   const [tab, setTab] = useState<
     "profile" | "organization" | "billing" | "notifications" | "security" | "privacy"
   >("profile");
-  const showBilling = canBilling(activeRole, "billing.view");
 
   return (
     <DashboardShell title="الإعدادات">
@@ -48,7 +45,6 @@ function Page() {
           {[
             { k: "profile", l: "حسابي" },
             { k: "organization", l: "المكتب" },
-            ...(showBilling ? [{ k: "billing", l: "هوية المستندات والأتعاب" }] : []),
             { k: "notifications", l: "التنبيهات" },
             { k: "security", l: "الأمان" },
             { k: "privacy", l: "الخصوصية" },
@@ -75,7 +71,6 @@ function Page() {
       </div>
       {tab === "profile" && <ProfileTab userId={user?.id} />}
       {tab === "organization" && <OrgTab orgId={activeOrgId} canManage={canManage(activeRole)} />}
-      {tab === "billing" && showBilling && <InvoiceBrandingSettings orgId={activeOrgId} />}
       {tab === "notifications" && <NotifTab orgId={activeOrgId} userId={user?.id} />}
       {tab === "security" && <SecurityTab orgId={activeOrgId} isOrgAdmin={canManage(activeRole)} />}
       {tab === "privacy" && (

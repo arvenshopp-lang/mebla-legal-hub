@@ -9,7 +9,6 @@ import {
   Briefcase,
   Calendar,
   FileText,
-  CreditCard,
   LogOut,
   ArrowRight,
   ChevronLeft,
@@ -24,7 +23,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Money } from "@/components/ui/money";
 import { CASE_STATUS, fmtDate } from "@/lib/enums";
 import {
   getPortalOfficeInfo,
@@ -38,7 +36,7 @@ export const Route = createFileRoute("/portal/$slug")({
   head: () => ({
     meta: [
       { title: "بوابة الموكلين | مِهلة" },
-      { name: "description", content: "بوابة الموكلين الخاصة بالمكتب لمتابعة القضايا والجلسات والمستندات والفواتير." },
+      { name: "description", content: "بوابة الموكلين الخاصة بالمكتب لمتابعة القضايا والجلسات والمستندات." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -100,16 +98,6 @@ type DashboardData = {
     createdAt: string;
     source: string | null;
   }>;
-  invoices: Array<{
-    id: string;
-    invoiceNumber: string;
-    totalAmount: number;
-    vatAmount: number;
-    status: string;
-    dueDate: string | null;
-    createdAt: string;
-    paidAt: string | null;
-  }>;
 };
 
 function PortalPage() {
@@ -142,7 +130,7 @@ function PortalPage() {
   // Dashboard Data State
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cases" | "hearings" | "documents" | "invoices">("cases");
+  const [activeTab, setActiveTab] = useState<"cases" | "hearings" | "documents">("cases");
 
   // Load Office Info on mount
   useEffect(() => {
@@ -556,7 +544,7 @@ function PortalPage() {
                     أهلاً بك، {dashboardData.client?.full_name || "عزيزي الموكل"}
                   </h2>
                   <p className="text-slate-400 text-sm mt-1 max-w-xl">
-                    تتيح لك هذه البوابة متابعة كافة قضاياك لدى مكتبنا، الاطلاع على مواعيد الجلسات والقرارات الصادرة، فحص المستندات المعتمدة، وسداد الفواتير.
+                    تتيح لك هذه البوابة متابعة كافة قضاياك لدى مكتبنا، الاطلاع على مواعيد الجلسات والقرارات الصادرة، والاطلاع على المستندات المعتمدة.
                   </p>
                 </div>
 
@@ -599,16 +587,6 @@ function PortalPage() {
                     {dashboardData.documents.length}
                   </div>
                 </div>
-
-                <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                    <span>الفواتير والمطالبات</span>
-                    <CreditCard size={16} className="text-purple-400" />
-                  </div>
-                  <div className="text-2xl font-bold text-white font-mono">
-                    {dashboardData.invoices.length}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -648,18 +626,6 @@ function PortalPage() {
               >
                 <FileText size={16} />
                 المستندات والصكوك ({dashboardData.documents.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab("invoices")}
-                className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition flex-shrink-0 ${
-                  activeTab === "invoices"
-                    ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                }`}
-              >
-                <CreditCard size={16} />
-                الفواتير والمطالبات ({dashboardData.invoices.length})
               </button>
             </div>
 
@@ -818,62 +784,6 @@ function PortalPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 4: INVOICES */}
-            {activeTab === "invoices" && (
-              <div className="space-y-4">
-                {dashboardData.invoices.length === 0 ? (
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center">
-                    <CreditCard size={40} className="text-slate-600 mx-auto mb-3" />
-                    <h3 className="text-base font-bold text-white mb-1">لا توجد فواتير أو مطالبات مالية</h3>
-                    <p className="text-xs text-slate-400">ستظهر هنا فواتير الأتعاب والمطالبات المعتمدة مع ضريبة 15%.</p>
-                  </div>
-                ) : (
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-right text-xs">
-                        <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 font-medium">
-                          <tr>
-                            <th className="py-3.5 px-4">رقم الفاتورة</th>
-                            <th className="py-3.5 px-4">تاريخ الإصدار</th>
-                            <th className="py-3.5 px-4">تاريخ الاستحقاق</th>
-                            <th className="py-3.5 px-4">المبلغ الإجمالي</th>
-                            <th className="py-3.5 px-4">حالة السداد</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/70">
-                          {dashboardData.invoices.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-slate-800/40 transition">
-                              <td className="py-3.5 px-4 font-mono font-bold text-white">
-                                {inv.invoiceNumber}
-                              </td>
-                              <td className="py-3.5 px-4 font-mono text-slate-400">
-                                {fmtDate(inv.createdAt)}
-                              </td>
-                              <td className="py-3.5 px-4 font-mono text-slate-300">
-                                {inv.dueDate ? fmtDate(inv.dueDate) : "—"}
-                              </td>
-                              <td className="py-3.5 px-4 font-bold text-white">
-                                <Money value={inv.totalAmount} />
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                                  inv.status === "paid"
-                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                }`}>
-                                  {inv.status === "paid" ? "مدفوعة" : "مستحقة السداد"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
                 )}
               </div>

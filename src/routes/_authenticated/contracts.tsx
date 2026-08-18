@@ -33,7 +33,6 @@ import {
   saveContractDraftFn,
   downloadContractPdfFn,
   convertContractToCaseFn,
-  convertContractToInvoiceFn,
   issueContractSignLinkFn,
 } from "@/lib/contracts/contracts.functions";
 import {
@@ -98,15 +97,6 @@ function ContractsPage() {
       queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
     },
     onError: () => toast.error("تعذّر إنشاء القضية."),
-  });
-
-  const convertToInvoiceMutation = useMutation({
-    mutationFn: convertContractToInvoiceFn,
-    onSuccess: (res) => {
-      toast.success(`تم إصدار فاتورة الأتعاب بنجاح: ${res.invoiceNumber}`);
-      queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
-    },
-    onError: () => toast.error("تعذّر إصدار الفاتورة."),
   });
 
   const resetForm = () => {
@@ -608,17 +598,6 @@ function ContractsPage() {
                             <Briefcase className="w-3.5 h-3.5" />
                           </Button>
 
-                          {/* Quick Issue Invoice */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="إصدار فاتورة أتعاب"
-                            onClick={() => convertToInvoiceMutation.mutate({ data: { contractId: contract.id } })}
-                            disabled={convertToInvoiceMutation.isPending}
-                            className="h-8 px-2 text-emerald-600 hover:bg-emerald-50"
-                          >
-                            <Receipt className="w-3.5 h-3.5" />
-                          </Button>
                         </div>
                       </td>
                     </tr>

@@ -271,13 +271,12 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
   const clientId = session.clientId;
   const orgId = session.organizationId;
 
-  // جلب بيانات العميل، قضاياه، جلساته، مستنداته، وفواتيره بالتوازي
+  // جلب بيانات العميل، قضاياه، جلساته، ومستنداته بالتوازي
   const [
     { data: client },
     { data: cases },
     { data: hearings },
     { data: documents },
-    { data: invoices },
   ] = await Promise.all([
     supabaseAdmin
       .from("clients")
@@ -307,12 +306,6 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
       .eq("is_confidential", false)
       .order("created_at", { ascending: false }),
 
-    supabaseAdmin
-      .from("office_invoices")
-      .select("id, invoice_number, total, tax_total, status, due_date, created_at, paid_at")
-      .eq("organization_id", orgId)
-      .eq("client_id", clientId)
-      .order("created_at", { ascending: false }),
   ]);
 
   const caseIds = new Set((cases ?? []).map((c) => c.id));
@@ -355,16 +348,6 @@ export async function loadClientPortalDashboard(sessionToken: string, slugOrId: 
       category: d.document_category,
       createdAt: d.created_at,
       source: d.source,
-    })),
-    invoices: (invoices ?? []).map((inv) => ({
-      id: inv.id,
-      invoiceNumber: inv.invoice_number,
-      totalAmount: Number(inv.total),
-      vatAmount: Number(inv.tax_total),
-      status: inv.status,
-      dueDate: inv.due_date,
-      createdAt: inv.created_at,
-      paidAt: inv.paid_at,
     })),
   };
 }
