@@ -142,10 +142,12 @@ function SubscriptionPage() {
                     : "—"
                 }
               />
-              <InfoCell
-                label="التجديد التلقائي"
-                value={overview.subscription?.auto_renew ? "مفعّل" : "غير مفعّل"}
-              />
+              {overview.subscription && (
+                <InfoCell
+                  label="التجديد التلقائي"
+                  value={overview.subscription.auto_renew ? "مفعّل" : "غير مفعّل"}
+                />
+              )}
             </dl>
 
             {overview.subscription?.suspension_reason && overview.state === "suspended" && (
@@ -158,45 +160,28 @@ function SubscriptionPage() {
           {/* Limits */}
           <SectionCard title="الحدود والاستخدام" description="أرقام فعلية محسوبة من بيانات مكتبك">
             <div className="grid gap-5 sm:grid-cols-2">
-              {buildLimits(overview.plan, overview.usage).map((row) => (
+              {sortLimits(buildLimits(overview.plan, overview.usage)).map((row) => (
                 <LimitBar key={row.key} row={row} />
               ))}
             </div>
           </SectionCard>
 
           {/* Features */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <SectionCard title="مميزات باقتك" description="ما تملكه وما لا تملكه بوضوح">
-              <ul className="divide-y divide-border">
-                {buildFeatureRows(overview).map((f) => (
-                  <FeatureLine
-                    key={f.key}
-                    label={f.label}
-                    available={f.available}
-                    requiredPlan={f.requiredPlan}
-                  />
-                ))}
-              </ul>
-            </SectionCard>
-
-            <SectionCard title="الدعم ومستوى الخدمة">
-              <ul className="divide-y divide-border">
+          <SectionCard title="مميزات باقتك" description="ما هو متاح لك الآن وما يحتاج ترقية">
+            <ul className="divide-y divide-border">
+              {sortFeatures(buildFeatureRows(overview)).map((f) => (
                 <FeatureLine
-                  label="مستوى الدعم"
-                  available
-                  value={SUPPORT_LABELS[overview.plan.support_level] ?? overview.plan.support_level}
+                  key={f.key}
+                  label={f.label}
+                  available={f.available}
+                  requiredPlan={f.requiredPlan}
                 />
-                <FeatureLine
-                  label="زمن الاستجابة (SLA)"
-                  available
-                  value={`${overview.plan.sla_hours} ساعة`}
-                />
-                {(overview.plan.features ?? []).map((extra) => (
-                  <FeatureLine key={extra} label={extra} available value="مشمولة" />
-                ))}
-              </ul>
-            </SectionCard>
-          </div>
+              ))}
+              {(overview.plan.features ?? []).map((extra) => (
+                <FeatureLine key={extra} label={extra} available value="مشمولة" />
+              ))}
+            </ul>
+          </SectionCard>
 
           {/* Upgrade options */}
           {overview.upgrade_plans.length > 0 && (
