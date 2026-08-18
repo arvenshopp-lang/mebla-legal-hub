@@ -34,6 +34,7 @@ import {
   downloadContractPdfFn,
   convertContractToCaseFn,
   convertContractToInvoiceFn,
+  issueContractSignLinkFn,
 } from "@/lib/contracts/contracts.functions";
 import {
   CONTRACT_TYPE_LABELS,
@@ -66,6 +67,7 @@ function ContractsPage() {
   const [clauses, setClauses] = React.useState<ContractClause[]>(SAUDI_CONTRACT_TEMPLATES.fee_agreement.clauses);
   const [lawyerSignatureBase64, setLawyerSignatureBase64] = React.useState<string | null>(null);
   const [copiedTokenId, setCopiedTokenId] = React.useState<string | null>(null);
+  const [issuingLinkId, setIssuingLinkId] = React.useState<string | null>(null);
 
   // Queries
   const { data, isLoading } = useQuery({
@@ -211,7 +213,7 @@ function ContractsPage() {
       setCopiedTokenId(contract.id);
       toast.success("تم إصدار رابط توقيع جديد ونسخه — صالح لمدة 14 يوماً.");
       setTimeout(() => setCopiedTokenId(null), 3000);
-      await loadContracts();
+      await queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
     } catch (error) {
       toast.error(
         error instanceof Error && error.message
