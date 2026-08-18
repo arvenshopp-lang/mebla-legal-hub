@@ -100,7 +100,6 @@ import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/bi
 import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
-import { Route as ApiAiBayanChatRouteImport } from './routes/api/ai/bayan-chat'
 import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -583,11 +582,6 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAiBayanChatRoute = ApiAiBayanChatRouteImport.update({
-  id: '/api/ai/bayan-chat',
-  path: '/api/ai/bayan-chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedTeamPerformanceMemberIdRoute =
   AuthenticatedTeamPerformanceMemberIdRouteImport.update({
     id: '/$memberId',
@@ -797,7 +791,6 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
-  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -911,7 +904,6 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
-  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -1028,7 +1020,6 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/_authenticated/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
-  '/api/ai/bayan-chat': typeof ApiAiBayanChatRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
@@ -1145,7 +1136,6 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/team-performance/$memberId'
-    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1259,7 +1249,6 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/cases/$id'
     | '/team-performance/$memberId'
-    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1375,7 +1364,6 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cases/$id'
     | '/_authenticated/team-performance/$memberId'
-    | '/api/ai/bayan-chat'
     | '/api/public/health'
     | '/api/public/theme.css'
     | '/api/public/webhook'
@@ -1441,7 +1429,6 @@ export interface RootRouteChildren {
   UploadIndexRoute: typeof UploadIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
-  ApiAiBayanChatRoute: typeof ApiAiBayanChatRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
@@ -2104,13 +2091,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/ai/bayan-chat': {
-      id: '/api/ai/bayan-chat'
-      path: '/api/ai/bayan-chat'
-      fullPath: '/api/ai/bayan-chat'
-      preLoaderRoute: typeof ApiAiBayanChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/team-performance/$memberId': {
       id: '/_authenticated/team-performance/$memberId'
       path: '/$memberId'
@@ -2461,7 +2441,6 @@ const rootRouteChildren: RootRouteChildren = {
   UploadIndexRoute: UploadIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
-  ApiAiBayanChatRoute: ApiAiBayanChatRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
