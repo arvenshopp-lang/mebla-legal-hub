@@ -2779,6 +2779,7 @@ export type Database = {
       email_outbox: {
         Row: {
           attempts: number
+          config_attempts: number
           created_at: string
           failure_ref: string | null
           id: string
@@ -2795,6 +2796,7 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          config_attempts?: number
           created_at?: string
           failure_ref?: string | null
           id?: string
@@ -2811,6 +2813,7 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          config_attempts?: number
           created_at?: string
           failure_ref?: string | null
           id?: string

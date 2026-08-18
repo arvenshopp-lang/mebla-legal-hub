@@ -567,6 +567,9 @@ type OutboxRow = {
   idempotency_key: string;
   attempts: number;
   max_attempts: number;
+  config_attempts: number;
+  last_error_code: string | null;
+  failure_ref: string | null;
 };
 
 /**
@@ -600,8 +603,23 @@ const SMTP_CONFIG_ERROR_CODES = new Set([
   "attachment_unavailable",
 ]);
 
-/** مهلة إعادة ثابتة قصيرة لأعطال الإعداد: وقت كافٍ لإصلاح تشغيلي. */
+/** مهلة إعادة أولية لأعطال الإعداد: وقت كافٍ لإصلاح تشغيلي. */
 const CONFIG_RETRY_DELAY_MINUTES = 5;
+
+/**
+ * حد أعلى لإعادة المحاولة على أعطال الإعداد. بدون هذا الحد تبقى الرسالة تُعاد
+ * إلى ما لا نهاية وتُنتج سجل أعطال جديداً في كل دورة، فيغرق سجل التشغيل.
+ * بعد استنفاده تُوقف الرسالة (failed) وتظل إعادة المحاولة اليدوية متاحة.
+ */
+const CONFIG_MAX_ATTEMPTS = 12;
+
+/** مهلة تصاعدية لأعطال الإعداد: 5 ثم 10 ثم 20 … بحد أقصى 60 دقيقة. */
+function configBackoffMinutes(configAttempts: number): number {
+  return Math.min(CONFIG_RETRY_DELAY_MINUTES * 2 ** Math.max(configAttempts - 1, 0), 60);
+}
+
+/** المدة التي تُعتبر بعدها الرسالة العالقة في حالة الإرسال قفلاً مهجوراً. */
+const STALE_LOCK_MINUTES = 15;
 
 function classifySendFailure(result: { code: string; smtpCode: number | null }): {
   permanent: boolean;
@@ -661,6 +679,7 @@ export async function prepareManualRetry(db: Db, messageId: string): Promise<voi
       status: "queued",
       next_attempt_at: new Date().toISOString(),
       max_attempts: Math.max(job.max_attempts, job.attempts + 1),
+      config_attempts: 0,
       last_error: null,
       last_error_code: null,
       locked_at: null,
@@ -674,7 +693,9 @@ export async function dispatchOne(
 ): Promise<{ sent: boolean; failureRef?: string }> {
   const { data: outboxRow } = await db
     .from("email_outbox")
-    .select("id, message_id, idempotency_key, attempts, max_attempts")
+    .select(
+      "id, message_id, idempotency_key, attempts, max_attempts, config_attempts, last_error_code, failure_ref",
+    )
     .eq("message_id", messageId)
     .maybeSingle();
   const job = outboxRow as OutboxRow | null;
@@ -783,10 +804,16 @@ export async function dispatchOne(
 
   const classification = classifySendFailure(result);
   // عطل الإعداد ليس محاولة إرسال فعلية: لا يُستهلك رصيد المحاولات حتى لا تُحرق
-  // رسالة صحيحة بسبب نقص سرّ على الخادم.
+  // رسالة صحيحة بسبب نقص سرّ على الخادم، لكنه يُحتسب في عدّاد مستقل بحدّ أعلى.
   const attempts = classification.configuration ? job.attempts : job.attempts + 1;
+  const configAttempts = classification.configuration
+    ? (job.config_attempts ?? 0) + 1
+    : (job.config_attempts ?? 0);
+  const configExhausted = classification.configuration && configAttempts >= CONFIG_MAX_ATTEMPTS;
   const exhausted =
-    classification.permanent || (!classification.configuration && attempts >= job.max_attempts);
+    classification.permanent ||
+    configExhausted ||
+    (!classification.configuration && attempts >= job.max_attempts);
   // ارتداد صلب مؤكَّد: يُسجَّل في حجب مِهلة كي لا يُعاد الإرسال لهذا العنوان.
   if (!result.ok) {
     const { captureHardBounce } = await import("@/lib/email/suppression.server");
@@ -800,7 +827,13 @@ export async function dispatchOne(
     }
   }
   let failureRef: string | null = null;
-  if (!RECIPIENT_DENY_CODES.has(result.code)) {
+  // تكرار عطل الإعداد نفسه لا يُسجَّل في كل دورة: عطل واحد لكل رسالة ولكل رمز،
+  // ويُسجَّل مرة أخرى عند التوقّف النهائي كي يظهر للفريق كحدث مكتمل.
+  const duplicateConfigFailure =
+    classification.configuration && job.last_error_code === result.code && !configExhausted;
+  if (duplicateConfigFailure) {
+    failureRef = job.failure_ref ?? null;
+  } else if (!RECIPIENT_DENY_CODES.has(result.code)) {
     const { logFailure } = await import("@/lib/observability/failure-log.server");
     failureRef = await logFailure({
       surface: "email",
@@ -812,24 +845,32 @@ export async function dispatchOne(
       metadata: {
         message_id: messageId,
         attempts,
+        config_attempts: configAttempts,
         transport: transportUsed,
         recipients: message.to_addresses.length,
         permanent: classification.permanent,
         configuration_failure: classification.configuration,
+        parked: configExhausted,
         ...(result.smtpCode !== null ? { smtp_code: result.smtpCode } : {}),
         provider_message: result.message.slice(0, 300),
       },
     });
   }
   const backoffMinutes = classification.configuration
-    ? CONFIG_RETRY_DELAY_MINUTES
+    ? configBackoffMinutes(configAttempts)
     : Math.min(2 ** attempts, 60);
+  const parkedReason =
+    "تعذّر الاتصال بخدمة البريد بعد محاولات متكررة؛ الرسالة موقوفة بانتظار إصلاح الإعداد، ويمكن إعادة المحاولة يدوياً.";
   await db
     .from("email_outbox")
     .update({
       status: exhausted ? "failed" : "queued",
       attempts,
-      last_error: (classification.reason ?? result.message).slice(0, 900),
+      config_attempts: configAttempts,
+      last_error: (configExhausted
+        ? parkedReason
+        : (classification.reason ?? result.message)
+      ).slice(0, 900),
       last_error_code: result.code,
       failure_ref: failureRef,
       locked_at: null,
@@ -850,6 +891,14 @@ export async function dispatchDue(
   db: Db,
   limit = 20,
 ): Promise<{ processed: number; sent: number }> {
+  // استرجاع الأقفال المهجورة: رسالة عالقة في "sending" بعد انقطاع تنفيذ سابق
+  // لن يلتقطها الاستعلام أدناه أبداً، فتبقى معلّقة إلى الأبد.
+  await db
+    .from("email_outbox")
+    .update({ status: "queued", locked_at: null })
+    .eq("status", "sending")
+    .lt("locked_at", new Date(Date.now() - STALE_LOCK_MINUTES * 60_000).toISOString());
+
   const { data } = await db
     .from("email_outbox")
     .select("message_id")
