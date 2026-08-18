@@ -17,7 +17,6 @@ export type SurfaceId =
   | "docs"
   | "billing"
   | "mail"
-  | "calendar"
   | "files"
   | "ai"
   | "notifications"
