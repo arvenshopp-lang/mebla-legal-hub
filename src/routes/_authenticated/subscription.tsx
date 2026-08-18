@@ -248,14 +248,12 @@ function SubscriptionPage() {
                   </tbody>
                 </table>
               </DataCard>
-            )}
-          </SectionCard>
+            </SectionCard>
+          )}
 
-          {/* Invoices */}
-          <SectionCard title="الفواتير" description="سجل المدفوعات الخاص بمكتبك">
-            {overview.invoices.length === 0 ? (
-              <EmptyState title="لا توجد فواتير" hint="ستظهر الفواتير بعد أول عملية دفع مسجّلة." />
-            ) : (
+          {/* Invoices — يظهر فقط عند وجود فواتير فعلية */}
+          {overview.invoices.length > 0 && (
+            <SectionCard title="فواتير الاشتراك" description="سجل مدفوعات اشتراك مكتبك في مِهلة">
               <DataCard>
                 <table className="w-full min-w-[680px] text-right">
                   <thead>
@@ -304,8 +302,8 @@ function SubscriptionPage() {
                   </tbody>
                 </table>
               </DataCard>
-            )}
-          </SectionCard>
+            </SectionCard>
+          )}
 
           <p className="flex items-center gap-2 text-[12px] text-text-muted">
             <CalendarDays className="h-3.5 w-3.5" aria-hidden />
