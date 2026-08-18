@@ -36,6 +36,7 @@ export const Route = createFileRoute("/api/integrations/onedrive/callback")({
           }
 
           const currentSettings = await getHybridStorageSettings(orgId, userId);
+          setCloudAccessToken(orgId, userId, "onedrive", tokens.accessToken);
           await saveHybridStorageSettings(orgId, userId, {
             onedrive: {
               ...currentSettings.onedrive,
