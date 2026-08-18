@@ -21,10 +21,14 @@ export const Route = createFileRoute("/api/public/hooks/operational-reminders")(
         if (denied) return denied;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { generateOperationalReminders } =
-            await import("@/lib/notifications/reminder-generator.server");
-          const report = await generateOperationalReminders(supabaseAdmin);
+          const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+          const report = await withJobHeartbeat("operational-reminders", async () => {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { generateOperationalReminders } = await import(
+              "@/lib/notifications/reminder-generator.server"
+            );
+            return generateOperationalReminders(supabaseAdmin);
+          });
           return json({ ok: true, ...report });
         } catch (error) {
           console.error(

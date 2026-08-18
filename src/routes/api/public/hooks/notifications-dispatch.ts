@@ -21,15 +21,20 @@ export const Route = createFileRoute("/api/public/hooks/notifications-dispatch")
         if (denied) return denied;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { materializeDueEvents } = await import("@/lib/notifications/engine.server");
-          const { processQueueBatch, reapStuckRows } =
-            await import("@/lib/notifications/queue.server");
+          const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+          const report = await withJobHeartbeat("notifications-dispatch", async () => {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { materializeDueEvents } = await import("@/lib/notifications/engine.server");
+            const { processQueueBatch, reapStuckRows } = await import(
+              "@/lib/notifications/queue.server"
+            );
 
-          const reaped = await reapStuckRows(supabaseAdmin);
-          const materialized = await materializeDueEvents(supabaseAdmin, 50);
-          const dispatched = await processQueueBatch(supabaseAdmin, 25);
-          return json({ ok: true, reaped, materialized, dispatched });
+            const reaped = await reapStuckRows(supabaseAdmin);
+            const materialized = await materializeDueEvents(supabaseAdmin, 50);
+            const dispatched = await processQueueBatch(supabaseAdmin, 25);
+            return { reaped, materialized, dispatched };
+          });
+          return json({ ok: true, ...report });
         } catch (error) {
           console.error(
             "[notifications-dispatch]",
