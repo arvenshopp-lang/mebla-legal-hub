@@ -84,7 +84,8 @@ export type IntegrationRequest = {
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
-  body?: string | null;
+  /** نص أو حمولة ثنائية (رفع ملفات إلى مزودي التخزين). */
+  body?: string | Uint8Array | null;
   timeoutMs: number;
   policy: UrlPolicy;
   /** عدد إعادة المحاولة عند أخطاء الشبكة أو 5xx فقط. */

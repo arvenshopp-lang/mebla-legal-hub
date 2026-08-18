@@ -14,7 +14,29 @@ import {
   type SendOtpResult,
   type ValidationResult,
 } from "./base.server";
-import { IntegrationHttpError, evaluateSuccess, integrationFetch } from "../http.server";
+import { IntegrationHttpError, evaluateSuccess, integrationFetch, joinUrl } from "../http.server";
+
+function baseUrl(context: ConnectorContext): string {
+  return context.baseUrl || "https://api.mobile.net.sa";
+}
+
+/** مفتاح الربط يُقرأ من خزانة الأسرار فقط — لا قيم مضمّنة في الكود. */
+function apiKey(context: ConnectorContext, required = true): string {
+  const key = context.secrets["api_key"] ?? context.secrets["token"] ?? "";
+  if (!key && required) {
+    throw new IntegrationHttpError("MISSING_CREDENTIALS", "MobileNet API key missing");
+  }
+  return key;
+}
+
+/** توحيد رقم الجوال السعودي إلى الصيغة الدولية بدون رمز +. */
+function normalizeSaudiPhone(raw: string): string {
+  let phone = raw.replace(/[\s\-+]/g, "");
+  if (phone.startsWith("00966")) phone = phone.slice(2);
+  else if (phone.startsWith("05")) phone = `966${phone.slice(1)}`;
+  else if (phone.startsWith("5") && phone.length === 9) phone = `966${phone}`;
+  return phone;
+}
 
 export class MobileNetOtpConnector extends BaseOtpConnector {
   getProviderMetadata(): ProviderMetadata {
@@ -40,11 +62,7 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
 
   validateConfig(context: ConnectorContext): ValidationResult {
     const errors: string[] = [];
-    const key =
-      context.secrets["api_key"] ||
-      context.secrets["token"] ||
-      "ERjjWiw9l1dN7hFfgErVXyvIW52zsDxKpM2Nnt4E07510174";
-    if (!key) {
+    if (!apiKey(context, false)) {
       errors.push("مفتاح الربط (API Key) مطلوب لمزوّد مدار التقنية.");
     }
     return errors.length ? { ok: false, errors } : { ok: true };
@@ -53,99 +71,88 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
   async testConnection(context: ConnectorContext): Promise<HealthResult> {
     const started = Date.now();
     try {
-      const baseUrl = context.baseUrl || "https://api.mobile.net.sa";
-      const key =
-        context.secrets["api_key"] ||
-        context.secrets["token"] ||
-        "ERjjWiw9l1dN7hFfgErVXyvIW52zsDxKpM2Nnt4E07510174";
+      const key = apiKey(context);
+      const response = await integrationFetch({
+        method: "GET",
+        url: joinUrl(baseUrl(context), "/sms/balance"),
+        headers: { Accept: "application/json", Authorization: `Bearer ${key}`, apiKey: key },
+        timeoutMs: context.timeoutMs,
+        policy: urlPolicy(context),
+        retries: context.maxRetries,
+      });
 
-      const res = await integrationFetch(
-        `${baseUrl.replace(/\/+$/, "")}/sms/balance`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${key}`,
-            apiKey: key,
-          },
-        },
-        urlPolicy(context.environment),
-      );
-
-      const latencyMs = Date.now() - started;
-      if (res.status === 200 || res.status === 404 || res.status === 401) {
+      // البوابة ترجع 401/404 عندما يكون المفتاح صحيحاً لكن المسار غير مفعّل للحساب.
+      const verdict = evaluateSuccess(response, {
+        successStatusCodes: [200],
+        successJsonPath: null,
+        expectedValue: null,
+        expectJson: false,
+      });
+      if (!verdict.ok) {
         return {
-          status: "healthy",
-          latencyMs,
-          messageAr: "تم الاتصال ببوابة mobile.net.sa بنجاح.",
-          metadata: { provider: "mobilenet" },
-          checkedAt: new Date().toISOString(),
+          ok: false,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
+          code: verdict.code,
+          detail: verdict.detail,
         };
       }
-
       return {
-        status: "degraded",
-        latencyMs,
-        messageAr: `استجابة البوابة: ${res.status}`,
-        checkedAt: new Date().toISOString(),
+        ok: true,
+        statusCode: response.status,
+        latencyMs: response.latencyMs,
+        detail: "تم الاتصال ببوابة mobile.net.sa بنجاح.",
       };
     } catch (error) {
       return toHealthFailure(error, Date.now() - started);
     }
   }
 
-  async sendOtp(input: SendOtpInput, context: ConnectorContext): Promise<SendOtpResult> {
-    const baseUrl = context.baseUrl || "https://api.mobile.net.sa";
-    const apiKey =
-      context.secrets["api_key"] ||
-      context.secrets["token"] ||
-      "ERjjWiw9l1dN7hFfgErVXyvIW52zsDxKpM2Nnt4E07510174";
+  async sendOtp(context: ConnectorContext, input: SendOtpInput): Promise<SendOtpResult> {
+    const key = apiKey(context);
     const sender =
       (context.configuration["sender_name"] as string | undefined) ||
       (context.configuration["sender_id"] as string | undefined) ||
+      context.secrets["sender_id"] ||
       "MehlaLex";
 
-    let phone = input.to.replace(/[\s\-+]/g, "");
-    if (phone.startsWith("00966")) phone = phone.slice(2);
-    else if (phone.startsWith("05")) phone = "966" + phone.slice(1);
-    else if (phone.startsWith("5") && phone.length === 9) phone = "966" + phone;
-
-    const res = await integrationFetch(
-      `${baseUrl.replace(/\/+$/, "")}/sms/send`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          apiKey: apiKey,
-        },
-        body: JSON.stringify({
-          apiKey,
-          numbers: phone,
-          sender: sender,
-          msg: input.text,
-          message: input.text,
-        }),
+    const response = await integrationFetch({
+      method: "POST",
+      url: joinUrl(baseUrl(context), "/sms/send"),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${key}`,
+        apiKey: key,
       },
-      urlPolicy(context.environment),
-    );
+      body: JSON.stringify({
+        apiKey: key,
+        numbers: normalizeSaudiPhone(input.phone),
+        sender,
+        msg: input.text,
+        message: input.text,
+      }),
+      timeoutMs: context.timeoutMs,
+      policy: urlPolicy(context),
+      retries: context.maxRetries,
+    });
 
-    const body = await res.text();
-    if (!res.ok) {
-      throw new IntegrationHttpError("PROVIDER_REJECTED", `MobileNet HTTP ${res.status}: ${body}`);
-    }
+    const verdict = evaluateSuccess(response, {
+      successStatusCodes: [200, 201],
+      successJsonPath: null,
+      expectedValue: null,
+      expectJson: false,
+    });
+    if (!verdict.ok) throw new IntegrationHttpError(verdict.code, verdict.detail, response.status);
 
-    try {
-      const parsed = JSON.parse(body);
-      const ref = parsed.messageId || parsed.msgId || parsed.data?.messageId || "mobilenet-" + Date.now();
-      return {
-        reference: String(ref),
-        providerMessageId: String(ref),
-      };
-    } catch {
-      return {
-        reference: "mobilenet-" + Date.now(),
-        providerMessageId: "mobilenet-" + Date.now(),
-      };
-    }
+    const payload = response.json as
+      | { messageId?: string | number; msgId?: string | number; data?: { messageId?: string | number } }
+      | null;
+    const reference = payload?.messageId ?? payload?.msgId ?? payload?.data?.messageId ?? null;
+    return {
+      reference: reference != null ? String(reference) : null,
+      latencyMs: response.latencyMs,
+      remoteVerification: false,
+    };
   }
 }

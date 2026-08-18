@@ -24,7 +24,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Riyal } from "@/components/ui/riyal";
+import { Money } from "@/components/ui/money";
 import { CASE_STATUS, fmtDate } from "@/lib/enums";
 import {
   getPortalOfficeInfo,
@@ -858,7 +858,7 @@ function PortalPage() {
                                 {inv.dueDate ? fmtDate(inv.dueDate) : "—"}
                               </td>
                               <td className="py-3.5 px-4 font-bold text-white">
-                                <Riyal amount={inv.totalAmount} />
+                                <Money value={inv.totalAmount} />
                               </td>
                               <td className="py-3.5 px-4">
                                 <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${

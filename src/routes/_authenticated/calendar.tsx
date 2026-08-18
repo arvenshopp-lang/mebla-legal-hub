@@ -124,7 +124,7 @@ function CalendarPage() {
   const totalDeadlines = events.filter((e) => e.category === "deadline").length;
 
   return (
-    <DashboardShell>
+    <DashboardShell title="التقويم الموحد" description="الجلسات والمهل القضائية في مكان واحد">
       <div className="space-y-6">
         {/* Header Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-slate-900 via-primary/95 to-slate-900 p-6 text-white shadow-xl">

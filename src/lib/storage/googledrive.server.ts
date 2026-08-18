@@ -1,7 +1,7 @@
 /**
  * محرك سحابة جوجل درايف للمكتب (Google Drive Cloud Storage Engine)
  */
-import { integrationFetch } from "@/lib/integrations/http.server";
+import { storageFetch } from "./http.server";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -78,7 +78,7 @@ export async function uploadFileToGoogleDrive(
       Buffer.from(closeDelimiter),
     ]);
 
-    const res = await integrationFetch(GOOGLE_UPLOAD_API, {
+    const res = await storageFetch(GOOGLE_UPLOAD_API, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -88,11 +88,11 @@ export async function uploadFileToGoogleDrive(
     });
 
     if (!res.ok) {
-      const errText = await res.text();
+      const errText = res.text();
       return { success: false, error: `فشل الرفع إلى Google Drive: ${errText}` };
     }
 
-    const data = (await res.json()) as { id: string; name: string };
+    const data = (res.json()) as { id: string; name: string };
     return {
       success: true,
       fileId: data.id,

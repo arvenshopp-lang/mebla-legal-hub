@@ -1,7 +1,7 @@
 /**
  * محرك المزامنة الثنائية مع تقويم مايكروسوفت أوتلوك (Microsoft Outlook 365 Sync Engine)
  */
-import { integrationFetch } from "@/lib/integrations/http.server";
+import { calendarFetch } from "./http.server";
 import type { CalendarEventModel, CalendarSyncResult } from "./calendar.shared";
 
 const MS_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
@@ -48,7 +48,7 @@ export async function exchangeOutlookCodeForTokens(
   const config = getOutlookConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(MS_TOKEN_URL, {
+  const res = await calendarFetch(MS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -57,11 +57,11 @@ export async function exchangeOutlookCodeForTokens(
       client_secret: config.clientSecret,
       redirect_uri: config.redirectUri,
       grant_type: "authorization_code",
-    }),
+    }).toString(),
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
+  const data = (res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -74,7 +74,7 @@ export async function refreshOutlookAccessToken(refreshToken: string): Promise<s
   const config = getOutlookConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(MS_TOKEN_URL, {
+  const res = await calendarFetch(MS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -83,11 +83,11 @@ export async function refreshOutlookAccessToken(refreshToken: string): Promise<s
       client_secret: config.clientSecret,
       grant_type: "refresh_token",
       scope: "Calendars.ReadWrite offline_access",
-    }),
+    }).toString(),
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string };
+  const data = (res.json()) as { access_token: string };
   return data.access_token;
 }
 
@@ -98,18 +98,18 @@ export async function ensureMehlaOutlookCalendar(
   const targetName = "مِهلة | الجلسات والمهل القضائية";
 
   // 1. Check existing calendars
-  const listRes = await integrationFetch(`${MS_GRAPH_API}/me/calendars`, {
+  const listRes = await calendarFetch(`${MS_GRAPH_API}/me/calendars`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (listRes.ok) {
-    const listData = (await listRes.json()) as { value?: Array<{ id: string; name: string }> };
+    const listData = (listRes.json()) as { value?: Array<{ id: string; name: string }> };
     const found = listData.value?.find((c) => c.name === targetName);
     if (found) return { calendarId: found.id, calendarName: found.name };
   }
 
   // 2. Create if not found
-  const createRes = await integrationFetch(`${MS_GRAPH_API}/me/calendars`, {
+  const createRes = await calendarFetch(`${MS_GRAPH_API}/me/calendars`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -121,7 +121,7 @@ export async function ensureMehlaOutlookCalendar(
   });
 
   if (!createRes.ok) return null;
-  const created = (await createRes.json()) as { id: string; name: string };
+  const created = (createRes.json()) as { id: string; name: string };
   return { calendarId: created.id, calendarName: created.name };
 }
 
@@ -170,7 +170,7 @@ export async function syncEventsToOutlookCalendar(
         reminderMinutesBeforeStart: 120, // 2 hours
       };
 
-      const res = await integrationFetch(`${MS_GRAPH_API}/me/calendars/${calendarId}/events`, {
+      const res = await calendarFetch(`${MS_GRAPH_API}/me/calendars/${calendarId}/events`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,

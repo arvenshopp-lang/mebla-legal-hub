@@ -1,7 +1,7 @@
 /**
  * محرك سحابة مايكروسوفت ون درايف وشيربوينت (Microsoft OneDrive Cloud Engine)
  */
-import { integrationFetch } from "@/lib/integrations/http.server";
+import { storageFetch } from "./http.server";
 
 const MS_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const MS_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
@@ -49,7 +49,7 @@ export async function exchangeOneDriveCode(
   const config = getOneDriveConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(MS_TOKEN_URL, {
+  const res = await storageFetch(MS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -58,11 +58,11 @@ export async function exchangeOneDriveCode(
       client_secret: config.clientSecret,
       redirect_uri: config.redirectUri,
       grant_type: "authorization_code",
-    }),
+    }).toString(),
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
+  const data = (res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -75,7 +75,7 @@ export async function refreshOneDriveToken(refreshToken: string): Promise<string
   const config = getOneDriveConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(MS_TOKEN_URL, {
+  const res = await storageFetch(MS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -84,11 +84,11 @@ export async function refreshOneDriveToken(refreshToken: string): Promise<string
       client_secret: config.clientSecret,
       grant_type: "refresh_token",
       scope: "Files.ReadWrite Files.ReadWrite.All offline_access",
-    }),
+    }).toString(),
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string };
+  const data = (res.json()) as { access_token: string };
   return data.access_token;
 }
 
@@ -111,7 +111,7 @@ export async function uploadFileToOneDrive(
 
     const uploadUrl = `${MS_GRAPH_API}/me/drive/root:/${encodedPath}:/content`;
 
-    const res = await integrationFetch(uploadUrl, {
+    const res = await storageFetch(uploadUrl, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -121,11 +121,11 @@ export async function uploadFileToOneDrive(
     });
 
     if (!res.ok) {
-      const errText = await res.text();
+      const errText = res.text();
       return { success: false, error: `فشل الرفع إلى OneDrive: ${errText}` };
     }
 
-    const fileData = (await res.json()) as { id: string; webUrl: string; name: string };
+    const fileData = (res.json()) as { id: string; webUrl: string; name: string };
     return {
       success: true,
       fileId: fileData.id,
