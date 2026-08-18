@@ -41,9 +41,12 @@ function PublicSignContractPage() {
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [isSuccessfullySigned, setIsSuccessfullySigned] = React.useState(false);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["public-contract", token],
     queryFn: () => getPublicContractForSigningFn({ data: { signToken: token } }),
+    // الرمز يُبطل خادمياً بعد التوقيع (استخدام واحد)، لذا لا يُعاد الجلب بعد النجاح
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
 
   const contract = data?.contract;
