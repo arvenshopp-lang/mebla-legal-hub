@@ -170,7 +170,7 @@ export const Route = createFileRoute("/api/ai/bayan-chat")({
               organization_id: orgId,
               sender: "assistant",
               content: response.text,
-              citations: response.citations as unknown as object[],
+              citations: JSON.parse(JSON.stringify(response.citations ?? [])),
             });
           }
 
