@@ -234,17 +234,6 @@ function DashboardHome() {
             </Link>
 
             <Link
-              to="/calendar"
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
-            >
-              <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600">
-                <Calendar className="h-4 w-4" />
-              </div>
-              <span className="text-xs font-bold text-foreground">التقويم الموحد</span>
-              <span className="text-[10px] text-muted-foreground">مزامنة Apple / Google</span>
-            </Link>
-
-            <Link
               to="/contracts"
               className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border/80 bg-card p-3.5 text-center shadow-sm transition hover:border-primary/50 hover:bg-muted/40 active:scale-95"
             >
