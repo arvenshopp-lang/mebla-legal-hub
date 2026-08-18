@@ -383,7 +383,7 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           </div>
 
           <h1 className="text-display mt-6 tracking-tight">
-            إدارة قانونية أوضح.
+            مِهلة — إدارة قانونية أوضح.
             <br />
             متابعة دقيقة للمهل والجلسات والأتعاب.
           </h1>

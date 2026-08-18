@@ -144,21 +144,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v2.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v2.png" },
       { rel: "manifest", href: "/site.webmanifest" },
-      // الخطوط مستضافة محلياً — نُحمّل مسبقاً خط الواجهة وخط العناوين للعرض الأول فقط
-      {
-        rel: "preload",
-        as: "font",
-        type: "font/woff2",
-        href: "/fonts/tajawal-arabic-400.woff2",
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "preload",
-        as: "font",
-        type: "font/woff2",
-        href: "/fonts/cairo-arabic-600.woff2",
-        crossOrigin: "anonymous",
-      },
+      // الخطوط مستضافة محلياً وتُحمَّل عبر @font-face مع font-display: swap
+      // (بدون preload: وسوم preload كانت تُنتج تحذير "preloaded but not used" في المتصفح)
     ],
   }),
   shellComponent: RootShell,
