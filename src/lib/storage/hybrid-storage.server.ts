@@ -147,13 +147,35 @@ export async function dispatchDocumentUpload(options: {
       ? await getHybridStorageSettings(options.organizationId, options.userId)
       : null;
 
-    // في حال عدم وجود توكن حي، يتم تسجيل الرابط المساري والمسار الهجين
-    cloudSaved = true;
-    cloudPath = `${relativeFolderPath}/${options.fileName}`;
-    cloudUrl = `https://onedrive.live.com/?path=${encodeURIComponent(cloudPath)}`;
+    if (settings?.onedrive?.connected && settings.onedrive.accessToken) {
+      // رفع حقيقي ومباشر إلى حساب مايكروسوفت ون درايف عبر Graph API
+      const odRes = await uploadFileToOneDrive(settings.onedrive.accessToken, {
+        folderPath: relativeFolderPath,
+        fileName: options.fileName,
+        fileContent: options.fileBuffer,
+        contentType: options.contentType,
+      });
 
-    // إذا وُجد سجل مستند في مِهلة، نقوم بتحديث مسار السحابة في الملاحظات أو الحقول
-    if (documentId) {
+      if (odRes.success) {
+        cloudSaved = true;
+        cloudPath = odRes.fullPath || `${relativeFolderPath}/${options.fileName}`;
+        cloudUrl = odRes.webUrl || `https://onedrive.live.com/?path=${encodeURIComponent(cloudPath)}`;
+      } else {
+        cloudSaved = false;
+        if (options.destination === "onedrive" && !vaultSaved) {
+          throw new Error(odRes.error || "تعذّر رفع الملف إلى OneDrive.");
+        }
+      }
+    } else {
+      // الحساب غير مربوط
+      cloudSaved = false;
+      if (options.destination === "onedrive" && !vaultSaved) {
+        throw new Error("حساب Microsoft OneDrive غير مربوط بالمكتب. يرجى ربط حساب مايكروسوفت أولاً لتفعيل الرفع السحابي.");
+      }
+    }
+
+    // إذا وُجد سجل مستند في مِهلة وكان الحساب مربوطاً، نحدث الوصف
+    if (documentId && cloudSaved) {
       try {
         await supabaseAdmin
           .from("documents")
@@ -162,7 +184,7 @@ export async function dispatchDocumentUpload(options: {
           })
           .eq("id", documentId);
       } catch {
-        // Fallback for mock environments
+        // تجاهل أخطاء التحديث
       }
     }
   }
