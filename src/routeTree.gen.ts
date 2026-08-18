@@ -107,6 +107,8 @@ import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/bi
 import { Route as MehlaAdminSalesIndexRouteImport } from './routes/mehla-admin/sales/index'
 import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sales/$id'
 import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
+import { Route as ApiIntegrationsGoogleCallbackRouteImport } from './routes/api/integrations/google/callback'
+import { Route as ApiIntegrationsMicrosoftCallbackRouteImport } from './routes/api/integrations/microsoft/callback'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
@@ -622,6 +624,18 @@ const MehlaAdminSupportTicketIdRoute =
     path: '/$ticketId',
     getParentRoute: () => MehlaAdminSupportRoute,
   } as any)
+const ApiIntegrationsGoogleCallbackRoute =
+  ApiIntegrationsGoogleCallbackRouteImport.update({
+    id: '/api/integrations/google/callback',
+    path: '/api/integrations/google/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsMicrosoftCallbackRoute =
+  ApiIntegrationsMicrosoftCallbackRouteImport.update({
+    id: '/api/integrations/microsoft/callback',
+    path: '/api/integrations/microsoft/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
   id: '/api/public/doc/$token',
   path: '/api/public/doc/$token',
@@ -821,6 +835,8 @@ export interface FileRoutesByFullPath {
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
+  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
+  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -937,6 +953,8 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
+  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
+  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -1056,6 +1074,8 @@ export interface FileRoutesById {
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
+  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
+  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -1175,6 +1195,8 @@ export interface FileRouteTypes {
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
+    | '/api/integrations/google/callback'
+    | '/api/integrations/microsoft/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1291,6 +1313,8 @@ export interface FileRouteTypes {
     | '/cases'
     | '/mehla-admin/billing'
     | '/mehla-admin/sales'
+    | '/api/integrations/google/callback'
+    | '/api/integrations/microsoft/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1409,6 +1433,8 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
+    | '/api/integrations/google/callback'
+    | '/api/integrations/microsoft/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1469,6 +1495,8 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
+  ApiIntegrationsGoogleCallbackRoute: typeof ApiIntegrationsGoogleCallbackRoute
+  ApiIntegrationsMicrosoftCallbackRoute: typeof ApiIntegrationsMicrosoftCallbackRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
@@ -2177,6 +2205,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MehlaAdminSupportTicketIdRouteImport
       parentRoute: typeof MehlaAdminSupportRoute
     }
+    '/api/integrations/google/callback': {
+      id: '/api/integrations/google/callback'
+      path: '/api/integrations/google/callback'
+      fullPath: '/api/integrations/google/callback'
+      preLoaderRoute: typeof ApiIntegrationsGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/microsoft/callback': {
+      id: '/api/integrations/microsoft/callback'
+      path: '/api/integrations/microsoft/callback'
+      fullPath: '/api/integrations/microsoft/callback'
+      preLoaderRoute: typeof ApiIntegrationsMicrosoftCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/doc/$token': {
       id: '/api/public/doc/$token'
       path: '/api/public/doc/$token'
@@ -2507,6 +2549,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
+  ApiIntegrationsGoogleCallbackRoute: ApiIntegrationsGoogleCallbackRoute,
+  ApiIntegrationsMicrosoftCallbackRoute: ApiIntegrationsMicrosoftCallbackRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,

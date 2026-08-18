@@ -14,13 +14,15 @@ export interface GoogleCalendarConfig {
   redirectUri: string;
 }
 
-export function getGoogleConfig(): GoogleCalendarConfig | null {
-  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+export function getGoogleConfig(): GoogleCalendarConfig {
+  const clientId =
+    process.env.GOOGLE_CALENDAR_CLIENT_ID ||
+    "433102357816-ciupjtacejjl4no0btu77dqbc8bn8fvt.apps.googleusercontent.com";
+  const clientSecret =
+    process.env.GOOGLE_CALENDAR_CLIENT_SECRET || "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";
   const redirectUri =
     process.env.GOOGLE_CALENDAR_REDIRECT_URI || "https://mehlalex.com/api/integrations/google/callback";
 
-  if (!clientId || !clientSecret) return null;
   return { clientId, clientSecret, redirectUri };
 }
 
