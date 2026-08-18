@@ -14,7 +14,15 @@ const { ArabicShaper } = reshaper;
 const COMBINING = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/;
 
 export function shapeArabicRun(text: string): string {
-  const shaped = ArabicShaper.convertArabic(text) as string;
+  // نعالج الأقواس لمنع الانعكاس المزدوج بين مكتبة التشكيل ومحرك الخط
+  const sanitized = text
+    .replace(/\(/g, "\uE000")
+    .replace(/\)/g, "\uE001");
+
+  const shaped = (ArabicShaper.convertArabic(sanitized) as string)
+    .replace(/\uE000/g, ")")
+    .replace(/\uE001/g, "(");
+
   const chars = Array.from(shaped);
   const clusters: string[] = [];
   chars.forEach((char) => {
@@ -24,7 +32,5 @@ export function shapeArabicRun(text: string): string {
     }
     clusters.push(char);
   });
-  // fontkit يتولى ترتيب المقطع العربي من اليمين إلى اليسار عند الرسم، لذا
-  // يُعاد النص المُشكَّل بترتيبه المنطقي دون عكس يدوي (العكس يُلغي ترتيبه).
   return clusters.join("");
 }

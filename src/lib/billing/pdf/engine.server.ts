@@ -97,7 +97,7 @@ const GOLD = rgb(0.788, 0.663, 0.38);
 const SURFACE = rgb(0.965, 0.953, 0.933);
 
 const USABLE = A4.width - MARGIN * 2;
-const FOOTER_RESERVE = 96;
+const FOOTER_RESERVE = 52;
 
 type Ctx = { doc: PDFDocument; page: PDFPage; font: PDFFont; y: number };
 
@@ -539,25 +539,25 @@ function recipientCard(ctx: Ctx, recipient: { title: string; lines: string[] }):
 /** خطوط توقيع رسمية أسفل المستند. */
 function signatureBlock(ctx: Ctx, slots: { label: string; caption?: string | null }[]): void {
   if (slots.length === 0) return;
-  ensureSpace(ctx, 74);
+  ensureSpace(ctx, 48);
   const right = A4.width - MARGIN;
   const gap = 24;
   const colWidth = (USABLE - gap * (slots.length - 1)) / slots.length;
-  const baseY = ctx.y - 6;
+  const baseY = ctx.y - 4;
   slots.forEach((slot, index) => {
     const cellRight = right - index * (colWidth + gap);
-    rightText(ctx, slot.label, cellRight, baseY, 9, INK);
+    rightText(ctx, slot.label, cellRight, baseY, 8.5, INK);
     ctx.page.drawLine({
-      start: { x: cellRight - colWidth, y: baseY - 34 },
-      end: { x: cellRight, y: baseY - 34 },
-      thickness: 0.7,
+      start: { x: cellRight - colWidth, y: baseY - 24 },
+      end: { x: cellRight, y: baseY - 24 },
+      thickness: 0.6,
       color: LINE,
     });
     if (slot.caption) {
-      rightText(ctx, truncate(ctx, slot.caption, colWidth, 8), cellRight, baseY - 48, 8, MUTED);
+      rightText(ctx, truncate(ctx, slot.caption, colWidth, 8), cellRight, baseY - 36, 8, MUTED);
     }
   });
-  ctx.y = baseY - 66;
+  ctx.y = baseY - 46;
 }
 
 function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
@@ -705,44 +705,39 @@ function footer(ctx: Ctx, brand: PdfBrand): void {
   const contact = [brand.contactPhone, brand.contactEmail, brand.website]
     .filter((value): value is string => !!value && value.trim().length > 0)
     .join("  ·  ");
-  const note = brand.documentFooterNote?.trim()
+  const rawNote = brand.documentFooterNote?.trim()
     ? brand.documentFooterNote.trim()
-    : "مستند صادر إلكترونياً من منصة مِهلة";
+    : "وثيقة قانونية صادرة وموقعة إلكترونياً من منصة مِهلة";
+  
   ctx.doc.getPages().forEach((page, index, pages) => {
-    const label = `صفحة ${index + 1} / ${pages.length}`;
+    const label = `صفحة ${index + 1} من ${pages.length}`;
     const labelWidth = splitDirectionalRuns(label).reduce(
-      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 7.5),
       0,
     );
-    const noteWidth = splitDirectionalRuns(note).reduce(
-      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
-      0,
-    );
+
     page.drawLine({
-      start: { x: MARGIN, y: MARGIN + 22 },
-      end: { x: A4.width - MARGIN, y: MARGIN + 22 },
+      start: { x: MARGIN, y: MARGIN + 18 },
+      end: { x: A4.width - MARGIN, y: MARGIN + 18 },
       thickness: 0.5,
       color: LINE,
     });
-    drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 8, 8, MUTED);
-    drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 8, 8, MUTED);
-    const fine = brand.footerFineNote?.trim();
-    if (fine) {
-      const fineWidth = splitDirectionalRuns(fine).reduce(
-        (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 6.5),
-        0,
-      );
-      drawLine(page, ctx.font, fine, A4.width - MARGIN - fineWidth, MARGIN - 4, 6.5, LINE);
-    }
-    const contactWidth = contact
-      ? splitDirectionalRuns(contact).reduce(
-          (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 8),
-          0,
-        )
-      : 0;
-    // لا نرسم سطر التواصل إن كان سيتراكب مع رقم الصفحة في منتصف التذييل.
-    if (contact && MARGIN + contactWidth < (A4.width - labelWidth) / 2 - 10) {
-      drawLine(page, ctx.font, contact, MARGIN, MARGIN + 8, 8, MUTED);
+
+    // التنويه القانوني في أقصى اليمين (محدد بحد أقصى لمنع التصادم)
+    const note = truncate(ctx, rawNote, 320, 7.5);
+    const noteWidth = splitDirectionalRuns(note).reduce(
+      (total, run) => total + ctx.font.widthOfTextAtSize(run.glyphs, 7.5),
+      0,
+    );
+    drawLine(page, ctx.font, note, A4.width - MARGIN - noteWidth, MARGIN + 6, 7.5, MUTED);
+
+    // ترقيم الصفحات في الوسط تماماً
+    drawLine(page, ctx.font, label, (A4.width - labelWidth) / 2, MARGIN + 6, 7.5, MUTED);
+
+    // بيانات التواصل في أقصى اليسار
+    if (contact) {
+      const contactText = truncate(ctx, contact, 140, 7.5);
+      drawLine(page, ctx.font, contactText, MARGIN, MARGIN + 6, 7.5, MUTED);
     }
   });
 }
