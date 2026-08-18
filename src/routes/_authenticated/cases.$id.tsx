@@ -32,7 +32,6 @@ import {
 } from "@/lib/list-utils";
 import { CaseDialog } from "./cases.index";
 import { DocumentRequestsSection } from "@/components/dashboard/document-requests";
-import { CaseFinancialCard } from "@/components/office-billing/case-financial-card";
 import { BayanCopilotDrawer } from "@/components/cases/bayan-copilot-drawer";
 import { ArrowRight, Copy, Eye, EyeOff, Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -534,12 +533,6 @@ function Page() {
       </section>
 
       <DocumentRequestsSection caseId={id} />
-
-      {activeOrgId ? (
-        <div className="mt-4">
-          <CaseFinancialCard organizationId={activeOrgId} caseId={id} />
-        </div>
-      ) : null}
 
       <UpdateDialog
         open={updateOpen}

@@ -10,7 +10,6 @@ import {
   signContractByClient,
   generateContractPdf,
   createCaseFromContract,
-  createInvoiceFromContract,
   resolveContractOrg,
   issueSignLink,
 } from "./contracts.server";
@@ -135,16 +134,3 @@ export const convertContractToCaseFn = createServerFn({ method: "POST" })
     return { ok: true, caseId: result.caseId };
   });
 
-export const convertContractToInvoiceFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((d: { contractId: string; organizationId?: string }) => d)
-  .handler(async ({ data, context }) => {
-    const { organizationId } = await resolveContractOrg(context.supabase, data.organizationId ?? null, true);
-    const result = await createInvoiceFromContract(
-      context.supabase,
-      organizationId,
-      data.contractId,
-      context.userId,
-    );
-    return { ok: true, invoiceId: result.invoiceId, invoiceNumber: result.invoiceNumber };
-  });
