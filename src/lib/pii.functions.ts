@@ -89,7 +89,10 @@ export const saveClientSecure = createServerFn({ method: "POST" })
       } as never)
       .select("id, full_name, client_type, company_name, phone, email, city, status, created_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      const { describeMutationError } = await import("./subscription.shared");
+      throw new Error(describeMutationError(error.message, "تعذّر حفظ بيانات العميل."));
+    }
     return row;
   });
 
