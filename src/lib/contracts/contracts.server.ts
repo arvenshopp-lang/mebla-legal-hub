@@ -364,9 +364,9 @@ export async function createCaseFromContract(
     .insert({
       organization_id: organizationId,
       client_id: clientId,
-      title: contract.title,
+      case_title: contract.title,
       case_type: contract.contractType === "fee_agreement" ? "commercial" : "general",
-      court: "المحكمة العامة / التجارية",
+      court_name: "المحكمة العامة / التجارية",
       status: "open",
       claim_amount: contract.totalAmount || null,
       description: `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
@@ -402,8 +402,9 @@ export async function createInvoiceFromContract(organizationId: string, contract
       organization_id: organizationId,
       client_id: contract.clientId,
       invoice_number: invoiceNumber,
-      total_amount: totalWithVat,
-      vat_amount: vatAmount,
+      subtotal: amount,
+      tax_total: vatAmount,
+      total: totalWithVat,
       status: "issued",
       due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
     })
