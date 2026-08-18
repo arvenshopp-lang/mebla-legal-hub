@@ -461,10 +461,30 @@ export function translateSubscriptionError(message?: string | null): string | nu
   return null;
 }
 
+/**
+ * رسالة عربية جاهزة للعرض دون كشف تفاصيل تقنية.
+ * تُعتبر الرسالة آمنة للعرض عندما تكون عربية قصيرة ولا تحمل أي أثر تقني
+ * (كود خطأ، مسار ملف، Stack، SQL، JSON) — وهي حالة الرسائل الصادرة من
+ * بوابات الحصص والاستحقاقات الخادمية.
+ */
+const TECHNICAL_MARKERS =
+  /(_EXCEEDED|_UNAVAILABLE|FORBIDDEN|UNAUTHORIZED|[A-Z]{3,}_[A-Z]{3,}|https?:\/\/|\/src\/|\bat\s|\{|\}|error:|ERROR:|select |insert |P0001)/;
+
+export function isUserSafeArabicMessage(message?: string | null): boolean {
+  if (!message) return false;
+  const text = message.trim();
+  if (text.length < 8 || text.length > 400) return false;
+  if (!/[\u0600-\u06FF]/.test(text)) return false;
+  return !TECHNICAL_MARKERS.test(text);
+}
+
 /** Ready-to-use toast payload for any mutation failure. */
 export function describeMutationError(
   message?: string | null,
   fallback = "حاول مرة أخرى.",
 ): string {
-  return translateSubscriptionError(message) ?? fallback;
+  const translated = translateSubscriptionError(message);
+  if (translated) return translated;
+  if (isUserSafeArabicMessage(message)) return message!.trim();
+  return fallback;
 }
