@@ -83,7 +83,10 @@ function SubscriptionPage() {
   const { activeOrgId } = useAuth();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
   const higherPlans = (overview?.upgrade_plans ?? [])
-    .filter((p) => p.code !== overview?.plan.code && p.price_monthly > (overview?.plan.price_monthly ?? 0))
+    .filter(
+      (p) =>
+        p.code !== overview?.plan.code && p.price_monthly > (overview?.plan.price_monthly ?? 0),
+    )
     .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
