@@ -162,67 +162,67 @@ function CalendarPage() {
           </div>
         </div>
 
-        {/* KPIs Cards */}
+        {/* 4-Stat Metric Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">الجلسات القضائية المجدولة</span>
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <span className="text-xs font-bold text-muted-foreground">الجلسات القضائية القادمة</span>
+              <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
                 <Gavel className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-foreground">{totalHearings}</span>
-              <span className="text-xs text-muted-foreground">جلسة نشطة</span>
+              <span className="text-3xl font-extrabold tabular-nums text-foreground">{totalHearings}</span>
+              <span className="text-xs text-muted-foreground">جلسة مجدولة</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">المهل والمهام المستعجلة</span>
-              <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+              <span className="text-xs font-bold text-muted-foreground">المهل والمهام المستعجلة</span>
+              <div className="rounded-xl bg-amber-500/10 p-2.5 text-amber-600">
                 <Clock className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-foreground">{totalDeadlines}</span>
+              <span className="text-3xl font-extrabold tabular-nums text-foreground">{totalDeadlines}</span>
               <span className="text-xs text-muted-foreground">مهلة قادمة</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">تقويم Google Calendar</span>
-              <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600">
+              <span className="text-xs font-bold text-muted-foreground">Google Calendar</span>
+              <div className="rounded-xl bg-blue-500/10 p-2.5 text-blue-600">
                 <CalendarCheck2 className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                جاهز للمزامنة
+                مزامنة ثنائية نشطة
               </span>
               <button
                 onClick={() => manualSyncMutation.mutate("google")}
                 disabled={manualSyncMutation.isPending}
-                className="text-xs font-semibold text-primary hover:underline"
+                className="text-xs font-bold text-primary hover:underline"
               >
-                مزامنة الآن
+                مزامنة فورية
               </button>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">تقويم Microsoft Outlook</span>
-              <div className="rounded-lg bg-indigo-500/10 p-2 text-indigo-600">
+              <span className="text-xs font-bold text-muted-foreground">Microsoft Outlook</span>
+              <div className="rounded-xl bg-indigo-500/10 p-2.5 text-indigo-600">
                 <CalendarCheck2 className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                جاهز للمزامنة
+                مزامنة ثنائية نشطة
               </span>
               <button
                 onClick={() => manualSyncMutation.mutate("outlook")}

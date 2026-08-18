@@ -249,52 +249,53 @@ function Page() {
 
   return (
     <DashboardShell title={data.case_title}>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/cases"
-          className="flex min-h-[44px] items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-border/80 bg-card px-3.5 text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground active:scale-95 shadow-xs"
         >
-          <ArrowRight className="h-4 w-4" /> عودة للقضايا
+          <ArrowRight className="h-4 w-4" /> عودة لقائمة القضايا
         </Link>
-        <div className="flex-1" />
-        <Btn
-          onClick={() => setBayanOpen(true)}
-          className="flex min-h-[44px] items-center gap-1.5 bg-gradient-to-r from-[#123C32] to-[#1E5648] text-white hover:brightness-110 shadow-xs border-0 sm:min-h-0"
-        >
-          <Sparkles className="h-4 w-4 text-[#C9A961]" />
-          المحامية بيان
-        </Btn>
-        <PrintButton
-          variant="button"
-          label="طباعة ملف القضية"
-          target={{
-            documentType: "case_file",
-            documentId: data.id,
-            documentRef: data.case_number ?? data.public_code ?? null,
-            title: data.case_title,
-            classification: "confidential",
-          }}
-          buildHtml={() =>
-            buildCaseSheetHtml({
-              caseRow: data as never,
-              parties: parties ?? [],
-              hearings: hearings ?? [],
-              deadlines: deadlines ?? [],
-              tasks: tasks ?? [],
-              updates: updates ?? [],
-            })
-          }
-        />
-        {canEdit(activeRole) && (
-          <Btn onClick={() => setEditOpen(true)} variant="outline">
-            <Pencil className="ms-1 inline h-4 w-4" /> تعديل
-          </Btn>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setBayanOpen(true)}
+            className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-xs font-bold text-slate-950 shadow-md transition hover:from-amber-400 hover:to-amber-500 active:scale-95"
+          >
+            <Sparkles className="h-4 w-4" />
+            استشارة المحامية بيان ✨
+          </button>
+          <PrintButton
+            variant="button"
+            label="طباعة ملف القضية"
+            target={{
+              documentType: "case_file",
+              documentId: data.id,
+              documentRef: data.case_number ?? data.public_code ?? null,
+              title: data.case_title,
+              classification: "confidential",
+            }}
+            buildHtml={() =>
+              buildCaseSheetHtml({
+                caseRow: data as never,
+                parties: parties ?? [],
+                hearings: hearings ?? [],
+                deadlines: deadlines ?? [],
+                tasks: tasks ?? [],
+                updates: updates ?? [],
+              })
+            }
+          />
+          {canEdit(activeRole) && (
+            <Btn onClick={() => setEditOpen(true)} variant="outline" className="min-h-[40px] rounded-xl text-xs font-bold">
+              <Pencil className="ms-1 inline h-3.5 w-3.5" /> تعديل القضية
+            </Btn>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5 lg:col-span-2">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+        <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm lg:col-span-2">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <Badge>{CASE_STATUS[data.status] ?? data.status}</Badge>
             <Badge
               tone={
@@ -304,22 +305,24 @@ function Page() {
               {CASE_PRIORITY[data.priority] ?? data.priority}
             </Badge>
             {data.case_number && (
-              <span className="text-xs text-muted-foreground">رقم: {data.case_number}</span>
+              <span className="rounded-lg bg-muted/60 px-2.5 py-1 text-xs font-bold tabular-nums text-foreground">
+                رقم القضية: {data.case_number}
+              </span>
             )}
             {data.public_code && (
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(data.public_code!);
-                  toast.success("تم نسخ رمز القضية");
+                  toast.success("تم نسخ رمز متابعة القضية للعميل");
                 }}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-full bg-warning-soft px-3 py-1 text-[11px] font-medium text-warning hover:brightness-95 sm:min-h-0 sm:py-1"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-700 transition hover:bg-amber-500/20 active:scale-95"
                 title="رمز متابعة القضية للعميل"
               >
                 <Copy className="h-3 w-3" /> رمز المتابعة: {data.public_code}
               </button>
             )}
           </div>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
+          <dl className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
             <Info label="نوع القضية" value={data.case_type} />
             <Info label="العميل" value={data.client?.full_name} />
             <Info
@@ -329,28 +332,28 @@ function Page() {
             <Info label="الخصم" value={data.opponent_name} />
             <Info label="المحكمة" value={data.court_name} />
             <Info label="الفرع" value={data.court_branch} />
-            <Info label="الدائرة" value={data.judicial_circuit} />
-            <Info label="القاضي" value={data.judge_name} />
+            <Info label="الدائرة القضائية" value={data.judicial_circuit} />
+            <Info label="القاضي ناظر الدعوى" value={data.judge_name} />
             <Info label="المحامي المسؤول" value={data.lawyer?.full_name ?? "غير مُسند"} />
-            <Info label="تاريخ الفتح" value={fmtDate(data.opened_at)} />
+            <Info label="تاريخ القيد والفتح" value={fmtDate(data.opened_at)} />
           </dl>
           {data.description && (
-            <div className="mt-4 border-t border-border pt-3 text-sm">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">الوصف</div>
+            <div className="mt-4 rounded-xl bg-surface-muted/60 p-3.5 text-xs sm:text-sm leading-relaxed">
+              <div className="mb-1 text-xs font-bold text-muted-foreground">وقائع ووصف القضية:</div>
               {data.description}
             </div>
           )}
           {internalNotes && (
-            <div className="mt-3 border-t border-border pt-3 text-sm">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">ملاحظات داخلية</div>
+            <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5 text-xs sm:text-sm leading-relaxed">
+              <div className="mb-1 text-xs font-bold text-amber-800">ملاحظات داخلية خاصة بالمكتب:</div>
               {internalNotes}
             </div>
           )}
         </section>
 
-        <section className="rounded-[var(--radius-l)] border border-border bg-surface p-5">
+        <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-bold">الخصوم والأطراف</h3>
+            <h3 className="text-sm font-bold text-foreground">الخصوم والأطراف</h3>
             {canCreateParty && (
               <button
                 onClick={() => {
@@ -359,7 +362,7 @@ function Page() {
                 }}
                 aria-label="إضافة طرف"
                 title="إضافة طرف"
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 hover:bg-surface-muted md:min-h-0 md:min-w-0"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition active:scale-95"
               >
                 <Plus className="h-4 w-4" />
               </button>
