@@ -149,16 +149,6 @@ export const SURFACES: SurfaceDef[] = [
     planned: true,
   },
   {
-    id: "calendar",
-    subdomain: "calendar",
-    label: "التقويم",
-    description: "الجلسات والمواعيد.",
-    entry: "/calendar",
-    allow: ["/calendar"],
-    requiresLawyerAuth: true,
-    planned: true,
-  },
-  {
     id: "files",
     subdomain: "files",
     label: "الملفات",
