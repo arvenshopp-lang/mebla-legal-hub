@@ -367,11 +367,11 @@ function CreateRequestModal({
               />
             </FormField>
 
-            <StorageDestinationPicker
-              value={destination}
-              onChange={setDestination}
-              label="أين ترغب بحفظ مستندات العميل عند إرسالها؟"
-            />
+            <p className="rounded-xl border border-border/60 bg-muted/40 p-3 text-xs leading-6 text-muted-foreground">
+              تُحفظ كل الملفات التي يرفعها العميل في خزينة مِهلة المشفّرة الخاصة بالمكتب (تشفير
+              AES-256-GCM، حاوية تخزين خاصة، روابط عرض موقّعة قصيرة الصلاحية، وسجل تدقيق لكل
+              عرض وتنزيل وطباعة). لا يمكن لأي طرف خارج مكتبك الوصول إليها.
+            </p>
 
             <FormField label="تاريخ الانتهاء (اختياري)">
               <input
