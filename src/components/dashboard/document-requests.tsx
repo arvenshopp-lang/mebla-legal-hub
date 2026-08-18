@@ -20,8 +20,6 @@ import {
 import { DOC_REQUEST_STATUS } from "@/lib/client-portal.shared";
 import { createDocumentRequest, revokeDocumentRequest } from "@/lib/document-requests.functions";
 import { describeMutationError } from "@/lib/subscription.shared";
-import { StorageDestinationPicker } from "@/components/storage/storage-destination-picker";
-import type { StorageDestination } from "@/lib/storage/hybrid-storage.shared";
 import type { Tables } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
 
@@ -234,7 +232,6 @@ function CreateRequestModal({
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [itemsText, setItemsText] = useState("");
-  const [destination, setDestination] = useState<StorageDestination>("vault");
   const [expires, setExpires] = useState("");
   const [saving, setSaving] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -243,7 +240,6 @@ function CreateRequestModal({
     setTitle("");
     setMessage("");
     setItemsText("");
-    setDestination("vault");
     setExpires("");
     setLink(null);
   };
@@ -263,13 +259,12 @@ function CreateRequestModal({
           title: title.trim(),
           message: message.trim() || null,
           items,
-          destination,
           expiresAt: expires ? new Date(expires).toISOString() : null,
         },
       });
       setLink(`${window.location.origin}/upload/${res.token}`);
       qc.invalidateQueries({ queryKey: ["doc-requests", caseId] });
-      toast.success("تم إنشاء الرابط وتحديد وجهة التخزين");
+      toast.success("تم إنشاء رابط الرفع الآمن");
     } catch (e: unknown) {
       toast.error("تعذّر إنشاء الرابط", { description: describeMutationError(errMsg(e)) });
     } finally {
