@@ -619,18 +619,20 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
 
 /** تحويل العقد إلى قضية جديدة */
 export async function createCaseFromContract(
+  client: AuthedClient,
   organizationId: string,
   contractId: string,
   lawyerId?: string,
 ) {
-  const contract = CONTRACTS_STORE.get(contractId);
-  if (!contract) throw new Error("العقد غير موجود.");
+  const contract = await getContractById(client, organizationId, contractId);
+  if (!contract) throw new ContractAccessError("العقد غير موجود أو لا تملك صلاحية الوصول إليه.");
+  if (contract.caseId) return { caseId: contract.caseId };
 
   let clientId = contract.clientId;
 
   // إذا لم يكن هناك عميل مرتبط، ننشئ سجلاً في جدول العملاء
   if (!clientId) {
-    const { data: newClient, error: cErr } = await supabaseAdmin
+    const { data: newClient, error: cErr } = await client
       .from("clients")
       .insert({
         organization_id: organizationId,
@@ -644,13 +646,11 @@ export async function createCaseFromContract(
       .select("id")
       .single();
 
-    if (!cErr && newClient) {
-      clientId = newClient.id;
-      contract.clientId = clientId;
-    }
+    if (cErr || !newClient) throw new ContractAccessError("تعذّر إنشاء سجل الموكل من بيانات العقد.");
+    clientId = newClient.id as string;
   }
 
-  const { data: newCase, error } = await supabaseAdmin
+  const { data: newCase, error } = await client
     .from("cases")
     .insert({
       organization_id: organizationId,
@@ -667,42 +667,91 @@ export async function createCaseFromContract(
     .select("id")
     .single();
 
-  if (error || !newCase) throw new Error("تعذّر إنشاء القضية من العقد.");
+  if (error || !newCase) throw new ContractAccessError("تعذّر إنشاء القضية من العقد.");
 
-  contract.caseId = newCase.id;
-  CONTRACTS_STORE.set(contract.id, contract);
-  return { caseId: newCase.id };
+  const caseId = newCase.id as string;
+  await client
+    .from("contracts")
+    .update({ case_id: caseId, client_id: clientId })
+    .eq("id", contract.id)
+    .eq("organization_id", organizationId);
+
+  await logContractEvent({
+    organizationId,
+    contractId: contract.id,
+    eventType: "converted_to_case",
+    metadata: { caseId },
+  });
+
+  return { caseId };
 }
 
-/** إصدار فاتورة مطالبة أتعاب من العقد */
-export async function createInvoiceFromContract(organizationId: string, contractId: string) {
-  const contract = CONTRACTS_STORE.get(contractId);
-  if (!contract) throw new Error("العقد غير موجود.");
+/**
+ * إصدار فاتورة أتعاب من العقد.
+ * الترقيم والإجماليات تُحسب داخل قاعدة البيانات (لا حسابات مالية في الواجهة).
+ */
+export async function createInvoiceFromContract(
+  client: AuthedClient,
+  organizationId: string,
+  contractId: string,
+  actorUserId?: string | null,
+) {
+  const contract = await getContractById(client, organizationId, contractId);
+  if (!contract) throw new ContractAccessError("العقد غير موجود أو لا تملك صلاحية الوصول إليه.");
   if (!contract.clientId) {
-    throw new Error("لا يمكن إصدار فاتورة قبل ربط العقد بموكل في سجل العملاء.");
+    throw new ContractAccessError("لا يمكن إصدار فاتورة قبل ربط العقد بموكل في سجل العملاء.");
   }
 
-  const amount = contract.advanceAmount || contract.totalAmount || 10000;
-  const vatAmount = Math.round(amount * 0.15 * 100) / 100;
-  const totalWithVat = amount + vatAmount;
+  const amount = contract.advanceAmount || contract.totalAmount;
+  if (!amount || amount <= 0) {
+    throw new ContractAccessError("لا يمكن إصدار فاتورة بلا قيمة أتعاب محددة في العقد.");
+  }
 
-  const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-  const { data: inv, error } = await supabaseAdmin
+  const { data: draft, error: draftError } = await client
     .from("office_invoices")
     .insert({
       organization_id: organizationId,
       client_id: contract.clientId,
-      invoice_number: invoiceNumber,
-      subtotal: amount,
-      tax_total: vatAmount,
-      total: totalWithVat,
-      status: "issued",
-      due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
+      case_id: contract.caseId,
+      status: "draft",
+      created_by: actorUserId ?? null,
+      title: `أتعاب العقد ${contract.contractNumber} — ${contract.title}`,
+      notes: `فاتورة صادرة من العقد رقم ${contract.contractNumber}.`,
     })
     .select("id")
     .single();
 
-  if (error || !inv) throw new Error("تعذّر إصدار الفاتورة من العقد.");
-  return { invoiceId: inv.id, invoiceNumber };
+  if (draftError || !draft) throw new ContractAccessError("تعذّر إنشاء مسودة الفاتورة من العقد.");
+  const invoiceId = draft.id as string;
+
+  const { error: itemError } = await client.from("office_invoice_items").insert({
+    organization_id: organizationId,
+    invoice_id: invoiceId,
+    description: contract.advanceAmount
+      ? `الدفعة المقدمة من أتعاب العقد ${contract.contractNumber}`
+      : `أتعاب العقد ${contract.contractNumber}`,
+    quantity: 1,
+    unit_price: amount,
+  });
+  if (itemError) throw new ContractAccessError("تعذّر إضافة بند الأتعاب إلى الفاتورة.");
+
+  const { data: issued, error: issueError } = await client
+    .from("office_invoices")
+    .update({ status: "issued" })
+    .eq("id", invoiceId)
+    .eq("organization_id", organizationId)
+    .select("id, invoice_number")
+    .single();
+
+  if (issueError || !issued) throw new ContractAccessError("تعذّر إصدار الفاتورة من العقد.");
+
+  await logContractEvent({
+    organizationId,
+    contractId: contract.id,
+    eventType: "converted_to_invoice",
+    actorUserId: actorUserId ?? null,
+    metadata: { invoiceId, invoiceNumber: issued.invoice_number },
+  });
+
+  return { invoiceId, invoiceNumber: (issued.invoice_number as string | null) ?? "—" };
 }
