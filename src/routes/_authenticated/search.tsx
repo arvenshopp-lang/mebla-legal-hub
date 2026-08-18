@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { FeatureGate } from "@/components/subscription/feature-gate";
 import { supabase } from "@/integrations/supabase/client";
 import { searchDocumentPages } from "@/lib/documents/search.functions";
+import { describeMutationError } from "@/lib/subscription.shared";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDate } from "@/lib/enums";
 import {
