@@ -386,6 +386,7 @@ export async function createInvoiceFromContract(organizationId: string, contract
   const contract = CONTRACTS_STORE.get(contractId);
   if (!contract) throw new Error("العقد غير موجود.");
 
+  if (!contract.clientId) throw new Error("لا يمكن إصدار فاتورة قبل ربط العقد بموكل.");
   const amount = contract.advanceAmount || contract.totalAmount || 10000;
   const vatAmount = Math.round(amount * 0.15 * 100) / 100;
   const totalWithVat = amount + vatAmount;
