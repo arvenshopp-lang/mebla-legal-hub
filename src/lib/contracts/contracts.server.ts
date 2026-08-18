@@ -185,7 +185,7 @@ export async function logContractEvent(entry: {
       ip_address: entry.ipAddress ?? null,
       user_agent: entry.userAgent ? entry.userAgent.slice(0, 300) : null,
       trace_ref: entry.traceRef ?? null,
-      metadata: entry.metadata ?? {},
+      metadata: (entry.metadata ?? {}) as never,
     });
   } catch {
     // سجل التدقيق لا يجب أن يُفشل العملية الأساسية
@@ -258,59 +258,81 @@ export async function getClientPartyInfo(clientId: string): Promise<ContractPart
   return null;
 }
 
-/** إنشاء عقد جديد وحفظه */
+/** إنشاء أو تحديث عقد في قاعدة البيانات (بهوية المستخدم — RLS مطبّق) */
 export async function saveContract(
+  client: AuthedClient,
   organizationId: string,
   contractData: Partial<ContractModel> & { title: string; contractType: ContractType },
+  actor?: { userId?: string | null; label?: string | null },
 ): Promise<ContractModel> {
-  const id = contractData.id || crypto.randomUUID();
-  const existing = CONTRACTS_STORE.get(id);
+  const existing = contractData.id ? await getContractById(client, organizationId, contractData.id) : null;
+  if (contractData.id && !existing) throw new ContractAccessError("العقد غير موجود أو لا تملك صلاحية الوصول إليه.");
+  if (existing && (existing.status === "signed" || existing.status === "cancelled")) {
+    throw new ContractAccessError("لا يمكن تعديل عقد موقّع أو ملغى.");
+  }
 
-  const contractNumber =
-    existing?.contractNumber ||
-    `CTR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const firstParty =
+    contractData.firstParty || existing?.firstParty || (await getOfficePartyInfo(organizationId));
+  const secondParty = contractData.secondParty || existing?.secondParty || FALLBACK_SECOND_PARTY;
+  const status = contractData.status ?? existing?.status ?? "draft";
 
-  const firstParty = contractData.firstParty || existing?.firstParty || (await getOfficePartyInfo(organizationId));
-  const secondParty =
-    contractData.secondParty ||
-    existing?.secondParty || {
-      role: "second_party",
-      name: "اسم الموكل / المنشأة",
-      identifierType: "national_id",
-      identifierNumber: "—",
-      phone: "—",
-    };
-
-  const signToken = existing?.signToken || (await hashSignSecret(`${id}:${Date.now()}`)).slice(0, 32);
-
-  const contract: ContractModel = {
-    id,
-    organizationId,
-    clientId: contractData.clientId ?? existing?.clientId ?? null,
-    caseId: contractData.caseId ?? existing?.caseId ?? null,
-    contractNumber,
+  const payload = {
+    organization_id: organizationId,
+    client_id: contractData.clientId ?? existing?.clientId ?? null,
+    case_id: contractData.caseId ?? existing?.caseId ?? null,
     title: contractData.title,
-    contractType: contractData.contractType,
-    status: contractData.status ?? existing?.status ?? "draft",
-    firstParty,
-    secondParty,
-    totalAmount: contractData.totalAmount ?? existing?.totalAmount ?? null,
-    advanceAmount: contractData.advanceAmount ?? existing?.advanceAmount ?? null,
-    finalAmount: contractData.finalAmount ?? existing?.finalAmount ?? null,
-    clauses: contractData.clauses ?? existing?.clauses ?? [],
-    lawyerSignature: contractData.lawyerSignature ?? existing?.lawyerSignature ?? null,
-    clientSignature: contractData.clientSignature ?? existing?.clientSignature ?? null,
-    signToken,
-    signUrl: `/sign/${signToken}`,
-    expiresAt: contractData.expiresAt ?? existing?.expiresAt ?? new Date(Date.now() + 14 * 86400000).toISOString(),
-    signedAt: contractData.signedAt ?? existing?.signedAt ?? null,
-    createdAt: existing?.createdAt ?? new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    contract_type: contractData.contractType,
+    status,
+    first_party: firstParty as never,
+    second_party: secondParty as never,
+    clauses: (contractData.clauses ?? existing?.clauses ?? []) as never,
+    total_amount: contractData.totalAmount ?? existing?.totalAmount ?? null,
+    advance_amount: contractData.advanceAmount ?? existing?.advanceAmount ?? null,
+    final_amount: contractData.finalAmount ?? existing?.finalAmount ?? null,
+    lawyer_signature: (contractData.lawyerSignature ?? existing?.lawyerSignature ?? null) as never,
+    expires_at:
+      contractData.expiresAt ?? existing?.expiresAt ?? new Date(Date.now() + 14 * 86400000).toISOString(),
   };
 
-  CONTRACTS_STORE.set(id, contract);
+  let row: ContractRow | null = null;
 
-  // إذا تم توقيع العقد ننشئ له سجلاً في المستندات
+  if (existing) {
+    const { data, error } = await client
+      .from("contracts")
+      .update(payload)
+      .eq("id", existing.id)
+      .eq("organization_id", organizationId)
+      .select(CONTRACT_COLUMNS)
+      .single();
+    if (error || !data) throw new ContractAccessError("تعذّر حفظ تعديلات العقد.");
+    row = data as ContractRow;
+  } else {
+    const { data: numberData, error: numberError } = await supabaseAdmin.rpc("next_contract_number", {
+      _organization_id: organizationId,
+    });
+    if (numberError || !numberData) throw new ContractAccessError("تعذّر توليد رقم العقد.");
+
+    const { data, error } = await client
+      .from("contracts")
+      .insert({ ...payload, contract_number: numberData as string, created_by: actor?.userId ?? null })
+      .select(CONTRACT_COLUMNS)
+      .single();
+    if (error || !data) throw new ContractAccessError("تعذّر إنشاء العقد.");
+    row = data as ContractRow;
+  }
+
+  const contract = mapRow(row);
+
+  await logContractEvent({
+    organizationId,
+    contractId: contract.id,
+    eventType: existing ? "updated" : "created",
+    actorUserId: actor?.userId ?? null,
+    actorLabel: actor?.label ?? null,
+    metadata: { status: contract.status, contractNumber: contract.contractNumber },
+  });
+
+  // إذا تم توقيع العقد ننشئ له سجلاً في تحديثات القضية
   if (contract.status === "signed" && contract.caseId) {
     try {
       await supabaseAdmin.from("case_updates").insert({
@@ -330,60 +352,166 @@ export async function saveContract(
   return contract;
 }
 
-/** جلب قائمة العقود الخاصة بالمنظمة */
-export async function getContractsByOrg(organizationId: string): Promise<ContractModel[]> {
-  const list = Array.from(CONTRACTS_STORE.values()).filter((c) => c.organizationId === organizationId);
-  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+/** جلب قائمة عقود المكتب */
+export async function getContractsByOrg(
+  client: AuthedClient,
+  organizationId: string,
+): Promise<ContractModel[]> {
+  const { data, error } = await client
+    .from("contracts")
+    .select(CONTRACT_COLUMNS)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new ContractAccessError("تعذّر جلب قائمة العقود.");
+  return ((data ?? []) as ContractRow[]).map(mapRow);
 }
 
-/** جلب تفاصيل عقد بواسطة الـ ID */
+/** جلب تفاصيل عقد بواسطة المعرّف داخل نفس المكتب */
 export async function getContractById(
+  client: AuthedClient,
   organizationId: string,
   contractId: string,
 ): Promise<ContractModel | null> {
-  const contract = CONTRACTS_STORE.get(contractId);
-  if (!contract || contract.organizationId !== organizationId) return null;
+  const { data, error } = await client
+    .from("contracts")
+    .select(CONTRACT_COLUMNS)
+    .eq("id", contractId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error) throw new ContractAccessError("تعذّر جلب بيانات العقد.");
+  return data ? mapRow(data as ContractRow) : null;
+}
+
+/**
+ * إصدار رابط توقيع جديد للموكل — يُبطل أي رابط سابق،
+ * ويُخزَّن في قاعدة البيانات كبصمة SHA-256 فقط.
+ */
+export async function issueSignLink(
+  client: AuthedClient,
+  organizationId: string,
+  contractId: string,
+  actor?: { userId?: string | null; label?: string | null },
+): Promise<{ signToken: string; signUrl: string; expiresAt: string }> {
+  const contract = await getContractById(client, organizationId, contractId);
+  if (!contract) throw new ContractAccessError("العقد غير موجود أو لا تملك صلاحية الوصول إليه.");
+  if (contract.status === "signed") throw new ContractAccessError("تم توقيع هذا العقد مسبقاً.");
+  if (contract.status === "cancelled") throw new ContractAccessError("العقد ملغى ولا يمكن إصدار رابط توقيع له.");
+
+  const token = generateSignToken();
+  const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+
+  const { error } = await client
+    .from("contracts")
+    .update({
+      sign_token_hash: await signTokenHash(token),
+      expires_at: expiresAt,
+      status: contract.status === "draft" ? "pending_signature" : contract.status,
+    })
+    .eq("id", contractId)
+    .eq("organization_id", organizationId);
+
+  if (error) throw new ContractAccessError("تعذّر إصدار رابط التوقيع.");
+
+  await logContractEvent({
+    organizationId,
+    contractId,
+    eventType: "sent_for_signature",
+    actorUserId: actor?.userId ?? null,
+    actorLabel: actor?.label ?? null,
+    metadata: { expiresAt },
+  });
+
+  return { signToken: token, signUrl: `/sign/${token}`, expiresAt };
+}
+
+/** جلب العقد بواسطة رمز التوقيع العام (مسار عام — بصمة الرمز فقط) */
+export async function getContractBySignToken(signToken: string): Promise<ContractModel | null> {
+  const token = (signToken || "").trim();
+  if (!/^[a-f0-9]{64}$/i.test(token)) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from("contracts")
+    .select(CONTRACT_COLUMNS)
+    .eq("sign_token_hash", await signTokenHash(token))
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const contract = mapRow(data as unknown as ContractRow);
+  if (contract.status === "cancelled") return null;
+  if (contract.status !== "signed" && contract.expiresAt && new Date(contract.expiresAt).getTime() < Date.now()) {
+    return null;
+  }
   return contract;
 }
 
-/** جلب العقد بواسطة رمز التوقيع العام للعميل */
-export async function getContractBySignToken(signToken: string): Promise<ContractModel | null> {
-  for (const contract of CONTRACTS_STORE.values()) {
-    if (contract.signToken === signToken) {
-      return contract;
-    }
-  }
-  return null;
-}
-
-/** تسجيل توقيع الموكل الإلكتروني */
+/** تسجيل توقيع الموكل الإلكتروني عبر الرابط العام */
 export async function signContractByClient(
   signToken: string,
   signatureImageBase64: string,
   signerName: string,
   ipAddress?: string,
+  userAgent?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const contract = await getContractBySignToken(signToken);
-  if (!contract) return { ok: false, error: "العقد غير موجود أو الرابط غير صالح." };
-
-  if (contract.status === "signed") {
-    return { ok: true };
+  if (!contract) return { ok: false, error: "الرابط غير صالح أو منتهي الصلاحية." };
+  if (contract.status === "signed") return { ok: true };
+  if (!signatureImageBase64.startsWith("data:image/")) {
+    return { ok: false, error: "صورة التوقيع غير صالحة." };
   }
 
+  const signedAt = new Date().toISOString();
   const clientSignature: ContractSignature = {
-    signedBy: signerName || contract.secondParty.name,
-    signedAt: new Date().toISOString(),
+    signedBy: (signerName || contract.secondParty.name).slice(0, 120),
+    signedAt,
     signatureImageBase64,
     ipAddress,
-    verificationHash: await hashSignSecret(`${contract.id}:${signerName}:${Date.now()}`),
+    verificationHash: await sha256Hex(
+      `${contract.id}:${contract.contractNumber}:${signerName}:${signedAt}:${signatureImageBase64.length}`,
+    ),
   };
 
-  contract.clientSignature = clientSignature;
-  contract.status = "signed";
-  contract.signedAt = new Date().toISOString();
-  contract.updatedAt = new Date().toISOString();
+  const { error } = await supabaseAdmin
+    .from("contracts")
+    .update({
+      client_signature: clientSignature as never,
+      status: "signed",
+      signed_at: signedAt,
+      sign_token_hash: null,
+    })
+    .eq("id", contract.id)
+    .neq("status", "signed");
 
-  CONTRACTS_STORE.set(contract.id, contract);
+  if (error) return { ok: false, error: "تعذّر تسجيل التوقيع، يرجى المحاولة مرة أخرى." };
+
+  await logContractEvent({
+    organizationId: contract.organizationId,
+    contractId: contract.id,
+    eventType: "signed_by_client",
+    actorLabel: clientSignature.signedBy,
+    ipAddress: ipAddress ?? null,
+    userAgent: userAgent ?? null,
+    metadata: { verificationHash: clientSignature.verificationHash },
+  });
+
+  if (contract.caseId) {
+    try {
+      await supabaseAdmin.from("case_updates").insert({
+        organization_id: contract.organizationId,
+        case_id: contract.caseId,
+        update_type: "note",
+        title: `تم اعتماد وتوقيع العقد: ${contract.title}`,
+        description: `تم توقيع العقد رقم (${contract.contractNumber}) إلكترونياً بنجاح.`,
+        event_date: signedAt,
+        is_client_visible: true,
+      });
+    } catch {
+      // تجاهل أخطاء التحديث
+    }
+  }
+
   return { ok: true };
 }
 
