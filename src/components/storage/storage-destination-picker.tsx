@@ -30,7 +30,7 @@ export function StorageDestinationPicker({
     staleTime: 30000,
   });
 
-  const isOneDriveConnected = Boolean(data?.settings?.onedrive?.connected);
+  const isOneDriveConnected = Boolean(data?.settings?.onedrive?.isConnected);
   const onedriveAuthUrl = data?.onedriveAuthUrl;
 
   const handleSelectOneDrive = (target: "onedrive" | "both") => {
