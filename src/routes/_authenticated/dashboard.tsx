@@ -17,7 +17,6 @@ import {
   Gavel,
   Clock,
   FileSignature,
-  Calendar,
   Receipt,
   Sparkles,
   ShieldCheck,
