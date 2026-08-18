@@ -368,8 +368,9 @@ export async function createCaseFromContract(
       case_type: contract.contractType === "fee_agreement" ? "commercial" : "general",
       court_name: "المحكمة العامة / التجارية",
       status: "open",
-      claim_amount: contract.totalAmount || null,
-      description: `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
+      description: contract.totalAmount
+        ? `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber} — قيمة العقد: ${contract.totalAmount} ر.س`
+        : `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
       assigned_lawyer_id: lawyerId || null,
     })
     .select("id")
