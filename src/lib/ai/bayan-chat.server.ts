@@ -20,6 +20,14 @@ export type BayanCitationRecord = {
   reference?: string;
 };
 
+export type BayanStoredMessage = {
+  id: string;
+  sender: "user" | "assistant";
+  content: string;
+  citations: BayanCitationRecord[];
+  created_at: string;
+};
+
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
@@ -62,7 +70,7 @@ export async function requireBayanAccess(
 export async function loadConversation(
   organizationId: string,
   caseId: string | null,
-): Promise<{ conversationId: string | null; messages: Array<Record<string, unknown>> }> {
+): Promise<{ conversationId: string | null; messages: BayanStoredMessage[] }> {
   if (!caseId) return { conversationId: null, messages: [] };
 
   const db = await admin();
@@ -76,7 +84,15 @@ export async function loadConversation(
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: true });
 
-  return { conversationId, messages: messages ?? [] };
+  const rows = (messages ?? []).map((m) => ({
+    id: m.id,
+    sender: m.sender as "user" | "assistant",
+    content: m.content,
+    citations: (Array.isArray(m.citations) ? m.citations : []) as unknown as BayanCitationRecord[],
+    created_at: m.created_at,
+  }));
+
+  return { conversationId, messages: rows };
 }
 
 async function ensureConversation(
