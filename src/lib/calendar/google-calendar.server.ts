@@ -1,7 +1,7 @@
 /**
  * محرك المزامنة الثنائية مع تقويم جوجل (Google Calendar 2-Way Sync Engine)
  */
-import { integrationFetch } from "@/lib/integrations/http.server";
+import { calendarFetch } from "./http.server";
 import type { CalendarEventModel, CalendarSyncResult } from "./calendar.shared";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -51,7 +51,7 @@ export async function exchangeGoogleCodeForTokens(
   const config = getGoogleConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(GOOGLE_TOKEN_URL, {
+  const res = await calendarFetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -64,7 +64,7 @@ export async function exchangeGoogleCodeForTokens(
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
+  const data = (res.json()) as { access_token: string; refresh_token?: string; expires_in: number };
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -77,7 +77,7 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<st
   const config = getGoogleConfig();
   if (!config) return null;
 
-  const res = await integrationFetch(GOOGLE_TOKEN_URL, {
+  const res = await calendarFetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -89,7 +89,7 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<st
   });
 
   if (!res.ok) return null;
-  const data = (await res.json()) as { access_token: string };
+  const data = (res.json()) as { access_token: string };
   return data.access_token;
 }
 
@@ -100,18 +100,18 @@ export async function ensureMehlaGoogleCalendar(
   const targetName = "مِهلة | الجلسات والمهل القضائية";
 
   // 1. Check existing calendars
-  const listRes = await integrationFetch(`${GOOGLE_CALENDAR_API}/users/me/calendarList`, {
+  const listRes = await calendarFetch(`${GOOGLE_CALENDAR_API}/users/me/calendarList`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (listRes.ok) {
-    const listData = (await listRes.json()) as { items?: Array<{ id: string; summary: string }> };
+    const listData = (listRes.json()) as { items?: Array<{ id: string; summary: string }> };
     const found = listData.items?.find((c) => c.summary === targetName);
     if (found) return { calendarId: found.id, calendarName: found.summary };
   }
 
   // 2. Create if not found
-  const createRes = await integrationFetch(`${GOOGLE_CALENDAR_API}/calendars`, {
+  const createRes = await calendarFetch(`${GOOGLE_CALENDAR_API}/calendars`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -125,7 +125,7 @@ export async function ensureMehlaGoogleCalendar(
   });
 
   if (!createRes.ok) return null;
-  const created = (await createRes.json()) as { id: string; summary: string };
+  const created = (createRes.json()) as { id: string; summary: string };
   return { calendarId: created.id, calendarName: created.summary };
 }
 
@@ -164,7 +164,7 @@ export async function syncEventsToGoogleCalendar(
       };
 
       // Try insert or update
-      const updateRes = await integrationFetch(
+      const updateRes = await calendarFetch(
         `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${googleEventPayload.id}`,
         {
           method: "PUT",
@@ -180,7 +180,7 @@ export async function syncEventsToGoogleCalendar(
         updated++;
       } else {
         // If not found, insert
-        const insertRes = await integrationFetch(
+        const insertRes = await calendarFetch(
           `${GOOGLE_CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`,
           {
             method: "POST",

@@ -18,6 +18,7 @@ import {
   Globe,
   BarChart3,
   Sparkles,
+  Plug,
 } from "lucide-react";
 import type { AppRole } from "@/hooks/use-auth";
 
@@ -71,6 +72,12 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: ["owner", "admin", "lawyer"],
       },
       { to: "/print-log", label: "سجل الطباعة", Icon: Printer },
+      {
+        to: "/integrations",
+        label: "التكاملات والتواصل",
+        Icon: Plug,
+        roles: ["owner", "admin", "lawyer"],
+      },
       { to: "/subscription", label: "الاشتراك", Icon: CreditCard },
       { to: "/support", label: "الدعم الفني", Icon: LifeBuoy },
       { to: "/settings", label: "الإعدادات", Icon: Settings },

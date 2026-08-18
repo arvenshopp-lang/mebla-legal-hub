@@ -148,12 +148,12 @@ export async function saveContract(
   CONTRACTS_STORE.set(id, contract);
 
   // إذا تم توقيع العقد ننشئ له سجلاً في المستندات
-  if (contract.status === "signed") {
+  if (contract.status === "signed" && contract.caseId) {
     try {
       await supabaseAdmin.from("case_updates").insert({
         organization_id: organizationId,
         case_id: contract.caseId,
-        update_type: "general",
+        update_type: "note",
         title: `تم اعتماد وتوقيع العقد: ${contract.title}`,
         description: `تم توقيع العقد رقم (${contract.contractNumber}) إلكترونياً بنجاح.`,
         event_date: new Date().toISOString(),
@@ -203,7 +203,7 @@ export async function signContractByClient(
   const contract = await getContractBySignToken(signToken);
   if (!contract) return { ok: false, error: "العقد غير موجود أو الرابط غير صالح." };
 
-  if (contract.status === "signed") {
+  if (contract.status === "signed" && contract.caseId) {
     return { ok: true };
   }
 
@@ -348,7 +348,7 @@ export async function createCaseFromContract(
         phone: contract.secondParty.phone,
         email: contract.secondParty.email || null,
         city: contract.secondParty.city || "الرياض",
-        client_type: contract.secondParty.identifierType === "cr" ? "corporate" : "individual",
+        client_type: contract.secondParty.identifierType === "cr" ? "company" : "individual",
       })
       .select("id")
       .single();
@@ -364,11 +364,10 @@ export async function createCaseFromContract(
     .insert({
       organization_id: organizationId,
       client_id: clientId,
-      title: contract.title,
+      case_title: contract.title,
       case_type: contract.contractType === "fee_agreement" ? "commercial" : "general",
-      court: "المحكمة العامة / التجارية",
-      status: "active",
-      claim_amount: contract.totalAmount || null,
+      court_name: "المحكمة العامة / التجارية",
+      status: "open",
       description: `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
       assigned_lawyer_id: lawyerId || null,
     })
@@ -387,6 +386,7 @@ export async function createInvoiceFromContract(organizationId: string, contract
   const contract = CONTRACTS_STORE.get(contractId);
   if (!contract) throw new Error("العقد غير موجود.");
 
+  if (!contract.clientId) throw new Error("لا يمكن إصدار فاتورة قبل ربط العقد بموكل.");
   const amount = contract.advanceAmount || contract.totalAmount || 10000;
   const vatAmount = Math.round(amount * 0.15 * 100) / 100;
   const totalWithVat = amount + vatAmount;
@@ -399,8 +399,8 @@ export async function createInvoiceFromContract(organizationId: string, contract
       organization_id: organizationId,
       client_id: contract.clientId,
       invoice_number: invoiceNumber,
-      total_amount: totalWithVat,
-      vat_amount: vatAmount,
+      total: totalWithVat,
+      tax_total: vatAmount,
       status: "issued",
       due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
     })
