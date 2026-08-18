@@ -17,7 +17,6 @@ export type SurfaceId =
   | "docs"
   | "billing"
   | "mail"
-  | "calendar"
   | "files"
   | "ai"
   | "notifications"
@@ -146,16 +145,6 @@ export const SURFACES: SurfaceDef[] = [
     description: "بريد المكتب والقوالب.",
     entry: "/mail",
     allow: ["/mail"],
-    requiresLawyerAuth: true,
-    planned: true,
-  },
-  {
-    id: "calendar",
-    subdomain: "calendar",
-    label: "التقويم",
-    description: "الجلسات والمواعيد.",
-    entry: "/calendar",
-    allow: ["/calendar"],
     requiresLawyerAuth: true,
     planned: true,
   },

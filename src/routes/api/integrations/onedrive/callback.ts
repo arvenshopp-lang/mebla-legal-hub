@@ -7,6 +7,7 @@ import { exchangeOneDriveCode } from "@/lib/storage/onedrive.server";
 import {
   getHybridStorageSettings,
   saveHybridStorageSettings,
+  setCloudAccessToken,
 } from "@/lib/storage/hybrid-storage.server";
 
 export const Route = createFileRoute("/api/integrations/onedrive/callback")({
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/api/integrations/onedrive/callback")({
           }
 
           const currentSettings = await getHybridStorageSettings(orgId, userId);
+          setCloudAccessToken(orgId, userId, "onedrive", tokens.accessToken);
           await saveHybridStorageSettings(orgId, userId, {
             onedrive: {
               ...currentSettings.onedrive,

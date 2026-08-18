@@ -89,7 +89,6 @@ import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContractsRouteImport } from './routes/_authenticated/contracts'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
-import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -124,10 +123,7 @@ import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
 import { Route as ApiIntegrationsOnedriveCallbackRouteImport } from './routes/api/integrations/onedrive/callback'
-import { Route as ApiIntegrationsMicrosoftCallbackRouteImport } from './routes/api/integrations/microsoft/callback'
-import { Route as ApiIntegrationsGoogleCallbackRouteImport } from './routes/api/integrations/google/callback'
 import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
-import { Route as ApiPublicCalendarFeedTokenRouteImport } from './routes/api/public/calendar/feed.$token'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -530,11 +526,6 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
   id: '/bayan',
   path: '/bayan',
@@ -719,28 +710,10 @@ const ApiIntegrationsOnedriveCallbackRoute =
     path: '/api/integrations/onedrive/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiIntegrationsMicrosoftCallbackRoute =
-  ApiIntegrationsMicrosoftCallbackRouteImport.update({
-    id: '/api/integrations/microsoft/callback',
-    path: '/api/integrations/microsoft/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiIntegrationsGoogleCallbackRoute =
-  ApiIntegrationsGoogleCallbackRouteImport.update({
-    id: '/api/integrations/google/callback',
-    path: '/api/integrations/google/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicOfficeMediaSplatRoute =
   ApiPublicOfficeMediaSplatRouteImport.update({
     id: '/api/public/office/media/$',
     path: '/api/public/office/media/$',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicCalendarFeedTokenRoute =
-  ApiPublicCalendarFeedTokenRouteImport.update({
-    id: '/api/public/calendar/feed/$token',
-    path: '/api/public/calendar/feed/$token',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -768,7 +741,6 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
-  '/calendar': typeof AuthenticatedCalendarRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -842,8 +814,6 @@ export interface FileRoutesByFullPath {
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
-  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -861,7 +831,6 @@ export interface FileRoutesByFullPath {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesByTo {
@@ -887,7 +856,6 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/bayan': typeof AuthenticatedBayanRoute
-  '/calendar': typeof AuthenticatedCalendarRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/contracts': typeof AuthenticatedContractsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -961,8 +929,6 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
-  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -980,7 +946,6 @@ export interface FileRoutesByTo {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRoutesById {
@@ -1009,7 +974,6 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/bayan': typeof AuthenticatedBayanRoute
-  '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/contracts': typeof AuthenticatedContractsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -1083,8 +1047,6 @@ export interface FileRoutesById {
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/google/callback': typeof ApiIntegrationsGoogleCallbackRoute
-  '/api/integrations/microsoft/callback': typeof ApiIntegrationsMicrosoftCallbackRoute
   '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -1102,7 +1064,6 @@ export interface FileRoutesById {
   '/api/public/wh/$slug': typeof ApiPublicWhSlugRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/api/public/calendar/feed/$token': typeof ApiPublicCalendarFeedTokenRoute
   '/api/public/office/media/$': typeof ApiPublicOfficeMediaSplatRoute
 }
 export interface FileRouteTypes {
@@ -1131,7 +1092,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
-    | '/calendar'
     | '/clients'
     | '/contracts'
     | '/dashboard'
@@ -1205,8 +1165,6 @@ export interface FileRouteTypes {
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/google/callback'
-    | '/api/integrations/microsoft/callback'
     | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -1224,7 +1182,6 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1250,7 +1207,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/bayan'
-    | '/calendar'
     | '/clients'
     | '/contracts'
     | '/dashboard'
@@ -1324,8 +1280,6 @@ export interface FileRouteTypes {
     | '/cases'
     | '/mehla-admin/billing'
     | '/mehla-admin/sales'
-    | '/api/integrations/google/callback'
-    | '/api/integrations/microsoft/callback'
     | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -1343,7 +1297,6 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   id:
     | '__root__'
@@ -1371,7 +1324,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/bayan'
-    | '/_authenticated/calendar'
     | '/_authenticated/clients'
     | '/_authenticated/contracts'
     | '/_authenticated/dashboard'
@@ -1445,8 +1397,6 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/google/callback'
-    | '/api/integrations/microsoft/callback'
     | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
@@ -1464,7 +1414,6 @@ export interface FileRouteTypes {
     | '/api/public/wh/$slug'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/api/public/calendar/feed/$token'
     | '/api/public/office/media/$'
   fileRoutesById: FileRoutesById
 }
@@ -1508,8 +1457,6 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
-  ApiIntegrationsGoogleCallbackRoute: typeof ApiIntegrationsGoogleCallbackRoute
-  ApiIntegrationsMicrosoftCallbackRoute: typeof ApiIntegrationsMicrosoftCallbackRoute
   ApiIntegrationsOnedriveCallbackRoute: typeof ApiIntegrationsOnedriveCallbackRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
@@ -1527,7 +1474,6 @@ export interface RootRouteChildren {
   ApiPublicWhSlugRoute: typeof ApiPublicWhSlugRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
-  ApiPublicCalendarFeedTokenRoute: typeof ApiPublicCalendarFeedTokenRoute
   ApiPublicOfficeMediaSplatRoute: typeof ApiPublicOfficeMediaSplatRoute
 }
 
@@ -2093,13 +2039,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/calendar': {
-      id: '/_authenticated/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/bayan': {
       id: '/_authenticated/bayan'
       path: '/bayan'
@@ -2338,32 +2277,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIntegrationsOnedriveCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/integrations/microsoft/callback': {
-      id: '/api/integrations/microsoft/callback'
-      path: '/api/integrations/microsoft/callback'
-      fullPath: '/api/integrations/microsoft/callback'
-      preLoaderRoute: typeof ApiIntegrationsMicrosoftCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/integrations/google/callback': {
-      id: '/api/integrations/google/callback'
-      path: '/api/integrations/google/callback'
-      fullPath: '/api/integrations/google/callback'
-      preLoaderRoute: typeof ApiIntegrationsGoogleCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/office/media/$': {
       id: '/api/public/office/media/$'
       path: '/api/public/office/media/$'
       fullPath: '/api/public/office/media/$'
       preLoaderRoute: typeof ApiPublicOfficeMediaSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/calendar/feed/$token': {
-      id: '/api/public/calendar/feed/$token'
-      path: '/api/public/calendar/feed/$token'
-      fullPath: '/api/public/calendar/feed/$token'
-      preLoaderRoute: typeof ApiPublicCalendarFeedTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -2386,7 +2304,6 @@ const AuthenticatedTeamPerformanceRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBayanRoute: typeof AuthenticatedBayanRoute
-  AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedContractsRoute: typeof AuthenticatedContractsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -2409,7 +2326,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBayanRoute: AuthenticatedBayanRoute,
-  AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedContractsRoute: AuthenticatedContractsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -2570,8 +2486,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
-  ApiIntegrationsGoogleCallbackRoute: ApiIntegrationsGoogleCallbackRoute,
-  ApiIntegrationsMicrosoftCallbackRoute: ApiIntegrationsMicrosoftCallbackRoute,
   ApiIntegrationsOnedriveCallbackRoute: ApiIntegrationsOnedriveCallbackRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
@@ -2592,7 +2506,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhSlugRoute: ApiPublicWhSlugRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
-  ApiPublicCalendarFeedTokenRoute: ApiPublicCalendarFeedTokenRoute,
   ApiPublicOfficeMediaSplatRoute: ApiPublicOfficeMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
