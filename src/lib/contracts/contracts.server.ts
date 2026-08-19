@@ -7,6 +7,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { renderBillingPdf, type PdfDocumentModel, type PdfBrand } from "@/lib/billing/pdf/engine.server";
 import { fmtDate } from "@/lib/enums";
+import {
+  sealContractVersion,
+  upsertSecondPartySigner,
+  markSignerViewed,
+  recordSignerSignature,
+} from "./contract-lifecycle.server";
 import type {
   ContractModel,
   ContractType,
@@ -482,11 +488,15 @@ export async function issueSignLink(
 
   const token = generateSignToken();
   const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+  const tokenHash = await signTokenHash(token);
+
+  // اعتماد النسخة النهائية قبل الإرسال: بصمة المحتوى ورقم التحقق العام.
+  const sealed = await sealContractVersion(contract, actor?.userId ?? null);
 
   const { error } = await client
     .from("contracts")
     .update({
-      sign_token_hash: await signTokenHash(token),
+      sign_token_hash: tokenHash,
       expires_at: expiresAt,
       status: contract.status === "draft" ? "pending_signature" : contract.status,
     })
@@ -495,13 +505,25 @@ export async function issueSignLink(
 
   if (error) throw new ContractAccessError("تعذّر إصدار رابط التوقيع.");
 
+  await upsertSecondPartySigner({
+    contract,
+    versionId: sealed.versionId,
+    signTokenHash: tokenHash,
+    expiresAt,
+  });
+
   await logContractEvent({
     organizationId,
     contractId,
     eventType: "sent_for_signature",
     actorUserId: actor?.userId ?? null,
     actorLabel: actor?.label ?? null,
-    metadata: { expiresAt },
+    metadata: {
+      expiresAt,
+      versionNumber: sealed.versionNumber,
+      contentHash: sealed.contentHash,
+      verificationId: sealed.verificationId,
+    },
   });
 
   return { signToken: token, signUrl: `/sign/${token}`, expiresAt };
@@ -524,6 +546,14 @@ export async function getContractBySignToken(signToken: string): Promise<Contrac
   if (contract.status === "cancelled") return null;
   if (contract.status !== "signed" && contract.expiresAt && new Date(contract.expiresAt).getTime() < Date.now()) {
     return null;
+  }
+  // تسجيل اطلاع الموقّع كدليل في سجل الموقّعين (مرة واحدة فقط).
+  if (contract.status !== "signed") {
+    try {
+      await markSignerViewed(contract.id, await signTokenHash(token));
+    } catch {
+      // الاطلاع دليل مساند ولا يجوز أن يمنع فتح العقد
+    }
   }
   return contract;
 }
@@ -568,6 +598,20 @@ export async function signContractByClient(
     .neq("status", "signed");
 
   if (error) return { ok: false, error: "تعذّر تسجيل التوقيع، يرجى المحاولة مرة أخرى." };
+
+  try {
+    await recordSignerSignature({
+      contractId: contract.id,
+      signTokenHash: await signTokenHash((signToken || "").trim()),
+      fullName: clientSignature.signedBy,
+      signatureHash: clientSignature.verificationHash ?? "",
+      signedAt,
+      ipAddress: ipAddress ?? null,
+      userAgent: userAgent ?? null,
+    });
+  } catch {
+    // التوقيع مسجَّل في العقد وسجل التدقيق؛ تعذّر تحديث سجل الموقّعين لا يُبطله
+  }
 
   const downloadTicket = await issueContractDownloadTicket(contract);
 
