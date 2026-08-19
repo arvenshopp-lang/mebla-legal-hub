@@ -606,7 +606,6 @@ export async function signContractByClient(
       client_signature: clientSignature as never,
       status: "signed",
       signed_at: signedAt,
-      sign_token_hash: null,
     })
     .eq("id", contract.id)
     .neq("status", "signed");
