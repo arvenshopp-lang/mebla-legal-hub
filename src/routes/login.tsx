@@ -238,7 +238,7 @@ function LoginPage() {
         {inactiveNotice && (
           <div
             role="status"
-            className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3 text-[12.5px] leading-6 text-warning-foreground"
+            className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3 text-[12.5px] leading-6 text-warning"
           >
             {INACTIVITY_MESSAGE}
           </div>
