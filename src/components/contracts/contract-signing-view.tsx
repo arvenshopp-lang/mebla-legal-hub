@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Money } from "@/components/ui/money";
 import { SignaturePad } from "@/components/contracts/signature-pad";
 import {
   getPublicContractForSigningFn,
