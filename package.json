@@ -42,7 +42,8 @@
     "notif-email:test": "bun scripts/notification-emails.test.ts",
     "mail:transport:test": "bun scripts/mehla-mailer.test.ts",
     "app-email:test": "bun scripts/app-email.test.ts",
-    "http-mail:test": "bun run scripts/http-mail.test.ts"
+    "http-mail:test": "bun run scripts/http-mail.test.ts",
+    "contracts:e2e": "bun scripts/e2e/contract_download.e2e.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",

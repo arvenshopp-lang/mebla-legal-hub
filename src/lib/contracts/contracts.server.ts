@@ -6,6 +6,7 @@ import fontkit from "@pdf-lib/fontkit";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { renderBillingPdf, type PdfDocumentModel, type PdfBrand } from "@/lib/billing/pdf/engine.server";
+import { buildQrMatrix, buildVerificationUrl } from "@/lib/pdf/verification-qr.server";
 import { fmtDate } from "@/lib/enums";
 import {
   sealContractVersion,
@@ -773,9 +774,28 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
       { label: "توقيع الطرف الأول (المكتب)", caption: contract.lawyerSignature?.signedBy || "المحامي المعتمد" },
       { label: "توقيع الطرف الثاني (الموكل)", caption: contract.clientSignature?.signedBy || contract.secondParty.name },
     ],
+    // رمز التحقق يُطبع فقط بعد اعتماد النسخة النهائية (عند صدور رقم التحقق).
+    verificationQr: buildContractVerificationQr(contract.verificationId ?? null),
   };
 
   return await renderBillingPdf(docModel, brand);
+}
+
+/** بطاقة QR للتحقق العام من العقد — تُهمل بصمت إذا لم يصدر رقم تحقق بعد. */
+function buildContractVerificationQr(
+  verificationId: string | null,
+): PdfDocumentModel["verificationQr"] {
+  if (!verificationId) return null;
+  const url = buildVerificationUrl(verificationId);
+  const matrix = buildQrMatrix(url);
+  if (!matrix) return null;
+  return {
+    size: matrix.size,
+    modules: matrix.modules,
+    verificationId,
+    url,
+    caption: "امسح الرمز للتحقق من رقم العقد وحالته ومطابقته للنسخة النهائية عبر منصة مِهلة.",
+  };
 }
 
 /** تحويل العقد إلى قضية جديدة */

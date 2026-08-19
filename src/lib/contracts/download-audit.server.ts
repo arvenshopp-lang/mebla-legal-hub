@@ -1,0 +1,77 @@
+/**
+ * سجل تدقيق تنزيل نسخ العقود — خادمي فقط.
+ *
+ * كل تنزيل (من رابط التوقيع العام أو من مساحة عمل المكتب) يُكتب كحدث
+ * `exported_pdf` في جدول `contract_events` المحصّن ضد التعديل والحذف.
+ * السجل جدول مستقل: حدث التنزيل لا يلمس صف العقد ولا نسخته المختومة،
+ * والكتابة لا تُفشل عملية التنزيل إطلاقاً.
+ */
+import { resolveRequestOrigin } from "@/lib/print/print-audit.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { logContractEvent } from "./contracts.server";
+import type { ContractModel } from "./contracts.shared";
+
+export type ContractDownloadChannel = "public_sign_link" | "office_workspace";
+
+export async function recordContractDownload(input: {
+  contract: ContractModel;
+  channel: ContractDownloadChannel;
+  /** حجم الملف الناتج بالبايت — دليل مساند على اكتمال الإصدار. */
+  byteLength: number;
+  actorUserId?: string | null;
+  actorLabel?: string | null;
+}): Promise<void> {
+  const { contract, channel } = input;
+  // عنوان الشبكة والمتصفح يُقرآن من الطلب على الخادم ولا يُقبلان من المتصفح.
+  const origin = resolveRequestOrigin();
+  const sealed = await resolveSealedVersion(contract);
+  await logContractEvent({
+    organizationId: contract.organizationId,
+    contractId: contract.id,
+    eventType: "exported_pdf",
+    actorUserId: input.actorUserId ?? null,
+    actorLabel:
+      input.actorLabel ??
+      (channel === "public_sign_link"
+        ? contract.clientSignature?.signedBy ?? contract.secondParty.name
+        : "مستخدم من المكتب"),
+    ipAddress: origin.ip || null,
+    userAgent: origin.userAgent || null,
+    metadata: {
+      channel,
+      contractNumber: contract.contractNumber,
+      verificationId: contract.verificationId ?? null,
+      versionNumber: sealed.versionNumber,
+      contentHash: sealed.contentHash,
+      signatureHash: contract.clientSignature?.verificationHash ?? null,
+      contractStatus: contract.status,
+      fileBytes: input.byteLength,
+      country: origin.country,
+      downloadedAt: new Date().toISOString(),
+    },
+  });
+}
+
+/** بصمة النسخة النهائية المختومة ورقمها (تُقرأ من سجل النسخ، وتُهمل عند تعذّرها). */
+async function resolveSealedVersion(
+  contract: ContractModel,
+): Promise<{ versionNumber: number | null; contentHash: string | null }> {
+  if (contract.contentHash) {
+    return { versionNumber: contract.versionNumber ?? null, contentHash: contract.contentHash };
+  }
+  try {
+    const { data } = await supabaseAdmin
+      .from("contract_versions")
+      .select("version_number, content_hash")
+      .eq("contract_id", contract.id)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return {
+      versionNumber: data?.version_number ?? null,
+      contentHash: data?.content_hash ?? null,
+    };
+  } catch {
+    return { versionNumber: null, contentHash: null };
+  }
+}

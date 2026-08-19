@@ -20,6 +20,7 @@ import {
   FileCheck,
   AlertCircle,
   FileSignature,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SignaturePad } from "@/components/contracts/signature-pad";
 import { ContractSignModal } from "@/components/contracts/contract-sign-modal";
+import { ContractDownloadLogDialog } from "@/components/contracts/contract-download-log";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import { Money } from "@/components/ui/money";
 import { Riyal } from "@/components/ui/riyal";
@@ -87,6 +89,10 @@ function ContractsPage() {
   const [issuingLinkId, setIssuingLinkId] = React.useState<string | null>(null);
   const [signingSession, setSigningSession] = React.useState<{
     token: string;
+    contractNumber: string;
+  } | null>(null);
+  const [downloadLogContract, setDownloadLogContract] = React.useState<{
+    id: string;
     contractNumber: string;
   } | null>(null);
 
@@ -694,6 +700,22 @@ function ContractsPage() {
                               <Download className="w-3.5 h-3.5" />
                             </Button>
 
+                            {/* Download audit log (read-only) */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="سجل تنزيلات العقد"
+                              onClick={() =>
+                                setDownloadLogContract({
+                                  id: contract.id,
+                                  contractNumber: contract.contractNumber,
+                                })
+                              }
+                              className="h-8 px-2 text-slate-600 hover:text-primary"
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </Button>
+
                             {/* Quick Convert to Case */}
                             <Button
                               variant="ghost"
@@ -725,6 +747,14 @@ function ContractsPage() {
           onSigned={() => {
             void queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
           }}
+        />
+      )}
+
+      {downloadLogContract && (
+        <ContractDownloadLogDialog
+          contractId={downloadLogContract.id}
+          contractNumber={downloadLogContract.contractNumber}
+          onClose={() => setDownloadLogContract(null)}
         />
       )}
     </DashboardShell>
