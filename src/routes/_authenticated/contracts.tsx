@@ -398,7 +398,7 @@ function ContractsPage() {
                         {clauses.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => handleRemoveClause(clause.id)}
+                            onClick={() => handleDeleteClause(clause.id)}
                             className="text-red-500 hover:text-red-700 p-1"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
