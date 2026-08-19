@@ -186,10 +186,12 @@ export function PublicBayanCopilot({
       toast.error("يرجى إدخال الاسم ورقم الجوال للتواصل");
       return;
     }
+    if (leadSending) return;
 
+    setLeadSending(true);
     try {
-      // إرسال البيانات لنظام خدمة العملاء / Leads
-      await fetch("/api/public/leads", {
+      // إرسال البيانات لنظام خدمة العملاء / Leads — لا نعلن النجاح قبل تأكيد الخادم.
+      const response = await fetch("/api/public/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -199,10 +201,20 @@ export function PublicBayanCopilot({
           message: `استفسار عبر المحامية بيان: ${leadForm.inquiry || "طلب تجربة المنصة والتواصل مع المبيعات"}`,
           source: "bayan_public_copilot",
         }),
-      }).catch(() => null);
+      });
+
+      const outcome = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+      } | null;
+
+      if (!response.ok || !outcome?.ok) {
+        toast.error(outcome?.message || "تعذّر إرسال بياناتك حالياً، يرجى المحاولة مرة أخرى.");
+        return;
+      }
 
       setLeadSubmitted(true);
-      toast.success("تم إرسال بياناتك لخدمة العملاء بنجاح!");
+      toast.success(outcome.message || "تم إرسال بياناتك لفريق المبيعات بنجاح!");
       setMessages((prev) => [
         ...prev,
         {
@@ -215,7 +227,9 @@ export function PublicBayanCopilot({
         },
       ]);
     } catch {
-      toast.error("حدث خطأ، يرجى المحاولة لاحقاً");
+      toast.error("تعذّر الاتصال بالخدمة، يرجى المحاولة لاحقاً.");
+    } finally {
+      setLeadSending(false);
     }
   }
 
