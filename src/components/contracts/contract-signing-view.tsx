@@ -254,14 +254,41 @@ export function ContractSigningView({
               المستند موقّع إلكترونياً عبر منصة مِهلة ولا يمثل توثيقاً رسمياً لدى جهة حكومية.
             </p>
           </div>
-          <Button
-            onClick={handleDownloadPdf}
-            disabled={isDownloading}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-          >
-            <Download className="w-4 h-4" />
-            {isDownloading ? "جارٍ تجهيز الملف..." : "تحميل نسخة العقد الموقعة (PDF)"}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              aria-busy={isDownloading}
+              className="gap-2 min-h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
+              <Download className="w-4 h-4" />
+              {isDownloading
+                ? "جارٍ تجهيز الملف..."
+                : downloadState.phase === "error"
+                  ? "إعادة المحاولة"
+                  : "تحميل نسخة العقد الموقعة (PDF)"}
+            </Button>
+
+            <div role="status" aria-live="polite" className="text-xs max-w-md mx-auto">
+              {downloadState.phase === "working" ? (
+                <p className="text-slate-600 dark:text-slate-300">
+                  جارٍ تجهيز نسخة العقد النهائية...
+                  {downloadState.attempt > 1 ? ` (محاولة ${downloadState.attempt} من 3)` : ""}
+                </p>
+              ) : downloadState.phase === "done" ? (
+                <p className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                  تم تنزيل نسخة العقد بنجاح.
+                </p>
+              ) : downloadState.phase === "error" ? (
+                <p className="text-rose-700 dark:text-rose-300">
+                  {downloadState.message}
+                  <span className="block text-[10px] text-slate-400 mt-1 font-mono">
+                    معرّف التتبع: {downloadState.traceId}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          </div>
         </Card>
       ) : null}
 
