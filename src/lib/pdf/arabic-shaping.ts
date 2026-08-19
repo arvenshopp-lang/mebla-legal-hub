@@ -122,10 +122,12 @@ const MIRRORED: Record<number, number> = {
 };
 
 /**
- * pdf-lib يرسم المحارف بالترتيب المُعطى من اليسار إلى اليمين دون تطبيق أي
- * ترتيب ثنائي الاتجاه. لذلك نحوّل الترتيب المنطقي إلى ترتيب بصري بأنفسنا:
- * نعكس السطر بالكامل (اتجاه أساسي RTL) ثم نُعيد كل مقطع لاتيني أو رقمي إلى
- * ترتيبه المنطقي (18/08/2026 وليس 6202/80/81)، ونقلب الأقواس في السياق العربي.
+ * fontkit (داخل pdf-lib) يعكس بنفسه ترتيب محارف المقطع العربي عند التخطيط، لكنه
+ * لا يطبّق خوارزمية bidi كاملة: فمقاطع الأرقام واللاتينية تُعكس أيضاً فتظهر
+ * «6202/80/91» بدل «19/08/2026». لذلك نُسلّمه الترتيب المنطقي كما هو — أي عكس
+ * إضافي من طرفنا يقلب السطر بالكامل — مع عكس داخلي مسبق لكل مقطع لاتيني/رقمي
+ * ليُلغيه عكسه العام فيعود المقطع لترتيبه الصحيح، ونقلب الأقواس لأنها تُرسم بعد
+ * العكس في السياق العربي.
  */
 function prepareForRtlLayout(shaped: number[]): number[] {
   const isLtrRun = shaped.map((code) => isLtr(code));
@@ -144,44 +146,55 @@ function prepareForRtlLayout(shaped: number[]): number[] {
   }
 
   const visual: number[] = [];
-  let index = shaped.length - 1;
-  while (index >= 0) {
+  let index = 0;
+  while (index < shaped.length) {
     if (!isLtrRun[index]) {
       const code = shaped[index]!;
       visual.push(MIRRORED[code] ?? code);
-      index -= 1;
+      index += 1;
       continue;
     }
-    let start = index;
-    while (start >= 0 && isLtrRun[start]) start -= 1;
-    for (let k = start + 1; k <= index; k += 1) visual.push(shaped[k]!);
-    index = start;
+    let end = index;
+    while (end < shaped.length && isLtrRun[end]) end += 1;
+    for (let k = end - 1; k >= index; k -= 1) visual.push(shaped[k]!);
+    index = end;
   }
   return visual;
 }
 
-/**
- * يحوّل نصاً عربياً إلى أشكال العرض المتصلة مع الحفاظ على الترتيب المنطقي
- * للقراءة، ثم يهيّئ مقاطع الأرقام واللاتينية لعكس fontkit. النتيجة سطر عربي
- * متصل وطبيعي القراءة داخل PDF مع أرقام وتواريخ بترتيبها الصحيح.
- */
-export function shapeArabic(input: string): string {
-  const codes = Array.from(input)
-    .map((ch) => ch.codePointAt(0)!)
-    .filter((code) => !isMark(code));
+function shapeToCodes(input: string): number[] {
+  const codes = Array.from(input).map((ch) => ch.codePointAt(0)!);
+
+  /** الجار السابق/التالي مع تجاوز علامات التشكيل (شفافة للوصل). */
+  const neighbour = (from: number, step: -1 | 1): number | undefined => {
+    let i = from + step;
+    while (i >= 0 && i < codes.length && isMark(codes[i]!)) i += step;
+    return i >= 0 && i < codes.length ? codes[i] : undefined;
+  };
 
   const shaped: number[] = [];
   for (let i = 0; i < codes.length; i += 1) {
     const code = codes[i]!;
 
+    // التشكيل يُرسم فوق الحرف السابق ولا يشارك في الوصل، فيمرّ كما هو.
+    if (isMark(code)) {
+      shaped.push(code);
+      continue;
+    }
+
     if (code === 0x0644) {
-      const next = codes[i + 1];
+      const next = neighbour(i, 1);
       const ligature = next !== undefined ? LAM_ALEF[next] : undefined;
       if (ligature) {
-        const prev = codes[i - 1];
-        const joinBefore = prev !== undefined && connectsForward(prev);
+        const prev = neighbour(i, -1);
+        const joinBefore = prev !== undefined && isArabicLetter(prev) && connectsForward(prev);
         shaped.push(joinBefore ? ligature[1] : ligature[0]);
-        i += 1;
+        let j = i + 1;
+        while (j < codes.length && isMark(codes[j]!)) {
+          shaped.push(codes[j]!);
+          j += 1;
+        }
+        i = j; // نتخطى الألف التي دُمجت في الليغاتورة
         continue;
       }
     }
@@ -196,8 +209,8 @@ export function shapeArabic(input: string): string {
     }
 
     const forms = FORMS[code]!;
-    const prev = codes[i - 1];
-    const next = codes[i + 1];
+    const prev = neighbour(i, -1);
+    const next = neighbour(i, 1);
     const joinBefore = prev !== undefined && isArabicLetter(prev) && connectsForward(prev);
     const joinAfter =
       next !== undefined && isArabicLetter(next) && connectsBackward(next) && connectsForward(code);
@@ -209,7 +222,25 @@ export function shapeArabic(input: string): string {
     shaped.push(form);
   }
 
-  return prepareForRtlLayout(shaped)
+  return prepareForRtlLayout(shaped);
+}
+
+/**
+ * سطر كامل مختلط (عربي + أرقام + لاتيني) يُرسم برسمة واحدة عبر `drawText`.
+ */
+export function shapeArabicLine(input: string): string {
+  return shapeToCodes(input)
     .map((code) => String.fromCodePoint(code))
     .join("");
 }
+
+/**
+ * مقطع عربي خالص يُرسم وحده بعد أن يحدّد المحرك موضعه بنفسه (الفواتير/العقود).
+ * المعالجة نفسها؛ فالمقطع لا يحتوي أرقاماً أو لاتينية فلا يتأثر بتهيئتها.
+ */
+export function shapeArabicRun(input: string): string {
+  return shapeArabicLine(input);
+}
+
+/** @deprecated استخدم shapeArabicLine — يبقى للتوافق مع الاستدعاءات القائمة. */
+export const shapeArabic = shapeArabicLine;
