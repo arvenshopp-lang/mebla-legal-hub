@@ -10,9 +10,11 @@ import { inputCls as fieldInputCls } from "@/lib/list-utils";
 import { INACTIVITY_MESSAGE } from "@/lib/session-activity";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { redirect: string; reason?: "inactive" } => ({
     redirect: typeof s.redirect === "string" ? s.redirect : "/dashboard",
-    reason: s.reason === "inactive" ? ("inactive" as const) : undefined,
+    ...(s.reason === "inactive" ? { reason: "inactive" as const } : {}),
   }),
   component: LoginPage,
   head: () => ({
