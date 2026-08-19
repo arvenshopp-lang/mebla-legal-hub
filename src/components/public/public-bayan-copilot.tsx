@@ -387,10 +387,11 @@ export function PublicBayanCopilot({
                       </div>
                       <button
                         type="submit"
-                        className="w-full mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-[#123C32] hover:bg-[#184E41] py-2 text-xs font-bold text-white shadow-xs transition-colors"
+                        disabled={leadSending}
+                        className="w-full mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-[#123C32] hover:bg-[#184E41] py-2 text-xs font-bold text-white shadow-xs transition-colors disabled:opacity-60"
                       >
                         <Send className="h-3.5 w-3.5" />
-                        إرسال الطلب لفريق المبيعات
+                        {leadSending ? "جارٍ الإرسال…" : "إرسال الطلب لفريق المبيعات"}
                       </button>
                     </form>
                   )}
