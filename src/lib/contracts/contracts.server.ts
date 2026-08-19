@@ -196,6 +196,8 @@ type ContractRow = {
   updated_at: string;
 };
 
+type ContractRowExtras = { verification_id?: string | null };
+
 const FALLBACK_SECOND_PARTY: ContractParty = {
   role: "second_party",
   name: "اسم الموكل / المنشأة",
@@ -231,6 +233,7 @@ function mapRow(row: ContractRow): ContractModel {
     clientSignature: (row.client_signature as ContractSignature | null) ?? null,
     signToken: null,
     signUrl: null,
+    verificationId: (row as ContractRow & ContractRowExtras).verification_id ?? null,
     expiresAt: row.expires_at,
     signedAt: row.signed_at,
     createdAt: row.created_at,
@@ -239,7 +242,7 @@ function mapRow(row: ContractRow): ContractModel {
 }
 
 const CONTRACT_COLUMNS =
-  "id, organization_id, client_id, case_id, contract_number, title, contract_type, status, first_party, second_party, clauses, total_amount, advance_amount, final_amount, lawyer_signature, client_signature, expires_at, signed_at, created_at, updated_at";
+  "id, organization_id, client_id, case_id, contract_number, title, contract_type, status, first_party, second_party, clauses, total_amount, advance_amount, final_amount, lawyer_signature, client_signature, verification_id, expires_at, signed_at, created_at, updated_at";
 
 /** كتابة حدث في سجل تدقيق العقود (غير قابل للتعديل أو الحذف) */
 export async function logContractEvent(entry: {
@@ -746,6 +749,9 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
             contract.clientSignature ? `— تم التوقيع إلكترونياً بتاريخ ${fmtDate(contract.clientSignature.signedAt)}` : ""
           }`,
           `الرقم المرجعي للتحقق: ${contract.contractNumber}`,
+          contract.verificationId
+            ? `رقم التحقق العام: ${contract.verificationId} — التحقق عبر: https://mehlalex.com/verify?id=${contract.verificationId}`
+            : "رقم التحقق العام يُصدر عند اعتماد النسخة النهائية وإرسال العقد للتوقيع.",
           contract.clientSignature?.verificationHash
             ? `بصمة المستند SHA-256: ${contract.clientSignature.verificationHash.slice(0, 32)}`
             : "بصمة المستند تُصدر عند اكتمال التوقيع.",
