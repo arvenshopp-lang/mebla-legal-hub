@@ -51,7 +51,7 @@ export interface BillingEventEmailProps {
 
 const money = (value: number, currency: string) =>
   `${new Intl.NumberFormat("ar-SA-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${
-    currency === "SAR" ? "ر.س" : currency
+    currency === "SAR" ? "ريال سعودي" : currency
   }`;
 
 const hijriSafeDate = (value: string | null) =>
