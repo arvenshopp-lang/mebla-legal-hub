@@ -697,6 +697,17 @@ function ContractsPage() {
           </div>
         </Card>
       </div>
+
+      {signingSession && (
+        <ContractSignModal
+          token={signingSession.token}
+          contractNumber={signingSession.contractNumber}
+          onClose={() => setSigningSession(null)}
+          onSigned={() => {
+            void queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }
