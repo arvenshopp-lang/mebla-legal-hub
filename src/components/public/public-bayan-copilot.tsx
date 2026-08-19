@@ -55,6 +55,7 @@ export function PublicBayanCopilot({
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadSending, setLeadSending] = useState(false);
   const [leadForm, setLeadForm] = useState({
     name: "",
     phone: "",
