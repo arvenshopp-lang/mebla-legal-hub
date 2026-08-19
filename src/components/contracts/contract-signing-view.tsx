@@ -47,7 +47,10 @@ export function ContractSigningView({
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [isSuccessfullySigned, setIsSuccessfullySigned] = React.useState(false);
   const [downloadTicket, setDownloadTicket] = React.useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [downloadState, setDownloadState] = React.useState<
+    { phase: "idle" } | { phase: "working"; attempt: number } | { phase: "done" } | { phase: "error"; message: string; traceId: string }
+  >({ phase: "idle" });
+  const isDownloading = downloadState.phase === "working";
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["public-contract", token],
@@ -111,60 +114,75 @@ export function ContractSigningView({
     });
   };
 
+  /** يجلب الملف بتذكرة صالحة، مع تجديد التذكرة عند انتهائها. */
+  const fetchSignedPdf = async () => {
+    // التذكرة قصيرة الصلاحية وقد تُفقد بعد إعادة تحميل الصفحة؛ تُطلب من جديد
+    // من الخادم بنفس رمز الرابط قبل الاستسلام لرسالة خطأ.
+    let ticket = downloadTicket;
+    if (!ticket) {
+      const fresh = await refetch();
+      ticket = fresh.data?.downloadTicket ?? null;
+      if (ticket) setDownloadTicket(ticket);
+    }
+    if (!ticket) throw new Error("no-ticket");
+    try {
+      return await downloadSignedContractByTicketFn({ data: { downloadTicket: ticket } });
+    } catch (first) {
+      const fresh = await refetch();
+      const renewed = fresh.data?.downloadTicket ?? null;
+      if (!renewed) throw first;
+      setDownloadTicket(renewed);
+      return await downloadSignedContractByTicketFn({ data: { downloadTicket: renewed } });
+    }
+  };
+
   const handleDownloadPdf = async () => {
     if (!contract || isDownloading) return;
-    setIsDownloading(true);
-    try {
-      toast.loading("جارٍ تجهيز ملف العقد...", { id: "pdf" });
-      // التذكرة قصيرة الصلاحية وقد تُفقد بعد إعادة تحميل الصفحة؛ تُطلب من جديد
-      // من الخادم بنفس رمز الرابط قبل الاستسلام لرسالة خطأ.
-      let ticket = downloadTicket;
-      if (!ticket) {
-        const fresh = await refetch();
-        ticket = fresh.data?.downloadTicket ?? null;
-        if (ticket) setDownloadTicket(ticket);
-      }
-      if (!ticket) throw new Error("no-ticket");
-      let res: Awaited<ReturnType<typeof downloadSignedContractByTicketFn>>;
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      setDownloadState({ phase: "working", attempt });
       try {
-        res = await downloadSignedContractByTicketFn({ data: { downloadTicket: ticket } });
-      } catch (first) {
-        // تذكرة منتهية: تُجدَّد مرة واحدة تلقائياً ثم يُعاد التحميل.
-        const fresh = await refetch();
-        const renewed = fresh.data?.downloadTicket ?? null;
-        if (!renewed) throw first;
-        setDownloadTicket(renewed);
-        res = await downloadSignedContractByTicketFn({ data: { downloadTicket: renewed } });
+        const res = await fetchSignedPdf();
+        const byteCharacters = atob(res.base64);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArray[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        setDownloadState({ phase: "done" });
+        return;
+      } catch (error) {
+        lastError = error;
+        const message = error instanceof Error ? error.message : "";
+        // حالات نهائية لا تُفيد فيها إعادة المحاولة.
+        if (message === "no-ticket" || message.includes("يكتمل")) break;
+        if (attempt < maxAttempts) {
+          // فواصل تصاعدية قصيرة قبل المحاولة التالية.
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1200));
+        }
       }
-      const byteCharacters = atob(res.base64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("تم تنزيل العقد بنجاح!", { id: "pdf" });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      toast.error(
+    }
+
+    const message = lastError instanceof Error ? lastError.message : "";
+    const traceId = `DL-${Date.now().toString(36).toUpperCase()}`;
+    setDownloadState({
+      phase: "error",
+      traceId,
+      message:
         message === "no-ticket"
           ? "نسخة العقد غير متاحة للتحميل عبر هذا الرابط، يرجى التواصل مع المكتب."
-          : message.includes("صلاحية")
-          ? "انتهت صلاحية رابط التحميل، يرجى طلب رابط جديد من المكتب."
           : message.includes("يكتمل")
             ? "لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل."
-            : "تعذّر تجهيز ملف العقد حالياً، يرجى المحاولة بعد قليل.",
-        { id: "pdf" },
-      );
-    } finally {
-      setIsDownloading(false);
-    }
+            : "تعذّر تجهيز ملف العقد حالياً بعد عدة محاولات، يرجى المحاولة بعد قليل أو التواصل مع المكتب.",
+    });
   };
 
   if (isLoading) {
