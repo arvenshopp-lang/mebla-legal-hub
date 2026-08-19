@@ -11,19 +11,20 @@ export class MarketingLeadError extends Error {}
 
 const HTML_PATTERN = /<[^>]*>|javascript:|data:text\/html|on\w+\s*=/i;
 
-const safeText = (max: number) =>
+const safeText = (min: number, max: number, message: string) =>
   z
     .string()
     .trim()
-    .max(max)
+    .min(min, message)
+    .max(max, "النص أطول من المسموح.")
     .refine((value) => !HTML_PATTERN.test(value), "النص يحتوي رموزاً غير مسموحة.");
 
 export const marketingLeadSchema = z.object({
-  fullName: safeText(120).min(2, "أدخل الاسم الكريم."),
-  phone: safeText(20).min(9, "أدخل رقم جوال صحيح."),
-  firmName: safeText(160).optional().default(""),
-  message: safeText(1000).optional().default(""),
-  source: safeText(60).optional().default("public_site"),
+  fullName: safeText(2, 120, "أدخل الاسم الكريم."),
+  phone: safeText(9, 20, "أدخل رقم جوال صحيح."),
+  firmName: safeText(0, 160, "").default(""),
+  message: safeText(0, 1000, "").default(""),
+  source: safeText(0, 60, "").default("public_site"),
 });
 
 function normalizePhone(raw: string): string {
@@ -80,7 +81,7 @@ export async function submitMarketingLead(raw: unknown): Promise<MarketingLeadOu
   if (error) {
     const { logFailure } = await import("@/lib/observability/failure-log.server");
     const ref = await logFailure({
-      surface: "public_site",
+      surface: "other",
       action: "marketing_lead_insert",
       error,
       metadata: { source },
