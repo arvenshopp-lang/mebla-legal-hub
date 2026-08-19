@@ -19,6 +19,7 @@ import {
   logContractEvent,
   ContractAccessError,
 } from "./contracts.server";
+import { recordContractDownload } from "./download-audit.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertEntitlement } from "@/lib/subscription.server";
 import type { ContractType } from "./contracts.shared";
@@ -151,18 +152,10 @@ export const downloadSignedContractByTicketFn = createServerFn({ method: "POST" 
 
     const pdfBytes = await generateContractPdf(contract);
 
-    const request = getRequest();
-    await logContractEvent({
-      organizationId: contract.organizationId,
-      contractId: contract.id,
-      eventType: "exported_pdf",
-      actorLabel: contract.clientSignature?.signedBy ?? contract.secondParty.name,
-      ipAddress:
-        request.headers.get("cf-connecting-ip") ||
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        null,
-      userAgent: request.headers.get("user-agent"),
-      metadata: { channel: "public_sign_link" },
+    await recordContractDownload({
+      contract,
+      channel: "public_sign_link",
+      byteLength: pdfBytes.byteLength,
     });
 
     return {
@@ -181,9 +174,58 @@ export const downloadContractPdfFn = createServerFn({ method: "POST" })
 
     const pdfBytes = await generateContractPdf(contract);
     const base64 = Buffer.from(pdfBytes).toString("base64");
+    await recordContractDownload({
+      contract,
+      channel: "office_workspace",
+      byteLength: pdfBytes.byteLength,
+      actorUserId: context.userId,
+    });
     return {
       fileName: `عقد_${contract.contractNumber}.pdf`,
       base64,
+    };
+  });
+
+/**
+ * سجل تنزيلات نسخة العقد لأعضاء المكتب (قراءة فقط).
+ * يعتمد على سياسة القراءة القائمة على `contract_events` بهوية المستخدم،
+ * فلا يمكن لعضو مكتب آخر الاطلاع على سجل عقود غير مكتبه.
+ */
+export const getContractDownloadLogFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { contractId: string; organizationId?: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await resolveContractOrg(context.supabase, data.organizationId ?? null);
+    const { data: rows, error } = await context.supabase
+      .from("contract_events")
+      .select("id, created_at, actor_label, ip_address, metadata")
+      .eq("organization_id", organizationId)
+      .eq("contract_id", data.contractId)
+      .eq("event_type", "exported_pdf")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new ContractAccessError("تعذّر جلب سجل تنزيلات العقد.");
+
+    type DownloadMeta = {
+      channel?: string;
+      verificationId?: string | null;
+      contractNumber?: string | null;
+      fileBytes?: number | null;
+    };
+
+    return {
+      entries: (rows ?? []).map((row) => {
+        const meta = (row.metadata ?? {}) as DownloadMeta;
+        return {
+          id: row.id as string,
+          downloadedAt: row.created_at as string,
+          actorLabel: (row.actor_label as string | null) ?? null,
+          ipAddress: (row.ip_address as string | null) ?? null,
+          channel: meta.channel === "office_workspace" ? "office_workspace" : "public_sign_link",
+          verificationId: meta.verificationId ?? null,
+          fileBytes: meta.fileBytes ?? null,
+        };
+      }),
     };
   });
 
