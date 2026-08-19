@@ -592,6 +592,17 @@ function ContractsPage() {
                       <tr key={contract.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="p-3.5 font-mono font-bold text-primary">
                           {contract.contractNumber}
+                          {contract.verificationId && (
+                            <a
+                              href={`/verify?id=${contract.verificationId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="فتح صفحة التحقق العامة لهذا العقد"
+                              className="mt-1 block text-[10px] font-normal text-slate-400 underline-offset-2 hover:text-primary hover:underline"
+                            >
+                              رقم التحقق: {contract.verificationId}
+                            </a>
+                          )}
                         </td>
                         <td className="p-3.5 font-semibold text-slate-900 dark:text-white">
                           {contract.title}
