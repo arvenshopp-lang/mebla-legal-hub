@@ -13,8 +13,11 @@ async function handle(request: Request) {
   if (denied) return denied;
 
   try {
-    const { runSecureArtifactCleanup } = await import("@/lib/secure-view/cleanup.server");
-    const report = await runSecureArtifactCleanup();
+    const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+    const report = await withJobHeartbeat("cleanup-secure-artifacts", async () => {
+      const { runSecureArtifactCleanup } = await import("@/lib/secure-view/cleanup.server");
+      return runSecureArtifactCleanup();
+    });
     return new Response(JSON.stringify({ success: true, ...report }), {
       headers: { "content-type": "application/json", "cache-control": "no-store" },
     });

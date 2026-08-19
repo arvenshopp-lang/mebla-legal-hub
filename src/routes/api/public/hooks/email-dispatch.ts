@@ -18,9 +18,12 @@ async function handle(request: Request) {
   if (denied) return denied;
 
   try {
-    const { dispatchDue } = await import("@/lib/email/workspace.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const report = await dispatchDue(supabaseAdmin, 25);
+    const { withJobHeartbeat } = await import("@/lib/observability/heartbeat.server");
+    const report = await withJobHeartbeat("email-dispatch", async () => {
+      const { dispatchDue } = await import("@/lib/email/workspace.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      return dispatchDue(supabaseAdmin, 25);
+    });
     return json({ success: true, ...report });
   } catch (error) {
     console.error("[email-dispatch]", error instanceof Error ? error.message : error);

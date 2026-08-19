@@ -45,6 +45,7 @@ import {
   type ContractClause,
 } from "@/lib/contracts/contracts.shared";
 import { toast } from "sonner";
+import { describeMutationError } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/contracts")({
   component: ContractsPage,
@@ -98,8 +99,15 @@ function ContractsPage() {
       setIsCreateOpen(false);
       resetForm();
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء حفظ العقد.");
+    onError: (error: unknown) => {
+      // بوابات الباقة والاستحقاقات ترجع سبباً عربياً واضحاً — نعرضه للمستخدم
+      // بدل رسالة عامة تُخفي أن السبب هو حدود الباقة.
+      toast.error("تعذّر حفظ العقد", {
+        description: describeMutationError(
+          error instanceof Error ? error.message : "",
+          "حاول مرة أخرى بعد قليل.",
+        ),
+      });
     },
   });
 
@@ -109,7 +117,13 @@ function ContractsPage() {
       toast.success("تم إنشاء القضية وربطها بالعقد بنجاح!");
       queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
     },
-    onError: () => toast.error("تعذّر إنشاء القضية."),
+    onError: (error: unknown) =>
+      toast.error("تعذّر إنشاء القضية", {
+        description: describeMutationError(
+          error instanceof Error ? error.message : "",
+          "حاول مرة أخرى بعد قليل.",
+        ),
+      }),
   });
 
   const resetForm = () => {

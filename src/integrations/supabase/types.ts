@@ -2779,6 +2779,7 @@ export type Database = {
       email_outbox: {
         Row: {
           attempts: number
+          config_attempts: number
           created_at: string
           failure_ref: string | null
           id: string
@@ -2795,6 +2796,7 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          config_attempts?: number
           created_at?: string
           failure_ref?: string | null
           id?: string
@@ -2811,6 +2813,7 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          config_attempts?: number
           created_at?: string
           failure_ref?: string | null
           id?: string
@@ -6120,6 +6123,139 @@ export type Database = {
           },
         ]
       }
+      platform_incident_events: {
+        Row: {
+          actor_email: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          incident_id: string
+          kind: string
+          metadata: Json
+          note: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          incident_id: string
+          kind: string
+          metadata?: Json
+          note?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          incident_id?: string
+          kind?: string
+          metadata?: Json
+          note?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_incident_events_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "platform_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_incidents: {
+        Row: {
+          action: string
+          alert_count: number
+          assignee_email: string | null
+          assignee_staff_id: string | null
+          created_at: string
+          error_code: string | null
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          last_alert_at: string | null
+          last_seen_at: string
+          metadata: Json
+          occurrences: number
+          reopened_count: number
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          sample_ref: string | null
+          severity: string
+          source: string
+          status: string
+          surface: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          alert_count?: number
+          assignee_email?: string | null
+          assignee_staff_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          last_alert_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          occurrences?: number
+          reopened_count?: number
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sample_ref?: string | null
+          severity?: string
+          source: string
+          status?: string
+          surface: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          alert_count?: number
+          assignee_email?: string | null
+          assignee_staff_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          last_alert_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          occurrences?: number
+          reopened_count?: number
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sample_ref?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          surface?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_incidents_assignee_staff_id_fkey"
+            columns: ["assignee_staff_id"]
+            isOneToOne: false
+            referencedRelation: "platform_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_integrations: {
         Row: {
           auth_type: string
@@ -6444,6 +6580,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_job_heartbeats: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          critical: boolean
+          enabled: boolean
+          expected_interval_seconds: number
+          job_key: string
+          label: string
+          last_duration_ms: number | null
+          last_error_code: string | null
+          last_failure_at: string | null
+          last_started_at: string | null
+          last_status: string
+          last_success_at: string | null
+          runs_total: number
+          schedule: string
+          slo_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          critical?: boolean
+          enabled?: boolean
+          expected_interval_seconds?: number
+          job_key: string
+          label: string
+          last_duration_ms?: number | null
+          last_error_code?: string | null
+          last_failure_at?: string | null
+          last_started_at?: string | null
+          last_status?: string
+          last_success_at?: string | null
+          runs_total?: number
+          schedule?: string
+          slo_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          critical?: boolean
+          enabled?: boolean
+          expected_interval_seconds?: number
+          job_key?: string
+          label?: string
+          last_duration_ms?: number | null
+          last_error_code?: string | null
+          last_failure_at?: string | null
+          last_started_at?: string | null
+          last_status?: string
+          last_success_at?: string | null
+          runs_total?: number
+          schedule?: string
+          slo_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       platform_notification_rules: {
         Row: {

@@ -122,10 +122,10 @@ const MIRRORED: Record<number, number> = {
 };
 
 /**
- * fontkit يعكس تسلسل المحارف بالكامل عند تخطيط مقطع عربي في PDF، ولا يفصل
- * مقاطع الأرقام واللاتينية عن ذلك العكس. لذلك نعكس هذه المقاطع مسبقاً كي
- * يُعيدها عكس fontkit إلى ترتيبها الصحيح (17/08/2026 وليس 6202/80/71)،
- * ونقلب الأقواس الواقعة في السياق العربي لأنها تُرسم بعد العكس.
+ * pdf-lib يرسم المحارف بالترتيب المُعطى من اليسار إلى اليمين دون تطبيق أي
+ * ترتيب ثنائي الاتجاه. لذلك نحوّل الترتيب المنطقي إلى ترتيب بصري بأنفسنا:
+ * نعكس السطر بالكامل (اتجاه أساسي RTL) ثم نُعيد كل مقطع لاتيني أو رقمي إلى
+ * ترتيبه المنطقي (18/08/2026 وليس 6202/80/81)، ونقلب الأقواس في السياق العربي.
  */
 function prepareForRtlLayout(shaped: number[]): number[] {
   const isLtrRun = shaped.map((code) => isLtr(code));
@@ -143,21 +143,21 @@ function prepareForRtlLayout(shaped: number[]): number[] {
     }
   }
 
-  const out: number[] = [];
-  let index = 0;
-  while (index < shaped.length) {
+  const visual: number[] = [];
+  let index = shaped.length - 1;
+  while (index >= 0) {
     if (!isLtrRun[index]) {
       const code = shaped[index]!;
-      out.push(MIRRORED[code] ?? code);
-      index += 1;
+      visual.push(MIRRORED[code] ?? code);
+      index -= 1;
       continue;
     }
-    let end = index;
-    while (end < shaped.length && isLtrRun[end]) end += 1;
-    for (let k = end - 1; k >= index; k -= 1) out.push(shaped[k]!);
-    index = end;
+    let start = index;
+    while (start >= 0 && isLtrRun[start]) start -= 1;
+    for (let k = start + 1; k <= index; k += 1) visual.push(shaped[k]!);
+    index = start;
   }
-  return out;
+  return visual;
 }
 
 /**

@@ -41,9 +41,12 @@ function PublicSignContractPage() {
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [isSuccessfullySigned, setIsSuccessfullySigned] = React.useState(false);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["public-contract", token],
     queryFn: () => getPublicContractForSigningFn({ data: { signToken: token } }),
+    // الرمز يُبطل خادمياً بعد التوقيع (استخدام واحد)، لذا لا يُعاد الجلب بعد النجاح
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
 
   const contract = data?.contract;
@@ -63,7 +66,6 @@ function PublicSignContractPage() {
       if (res.ok) {
         setIsSuccessfullySigned(true);
         toast.success("تم توقيع واعتماد العقد بنجاح!");
-        refetch();
       } else {
         toast.error(res.error || "تعذّر تسجيل التوقيع.");
       }
@@ -227,10 +229,14 @@ function PublicSignContractPage() {
                   <Building2 className="w-4 h-4" />
                   الطرف الأول: {contract.firstParty.name}
                 </div>
-                <div className="text-slate-600 dark:text-slate-400">
-                  السجل التجاري / الترخيص: {contract.firstParty.identifierNumber}
-                </div>
-                <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.firstParty.phone}</div>
+                {contract.firstParty.identifierNumber ? (
+                  <div className="text-slate-600 dark:text-slate-400">
+                    السجل التجاري / الترخيص: {contract.firstParty.identifierNumber}
+                  </div>
+                ) : null}
+                {contract.firstParty.phone ? (
+                  <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.firstParty.phone}</div>
+                ) : null}
               </div>
 
               <div className="p-4 rounded-xl border bg-slate-50/50 dark:bg-slate-900/30 space-y-1.5">
@@ -238,10 +244,14 @@ function PublicSignContractPage() {
                   <User className="w-4 h-4" />
                   الطرف الثاني: {contract.secondParty.name}
                 </div>
-                <div className="text-slate-600 dark:text-slate-400">
-                  الهوية / السجل: {contract.secondParty.identifierNumber}
-                </div>
-                <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.secondParty.phone}</div>
+                {contract.secondParty.identifierNumber ? (
+                  <div className="text-slate-600 dark:text-slate-400">
+                    الهوية / السجل: {contract.secondParty.identifierNumber}
+                  </div>
+                ) : null}
+                {contract.secondParty.phone ? (
+                  <div className="text-slate-600 dark:text-slate-400">هاتف: {contract.secondParty.phone}</div>
+                ) : null}
               </div>
             </div>
 

@@ -171,6 +171,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         permission: "monitoring.read",
         tabs: [
           { to: "/mehla-admin/monitoring", label: "نظرة عامة" },
+          { to: "/mehla-admin/operations", label: "مركز التشغيل", permission: "operations.read" },
           { to: "/mehla-admin/analytics", label: "التحليلات والنمو" },
           { to: "/mehla-admin/services", label: "حالة الخدمات" },
           { to: "/mehla-admin/jobs", label: "مهام النظام" },

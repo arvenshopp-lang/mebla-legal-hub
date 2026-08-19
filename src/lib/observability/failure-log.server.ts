@@ -35,6 +35,34 @@ export type FailureInput = {
 
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+/** خطورة الحادثة المشتقة من السطح — لا تعتمد على نص العطل. */
+const SURFACE_SEVERITY: Record<FailureSurface, "critical" | "high" | "medium" | "low"> = {
+  secure_view: "critical",
+  secure_share: "high",
+  document_processing: "high",
+  support_ticket: "medium",
+  support_message: "medium",
+  support_rating: "low",
+  print: "high",
+  email: "high",
+  office_page: "medium",
+  other: "medium",
+};
+
+/** تسميات عربية للأسطح داخل عنوان الحادثة. */
+const SURFACE_LABELS: Record<FailureSurface, string> = {
+  secure_view: "العرض الآمن للمستندات",
+  secure_share: "مشاركة المستندات",
+  document_processing: "معالجة المستندات",
+  support_ticket: "تذاكر الدعم",
+  support_message: "رسائل الدعم",
+  support_rating: "تقييم الدعم",
+  print: "محرك الطباعة",
+  email: "البريد",
+  office_page: "صفحة المكتب العامة",
+  other: "أنظمة أخرى",
+};
+
 /** معرّف تعرّف آمن: عشوائي بالكامل ولا يكشف أي بيانات. */
 export function newFailureRef(): string {
   const bytes = new Uint8Array(10);
@@ -97,6 +125,42 @@ export async function logFailure(input: FailureInput): Promise<string> {
       user_agent: env.userAgent || null,
       metadata: (input.metadata ?? {}) as never,
     });
+
+    // تجميع العطل في حادثة تشغيلية واحدة (بصمة السطح + الإجراء + رمز العطل)
+    // ثم تنبيه فريق المنصة عبر قناة لا تعتمد على SMTP.
+    const [{ recordIncident, recordAlertOutcome }, { dispatchIncidentAlert }] = await Promise.all([
+      import("@/lib/observability/incidents.server"),
+      import("@/lib/observability/alert-channel.server"),
+    ]);
+    const incident = await recordIncident(supabaseAdmin, {
+      source: "failure",
+      surface: input.surface,
+      action: input.action,
+      errorCode: input.errorCode ?? null,
+      title: `عطل في ${SURFACE_LABELS[input.surface]} — ${input.action}`,
+      severity: SURFACE_SEVERITY[input.surface],
+      sampleRef: ref,
+      metadata: {
+        http_status: input.httpStatus ?? undefined,
+        ...(input.metadata ?? {}),
+      },
+    });
+    if (incident?.shouldAlert) {
+      const outcome = await dispatchIncidentAlert(supabaseAdmin, {
+        incidentId: incident.incidentId,
+        title: incident.title,
+        severity: incident.severity,
+        surface: input.surface,
+        action: input.action,
+        occurrences: incident.occurrences,
+        reopened: incident.reopened,
+      });
+      await recordAlertOutcome(supabaseAdmin, incident.incidentId, {
+        sent: outcome.sent,
+        channel: outcome.channel,
+        reason: outcome.reason ?? null,
+      });
+    }
   } catch (error) {
     console.error("[failure-log] تعذّر حفظ سجل العطل", ref, error);
   }

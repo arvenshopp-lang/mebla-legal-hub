@@ -52,6 +52,7 @@ import { Route as MehlaAdminRbacRouteImport } from './routes/mehla-admin/rbac'
 import { Route as MehlaAdminProvidersRouteImport } from './routes/mehla-admin/providers'
 import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
 import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
+import { Route as MehlaAdminOperationsRouteImport } from './routes/mehla-admin/operations'
 import { Route as MehlaAdminNotificationsRouteImport } from './routes/mehla-admin/notifications'
 import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/monitoring'
 import { Route as MehlaAdminMarketingRouteImport } from './routes/mehla-admin/marketing'
@@ -99,6 +100,7 @@ import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sale
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
+import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
@@ -111,6 +113,7 @@ import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/w
 import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
 import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
 import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
+import { Route as ApiPublicHooksOpsWatchdogRouteImport } from './routes/api/public/hooks/ops-watchdog'
 import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
 import { Route as ApiPublicHooksOperationalRemindersRouteImport } from './routes/api/public/hooks/operational-reminders'
 import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
@@ -120,7 +123,6 @@ import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
 import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
-import { Route as ApiIntegrationsOnedriveCallbackRouteImport } from './routes/api/integrations/onedrive/callback'
 import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
 
 const TrackRoute = TrackRouteImport.update({
@@ -335,6 +337,11 @@ const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
 const MehlaAdminOrganizationsRoute = MehlaAdminOrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminOperationsRoute = MehlaAdminOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
 const MehlaAdminNotificationsRoute = MehlaAdminNotificationsRouteImport.update({
@@ -577,6 +584,11 @@ const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
   path: '/api/public/theme.css',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
+  id: '/api/public/leads',
+  path: '/api/public/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -640,6 +652,12 @@ const ApiPublicOfficeEventRoute = ApiPublicOfficeEventRouteImport.update({
   path: '/api/public/office/event',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksOpsWatchdogRoute =
+  ApiPublicHooksOpsWatchdogRouteImport.update({
+    id: '/api/public/hooks/ops-watchdog',
+    path: '/api/public/hooks/ops-watchdog',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksOperationalScoreRoute =
   ApiPublicHooksOperationalScoreRouteImport.update({
     id: '/api/public/hooks/operational-score',
@@ -692,12 +710,6 @@ const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
   path: '/api/public/doc/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiIntegrationsOnedriveCallbackRoute =
-  ApiIntegrationsOnedriveCallbackRouteImport.update({
-    id: '/api/integrations/onedrive/callback',
-    path: '/api/integrations/onedrive/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicOfficeMediaSplatRoute =
   ApiPublicOfficeMediaSplatRouteImport.update({
     id: '/api/public/office/media/$',
@@ -765,6 +777,7 @@ export interface FileRoutesByFullPath {
   '/mehla-admin/marketing': typeof MehlaAdminMarketingRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
+  '/mehla-admin/operations': typeof MehlaAdminOperationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/providers': typeof MehlaAdminProvidersRoute
@@ -792,6 +805,7 @@ export interface FileRoutesByFullPath {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -800,7 +814,6 @@ export interface FileRoutesByFullPath {
   '/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -810,6 +823,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/ops-watchdog': typeof ApiPublicHooksOpsWatchdogRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -878,6 +892,7 @@ export interface FileRoutesByTo {
   '/mehla-admin/marketing': typeof MehlaAdminMarketingRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
+  '/mehla-admin/operations': typeof MehlaAdminOperationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/providers': typeof MehlaAdminProvidersRoute
@@ -905,6 +920,7 @@ export interface FileRoutesByTo {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -913,7 +929,6 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -923,6 +938,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/ops-watchdog': typeof ApiPublicHooksOpsWatchdogRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -994,6 +1010,7 @@ export interface FileRoutesById {
   '/mehla-admin/marketing': typeof MehlaAdminMarketingRoute
   '/mehla-admin/monitoring': typeof MehlaAdminMonitoringRoute
   '/mehla-admin/notifications': typeof MehlaAdminNotificationsRoute
+  '/mehla-admin/operations': typeof MehlaAdminOperationsRoute
   '/mehla-admin/organizations': typeof MehlaAdminOrganizationsRoute
   '/mehla-admin/plans': typeof MehlaAdminPlansRoute
   '/mehla-admin/providers': typeof MehlaAdminProvidersRoute
@@ -1021,6 +1038,7 @@ export interface FileRoutesById {
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/_authenticated/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -1029,7 +1047,6 @@ export interface FileRoutesById {
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
   '/mehla-admin/billing/': typeof MehlaAdminBillingIndexRoute
   '/mehla-admin/sales/': typeof MehlaAdminSalesIndexRoute
-  '/api/integrations/onedrive/callback': typeof ApiIntegrationsOnedriveCallbackRoute
   '/api/public/doc/$token': typeof ApiPublicDocTokenRoute
   '/api/public/hooks/cleanup-secure-artifacts': typeof ApiPublicHooksCleanupSecureArtifactsRoute
   '/api/public/hooks/email-dispatch': typeof ApiPublicHooksEmailDispatchRoute
@@ -1039,6 +1056,7 @@ export interface FileRoutesById {
   '/api/public/hooks/notifications-dispatch': typeof ApiPublicHooksNotificationsDispatchRoute
   '/api/public/hooks/operational-reminders': typeof ApiPublicHooksOperationalRemindersRoute
   '/api/public/hooks/operational-score': typeof ApiPublicHooksOperationalScoreRoute
+  '/api/public/hooks/ops-watchdog': typeof ApiPublicHooksOpsWatchdogRoute
   '/api/public/office/event': typeof ApiPublicOfficeEventRoute
   '/api/public/office/lead': typeof ApiPublicOfficeLeadRoute
   '/api/public/payments/$provider': typeof ApiPublicPaymentsProviderRoute
@@ -1110,6 +1128,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/marketing'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
+    | '/mehla-admin/operations'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/providers'
@@ -1137,6 +1156,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1145,7 +1165,6 @@ export interface FileRouteTypes {
     | '/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1155,6 +1174,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/ops-watchdog'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1223,6 +1243,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/marketing'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
+    | '/mehla-admin/operations'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/providers'
@@ -1250,6 +1271,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1258,7 +1280,6 @@ export interface FileRouteTypes {
     | '/cases'
     | '/mehla-admin/billing'
     | '/mehla-admin/sales'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1268,6 +1289,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/ops-watchdog'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1338,6 +1360,7 @@ export interface FileRouteTypes {
     | '/mehla-admin/marketing'
     | '/mehla-admin/monitoring'
     | '/mehla-admin/notifications'
+    | '/mehla-admin/operations'
     | '/mehla-admin/organizations'
     | '/mehla-admin/plans'
     | '/mehla-admin/providers'
@@ -1365,6 +1388,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/$id'
     | '/_authenticated/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1373,7 +1397,6 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/'
     | '/mehla-admin/billing/'
     | '/mehla-admin/sales/'
-    | '/api/integrations/onedrive/callback'
     | '/api/public/doc/$token'
     | '/api/public/hooks/cleanup-secure-artifacts'
     | '/api/public/hooks/email-dispatch'
@@ -1383,6 +1406,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-dispatch'
     | '/api/public/hooks/operational-reminders'
     | '/api/public/hooks/operational-score'
+    | '/api/public/hooks/ops-watchdog'
     | '/api/public/office/event'
     | '/api/public/office/lead'
     | '/api/public/payments/$provider'
@@ -1430,9 +1454,9 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
-  ApiIntegrationsOnedriveCallbackRoute: typeof ApiIntegrationsOnedriveCallbackRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
   ApiPublicHooksCleanupSecureArtifactsRoute: typeof ApiPublicHooksCleanupSecureArtifactsRoute
   ApiPublicHooksEmailDispatchRoute: typeof ApiPublicHooksEmailDispatchRoute
@@ -1442,6 +1466,7 @@ export interface RootRouteChildren {
   ApiPublicHooksNotificationsDispatchRoute: typeof ApiPublicHooksNotificationsDispatchRoute
   ApiPublicHooksOperationalRemindersRoute: typeof ApiPublicHooksOperationalRemindersRoute
   ApiPublicHooksOperationalScoreRoute: typeof ApiPublicHooksOperationalScoreRoute
+  ApiPublicHooksOpsWatchdogRoute: typeof ApiPublicHooksOpsWatchdogRoute
   ApiPublicOfficeEventRoute: typeof ApiPublicOfficeEventRoute
   ApiPublicOfficeLeadRoute: typeof ApiPublicOfficeLeadRoute
   ApiPublicPaymentsProviderRoute: typeof ApiPublicPaymentsProviderRoute
@@ -1753,6 +1778,13 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/mehla-admin/organizations'
       preLoaderRoute: typeof MehlaAdminOrganizationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/operations': {
+      id: '/mehla-admin/operations'
+      path: '/operations'
+      fullPath: '/mehla-admin/operations'
+      preLoaderRoute: typeof MehlaAdminOperationsRouteImport
       parentRoute: typeof MehlaAdminRouteRoute
     }
     '/mehla-admin/notifications': {
@@ -2084,6 +2116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/leads': {
+      id: '/api/public/leads'
+      path: '/api/public/leads'
+      fullPath: '/api/public/leads'
+      preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -2168,6 +2207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/ops-watchdog': {
+      id: '/api/public/hooks/ops-watchdog'
+      path: '/api/public/hooks/ops-watchdog'
+      fullPath: '/api/public/hooks/ops-watchdog'
+      preLoaderRoute: typeof ApiPublicHooksOpsWatchdogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/operational-score': {
       id: '/api/public/hooks/operational-score'
       path: '/api/public/hooks/operational-score'
@@ -2229,13 +2275,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/doc/$token'
       fullPath: '/api/public/doc/$token'
       preLoaderRoute: typeof ApiPublicDocTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/integrations/onedrive/callback': {
-      id: '/api/integrations/onedrive/callback'
-      path: '/api/integrations/onedrive/callback'
-      fullPath: '/api/integrations/onedrive/callback'
-      preLoaderRoute: typeof ApiIntegrationsOnedriveCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/office/media/$': {
@@ -2338,6 +2377,7 @@ interface MehlaAdminRouteRouteChildren {
   MehlaAdminMarketingRoute: typeof MehlaAdminMarketingRoute
   MehlaAdminMonitoringRoute: typeof MehlaAdminMonitoringRoute
   MehlaAdminNotificationsRoute: typeof MehlaAdminNotificationsRoute
+  MehlaAdminOperationsRoute: typeof MehlaAdminOperationsRoute
   MehlaAdminOrganizationsRoute: typeof MehlaAdminOrganizationsRoute
   MehlaAdminPlansRoute: typeof MehlaAdminPlansRoute
   MehlaAdminProvidersRoute: typeof MehlaAdminProvidersRoute
@@ -2378,6 +2418,7 @@ const MehlaAdminRouteRouteChildren: MehlaAdminRouteRouteChildren = {
   MehlaAdminMarketingRoute: MehlaAdminMarketingRoute,
   MehlaAdminMonitoringRoute: MehlaAdminMonitoringRoute,
   MehlaAdminNotificationsRoute: MehlaAdminNotificationsRoute,
+  MehlaAdminOperationsRoute: MehlaAdminOperationsRoute,
   MehlaAdminOrganizationsRoute: MehlaAdminOrganizationsRoute,
   MehlaAdminPlansRoute: MehlaAdminPlansRoute,
   MehlaAdminProvidersRoute: MehlaAdminProvidersRoute,
@@ -2442,9 +2483,9 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
-  ApiIntegrationsOnedriveCallbackRoute: ApiIntegrationsOnedriveCallbackRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
   ApiPublicHooksCleanupSecureArtifactsRoute:
     ApiPublicHooksCleanupSecureArtifactsRoute,
@@ -2457,6 +2498,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksOperationalRemindersRoute:
     ApiPublicHooksOperationalRemindersRoute,
   ApiPublicHooksOperationalScoreRoute: ApiPublicHooksOperationalScoreRoute,
+  ApiPublicHooksOpsWatchdogRoute: ApiPublicHooksOpsWatchdogRoute,
   ApiPublicOfficeEventRoute: ApiPublicOfficeEventRoute,
   ApiPublicOfficeLeadRoute: ApiPublicOfficeLeadRoute,
   ApiPublicPaymentsProviderRoute: ApiPublicPaymentsProviderRoute,

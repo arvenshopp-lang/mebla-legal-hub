@@ -1,0 +1,1 @@
+DELETE FROM public.crm_leads WHERE phone = '+966500000001' AND source = 'bayan_public_copilot';
