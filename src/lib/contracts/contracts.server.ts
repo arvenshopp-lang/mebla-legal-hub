@@ -7,6 +7,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { renderBillingPdf, type PdfDocumentModel, type PdfBrand } from "@/lib/billing/pdf/engine.server";
 import { fmtDate } from "@/lib/enums";
+import {
+  sealContractVersion,
+  upsertSecondPartySigner,
+  markSignerViewed,
+  recordSignerSignature,
+} from "./contract-lifecycle.server";
 import type {
   ContractModel,
   ContractType,
@@ -44,6 +50,88 @@ function generateSignToken(): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/* ------------------------------------------------------------------ *
+ * تذكرة تحميل النسخة الموقعة للطرف الخارجي
+ *
+ * الطرف الثاني الخارجي لا يملك جلسة داخل المنصة، لذلك لا يجوز أن يستدعي
+ * دالة المكتب المحمية لتحميل الـ PDF (كانت هذه سبب رسالة «تعذّر التنزيل»).
+ * بدلاً من ذلك تُصدر له بعد التوقيع تذكرة موقّعة (HMAC) قصيرة الصلاحية
+ * تحمل معرّف العقد فقط، ولا تُخزَّن ولا تكشف أي بيانات.
+ * ------------------------------------------------------------------ */
+
+const DOWNLOAD_TICKET_TTL_MS = 60 * 60 * 1000; // ساعة واحدة
+
+function base64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function ticketKey(): Promise<CryptoKey> {
+  const secret = process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SUPABASE_URL"] || "";
+  if (!secret) throw new ContractAccessError("تعذّر تجهيز رابط التحميل الآمن.");
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(`mehla-contract-download:v1:${secret}`),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+}
+
+async function ticketSignature(payload: string): Promise<string> {
+  const key = await ticketKey();
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  return base64Url(new Uint8Array(sig));
+}
+
+/** إصدار تذكرة تحميل قصيرة الصلاحية لعقد موقّع (للطرف الخارجي). */
+export async function issueContractDownloadTicket(contract: {
+  id: string;
+  organizationId: string;
+}): Promise<string> {
+  const payload = `${contract.id}.${contract.organizationId}.${Date.now() + DOWNLOAD_TICKET_TTL_MS}`;
+  return `${payload}.${await ticketSignature(payload)}`;
+}
+
+/** التحقق من تذكرة التحميل وإرجاع معرّفات العقد — بدون أي وصول لقاعدة البيانات. */
+export async function resolveContractDownloadTicket(
+  ticket: string,
+): Promise<{ contractId: string; organizationId: string }> {
+  const parts = (ticket || "").split(".");
+  if (parts.length !== 4) throw new ContractAccessError("رابط التحميل غير صالح.");
+  const [contractId, organizationId, expiresAt, signature] = parts as [string, string, string, string];
+  const payload = `${contractId}.${organizationId}.${expiresAt}`;
+  const expected = await ticketSignature(payload);
+  if (signature.length !== expected.length) throw new ContractAccessError("رابط التحميل غير صالح.");
+  let mismatch = 0;
+  for (let i = 0; i < expected.length; i++) mismatch |= signature.charCodeAt(i) ^ expected.charCodeAt(i);
+  if (mismatch !== 0) throw new ContractAccessError("رابط التحميل غير صالح.");
+  if (!Number(expiresAt) || Number(expiresAt) < Date.now()) {
+    throw new ContractAccessError("انتهت صلاحية رابط التحميل، يرجى طلب رابط جديد من المكتب.");
+  }
+  return { contractId, organizationId };
+}
+
+/**
+ * جلب العقد بمعرّفه بعد التحقق من تذكرة التحميل — يُستخدم للمسار العام فقط،
+ * ويُشترط تطابق المكتب المحقون في التذكرة مع مكتب العقد (عزل تام).
+ */
+export async function getContractForTicket(
+  contractId: string,
+  organizationId: string,
+): Promise<ContractModel | null> {
+  const { data, error } = await supabaseAdmin
+    .from("contracts")
+    .select(CONTRACT_COLUMNS)
+    .eq("id", contractId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapRow(data as unknown as ContractRow);
 }
 
 export class ContractAccessError extends Error {
@@ -400,11 +488,15 @@ export async function issueSignLink(
 
   const token = generateSignToken();
   const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+  const tokenHash = await signTokenHash(token);
+
+  // اعتماد النسخة النهائية قبل الإرسال: بصمة المحتوى ورقم التحقق العام.
+  const sealed = await sealContractVersion(contract, actor?.userId ?? null);
 
   const { error } = await client
     .from("contracts")
     .update({
-      sign_token_hash: await signTokenHash(token),
+      sign_token_hash: tokenHash,
       expires_at: expiresAt,
       status: contract.status === "draft" ? "pending_signature" : contract.status,
     })
@@ -413,13 +505,25 @@ export async function issueSignLink(
 
   if (error) throw new ContractAccessError("تعذّر إصدار رابط التوقيع.");
 
+  await upsertSecondPartySigner({
+    contract,
+    versionId: sealed.versionId,
+    signTokenHash: tokenHash,
+    expiresAt,
+  });
+
   await logContractEvent({
     organizationId,
     contractId,
     eventType: "sent_for_signature",
     actorUserId: actor?.userId ?? null,
     actorLabel: actor?.label ?? null,
-    metadata: { expiresAt },
+    metadata: {
+      expiresAt,
+      versionNumber: sealed.versionNumber,
+      contentHash: sealed.contentHash,
+      verificationId: sealed.verificationId,
+    },
   });
 
   return { signToken: token, signUrl: `/sign/${token}`, expiresAt };
@@ -443,6 +547,14 @@ export async function getContractBySignToken(signToken: string): Promise<Contrac
   if (contract.status !== "signed" && contract.expiresAt && new Date(contract.expiresAt).getTime() < Date.now()) {
     return null;
   }
+  // تسجيل اطلاع الموقّع كدليل في سجل الموقّعين (مرة واحدة فقط).
+  if (contract.status !== "signed") {
+    try {
+      await markSignerViewed(contract.id, await signTokenHash(token));
+    } catch {
+      // الاطلاع دليل مساند ولا يجوز أن يمنع فتح العقد
+    }
+  }
   return contract;
 }
 
@@ -453,10 +565,12 @@ export async function signContractByClient(
   signerName: string,
   ipAddress?: string,
   userAgent?: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; downloadTicket?: string }> {
   const contract = await getContractBySignToken(signToken);
   if (!contract) return { ok: false, error: "الرابط غير صالح أو منتهي الصلاحية." };
-  if (contract.status === "signed") return { ok: true };
+  if (contract.status === "signed") {
+    return { ok: true, downloadTicket: await issueContractDownloadTicket(contract) };
+  }
   if (!signatureImageBase64.startsWith("data:image/")) {
     return { ok: false, error: "صورة التوقيع غير صالحة." };
   }
@@ -485,6 +599,22 @@ export async function signContractByClient(
 
   if (error) return { ok: false, error: "تعذّر تسجيل التوقيع، يرجى المحاولة مرة أخرى." };
 
+  try {
+    await recordSignerSignature({
+      contractId: contract.id,
+      signTokenHash: await signTokenHash((signToken || "").trim()),
+      fullName: clientSignature.signedBy,
+      signatureHash: clientSignature.verificationHash ?? "",
+      signedAt,
+      ipAddress: ipAddress ?? null,
+      userAgent: userAgent ?? null,
+    });
+  } catch {
+    // التوقيع مسجَّل في العقد وسجل التدقيق؛ تعذّر تحديث سجل الموقّعين لا يُبطله
+  }
+
+  const downloadTicket = await issueContractDownloadTicket(contract);
+
   await logContractEvent({
     organizationId: contract.organizationId,
     contractId: contract.id,
@@ -511,7 +641,7 @@ export async function signContractByClient(
     }
   }
 
-  return { ok: true };
+  return { ok: true, downloadTicket };
 }
 
 /** توليد ملف الـ PDF الرسمي للعقد بهوية المكتب والتواقيع والأختام */
@@ -549,7 +679,8 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
     contactEmail: org?.email || contract.firstParty.email || undefined,
     signatoryName: contract.lawyerSignature?.signedBy || "المحامي المعتمد",
     signatoryTitle: "الطرف الأول / المحامي",
-    documentFooterNote: "وثيقة قانونية صادرة وموقعة إلكترونياً وفق نظام التعاملات الإلكترونية ونظام الإثبات بالمملكة.",
+    // التذييل يُطبع في سطر واحد ضيق، لذا يبقى مختصراً والنص الكامل في متن المستند.
+    documentFooterNote: "مستند موقّع إلكترونياً عبر منصة مِهلة — ليس توثيقاً رسمياً حكومياً.",
   };
 
   const docModel: PdfDocumentModel = {
@@ -557,13 +688,14 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
     title: contract.title,
     reference: contract.contractNumber,
     fileName: `عقد_${contract.contractNumber}.pdf`,
-    subtitle: `عقد واتفاقية قانونية معتمدة`,
-    statusLine: contract.status === "signed" ? "موقع ومعتمد رسمياً بالختم الرقمي" : "بانتظار توقيع الطرف الثاني",
-    notice: "حرر هذا العقد إلكترونياً ويعد ملزماً لأطرافه وفق الأنظمة واللوائح السارية بالمملكة.",
+    subtitle: `عقد واتفاقية قانونية`,
+    statusLine:
+      contract.status === "signed" ? "موقّع إلكترونياً عبر منصة مِهلة" : "بانتظار توقيع الطرف الثاني",
+    notice: "حرر هذا العقد ووُقّع إلكترونياً عبر منصة مِهلة بين أطرافه المذكورين أدناه.",
     meta: [
       { label: "رقم العقد", value: contract.contractNumber },
       { label: "تاريخ الإنشاء", value: fmtDate(contract.createdAt) },
-      { label: "حالة التوثيق", value: contract.status === "signed" ? "معتمد ومكتمل" : "قيد الإجراء" },
+      { label: "حالة العقد", value: contract.status === "signed" ? "موقّع إلكترونياً" : "قيد الإجراء" },
       { label: "تاريخ التوقيع", value: contract.signedAt ? fmtDate(contract.signedAt) : "—" },
     ],
     recipient: {
@@ -605,13 +737,19 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
       : [],
     blocks: [
       {
-        title: "إقرار وتوثيق التوقيع الإلكتروني:",
+        title: "إقرار التوقيع الإلكتروني:",
         lines: [
-          `الطرف الأول: ${contract.firstParty.name} (${contract.lawyerSignature?.signedBy || "المحامي المعتمد"}) — تم التوقيع والاعتماد`,
+          `الطرف الأول: ${contract.firstParty.name} (${contract.lawyerSignature?.signedBy || "المحامي المسؤول"}) — ${
+            contract.lawyerSignature ? "تم التوقيع إلكترونياً" : "بانتظار التوقيع"
+          }`,
           `الطرف الثاني: ${contract.secondParty.name} (${contract.clientSignature?.signedBy || "بانتظار التوقيع"}) ${
             contract.clientSignature ? `— تم التوقيع إلكترونياً بتاريخ ${fmtDate(contract.clientSignature.signedAt)}` : ""
           }`,
-          "يعد توقيع الطرفين عبر المنصة إقراراً نظامياً ملزماً لا رجعة فيه وفق نظام التعاملات الإلكترونية ونظام الإثبات بالمملكة.",
+          `الرقم المرجعي للتحقق: ${contract.contractNumber}`,
+          contract.clientSignature?.verificationHash
+            ? `بصمة المستند SHA-256: ${contract.clientSignature.verificationHash.slice(0, 32)}`
+            : "بصمة المستند تُصدر عند اكتمال التوقيع.",
+          "تم إنشاء وتوقيع هذا المستند إلكترونياً عبر منصة مِهلة، ولا يمثل توثيقاً رسمياً لدى وزارة العدل أو أي جهة حكومية ما لم يرد ما يثبت خلاف ذلك.",
         ],
       },
     ],

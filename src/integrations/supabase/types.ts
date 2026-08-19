@@ -826,6 +826,166 @@ export type Database = {
           },
         ]
       }
+      contract_signers: {
+        Row: {
+          capacity: string | null
+          consent_at: string | null
+          consumed_at: string | null
+          contract_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          ip_address: string | null
+          organization_id: string
+          otp_reference: string | null
+          party_role: string
+          phone: string | null
+          rejection_reason: string | null
+          sign_order: number
+          sign_token_hash: string | null
+          signature: Json | null
+          signature_hash: string | null
+          signed_at: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_agent: string | null
+          verification_method: string
+          version_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          capacity?: string | null
+          consent_at?: string | null
+          consumed_at?: string | null
+          contract_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          ip_address?: string | null
+          organization_id: string
+          otp_reference?: string | null
+          party_role?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          sign_order?: number
+          sign_token_hash?: string | null
+          signature?: Json | null
+          signature_hash?: string | null
+          signed_at?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          verification_method?: string
+          version_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          capacity?: string | null
+          consent_at?: string | null
+          consumed_at?: string | null
+          contract_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          ip_address?: string | null
+          organization_id?: string
+          otp_reference?: string | null
+          party_role?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          sign_order?: number
+          sign_token_hash?: string | null
+          signature?: Json | null
+          signature_hash?: string | null
+          signed_at?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          verification_method?: string
+          version_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_signers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signers_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "contract_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_versions: {
+        Row: {
+          content_hash: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          snapshot: Json
+          state: string
+          version_number: number
+        }
+        Insert: {
+          content_hash: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          snapshot?: Json
+          state?: string
+          version_number: number
+        }
+        Update: {
+          content_hash?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          snapshot?: Json
+          state?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_versions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           advance_amount: number | null
@@ -837,11 +997,13 @@ export type Database = {
           contract_type: string
           created_at: string
           created_by: string | null
+          current_version_id: string | null
           expires_at: string | null
           final_amount: number | null
           first_party: Json
           id: string
           lawyer_signature: Json | null
+          office_endorsement: Json | null
           organization_id: string
           second_party: Json
           sign_token_hash: string | null
@@ -850,6 +1012,7 @@ export type Database = {
           title: string
           total_amount: number | null
           updated_at: string
+          verification_id: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -861,11 +1024,13 @@ export type Database = {
           contract_type?: string
           created_at?: string
           created_by?: string | null
+          current_version_id?: string | null
           expires_at?: string | null
           final_amount?: number | null
           first_party?: Json
           id?: string
           lawyer_signature?: Json | null
+          office_endorsement?: Json | null
           organization_id: string
           second_party?: Json
           sign_token_hash?: string | null
@@ -874,6 +1039,7 @@ export type Database = {
           title: string
           total_amount?: number | null
           updated_at?: string
+          verification_id?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -885,11 +1051,13 @@ export type Database = {
           contract_type?: string
           created_at?: string
           created_by?: string | null
+          current_version_id?: string | null
           expires_at?: string | null
           final_amount?: number | null
           first_party?: Json
           id?: string
           lawyer_signature?: Json | null
+          office_endorsement?: Json | null
           organization_id?: string
           second_party?: Json
           sign_token_hash?: string | null
@@ -898,6 +1066,7 @@ export type Database = {
           title?: string
           total_amount?: number | null
           updated_at?: string
+          verification_id?: string | null
         }
         Relationships: [
           {
@@ -912,6 +1081,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "contract_versions"
             referencedColumns: ["id"]
           },
           {
