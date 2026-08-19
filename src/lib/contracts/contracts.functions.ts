@@ -16,7 +16,6 @@ import {
   issueContractDownloadTicket,
   resolveContractDownloadTicket,
   getContractForTicket,
-  logContractEvent,
   ContractAccessError,
 } from "./contracts.server";
 import { recordContractDownload } from "./download-audit.server";
