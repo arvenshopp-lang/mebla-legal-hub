@@ -158,3 +158,85 @@ FIRST_RECOMMENDED_IMPLEMENTATION_PHASE = S0 — BASELINE & INVENTORY (بلا أ�
 FIRST_PHASE_REQUIRES_APPROVAL = YES
 
 WAITING FOR IMPLEMENTATION PHASE 1 APPROVAL
+
+---
+
+# MEHLA FILE SECURITY S0 — VERIFIED ATTACK SURFACE INVENTORY
+
+READ-ONLY DISCOVERY فقط. لا Migration ولا SQL كتابة ولا تعديل تخزين/صلاحيات/ملفات.
+
+## FILE_ENTRYPOINT_INVENTORY
+| ID | المصدر | السلوك | الفاعل | حدود المستأجر | الاعتماد | بايتات خام | الحماية | الخطورة |
+|---|---|---|---|---|---|---|---|---|
+| EP-01 | `documents/intake.functions.ts` + `intake.server.ts` | فتحة رفع موقّعة ثم تحقق وربط | مصادق | بادئة organization_id | service role | نعم (`verifyUploadedObject`) | دور كتابة + حصص + Magic Bytes | مرتفع |
+| EP-02 | `routes/upload.$token.tsx:97` | رفع عميل بتوكن مؤقت | مجهول بتوكن | من القضية | توكن رفع موقّع | نعم (خادمياً) | حد IP + نوع/حجم | مرتفع |
+| EP-03 | `routes/_authenticated/documents.tsx:370` | رفع لوحة المكتب | مصادق | نعم | توكن فتحة | نعم | كما EP-01 | متوسط |
+| EP-04 | `email/attachments.server.ts` | مرفقات بريد | مصادق/Webhook | نعم | service role | نعم | Allowlist + حظر امتدادات | متوسط |
+| EP-05 | `office-page.server.ts:118` | وسائط المكتب draft→public | مصادق | نعم | service role | نعم | تحقق نوع فقط | مرتفع |
+| EP-06 | `documents/repair.server.ts` | إصلاح/قديم | إداري | نعم | service role | نعم | صلاحية إدارية | متوسط |
+| EP-07 | `contracts/*`, `sales-docs.server.ts` | ملفات العقود/البيع | مصادق/موقّع خارجي | نعم | service role | نعم | تذاكر HMAC | متوسط |
+
+## FILE_DELIVERY_INVENTORY + SIGNED_URL_INVENTORY
+DL-01 `secure-view.server.ts:297` (60s) · DL-02 `email/attachments.server.ts:287,361` (300s) · DL-03 `subscription.functions.ts:83` (60s) · DL-04 `office-page.server.ts:118` (300s) · DL-05 `api/public/doc.$token.ts` + `share.$token.tsx` (تذكرة) · DL-06 `api/public/office/media/$.ts` (عام).
+
+## SIGNED_UPLOAD_INVENTORY
+SU-01 `intake.server.ts:65` `createSignedUploadUrl` — أحادية الاستخدام وTTL: **NOT_PROVEN**؛ `upsert=false` لا يساوي immutability.
+
+## RAW_FILE_PROCESSOR_INVENTORY (9)
+RP-01 `documents/file-signature.ts` · RP-02 `documents/intake.server.ts` · RP-03 `secure-view/*` + `pdf/*` · RP-04 `ocr.server.ts` (يرسل صوراً لمزود خارجي) · RP-05 `document-ai.*` + `search_document_pages` · RP-06 `ai/bayan-*.server.ts` · RP-07 `email/attachments.server.ts` · RP-08 `contracts/contracts.server.ts` · RP-09 `office-page.server.ts`.
+كلها: تفكيك بايتات = نعم، شبكة = نعم، أسرار = نعم، سياق مستأجر = نعم، ويصلها ملف غير موثوق اليوم = نعم.
+
+## STORAGE_INVENTORY / PUBLIC_STORAGE_INVENTORY
+documents (خاص) · email-attachments (خاص) · office-media-draft (خاص) · **office-public-media (عام)**. Object Lock/Versioning/One-time semantics: **NOT_PROVEN** في بوابة قرائية.
+
+## PRIVILEGED_STORAGE_ACCESS + SERVICE_ROLE_USAGE
+مصدر وحيد للمفتاح: `integrations/supabase/client.server.ts:37-51`. 60+ وحدة تستورد `supabaseAdmin`؛ الملفّية منها: intake، repair، secure-view (+cleanup)، email/attachments، office-page(.ops)، contracts، sales-docs، client-portal، ai/bayan. هوية موحدة واحدة — لا فصل هويات (ماسح/قرار/أدلة/تسليم).
+اقتران أسرار: `client-portal/portal-auth.server.ts:14`، `contracts/contracts.server.ts:74`، `sms/otp.server.ts:119` تشتق أسراراً من مفتاح الخدمة.
+
+## DATABASE_FILE_SECURITY_INVENTORY
+جداول ملفّية: documents، document_pages، document_processing_jobs، document_requests(+events)، document_access_tokens/logs، email_attachments، print_audit_logs، contract_*، sales_document_*، hr_documents.
+لا وجود لأي `scan_status` / `sha256` / قرار أمني / نسب. `documents.file_status` يُكتب مباشرة (`intake.functions.ts:91` = AVAILABLE) بلا دالة انتقال محكومة. محارس قائمة (`deny_update`, `deny_hard_delete`, `contracts_immutability_guard`, `document_requests_guard`, `print_audit_enforce_actor`) لا تغطي الفحص الأمني.
+
+## CLIENT_TEMP_LINK_INVENTORY
+`expires_at` للطلب · 15 ملفاً · 20MB لكل ملف · أنواع محددة · 30 محاولة/8 فشل لكل IP/15 دقيقة (`guardUploadToken`) · ربط المستأجر من القضية مع رفض عند اختلاف المكتب · إعادة الاستخدام ضمن المدة (أحادية الاستخدام NOT_PROVEN) · البايتات تهبط في bucket `documents` النهائي وتصبح `AVAILABLE` فوراً.
+
+## AI_OCR_SEARCH_FILE_FLOW
+documents → استخراج/OCR → document_pages → search_document_pages → بيان، بلا أي بوابة إفراج.
+
+## CURRENT_TRUST_BOUNDARIES
+منطقة ثقة واحدة فعلياً: التطبيق يقرأ البايتات ويحمل مفتاح الخدمة ويكتب الحالة ويصدر الروابط. لا Zone Q/H/D/R.
+
+## CURRENT_BYPASS_PATHS
+BP-01 UPLOAD_BYPASS (لا حجر) CRITICAL · BP-02 RAW_PROCESSOR_BYPASS CRITICAL · BP-03 DELIVERY_BYPASS (روابط تخزين) HIGH · BP-04 PUBLIC_STORAGE_BYPASS CRITICAL · BP-05 AI/OCR_BYPASS CRITICAL · BP-06 STATE_BYPASS CRITICAL · BP-07 SECRET_COUPLING CRITICAL · BP-08 REPAIR/LEGACY HIGH.
+
+## VERIFIED_DEPENDENCY_GRAPH_V2
+```text
+S0 → S1 → S2 → S3 → S4 → S5A (RAW PROCESSING BOUNDARY REFACTOR)
+S5A → S6 → S7 → S8 → S5B (CUTOVER) ⇒ RAW_UNTRUSTED_APP_PROCESSING = 0
+S8 → {S9,S10} → S11 (AV-B REQUIRED، لا يصبح Optional) → S12 → S13
+S15/S16 عقود مبكراً؛ DECISION_ENGINE_INTEGRATION_GATE لا ينجح قبل نتائج S8–S13
+S16 → S17 → S18 → S19 ; S13+S17+S19 → S23 ; S9..S19 → S21
+S22: الجرد مبكراً، الترحيل/إعادة الفحص بعد اكتمال الأنبوب
+S27 يبدأ مع أول Parser ويستمر ; S26 بعد كل الضوابط الحرجة ; S20/S24/S25 بالتوازي
+```
+
+## S0 ACCEPTANCE GATE
+UNKNOWN_FILE_ENTRYPOINTS = 0 · UNKNOWN_DELIVERY_PATHS = 0 · UNKNOWN_RAW_PROCESSORS = 0 · UNKNOWN_STORAGE_PATHS = 0 · UNKNOWN_SIGNED_URL_PATHS = 0 · UNKNOWN_PRIVILEGED_STORAGE_CLIENTS = 0 · UNKNOWN_SERVICE_ROLE_FILE_PATHS = 0 — كلها مدعومة بأدلة كود/DB أعلاه.
+Immutability وTTL وأحادية استخدام روابط الرفع: NOT_PROVEN (يتطلب تحقق وقت تشغيل غير مسموح في هذه البوابة).
+
+## النتيجة
+S0_STATUS = NOT_PROVEN (الجرد مكتمل؛ خصائص التخزين/الروابط غير مثبتة)
+PRODUCTION_CHANGED = NO
+DATABASE_CHANGED = NO
+STORAGE_CHANGED = NO
+CODE_BEHAVIOR_CHANGED = NO
+UNKNOWN_FILE_ENTRYPOINTS = 0
+UNKNOWN_DELIVERY_PATHS = 0
+UNKNOWN_RAW_PROCESSORS = 0
+CRITICAL_FINDINGS = BP-01, BP-02, BP-04, BP-05, BP-06, BP-07
+HIGH_FINDINGS = BP-03, BP-08, SU-01, غياب البصمات/النسب، هوية خدمة موحدة
+MASTER_PLAN_DEPENDENCIES_CORRECTED = YES
+
+S1_APPROVAL = NOT_GRANTED
+
+WAITING FOR S0 SECURITY REVIEW
