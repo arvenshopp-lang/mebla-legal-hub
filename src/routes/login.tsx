@@ -7,10 +7,12 @@ import { AUTH_MESSAGES, logAuthEvent } from "@/lib/auth-errors";
 import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
+import { INACTIVITY_MESSAGE } from "@/lib/session-activity";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : "/dashboard",
+    reason: s.reason === "inactive" ? ("inactive" as const) : undefined,
   }),
   component: LoginPage,
   head: () => ({
@@ -34,7 +36,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { redirect } = useSearch({ from: "/login" });
+  const { redirect, reason } = useSearch({ from: "/login" });
   const {
     session,
     authLoading,
@@ -55,6 +57,7 @@ function LoginPage() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [actionBusy, setActionBusy] = useState<null | "resend" | "magic">(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [inactiveNotice, setInactiveNotice] = useState(false);
   const hydrated = useHydrated();
 
   const safeRedirect =
@@ -100,12 +103,23 @@ function LoginPage() {
       params.delete("password");
       changed = true;
     }
+    if (params.has("reason")) {
+      params.delete("reason");
+      changed = true;
+    }
     if (changed) {
       const search = params.toString();
       const url = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
       window.history.replaceState(null, "", url);
     }
   }, []);
+
+  // انتهاء الجلسة بسبب الخمول: تنبيه واضح مرة واحدة عند فتح صفحة الدخول.
+  useEffect(() => {
+    if (reason !== "inactive") return;
+    setInactiveNotice(true);
+    toast.info(INACTIVITY_MESSAGE);
+  }, [reason]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
