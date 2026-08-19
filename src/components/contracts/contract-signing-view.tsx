@@ -226,7 +226,7 @@ export function ContractSigningView({
               <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border text-right">
                 <div className="text-[10px] text-slate-400">قيمة العقد الإجمالية</div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">
-                  {contract.totalAmount.toLocaleString("en-US")} ر.س
+                  <Money value={contract.totalAmount} />
                 </div>
               </div>
             )}
