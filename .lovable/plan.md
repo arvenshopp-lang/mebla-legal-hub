@@ -203,3 +203,108 @@ READY_FOR_IMPLEMENTATION = NO
 READY_FOR_EXTERNAL_SECURITY_TEST = NO
 
 WAITING FOR FINAL SECURITY ARCHITECTURE REVIEW
+
+---
+
+# V5 FINAL — ARCHITECTURE FREEZE CANDIDATE (ADDENDUM)
+
+## A1. لا ثقة منفردة بمحرك القرار
+مسار الإفراج النهائي:
+```text
+SCAN EVIDENCE → DECISION ENGINE → DECISION_TOKEN
+                INDEPENDENT EVIDENCE VERIFIER → EVIDENCE_ATTESTATION
+                (+ CURRENT POLICY) → RELEASE GATE
+```
+VALID SIGNATURE ≠ TRUSTED DECISION. الإفراج يتطلب الرمزين معاً؛ رمز واحد = لا إفراج.
+
+## A2. RELEASE_AUTHORIZATION = 2 OF 2
+A = محرك القرار، B = مدقّق الأدلة المستقل؛ لكل منهما هوية خدمة ومفتاح توقيع KMS وسياسة تفويض وسجل تدقيق منفصلة. اختراق أحدهما وحده = لا إفراج. أي اختلاف = NO RELEASE. لا أغلبية.
+
+## A3. مدقّق الأدلة يعيد حساب السياسة
+يقرأ Metadata موقّعة فقط (لا بايتات) ويتحقق بنفسه من: حضور كل المحركات المطلوبة، غياب نتيجة خبيثة، لا Timeout، لا محرك فاشل، لا UNSCANNABLE، اتساق البصمات، إصدار السياسة الحالي، حداثة التواقيع، سلسلة النسب، واكتمال إعادة الفحص المطلوبة.
+
+## A4. تقسية رمز الإفراج
+مربوط بـ: file_id, organization_id, sha256, security_decision_id, evidence_bundle_id, policy_version, purpose, issued_at, expires_at, audience, issuer, jti/nonce. لا يصلح لملف/مكتب/غرض آخر، ولا يُعاد استخدامه بعد الاستهلاك.
+
+## A5. لا قراءة على مستوى المخزن لخدمة الإفراج
+OBJECT-SCOPED DELIVERY CAPABILITY: ملف واحد، مكتب واحد، غرض واحد، مدة قصيرة جداً. لا مفتاح تخزين رئيسي ولا service role واسع. COMPROMISED_RELEASE_SERVICE ≠ ALL_DOCUMENTS_EXPOSED.
+
+## A6. عدم قابلية تعديل الحجر فعلياً
+`upsert=false` في الكود غير كافٍ. الضوابط: Object Lock/immutability على مستوى المخزن إن توفر، وإلا: إلغاء صلاحية UPDATE، توليد كائن فريد لكل رفع، هوية معنونة بالمحتوى (sha256)، هوية منفصلة للحذف/الاحتفاظ، ومرجع إصدار كائن ثابت. بعد UPLOAD_COMPLETE لا هوية تشغيلية طبيعية تستطيع تعديل نفس البايتات؛ أي استبدال = INTEGRITY INCIDENT.
+
+## A7/A8. الانتقالات مفروضة من قاعدة البيانات
+تصميم: دالة انتقال محكومة `approved_security_transition(...)` (SECURITY DEFINER) + Trigger يرفض أي UPDATE مباشر على عمود الحالة + عمود version للـ CAS + سحب صلاحية UPDATE على عمود الحالة من دور التطبيق + تقسيم هويات الخدمات. الدالة تتحقق من الحالة الحالية والهدف والقرار والأدلة والبصمة والسياسة. Invariant: DIRECT_SECURITY_STATE_UPDATE = IMPOSSIBLE.
+
+## A9. محرك خبيث ثانٍ مستقل
+مطلوب AV ENGINE A + AV ENGINE B (محركان مختلفان فعلاً، لا نفس المحرك مرتين) لكل PDF/DOCX/XLSX من المشترك أو الرابط المؤقت أو البريد الوارد أو التكاملات. الحالة الآن: **HIGH IMPLEMENTATION GAP** — لا يُدّعى Multi-Engine Malware Detection قبل توفره.
+
+## A10. السياسة الأعلى للمستندات الخارجية
+Structural + AV-A + AV-B (إن توفر) + YARA + Dynamic Detonation + CDR للأنواع المناسبة + إعادة فحص المخرجات. لا مصنّف مخاطر يخفّض هذا الأساس.
+
+## A11. مقاومة تحايل الصندوق
+تسريع الزمن، محاكاة تفاعل مستخدم، ملفات تعريف صندوق متعددة، ارتباط سلوكي، كشف بيئة وهمية، مهل ممتدة للتنفيذ الشرطي. لا يُدّعى كشف كل Malware متحايل؛ عدم الحسم = لا إفراج للمستندات الخارجية.
+
+## A12. MicroVM بوابة أمنية لا خياراً
+في Maximum Assurance Mode: إذا لم تتوفر عزلة VM/MicroVM المعتمدة للتفجير عالي الخطورة فإن HIGH_RISK_DYNAMIC_RELEASE = DISABLED. لا تخفيض صامت للمستوى الأمني.
+
+## A13. تقسية ZIP داخل OOXML
+رفض: symlinks، hardlinks، مدخلات أجهزة، مسارات مطلقة، `../`، Zip Slip. حدود: أقصى عدد مدخلات، أقصى حجم مفكوك، أقصى تعشيش، أقصى نسبة ضغط. أي خرق = BLOCK/UNSCANNABLE. (يبني على `zipEntryNames` الحالي مع نقله إلى Zone H.)
+
+## A14. الكشف التفاضلي للمحللات
+اختلاف جذري بين كاشف MIME والمحلل البنيوي وكاشف البصمة على نوع الملف = PARSER_DISAGREEMENT → SUSPICIOUS → NO RELEASE، ويُسجّل كدليل أمني. لا اختيار "النتيجة المريحة".
+
+## A15. الهوية المعنونة بالمحتوى
+sha256 جزء من الهوية الداخلية غير القابلة للتغيير للملف/الإصدار؛ أي محتوى جديد = كائن/إصدار جديد؛ لا تعديل in-place بعد بدء الفحص.
+
+## A16. OWASP ASVS 5.0.0 CROSSWALK (معرّفات النسخة الرسمية غير مُتحقَّق منها في هذه الجلسة = UNVERIFIED)
+| Requirement (v5.0.0-\<req\>) — UNVERIFIED IDs | الضابط المعماري | المكوّن | الاختبار | الدليل | الحالة |
+|---|---|---|---|---|---|
+| File Upload — حد الحجم | حد 20MB + حصص | بوابة الرفع | اختبار تجاوز | سجل رفض | DESIGNED |
+| File Upload — تحقق النوع/المحتوى | MIME مستقل + Magic + Polyglot | Zone H | ملف متنكر | تقرير فحص | DESIGNED |
+| File Upload — حدود المحتوى المضغوط | حدود OOXML/ZIP | Structural | Zip bomb | سجل حدود | DESIGNED |
+| File Upload — حصص المستخدم | حصص توكن/مستخدم/مستأجر | مستوى التحكم | إساءة رفع | مقاييس | DESIGNED |
+| File Storage — symlink | رفض symlink/traversal | Structural | Zip Slip | سجل خرق | DESIGNED |
+| File Storage — pixel flood | حدود أبعاد وبكسل | Image worker | قنبلة صورة | سجل حدود | DESIGNED |
+| File Storage — مسارات آمنة | مفتاح مولّد خادمياً | الحجر | Path traversal | سجل مسار | DESIGNED |
+| File Storage — منع تنفيذ خادمي | noexec + مخزن خاص | Zone Q/H | محاولة تنفيذ | سياسة mount | DESIGNED |
+| File Download — أسماء آمنة | تنقية UTF-8 + Disposition | Zone R | هجمات الأسماء | ترويسات | DESIGNED |
+| File Download — فحص مضاد للفيروسات | AV-A/AV-B + YARA | Zone H | EICAR | تقرير فحص | DESIGNED |
+الحالة العامة: DESIGNED (لا Passed).
+
+## A17. NCA CROSSWALK + APPLICABILITY
+| الإطار | Applicability |
+|---|---|
+| ECC 2-2024 | REQUIRES_LEGAL_OR_COMPLIANCE_CONFIRMATION |
+| CCC-2:2024 | APPLICABLE (خدمات سحابية) |
+| DCC-1:2022 | REQUIRES_LEGAL_OR_COMPLIANCE_CONFIRMATION |
+| ضوابط القطاع الخاص من غير ذوات البنى التحتية الحساسة — 2025 | REQUIRES_LEGAL_OR_COMPLIANCE_CONFIRMATION |
+لا افتراض نطاق، ولا استخدام لكلمة COMPLIANT؛ أرقام ونصوص الضوابط غير المؤكدة = UNVERIFIED.
+
+## A18–A20. سيناريوهات اختراق مستوى التحكم
+- **Release Service مخترقة بالكامل**: لا قدرة على ملف مستأجر آخر ولا ملف مُفرج عنه عشوائي ولا ملف محجوز ولا ملف خزنة الأدلة؛ لا تجاوز لمدقّق الأدلة؛ رمز القرار لا يُعاد استخدامه (jti + استهلاك). نطاق الانفجار = الملف الجاري تسليمه فقط.
+- **Decision Engine يصدر CLEAN كاذباً**: مدقّق الأدلة يعيد الحساب ويرفض → FALSE_DECISION_RELEASE = 0.
+- **Evidence Verifier مخترق ومحرك القرار يرفض**: 2-of-2 غير مكتملة → SINGLE_CONTROL_PLANE_COMPROMISE_RELEASE = 0.
+
+## A21. دليل اختراق المفاتيح
+لمفتاح توقيع القرار، مفتاح توقيع الأدلة، مفتاح mTLS، هوية الماسح: Revoke فوري → Rotate → إبطال كل القدرات القائمة → تحديد القرارات المتأثرة → إعادة تقييم الملفات الحديثة → حفظ أدلة الحادث، مع تعليق الإفراج حتى اكتمال التدوير.
+
+## A22. نزاهة الوقت
+مصدر وقت موثوق ومزامنة NTP مصدّقة، رفض الرموز عند انحراف يتجاوز الحد، تحقق مزدوج للانتهاء في المُصدر والمستهلك، nonce/jti مخزّن لمنع Replay؛ الانحراف الكبير = Fail Closed لا قبول رمز منته.
+
+## A23. صلابة وسيط التسليم
+حساب منفصل (Bulkhead)، بث بلا تخزين كامل في الذاكرة، حدود نطاق ترددي وزمن، حدود تزامن، سياسة Range صارمة، تحكم بمعدل التنزيل. تعطّله لا يُسقط التطبيق الرئيسي.
+
+## A24. ثوابت التجميد الإضافية
+FALSE_DECISION_ENGINE_RELEASE=0 · FALSE_EVIDENCE_VERIFIER_RELEASE=0 · SINGLE_CONTROL_PLANE_COMPROMISE_RELEASE=0 · RELEASE_SERVICE_BUCKET_WIDE_ACCESS=0 · QUARANTINE_OBJECT_OVERWRITE_AFTER_UPLOAD=0 · DIRECT_SECURITY_STATE_UPDATE=0 · OOXML_SYMLINK_ACCEPTANCE=0 · OOXML_PATH_TRAVERSAL=0 · PARSER_DISAGREEMENT_FAIL_OPEN=0 — إضافة إلى كل ثوابت V3/V4/V5.
+
+## A25. قرار التجميد
+FINAL_CRITICAL_DESIGN_GAPS = لا حجر غير قابل للتعديل ولا حالة فحص في المخطط الحالي؛ لا ماسح/صندوق مُشغَّل؛ لا بوابة تسليم موحدة مفروضة؛ التحقق من البايتات ما زال داخل التطبيق؛ لا دالة انتقال محكومة في قاعدة البيانات
+FINAL_HIGH_DESIGN_GAPS = لا محرك AV ثانٍ مستقل؛ Legacy غير مجرود؛ الوسائط العامة بلا فحص؛ لا حصص لكل توكن؛ لا Origin معزول للمعاينة؛ لا سجل نسب؛ Allowlist المستندات أوسع من مرفقات البريد
+UNPROVEN_INFRASTRUCTURE_ASSUMPTIONS = توفر MicroVM في البنية السعودية؛ توفر Object Lock على مستوى المخزن؛ توفر قدرات قراءة معنونة بالكائن؛ توفر مزود ماسح سعودي بـ mTLS ومحركين مستقلين؛ جدوى عامل مؤقت لكل ملف؛ دقة CDR على مستندات عربية معقّدة
+V5_FINAL_SECURITY_CONTROLS_DESIGNED = YES
+ARCHITECTURE_CAN_BE_FROZEN = YES
+IMPLEMENTATION_PLAN_CAN_BEGIN = YES
+
+**MEHLA DOCUMENT SECURITY ARCHITECTURE FROZEN**
+
+WAITING FOR IMPLEMENTATION SECURITY PLAN APPROVAL
