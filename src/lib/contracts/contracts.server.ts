@@ -533,6 +533,13 @@ export async function issueSignLink(
 }
 
 /** جلب العقد بواسطة رمز التوقيع العام (مسار عام — بصمة الرمز فقط) */
+/**
+ * مدة إتاحة الرابط بعد اكتمال التوقيع: الطرف الثاني يحتاج الرجوع للرابط نفسه
+ * لتحميل النسخة النهائية بعد إعادة تحميل الصفحة أو لاحقاً من رسالته، لذلك
+ * يبقى الرمز صالحاً للقراءة والتحميل فقط (لا يسمح بتوقيع ثانٍ) خلال هذه المدة.
+ */
+const SIGNED_LINK_RETENTION_MS = 30 * 86400000; // 30 يوماً
+
 export async function getContractBySignToken(signToken: string): Promise<ContractModel | null> {
   const token = (signToken || "").trim();
   if (!/^[a-f0-9]{64}$/i.test(token)) return null;
@@ -549,6 +556,10 @@ export async function getContractBySignToken(signToken: string): Promise<Contrac
   if (contract.status === "cancelled") return null;
   if (contract.status !== "signed" && contract.expiresAt && new Date(contract.expiresAt).getTime() < Date.now()) {
     return null;
+  }
+  // بعد انتهاء نافذة الإتاحة يتوقف الرابط عن العمل نهائياً.
+  if (contract.status === "signed" && contract.signedAt) {
+    if (new Date(contract.signedAt).getTime() + SIGNED_LINK_RETENTION_MS < Date.now()) return null;
   }
   // تسجيل اطلاع الموقّع كدليل في سجل الموقّعين (مرة واحدة فقط).
   if (contract.status !== "signed") {
@@ -595,7 +606,6 @@ export async function signContractByClient(
       client_signature: clientSignature as never,
       status: "signed",
       signed_at: signedAt,
-      sign_token_hash: null,
     })
     .eq("id", contract.id)
     .neq("status", "signed");

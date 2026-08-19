@@ -49,10 +49,9 @@ export function ContractSigningView({
   const [downloadTicket, setDownloadTicket] = React.useState<string | null>(null);
   const [isDownloading, setIsDownloading] = React.useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["public-contract", token],
     queryFn: () => getPublicContractForSigningFn({ data: { signToken: token } }),
-    // الرمز يُبطل خادمياً بعد التوقيع (استخدام واحد)، لذا لا يُعاد الجلب بعد النجاح
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
@@ -114,14 +113,29 @@ export function ContractSigningView({
 
   const handleDownloadPdf = async () => {
     if (!contract || isDownloading) return;
-    if (!downloadTicket) {
-      toast.error("رابط التحميل غير متاح حالياً، يرجى تحديث الصفحة أو التواصل مع المكتب.");
-      return;
-    }
     setIsDownloading(true);
     try {
       toast.loading("جارٍ تجهيز ملف العقد...", { id: "pdf" });
-      const res = await downloadSignedContractByTicketFn({ data: { downloadTicket } });
+      // التذكرة قصيرة الصلاحية وقد تُفقد بعد إعادة تحميل الصفحة؛ تُطلب من جديد
+      // من الخادم بنفس رمز الرابط قبل الاستسلام لرسالة خطأ.
+      let ticket = downloadTicket;
+      if (!ticket) {
+        const fresh = await refetch();
+        ticket = fresh.data?.downloadTicket ?? null;
+        if (ticket) setDownloadTicket(ticket);
+      }
+      if (!ticket) throw new Error("no-ticket");
+      let res: Awaited<ReturnType<typeof downloadSignedContractByTicketFn>>;
+      try {
+        res = await downloadSignedContractByTicketFn({ data: { downloadTicket: ticket } });
+      } catch (first) {
+        // تذكرة منتهية: تُجدَّد مرة واحدة تلقائياً ثم يُعاد التحميل.
+        const fresh = await refetch();
+        const renewed = fresh.data?.downloadTicket ?? null;
+        if (!renewed) throw first;
+        setDownloadTicket(renewed);
+        res = await downloadSignedContractByTicketFn({ data: { downloadTicket: renewed } });
+      }
       const byteCharacters = atob(res.base64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -139,7 +153,9 @@ export function ContractSigningView({
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       toast.error(
-        message.includes("صلاحية")
+        message === "no-ticket"
+          ? "نسخة العقد غير متاحة للتحميل عبر هذا الرابط، يرجى التواصل مع المكتب."
+          : message.includes("صلاحية")
           ? "انتهت صلاحية رابط التحميل، يرجى طلب رابط جديد من المكتب."
           : message.includes("يكتمل")
             ? "لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل."
