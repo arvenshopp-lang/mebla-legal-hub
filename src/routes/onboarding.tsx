@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/product-analytics";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { getMyPhoneStatus, getSmsPublicConfig } from "@/lib/sms/sms.functions";
+import { PhoneVerificationCard } from "@/components/security/phone-card";
 import { AuthShell, Field, inputCls } from "./login";
 
 export const Route = createFileRoute("/onboarding")({
@@ -47,6 +50,23 @@ function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const loading = authLoading || organizationLoading;
 
+  // سياسة المنصة قد تُلزم توثيق رقم الجوال قبل إنشاء المكتب — والخادم يفرضها أيضاً.
+  const smsConfig = useQuery({
+    queryKey: ["sms-public-config"],
+    queryFn: () => getSmsPublicConfig(),
+    enabled: !!session,
+  });
+  const phoneStatus = useQuery({
+    queryKey: ["my-phone-status"],
+    queryFn: () => getMyPhoneStatus(),
+    enabled: !!session,
+  });
+  const gateLoading = !!session && (smsConfig.isLoading || phoneStatus.isLoading);
+  const verificationRequired =
+    !!smsConfig.data?.smsEnabled && smsConfig.data.signupMode === "required_verified";
+  const phoneVerified = phoneStatus.data?.status === "verified";
+  const blockedByPhone = verificationRequired && !phoneVerified;
+
   useEffect(() => {
     if (loading) return;
     if (!session) {
@@ -63,6 +83,11 @@ function OnboardingPage() {
     if (!session?.user) return;
     const trimmedName = name.trim();
     if (!trimmedName) return toast.error("يرجى إدخال اسم المكتب");
+    if (blockedByPhone) {
+      return toast.error("توثيق رقم الجوال مطلوب", {
+        description: "وثّق رقم جوالك السعودي أولاً لإكمال إنشاء المكتب.",
+      });
+    }
     setSubmitting(true);
     const { data, error } = await supabase.rpc("create_organization_with_owner", {
       _name: trimmedName,
@@ -71,6 +96,12 @@ function OnboardingPage() {
 
     if (error || !data?.[0]?.organization_id) {
       setSubmitting(false);
+      if (error?.message?.includes("PHONE_VERIFICATION_REQUIRED")) {
+        void phoneStatus.refetch();
+        return toast.error("توثيق رقم الجوال مطلوب", {
+          description: "أكمل توثيق رقم جوالك السعودي ثم أعد المحاولة.",
+        });
+      }
       const isDuplicate =
         error?.message?.includes("already belongs") || error?.message?.includes("already");
       return toast.error(isDuplicate ? "لديك مكتب مُفعّل بالفعل" : "تعذّر إنشاء المكتب", {
@@ -90,12 +121,23 @@ function OnboardingPage() {
     navigate({ to: "/dashboard", replace: true });
   };
 
-  if (loading) {
+  if (loading || gateLoading) {
     return (
       <AuthShell title="جاري التحقق" subtitle="نتأكد من حالة حسابك ومكتبك قبل المتابعة">
         <div className="rounded-[var(--radius-m)] border border-border bg-surface-muted p-5 text-sm text-foreground">
           لحظات قليلة…
         </div>
+      </AuthShell>
+    );
+  }
+
+  if (blockedByPhone) {
+    return (
+      <AuthShell
+        title="وثّق رقم جوالك"
+        subtitle="لا يمكن إنشاء المكتب قبل توثيق رقم جوالك السعودي برمز التحقق"
+      >
+        <PhoneVerificationCard />
       </AuthShell>
     );
   }
