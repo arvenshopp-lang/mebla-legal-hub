@@ -19,6 +19,7 @@ import {
   Check,
   FileCheck,
   AlertCircle,
+  FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SignaturePad } from "@/components/contracts/signature-pad";
+import { ContractSignModal } from "@/components/contracts/contract-sign-modal";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import {
   getContractsListFn,
@@ -81,6 +83,10 @@ function ContractsPage() {
   const [lawyerSignatureBase64, setLawyerSignatureBase64] = React.useState<string | null>(null);
   const [copiedTokenId, setCopiedTokenId] = React.useState<string | null>(null);
   const [issuingLinkId, setIssuingLinkId] = React.useState<string | null>(null);
+  const [signingSession, setSigningSession] = React.useState<{
+    token: string;
+    contractNumber: string;
+  } | null>(null);
 
   // Queries
   const { data, isLoading } = useQuery({
@@ -236,6 +242,33 @@ function ContractsPage() {
         error instanceof Error && error.message
           ? error.message
           : "تعذّر إصدار رابط التوقيع. حاول مرة أخرى.",
+      );
+    } finally {
+      setIssuingLinkId(null);
+    }
+  };
+
+  /**
+   * فتح نافذة التوقيع داخل الصفحة: يُصدر رمز توقيع جديد (استخدام واحد) ثم يعرض
+   * وثيقة العقد في نافذة مضغوطة مع بقاء القائمة الجانبية متاحة للتنقل.
+   */
+  const handleOpenSignModal = async (contract: ContractModel) => {
+    if (issuingLinkId) return;
+    setIssuingLinkId(contract.id);
+    try {
+      const { signUrl } = await issueContractSignLinkFn({ data: { contractId: contract.id } });
+      const token = signUrl.split("/").filter(Boolean).pop();
+      if (!token) {
+        toast.error("تعذّر تجهيز رمز التوقيع. حاول مرة أخرى.");
+        return;
+      }
+      setSigningSession({ token, contractNumber: contract.contractNumber });
+      await queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "تعذّر فتح نافذة التوقيع. حاول مرة أخرى.",
       );
     } finally {
       setIssuingLinkId(null);
@@ -398,7 +431,7 @@ function ContractsPage() {
                         {clauses.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => handleRemoveClause(clause.id)}
+                            onClick={() => handleDeleteClause(clause.id)}
                             className="text-red-500 hover:text-red-700 p-1"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -589,6 +622,23 @@ function ContractsPage() {
                         </td>
                         <td className="p-3.5 text-left">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Sign inside the workspace — no standalone page */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={
+                                contract.status === "signed"
+                                  ? "العقد مكتمل وموقع"
+                                  : "توقيع العقد داخل المنصة دون مغادرة الصفحة"
+                              }
+                              disabled={isIssuing || contract.status === "signed"}
+                              onClick={() => handleOpenSignModal(contract)}
+                              className="h-8 px-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                            >
+                              <FileSignature className="w-3.5 h-3.5" />
+                              <span className="text-[10px] mr-1 hidden md:inline">توقيع الآن</span>
+                            </Button>
+
                             {/* Copy or Issue Sign Link */}
                             <Button
                               variant="ghost"
@@ -647,6 +697,17 @@ function ContractsPage() {
           </div>
         </Card>
       </div>
+
+      {signingSession && (
+        <ContractSignModal
+          token={signingSession.token}
+          contractNumber={signingSession.contractNumber}
+          onClose={() => setSigningSession(null)}
+          onSigned={() => {
+            void queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }
