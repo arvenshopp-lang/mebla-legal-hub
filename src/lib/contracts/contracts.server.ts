@@ -591,8 +591,16 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
     ],
     totals: contract.totalAmount
       ? [
-          { label: "إجمالي قيمة العقد والأتعاب", value: `${contract.totalAmount.toLocaleString("en-US")} ر.س`, emphasis: true },
-          { label: "الدفعة المقدمة غير المستردة", value: `${(contract.advanceAmount || 0).toLocaleString("en-US")} ر.س` },
+          {
+            label: "إجمالي قيمة العقد والأتعاب",
+            // «SAR» يُستبدل داخل محرك الطباعة برمز الريال الرسمي المتجهي.
+            value: `${contract.totalAmount.toLocaleString("en-US")} SAR`,
+            emphasis: true,
+          },
+          {
+            label: "الدفعة المقدمة غير المستردة",
+            value: `${(contract.advanceAmount || 0).toLocaleString("en-US")} SAR`,
+          },
         ]
       : [],
     blocks: [
