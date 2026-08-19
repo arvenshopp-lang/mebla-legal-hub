@@ -84,6 +84,22 @@ export type PdfDocumentModel = {
   recipient?: { title: string; lines: string[] } | null;
   /** خطّا توقيع أسفل المستند (الجهة المُصدرة والعميل). */
   signatureSlots?: { label: string; caption?: string | null }[];
+  /**
+   * بطاقة رمز QR للتحقق العام (اختيارية). تُرسم كمربعات متجهية أسفل المستند،
+   * فلا تمر على مسار تشكيل الحروف العربية ولا تؤثر على جودة النص.
+   */
+  verificationQr?: {
+    /** عدد وحدات الرمز في كل ضلع. */
+    size: number;
+    /** بايت لكل وحدة (1 = داكنة) بطول size × size. */
+    modules: Uint8Array;
+    /** رقم التحقق العام المطبوع بجوار الرمز. */
+    verificationId: string;
+    /** رابط صفحة التحقق (يُطبع كنص مساند للمسح اليدوي). */
+    url?: string | null;
+    /** سطر توضيحي عربي. */
+    caption?: string | null;
+  } | null;
 };
 
 /* ------------------------------------------------------------------- الهوية */
