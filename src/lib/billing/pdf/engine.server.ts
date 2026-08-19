@@ -576,6 +576,99 @@ function signatureBlock(ctx: Ctx, slots: { label: string; caption?: string | nul
   ctx.y = baseY - 46;
 }
 
+/**
+ * بطاقة التحقق العام: رمز QR متجهي + رقم التحقق + رابط الصفحة العامة.
+ * تُرسم كصندوق مستقل ولا تتصادم مع التذييل لأنها تحترم ensureSpace.
+ */
+function verificationQrBlock(
+  ctx: Ctx,
+  qr: NonNullable<PdfDocumentModel["verificationQr"]>,
+): void {
+  if (qr.size <= 0 || qr.modules.length < qr.size * qr.size) return;
+  const boxHeight = 98;
+  ensureSpace(ctx, boxHeight + 12);
+  const right = A4.width - MARGIN;
+  const top = ctx.y;
+
+  ctx.page.drawRectangle({
+    x: MARGIN,
+    y: top - boxHeight,
+    width: USABLE,
+    height: boxHeight,
+    color: SURFACE,
+    borderColor: LINE,
+    borderWidth: 0.7,
+  });
+  ctx.page.drawRectangle({ x: right - 3, y: top - boxHeight, width: 3, height: boxHeight, color: GOLD });
+
+  // رسم الرمز كمربعات متجهية على خلفية بيضاء مع هامش صامت (4 وحدات).
+  const boxSide = 74;
+  const quiet = 4;
+  const unit = boxSide / (qr.size + quiet * 2);
+  const qrX = right - 16 - boxSide;
+  const qrY = top - boxHeight + (boxHeight - boxSide) / 2;
+  ctx.page.drawRectangle({
+    x: qrX,
+    y: qrY,
+    width: boxSide,
+    height: boxSide,
+    color: rgb(1, 1, 1),
+    borderColor: LINE,
+    borderWidth: 0.5,
+  });
+  for (let row = 0; row < qr.size; row++) {
+    let run = 0;
+    for (let col = 0; col <= qr.size; col++) {
+      const dark = col < qr.size && qr.modules[row * qr.size + col] === 1;
+      if (dark) {
+        run += 1;
+        continue;
+      }
+      if (run > 0) {
+        // تُدمج الوحدات المتجاورة في مستطيل واحد لتقليل حجم الملف.
+        ctx.page.drawRectangle({
+          x: qrX + (quiet + col - run) * unit,
+          y: qrY + boxSide - (quiet + row + 1) * unit,
+          width: unit * run,
+          height: unit,
+          color: INK,
+        });
+        run = 0;
+      }
+    }
+  }
+
+  const textRight = qrX - 16;
+  const maxWidth = textRight - MARGIN - 14;
+  rightText(ctx, "التحقق من صحة هذا المستند", textRight, top - 26, 10.5, INK);
+  rightText(
+    ctx,
+    truncate(ctx, `رقم التحقق: ${qr.verificationId}`, maxWidth, 9),
+    textRight,
+    top - 44,
+    9,
+    INK,
+  );
+  rightText(
+    ctx,
+    truncate(
+      ctx,
+      qr.caption ?? "امسح الرمز للتحقق من رقم المستند وحالته ومطابقته للنسخة النهائية.",
+      maxWidth,
+      8,
+    ),
+    textRight,
+    top - 60,
+    8,
+    MUTED,
+  );
+  if (qr.url) {
+    rightText(ctx, truncate(ctx, qr.url, maxWidth, 8), textRight, top - 76, 8, MUTED);
+  }
+
+  ctx.y = top - boxHeight - 16;
+}
+
 function metaGrid(ctx: Ctx, meta: PdfMetaRow[]): void {
   if (meta.length === 0) return;
   const right = A4.width - MARGIN;
@@ -790,6 +883,7 @@ export async function renderBillingPdf(
   if (model.signatureSlots && model.signatureSlots.length > 0) {
     signatureBlock(ctx, model.signatureSlots);
   }
+  if (model.verificationQr) verificationQrBlock(ctx, model.verificationQr);
   footer(ctx, brand);
 
   return doc.save();
