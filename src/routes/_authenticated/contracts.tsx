@@ -248,6 +248,33 @@ function ContractsPage() {
     }
   };
 
+  /**
+   * فتح نافذة التوقيع داخل الصفحة: يُصدر رمز توقيع جديد (استخدام واحد) ثم يعرض
+   * وثيقة العقد في نافذة مضغوطة مع بقاء القائمة الجانبية متاحة للتنقل.
+   */
+  const handleOpenSignModal = async (contract: ContractModel) => {
+    if (issuingLinkId) return;
+    setIssuingLinkId(contract.id);
+    try {
+      const { signUrl } = await issueContractSignLinkFn({ data: { contractId: contract.id } });
+      const token = signUrl.split("/").filter(Boolean).pop();
+      if (!token) {
+        toast.error("تعذّر تجهيز رمز التوقيع. حاول مرة أخرى.");
+        return;
+      }
+      setSigningSession({ token, contractNumber: contract.contractNumber });
+      await queryClient.invalidateQueries({ queryKey: ["contracts-list"] });
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "تعذّر فتح نافذة التوقيع. حاول مرة أخرى.",
+      );
+    } finally {
+      setIssuingLinkId(null);
+    }
+  };
+
   // KPIs
   const totalCount = contracts.length;
   const pendingCount = contracts.filter((c) => c.status === "pending_signature").length;
