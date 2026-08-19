@@ -235,6 +235,14 @@ function LoginPage() {
         <span aria-hidden="true" className="h-px flex-1 bg-border" />
       </div>
       <form onSubmit={submit} method="post" noValidate className="space-y-4">
+        {inactiveNotice && (
+          <div
+            role="status"
+            className="rounded-[var(--radius-m)] border border-warning/25 bg-warning-soft p-3 text-[12.5px] leading-6 text-warning-foreground"
+          >
+            {INACTIVITY_MESSAGE}
+          </div>
+        )}
         {formError && (
           <div
             role="alert"
