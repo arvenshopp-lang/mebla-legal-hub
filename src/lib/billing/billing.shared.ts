@@ -273,9 +273,13 @@ export function computeTotals(
   };
 }
 
+/**
+ * مبلغ مالي نصي — للسياقات النصية فقط (تنبيهات، بريد، تصدير).
+ * داخل الواجهة استخدم `<Money />` الذي يرسم رمز الريال الرسمي متجهياً.
+ */
 export function formatMoney(amount: number | string | null | undefined, currency = "SAR"): string {
   const value = Number(amount ?? 0);
-  const label = currency === "SAR" ? "ر.س" : currency;
+  const label = String(currency).toUpperCase() === "SAR" ? "ريال سعودي" : currency;
   return `${fmtDecimal(value)} ${label}`;
 }
 
