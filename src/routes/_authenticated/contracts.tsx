@@ -622,6 +622,23 @@ function ContractsPage() {
                         </td>
                         <td className="p-3.5 text-left">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Sign inside the workspace — no standalone page */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={
+                                contract.status === "signed"
+                                  ? "العقد مكتمل وموقع"
+                                  : "توقيع العقد داخل المنصة دون مغادرة الصفحة"
+                              }
+                              disabled={isIssuing || contract.status === "signed"}
+                              onClick={() => handleOpenSignModal(contract)}
+                              className="h-8 px-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                            >
+                              <FileSignature className="w-3.5 h-3.5" />
+                              <span className="text-[10px] mr-1 hidden md:inline">توقيع الآن</span>
+                            </Button>
+
                             {/* Copy or Issue Sign Link */}
                             <Button
                               variant="ghost"
