@@ -1,6 +1,6 @@
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { shapeArabic } from "./arabic-shaper";
+import { shapeArabicLine as shapeArabic } from "@/lib/pdf/arabic-shaping";
 import { watermarkFontBytes } from "./watermark-font";
 
 /**
