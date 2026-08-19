@@ -6,6 +6,7 @@ import fontkit from "@pdf-lib/fontkit";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { renderBillingPdf, type PdfDocumentModel, type PdfBrand } from "@/lib/billing/pdf/engine.server";
+import { buildQrMatrix, buildVerificationUrl } from "@/lib/pdf/verification-qr.server";
 import { fmtDate } from "@/lib/enums";
 import {
   sealContractVersion,
