@@ -80,7 +80,7 @@ export function deriveAlerts(input: CommandCenterInput): CommandAlert[] {
       id: "invoices-overdue",
       severity: "critical",
       title: `${ar(invoices.overdue)} فاتورة متأخرة عن السداد`,
-      detail: `المبلغ المستحق غير المسدّد: ${ar(invoices.outstanding_amount)} ر.س.`,
+      detail: `المبلغ المستحق غير المسدّد: ${ar(invoices.outstanding_amount)} ريال سعودي.`,
       to: "/mehla-admin/billing",
       cta: "فتح المركز المالي",
     });

@@ -591,8 +591,16 @@ export async function generateContractPdf(contract: ContractModel): Promise<Uint
     ],
     totals: contract.totalAmount
       ? [
-          { label: "إجمالي قيمة العقد والأتعاب", value: `${contract.totalAmount.toLocaleString("en-US")} ر.س`, emphasis: true },
-          { label: "الدفعة المقدمة غير المستردة", value: `${(contract.advanceAmount || 0).toLocaleString("en-US")} ر.س` },
+          {
+            label: "إجمالي قيمة العقد والأتعاب",
+            // «SAR» يُستبدل داخل محرك الطباعة برمز الريال الرسمي المتجهي.
+            value: `${contract.totalAmount.toLocaleString("en-US")} SAR`,
+            emphasis: true,
+          },
+          {
+            label: "الدفعة المقدمة غير المستردة",
+            value: `${(contract.advanceAmount || 0).toLocaleString("en-US")} SAR`,
+          },
         ]
       : [],
     blocks: [
@@ -659,7 +667,7 @@ export async function createCaseFromContract(
       court_name: "المحكمة العامة / التجارية",
       status: "open",
       description: contract.totalAmount
-        ? `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber} — قيمة العقد: ${contract.totalAmount} ر.س`
+        ? `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber} — قيمة العقد: ${contract.totalAmount} ريال سعودي`
         : `قضية تم إنشاؤها تلقائياً من العقد رقم: ${contract.contractNumber}`,
       assigned_lawyer_id: lawyerId || null,
     })

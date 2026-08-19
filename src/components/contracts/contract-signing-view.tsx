@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Money } from "@/components/ui/money";
 import { SignaturePad } from "@/components/contracts/signature-pad";
 import {
   getPublicContractForSigningFn,
@@ -226,7 +227,7 @@ export function ContractSigningView({
               <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border text-right">
                 <div className="text-[10px] text-slate-400">قيمة العقد الإجمالية</div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">
-                  {contract.totalAmount.toLocaleString("en-US")} ر.س
+                  <Money value={contract.totalAmount} />
                 </div>
               </div>
             )}

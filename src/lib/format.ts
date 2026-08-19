@@ -155,11 +155,13 @@ export const fmtDecimal = (n: number | null | undefined): string =>
 export const fmtAmount = (n: number | null | undefined): string => decimalFmt.format(Number(n ?? 0));
 
 /**
- * مبلغ مالي نصي مع رمز العملة — للسياقات النصية البحتة فقط
- * (التنبيهات، عناوين النوافذ، البريد، التصدير) حيث لا يمكن رسم رمز متجهي.
+ * مبلغ مالي نصي — للسياقات النصية البحتة فقط (التنبيهات، عناوين النوافذ،
+ * البريد، التصدير). لا يُستخدم داخل JSX حيث يمكن استخدام `<Money />` الذي
+ * يرسم رمز الريال الرسمي متجهياً.
+ * الريال السعودي يُكتب «ريال سعودي» بالعربية، والعملات الأخرى برمزها الثلاثي.
  */
 export const fmtMoney = (n: number | null | undefined, currency = "SAR"): string =>
-  `${fmtDecimal(n)} ${currency}`;
+  `${fmtDecimal(n)} ${String(currency).toUpperCase() === "SAR" ? "ريال سعودي" : currency}`;
 
 /** نسبة مئوية بأرقام إنجليزية. */
 export const fmtPercent = (n: number | null | undefined, fractionDigits = 1): string =>

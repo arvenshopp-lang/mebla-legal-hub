@@ -31,6 +31,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { SignaturePad } from "@/components/contracts/signature-pad";
 import { ContractSignModal } from "@/components/contracts/contract-sign-modal";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
+import { Money } from "@/components/ui/money";
+import { Riyal } from "@/components/ui/riyal";
 import {
   getContractsListFn,
   saveContractDraftFn,
@@ -380,7 +382,10 @@ function ContractsPage() {
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>إجمالي قيمة العقد (ر.س):</Label>
+                    <Label className="inline-flex items-center gap-1">
+                      إجمالي قيمة العقد (<Riyal />
+                      <span className="sr-only">ريال سعودي</span>):
+                    </Label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -389,7 +394,10 @@ function ContractsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>الدفعة المقدمة / دفعة التعاقد (ر.س):</Label>
+                    <Label className="inline-flex items-center gap-1">
+                      الدفعة المقدمة / دفعة التعاقد (<Riyal />
+                      <span className="sr-only">ريال سعودي</span>):
+                    </Label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -506,7 +514,7 @@ function ContractsPage() {
           />
           <StatCard
             label="إجمالي قيمة العقود"
-            value={`${totalValue.toLocaleString("ar-SA")} ر.س`}
+            value={<Money value={totalValue} decimals={false} />}
             hint="المقابل المالي للعقود"
             tone="gold"
           />
@@ -602,7 +610,7 @@ function ContractsPage() {
                           {CONTRACT_TYPE_LABELS[contract.contractType] || contract.contractType}
                         </td>
                         <td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
-                          {contract.totalAmount ? `${contract.totalAmount.toLocaleString("ar-SA")} ر.س` : "—"}
+                          {contract.totalAmount ? <Money value={contract.totalAmount} /> : "—"}
                         </td>
                         <td className="p-3.5">
                           <Badge
