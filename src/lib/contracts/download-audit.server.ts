@@ -7,6 +7,7 @@
  * والكتابة لا تُفشل عملية التنزيل إطلاقاً.
  */
 import { resolveRequestOrigin } from "@/lib/print/print-audit.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logContractEvent } from "./contracts.server";
 import type { ContractModel } from "./contracts.shared";
 
@@ -23,6 +24,7 @@ export async function recordContractDownload(input: {
   const { contract, channel } = input;
   // عنوان الشبكة والمتصفح يُقرآن من الطلب على الخادم ولا يُقبلان من المتصفح.
   const origin = resolveRequestOrigin();
+  const sealed = await resolveSealedVersion(contract);
   await logContractEvent({
     organizationId: contract.organizationId,
     contractId: contract.id,
@@ -39,8 +41,8 @@ export async function recordContractDownload(input: {
       channel,
       contractNumber: contract.contractNumber,
       verificationId: contract.verificationId ?? null,
-      versionNumber: contract.versionNumber ?? null,
-      contentHash: contract.contentHash ?? null,
+      versionNumber: sealed.versionNumber,
+      contentHash: sealed.contentHash,
       signatureHash: contract.clientSignature?.verificationHash ?? null,
       contractStatus: contract.status,
       fileBytes: input.byteLength,
@@ -48,4 +50,28 @@ export async function recordContractDownload(input: {
       downloadedAt: new Date().toISOString(),
     },
   });
+}
+
+/** بصمة النسخة النهائية المختومة ورقمها (تُقرأ من سجل النسخ، وتُهمل عند تعذّرها). */
+async function resolveSealedVersion(
+  contract: ContractModel,
+): Promise<{ versionNumber: number | null; contentHash: string | null }> {
+  if (contract.contentHash) {
+    return { versionNumber: contract.versionNumber ?? null, contentHash: contract.contentHash };
+  }
+  try {
+    const { data } = await supabaseAdmin
+      .from("contract_versions")
+      .select("version_number, content_hash")
+      .eq("contract_id", contract.id)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return {
+      versionNumber: data?.version_number ?? null,
+      contentHash: data?.content_hash ?? null,
+    };
+  } catch {
+    return { versionNumber: null, contentHash: null };
+  }
 }
