@@ -371,19 +371,19 @@ export function DraftFormModal({
         <div className="rounded-[var(--radius-m)] bg-surface-muted p-4 text-body-sm">
           <div className="flex justify-between">
             <span>المجموع قبل الضريبة</span>
-            <span className="tabular-nums">{formatMoney(totals.subtotal)}</span>
+            <Money value={totals.subtotal} />
           </div>
           <div className="mt-1 flex justify-between">
             <span>الخصم</span>
-            <span className="tabular-nums">{formatMoney(totals.discountTotal)}</span>
+            <Money value={totals.discountTotal} />
           </div>
           <div className="mt-1 flex justify-between">
             <span>الضريبة</span>
-            <span className="tabular-nums">{formatMoney(totals.taxTotal)}</span>
+            <Money value={totals.taxTotal} />
           </div>
           <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold">
             <span>الإجمالي التقديري</span>
-            <span className="tabular-nums">{formatMoney(totals.total)}</span>
+            <Money value={totals.total} />
           </div>
         </div>
 
