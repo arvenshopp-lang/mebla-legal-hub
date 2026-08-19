@@ -100,6 +100,7 @@ import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sale
 import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
 import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
 import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
+import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
 import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
@@ -583,6 +584,11 @@ const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
   path: '/api/public/theme.css',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
+  id: '/api/public/leads',
+  path: '/api/public/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -799,6 +805,7 @@ export interface FileRoutesByFullPath {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -913,6 +920,7 @@ export interface FileRoutesByTo {
   '/cases/$id': typeof AuthenticatedCasesIdRoute
   '/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -1030,6 +1038,7 @@ export interface FileRoutesById {
   '/_authenticated/cases/$id': typeof AuthenticatedCasesIdRoute
   '/_authenticated/team-performance/$memberId': typeof AuthenticatedTeamPerformanceMemberIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/theme.css': typeof ApiPublicThemeDotcssRoute
   '/api/public/webhook': typeof ApiPublicWebhookRoute
   '/mehla-admin/billing/$id': typeof MehlaAdminBillingIdRoute
@@ -1147,6 +1156,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1261,6 +1271,7 @@ export interface FileRouteTypes {
     | '/cases/$id'
     | '/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1377,6 +1388,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cases/$id'
     | '/_authenticated/team-performance/$memberId'
     | '/api/public/health'
+    | '/api/public/leads'
     | '/api/public/theme.css'
     | '/api/public/webhook'
     | '/mehla-admin/billing/$id'
@@ -1442,6 +1454,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicThemeDotcssRoute: typeof ApiPublicThemeDotcssRoute
   ApiPublicWebhookRoute: typeof ApiPublicWebhookRoute
   ApiPublicDocTokenRoute: typeof ApiPublicDocTokenRoute
@@ -2103,6 +2116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/leads': {
+      id: '/api/public/leads'
+      path: '/api/public/leads'
+      fullPath: '/api/public/leads'
+      preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -2463,6 +2483,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicThemeDotcssRoute: ApiPublicThemeDotcssRoute,
   ApiPublicWebhookRoute: ApiPublicWebhookRoute,
   ApiPublicDocTokenRoute: ApiPublicDocTokenRoute,
