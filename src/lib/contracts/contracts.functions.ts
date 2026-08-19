@@ -196,3 +196,16 @@ export const convertContractToCaseFn = createServerFn({ method: "POST" })
     return { ok: true, caseId: result.caseId };
   });
 
+
+/**
+ * تحقق عام من عقد عبر رقم التحقق (QR أو إدخال يدوي).
+ * لا يكشف أي بند أو مبلغ أو بيانات تعريف للأطراف — إثبات وجود وحالة فقط.
+ */
+export const verifyContractPublicFn = createServerFn({ method: "GET" })
+  .validator((d: { verificationId: string }) => ({
+    verificationId: String(d?.verificationId ?? "").slice(0, 40),
+  }))
+  .handler(async ({ data }) => {
+    const { verifyContractByPublicId } = await import("./contract-lifecycle.server");
+    return verifyContractByPublicId(data.verificationId);
+  });
