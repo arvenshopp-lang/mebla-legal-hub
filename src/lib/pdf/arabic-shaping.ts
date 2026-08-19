@@ -1,15 +1,15 @@
 /**
- * Minimal Arabic presentation-form shaper.
+ * محرك تهيئة النص العربي للرسم في PDF — المصدر الوحيد لكل مولدات PDF في المنصة
+ * (العلامة المائية، الفواتير، العقود) حتى لا يتكرر خلل الاتجاه في مسار واحد.
  *
- * pdf-lib draws raw glyphs with no OpenType shaping, so Arabic text must be
- * converted to its contextual presentation forms before it is written into a
- * PDF. Ordering is NOT handled here: fontkit applies the bidi reordering for
- * right-to-left runs when pdf-lib lays the text out, so the shaper returns the
- * presentation forms in logical order. Reversing them here would cancel that
- * reordering and render the line back-to-front.
+ * حقيقتان تحكمان التنفيذ، أُثبتتا بمخرج مرئي:
+ * 1. pdf-lib لا يطبّق تشكيلاً سياقياً على النص الخام، فيجب تحويل الحروف إلى
+ *    أشكال العرض المتصلة (Presentation Forms) صريحةً لتظهر موصولة.
+ * 2. fontkit (داخل pdf-lib) يعكس ترتيب محارف المقطع العربي بنفسه عند التخطيط،
+ *    لكنه لا يطبّق bidi كاملة. فأي عكس إضافي من طرفنا ينتج سطراً مقلوباً، وفي
+ *    المقابل تحتاج مقاطع الأرقام واللاتينية عكساً مسبقاً ليُلغيه عكسه العام.
  *
- * Coverage: the standard Arabic block plus the lam-alef ligatures, which is all
- * the watermark needs (office name, viewer name, timestamp).
+ * التغطية: الكتلة العربية الأساسية + ليغاتورة لام-ألف + علامات التشكيل.
  */
 
 type Forms = [number, number?, number?, number?]; // isolated, final, initial, medial
