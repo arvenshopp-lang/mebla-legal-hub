@@ -58,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/contracts")({
       { title: "العقود والاتفاقيات | مِهلة" },
       {
         name: "description",
-        content: "صياغة وتدقيق وتوقيع العقود الرقمية بهوية وشعار المكتب مع الختم الموثق.",
+        content: "صياغة وتدقيق وتوقيع العقود إلكترونياً بهوية وشعار المكتب مع اعتماد المكتب.",
       },
       { property: "og:title", content: "العقود والاتفاقيات | مِهلة" },
       { property: "og:type", content: "website" },
@@ -207,7 +207,7 @@ function ContractsPage() {
 
   const handleDownloadPdf = async (contractId: string) => {
     try {
-      toast.loading("جارٍ توليد وثيقة العقد الرسمية...", { id: "pdf-gen" });
+      toast.loading("جارٍ توليد نسخة العقد PDF...", { id: "pdf-gen" });
       const res = await downloadContractPdfFn({ data: { contractId } });
       const byteCharacters = atob(res.base64);
       const byteNumbers = new Array(byteCharacters.length);
@@ -297,7 +297,7 @@ function ContractsPage() {
   return (
     <DashboardShell
       title="العقود والاتفاقيات"
-      description="صياغة وتدقيق وتوقيع العقود الرقمية بهوية وشعار المكتب مع الختم الموثق وربط القضايا."
+      description="صياغة وتدقيق وتوقيع العقود إلكترونياً بهوية وشعار المكتب مع اعتماد المكتب وربط القضايا."
       actions={
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -509,7 +509,7 @@ function ContractsPage() {
           <StatCard
             label="العقود الموقعة والمعتمدة"
             value={signedCount}
-            hint="موثقة ببصمة إلكترونية رسمية"
+            hint="موقّعة إلكترونياً ببصمة SHA-256"
             tone="success"
           />
           <StatCard
@@ -571,7 +571,7 @@ function ContractsPage() {
                     <td colSpan={8} className="text-center p-12">
                       <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">لا توجد عقود مطابقة</p>
-                      <p className="text-xs text-slate-400 mt-1">ابدأ بإنشاء أول عقد أتعاب إلكتروني موثق لمكتبك.</p>
+                      <p className="text-xs text-slate-400 mt-1">ابدأ بإنشاء أول عقد أتعاب إلكتروني لمكتبك.</p>
                       <Button
                         variant="outline"
                         size="sm"
@@ -676,7 +676,7 @@ function ContractsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="تحميل وثيقة العقد الرسمية PDF"
+                              title="تحميل نسخة العقد PDF"
                               onClick={() => handleDownloadPdf(contract.id)}
                               className="h-8 px-2 text-slate-600 hover:text-primary"
                             >

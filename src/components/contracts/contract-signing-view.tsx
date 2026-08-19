@@ -21,7 +21,7 @@ import { SignaturePad } from "@/components/contracts/signature-pad";
 import {
   getPublicContractForSigningFn,
   signPublicContractFn,
-  downloadContractPdfFn,
+  downloadSignedContractByTicketFn,
 } from "@/lib/contracts/contracts.functions";
 import { CONTRACT_TYPE_LABELS } from "@/lib/contracts/contracts.shared";
 import { toast } from "sonner";
@@ -46,6 +46,8 @@ export function ContractSigningView({
   const [signatureBase64, setSignatureBase64] = React.useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [isSuccessfullySigned, setIsSuccessfullySigned] = React.useState(false);
+  const [downloadTicket, setDownloadTicket] = React.useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["public-contract", token],
@@ -66,11 +68,16 @@ export function ContractSigningView({
     }
   }, [contract]);
 
+  React.useEffect(() => {
+    if (data?.downloadTicket) setDownloadTicket(data.downloadTicket);
+  }, [data?.downloadTicket]);
+
   const signMutation = useMutation({
     mutationFn: signPublicContractFn,
     onSuccess: (res) => {
       if (res.ok) {
         setIsSuccessfullySigned(true);
+        if (res.downloadTicket) setDownloadTicket(res.downloadTicket);
         toast.success("تم توقيع واعتماد العقد بنجاح!");
         onSigned?.();
       } else {
@@ -106,10 +113,15 @@ export function ContractSigningView({
   };
 
   const handleDownloadPdf = async () => {
-    if (!contract) return;
+    if (!contract || isDownloading) return;
+    if (!downloadTicket) {
+      toast.error("رابط التحميل غير متاح حالياً، يرجى تحديث الصفحة أو التواصل مع المكتب.");
+      return;
+    }
+    setIsDownloading(true);
     try {
       toast.loading("جارٍ تجهيز ملف العقد...", { id: "pdf" });
-      const res = await downloadContractPdfFn({ data: { contractId: contract.id } });
+      const res = await downloadSignedContractByTicketFn({ data: { downloadTicket } });
       const byteCharacters = atob(res.base64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -124,8 +136,18 @@ export function ContractSigningView({
       a.click();
       URL.revokeObjectURL(url);
       toast.success("تم تنزيل العقد بنجاح!", { id: "pdf" });
-    } catch {
-      toast.error("تعذّر تنزيل ملف الـ PDF.", { id: "pdf" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      toast.error(
+        message.includes("صلاحية")
+          ? "انتهت صلاحية رابط التحميل، يرجى طلب رابط جديد من المكتب."
+          : message.includes("يكتمل")
+            ? "لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل."
+            : "تعذّر تجهيز ملف العقد حالياً، يرجى المحاولة بعد قليل.",
+        { id: "pdf" },
+      );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -134,7 +156,7 @@ export function ContractSigningView({
       <div className="flex items-center justify-center p-10" role="status" aria-live="polite">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-semibold text-slate-600">جارٍ تحميل وثيقة العقد الرسمية...</p>
+          <p className="text-sm font-semibold text-slate-600">جارٍ تحميل وثيقة العقد...</p>
         </div>
       </div>
     );
@@ -170,7 +192,7 @@ export function ContractSigningView({
             </h2>
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>منصة العقود الرقمية المعتمدة</span>
+              <span>عقود إلكترونية عبر منصة مِهلة</span>
               <span>•</span>
               <span>س.ت: {contract.firstParty.identifierNumber}</span>
             </div>
@@ -178,7 +200,7 @@ export function ContractSigningView({
         </div>
 
         <div className="text-left sm:text-right bg-slate-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border text-xs">
-          <div className="text-slate-400 text-[10px]">رقم العقد الرسمي</div>
+          <div className="text-slate-400 text-[10px]">الرقم المرجعي للعقد</div>
           <div className="font-mono font-bold text-primary text-sm">{contract.contractNumber}</div>
         </div>
       </div>
@@ -191,19 +213,20 @@ export function ContractSigningView({
           </div>
           <div>
             <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-300">
-              تم توقيع واعتماد العقد رسمياً بنجاح!
+              تم توقيع العقد إلكترونياً بنجاح
             </h3>
             <p className="text-xs text-emerald-600/90 mt-1 max-w-md mx-auto">
-              تم توثيق التوقيع الإلكتروني وختم العقد ببيانات الإثبات الرسمية وفق نظام التعاملات
-              الإلكترونية ونظام الإثبات السعودي.
+              تم تسجيل التوقيع مع تاريخه ووقته وبيانات الجهاز وبصمة المستند داخل سجل العقد. هذا
+              المستند موقّع إلكترونياً عبر منصة مِهلة ولا يمثل توثيقاً رسمياً لدى جهة حكومية.
             </p>
           </div>
           <Button
             onClick={handleDownloadPdf}
+            disabled={isDownloading}
             className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
           >
             <Download className="w-4 h-4" />
-            تحميل وثيقة العقد الموقعة (PDF)
+            {isDownloading ? "جارٍ تجهيز الملف..." : "تحميل نسخة العقد الموقعة (PDF)"}
           </Button>
         </Card>
       ) : null}
@@ -305,8 +328,8 @@ export function ContractSigningView({
                   التوقيع الإلكتروني للطرف الثاني (الموكل):
                 </h4>
                 <p className="text-xs text-slate-500">
-                  توقيعك الإلكتروني يعد موافقة نظامية ملزمة لا رجعة فيها وفق نظام الإثبات ونظام
-                  المعاملات الإلكترونية.
+                  توقيعك الإلكتروني يعد إقراراً صريحاً بالموافقة على بنود العقد، ويُسجَّل مع تاريخه
+                  ووقته وبيانات جهازك كدليل على التوقيع.
                 </p>
               </div>
 
@@ -342,8 +365,8 @@ export function ContractSigningView({
                   className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   أقر أنا الموقع أعلاه بصفتي أصيلاً أو مفوضاً عن الطرف الثاني بقراءتي التامة لجميع
-                  بنود وشروط هذا العقد والموافقة عليها، وأعتمد توقيعي الإلكتروني كحجة قاطعة وملزمة
-                  وفق نظام التعاملات الإلكترونية ونظام الإثبات بالمملكة العربية السعودية.
+                  بنود وشروط هذا العقد والموافقة الصريحة عليها، وأعتمد توقيعي الإلكتروني عبر منصة
+                  مِهلة تعبيراً عن رضائي بالتعاقد.
                 </label>
               </div>
 
@@ -355,8 +378,8 @@ export function ContractSigningView({
               >
                 <CheckCircle2 className="w-5 h-5" />
                 {signMutation.isPending
-                  ? "جارٍ التوثيق والتوقيع..."
-                  : "تأكيد واعتماد توقيع العقد إلكترونياً"}
+                  ? "جارٍ تسجيل التوقيع..."
+                  : "تأكيد التوقيع الإلكتروني على العقد"}
               </Button>
             </div>
           )}

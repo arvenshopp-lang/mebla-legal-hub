@@ -2,6 +2,7 @@
  * دوال الخادم لعقود مِهلة الرقمية (TanStack Start Server Functions)
  */
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import {
   getContractsByOrg,
   getContractById,
@@ -12,6 +13,11 @@ import {
   createCaseFromContract,
   resolveContractOrg,
   issueSignLink,
+  issueContractDownloadTicket,
+  resolveContractDownloadTicket,
+  getContractForTicket,
+  logContractEvent,
+  ContractAccessError,
 } from "./contracts.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertEntitlement } from "@/lib/subscription.server";
@@ -101,7 +107,10 @@ export const getPublicContractForSigningFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const contract = await getContractBySignToken(data.signToken);
     if (!contract) return { contract: null };
-    return { contract };
+    // العقد الموقّع مسبقاً يُتاح تحميله فوراً بتذكرة قصيرة الصلاحية.
+    const downloadTicket =
+      contract.status === "signed" ? await issueContractDownloadTicket(contract) : null;
+    return { contract, downloadTicket };
   });
 
 export const signPublicContractFn = createServerFn({ method: "POST" })
@@ -109,13 +118,57 @@ export const signPublicContractFn = createServerFn({ method: "POST" })
     (d: { signToken: string; signatureImageBase64: string; signerName: string; ipAddress?: string }) => d,
   )
   .handler(async ({ data }) => {
+    // عنوان الشبكة والمتصفح يُقرآن من الطلب على الخادم ولا يُقبلان من المتصفح.
+    const request = getRequest();
+    const ipAddress =
+      request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      undefined;
     const result = await signContractByClient(
       data.signToken,
       data.signatureImageBase64,
       data.signerName,
-      data.ipAddress,
+      ipAddress,
+      request.headers.get("user-agent") ?? undefined,
     );
     return result;
+  });
+
+/**
+ * تحميل النسخة الموقعة من رابط التوقيع العام.
+ * الطرف الخارجي لا يملك جلسة، فالتحقق يعتمد على تذكرة موقّعة (HMAC) قصيرة
+ * الصلاحية صادرة من الخادم بعد التوقيع، ولا تُقبل أي معرّفات من المتصفح.
+ */
+export const downloadSignedContractByTicketFn = createServerFn({ method: "POST" })
+  .validator((d: { downloadTicket: string }) => d)
+  .handler(async ({ data }) => {
+    const { contractId, organizationId } = await resolveContractDownloadTicket(data.downloadTicket);
+    const contract = await getContractForTicket(contractId, organizationId);
+    if (!contract) throw new ContractAccessError("العقد غير متاح للتحميل.");
+    if (contract.status !== "signed") {
+      throw new ContractAccessError("لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل.");
+    }
+
+    const pdfBytes = await generateContractPdf(contract);
+
+    const request = getRequest();
+    await logContractEvent({
+      organizationId: contract.organizationId,
+      contractId: contract.id,
+      eventType: "exported_pdf",
+      actorLabel: contract.clientSignature?.signedBy ?? contract.secondParty.name,
+      ipAddress:
+        request.headers.get("cf-connecting-ip") ||
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        null,
+      userAgent: request.headers.get("user-agent"),
+      metadata: { channel: "public_sign_link" },
+    });
+
+    return {
+      fileName: `عقد_${contract.contractNumber}.pdf`,
+      base64: Buffer.from(pdfBytes).toString("base64"),
+    };
   });
 
 export const downloadContractPdfFn = createServerFn({ method: "POST" })

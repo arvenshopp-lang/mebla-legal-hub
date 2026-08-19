@@ -22,7 +22,7 @@ export type ContractStatus = "draft" | "pending_signature" | "signed" | "cancell
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: "مسودة قيد الصياغة",
   pending_signature: "بانتظار توقيع الموكل",
-  signed: "موقع ومعتمد رسمياً",
+  signed: "موقّع إلكترونياً",
   cancelled: "ملغي",
   expired: "منتهي الصلاحية",
 };
