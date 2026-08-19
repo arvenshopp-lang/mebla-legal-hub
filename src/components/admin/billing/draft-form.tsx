@@ -3,10 +3,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { Btn, FormField, Modal, inputCls } from "@/lib/list-utils";
 import {
   computeTotals,
-  formatMoney,
   type InvoiceDetail,
   type InvoiceItemInput,
 } from "@/lib/billing/billing.shared";
+import { Money } from "@/components/ui/money";
 import { num } from "./shared";
 
 export type DraftFormValue = {
