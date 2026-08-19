@@ -17,7 +17,7 @@ import {
 import { IntegrationHttpError, evaluateSuccess, integrationFetch, joinUrl } from "../http.server";
 
 function baseUrl(context: ConnectorContext): string {
-  return context.baseUrl || "https://api.mobile.net.sa";
+  return context.baseUrl || "https://app.mobile.net.sa";
 }
 
 /** مفتاح الربط يُقرأ من خزانة الأسرار فقط — لا قيم مضمّنة في الكود. */
@@ -46,7 +46,8 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
       adapterType: "mobilenet",
       logoKey: "mobilenet",
       websiteUrl: "https://mobile.net.sa",
-      docsHint: "مفتاح الـ API واسم المرسل المعتمد من هيئة الاتصالات (CST) عبر لوحة تحكم mobile.net.sa.",
+      docsHint:
+        "مفتاح الـ API واسم المرسل المعتمد من هيئة الاتصالات (CST) عبر لوحة تحكم mobile.net.sa — بوابة Madar API v1.",
     };
   }
 
@@ -73,15 +74,18 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
     try {
       const key = apiKey(context);
       const response = await integrationFetch({
-        method: "GET",
-        url: joinUrl(baseUrl(context), "/sms/balance"),
-        headers: { Accept: "application/json", Authorization: `Bearer ${key}`, apiKey: key },
+        method: "POST",
+        url: joinUrl(baseUrl(context), "/api/v1/get-balance"),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        },
+        body: "{}",
         timeoutMs: context.timeoutMs,
         policy: urlPolicy(context),
         retries: context.maxRetries,
       });
-
-      // البوابة ترجع 401/404 عندما يكون المفتاح صحيحاً لكن المسار غير مفعّل للحساب.
       const verdict = evaluateSuccess(response, {
         successStatusCodes: [200],
         successJsonPath: null,
@@ -118,19 +122,17 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
 
     const response = await integrationFetch({
       method: "POST",
-      url: joinUrl(baseUrl(context), "/sms/send"),
+      url: joinUrl(baseUrl(context), "/api/v1/send"),
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${key}`,
-        apiKey: key,
       },
       body: JSON.stringify({
-        apiKey: key,
-        numbers: normalizeSaudiPhone(input.phone),
-        sender,
-        msg: input.text,
-        message: input.text,
+        number: normalizeSaudiPhone(input.phone),
+        senderName: sender,
+        sendAtOption: "Now",
+        messageBody: input.text,
       }),
       timeoutMs: context.timeoutMs,
       policy: urlPolicy(context),
@@ -146,9 +148,20 @@ export class MobileNetOtpConnector extends BaseOtpConnector {
     if (!verdict.ok) throw new IntegrationHttpError(verdict.code, verdict.detail, response.status);
 
     const payload = response.json as
-      | { messageId?: string | number; msgId?: string | number; data?: { messageId?: string | number } }
+      | {
+          id?: string | number;
+          messageId?: string | number;
+          msgId?: string | number;
+          data?: { id?: string | number; messageId?: string | number };
+        }
       | null;
-    const reference = payload?.messageId ?? payload?.msgId ?? payload?.data?.messageId ?? null;
+    const reference =
+      payload?.id ??
+      payload?.messageId ??
+      payload?.msgId ??
+      payload?.data?.id ??
+      payload?.data?.messageId ??
+      null;
     return {
       reference: reference != null ? String(reference) : null,
       latencyMs: response.latencyMs,

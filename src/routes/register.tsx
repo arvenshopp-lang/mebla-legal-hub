@@ -26,6 +26,18 @@ import {
   phoneFieldVisible,
 } from "@/lib/sms/sms.shared";
 import { isValidInviteToken } from "@/lib/invitations.shared";
+import { OtpCodeInput } from "@/components/otp-code-input";
+
+/** الجوال السعودي فقط: 9 أرقام تبدأ بـ 5، ومفتاح الدولة مقفل على +966. */
+const SAUDI_PHONE_ERROR = "أدخل رقم جوال سعودي يبدأ بـ 5 ويتكوّن من 9 أرقام.";
+
+function toSaudiNational(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("00966")) digits = digits.slice(5);
+  else if (digits.startsWith("966")) digits = digits.slice(3);
+  if (digits.startsWith("0")) digits = digits.replace(/^0+/, "");
+  return digits.slice(0, 9);
+}
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -80,7 +92,11 @@ function RegisterPage() {
   const showPhone = phoneFieldVisible(sms);
   const phoneRequired = showPhone && sms.requirePhone;
   const verificationRequired = showPhone && sms.requireVerification && !sms.outage;
-  const phoneParsed = normalizePhone(phone, sms.defaultDialCode);
+  const saudiValid = /^5\d{8}$/.test(phone);
+  const parsed = normalizePhone(phone, sms.defaultDialCode);
+  const phoneParsed: ReturnType<typeof normalizePhone> = saudiValid
+    ? parsed
+    : { ok: false, message: SAUDI_PHONE_ERROR };
 
   // خطوة التحقق محفوظة على الخادم: الرجوع من واتساب لا يُعيدها من الصفر
   const challenge = usePhoneChallenge({
@@ -96,7 +112,7 @@ function RegisterPage() {
     (value: Partial<{ fullName: string; email: string; phone: string }>) => {
       if (typeof value.fullName === "string") setFullName(value.fullName);
       if (typeof value.email === "string") setEmail(value.email);
-      if (typeof value.phone === "string") setPhone(value.phone);
+      if (typeof value.phone === "string") setPhone(toSaudiNational(value.phone));
     },
     [],
   );
@@ -143,7 +159,8 @@ function RegisterPage() {
       });
       setPhoneVerified(true);
       challenge.reset();
-      toast.success(SMS_MESSAGES.verified);
+      setPhoneCode("");
+      toast.success("تم توثيق رقم الجوال بنجاح ✅", { description: SMS_MESSAGES.verified });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : SMS_MESSAGES.invalidCode);
     } finally {
@@ -390,27 +407,45 @@ function RegisterPage() {
         {showPhone && (
           <div className="space-y-3">
             <Field
-              label={phoneRequired ? "رقم الجوال" : "رقم الجوال (اختياري)"}
+              label="رقم الجوال السعودي"
               hint={
                 verificationRequired
-                  ? "سنرسل رمز تحقق لمرة واحدة لتوثيق الرقم."
+                  ? "سنرسل رمز تحقق من 6 أرقام لتوثيق الرقم قبل إكمال التسجيل."
                   : "يُستخدم للتواصل والتنبيهات، ويمكن توثيقه لاحقاً من الإعدادات."
               }
             >
-              <input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                dir="ltr"
-                placeholder="05XXXXXXXX"
-                required={phoneRequired}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setPhoneVerified(false);
-                }}
-                className={inputCls + " text-center tracking-[0.12em]"}
-              />
+              <div dir="ltr" className="flex items-stretch gap-2">
+                <span
+                  aria-hidden
+                  className="flex min-h-[46px] shrink-0 items-center rounded-[var(--radius-m)] border border-border bg-surface-muted px-3 font-mono text-[14px] font-semibold text-foreground"
+                >
+                  +966
+                </span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  dir="ltr"
+                  placeholder="5XXXXXXXX"
+                  aria-describedby="phone-country-note"
+                  maxLength={9}
+                  required={phoneRequired}
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(toSaudiNational(e.target.value));
+                    setPhoneVerified(false);
+                  }}
+                  className={inputCls + " text-center tracking-[0.14em]"}
+                />
+              </div>
+              <p id="phone-country-note" className="mt-1 text-[12px] text-text-muted">
+                مفتاح الدولة ثابت (+966) — تُقبل الأرقام السعودية فقط.
+              </p>
+              {phone.length > 0 && !saudiValid && (
+                <p role="alert" className="mt-1 text-[12px] text-danger">
+                  {SAUDI_PHONE_ERROR}
+                </p>
+              )}
             </Field>
 
             {sms.showOutageNotice && (
@@ -446,17 +481,15 @@ function RegisterPage() {
                           : "إرسال رمز التحقق"}
                   </button>
                   {(challenge.active || challenge.expired) && (
-                    <input
+                    <OtpCodeInput
                       value={phoneCode}
-                      onChange={(e) =>
-                        setPhoneCode(e.target.value.replace(/\D/g, "").slice(0, sms.codeLength))
-                      }
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      dir="ltr"
-                      aria-label="رمز التحقق"
+                      onChange={setPhoneCode}
+                      length={sms.codeLength}
                       disabled={challenge.expired}
-                      className={inputCls + " max-w-[150px] text-center font-mono tracking-[0.4em]"}
+                      autoFocus={challenge.active}
+                      onComplete={() => {
+                        if (!challenge.expired) void confirmPhoneCode();
+                      }}
                     />
                   )}
                   {(challenge.active || challenge.expired) && (
@@ -494,7 +527,9 @@ function RegisterPage() {
             )}
 
             {phoneVerified && (
-              <p className="text-[12.5px] font-medium text-success">تم توثيق رقم الجوال بنجاح.</p>
+              <p role="status" className="text-[12.5px] font-medium text-success">
+                تم توثيق رقم الجوال بنجاح ✅
+              </p>
             )}
           </div>
         )}

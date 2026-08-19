@@ -190,94 +190,88 @@ async function sendUnifonic(
   }
 }
 
-/** مزوّد مدار التقنية (mobile.net.sa) — البوابة السحابية السعودية المعتمدة. */
+/** الرابط الأساسي لبوابة مدار التقنية (Madar SMS API v1). */
+export const MOBILENET_BASE_URL = "https://app.mobile.net.sa";
+
+/** توحيد رقم الجوال السعودي إلى الصيغة الدولية بدون رمز + (9665XXXXXXXX). */
+export function normalizeSaudiMsisdn(raw: string): string {
+  let phone = raw.replace(/[\s\-()+]/g, "");
+  if (phone.startsWith("00966")) phone = phone.slice(2);
+  else if (phone.startsWith("05")) phone = `966${phone.slice(1)}`;
+  else if (phone.startsWith("5") && phone.length === 9) phone = `966${phone}`;
+  return phone;
+}
+
+/** استخراج معرّف الرسالة من رد المزوّد إن وُجد — بلا معرّفات وهمية. */
+function mobileNetReference(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as {
+      id?: string | number;
+      messageId?: string | number;
+      msgId?: string | number;
+      data?: { id?: string | number; messageId?: string | number };
+    };
+    const reference =
+      parsed.id ?? parsed.messageId ?? parsed.msgId ?? parsed.data?.id ?? parsed.data?.messageId;
+    return reference != null ? String(reference) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** مزوّد مدار التقنية (mobile.net.sa) — Madar SMS API v1. */
 async function sendMobileNet(
   config: SmsProviderConfig,
   creds: Credentials,
   to: string,
   text: string,
 ): Promise<string | null> {
-  const apiKey =
-    creds.key ||
-    process.env["SMS_API_KEY"] ||
-    process.env["MOBILENET_API_KEY"] ||
-    "ERjjWiw9l1dN7hFfgErVXyvIW52zsDxKpM2Nnt4E07510174";
+  const apiKey = requireKey(creds);
+  const sender = config.senderName ?? config.senderId ?? "Mehlalex";
+  const base = trimUrl(config.baseUrl ?? MOBILENET_BASE_URL);
 
-  if (!apiKey) {
-    throw new SmsProviderError(
-      "MISSING_CREDENTIALS",
-      "مفتاح الربط مع mobile.net.sa غير مُعرَّف في الإعدادات.",
-    );
-  }
-
-  const sender = config.senderName ?? config.senderId ?? "MehlaLex";
-
-  // تطبيع الرقم للصيغة السعودية الدولية (9665XXXXXXXX)
-  let phone = to.replace(/[\s\-+]/g, "");
-  if (phone.startsWith("00966")) phone = phone.slice(2);
-  else if (phone.startsWith("05")) phone = "966" + phone.slice(1);
-  else if (phone.startsWith("5") && phone.length === 9) phone = "966" + phone;
-
-  const base = trimUrl(config.baseUrl ?? "https://api.mobile.net.sa");
-
-  const response = await fetch(`${base}/sms/send`, {
+  const response = await fetch(`${base}/api/v1/send`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Accept: "application/json",
       Authorization: `Bearer ${apiKey}`,
-      apiKey: apiKey,
     },
     body: JSON.stringify({
-      apiKey,
-      userName: config.applicationId ?? undefined,
-      numbers: phone,
-      sender: sender,
-      msg: text,
-      message: text,
+      number: normalizeSaudiMsisdn(to),
+      senderName: sender,
+      sendAtOption: "Now",
+      messageBody: text,
     }),
   });
 
   const body = await readBody(response);
   if (!response.ok) {
-    // محاولة إرسال بديلة عبر بوابة المعاملات
-    try {
-      const fallbackUrl = `https://mobile.net.sa/sms/gw/?userName=${encodeURIComponent(
-        config.applicationId ?? "",
-      )}&apiKey=${encodeURIComponent(apiKey)}&numbers=${encodeURIComponent(
-        phone,
-      )}&sender=${encodeURIComponent(sender)}&msg=${encodeURIComponent(text)}`;
-      const fallbackRes = await fetch(fallbackUrl);
-      const fallbackBody = await readBody(fallbackRes);
-      if (fallbackRes.ok && (fallbackBody.includes("1") || fallbackBody.includes("success"))) {
-        return "mobilenet-" + Date.now();
-      }
-    } catch {
-      // تجاهل محاولة البديل في حال تعثرها
-    }
-
     throw new SmsProviderError(
       "PROVIDER_REJECTED",
       `MobileNet [${response.status}]: ${body}`,
       response.status,
     );
   }
+  return mobileNetReference(body);
+}
 
-  try {
-    const parsed = JSON.parse(body) as {
-      status?: string | number;
-      messageId?: string | number;
-      msgId?: string | number;
-      data?: { messageId?: string | number };
-    };
-    return (
-      (parsed.messageId ? String(parsed.messageId) : null) ??
-      (parsed.msgId ? String(parsed.msgId) : null) ??
-      (parsed.data?.messageId ? String(parsed.data.messageId) : null) ??
-      "mobilenet-" + Date.now()
-    );
-  } catch {
-    return "mobilenet-" + Date.now();
-  }
+/** فحص رصيد الحساب عند مدار التقنية — يُستخدم لإثبات صحة المفتاح. */
+export async function checkMobileNetBalance(
+  config: SmsProviderConfig,
+): Promise<{ status: number; body: string }> {
+  const apiKey = requireKey(readSmsCredentials());
+  const base = trimUrl(config.baseUrl ?? MOBILENET_BASE_URL);
+  const response = await fetch(`${base}/api/v1/get-balance`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: "{}",
+  });
+  return { status: response.status, body: await readBody(response) };
 }
 
 /** مزوّد مخصص: نقطة HTTP يحددها العميل وتستقبل JSON موحّداً. */
