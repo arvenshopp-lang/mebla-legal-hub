@@ -19,6 +19,7 @@ import {
   Check,
   FileCheck,
   AlertCircle,
+  FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SignaturePad } from "@/components/contracts/signature-pad";
+import { ContractSignModal } from "@/components/contracts/contract-sign-modal";
 import { DashboardShell, StatCard } from "@/components/dashboard/shell";
 import {
   getContractsListFn,
@@ -81,6 +83,10 @@ function ContractsPage() {
   const [lawyerSignatureBase64, setLawyerSignatureBase64] = React.useState<string | null>(null);
   const [copiedTokenId, setCopiedTokenId] = React.useState<string | null>(null);
   const [issuingLinkId, setIssuingLinkId] = React.useState<string | null>(null);
+  const [signingSession, setSigningSession] = React.useState<{
+    token: string;
+    contractNumber: string;
+  } | null>(null);
 
   // Queries
   const { data, isLoading } = useQuery({
