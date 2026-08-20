@@ -60,16 +60,16 @@ const PAGE_SIZE = 20;
 
 const schema = z.object({
   case_id: z.string().uuid("اختر القضية"),
-  title: z.string().trim().min(2, "العنوان مطلوب").max(200),
+  title: z.string().trim().min(2, "العنوان مطلوب").max(FIELD_LIMITS.title),
   hearing_date: z.string().min(1, "التاريخ مطلوب"),
-  court_name: z.string().max(150).optional().nullable(),
-  judicial_circuit: z.string().max(80).optional().nullable(),
-  hearing_type: z.string().max(80).optional().nullable(),
-  location: z.string().max(200).optional().nullable(),
-  remote_link: z.string().max(500).optional().nullable(),
+  court_name: z.string().max(FIELD_LIMITS.court).optional().nullable(),
+  judicial_circuit: z.string().max(FIELD_LIMITS.shortText).optional().nullable(),
+  hearing_type: z.string().max(FIELD_LIMITS.shortText).optional().nullable(),
+  location: z.string().max(FIELD_LIMITS.location).optional().nullable(),
+  remote_link: optionalHttpsUrlSchema,
   status: z.enum(["scheduled", "completed", "postponed", "cancelled", "missed"]),
-  result: z.string().max(1000).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
+  result: z.string().max(FIELD_LIMITS.result).optional().nullable(),
+  notes: z.string().max(FIELD_LIMITS.notes).optional().nullable(),
 });
 type Form = z.infer<typeof schema>;
 
@@ -450,6 +450,7 @@ function HearingDialog({
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
@@ -485,6 +486,7 @@ function HearingDialog({
           <input
             value={form.court_name ?? ""}
             onChange={(e) => setForm({ ...form, court_name: e.target.value })}
+            maxLength={FIELD_LIMITS.court}
             className={inputCls}
           />
         </FormField>
@@ -492,6 +494,7 @@ function HearingDialog({
           <input
             value={form.judicial_circuit ?? ""}
             onChange={(e) => setForm({ ...form, judicial_circuit: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -499,6 +502,7 @@ function HearingDialog({
           <input
             value={form.hearing_type ?? ""}
             onChange={(e) => setForm({ ...form, hearing_type: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
             placeholder="مرافعة / نطق حكم / تصالح"
           />
@@ -507,14 +511,18 @@ function HearingDialog({
           <input
             value={form.location ?? ""}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
+            maxLength={FIELD_LIMITS.location}
             className={inputCls}
           />
         </FormField>
         <div className="md:col-span-2">
-          <FormField label="رابط عن بُعد">
+          <FormField label="رابط عن بُعد" error={errors.remote_link}>
             <input
+              type="url"
+              dir="ltr"
               value={form.remote_link ?? ""}
               onChange={(e) => setForm({ ...form, remote_link: e.target.value })}
+              maxLength={FIELD_LIMITS.url}
               className={inputCls}
               placeholder="https://…"
             />
@@ -526,6 +534,7 @@ function HearingDialog({
               rows={2}
               value={form.result ?? ""}
               onChange={(e) => setForm({ ...form, result: e.target.value })}
+              maxLength={FIELD_LIMITS.result}
               className={inputCls}
             />
           </FormField>
@@ -536,6 +545,7 @@ function HearingDialog({
               rows={2}
               value={form.notes ?? ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
