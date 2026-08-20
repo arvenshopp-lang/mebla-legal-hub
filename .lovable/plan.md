@@ -1,34 +1,30 @@
-# MEHLA SECURITY LAB — ISOLATION PRE-FLIGHT (READ-ONLY)
+# MEHLA SECURITY LAB — FINAL ISOLATION GATE (READ-ONLY)
 
-## النتيجة: ISOLATION_GATE = FAIL — STOP
+## ISOLATION_GATE = FAIL — STOP
 
-البيئة الحالية ليست مختبراً؛ إنها بيئة مِهلة الإنتاجية.
+البيئة النشطة هي مِهلة الإنتاجية، لا المختبر. لم يُنفَّذ أي SQL أو Migration أو Storage write أو Test data أو Code change أو Deploy.
 
 ### الأدلة (بلا كشف أي قيمة سرية)
-- `SUPABASE_URL` → المرجع **xklzpjocsiadnoglwryw**
-- `VITE_SUPABASE_URL` → المرجع **xklzpjocsiadnoglwryw**
-- `SUPABASE_PROJECT_ID` → **xklzpjocsiadnoglwryw**
-- عدد ظهور مرجع الإنتاج في متغيرات البيئة = 7
-- عدد ظهور مرجع المختبر `pmiyheweosmbysywzqhw` في متغيرات البيئة = 0
-- `SUPABASE_SERVICE_ROLE_KEY` = PRESENT (اعتماد إنتاجي، لم تُقرأ قيمته)
-- `SUPABASE_PUBLISHABLE_KEY` = PRESENT (إنتاجي)
-- `LAB_SUPABASE_URL` / `LAB_SUPABASE_SERVICE_ROLE_KEY` / `LAB_PG_URL` = ABSENT
-- اتصال Postgres (`PGHOST`/`PGUSER`) يشير إلى مرجع الإنتاج، لا المختبر
+- ACTIVE_SUPABASE_PROJECT_ID = **xklzpjocsiadnoglwryw** (من `SUPABASE_PROJECT_ID` و`SUPABASE_URL` و`VITE_SUPABASE_URL`)
+- ACTIVE_SUPABASE_URL = https://xklzpjocsiadnoglwryw.supabase.co
+- DATABASE_TARGET = Postgres الإنتاجي (`PGHOST`/`PGUSER` يطابقان مرجع الإنتاج)
+- STORAGE_TARGET = Storage الإنتاجي لنفس المرجع (لا يوجد نقطة تخزين أخرى مربوطة)
+- ظهور مرجع المختبر `pmiyheweosmbysywzqhw` في البيئة = 0؛ ظهور مرجع الإنتاج = 7
+- اعتمادات المختبر: DB = غائبة · Storage = غائبة · publishable = غائبة · privileged = غائبة
+- اعتمادات إنتاجية موجودة (لم تُقرأ قيمها): `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_KEY`, متغيرات `PG*`
 - SOURCE_COMMIT_SHA = 98899a2101a5
 
 ## الناتج
-ACTIVE_SUPABASE_PROJECT_ID = xklzpjocsiadnoglwryw
-ACTIVE_SUPABASE_URL = https://xklzpjocsiadnoglwryw.supabase.co
 LAB_PROJECT_BOUND = NO
-PRODUCTION_PROJECT_BOUND = YES
-PRODUCTION_CREDENTIAL_PRESENT = YES
-LAB_CREDENTIAL_AVAILABLE = NO
 LAB_DATABASE_ACCESS = NO
 LAB_STORAGE_ACCESS = NO
+LAB_PRIVILEGED_ACCESS_AVAILABLE = NO
+PRODUCTION_PROJECT_BOUND = YES
+PRODUCTION_CREDENTIAL_PRESENT = YES
 ISOLATION_GATE = FAIL
-P0_A_EXECUTION = STOPPED (لم تُنفَّذ أي كتابة أو SQL أو Storage أو Secret أو Deploy)
+P0_A_BUILD_READY = NO
 
-## ما يلزم لتحويل البوابة إلى PASS
-هذه المحادثة تعمل داخل مشروع Lovable الإنتاجي `0ac4f813-8ba3-4f48-9bc7-432613df3dae`، وربطه الخلفي هو مشروع الإنتاج ولا يمكن تحويله إلى المختبر من داخل المحادثة. الحل: افتح مشروع Lovable منفصلاً (مثل `mehla-security-lab`) واربط خلفيته بـ `pmiyheweosmbysywzqhw`، ثم أصدر أمر P0-A هناك. عندئذ يكون تشغيل أي شيء على الإنتاج مستحيلاً تقنياً لا ممنوعاً سياسةً فقط.
+## الشرط الوحيد لتحويلها إلى PASS
+هذه المحادثة تجري داخل مشروع Lovable الإنتاجي `0ac4f813-8ba3-4f48-9bc7-432613df3dae`، وربطه الخلفي ثابت على مشروع الإنتاج ولا يمكن تحويله من داخل المحادثة. المطلوب: مشروع Lovable منفصل (مثل `mehla-security-lab`) مربوط خلفياً بـ `pmiyheweosmbysywzqhw`، ثم إصدار أمر P0-A داخله. بذلك يصبح تشغيل أي شيء على الإنتاج مستحيلاً تقنياً وليس ممنوعاً سياسةً فقط.
 
 WAITING FOR P0-A BUILD AUTHORIZATION
