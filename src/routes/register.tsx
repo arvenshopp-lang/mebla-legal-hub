@@ -386,7 +386,7 @@ function RegisterPage() {
             {formError}
           </div>
         )}
-        <Field label="الاسم الكامل">
+        <Field label="الاسم الكامل" required>
           <input
             required
             value={fullName}
@@ -394,7 +394,7 @@ function RegisterPage() {
             className={inputCls}
           />
         </Field>
-        <Field label="البريد الإلكتروني">
+        <Field label="البريد الإلكتروني" required>
           <input
             type="email"
             autoComplete="email"
@@ -407,11 +407,10 @@ function RegisterPage() {
         {showPhone && (
           <div className="space-y-3">
             <Field
-              label="رقم الجوال السعودي"
+              label="رقم الجوال"
+              required={phoneRequired}
               hint={
-                verificationRequired
-                  ? "سنرسل رمز تحقق من 6 أرقام لتوثيق الرقم قبل إكمال التسجيل."
-                  : "يُستخدم للتواصل والتنبيهات، ويمكن توثيقه لاحقاً من الإعدادات."
+                verificationRequired ? "سنرسل رمز تحقق من 6 أرقام لتوثيق الرقم." : undefined
               }
             >
               <div dir="ltr" className="flex items-stretch gap-2">
@@ -427,7 +426,6 @@ function RegisterPage() {
                   autoComplete="tel-national"
                   dir="ltr"
                   placeholder="5XXXXXXXX"
-                  aria-describedby="phone-country-note"
                   maxLength={9}
                   required={phoneRequired}
                   value={phone}
@@ -438,9 +436,6 @@ function RegisterPage() {
                   className={inputCls + " text-center tracking-[0.14em]"}
                 />
               </div>
-              <p id="phone-country-note" className="mt-1 text-[12px] text-text-muted">
-                مفتاح الدولة ثابت (+966) — تُقبل الأرقام السعودية فقط.
-              </p>
               {phone.length > 0 && !saudiValid && (
                 <p role="alert" className="mt-1 text-[12px] text-danger">
                   {SAUDI_PHONE_ERROR}
