@@ -35,6 +35,7 @@ import {
   Pagination,
   sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { RIYADH_TZ_HINT, isoToRiyadhLocalInput, riyadhLocalToIso } from "@/lib/format";
 import { Pencil, Trash2, Check } from "lucide-react";

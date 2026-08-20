@@ -22,6 +22,7 @@ import {
   Badge,
   ConfirmDialog,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Copy, Mail } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";

@@ -33,6 +33,7 @@ import {
   Pagination,
   sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";

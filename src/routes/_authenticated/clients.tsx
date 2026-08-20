@@ -26,6 +26,7 @@ import {
   Pagination,
   sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2 } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
