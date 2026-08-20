@@ -11,6 +11,7 @@ import { useAuth, canEdit, canManage } from "@/hooks/use-auth";
 import { useHashCreate } from "@/hooks/use-hash-create";
 import { HEARING_STATUS, asOptions, fmtDateTime } from "@/lib/enums";
 import { RIYADH_TZ_HINT, isoToRiyadhLocalInput, riyadhLocalToIso } from "@/lib/format";
+import { FIELD_LIMITS, optionalHttpsUrlSchema } from "@/lib/form-limits";
 import {
   PageToolbar,
   EmptyState,
