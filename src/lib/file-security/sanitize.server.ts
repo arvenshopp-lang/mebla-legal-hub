@@ -24,7 +24,7 @@ export async function buildSafeRender(
   bytes: Uint8Array,
 ): Promise<SafeRender | null> {
   if (!isSanitizable(ext)) return null;
-  const { PDFDocument } = await import("pdf-lib");
+  const { PDFDocument, PDFName } = await import("pdf-lib");
 
   const safe = await PDFDocument.create();
   safe.setProducer("Mehla Secure Render");
@@ -40,7 +40,8 @@ export async function buildSafeRender(
     const pages = await safe.copyPages(source, source.getPageIndices());
     for (const page of pages) {
       // إزالة أي تعليقات/حقول على مستوى الصفحة (قد تحمل أفعالاً).
-      page.node.delete(page.node.context.obj("Annots").asName?.() ?? ("Annots" as never));
+      page.node.delete(PDFName.of("Annots"));
+      page.node.delete(PDFName.of("AA"));
       safe.addPage(page);
     }
   } else {
