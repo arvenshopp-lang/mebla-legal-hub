@@ -418,6 +418,7 @@ export function ClientDialog({
             onBlur={() => markTouched("full_name")}
             required
             aria-required
+            maxLength={FIELD_LIMITS.name}
             className={inputCls}
           />
         </FormField>
@@ -453,12 +454,22 @@ export function ClientDialog({
             <input
               value={form.company_name ?? ""}
               onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+              maxLength={FIELD_LIMITS.name}
               className={inputCls}
             />
           </FormField>
         )}
         <PiiSecureInput
-          label={piiField === "national_id" ? "رقم الهوية" : "السجل التجاري"}
+          label={
+            piiField === "national_id" ? "رقم الهوية الوطنية" : "رقم السجل التجاري"
+          }
+          placeholder={piiField === "national_id" ? "1xxxxxxxxx" : "7xxxxxxxxx"}
+          hint={
+            piiField === "national_id"
+              ? "رقم الهوية الوطنية أو الإقامة — 10 أرقام، يُحفظ مشفّراً."
+              : "رقم السجل التجاري للجهة — 10 أرقام، يُحفظ مشفّراً."
+          }
+          maxLength={20}
           mask={piiMask}
           value={piiEdit?.field === piiField ? piiEdit.value : ""}
           editing={piiEdit?.field === piiField || (piiMask === "—" && !editing)}
@@ -470,6 +481,8 @@ export function ClientDialog({
           <input
             value={form.phone ?? ""}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            maxLength={FIELD_LIMITS.phone}
+            dir="ltr"
             className={inputCls}
           />
         </FormField>
@@ -479,6 +492,8 @@ export function ClientDialog({
             value={form.email ?? ""}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             onBlur={() => markTouched("email")}
+            maxLength={FIELD_LIMITS.email}
+            dir="ltr"
             className={inputCls}
           />
         </FormField>
@@ -486,6 +501,7 @@ export function ClientDialog({
           <input
             value={form.city ?? ""}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -493,6 +509,7 @@ export function ClientDialog({
           <input
             value={form.address ?? ""}
             onChange={(e) => setForm({ ...form, address: e.target.value })}
+            maxLength={FIELD_LIMITS.location}
             className={inputCls}
           />
         </FormField>
@@ -502,6 +519,7 @@ export function ClientDialog({
               rows={3}
               value={form.notes ?? ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
