@@ -28,7 +28,23 @@ export type ReleaseDecision = {
   state: DocumentSecurityState;
   sha256: string;
   decisionId: string;
+  /** النسخة الآمنة المسطّحة، عندما تكون الصيغة قابلة للتطهير. */
+  safe: { path: string; sha256: string; mime: string } | null;
 };
+
+/**
+ * يحدد مصدر البايتات لغرض التسليم: النسخة الآمنة للعرض والمشاركة والطباعة،
+ * والأصل فقط لمسار المعالجة الداخلي المصرَّح له بالبايتات الخام.
+ */
+export function deliverySource(
+  decision: ReleaseDecision,
+  originalPath: string,
+): { path: string; sha256: string; isSafeCopy: boolean } {
+  if (decision.safe && !RAW_BYTE_PURPOSES.includes(decision.purpose)) {
+    return { path: decision.safe.path, sha256: decision.safe.sha256, isSafeCopy: true };
+  }
+  return { path: originalPath, sha256: decision.sha256, isSafeCopy: false };
+}
 
 /**
  * يمنح — أو يمنع — تسليم بايتات مستند لغرض محدد. يُسجّل القرار في السجل الأمني
@@ -75,6 +91,9 @@ export async function assertReleasable(input: {
   if (!row.sha256 || !row.decision_id) {
     return deny(row.state, "missing_integrity_binding", releaseDenialMessage("quarantined"));
   }
+  if (!row.scan_engine_version) {
+    return deny(row.state, "missing_scan_result", releaseDenialMessage("quarantined"));
+  }
   if (RAW_BYTE_PURPOSES.includes(input.purpose) && !input.allowRawBytes) {
     return deny(row.state, "raw_bytes_not_authorized", releaseDenialMessage("quarantined"));
   }
@@ -99,6 +118,14 @@ export async function assertReleasable(input: {
     state: row.state,
     sha256: row.sha256,
     decisionId: row.decision_id,
+    safe:
+      row.safe_path && row.safe_sha256
+        ? {
+            path: row.safe_path,
+            sha256: row.safe_sha256,
+            mime: row.safe_mime ?? "application/pdf",
+          }
+        : null,
   };
 }
 
@@ -112,7 +139,8 @@ export async function assertContentMatchesDecision(
 ): Promise<void> {
   const { sha256Hex } = await import("./security-state.server");
   const actual = await sha256Hex(bytes);
-  if (actual === decision.sha256) return;
+  // تُقبل بصمة الأصل أو بصمة النسخة الآمنة المثبَّتة لنفس القرار.
+  if (actual === decision.sha256 || actual === decision.safe?.sha256) return;
   await logSecurityEvent({
     documentId: decision.documentId,
     organizationId: decision.organizationId,
