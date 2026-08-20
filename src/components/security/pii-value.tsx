@@ -191,6 +191,9 @@ export function PiiSecureInput({
   onChange,
   onStartEdit,
   onCancelEdit,
+  placeholder,
+  hint,
+  maxLength,
 }: {
   label: string;
   mask: string;
@@ -200,13 +203,18 @@ export function PiiSecureInput({
   onChange: (next: string) => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
+  placeholder?: string;
+  /** نص توضيحي أسفل الحقل. */
+  hint?: string;
+  maxLength?: number;
 }) {
-  const fieldId = `pii-${label.replace(/\s+/g, "-")}`;
+  const fieldId = `pii-${label.replace(/[\s/]+/g, "-")}`;
+  const hintId = hint ? `${fieldId}-hint` : undefined;
   return (
     <div className="grid gap-1.5">
       <label
         htmlFor={fieldId}
-        className="flex w-fit items-center gap-1.5 text-sm font-medium text-foreground"
+        className="flex w-fit max-w-full flex-wrap items-center gap-1.5 text-sm font-medium text-foreground"
       >
         {label}
         <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden />
@@ -219,9 +227,17 @@ export function PiiSecureInput({
             onChange={(e) => onChange(e.target.value)}
             inputMode="numeric"
             autoComplete="off"
+            placeholder={placeholder}
+            aria-describedby={hintId}
+            maxLength={maxLength}
             className={inputCls}
             dir="ltr"
           />
+          {hint && (
+            <span id={hintId} className="text-caption text-text-muted">
+              {hint}
+            </span>
+          )}
           {mask !== "—" && (
             <button
               type="button"
