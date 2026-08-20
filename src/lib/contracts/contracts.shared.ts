@@ -22,7 +22,7 @@ export type ContractStatus = "draft" | "pending_signature" | "signed" | "cancell
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: "مسودة قيد الصياغة",
   pending_signature: "بانتظار توقيع الموكل",
-  signed: "موقع ومعتمد رسمياً",
+  signed: "موقّع إلكترونياً",
   cancelled: "ملغي",
   expired: "منتهي الصلاحية",
 };
@@ -74,6 +74,11 @@ export type ContractModel = {
   clientSignature?: ContractSignature | null;
   signToken?: string | null;
   signUrl?: string | null;
+  /** رقم التحقق العام المستخدم في صفحة /verify ورمز QR (يُصدر عند اعتماد النسخة النهائية). */
+  verificationId?: string | null;
+  /** بصمة SHA-256 للنسخة النهائية المعتمدة ورقمها. */
+  contentHash?: string | null;
+  versionNumber?: number | null;
   expiresAt?: string | null;
   signedAt?: string | null;
   createdAt: string;

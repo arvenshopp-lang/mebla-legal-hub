@@ -22,6 +22,7 @@ import {
   Badge,
   ConfirmDialog,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Copy, Mail } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
@@ -564,17 +565,19 @@ function InviteDialog({
       ) : (
         <>
           <div className="grid gap-4">
-            <FormField label="البريد الإلكتروني *">
+            <FormField label="البريد الإلكتروني" required>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                maxLength={FIELD_LIMITS.email}
+                dir="ltr"
                 className={inputCls}
                 placeholder="user@example.com"
               />
               {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
             </FormField>
-            <FormField label="الدور *">
+            <FormField label="الدور" required>
               <select
                 value={role}
                 onChange={(e) =>

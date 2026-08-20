@@ -31,7 +31,9 @@ import {
   useDebounced,
   ConfirmDialog,
   Pagination,
+  sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Trash2, Upload, Lock, ScanText } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -99,7 +101,7 @@ function Page() {
   const [deleting, setDeleting] = useState<DocumentListRow | null>(null);
   const [sharing, setSharing] = useState<SecureDoc | null>(null);
   const [viewingText, setViewingText] = useState<DocumentRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
   const secure = useSecureDocument();
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -427,7 +429,7 @@ function UploadDialog({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="الملف *">
+          <FormField label="الملف" required>
             <input
               ref={fileRef}
               type="file"
@@ -473,6 +475,7 @@ function UploadDialog({
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
             placeholder="عقد / محضر / حكم / ..."
           />
@@ -499,6 +502,7 @@ function UploadDialog({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>

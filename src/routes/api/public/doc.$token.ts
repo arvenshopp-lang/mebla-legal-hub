@@ -118,13 +118,54 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               organizationId: resolved.organizationId,
               path,
             });
-          let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
+
+          // البوابة المركزية: لا تُقرأ بايتات أي مستند قبل قرار إفراج صريح
+          // مرتبط ببصمة المحتوى ومعرّف قرار وتطابق المكتب.
+          const {
+            assertReleasable,
+            assertContentMatchesDecision,
+            deliverySource,
+            ReleaseDenied,
+          } = await import("@/lib/file-security/release-gate.server");
+          let decision: Awaited<ReturnType<typeof assertReleasable>>;
           try {
-            storageRead = await secure.readOriginal(doc.file_path, {
+            decision = await assertReleasable({
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              purpose:
+                resolved.kind === "process"
+                  ? "process"
+                  : resolved.kind === "share"
+                    ? "share"
+                    : "view",
+              actorId: resolved.createdBy,
+              // تذكرة المعالجة الداخلية هي المسار الوحيد المصرَّح له بالبايتات الخام.
+              allowRawBytes: resolved.kind === "process",
+            });
+          } catch (error) {
+            const publicMessage =
+              error instanceof ReleaseDenied ? error.message : PUBLIC_LOAD_ERROR;
+            return failure(publicMessage, 403, {
+              action: "release_gate.denied",
+              error,
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+              metadata: { token_kind: resolved.kind },
+            });
+          }
+
+          let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
+          // مسارات العرض والمشاركة والطباعة تُخدَم من النسخة الآمنة المسطّحة، لا من الأصل.
+          const source = deliverySource(decision, doc.file_path);
+          try {
+            storageRead = await secure.readOriginal(source.path, {
               allowProcessingFormat: resolved.kind === "process",
               documentId: resolved.documentId,
               organizationId: doc.organization_id,
-              declaredMime: doc.file_type,
+              declaredMime: source.isSafeCopy
+                ? (decision.safe?.mime ?? "application/pdf")
+                : doc.file_type,
             });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
@@ -132,7 +173,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               document_id: resolved.documentId,
               temporary_link_id: resolved.id,
               bucket: trace?.bucket ?? "documents",
-              storage_path: trace?.storagePath ?? doc.file_path,
+              storage_path: trace?.storagePath ?? source.path,
               signed_url_host: trace?.signedUrlHost ?? null,
               response_status: trace?.status ?? null,
               content_type: trace?.contentType ?? null,
@@ -152,7 +193,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               metadata: {
                 temporary_link_id: resolved.id,
                 bucket: trace?.bucket ?? "documents",
-                storage_path: trace?.storagePath ?? doc.file_path,
+                storage_path: trace?.storagePath ?? source.path,
                 signed_url_host: trace?.signedUrlHost ?? null,
                 response_status: trace?.status ?? null,
                 content_type: trace?.contentType ?? null,
@@ -173,8 +214,24 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           }
           const original = storageRead.bytes;
 
+          // إعادة تحقق سلامة المحتوى: البايتات المسلَّمة يجب أن تطابق البصمة
+          // المثبَّتة لحظة الإفراج، وإلا فقد تغيّر الكائن بعد القرار.
+          try {
+            await assertContentMatchesDecision(decision, original);
+          } catch (error) {
+            const publicMessage =
+              error instanceof ReleaseDenied ? error.message : PUBLIC_LOAD_ERROR;
+            return failure(publicMessage, 409, {
+              action: "release_gate.integrity_mismatch",
+              error,
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+            });
+          }
+
           // تذكرة المعالجة الداخلية تُعيد البايتات الأصلية لمحرك الاستخراج فقط،
-          // ولا تُصدر إلا بعد التحقق من الصلاحية، وتُستهلك مرة واحدة.
+          // بعد قرار إفراج صريح، ولا تُستهلك إلا مرة واحدة.
           if (resolved.kind === "process") {
             return new Response(original as unknown as BodyInit, {
               headers: {
@@ -187,7 +244,9 @@ export const Route = createFileRoute("/api/public/doc/$token")({
 
           // الصيغ غير القابلة للختم المباشر تُعرض كنسخة نصية مائية دائماً.
           const kind = storageRead.stampable
-            ? shared.viewableKind(doc.file_name, doc.file_type)
+            ? source.isSafeCopy
+              ? ("pdf" as const)
+              : shared.viewableKind(doc.file_name, doc.file_type)
             : ("text" as const);
           // النص المستخرج يُستخدم كنسخة عرض للصيغ غير القابلة للختم، وكذلك
           // كخطة بديلة إن كان الملف الأصلي تالفاً أو غير قابل للقراءة.
@@ -196,7 +255,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           const pdf = await stamp.buildWatermarkedPdf({
             bytes: original,
             kind,
-            mimeType: doc.file_type,
+            mimeType: source.isSafeCopy ? "application/pdf" : doc.file_type,
             fallbackText,
             lines: [resolved.watermarkOffice, resolved.watermarkUser],
             note: resolved.watermarkNote,

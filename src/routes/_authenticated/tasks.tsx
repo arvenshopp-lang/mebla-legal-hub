@@ -27,7 +27,9 @@ import {
   useDebounced,
   ConfirmDialog,
   Pagination,
+  sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
@@ -95,7 +97,7 @@ function Page() {
     setOpen(true);
   });
   const [deleting, setDeleting] = useState<TaskRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
@@ -463,10 +465,11 @@ function TaskDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="العنوان *">
+          <FormField label="العنوان" required>
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
@@ -508,7 +511,7 @@ function TaskDialog({
             className={inputCls}
           />
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "pending"}
             onChange={(e) => setForm({ ...form, status: e.target.value as Enums<"task_status"> })}
@@ -521,7 +524,7 @@ function TaskDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="الأولوية *">
+        <FormField label="الأولوية" required>
           <select
             value={form.priority ?? "medium"}
             onChange={(e) =>
@@ -542,6 +545,7 @@ function TaskDialog({
               rows={3}
               value={form.description ?? ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>

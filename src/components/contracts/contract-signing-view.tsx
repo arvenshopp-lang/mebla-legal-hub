@@ -21,7 +21,7 @@ import { SignaturePad } from "@/components/contracts/signature-pad";
 import {
   getPublicContractForSigningFn,
   signPublicContractFn,
-  downloadContractPdfFn,
+  downloadSignedContractByTicketFn,
 } from "@/lib/contracts/contracts.functions";
 import { CONTRACT_TYPE_LABELS } from "@/lib/contracts/contracts.shared";
 import { toast } from "sonner";
@@ -46,11 +46,15 @@ export function ContractSigningView({
   const [signatureBase64, setSignatureBase64] = React.useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [isSuccessfullySigned, setIsSuccessfullySigned] = React.useState(false);
+  const [downloadTicket, setDownloadTicket] = React.useState<string | null>(null);
+  const [downloadState, setDownloadState] = React.useState<
+    { phase: "idle" } | { phase: "working"; attempt: number } | { phase: "done" } | { phase: "error"; message: string; traceId: string }
+  >({ phase: "idle" });
+  const isDownloading = downloadState.phase === "working";
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["public-contract", token],
     queryFn: () => getPublicContractForSigningFn({ data: { signToken: token } }),
-    // الرمز يُبطل خادمياً بعد التوقيع (استخدام واحد)، لذا لا يُعاد الجلب بعد النجاح
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
@@ -66,11 +70,16 @@ export function ContractSigningView({
     }
   }, [contract]);
 
+  React.useEffect(() => {
+    if (data?.downloadTicket) setDownloadTicket(data.downloadTicket);
+  }, [data?.downloadTicket]);
+
   const signMutation = useMutation({
     mutationFn: signPublicContractFn,
     onSuccess: (res) => {
       if (res.ok) {
         setIsSuccessfullySigned(true);
+        if (res.downloadTicket) setDownloadTicket(res.downloadTicket);
         toast.success("تم توقيع واعتماد العقد بنجاح!");
         onSigned?.();
       } else {
@@ -105,28 +114,75 @@ export function ContractSigningView({
     });
   };
 
-  const handleDownloadPdf = async () => {
-    if (!contract) return;
-    try {
-      toast.loading("جارٍ تجهيز ملف العقد...", { id: "pdf" });
-      const res = await downloadContractPdfFn({ data: { contractId: contract.id } });
-      const byteCharacters = atob(res.base64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("تم تنزيل العقد بنجاح!", { id: "pdf" });
-    } catch {
-      toast.error("تعذّر تنزيل ملف الـ PDF.", { id: "pdf" });
+  /** يجلب الملف بتذكرة صالحة، مع تجديد التذكرة عند انتهائها. */
+  const fetchSignedPdf = async () => {
+    // التذكرة قصيرة الصلاحية وقد تُفقد بعد إعادة تحميل الصفحة؛ تُطلب من جديد
+    // من الخادم بنفس رمز الرابط قبل الاستسلام لرسالة خطأ.
+    let ticket = downloadTicket;
+    if (!ticket) {
+      const fresh = await refetch();
+      ticket = fresh.data?.downloadTicket ?? null;
+      if (ticket) setDownloadTicket(ticket);
     }
+    if (!ticket) throw new Error("no-ticket");
+    try {
+      return await downloadSignedContractByTicketFn({ data: { downloadTicket: ticket } });
+    } catch (first) {
+      const fresh = await refetch();
+      const renewed = fresh.data?.downloadTicket ?? null;
+      if (!renewed) throw first;
+      setDownloadTicket(renewed);
+      return await downloadSignedContractByTicketFn({ data: { downloadTicket: renewed } });
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!contract || isDownloading) return;
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      setDownloadState({ phase: "working", attempt });
+      try {
+        const res = await fetchSignedPdf();
+        const byteCharacters = atob(res.base64);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArray[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        setDownloadState({ phase: "done" });
+        return;
+      } catch (error) {
+        lastError = error;
+        const message = error instanceof Error ? error.message : "";
+        // حالات نهائية لا تُفيد فيها إعادة المحاولة.
+        if (message === "no-ticket" || message.includes("يكتمل")) break;
+        if (attempt < maxAttempts) {
+          // فواصل تصاعدية قصيرة قبل المحاولة التالية.
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1200));
+        }
+      }
+    }
+
+    const message = lastError instanceof Error ? lastError.message : "";
+    const traceId = `DL-${Date.now().toString(36).toUpperCase()}`;
+    setDownloadState({
+      phase: "error",
+      traceId,
+      message:
+        message === "no-ticket"
+          ? "نسخة العقد غير متاحة للتحميل عبر هذا الرابط، يرجى التواصل مع المكتب."
+          : message.includes("يكتمل")
+            ? "لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل."
+            : "تعذّر تجهيز ملف العقد حالياً بعد عدة محاولات، يرجى المحاولة بعد قليل أو التواصل مع المكتب.",
+    });
   };
 
   if (isLoading) {
@@ -134,7 +190,7 @@ export function ContractSigningView({
       <div className="flex items-center justify-center p-10" role="status" aria-live="polite">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-semibold text-slate-600">جارٍ تحميل وثيقة العقد الرسمية...</p>
+          <p className="text-sm font-semibold text-slate-600">جارٍ تحميل وثيقة العقد...</p>
         </div>
       </div>
     );
@@ -170,7 +226,7 @@ export function ContractSigningView({
             </h2>
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>منصة العقود الرقمية المعتمدة</span>
+              <span>عقود إلكترونية عبر منصة مِهلة</span>
               <span>•</span>
               <span>س.ت: {contract.firstParty.identifierNumber}</span>
             </div>
@@ -178,7 +234,7 @@ export function ContractSigningView({
         </div>
 
         <div className="text-left sm:text-right bg-slate-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border text-xs">
-          <div className="text-slate-400 text-[10px]">رقم العقد الرسمي</div>
+          <div className="text-slate-400 text-[10px]">الرقم المرجعي للعقد</div>
           <div className="font-mono font-bold text-primary text-sm">{contract.contractNumber}</div>
         </div>
       </div>
@@ -191,20 +247,48 @@ export function ContractSigningView({
           </div>
           <div>
             <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-300">
-              تم توقيع واعتماد العقد رسمياً بنجاح!
+              تم توقيع العقد إلكترونياً بنجاح
             </h3>
             <p className="text-xs text-emerald-600/90 mt-1 max-w-md mx-auto">
-              تم توثيق التوقيع الإلكتروني وختم العقد ببيانات الإثبات الرسمية وفق نظام التعاملات
-              الإلكترونية ونظام الإثبات السعودي.
+              تم تسجيل التوقيع مع تاريخه ووقته وبيانات الجهاز وبصمة المستند داخل سجل العقد. هذا
+              المستند موقّع إلكترونياً عبر منصة مِهلة ولا يمثل توثيقاً رسمياً لدى جهة حكومية.
             </p>
           </div>
-          <Button
-            onClick={handleDownloadPdf}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-          >
-            <Download className="w-4 h-4" />
-            تحميل وثيقة العقد الموقعة (PDF)
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              aria-busy={isDownloading}
+              className="gap-2 min-h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
+              <Download className="w-4 h-4" />
+              {isDownloading
+                ? "جارٍ تجهيز الملف..."
+                : downloadState.phase === "error"
+                  ? "إعادة المحاولة"
+                  : "تحميل نسخة العقد الموقعة (PDF)"}
+            </Button>
+
+            <div role="status" aria-live="polite" className="text-xs max-w-md mx-auto">
+              {downloadState.phase === "working" ? (
+                <p className="text-slate-600 dark:text-slate-300">
+                  جارٍ تجهيز نسخة العقد النهائية...
+                  {downloadState.attempt > 1 ? ` (محاولة ${downloadState.attempt} من 3)` : ""}
+                </p>
+              ) : downloadState.phase === "done" ? (
+                <p className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                  تم تنزيل نسخة العقد بنجاح.
+                </p>
+              ) : downloadState.phase === "error" ? (
+                <p className="text-rose-700 dark:text-rose-300">
+                  {downloadState.message}
+                  <span className="block text-[10px] text-slate-400 mt-1 font-mono">
+                    معرّف التتبع: {downloadState.traceId}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          </div>
         </Card>
       ) : null}
 
@@ -305,8 +389,8 @@ export function ContractSigningView({
                   التوقيع الإلكتروني للطرف الثاني (الموكل):
                 </h4>
                 <p className="text-xs text-slate-500">
-                  توقيعك الإلكتروني يعد موافقة نظامية ملزمة لا رجعة فيها وفق نظام الإثبات ونظام
-                  المعاملات الإلكترونية.
+                  توقيعك الإلكتروني يعد إقراراً صريحاً بالموافقة على بنود العقد، ويُسجَّل مع تاريخه
+                  ووقته وبيانات جهازك كدليل على التوقيع.
                 </p>
               </div>
 
@@ -342,8 +426,8 @@ export function ContractSigningView({
                   className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   أقر أنا الموقع أعلاه بصفتي أصيلاً أو مفوضاً عن الطرف الثاني بقراءتي التامة لجميع
-                  بنود وشروط هذا العقد والموافقة عليها، وأعتمد توقيعي الإلكتروني كحجة قاطعة وملزمة
-                  وفق نظام التعاملات الإلكترونية ونظام الإثبات بالمملكة العربية السعودية.
+                  بنود وشروط هذا العقد والموافقة الصريحة عليها، وأعتمد توقيعي الإلكتروني عبر منصة
+                  مِهلة تعبيراً عن رضائي بالتعاقد.
                 </label>
               </div>
 
@@ -355,8 +439,8 @@ export function ContractSigningView({
               >
                 <CheckCircle2 className="w-5 h-5" />
                 {signMutation.isPending
-                  ? "جارٍ التوثيق والتوقيع..."
-                  : "تأكيد واعتماد توقيع العقد إلكترونياً"}
+                  ? "جارٍ تسجيل التوقيع..."
+                  : "تأكيد التوقيع الإلكتروني على العقد"}
               </Button>
             </div>
           )}

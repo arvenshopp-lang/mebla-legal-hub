@@ -887,7 +887,21 @@ export async function sendViaAgentic(
     const attachments: { filename: string; content_type: string; content_base64: string }[] = [];
     if (stored.length > 0) {
       const { base64Encode } = await import("@/lib/email/transport/mime.server");
+      const { assertAttachmentReleasable } = await import(
+        "@/lib/file-security/release-gate.server"
+      );
       for (const item of stored) {
+        // لا تُقرأ بايتات أي مرفق قبل عبور بوابة الإفراج المركزية.
+        try {
+          await assertAttachmentReleasable(db as never, item.id);
+        } catch {
+          return {
+            ok: false,
+            code: "attachment_blocked",
+            message: "أحد المرفقات غير متاح لأسباب أمنية، ولم تُرسل الرسالة.",
+            unsupported: false,
+          };
+        }
         const download = await db.storage.from(ATTACHMENT_BUCKET).download(item.storage_path);
         if (download.error || !download.data) {
           return {

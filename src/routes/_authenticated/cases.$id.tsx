@@ -700,7 +700,7 @@ function PartyDialog({
   return (
     <Modal open={open} onClose={onClose} title={editing ? "تعديل طرف" : "إضافة طرف"}>
       <div className="grid gap-4 md:grid-cols-2">
-        <FormField label="الاسم *">
+        <FormField label="الاسم" required>
           <input
             value={form.party_name ?? ""}
             onChange={(e) => setForm({ ...form, party_name: e.target.value })}
@@ -855,7 +855,7 @@ function UpdateDialog({
       title="إضافة تحديث"
     >
       <div className="grid gap-4">
-        <FormField label="العنوان *">
+        <FormField label="العنوان" required>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
         </FormField>
         <FormField label="النوع">

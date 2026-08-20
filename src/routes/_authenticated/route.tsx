@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useSessionTimeout } from "@/hooks/use-session-timeout";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -18,6 +19,7 @@ function Splash({ text }: { text: string }) {
 function AuthGate() {
   const { authLoading, organizationLoading, session, memberships, allMemberships, authError } =
     useAuth();
+  useSessionTimeout();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const loading = authLoading || organizationLoading;

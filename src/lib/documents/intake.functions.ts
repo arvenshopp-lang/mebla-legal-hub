@@ -107,6 +107,22 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       throw new Error("تعذّر حفظ المستند. أعد المحاولة.");
     }
 
+    // الحجر ثم الفحص البنيوي ثم قرار الإفراج. أي فشل يُبقي الملف محجوزاً ولا
+    // يُسلَّم لأي مسار عرض أو تنزيل.
+    const { runIntakeReleasePipeline } = await import(
+      "@/lib/file-security/security-state.server"
+    );
+    await runIntakeReleasePipeline({
+      documentId: inserted.id,
+      organizationId: data.organizationId,
+      sha256: verified.sha256,
+      bytes: verified.size,
+      declaredMime: verified.mime,
+      detectedMime: verified.mime,
+      actorId: context.userId,
+      scan: verified.scan,
+    });
+
     return { documentId: inserted.id, fileType: verified.mime, fileSize: verified.size };
   });
 

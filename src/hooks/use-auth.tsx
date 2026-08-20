@@ -11,6 +11,12 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES, logAuthEvent, translateAuthError } from "@/lib/auth-errors";
 import { clearAllDrafts } from "@/lib/drafts/draft-store";
+import {
+  clearSessionActivity,
+  isInactivityExpired,
+  markSessionActive,
+  readLastActiveAt,
+} from "@/lib/session-activity";
 
 type Profile = {
   id: string;
@@ -92,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileLoading(false);
     setOrganizationLoading(false);
     setAuthError(null);
+    clearSessionActivity();
     if (typeof window !== "undefined") localStorage.removeItem(ACTIVE_ORG_KEY);
   }, []);
 
@@ -217,9 +224,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const runLoad = useCallback(
     async (nextSession: Session | null, background = false): Promise<LoadResult> => {
       const currentRequestId = ++requestId.current;
+      // جلسة مخزّنة تجاوزت مهلة الخمول: تُنهى قبل أي توجيه إلى المسارات المحمية.
+      if (nextSession?.user && isInactivityExpired()) {
+        await supabase.auth.signOut();
+        clearAllDrafts();
+        clearUserData();
+        setSession(null);
+        loadedUserId.current = null;
+        setAuthLoading(false);
+        bootstrapped.current = true;
+        return EMPTY;
+      }
       setSession(nextSession);
       let all: OrgMembership[] = [];
       if (nextSession?.user) {
+        if (readLastActiveAt() === null) markSessionActive();
         all = await loadUserData(nextSession.user, currentRequestId, background);
         loadedUserId.current = nextSession.user.id;
       } else {
@@ -278,6 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) return { error: translateAuthError(error) };
+    markSessionActive();
     return { error: null };
   }, []);
 

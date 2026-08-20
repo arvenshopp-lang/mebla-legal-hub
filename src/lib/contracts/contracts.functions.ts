@@ -2,6 +2,7 @@
  * دوال الخادم لعقود مِهلة الرقمية (TanStack Start Server Functions)
  */
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import {
   getContractsByOrg,
   getContractById,
@@ -12,7 +13,12 @@ import {
   createCaseFromContract,
   resolveContractOrg,
   issueSignLink,
+  issueContractDownloadTicket,
+  resolveContractDownloadTicket,
+  getContractForTicket,
+  ContractAccessError,
 } from "./contracts.server";
+import { recordContractDownload } from "./download-audit.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertEntitlement } from "@/lib/subscription.server";
 import type { ContractType } from "./contracts.shared";
@@ -101,7 +107,10 @@ export const getPublicContractForSigningFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const contract = await getContractBySignToken(data.signToken);
     if (!contract) return { contract: null };
-    return { contract };
+    // العقد الموقّع مسبقاً يُتاح تحميله فوراً بتذكرة قصيرة الصلاحية.
+    const downloadTicket =
+      contract.status === "signed" ? await issueContractDownloadTicket(contract) : null;
+    return { contract, downloadTicket };
   });
 
 export const signPublicContractFn = createServerFn({ method: "POST" })
@@ -109,13 +118,49 @@ export const signPublicContractFn = createServerFn({ method: "POST" })
     (d: { signToken: string; signatureImageBase64: string; signerName: string; ipAddress?: string }) => d,
   )
   .handler(async ({ data }) => {
+    // عنوان الشبكة والمتصفح يُقرآن من الطلب على الخادم ولا يُقبلان من المتصفح.
+    const request = getRequest();
+    const ipAddress =
+      request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      undefined;
     const result = await signContractByClient(
       data.signToken,
       data.signatureImageBase64,
       data.signerName,
-      data.ipAddress,
+      ipAddress,
+      request.headers.get("user-agent") ?? undefined,
     );
     return result;
+  });
+
+/**
+ * تحميل النسخة الموقعة من رابط التوقيع العام.
+ * الطرف الخارجي لا يملك جلسة، فالتحقق يعتمد على تذكرة موقّعة (HMAC) قصيرة
+ * الصلاحية صادرة من الخادم بعد التوقيع، ولا تُقبل أي معرّفات من المتصفح.
+ */
+export const downloadSignedContractByTicketFn = createServerFn({ method: "POST" })
+  .validator((d: { downloadTicket: string }) => d)
+  .handler(async ({ data }) => {
+    const { contractId, organizationId } = await resolveContractDownloadTicket(data.downloadTicket);
+    const contract = await getContractForTicket(contractId, organizationId);
+    if (!contract) throw new ContractAccessError("العقد غير متاح للتحميل.");
+    if (contract.status !== "signed") {
+      throw new ContractAccessError("لم يكتمل توقيع العقد بعد، ولا تتوفر نسخة نهائية للتحميل.");
+    }
+
+    const pdfBytes = await generateContractPdf(contract);
+
+    await recordContractDownload({
+      contract,
+      channel: "public_sign_link",
+      byteLength: pdfBytes.byteLength,
+    });
+
+    return {
+      fileName: `عقد_${contract.contractNumber}.pdf`,
+      base64: Buffer.from(pdfBytes).toString("base64"),
+    };
   });
 
 export const downloadContractPdfFn = createServerFn({ method: "POST" })
@@ -128,9 +173,58 @@ export const downloadContractPdfFn = createServerFn({ method: "POST" })
 
     const pdfBytes = await generateContractPdf(contract);
     const base64 = Buffer.from(pdfBytes).toString("base64");
+    await recordContractDownload({
+      contract,
+      channel: "office_workspace",
+      byteLength: pdfBytes.byteLength,
+      actorUserId: context.userId,
+    });
     return {
       fileName: `عقد_${contract.contractNumber}.pdf`,
       base64,
+    };
+  });
+
+/**
+ * سجل تنزيلات نسخة العقد لأعضاء المكتب (قراءة فقط).
+ * يعتمد على سياسة القراءة القائمة على `contract_events` بهوية المستخدم،
+ * فلا يمكن لعضو مكتب آخر الاطلاع على سجل عقود غير مكتبه.
+ */
+export const getContractDownloadLogFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { contractId: string; organizationId?: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await resolveContractOrg(context.supabase, data.organizationId ?? null);
+    const { data: rows, error } = await context.supabase
+      .from("contract_events")
+      .select("id, created_at, actor_label, ip_address, metadata")
+      .eq("organization_id", organizationId)
+      .eq("contract_id", data.contractId)
+      .eq("event_type", "exported_pdf")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new ContractAccessError("تعذّر جلب سجل تنزيلات العقد.");
+
+    type DownloadMeta = {
+      channel?: string;
+      verificationId?: string | null;
+      contractNumber?: string | null;
+      fileBytes?: number | null;
+    };
+
+    return {
+      entries: (rows ?? []).map((row) => {
+        const meta = (row.metadata ?? {}) as DownloadMeta;
+        return {
+          id: row.id as string,
+          downloadedAt: row.created_at as string,
+          actorLabel: (row.actor_label as string | null) ?? null,
+          ipAddress: (row.ip_address as string | null) ?? null,
+          channel: meta.channel === "office_workspace" ? "office_workspace" : "public_sign_link",
+          verificationId: meta.verificationId ?? null,
+          fileBytes: meta.fileBytes ?? null,
+        };
+      }),
     };
   });
 
@@ -143,3 +237,16 @@ export const convertContractToCaseFn = createServerFn({ method: "POST" })
     return { ok: true, caseId: result.caseId };
   });
 
+
+/**
+ * تحقق عام من عقد عبر رقم التحقق (QR أو إدخال يدوي).
+ * لا يكشف أي بند أو مبلغ أو بيانات تعريف للأطراف — إثبات وجود وحالة فقط.
+ */
+export const verifyContractPublicFn = createServerFn({ method: "GET" })
+  .validator((d: { verificationId: string }) => ({
+    verificationId: String(d?.verificationId ?? "").slice(0, 40),
+  }))
+  .handler(async ({ data }) => {
+    const { verifyContractByPublicId } = await import("./contract-lifecycle.server");
+    return verifyContractByPublicId(data.verificationId);
+  });

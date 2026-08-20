@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "security:check": "bun scripts/security-guardrails.ts",
+    "files:security": "bun scripts/file-security-guardrails.ts",
     "security:db": "bun scripts/security-guardrails-db.ts",
     "rbac:matrix": "bun scripts/rbac-matrix.ts",
     "rbac:nav": "bun scripts/rbac-nav-check.ts",
@@ -32,6 +33,8 @@
     "e2e:gate": "bun scripts/e2e-gate-guardrails.ts",
     "documents:requests": "bun scripts/document-requests-integrity-guardrails.ts",
     "repo:hygiene": "bun scripts/repo-hygiene-guardrails.ts",
+    "deep-scan:test": "bun scripts/deep-scan.test.ts",
+    "deep-scan:ooxml:test": "bun scripts/deep-scan-ooxml.test.ts",
     "score:test": "bun scripts/operational-score.test.ts",
     "score:ranking:test": "bun scripts/operational-score-ranking.test.ts",
     "score:optin:test": "bun scripts/operational-score-optin.test.ts",
@@ -42,7 +45,8 @@
     "notif-email:test": "bun scripts/notification-emails.test.ts",
     "mail:transport:test": "bun scripts/mehla-mailer.test.ts",
     "app-email:test": "bun scripts/app-email.test.ts",
-    "http-mail:test": "bun run scripts/http-mail.test.ts"
+    "http-mail:test": "bun run scripts/http-mail.test.ts",
+    "contracts:e2e": "bun scripts/e2e/contract_download.e2e.ts"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",

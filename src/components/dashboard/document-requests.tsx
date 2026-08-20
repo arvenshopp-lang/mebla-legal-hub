@@ -340,7 +340,7 @@ function CreateRequestModal({
       ) : (
         <>
           <div className="grid gap-4">
-            <FormField label="عنوان الطلب *">
+            <FormField label="عنوان الطلب" required>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}

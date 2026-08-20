@@ -33,7 +33,9 @@ import {
   useDebounced,
   ConfirmDialog,
   Pagination,
+  sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { RIYADH_TZ_HINT, isoToRiyadhLocalInput, riyadhLocalToIso } from "@/lib/format";
 import { Pencil, Trash2, Check } from "lucide-react";
@@ -104,7 +106,7 @@ function Page() {
   const [editing, setEditing] = useState<DeadlineRow | null>(null);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<DeadlineRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
@@ -513,16 +515,17 @@ function DeadlineDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="العنوان *">
+          <FormField label="العنوان" required>
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
           </FormField>
         </div>
-        <FormField label="النوع *">
+        <FormField label="النوع" required>
           <select
             value={form.deadline_type ?? "custom"}
             onChange={(e) =>
@@ -551,7 +554,7 @@ function DeadlineDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="تاريخ الاستحقاق *" hint={RIYADH_TZ_HINT}>
+        <FormField label="تاريخ الاستحقاق" required hint={RIYADH_TZ_HINT}>
           <input
             type="datetime-local"
             value={form.due_date ?? ""}
@@ -560,7 +563,7 @@ function DeadlineDialog({
           />
           {errors.due_date && <span className="text-xs text-danger">{errors.due_date}</span>}
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "active"}
             onChange={(e) =>
@@ -575,7 +578,7 @@ function DeadlineDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="الأولوية *">
+        <FormField label="الأولوية" required>
           <select
             value={form.priority ?? "medium"}
             onChange={(e) =>
@@ -610,6 +613,7 @@ function DeadlineDialog({
               rows={2}
               value={form.notes ?? ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
