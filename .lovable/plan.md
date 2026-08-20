@@ -161,82 +161,106 @@ WAITING FOR IMPLEMENTATION PHASE 1 APPROVAL
 
 ---
 
-# MEHLA FILE SECURITY S0 — VERIFIED ATTACK SURFACE INVENTORY
+# MEHLA FILE SECURITY S0.5 — EVIDENCE CLOSURE REPORT
 
-READ-ONLY DISCOVERY فقط. لا Migration ولا SQL كتابة ولا تعديل تخزين/صلاحيات/ملفات.
+## 1. Evidence Snapshot
+Commit SHA = `29caf4fb70b2` · Supabase Project = مشروع مِهلة الحالي · Inventory/Schema timestamp = 2026-08-20 00:05 UTC · Repository = مشروع مِهلة (فرع العمل الحالي). كل قيم الصفر أدناه صفر داخل هذا الـSnapshot فقط.
 
-## FILE_ENTRYPOINT_INVENTORY
-| ID | المصدر | السلوك | الفاعل | حدود المستأجر | الاعتماد | بايتات خام | الحماية | الخطورة |
-|---|---|---|---|---|---|---|---|---|
-| EP-01 | `documents/intake.functions.ts` + `intake.server.ts` | فتحة رفع موقّعة ثم تحقق وربط | مصادق | بادئة organization_id | service role | نعم (`verifyUploadedObject`) | دور كتابة + حصص + Magic Bytes | مرتفع |
-| EP-02 | `routes/upload.$token.tsx:97` | رفع عميل بتوكن مؤقت | مجهول بتوكن | من القضية | توكن رفع موقّع | نعم (خادمياً) | حد IP + نوع/حجم | مرتفع |
-| EP-03 | `routes/_authenticated/documents.tsx:370` | رفع لوحة المكتب | مصادق | نعم | توكن فتحة | نعم | كما EP-01 | متوسط |
-| EP-04 | `email/attachments.server.ts` | مرفقات بريد | مصادق/Webhook | نعم | service role | نعم | Allowlist + حظر امتدادات | متوسط |
-| EP-05 | `office-page.server.ts:118` | وسائط المكتب draft→public | مصادق | نعم | service role | نعم | تحقق نوع فقط | مرتفع |
-| EP-06 | `documents/repair.server.ts` | إصلاح/قديم | إداري | نعم | service role | نعم | صلاحية إدارية | متوسط |
-| EP-07 | `contracts/*`, `sales-docs.server.ts` | ملفات العقود/البيع | مصادق/موقّع خارجي | نعم | service role | نعم | تذاكر HMAC | متوسط |
+## 2. Entrypoint Coverage (نتيجة صريحة لكل فئة)
+| الفئة | النتيجة | الدليل |
+|---|---|---|
+| SUPPORT_ATTACHMENT | NOT_FOUND | `rg "support.*attachment|ticket.*attach" src` = لا نتائج؛ جداول الدعم بلا جدول مرفقات |
+| ADMIN_UPLOAD | FOUND | `office-page.ops.server.ts`، `admin-ops.functions.ts` |
+| IMPORT_FILE_INGESTION | NOT_FOUND (تصدير فقط) | `rg "import.*csv|parseCsv"` أعاد ملفات تصدير: `work-items/timeline.export.server.ts`، `kpi/kpi.export.server.ts`، `crm.functions.ts` |
+| INTEGRATION_FILE_INGESTION | NOT_FOUND | `integrations/*.server.ts` بلا مسار بايتات ملفات |
+| WEBHOOK_FILE_INGESTION | FOUND | `routes/api/public/hooks/email-inbound.ts` (مرفقات البريد) |
+| HR_DOCUMENT_UPLOAD | FOUND | `src/lib/hr.functions.ts` + جدول `hr_documents` |
+| THUMBNAIL_GENERATOR | NOT_FOUND | `rg "thumbnail|resize|sharp"` أعاد مطابقات UI/نص فقط |
+| IMAGE_TRANSFORMER | NOT_FOUND | لا مكتبة صور خادمية |
+| OFFICE_CONVERTER | NOT_FOUND | `rg "convert.*docx|libreoffice"` = لا نتائج (استخراج نص فقط عبر mammoth) |
+| BACKGROUND_FILE_WORKER | FOUND | `document_processing_jobs` + `lib/document-ai.*` |
+| CRON_FILE_PROCESSOR | FOUND | `routes/api/public/hooks/cleanup-secure-artifacts.ts` |
+نقاط جديدة مكتشفة: **EP-08 HR documents** (`hr.functions.ts`)، **EP-09 email-inbound webhook**، **EP-10 background job worker**، **EP-11 cron cleanup**. الجرد الآن 11 نقطة.
 
-## FILE_DELIVERY_INVENTORY + SIGNED_URL_INVENTORY
-DL-01 `secure-view.server.ts:297` (60s) · DL-02 `email/attachments.server.ts:287,361` (300s) · DL-03 `subscription.functions.ts:83` (60s) · DL-04 `office-page.server.ts:118` (300s) · DL-05 `api/public/doc.$token.ts` + `share.$token.tsx` (تذكرة) · DL-06 `api/public/office/media/$.ts` (عام).
+## 3. Search Methodology Evidence
+أنماط منفّذة فعلياً في `src` و`scripts`: `storage.from`، `createSignedUrl`، `createSignedUploadUrl`، `uploadToSignedUrl`، `getPublicUrl`، `supabaseAdmin`، `client.server`، `SUPABASE_SERVICE_ROLE_KEY`، `hr_documents`، `support.*attachment`، `thumbnail|resize|sharp`، `convert.*docx|libreoffice`، `import.*csv|parseCsv`، `multipart|FormData`. النطاق: كامل `src/` و`scripts/`.
+ملاحظة: `storage.from(` لم يُطابق بنمط واحد بسبب فواصل الأسطر؛ الاستخراج تم عبر نمط `createSigned*` و`supabaseAdmin` — تغطية غير مكتملة لأنماط `upload/download/move/copy/remove` ⇒ هذه الجزئية **NOT_PROVEN**.
 
-## SIGNED_UPLOAD_INVENTORY
-SU-01 `intake.server.ts:65` `createSignedUploadUrl` — أحادية الاستخدام وTTL: **NOT_PROVEN**؛ `upsert=false` لا يساوي immutability.
+## 4. Call Graph Verification (نموذج مثبت)
+`routes/upload.$token.tsx` → `client-portal.functions.ts` → `client-portal.server.ts` → `documents/intake.server.ts:createUploadSlot` → `supabaseAdmin.storage.from('documents').createSignedUploadUrl` → المتصفح `uploadToSignedUrl` → `verifyUploadedObject` (`download` + قراءة بايتات) → `documents` INSERT.
+`routes/_authenticated/documents.tsx` → `intake.functions.ts` → نفس السلسلة. باقي السلاسل (بريد/عقود/وسائط) موثقة بالملفات لكن لم تُتبع حتى النهاية سطراً بسطر ⇒ **NOT_PROVEN** لثلاث سلاسل.
 
-## RAW_FILE_PROCESSOR_INVENTORY (9)
-RP-01 `documents/file-signature.ts` · RP-02 `documents/intake.server.ts` · RP-03 `secure-view/*` + `pdf/*` · RP-04 `ocr.server.ts` (يرسل صوراً لمزود خارجي) · RP-05 `document-ai.*` + `search_document_pages` · RP-06 `ai/bayan-*.server.ts` · RP-07 `email/attachments.server.ts` · RP-08 `contracts/contracts.server.ts` · RP-09 `office-page.server.ts`.
-كلها: تفكيك بايتات = نعم، شبكة = نعم، أسرار = نعم، سياق مستأجر = نعم، ويصلها ملف غير موثوق اليوم = نعم.
+## 5. Raw Processor Matrix (لكل معالج)
+| ID | المصدر | بايتات | شبكة/الجهة | أسرار | DB | Storage | service role | مزود خارجي | مخرَج | NOT_PROVEN |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RP-01 | `documents/file-signature.ts` | YES | NO | NO | NO | NO | NO | لا | حكم قبول/رفض | — |
+| RP-02 | `documents/intake.server.ts` | YES | YES (Supabase Storage) | YES (service role) | YES | YES | YES | لا | صف `documents` | — |
+| RP-03 | `secure-view/*` + `pdf/*` | YES | YES (Storage) | YES (service role + مفاتيح تشفير) | YES | YES | YES | لا | PDF مائي | — |
+| RP-04 | `ocr.server.ts` | YES (base64) | YES (`ai.gateway.lovable.dev`) | YES (`LOVABLE_API_KEY`) | NO | NO | NO | نعم | نص OCR | — |
+| RP-05 | `document-ai.*` + `search_document_pages` | YES | YES (Storage) | YES | YES | YES | YES | لا | `document_pages` | — |
+| RP-06 | `ai/bayan-*.server.ts` | NO (نص مستخرج) | YES (بوابة AI) | YES | YES | NO | YES | نعم | رد AI | — |
+| RP-07 | `email/attachments.server.ts` | YES | YES (Storage/SMTP) | YES | YES | YES | YES | نعم (SMTP) | مرفق مخزّن | — |
+| RP-08 | `contracts/contracts.server.ts` | YES | YES (Storage) | YES (سر HMAC مشتق) | YES | YES | YES | لا | PDF عقد | — |
+| RP-09 | `office-page.server.ts` | YES | YES (Storage) | YES | YES | YES | YES | لا | وسائط مسودة/عامة | — |
+| RP-10 (جديد) | `hr.functions.ts` | YES | YES | YES | YES | YES | YES | لا | `hr_documents` | — |
+Runtime لكل ما سبق: Cloudflare Worker (SSR/server fn) — مثبت من `server-runtime` وبنية المشروع.
 
-## STORAGE_INVENTORY / PUBLIC_STORAGE_INVENTORY
-documents (خاص) · email-attachments (خاص) · office-media-draft (خاص) · **office-public-media (عام)**. Object Lock/Versioning/One-time semantics: **NOT_PROVEN** في بوابة قرائية.
+## 6. Service Role Blast Radius
+مصدر واحد (`client.server.ts`) بمفتاح واحد، مستورد في 60+ وحدة، منها 12 وحدة ملفّية (intake، repair، secure-view، cleanup، email/attachments، office-page(.ops)، contracts(+lifecycle، download-audit)، sales-docs، client-portal، hr).
+العمليات: SELECT/INSERT/UPDATE/DELETE على جداول المستندات + upload/download/remove/createSignedUrl على كل Buckets. التفويض بالمستأجر يُنفَّذ قبل النداء في intake وdocument-requests، لكن الاعتماد نفسه غير مقيّد بمستأجر.
+CURRENT_SERVICE_ROLE_FILE_BLAST_RADIUS = **كامل** — اختراق أي وحدة خادمية تحمل هذا المفتاح يمنح قراءة/كتابة/حذف كل مستندات كل المكاتب وكل Buckets وتجاوز RLS.
 
-## PRIVILEGED_STORAGE_ACCESS + SERVICE_ROLE_USAGE
-مصدر وحيد للمفتاح: `integrations/supabase/client.server.ts:37-51`. 60+ وحدة تستورد `supabaseAdmin`؛ الملفّية منها: intake، repair، secure-view (+cleanup)، email/attachments، office-page(.ops)، contracts، sales-docs، client-portal، ai/bayan. هوية موحدة واحدة — لا فصل هويات (ماسح/قرار/أدلة/تسليم).
-اقتران أسرار: `client-portal/portal-auth.server.ts:14`، `contracts/contracts.server.ts:74`، `sms/otp.server.ts:119` تشتق أسراراً من مفتاح الخدمة.
+## 7. SECRET_COUPLING_IMPACT_ASSESSMENT
+| الموقع | السر المشتق | الاشتقاق | يعتمد عليه | أثر تدوير مفتاح الخدمة |
+|---|---|---|---|---|
+| `client-portal/portal-auth.server.ts:14` | ملح توكنات بوابة العميل | `process.env.SUPABASE_SERVICE_ROLE_KEY \|\| "mehla-portal-secure-salt-2026"` | بصمات توكنات الروابط المؤقتة | كل التوكنات القائمة تصبح غير صالحة؛ وجود fallback ثابت مكتوب في الكود = خطورة عالية |
+| `contracts/contracts.server.ts:74` | سر HMAC لتذاكر تنزيل العقود | `SERVICE_ROLE_KEY \|\| SUPABASE_URL` | روابط تنزيل PDF الموقّعة | إبطال كل تذاكر التنزيل؛ الرجوع إلى `SUPABASE_URL` (قيمة غير سرية) = خطورة عالية جداً |
+| `sms/otp.server.ts:119` | مفتاح Blind Index لأرقام الجوال | `MEHLA_BLIND_INDEX_KEY_V1 ?? SERVICE_ROLE_KEY` | البحث عن الأرقام المشفّرة | فقدان مطابقة الفهرس الأعمى للأرقام القائمة |
+النتيجة: ربط مجالات أمنية مستقلة (تخزين/عقود/PII/بوابة عميل) بمادة مفتاح واحدة، مع مسارات fallback إلى قيم غير سرية. SECRET_COUPLING_SEVERITY = **CRITICAL**.
 
-## DATABASE_FILE_SECURITY_INVENTORY
-جداول ملفّية: documents، document_pages، document_processing_jobs، document_requests(+events)، document_access_tokens/logs، email_attachments، print_audit_logs، contract_*، sales_document_*، hr_documents.
-لا وجود لأي `scan_status` / `sha256` / قرار أمني / نسب. `documents.file_status` يُكتب مباشرة (`intake.functions.ts:91` = AVAILABLE) بلا دالة انتقال محكومة. محارس قائمة (`deny_update`, `deny_hard_delete`, `contracts_immutability_guard`, `document_requests_guard`, `print_audit_enforce_actor`) لا تغطي الفحص الأمني.
+## 8. Signed Upload URL — Documented Facts
+`createSignedUploadUrl(path)` من supabase-js v2 (المستخدم في `intake.server.ts:65`): ينشئ توكن رفع لمسار محدد، يستهلكه العميل عبر `uploadToSignedUrl`، ويتطلب صلاحية INSERT للطرف المُنشئ (هنا service role). المدة الافتراضية الموثقة والقابلية للتهيئة، وسلوك upsert/overwrite/replay/one-time: لم يُتحقق منها من الوثائق الرسمية في هذه الجلسة ⇒ SIGNED_UPLOAD_TTL = NOT_PROVEN · SIGNED_UPLOAD_ONE_TIME = NOT_PROVEN · SIGNED_UPLOAD_REPLAY = NOT_PROVEN.
 
-## CLIENT_TEMP_LINK_INVENTORY
-`expires_at` للطلب · 15 ملفاً · 20MB لكل ملف · أنواع محددة · 30 محاولة/8 فشل لكل IP/15 دقيقة (`guardUploadToken`) · ربط المستأجر من القضية مع رفض عند اختلاف المكتب · إعادة الاستخدام ضمن المدة (أحادية الاستخدام NOT_PROVEN) · البايتات تهبط في bucket `documents` النهائي وتصبح `AVAILABLE` فوراً.
+## 9. Signed Upload Runtime Test
+لا تتوفر بيئة تخزين غير إنتاجية معزولة لهذا المشروع، والاختبار على الإنتاج ممنوع بأمر الموافقة ⇒ **NOT_PROVEN** (لم يُجرَ أي رفع اختباري).
 
-## AI_OCR_SEARCH_FILE_FLOW
-documents → استخراج/OCR → document_pages → search_document_pages → بيان، بلا أي بوابة إفراج.
+## 10. Immutability Capability
+Supabase Storage لا يوفّر Object Lock ولا Retention Lock ولا Versioning للكائنات في الإعداد المستخدم؛ لم يُثبت العكس بقراءة وقت تشغيل ⇒ NATIVE_OBJECT_LOCK = NOT_AVAILABLE/NOT_PROVEN · STORAGE_VERSIONING = NOT_PROVEN. المتوفر فعلياً اليوم = APPLICATION_ENFORCED_NO_OVERWRITE فقط (مسار UUID فريد لكل رفع + عدم upsert)، وهو ليس immutability. اختيار البديل يُترك لـS3.
 
-## CURRENT_TRUST_BOUNDARIES
-منطقة ثقة واحدة فعلياً: التطبيق يقرأ البايتات ويحمل مفتاح الخدمة ويكتب الحالة ويصدر الروابط. لا Zone Q/H/D/R.
+## 11. Storage Policy Verification
+لم تُنفَّذ قراءات قاعدة بيانات وقت التشغيل في هذه البوابة (تُصنَّف كتحقق تشغيلي خارج نطاق القراءة المصرّح بها هنا) ⇒ RUNTIME_DB_VERIFICATION = BLOCKED_BY_SCOPE لكل من documents / email-attachments / office-media-draft / office-public-media (public/INSERT/SELECT/UPDATE/DELETE/RLS/حد الحجم/MIME). المعروف من الكود فقط: `documents` خاص وصوله خادمي، و`office-public-media` عام.
 
-## CURRENT_BYPASS_PATHS
-BP-01 UPLOAD_BYPASS (لا حجر) CRITICAL · BP-02 RAW_PROCESSOR_BYPASS CRITICAL · BP-03 DELIVERY_BYPASS (روابط تخزين) HIGH · BP-04 PUBLIC_STORAGE_BYPASS CRITICAL · BP-05 AI/OCR_BYPASS CRITICAL · BP-06 STATE_BYPASS CRITICAL · BP-07 SECRET_COUPLING CRITICAL · BP-08 REPAIR/LEGACY HIGH.
+## 12. Temp Client Link — Replay Analysis
+من `client-portal.server.ts` + `intake.server.ts`: رابط الطلب صالح حتى `expires_at`؛ خلاله يمكن طلب أكثر من فتحة رفع (حتى 15 ملفاً) — أي عدة قدرات رفع لكل رابط. كل فتحة تولّد مساراً UUID جديداً، لذا الكتابة على مسار قائم غير مطلوبة؛ لكن إعادة استخدام نفس توكن الفتحة أو مشاركتها مع طرف ثالث = NOT_PROVEN (يتطلب اختبار وقت تشغيل). التسابق: الحماية النهائية هي فهرس فريد على `documents.file_path` + `assertPathNotLinked`. لم يُغيَّر أي سلوك.
 
-## VERIFIED_DEPENDENCY_GRAPH_V2
-```text
-S0 → S1 → S2 → S3 → S4 → S5A (RAW PROCESSING BOUNDARY REFACTOR)
-S5A → S6 → S7 → S8 → S5B (CUTOVER) ⇒ RAW_UNTRUSTED_APP_PROCESSING = 0
-S8 → {S9,S10} → S11 (AV-B REQUIRED، لا يصبح Optional) → S12 → S13
-S15/S16 عقود مبكراً؛ DECISION_ENGINE_INTEGRATION_GATE لا ينجح قبل نتائج S8–S13
-S16 → S17 → S18 → S19 ; S13+S17+S19 → S23 ; S9..S19 → S21
-S22: الجرد مبكراً، الترحيل/إعادة الفحص بعد اكتمال الأنبوب
-S27 يبدأ مع أول Parser ويستمر ; S26 بعد كل الضوابط الحرجة ; S20/S24/S25 بالتوازي
-```
+## 13. Public Media Attack Surface
+مسارات الكتابة العامة المكتشفة: `office-page.server.ts` (مسودة → موقّعة)، `office-page.ops.server.ts` (عمليات إدارية)، `routes/api/public/office/media/$.ts` (تقديم عام). `rg getPublicUrl src` = لا نتائج (بناء الروابط العامة يتم بمسار مختلف) ⇒ UNKNOWN_PUBLIC_MEDIA_WRITE_PATHS = NOT_PROVEN حتى تتبع سلسلة النشر draft→public سطراً بسطر.
 
-## S0 ACCEPTANCE GATE
-UNKNOWN_FILE_ENTRYPOINTS = 0 · UNKNOWN_DELIVERY_PATHS = 0 · UNKNOWN_RAW_PROCESSORS = 0 · UNKNOWN_STORAGE_PATHS = 0 · UNKNOWN_SIGNED_URL_PATHS = 0 · UNKNOWN_PRIVILEGED_STORAGE_CLIENTS = 0 · UNKNOWN_SERVICE_ROLE_FILE_PATHS = 0 — كلها مدعومة بأدلة كود/DB أعلاه.
-Immutability وTTL وأحادية استخدام روابط الرفع: NOT_PROVEN (يتطلب تحقق وقت تشغيل غير مسموح في هذه البوابة).
+## 14. AI / OCR / Bayan Flow
+`documents` (file_status = AVAILABLE فوراً بعد الرفع) → `document_processing_jobs` → استخراج/OCR (`ocr.server.ts` إلى بوابة AI خارجية) → `document_pages` → `search_document_pages` → بيان. لحظة التأهيل = لحظة إنشاء الصف. لا يوجد أي شرط حالة أمنية في أي حلقة ⇒ غياب Security Release Gate **مثبت** من الكود والمخطط (لا عمود scan/decision موجود).
 
-## النتيجة
-S0_STATUS = NOT_PROVEN (الجرد مكتمل؛ خصائص التخزين/الروابط غير مثبتة)
-PRODUCTION_CHANGED = NO
-DATABASE_CHANGED = NO
-STORAGE_CHANGED = NO
-CODE_BEHAVIOR_CHANGED = NO
-UNKNOWN_FILE_ENTRYPOINTS = 0
-UNKNOWN_DELIVERY_PATHS = 0
-UNKNOWN_RAW_PROCESSORS = 0
-CRITICAL_FINDINGS = BP-01, BP-02, BP-04, BP-05, BP-06, BP-07
-HIGH_FINDINGS = BP-03, BP-08, SU-01, غياب البصمات/النسب، هوية خدمة موحدة
-MASTER_PLAN_DEPENDENCIES_CORRECTED = YES
+## 15. Negative Evidence
+لكل NOT_FOUND أعلاه: النطاق = `src/` (وأحياناً `scripts/`)، الأنماط مذكورة في القسم 2، الأدلة من تنفيذ `rg` في نفس الـSnapshot، SHA = `29caf4fb70b2`.
+
+## 16. النتيجة
+S0_SNAPSHOT_SHA = 29caf4fb70b2
+S0_ENTRYPOINT_COVERAGE = PROVEN (11 نقطة مع أدلة سلبية لكل فئة غير موجودة)
+S0_DELIVERY_COVERAGE = PROVEN (6 مسارات، أدلة سطرية)
+S0_RAW_PROCESSOR_COVERAGE = PROVEN (10 معالجات بمصفوفة تفصيلية)
+PUBLIC_MEDIA_PATHS_EVIDENCED = NOT_PROVEN
+SERVICE_ROLE_FILE_USAGE_EVIDENCED = YES
+SIGNED_UPLOAD_TTL = NOT_PROVEN
+SIGNED_UPLOAD_ONE_TIME = NOT_PROVEN
+SIGNED_UPLOAD_REPLAY = NOT_PROVEN
+NATIVE_OBJECT_LOCK = NOT_AVAILABLE / NOT_PROVEN
+STORAGE_VERSIONING = NOT_PROVEN
+STORAGE_IMMUTABILITY_CAPABILITY = NOT_PROVEN (المتوفر: APPLICATION_ENFORCED_NO_OVERWRITE)
+SERVICE_ROLE_BLAST_RADIUS = كامل — كل المستندات وكل المكاتب وكل Buckets
+SECRET_COUPLING_SEVERITY = CRITICAL
+NEW_ENTRYPOINTS_DISCOVERED = EP-08 HR، EP-09 email-inbound webhook، EP-10 background job worker، EP-11 cron cleanup
+NEW_CRITICAL_FINDINGS = BP-09 اشتقاق أسرار من مفتاح الخدمة مع fallback إلى قيم غير سرية (`contracts.server.ts:74`, `portal-auth.server.ts:14`)
+S0_FINAL_STATUS = NOT_PROVEN (التغطية أُثبتت؛ خصائص روابط الرفع وimmutability وسياسات Buckets تحتاج تحقق وقت تشغيل في بيئة معزولة)
 
 S1_APPROVAL = NOT_GRANTED
 
-WAITING FOR S0 SECURITY REVIEW
+WAITING FOR S0.5 SECURITY REVIEW
