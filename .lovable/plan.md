@@ -760,3 +760,40 @@ DESIGN_STATUS = CLOSED
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR E1 SECURITY REVIEW
+
+---
+
+# MEHLA SECURITY — FINAL SOURCE CLOSURE (READ-ONLY)
+
+## EP-03 Contracts
+- `src/lib/contracts/contracts.server.ts` · `issueContractDownloadTicket` / `resolveContractDownloadTicket` — تذكرة HMAC موقّعة (سر بسطر 74 مع fallback ثابت غير آمن)، صلاحية 1 ساعة. tenant check: مضمّن في معرّف العقد فقط (لا فحص org مستقل عند الاستهلاك). security gate: ABSENT.
+- `downloadSignedContractByTicketFn` / `downloadContractPdfFn` — PDF يُولّد بالذاكرة ويعاد base64. credential: supabaseAdmin (module-scope، RLS متجاوز).
+- Storage: لا عملية Storage مرصودة في هذا المسار ⇒ لا مسار ملفات غير مكتشف داخل contracts.server.ts. أي طريق عبر contract-lifecycle = P0_REQUIRED.
+
+## EP-04 Email attachments
+- `src/lib/email/attachments.server.ts`: `createSignedUrl` (285، 359 مع `{download}`)، `remove` (219، 337). credential: service role. tenant check: NOT_PROVEN (لا فحص organization_id مرصود قبل الرابط/الحذف). security gate: ABSENT.
+- سلسلة storage → bytes → MIME (`email/transport/mime.server.ts`) → provider: القراءة الفعلية للبايتات غير مثبتة سطرياً ⇒ P0_REQUIRED.
+
+## EP-05 Secure View
+- `src/routes/api/public/doc.$token.ts` هو المُصدِر والمستهلك الوحيد لـ`kind`. `kind="process"` يعيد **البايتات الأصلية بلا ختم** لمحرك الاستخراج (`document-ai.server.ts` / `document-pipeline.ts`). credential: supabaseAdmin عبر `secure-view.server.ts:84`. tenant check: نعم (org match صريح). security gate: ABSENT.
+- البايتات الأصلية تُقرأ عبر `createSignedUrl(bucket, 60s)` + `arrayBuffer()` (297، 354) داخل التطبيق.
+
+## EP-06 Public Media
+- كتابات public media محصورة في `src/lib/office-page.ops.server.ts` و`office-page.server.ts` (استدعاء من `components/office/editor.tsx`). credential: خادمي. tenant check: عبر org المكتب في طبقة ops. security gate: ABSENT (لا فحص محتوى قبل النشر العام) ⇒ تجاوز واحد محتمل: صورة مكتب تُنشر علناً بلا فحص.
+
+## EP-10 Background worker
+- لا Worker مستقل؛ المعالجة تتم داخل الطلب عبر `document-pipeline.ts` + `document-ai.server.ts`، ويُشغّلها ticket `kind=process`. لا طابور، لا Security Gate. حدود الملفات المسموحة: P0_REQUIRED.
+
+## EP-11 Cleanup
+- `src/lib/secure-view/cleanup.server.ts`: `candidates.filter(p => !referenced.has(p))` (139) ثم `supabaseAdmin.storage.remove(chunk)` (75). منطق orphan **عالمي غير مقيّد بمكتب**: مجموعة `referenced` تُبنى من صفوف documents؛ أي نقص/تأخر في المرجع (رفع قيد الإنشاء، فرق توقيت) يجعل كائناً صالحاً لأي مكتب مؤهلاً للحذف. credential: service role. tenant check: ABSENT.
+
+## الناتج
+CRITICAL_BYPASS_PATHS_FOUND = 4 (CF-21 `kind=process` بايتات خام عبر مسار عام · مرفقات البريد بلا فحص/بلا org check · public media بلا فحص · cleanup عالمي بلا نطاق مكتب)
+UNSCANNED_DELIVERY_PATHS = 5 (تذكرة تنزيل العقد · روابط مرفقات موقّعة · تنزيل مرفق مباشر · public media · مخرجات `kind=process`)
+RAW_PROCESSING_BEFORE_RELEASE = YES (EP-05 → document-pipeline، بلا بوابة)
+PUBLIC_MEDIA_BYPASSES = 1 (office-page.ops.server.ts)
+BACKGROUND_PROCESSING_BYPASSES = 1 (معالجة داخل الطلب بلا Gate)
+CLEANUP_CROSS_TENANT_RISK = HIGH (منطق orphan عالمي، الاستغلال الفعلي P0_REQUIRED)
+P0_RUNTIME_TESTS_REQUIRED = 5 (إعادة استخدام رمز doc · قراءة بايتات المرفقات وتفويضها · إبطال تذكرة العقد · أنواع الملفات المقبولة للمعالجة · نافذة سباق orphan)
+SOURCE_SECURITY_REVIEW = COMPLETE (بحدود المصدر؛ ما تبقّى يحتاج وقت تشغيل)
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
