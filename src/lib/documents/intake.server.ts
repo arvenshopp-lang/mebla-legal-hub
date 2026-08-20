@@ -141,7 +141,7 @@ export async function verifyUploadedObject(input: {
   path: string;
   prefix: string;
   fileName: string;
-}): Promise<VerifiedFile & { path: string }> {
+}): Promise<VerifiedFile & { path: string; sha256: string }> {
   const path = assertOwnedPath(input.path, input.prefix);
   const db = await admin();
   const { data: blob, error } = await db.storage.from(DOCUMENTS_BUCKET).download(path);
@@ -158,7 +158,8 @@ export async function verifyUploadedObject(input: {
     await removeOrphanObject(path);
     throw new IntakeRejection(verdict.reason);
   }
-  return { ...verdict.file, path };
+  const { sha256Hex } = await import("@/lib/file-security/security-state.server");
+  return { ...verdict.file, path, sha256: await sha256Hex(bytes) };
 }
 
 /** الأدوار التي تحذف أي مستند داخل المكتب. */
