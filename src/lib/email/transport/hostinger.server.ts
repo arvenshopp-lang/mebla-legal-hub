@@ -417,7 +417,18 @@ export async function sendViaHostinger(
   const { listAttachments, ATTACHMENT_BUCKET } = await import("@/lib/email/attachments.server");
   const stored = await listAttachments(db, input.messageId);
   const attachments: { fileName: string; mimeType: string; bytes: Uint8Array }[] = [];
+  const { assertAttachmentReleasable } = await import("@/lib/file-security/release-gate.server");
   for (const item of stored) {
+    // لا تُقرأ بايتات أي مرفق قبل عبور بوابة الإفراج المركزية.
+    try {
+      await assertAttachmentReleasable(db as never, item.id);
+    } catch {
+      return {
+        ok: false,
+        code: "attachment_blocked",
+        message: "أحد المرفقات غير متاح لأسباب أمنية، ولم تُرسل الرسالة.",
+      };
+    }
     const download = await db.storage.from(ATTACHMENT_BUCKET).download(item.storage_path);
     if (download.error || !download.data) {
       return { ok: false, code: "attachment_unavailable", message: "تعذّر قراءة أحد المرفقات." };
