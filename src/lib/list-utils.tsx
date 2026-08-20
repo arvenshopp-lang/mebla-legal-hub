@@ -7,6 +7,21 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Loader2, Search, Plus, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/* ------------------------------------------------------------------- Search */
+
+/**
+ * ينقّي نص البحث قبل تمريره إلى استعلامات PostgREST.
+ * الفواصل والأقواس والنقطتان والنجمة تُفسد صيغة `or(...)` و`ilike` وتُنتج خطأ 400،
+ * لذا تُستبدل بمسافات ويُقصّ الطول لحماية الاستعلام.
+ */
+export function sanitizeSearchTerm(input: string, maxLength = 120): string {
+  return input
+    .replace(/[,()."':;*%\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
 /* ------------------------------------------------------------------ Buttons */
 
 type BtnVariant = "primary" | "secondary" | "tertiary" | "ghost" | "outline" | "danger" | "link";
