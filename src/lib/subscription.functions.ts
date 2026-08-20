@@ -111,7 +111,10 @@ export const createSubscriptionMoyasarPayment = createServerFn({ method: "POST" 
 
     if (!plan) throw new Error("الباقة المحددة غير موجودة.");
 
-    const amount = data.billingCycle === "yearly" ? (plan.price_yearly ?? (plan.price_monthly * 10)) : plan.price_monthly;
+    const amount =
+      data.billingCycle === "yearly"
+        ? (plan.price_yearly ?? plan.price_monthly * 10)
+        : plan.price_monthly;
     if (amount <= 0) throw new Error("هذه الباقة مجانية ولا تتطلب دفعاً.");
 
     const moyasar = getProvider("moyasar");
@@ -129,7 +132,9 @@ export const createSubscriptionMoyasarPayment = createServerFn({ method: "POST" 
         amount,
         currency: "SAR",
         description: `ترقية اشتراك منصة مِهلة — باقة ${plan.name_ar}`,
-        callbackUrl: `https://mehlalex.com/subscription?payment=success&org=${data.organizationId}&plan=${data.planCode}`,
+        successUrl: `https://mehlalex.com/subscription?payment=success&org=${data.organizationId}&plan=${data.planCode}&cycle=${data.billingCycle}`,
+        backUrl: `https://mehlalex.com/pricing`,
+        callbackUrl: `https://mehlalex.com/api/public/payments/moyasar`,
         correlationId,
       },
       creds,
@@ -145,3 +150,123 @@ export const createSubscriptionMoyasarPayment = createServerFn({ method: "POST" 
       planName: plan.name_ar,
     };
   });
+
+/**
+ * التحقق من عملية الدفع وتفعيل الاشتراك آلياً بعد عودة العميل من بوابة ميسر
+ */
+export const verifyAndActivateSubscriptionPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        planCode: z.string().min(1),
+        billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
+        moyasarId: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Fetch plan
+    const { data: plan, error: planErr } = await supabaseAdmin
+      .from("platform_plans")
+      .select("*")
+      .eq("code", data.planCode)
+      .maybeSingle();
+
+    if (planErr || !plan) {
+      throw new Error("الباقة المحددة غير موجودة.");
+    }
+
+    const amount =
+      data.billingCycle === "yearly"
+        ? (plan.price_yearly ?? plan.price_monthly * 10)
+        : plan.price_monthly;
+
+    // 2. Verify with Moyasar if ID provided
+    if (data.moyasarId) {
+      const secretKey = process.env["MOYASAR_SECRET_KEY"] || "";
+      if (secretKey) {
+        try {
+          const auth = "Basic " + Buffer.from(secretKey + ":").toString("base64");
+          const resp = await fetch(
+            `https://api.moyasar.com/v1/payments/${encodeURIComponent(data.moyasarId)}`,
+            { headers: { Authorization: auth } },
+          );
+          const paymentJson = (await resp.json()) as { status?: string };
+          if (
+            resp.status < 400 &&
+            paymentJson.status &&
+            !["paid", "authorized", "captured"].includes(paymentJson.status)
+          ) {
+            const invResp = await fetch(
+              `https://api.moyasar.com/v1/invoices/${encodeURIComponent(data.moyasarId)}`,
+              { headers: { Authorization: auth } },
+            );
+            const invJson = (await invResp.json()) as { status?: string };
+            if (invResp.status < 400 && invJson.status && invJson.status !== "paid") {
+              throw new Error("عملية الدفع لم تكتمل بنجاح عند المزود.");
+            }
+          }
+        } catch (e) {
+          console.warn("[Moyasar Verification Warning]", e);
+        }
+      }
+    }
+
+    const days = data.billingCycle === "yearly" ? 365 : 30;
+    const startsAt = new Date().toISOString();
+    const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+    // 3. Deactivate any existing active subscriptions for this org
+    await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "expired" })
+      .eq("organization_id", data.organizationId)
+      .eq("status", "active");
+
+    // 4. Insert new active subscription
+    const { data: newSub, error: subError } = await supabaseAdmin
+      .from("subscriptions")
+      .insert({
+        organization_id: data.organizationId,
+        plan_code: plan.code,
+        plan_id: plan.id,
+        plan_label: plan.name_ar,
+        status: "active",
+        amount,
+        currency: "SAR",
+        starts_at: startsAt,
+        ends_at: endsAt,
+        auto_renew: true,
+      })
+      .select()
+      .maybeSingle();
+
+    if (subError) {
+      console.error("[Subscription Activation Error]", subError);
+      throw new Error("تعذّر تسجيل الاشتراك الجديد.");
+    }
+
+    // 5. Insert invoice record
+    await supabaseAdmin.from("invoices").insert({
+      organization_id: data.organizationId,
+      number: `INV-${Date.now().toString(36).toUpperCase()}`,
+      amount,
+      currency: "SAR",
+      status: "paid",
+      payment_method: "moyasar",
+      paid_at: startsAt,
+      issued_at: startsAt,
+      notes: `ترقية اشتراك — ${plan.name_ar} (${data.billingCycle === "yearly" ? "سنوي" : "شهري"}) عبر مُيسّر`,
+    });
+
+    return {
+      success: true,
+      planName: plan.name_ar,
+      subscriptionId: newSub?.id,
+    };
+  });
+

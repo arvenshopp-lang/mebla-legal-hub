@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Money } from "@/components/ui/money";
 import { useServerFn } from "@tanstack/react-start";
@@ -14,7 +14,11 @@ import {
 } from "@/components/subscription/subscription-ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
-import { createSubscriptionMoyasarPayment, signInvoiceUrl } from "@/lib/subscription.functions";
+import {
+  createSubscriptionMoyasarPayment,
+  signInvoiceUrl,
+  verifyAndActivateSubscriptionPayment,
+} from "@/lib/subscription.functions";
 import {
   Badge,
   Btn,
@@ -39,6 +43,15 @@ import {
 } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    payment: typeof search.payment === "string" ? search.payment : undefined,
+    org: typeof search.org === "string" ? search.org : undefined,
+    plan: typeof search.plan === "string" ? search.plan : undefined,
+    cycle: typeof search.cycle === "string" ? search.cycle : undefined,
+    id: typeof search.id === "string" ? search.id : undefined,
+    status: typeof search.status === "string" ? search.status : undefined,
+    message: typeof search.message === "string" ? search.message : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "الاشتراك · مِهلة" },
@@ -83,9 +96,48 @@ function sortFeatures(rows: FeatureRow[]): FeatureRow[] {
 
 function SubscriptionPage() {
   const { activeOrgId } = useAuth();
+  const searchParams = Route.useSearch();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
   const payFn = useServerFn(createSubscriptionMoyasarPayment);
+  const verifyFn = useServerFn(verifyAndActivateSubscriptionPayment);
   const [upgradingCode, setUpgradingCode] = useState<string | null>(null);
+
+  // Auto-verify payment when redirected back from Moyasar
+  useEffect(() => {
+    if (searchParams?.payment === "success" || searchParams?.status === "paid") {
+      const targetOrg = searchParams.org || activeOrgId;
+      const targetPlan = searchParams.plan || "basic";
+      const targetCycle = (searchParams.cycle === "yearly" ? "yearly" : "monthly") as
+        | "monthly"
+        | "yearly";
+      const moyasarId = searchParams.id;
+
+      if (targetOrg) {
+        toast.promise(
+          verifyFn({
+            data: {
+              organizationId: targetOrg,
+              planCode: targetPlan,
+              billingCycle: targetCycle,
+              moyasarId,
+            },
+          }).then((res) => {
+            void refetch();
+            window.history.replaceState({}, document.title, "/subscription");
+            return res;
+          }),
+          {
+            loading: "جاري التحقق من عملية السداد وتفعيل الباقة…",
+            success: (data) => `🎉 تم تفعيل اشتراك مكتبك في باقة ${data.planName} بنجاح!`,
+            error: (err) => err?.message || "تعذّر تأكيد عملية السداد.",
+          },
+        );
+      }
+    } else if (searchParams?.status === "failed") {
+      toast.error("لم تكتمل عملية الدفع أو تم إلغاؤها من قبلك.");
+      window.history.replaceState({}, document.title, "/subscription");
+    }
+  }, [searchParams, activeOrgId]);
 
   const upgradeMutation = useMutation({
     mutationFn: async (planCode: string) => {

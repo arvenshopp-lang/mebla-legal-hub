@@ -17,6 +17,8 @@ export type CreatePaymentInput = {
   description: string;
   correlationId: string;
   callbackUrl?: string;
+  successUrl?: string;
+  backUrl?: string;
 };
 
 export type ProviderPaymentState = {
@@ -202,11 +204,27 @@ const moyasarProvider: PaymentProvider = {
   requiresCredentials: true,
   requiredCredentialKeys: ["secret_key", "publishable_key", "webhook_secret"],
   async createPayment(input, creds) {
+    const successUrl = input.successUrl
+      ? input.successUrl.startsWith("http")
+        ? input.successUrl
+        : `https://mehlalex.com${input.successUrl}`
+      : input.callbackUrl
+        ? input.callbackUrl.startsWith("http")
+          ? input.callbackUrl
+          : `https://mehlalex.com${input.callbackUrl}`
+        : "https://mehlalex.com/subscription?payment=success";
+
+    const backUrl = input.backUrl
+      ? input.backUrl.startsWith("http")
+        ? input.backUrl
+        : `https://mehlalex.com${input.backUrl}`
+      : "https://mehlalex.com/pricing";
+
     const callbackUrl = input.callbackUrl
       ? input.callbackUrl.startsWith("http")
         ? input.callbackUrl
         : `https://mehlalex.com${input.callbackUrl}`
-      : "https://mehlalex.com/subscription";
+      : "https://mehlalex.com/api/public/payments/moyasar";
 
     const { status, json } = await moyasarRequest("/invoices", creds, {
       method: "POST",
@@ -215,6 +233,8 @@ const moyasarProvider: PaymentProvider = {
         currency: input.currency || "SAR",
         description: input.description,
         callback_url: callbackUrl,
+        success_url: successUrl,
+        back_url: backUrl,
         metadata: {
           invoice_id: input.invoiceId,
           invoice_number: input.invoiceNumber,
