@@ -125,7 +125,7 @@ function PricingRoute() {
             <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
             <p className="text-foreground leading-normal">
               أهلاً بك <strong>{user.user_metadata?.full_name || user.email}</strong> — باقة مكتبك الحالية هي:{" "}
-              <strong className="text-primary font-bold text-[14.5px]">«{overview.plan.name_ar}»</strong>.
+              <strong className="text-primary font-bold text-[14.5px]">{overview.plan.name_ar}</strong>.
               يمكنك الترقية فوراً باختيار أي باقة أعلى أدناه.
             </p>
           </div>
