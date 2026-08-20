@@ -797,3 +797,48 @@ CLEANUP_CROSS_TENANT_RISK = HIGH (منطق orphan عالمي، الاستغلا�
 P0_RUNTIME_TESTS_REQUIRED = 5 (إعادة استخدام رمز doc · قراءة بايتات المرفقات وتفويضها · إبطال تذكرة العقد · أنواع الملفات المقبولة للمعالجة · نافذة سباق orphan)
 SOURCE_SECURITY_REVIEW = COMPLETE (بحدود المصدر؛ ما تبقّى يحتاج وقت تشغيل)
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+---
+
+# MEHLA P0 SECURITY LAB — EXECUTION & EVIDENCE REPORT
+
+## STOP CONDITION TRIGGERED — لم يُنشأ أي شيء
+شرطك: «إذا لم تستطع ضمان الفصل الكامل عن Production: STOP immediately ولا تنشئ أي شيء». الشرط تحقق.
+
+### الدليل (فحص قراءة فقط)
+- الربط الخلفي الوحيد المتاح في بيئة العمل هو مشروع مِهلة الإنتاجي: `SUPABASE_URL` يشير إلى `xklzpjocsiadnoglwryw` (نفس مرجع المشروع المستخدم في الإنتاج).
+- `SUPABASE_SERVICE_ROLE_KEY` الموجود = مفتاح خدمة الإنتاج. لا يوجد أي متغير بادئة `P0_` (العدد = 0) ولا أي مسار ثانٍ.
+- أدوات المنصة المتاحة (migration / storage_create_bucket / insert / secrets) تعمل **كلها** على هذا المشروع الإنتاجي فقط؛ لا توجد أداة لإنشاء مشروع Supabase منفصل أو قاعدة/تخزين/أسرار مستقلة.
+- نتيجة: أي تنفيذ لبنود 3–9 (اختبارات الرفع الموقّع، سياسات الحاويات، رموز kind=process، Cleanup CF-20، مرفقات البريد، هوية الخدمة، SECURITY DEFINER) كان سيكتب جداول/كائنات/أدوار داخل الإنتاج ⇒ محظور صراحةً.
+- SOURCE_COMMIT_SHA = 7d74f27bff36
+
+### ما يلزم لفتح P0 (بقرارك، خارج قدرتي الحالية)
+مشروع Lovable/Supabase منفصل غير إنتاجي (P0_PROJECT_ID مستقل) + مفاتيح خدمة خاصة به + حاويات تخزين خاصة. عند توفير مشروع مختبر منفصل وربطه، أنفّذ البنود 1–9 كاملة ببيانات صناعية.
+
+## الناتج
+P0_ISOLATION = FAIL (لا بيئة غير إنتاجية متاحة)
+PRODUCTION_TOUCHED = NO
+SIGNED_UPLOAD_REPLAY = NOT_TESTED (P0_REQUIRED)
+SIGNED_UPLOAD_CONCURRENCY = NOT_TESTED (P0_REQUIRED)
+SIGNED_UPLOAD_OVERWRITE = NOT_TESTED (P0_REQUIRED)
+SIGNED_UPLOAD_EXPIRY = NOT_TESTED (P0_REQUIRED)
+BUCKET_RLS_ISOLATION = NOT_TESTED (P0_REQUIRED)
+CROSS_TENANT_STORAGE_ACCESS = NOT_TESTED (P0_REQUIRED)
+PROCESS_TOKEN_REPLAY = NOT_TESTED (P0_REQUIRED)
+PROCESS_TOKEN_CONCURRENCY = NOT_TESTED (P0_REQUIRED)
+PROCESS_TOKEN_TENANT_ISOLATION = NOT_TESTED (P0_REQUIRED)
+EMAIL_ATTACHMENT_CROSS_TENANT_ACCESS = NOT_TESTED (P0_REQUIRED)
+CLEANUP_CROSS_TENANT_DELETION_EXPLOITABILITY = NOT_PROVEN (يتطلب مختبر معزول)
+SERVICE_IDENTITY_FEASIBILITY = NOT_TESTED (P0_REQUIRED)
+SECURITY_DEFINER_FEASIBILITY = NOT_TESTED (P0_REQUIRED)
+NEW_CRITICAL_FINDINGS = CF-22: بيئة التطوير/الوكيل مربوطة بمفتاح خدمة الإنتاج ولا توجد بيئة اختبار أمني معزولة ⇒ أي اختبار أمني للملفات حالياً يُجبر على لمس الإنتاج (ENVIRONMENT_SEPARATION_ABSENT)
+P0_FINAL_STATUS = BLOCKED
+S1_APPROVAL = NOT_GRANTED
+
+PRODUCTION_PROJECT_CHANGED = NO
+PRODUCTION_SCHEMA_CHANGED = NO
+PRODUCTION_STORAGE_CHANGED = NO
+PRODUCTION_SECRETS_USED = NO
+PRODUCTION_DOCUMENTS_ACCESSED = NO
+
+WAITING FOR P0 SECURITY REVIEW
