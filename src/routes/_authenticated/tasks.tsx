@@ -27,6 +27,7 @@ import {
   useDebounced,
   ConfirmDialog,
   Pagination,
+  sanitizeSearchTerm,
 } from "@/lib/list-utils";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2, Check } from "lucide-react";
