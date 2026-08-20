@@ -103,23 +103,11 @@ export const createSubscriptionMoyasarPayment = createServerFn({ method: "POST" 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getProvider } = await import("@/lib/billing/providers.server");
 
-    let plan = null;
-    const { data: platformPlan } = await supabaseAdmin
+    const { data: plan } = await supabaseAdmin
       .from("platform_plans")
       .select("*")
       .eq("code", data.planCode)
       .maybeSingle();
-
-    if (platformPlan) {
-      plan = platformPlan;
-    } else {
-      const { data: subPlan } = await supabaseAdmin
-        .from("subscription_plans")
-        .select("*")
-        .eq("code", data.planCode)
-        .maybeSingle();
-      plan = subPlan;
-    }
 
     if (!plan) throw new Error("الباقة المحددة غير موجودة.");
 

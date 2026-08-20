@@ -410,7 +410,9 @@ function RegisterPage() {
               label="رقم الجوال"
               required={phoneRequired}
               hint={
-                verificationRequired ? "سنرسل رمز تحقق من 6 أرقام لتوثيق الرقم." : undefined
+                verificationRequired
+                  ? "سنرسل رمز تحقق من 6 أرقام لتوثيق الرقم."
+                  : "اختياري — يمكنك إضافته لاحقاً من الإعدادات."
               }
             >
               <div dir="ltr" className="flex items-stretch gap-2">
