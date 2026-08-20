@@ -153,8 +153,16 @@ async function purgeOrphanUploads(): Promise<number> {
     // المراجع تُقرأ داخل نطاق المكتب نفسه فقط: مسار مملوك لمكتب آخر لا يُعد
     // يتيماً هنا، ولا يمكن لهذا المرور أن يمسّ كائنات مكتب آخر.
     const referenced = new Set<string>();
-    for (let i = 0; i < candidates.length; i += REMOVE_CHUNK) {
-      const chunk = candidates.slice(i, i + REMOVE_CHUNK);
+    // يُسأل عن المسار الأصلي لكل مرشّح (بما يشمل أصل النسخة الآمنة).
+    const lookups = Array.from(
+      new Set(
+        candidates.map((path) =>
+          path.endsWith(".safe.pdf") ? path.slice(0, -".safe.pdf".length) : path,
+        ),
+      ),
+    );
+    for (let i = 0; i < lookups.length; i += REMOVE_CHUNK) {
+      const chunk = lookups.slice(i, i + REMOVE_CHUNK);
       const { data, error } = await supabaseAdmin
         .from("documents")
         .select("file_path")
@@ -165,9 +173,12 @@ async function purgeOrphanUploads(): Promise<number> {
       data?.forEach((row) => referenced.add(row.file_path));
     }
 
-    const orphans = candidates.filter(
-      (path) => !referenced.has(path) && path.startsWith(`${organizationId}/client-uploads/`),
-    );
+    // النسخة الآمنة `<path>.safe.pdf` تابعة لأصلها: تبقى ما بقي المستند مسجّلاً.
+    const orphans = candidates.filter((path) => {
+      if (!path.startsWith(`${organizationId}/client-uploads/`)) return false;
+      const owner = path.endsWith(".safe.pdf") ? path.slice(0, -".safe.pdf".length) : path;
+      return !referenced.has(owner);
+    });
     if (orphans.length) removed += await removePaths(orphans);
   }
   return removed;

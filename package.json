@@ -33,6 +33,8 @@
     "e2e:gate": "bun scripts/e2e-gate-guardrails.ts",
     "documents:requests": "bun scripts/document-requests-integrity-guardrails.ts",
     "repo:hygiene": "bun scripts/repo-hygiene-guardrails.ts",
+    "deep-scan:test": "bun scripts/deep-scan.test.ts",
+    "deep-scan:ooxml:test": "bun scripts/deep-scan-ooxml.test.ts",
     "score:test": "bun scripts/operational-score.test.ts",
     "score:ranking:test": "bun scripts/operational-score-ranking.test.ts",
     "score:optin:test": "bun scripts/operational-score-optin.test.ts",

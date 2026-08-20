@@ -64,10 +64,14 @@ export type SecurityStateRow = {
   detected_mime: string | null;
   decision_id: string | null;
   scan_attempts: number;
+  scan_engine_version: string | null;
+  safe_path: string | null;
+  safe_sha256: string | null;
+  safe_mime: string | null;
 };
 
 const STATE_COLUMNS =
-  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts";
+  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts, scan_engine_version, safe_path, safe_sha256, safe_mime";
 
 export async function readSecurityState(documentId: string): Promise<SecurityStateRow | null> {
   const db = await admin();
@@ -205,6 +209,31 @@ export async function transitionSecurityState(input: {
   return input.next;
 }
 
+/** يثبّت نتيجة الفحص العميق والنسخة الآمنة قبل أي قرار إفراج. */
+export async function persistScanOutcome(input: {
+  documentId: string;
+  organizationId: string;
+  engineVersion: string;
+  findings: unknown[];
+  safePath?: string | null;
+  safeSha256?: string | null;
+  safeMime?: string | null;
+}): Promise<void> {
+  const db = await admin();
+  const { error } = await db
+    .from("document_security_state")
+    .update({
+      scan_engine_version: input.engineVersion,
+      scan_findings: input.findings as never,
+      safe_path: input.safePath ?? null,
+      safe_sha256: input.safeSha256 ?? null,
+      safe_mime: input.safeMime ?? null,
+    })
+    .eq("document_id", input.documentId)
+    .eq("organization_id", input.organizationId);
+  if (error) throw new Error("تعذّر تسجيل نتيجة الفحص الأمني، ولم يُتَح الملف.");
+}
+
 /**
  * خط الفحص والإفراج الكامل لملف تم التحقق من بايتاته عند الإدخال:
  * مرفوع → محجوز → قيد الفحص → سليم → مُفرَج عنه.
@@ -220,6 +249,13 @@ export async function runIntakeReleasePipeline(input: {
   declaredMime: string | null;
   detectedMime: string | null;
   actorId?: string | null;
+  scan: {
+    engineVersion: string;
+    findings: unknown[];
+    safePath: string | null;
+    safeSha256: string | null;
+    safeMime: string | null;
+  };
 }): Promise<DocumentSecurityState> {
   const correlationId = crypto.randomUUID();
   await registerUploadedDocument({ ...input, correlationId });
@@ -238,10 +274,21 @@ export async function runIntakeReleasePipeline(input: {
       throw new Error("حجم الملف خارج السياسة الأمنية.");
     }
 
+    // نتيجة الفحص العميق ومسار النسخة الآمنة يُثبّتان قبل الإفراج (يفرضه المُشغِّل أيضاً).
+    await persistScanOutcome({
+      documentId: input.documentId,
+      organizationId: input.organizationId,
+      engineVersion: input.scan.engineVersion,
+      findings: input.scan.findings,
+      safePath: input.scan.safePath,
+      safeSha256: input.scan.safeSha256,
+      safeMime: input.scan.safeMime,
+    });
+
     await transitionSecurityState({
       ...base,
       next: "clean",
-      reason: "structural_validation_passed",
+      reason: "deep_scan_passed",
       sha256: input.sha256,
       detectedMime: input.detectedMime,
     });
