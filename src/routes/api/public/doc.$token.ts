@@ -118,6 +118,40 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               organizationId: resolved.organizationId,
               path,
             });
+
+          // البوابة المركزية: لا تُقرأ بايتات أي مستند قبل قرار إفراج صريح
+          // مرتبط ببصمة المحتوى ومعرّف قرار وتطابق المكتب.
+          const { assertReleasable, assertContentMatchesDecision, ReleaseDenied } = await import(
+            "@/lib/file-security/release-gate.server"
+          );
+          let decision: Awaited<ReturnType<typeof assertReleasable>>;
+          try {
+            decision = await assertReleasable({
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              purpose:
+                resolved.kind === "process"
+                  ? "process"
+                  : resolved.kind === "share"
+                    ? "share"
+                    : "view",
+              actorId: resolved.createdBy,
+              // تذكرة المعالجة الداخلية هي المسار الوحيد المصرَّح له بالبايتات الخام.
+              allowRawBytes: resolved.kind === "process",
+            });
+          } catch (error) {
+            const publicMessage =
+              error instanceof ReleaseDenied ? error.message : PUBLIC_LOAD_ERROR;
+            return failure(publicMessage, 403, {
+              action: "release_gate.denied",
+              error,
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+              metadata: { token_kind: resolved.kind },
+            });
+          }
+
           let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
           try {
             storageRead = await secure.readOriginal(doc.file_path, {
@@ -173,8 +207,24 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           }
           const original = storageRead.bytes;
 
+          // إعادة تحقق سلامة المحتوى: البايتات المسلَّمة يجب أن تطابق البصمة
+          // المثبَّتة لحظة الإفراج، وإلا فقد تغيّر الكائن بعد القرار.
+          try {
+            await assertContentMatchesDecision(decision, original);
+          } catch (error) {
+            const publicMessage =
+              error instanceof ReleaseDenied ? error.message : PUBLIC_LOAD_ERROR;
+            return failure(publicMessage, 409, {
+              action: "release_gate.integrity_mismatch",
+              error,
+              documentId: resolved.documentId,
+              organizationId: resolved.organizationId,
+              path,
+            });
+          }
+
           // تذكرة المعالجة الداخلية تُعيد البايتات الأصلية لمحرك الاستخراج فقط،
-          // ولا تُصدر إلا بعد التحقق من الصلاحية، وتُستهلك مرة واحدة.
+          // بعد قرار إفراج صريح، ولا تُستهلك إلا مرة واحدة.
           if (resolved.kind === "process") {
             return new Response(original as unknown as BodyInit, {
               headers: {
