@@ -120,6 +120,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       declaredMime: verified.mime,
       detectedMime: verified.mime,
       actorId: context.userId,
+      scan: verified.scan,
     });
 
     return { documentId: inserted.id, fileType: verified.mime, fileSize: verified.size };
