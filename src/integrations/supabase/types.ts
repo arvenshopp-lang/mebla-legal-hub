@@ -2455,7 +2455,12 @@ export type Database = {
           document_id: string
           organization_id: string
           reason: string | null
+          safe_mime: string | null
+          safe_path: string | null
+          safe_sha256: string | null
           scan_attempts: number
+          scan_engine_version: string | null
+          scan_findings: Json
           sha256: string | null
           state: Database["public"]["Enums"]["document_security_state_kind"]
           updated_at: string
@@ -2471,7 +2476,12 @@ export type Database = {
           document_id: string
           organization_id: string
           reason?: string | null
+          safe_mime?: string | null
+          safe_path?: string | null
+          safe_sha256?: string | null
           scan_attempts?: number
+          scan_engine_version?: string | null
+          scan_findings?: Json
           sha256?: string | null
           state?: Database["public"]["Enums"]["document_security_state_kind"]
           updated_at?: string
@@ -2487,7 +2497,12 @@ export type Database = {
           document_id?: string
           organization_id?: string
           reason?: string | null
+          safe_mime?: string | null
+          safe_path?: string | null
+          safe_sha256?: string | null
           scan_attempts?: number
+          scan_engine_version?: string | null
+          scan_findings?: Json
           sha256?: string | null
           state?: Database["public"]["Enums"]["document_security_state_kind"]
           updated_at?: string
