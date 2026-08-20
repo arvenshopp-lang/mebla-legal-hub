@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { FILE_SECURITY_LIMITS } from "@/lib/file-security/policy";
+
+/** مجلد المكتب في المخزن يجب أن يكون معرّف مكتب حقيقياً. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Retention / janitor pass for the secure document pipeline.
