@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Info, RefreshCw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CreditCard, Info, RefreshCw } from "lucide-react";
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { CycleToggle } from "@/components/marketing/pricing/cycle-toggle";
 import { PlanCard } from "@/components/marketing/pricing/plan-card";
 import { CompareTable } from "@/components/marketing/pricing/compare-table";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
+import { useAuth } from "@/hooks/use-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import {
   PRICING_FAQ,
   PRICING_NOTES,
@@ -98,6 +100,8 @@ function StateBox({ title, body, onRetry }: { title: string; body: string; onRet
 function PricingRoute() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const registerHref = useSurfaceHref("/register");
+  const { user } = useAuth();
+  const { overview } = useSubscription();
   const { data, isPending, isError, refetch, isFetching } = useQuery(publicPlansQueryOptions());
 
   const plans = data ?? [];
@@ -114,6 +118,26 @@ function PricingRoute() {
       />
 
       <section className="container-page py-10 md:py-14">
+        {/* شريط تنبيه المشترك المسجل */}
+        {user && overview && (
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-l)] border border-primary/30 bg-primary/5 p-4 text-[13.5px]">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <span>
+                أهلاً بك <strong>{user.user_metadata?.full_name || user.email}</strong> — باقة مكتبك الحالية هي:{" "}
+                <strong className="text-primary font-bold text-[14px]">«{overview.plan.name_ar}»</strong>.
+                يمكنك الترقية فوراً بالضغط على أي باقة أعلى أدناه.
+              </span>
+            </div>
+            <Link
+              to="/subscription"
+              className="inline-flex items-center gap-1.5 rounded-[var(--radius-m)] bg-primary px-3.5 py-1.5 text-[13px] font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"
+            >
+              <CreditCard className="h-3.5 w-3.5" /> صفحة الاشتراك والسداد <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
+
         {plans.length > 0 && (
           <div className="flex justify-center">
             <CycleToggle value={cycle} onChange={setCycle} savingPercent={saving} />
