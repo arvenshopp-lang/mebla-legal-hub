@@ -165,9 +165,12 @@ async function purgeOrphanUploads(): Promise<number> {
       data?.forEach((row) => referenced.add(row.file_path));
     }
 
-    const orphans = candidates.filter(
-      (path) => !referenced.has(path) && path.startsWith(`${organizationId}/client-uploads/`),
-    );
+    // النسخة الآمنة `<path>.safe.pdf` تابعة لأصلها: تبقى ما بقي المستند مسجّلاً.
+    const orphans = candidates.filter((path) => {
+      if (!path.startsWith(`${organizationId}/client-uploads/`)) return false;
+      const owner = path.endsWith(".safe.pdf") ? path.slice(0, -".safe.pdf".length) : path;
+      return !referenced.has(owner);
+    });
     if (orphans.length) removed += await removePaths(orphans);
   }
   return removed;
