@@ -1,6 +1,11 @@
 import type { DocumentSecurityState, ReleasePurpose } from "./policy";
 import { RAW_BYTE_PURPOSES, RELEASABLE_STATES, releaseDenialMessage } from "./policy";
-import { logSecurityEvent, readSecurityState } from "./security-state.server";
+import {
+  bindLegacyContentHash,
+  isLegacyGrandfathered,
+  logSecurityEvent,
+  readSecurityState,
+} from "./security-state.server";
 
 /**
  * البوابة المركزية الوحيدة لتسليم بايتات أي مستند.
@@ -26,8 +31,11 @@ export type ReleaseDecision = {
   organizationId: string;
   purpose: ReleasePurpose;
   state: DocumentSecurityState;
-  sha256: string;
+  /** بصمة الأصل؛ تكون null لملفات ما قبل خط الفحص حتى تُثبَّت عند أول تسليم. */
+  sha256: string | null;
   decisionId: string;
+  /** ملف موروث أُفرِج عنه بقرار Backfill بلا بصمة محتوى مسجّلة. */
+  legacy: boolean;
   /** النسخة الآمنة المسطّحة، عندما تكون الصيغة قابلة للتطهير. */
   safe: { path: string; sha256: string; mime: string } | null;
 };
@@ -39,7 +47,7 @@ export type ReleaseDecision = {
 export function deliverySource(
   decision: ReleaseDecision,
   originalPath: string,
-): { path: string; sha256: string; isSafeCopy: boolean } {
+): { path: string; sha256: string | null; isSafeCopy: boolean } {
   if (decision.safe && !RAW_BYTE_PURPOSES.includes(decision.purpose)) {
     return { path: decision.safe.path, sha256: decision.safe.sha256, isSafeCopy: true };
   }
@@ -88,7 +96,8 @@ export async function assertReleasable(input: {
   if (!RELEASABLE_STATES.includes(row.state)) {
     return deny(row.state, `state_not_releasable:${row.state}`, releaseDenialMessage(row.state));
   }
-  if (!row.sha256 || !row.decision_id) {
+  const legacy = isLegacyGrandfathered(row);
+  if ((!row.sha256 && !legacy) || !row.decision_id) {
     return deny(row.state, "missing_integrity_binding", releaseDenialMessage("quarantined"));
   }
   if (!row.scan_engine_version) {
@@ -118,6 +127,7 @@ export async function assertReleasable(input: {
     state: row.state,
     sha256: row.sha256,
     decisionId: row.decision_id,
+    legacy,
     safe:
       row.safe_path && row.safe_sha256
         ? {
@@ -141,6 +151,15 @@ export async function assertContentMatchesDecision(
   const actual = await sha256Hex(bytes);
   // تُقبل بصمة الأصل أو بصمة النسخة الآمنة المثبَّتة لنفس القرار.
   if (actual === decision.sha256 || actual === decision.safe?.sha256) return;
+  // ملف موروث بلا بصمة: تُثبَّت بصمته الآن ويُسلَّم، فيخضع بعدها للتحقق الكامل.
+  if (decision.legacy && !decision.sha256) {
+    await bindLegacyContentHash({
+      documentId: decision.documentId,
+      organizationId: decision.organizationId,
+      sha256: actual,
+    });
+    return;
+  }
   await logSecurityEvent({
     documentId: decision.documentId,
     organizationId: decision.organizationId,

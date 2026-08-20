@@ -68,10 +68,46 @@ export type SecurityStateRow = {
   safe_path: string | null;
   safe_sha256: string | null;
   safe_mime: string | null;
+  reason: string | null;
 };
 
 const STATE_COLUMNS =
-  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts, scan_engine_version, safe_path, safe_sha256, safe_mime";
+  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts, scan_engine_version, safe_path, safe_sha256, safe_mime, reason";
+
+/**
+ * ملفات ما قبل خط الفحص (المُدرَجة عبر Backfill) أُفرِج عنها بقرار موروث بلا
+ * بصمة محتوى. تُثبَّت بصمتها عند أول تسليم فعلي حتى تعود القيود الكاملة عليها
+ * بعد ذلك، دون كسر روابط المكاتب القائمة ولا فقدان أي مستند.
+ */
+export const LEGACY_GRANDFATHER_REASON = "legacy_grandfathered";
+
+export function isLegacyGrandfathered(row: SecurityStateRow): boolean {
+  return row.state === "released" && !row.sha256 && row.reason === LEGACY_GRANDFATHER_REASON;
+}
+
+/** يثبّت بصمة المحتوى لملف موروث عند أول تسليم (لا يغيّر الحالة). */
+export async function bindLegacyContentHash(input: {
+  documentId: string;
+  organizationId: string;
+  sha256: string;
+}): Promise<void> {
+  const db = await admin();
+  const { error } = await db
+    .from("document_security_state")
+    .update({ sha256: input.sha256 })
+    .eq("document_id", input.documentId)
+    .eq("organization_id", input.organizationId)
+    .is("sha256", null);
+  await logSecurityEvent({
+    documentId: input.documentId,
+    organizationId: input.organizationId,
+    action: "legacy_integrity_binding",
+    result: error ? "error" : "allowed",
+    reason: error ? "legacy_hash_binding_failed" : "legacy_hash_bound",
+    fromState: "released",
+    sha256: input.sha256,
+  });
+}
 
 export async function readSecurityState(documentId: string): Promise<SecurityStateRow | null> {
   const db = await admin();
