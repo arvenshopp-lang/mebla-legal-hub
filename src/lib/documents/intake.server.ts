@@ -137,11 +137,19 @@ export async function assertCaseAndClientInOrg(
  * يتحقق من الكائن المرفوع فعلياً: ملكية المسار، وجود الملف، الحجم، النوع
  * المعياري، وبصمة البايتات. عند أي فشل يُحذف الكائن ويُرفع خطأ عربي واضح.
  */
+export type IntakeScanOutcome = {
+  engineVersion: string;
+  findings: { rule: string; severity: string; locator?: string }[];
+  safePath: string | null;
+  safeSha256: string | null;
+  safeMime: string | null;
+};
+
 export async function verifyUploadedObject(input: {
   path: string;
   prefix: string;
   fileName: string;
-}): Promise<VerifiedFile & { path: string; sha256: string }> {
+}): Promise<VerifiedFile & { path: string; sha256: string; scan: IntakeScanOutcome }> {
   const path = assertOwnedPath(input.path, input.prefix);
   const db = await admin();
   const { data: blob, error } = await db.storage.from(DOCUMENTS_BUCKET).download(path);
@@ -158,8 +166,70 @@ export async function verifyUploadedObject(input: {
     await removeOrphanObject(path);
     throw new IntakeRejection(verdict.reason);
   }
-  const { sha256Hex } = await import("@/lib/file-security/security-state.server");
-  return { ...verdict.file, path, sha256: await sha256Hex(bytes) };
+  const { sha256Hex, logSecurityEvent } = await import(
+    "@/lib/file-security/security-state.server"
+  );
+  const sha256 = await sha256Hex(bytes);
+
+  // الفحص العميق داخل الطلب: أي ملف لا يخرج بقرار «سليم» لا يُقبل مطلقاً.
+  const ext = input.fileName.toLowerCase().split(".").pop() ?? "";
+  const { deepScanBytes } = await import("@/lib/file-security/deep-scan/index.server");
+  const { SCAN_REJECTED_MESSAGE, SCAN_UNSCANNABLE_MESSAGE } = await import(
+    "@/lib/file-security/deep-scan/rules"
+  );
+  const scan = await deepScanBytes(ext, bytes);
+  if (scan.verdict !== "clean") {
+    await removeOrphanObject(path);
+    await logSecurityEvent({
+      action: "deep_scan",
+      result: "denied",
+      reason: scan.verdict,
+      sha256,
+      metadata: {
+        engine_version: scan.engineVersion,
+        findings: scan.findings,
+        file_extension: ext,
+      },
+    });
+    throw new IntakeRejection(
+      scan.verdict === "malicious" ? SCAN_REJECTED_MESSAGE : SCAN_UNSCANNABLE_MESSAGE,
+    );
+  }
+
+  // نسخة عرض آمنة مسطّحة: هي وحدها ما يُسلَّم لمسارات العرض والطباعة والمشاركة.
+  const { buildSafeRender, safeRenderPath } = await import("@/lib/file-security/sanitize.server");
+  let safePath: string | null = null;
+  let safeSha256: string | null = null;
+  let safeMime: string | null = null;
+  const safe = await buildSafeRender(ext, bytes);
+  if (safe) {
+    safePath = safeRenderPath(path);
+    const { error: safeError } = await db.storage
+      .from(DOCUMENTS_BUCKET)
+      .upload(safePath, safe.bytes as unknown as ArrayBuffer, {
+        contentType: safe.mime,
+        upsert: true,
+      });
+    if (safeError) {
+      await removeOrphanObject(path);
+      throw new IntakeRejection("تعذّر تجهيز النسخة الآمنة من الملف، ولم يُقبل الملف.");
+    }
+    safeSha256 = await sha256Hex(safe.bytes);
+    safeMime = safe.mime;
+  }
+
+  return {
+    ...verdict.file,
+    path,
+    sha256,
+    scan: {
+      engineVersion: scan.engineVersion,
+      findings: scan.findings,
+      safePath,
+      safeSha256,
+      safeMime,
+    },
+  };
 }
 
 /** الأدوار التي تحذف أي مستند داخل المكتب. */
