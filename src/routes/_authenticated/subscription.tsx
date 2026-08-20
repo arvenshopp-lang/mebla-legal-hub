@@ -2,7 +2,8 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Money } from "@/components/ui/money";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, Download, RefreshCw } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { CalendarDays, CreditCard, Download, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/components/subscription/subscription-ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
-import { signInvoiceUrl } from "@/lib/subscription.functions";
+import { createSubscriptionMoyasarPayment, signInvoiceUrl } from "@/lib/subscription.functions";
 import {
   Badge,
   Btn,
@@ -82,6 +83,36 @@ function sortFeatures(rows: FeatureRow[]): FeatureRow[] {
 function SubscriptionPage() {
   const { activeOrgId } = useAuth();
   const { overview, isLoading, isError, refetch, isFetching } = useSubscription();
+  const payFn = useServerFn(createSubscriptionMoyasarPayment);
+  const [upgradingCode, setUpgradingCode] = useState<string | null>(null);
+
+  const upgradeMutation = useMutation({
+    mutationFn: async (planCode: string) => {
+      if (!activeOrgId) throw new Error("لم يتم تحديد المنظمة.");
+      setUpgradingCode(planCode);
+      return payFn({
+        data: {
+          organizationId: activeOrgId,
+          planCode,
+          billingCycle: "monthly",
+        },
+      });
+    },
+    onSuccess: (result) => {
+      const data = result as { redirectUrl: string; planName: string };
+      toast.success(`تم إنشاء رابط السداد لباقة ${data.planName}. جاري التحويل لمُيسّر…`);
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "تعذّر بدء عملية الدفع.");
+    },
+    onSettled: () => {
+      setUpgradingCode(null);
+    },
+  });
+
   const higherPlans = (overview?.upgrade_plans ?? [])
     .filter(
       (p) =>
@@ -191,33 +222,61 @@ function SubscriptionPage() {
           {/* Upgrade options — الباقات الأعلى من باقتك الحالية فقط */}
           {higherPlans.length > 0 && (
             <SectionCard
-              title="ترقية الباقة"
-              description="باقات أعلى من باقتك الحالية — تواصل مع فريق مِهلة لإتمام الترقية"
+              title="ترقية الباقة وسداد فوري"
+              description="اختر باقتك المفضلة للدفع الفوري عبر مدى أو Apple Pay أو البطاقات الائتمانية عبر مُيسّر"
             >
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {higherPlans.map((p) => (
                   <div
                     key={p.code}
-                    className="rounded-[var(--radius-m)] border border-border bg-surface-muted/50 p-4"
+                    className="flex flex-col justify-between rounded-[var(--radius-l)] border border-primary/20 bg-gradient-to-b from-surface to-surface-muted/40 p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
                   >
-                    <p className="text-[14px] font-bold">{p.name_ar}</p>
-                    <p className="mt-1.5 text-[13px] tabular-nums text-muted-foreground">
-                      {SAR(p.price_monthly)} / شهرياً
-                    </p>
-                    <p className="mt-2 text-[12px] text-text-muted">
-                      {p.max_users === null ? "مستخدمون بلا حد" : `حتى ${p.max_users} مستخدمين`} ·{" "}
-                      {p.max_cases === null ? "قضايا بلا حد" : `${p.max_cases} قضية`}
-                    </p>
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[15px] font-bold text-foreground">{p.name_ar}</p>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          <Sparkles className="h-3 w-3" /> مميزة
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[20px] font-extrabold tabular-nums text-primary">
+                        {SAR(p.price_monthly)} <span className="text-[12px] font-normal text-muted-foreground">/ شهرياً</span>
+                      </p>
+                      <p className="mt-2.5 text-[12px] text-muted-foreground leading-relaxed">
+                        {p.max_users === null ? "👥 مستخدمون بلا حد" : `👥 حتى ${p.max_users} مستخدمين`} ·{" "}
+                        {p.max_cases === null ? "📁 قضايا بلا حد" : `📁 ${p.max_cases} قضية`}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-border/60">
+                      <Btn
+                        variant="primary"
+                        className="w-full justify-center gap-2 font-medium"
+                        loading={upgradingCode === p.code && upgradeMutation.isPending}
+                        onClick={() => upgradeMutation.mutate(p.code)}
+                      >
+                        <CreditCard className="h-4 w-4" /> ترقية وسداد عبر مُيسّر
+                      </Btn>
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link to="/pricing">
-                  <Btn variant="ghost">مقارنة الباقات</Btn>
-                </Link>
-                <Link to="/contact">
-                  <Btn variant="ghost">تواصل مع مِهلة</Btn>
-                </Link>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4 text-[12.5px] text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <span>💳 وسائل الدفع المعتمدة:</span>
+                  <span className="font-semibold text-foreground">مدى (Mada)</span>
+                  <span>·</span>
+                  <span className="font-semibold text-foreground">Apple Pay</span>
+                  <span>·</span>
+                  <span className="font-semibold text-foreground">Visa / MasterCard</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link to="/pricing">
+                    <Btn variant="ghost" size="sm">مقارنة الباقات</Btn>
+                  </Link>
+                  <Link to="/contact">
+                    <Btn variant="ghost" size="sm">تواصل مع الدعم</Btn>
+                  </Link>
+                </div>
               </div>
             </SectionCard>
           )}

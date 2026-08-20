@@ -135,7 +135,7 @@ const manualProvider: PaymentProvider = {
 const MOYASAR_BASE = "https://api.moyasar.com/v1";
 
 function moyasarAuth(creds: ProviderCredentials): string {
-  const key = creds["secret_key"] ?? "";
+  const key = creds["secret_key"] || process.env["MOYASAR_SECRET_KEY"] || "";
   if (!key) throw new Error("مفاتيح مُيسّر غير مُعرّفة.");
   return `Basic ${Buffer.from(`${key}:`).toString("base64")}`;
 }
@@ -200,15 +200,21 @@ async function moyasarRequest(
 const moyasarProvider: PaymentProvider = {
   code: "moyasar",
   requiresCredentials: true,
-  requiredCredentialKeys: ["secret_key", "webhook_secret"],
+  requiredCredentialKeys: ["secret_key", "publishable_key", "webhook_secret"],
   async createPayment(input, creds) {
+    const callbackUrl = input.callbackUrl
+      ? input.callbackUrl.startsWith("http")
+        ? input.callbackUrl
+        : `https://mehlalex.com${input.callbackUrl}`
+      : "https://mehlalex.com/subscription";
+
     const { status, json } = await moyasarRequest("/invoices", creds, {
       method: "POST",
       body: {
         amount: Math.round(input.amount * 100),
-        currency: input.currency,
+        currency: input.currency || "SAR",
         description: input.description,
-        callback_url: input.callbackUrl,
+        callback_url: callbackUrl,
         metadata: {
           invoice_id: input.invoiceId,
           invoice_number: input.invoiceNumber,
@@ -282,7 +288,7 @@ const moyasarProvider: PaymentProvider = {
     };
   },
   validateWebhookSignature({ rawBody, headers, creds }) {
-    const secret = creds["webhook_secret"] ?? "";
+    const secret = creds["webhook_secret"] || process.env["MOYASAR_WEBHOOK_SECRET"] || "";
     if (!secret) return false;
     const provided = headers["x-moyasar-signature"] ?? headers["x-signature"] ?? "";
     if (!provided) {
@@ -323,7 +329,7 @@ const moyasarProvider: PaymentProvider = {
         return { ok: false, message: "المفاتيح مرفوضة من المزوّد." };
       if (status >= 400) return { ok: false, message: `المزوّد أعاد الحالة ${status}.` };
       void json;
-      return { ok: true, message: "تم الاتصال بالمزوّد بنجاح." };
+      return { ok: true, message: "تم الاتصال بمُيسّر بنجاح." };
     } catch (error) {
       return {
         ok: false,

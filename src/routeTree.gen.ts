@@ -9,205 +9,129 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TrackRouteImport } from './routes/track'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SecurityRouteImport } from './routes/security'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as PendingAccessRouteImport } from './routes/pending-access'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HowItWorksRouteImport } from './routes/how-it-works'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as DocsRouteImport } from './routes/docs'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as MehlaAdminRouteRouteImport } from './routes/mehla-admin/route'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UploadIndexRouteImport } from './routes/upload.index'
-import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
-import { Route as UploadTokenRouteImport } from './routes/upload.$token'
-import { Route as SignTokenRouteImport } from './routes/sign.$token'
-import { Route as ShareTokenRouteImport } from './routes/share.$token'
-import { Route as PortalSlugRouteImport } from './routes/portal.$slug'
-import { Route as OfficeSlugRouteImport } from './routes/office.$slug'
-import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
-import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
-import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
-import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
-import { Route as MehlaAdminSmsRouteImport } from './routes/mehla-admin/sms'
-import { Route as MehlaAdminSettingsRouteImport } from './routes/mehla-admin/settings'
-import { Route as MehlaAdminServicesRouteImport } from './routes/mehla-admin/services'
-import { Route as MehlaAdminSeoRouteImport } from './routes/mehla-admin/seo'
-import { Route as MehlaAdminSecurityRouteImport } from './routes/mehla-admin/security'
-import { Route as MehlaAdminRolesRouteImport } from './routes/mehla-admin/roles'
-import { Route as MehlaAdminRevenueRouteImport } from './routes/mehla-admin/revenue'
-import { Route as MehlaAdminRbacRouteImport } from './routes/mehla-admin/rbac'
-import { Route as MehlaAdminProvidersRouteImport } from './routes/mehla-admin/providers'
-import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
-import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
-import { Route as MehlaAdminOperationsRouteImport } from './routes/mehla-admin/operations'
-import { Route as MehlaAdminNotificationsRouteImport } from './routes/mehla-admin/notifications'
-import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/monitoring'
-import { Route as MehlaAdminMarketingRouteImport } from './routes/mehla-admin/marketing'
-import { Route as MehlaAdminMailRouteImport } from './routes/mehla-admin/mail'
-import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
-import { Route as MehlaAdminJobsRouteImport } from './routes/mehla-admin/jobs'
-import { Route as MehlaAdminIntegrationsRouteImport } from './routes/mehla-admin/integrations'
-import { Route as MehlaAdminHrRouteImport } from './routes/mehla-admin/hr'
-import { Route as MehlaAdminFlagsRouteImport } from './routes/mehla-admin/flags'
-import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
-import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
-import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
-import { Route as MehlaAdminCrmRouteImport } from './routes/mehla-admin/crm'
-import { Route as MehlaAdminContentRouteImport } from './routes/mehla-admin/content'
-import { Route as MehlaAdminBackupsRouteImport } from './routes/mehla-admin/backups'
-import { Route as MehlaAdminAnalyticsRouteImport } from './routes/mehla-admin/analytics'
-import { Route as MehlaAdminActivityRouteImport } from './routes/mehla-admin/activity'
-import { Route as InviteTokenRouteImport } from './routes/invite.$token'
-import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
-import { Route as AuthenticatedTeamPerformanceRouteImport } from './routes/_authenticated/team-performance'
-import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
-import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
-import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
-import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
-import { Route as AuthenticatedPrintLogRouteImport } from './routes/_authenticated/print-log'
-import { Route as AuthenticatedOfficePageRouteImport } from './routes/_authenticated/office-page'
-import { Route as AuthenticatedHearingsRouteImport } from './routes/_authenticated/hearings'
-import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
-import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedContractsRouteImport } from './routes/_authenticated/contracts'
-import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
-import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MehlaAdminRouteRouteImport } from './routes/mehla-admin/route'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PendingAccessRouteImport } from './routes/pending-access'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TrackRouteImport } from './routes/track'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as MehlaAdminSalesIndexRouteImport } from './routes/mehla-admin/sales/index'
-import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
-import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
-import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
-import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sales/$id'
-import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
-import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
-import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
-import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
-import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
-import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
-import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedBayanRouteImport } from './routes/_authenticated/bayan'
+import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedContractsRouteImport } from './routes/_authenticated/contracts'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
+import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
+import { Route as AuthenticatedHearingsRouteImport } from './routes/_authenticated/hearings'
+import { Route as AuthenticatedOfficePageRouteImport } from './routes/_authenticated/office-page'
+import { Route as AuthenticatedPrintLogRouteImport } from './routes/_authenticated/print-log'
+import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as AuthenticatedTeamPerformanceRouteImport } from './routes/_authenticated/team-performance'
+import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthVerifiedRouteImport } from './routes/auth.verified'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as MehlaAdminIndexRouteImport } from './routes/mehla-admin/index'
+import { Route as MehlaAdminActivityRouteImport } from './routes/mehla-admin/activity'
+import { Route as MehlaAdminAnalyticsRouteImport } from './routes/mehla-admin/analytics'
+import { Route as MehlaAdminBackupsRouteImport } from './routes/mehla-admin/backups'
+import { Route as MehlaAdminContentRouteImport } from './routes/mehla-admin/content'
+import { Route as MehlaAdminCrmRouteImport } from './routes/mehla-admin/crm'
+import { Route as MehlaAdminDesignRouteImport } from './routes/mehla-admin/design'
+import { Route as MehlaAdminEmailRouteImport } from './routes/mehla-admin/email'
+import { Route as MehlaAdminFailuresRouteImport } from './routes/mehla-admin/failures'
+import { Route as MehlaAdminFlagsRouteImport } from './routes/mehla-admin/flags'
+import { Route as MehlaAdminHrRouteImport } from './routes/mehla-admin/hr'
+import { Route as MehlaAdminIntegrationsRouteImport } from './routes/mehla-admin/integrations'
+import { Route as MehlaAdminJobsRouteImport } from './routes/mehla-admin/jobs'
+import { Route as MehlaAdminLogsRouteImport } from './routes/mehla-admin/logs'
+import { Route as MehlaAdminMailRouteImport } from './routes/mehla-admin/mail'
+import { Route as MehlaAdminMarketingRouteImport } from './routes/mehla-admin/marketing'
+import { Route as MehlaAdminMonitoringRouteImport } from './routes/mehla-admin/monitoring'
+import { Route as MehlaAdminNotificationsRouteImport } from './routes/mehla-admin/notifications'
+import { Route as MehlaAdminOperationsRouteImport } from './routes/mehla-admin/operations'
+import { Route as MehlaAdminOrganizationsRouteImport } from './routes/mehla-admin/organizations'
+import { Route as MehlaAdminPlansRouteImport } from './routes/mehla-admin/plans'
+import { Route as MehlaAdminProvidersRouteImport } from './routes/mehla-admin/providers'
+import { Route as MehlaAdminRbacRouteImport } from './routes/mehla-admin/rbac'
+import { Route as MehlaAdminRevenueRouteImport } from './routes/mehla-admin/revenue'
+import { Route as MehlaAdminRolesRouteImport } from './routes/mehla-admin/roles'
+import { Route as MehlaAdminSecurityRouteImport } from './routes/mehla-admin/security'
+import { Route as MehlaAdminSeoRouteImport } from './routes/mehla-admin/seo'
+import { Route as MehlaAdminServicesRouteImport } from './routes/mehla-admin/services'
+import { Route as MehlaAdminSettingsRouteImport } from './routes/mehla-admin/settings'
+import { Route as MehlaAdminSmsRouteImport } from './routes/mehla-admin/sms'
+import { Route as MehlaAdminStaffRouteImport } from './routes/mehla-admin/staff'
+import { Route as MehlaAdminSubscriptionsRouteImport } from './routes/mehla-admin/subscriptions'
+import { Route as MehlaAdminSupportRouteImport } from './routes/mehla-admin/support'
+import { Route as MehlaAdminUsersRouteImport } from './routes/mehla-admin/users'
+import { Route as OfficeSlugRouteImport } from './routes/office.$slug'
+import { Route as PortalSlugRouteImport } from './routes/portal.$slug'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as SignTokenRouteImport } from './routes/sign.$token'
+import { Route as UploadIndexRouteImport } from './routes/upload.index'
+import { Route as UploadTokenRouteImport } from './routes/upload.$token'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
-import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
-import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
-import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
-import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
-import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
-import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
-import { Route as ApiPublicHooksOpsWatchdogRouteImport } from './routes/api/public/hooks/ops-watchdog'
-import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
-import { Route as ApiPublicHooksOperationalRemindersRouteImport } from './routes/api/public/hooks/operational-reminders'
-import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
-import { Route as ApiPublicHooksNotificationEmailsRouteImport } from './routes/api/public/hooks/notification-emails'
-import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
-import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
-import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
-import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases.index'
+import { Route as AuthenticatedCasesIdRouteImport } from './routes/_authenticated/cases.$id'
+import { Route as AuthenticatedTeamPerformanceMemberIdRouteImport } from './routes/_authenticated/team-performance.$memberId'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
+import { Route as ApiPublicThemeDotcssRouteImport } from './routes/api/public/theme[.]css'
+import { Route as ApiPublicWebhookRouteImport } from './routes/api/public/webhook'
+import { Route as MehlaAdminBillingIndexRouteImport } from './routes/mehla-admin/billing/index'
+import { Route as MehlaAdminBillingIdRouteImport } from './routes/mehla-admin/billing/$id'
+import { Route as MehlaAdminSalesIndexRouteImport } from './routes/mehla-admin/sales/index'
+import { Route as MehlaAdminSalesIdRouteImport } from './routes/mehla-admin/sales/$id'
+import { Route as MehlaAdminSupportTicketIdRouteImport } from './routes/mehla-admin/support/$ticketId'
 import { Route as ApiPublicDocTokenRouteImport } from './routes/api/public/doc.$token'
+import { Route as ApiPublicHooksCleanupSecureArtifactsRouteImport } from './routes/api/public/hooks/cleanup-secure-artifacts'
+import { Route as ApiPublicHooksEmailDispatchRouteImport } from './routes/api/public/hooks/email-dispatch'
+import { Route as ApiPublicHooksEmailInboundRouteImport } from './routes/api/public/hooks/email-inbound'
+import { Route as ApiPublicHooksMailSyncRouteImport } from './routes/api/public/hooks/mail-sync'
+import { Route as ApiPublicHooksNotificationEmailsRouteImport } from './routes/api/public/hooks/notification-emails'
+import { Route as ApiPublicHooksNotificationsDispatchRouteImport } from './routes/api/public/hooks/notifications-dispatch'
+import { Route as ApiPublicHooksOperationalRemindersRouteImport } from './routes/api/public/hooks/operational-reminders'
+import { Route as ApiPublicHooksOperationalScoreRouteImport } from './routes/api/public/hooks/operational-score'
+import { Route as ApiPublicHooksOpsWatchdogRouteImport } from './routes/api/public/hooks/ops-watchdog'
+import { Route as ApiPublicOfficeEventRouteImport } from './routes/api/public/office/event'
+import { Route as ApiPublicOfficeLeadRouteImport } from './routes/api/public/office/lead'
+import { Route as ApiPublicPaymentsProviderRouteImport } from './routes/api/public/payments/$provider'
+import { Route as ApiPublicWebhooksSlugRouteImport } from './routes/api/public/webhooks/$slug'
+import { Route as ApiPublicWhSlugRouteImport } from './routes/api/public/wh.$slug'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as ApiPublicOfficeMediaSplatRouteImport } from './routes/api/public/office/media/$'
 
-const TrackRoute = TrackRouteImport.update({
-  id: '/track',
-  path: '/track',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SecurityRoute = SecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PendingAccessRoute = PendingAccessRouteImport.update({
-  id: '/pending-access',
-  path: '/pending-access',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HowItWorksRoute = HowItWorksRouteImport.update({
-  id: '/how-it-works',
-  path: '/how-it-works',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -215,259 +139,161 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MehlaAdminRouteRoute = MehlaAdminRouteRouteImport.update({
   id: '/mehla-admin',
   path: '/mehla-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PendingAccessRoute = PendingAccessRouteImport.update({
+  id: '/pending-access',
+  path: '/pending-access',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UploadIndexRoute = UploadIndexRouteImport.update({
-  id: '/upload/',
-  path: '/upload/',
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MehlaAdminIndexRoute = MehlaAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const UploadTokenRoute = UploadTokenRouteImport.update({
-  id: '/upload/$token',
-  path: '/upload/$token',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignTokenRoute = SignTokenRouteImport.update({
-  id: '/sign/$token',
-  path: '/sign/$token',
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShareTokenRoute = ShareTokenRouteImport.update({
-  id: '/share/$token',
-  path: '/share/$token',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortalSlugRoute = PortalSlugRouteImport.update({
-  id: '/portal/$slug',
-  path: '/portal/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OfficeSlugRoute = OfficeSlugRouteImport.update({
-  id: '/office/$slug',
-  path: '/office/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MehlaAdminUsersRoute = MehlaAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSupportRoute = MehlaAdminSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSubscriptionsRoute = MehlaAdminSubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminStaffRoute = MehlaAdminStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSmsRoute = MehlaAdminSmsRouteImport.update({
-  id: '/sms',
-  path: '/sms',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSettingsRoute = MehlaAdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminServicesRoute = MehlaAdminServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSeoRoute = MehlaAdminSeoRouteImport.update({
-  id: '/seo',
-  path: '/seo',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminSecurityRoute = MehlaAdminSecurityRouteImport.update({
+const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminRolesRoute = MehlaAdminRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminRevenueRoute = MehlaAdminRevenueRouteImport.update({
-  id: '/revenue',
-  path: '/revenue',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminRbacRoute = MehlaAdminRbacRouteImport.update({
-  id: '/rbac',
-  path: '/rbac',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminProvidersRoute = MehlaAdminProvidersRouteImport.update({
-  id: '/providers',
-  path: '/providers',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
-  id: '/plans',
-  path: '/plans',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminOrganizationsRoute = MehlaAdminOrganizationsRouteImport.update({
-  id: '/organizations',
-  path: '/organizations',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminOperationsRoute = MehlaAdminOperationsRouteImport.update({
-  id: '/operations',
-  path: '/operations',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminNotificationsRoute = MehlaAdminNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminMonitoringRoute = MehlaAdminMonitoringRouteImport.update({
-  id: '/monitoring',
-  path: '/monitoring',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminMarketingRoute = MehlaAdminMarketingRouteImport.update({
-  id: '/marketing',
-  path: '/marketing',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminMailRoute = MehlaAdminMailRouteImport.update({
-  id: '/mail',
-  path: '/mail',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminLogsRoute = MehlaAdminLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminJobsRoute = MehlaAdminJobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminIntegrationsRoute = MehlaAdminIntegrationsRouteImport.update({
-  id: '/integrations',
-  path: '/integrations',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminHrRoute = MehlaAdminHrRouteImport.update({
-  id: '/hr',
-  path: '/hr',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminFlagsRoute = MehlaAdminFlagsRouteImport.update({
-  id: '/flags',
-  path: '/flags',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminFailuresRoute = MehlaAdminFailuresRouteImport.update({
-  id: '/failures',
-  path: '/failures',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminEmailRoute = MehlaAdminEmailRouteImport.update({
-  id: '/email',
-  path: '/email',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
-  id: '/design',
-  path: '/design',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminCrmRoute = MehlaAdminCrmRouteImport.update({
-  id: '/crm',
-  path: '/crm',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminContentRoute = MehlaAdminContentRouteImport.update({
-  id: '/content',
-  path: '/content',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminBackupsRoute = MehlaAdminBackupsRouteImport.update({
-  id: '/backups',
-  path: '/backups',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminAnalyticsRoute = MehlaAdminAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const MehlaAdminActivityRoute = MehlaAdminActivityRouteImport.update({
-  id: '/activity',
-  path: '/activity',
-  getParentRoute: () => MehlaAdminRouteRoute,
-} as any)
-const InviteTokenRoute = InviteTokenRouteImport.update({
-  id: '/invite/$token',
-  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
-  id: '/auth/verified',
-  path: '/auth/verified',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiWebhookRoute = ApiWebhookRouteImport.update({
-  id: '/api/webhook',
-  path: '/api/webhook',
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTeamPerformanceRoute =
-  AuthenticatedTeamPerformanceRouteImport.update({
-    id: '/team-performance',
-    path: '/team-performance',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
+  id: '/bayan',
+  path: '/bayan',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
+const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
+const AuthenticatedContractsRoute = AuthenticatedContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDeadlinesRoute = AuthenticatedDeadlinesRouteImport.update({
+  id: '/deadlines',
+  path: '/deadlines',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHearingsRoute = AuthenticatedHearingsRouteImport.update({
+  id: '/hearings',
+  path: '/hearings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOfficePageRoute = AuthenticatedOfficePageRouteImport.update({
+  id: '/office-page',
+  path: '/office-page',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPrintLogRoute = AuthenticatedPrintLogRouteImport.update({
+  id: '/print-log',
+  path: '/print-log',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSubscriptionRoute =
@@ -476,134 +302,251 @@ const AuthenticatedSubscriptionRoute =
     path: '/subscription',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTeamPerformanceRoute =
+  AuthenticatedTeamPerformanceRouteImport.update({
+    id: '/team-performance',
+    path: '/team-performance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiWebhookRoute = ApiWebhookRouteImport.update({
+  id: '/api/webhook',
+  path: '/api/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifiedRoute = AuthVerifiedRouteImport.update({
+  id: '/auth/verified',
+  path: '/auth/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MehlaAdminIndexRoute = MehlaAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminActivityRoute = MehlaAdminActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminAnalyticsRoute = MehlaAdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminBackupsRoute = MehlaAdminBackupsRouteImport.update({
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminContentRoute = MehlaAdminContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminCrmRoute = MehlaAdminCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminDesignRoute = MehlaAdminDesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminEmailRoute = MehlaAdminEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminFailuresRoute = MehlaAdminFailuresRouteImport.update({
+  id: '/failures',
+  path: '/failures',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminFlagsRoute = MehlaAdminFlagsRouteImport.update({
+  id: '/flags',
+  path: '/flags',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminHrRoute = MehlaAdminHrRouteImport.update({
+  id: '/hr',
+  path: '/hr',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminIntegrationsRoute = MehlaAdminIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminJobsRoute = MehlaAdminJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminLogsRoute = MehlaAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminMailRoute = MehlaAdminMailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminMarketingRoute = MehlaAdminMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminMonitoringRoute = MehlaAdminMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminNotificationsRoute = MehlaAdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminOperationsRoute = MehlaAdminOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminOrganizationsRoute = MehlaAdminOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminPlansRoute = MehlaAdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminProvidersRoute = MehlaAdminProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminRbacRoute = MehlaAdminRbacRouteImport.update({
+  id: '/rbac',
+  path: '/rbac',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminRevenueRoute = MehlaAdminRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminRolesRoute = MehlaAdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSecurityRoute = MehlaAdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSeoRoute = MehlaAdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminServicesRoute = MehlaAdminServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSettingsRoute = MehlaAdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPrintLogRoute = AuthenticatedPrintLogRouteImport.update({
-  id: '/print-log',
-  path: '/print-log',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOfficePageRoute = AuthenticatedOfficePageRouteImport.update({
-  id: '/office-page',
-  path: '/office-page',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHearingsRoute = AuthenticatedHearingsRouteImport.update({
-  id: '/hearings',
-  path: '/hearings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDeadlinesRoute = AuthenticatedDeadlinesRouteImport.update({
-  id: '/deadlines',
-  path: '/deadlines',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedContractsRoute = AuthenticatedContractsRouteImport.update({
-  id: '/contracts',
-  path: '/contracts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedBayanRoute = AuthenticatedBayanRouteImport.update({
-  id: '/bayan',
-  path: '/bayan',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const MehlaAdminSalesIndexRoute = MehlaAdminSalesIndexRouteImport.update({
-  id: '/sales/',
-  path: '/sales/',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
-const MehlaAdminBillingIndexRoute = MehlaAdminBillingIndexRouteImport.update({
-  id: '/billing/',
-  path: '/billing/',
+const MehlaAdminSmsRoute = MehlaAdminSmsRouteImport.update({
+  id: '/sms',
+  path: '/sms',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
-const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
-  id: '/cases/',
-  path: '/cases/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const MehlaAdminSupportTicketIdRoute =
-  MehlaAdminSupportTicketIdRouteImport.update({
-    id: '/$ticketId',
-    path: '/$ticketId',
-    getParentRoute: () => MehlaAdminSupportRoute,
-  } as any)
-const MehlaAdminSalesIdRoute = MehlaAdminSalesIdRouteImport.update({
-  id: '/sales/$id',
-  path: '/sales/$id',
+const MehlaAdminStaffRoute = MehlaAdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
-const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
-  id: '/billing/$id',
-  path: '/billing/$id',
+const MehlaAdminSubscriptionsRoute = MehlaAdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => MehlaAdminRouteRoute,
 } as any)
-const ApiPublicWebhookRoute = ApiPublicWebhookRouteImport.update({
-  id: '/api/public/webhook',
-  path: '/api/public/webhook',
+const MehlaAdminSupportRoute = MehlaAdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminUsersRoute = MehlaAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const OfficeSlugRoute = OfficeSlugRouteImport.update({
+  id: '/office/$slug',
+  path: '/office/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
-  id: '/api/public/theme.css',
-  path: '/api/public/theme.css',
+const PortalSlugRoute = PortalSlugRouteImport.update({
+  id: '/portal/$slug',
+  path: '/portal/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
-  id: '/api/public/leads',
-  path: '/api/public/leads',
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
-  id: '/api/public/health',
-  path: '/api/public/health',
+const SignTokenRoute = SignTokenRouteImport.update({
+  id: '/sign/$token',
+  path: '/sign/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTeamPerformanceMemberIdRoute =
-  AuthenticatedTeamPerformanceMemberIdRouteImport.update({
-    id: '/$memberId',
-    path: '/$memberId',
-    getParentRoute: () => AuthenticatedTeamPerformanceRoute,
-  } as any)
-const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
-  id: '/cases/$id',
-  path: '/cases/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const UploadIndexRoute = UploadIndexRouteImport.update({
+  id: '/upload/',
+  path: '/upload/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadTokenRoute = UploadTokenRouteImport.update({
+  id: '/upload/$token',
+  path: '/upload/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
@@ -611,86 +554,77 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
+  id: '/cases/',
+  path: '/cases/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
-  id: '/lovable/email/auth/webhook',
-  path: '/lovable/email/auth/webhook',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedCasesIdRoute = AuthenticatedCasesIdRouteImport.update({
+  id: '/cases/$id',
+  path: '/cases/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
-  id: '/lovable/email/auth/preview',
-  path: '/lovable/email/auth/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWhSlugRoute = ApiPublicWhSlugRouteImport.update({
-  id: '/api/public/wh/$slug',
-  path: '/api/public/wh/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWebhooksSlugRoute = ApiPublicWebhooksSlugRouteImport.update({
-  id: '/api/public/webhooks/$slug',
-  path: '/api/public/webhooks/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicPaymentsProviderRoute =
-  ApiPublicPaymentsProviderRouteImport.update({
-    id: '/api/public/payments/$provider',
-    path: '/api/public/payments/$provider',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedTeamPerformanceMemberIdRoute =
+  AuthenticatedTeamPerformanceMemberIdRouteImport.update({
+    id: '/$memberId',
+    path: '/$memberId',
+    getParentRoute: () => AuthenticatedTeamPerformanceRoute,
   } as any)
-const ApiPublicOfficeLeadRoute = ApiPublicOfficeLeadRouteImport.update({
-  id: '/api/public/office/lead',
-  path: '/api/public/office/lead',
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicOfficeEventRoute = ApiPublicOfficeEventRouteImport.update({
-  id: '/api/public/office/event',
-  path: '/api/public/office/event',
+const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
+  id: '/api/public/leads',
+  path: '/api/public/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksOpsWatchdogRoute =
-  ApiPublicHooksOpsWatchdogRouteImport.update({
-    id: '/api/public/hooks/ops-watchdog',
-    path: '/api/public/hooks/ops-watchdog',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksOperationalScoreRoute =
-  ApiPublicHooksOperationalScoreRouteImport.update({
-    id: '/api/public/hooks/operational-score',
-    path: '/api/public/hooks/operational-score',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksOperationalRemindersRoute =
-  ApiPublicHooksOperationalRemindersRouteImport.update({
-    id: '/api/public/hooks/operational-reminders',
-    path: '/api/public/hooks/operational-reminders',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksNotificationsDispatchRoute =
-  ApiPublicHooksNotificationsDispatchRouteImport.update({
-    id: '/api/public/hooks/notifications-dispatch',
-    path: '/api/public/hooks/notifications-dispatch',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksNotificationEmailsRoute =
-  ApiPublicHooksNotificationEmailsRouteImport.update({
-    id: '/api/public/hooks/notification-emails',
-    path: '/api/public/hooks/notification-emails',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksMailSyncRoute = ApiPublicHooksMailSyncRouteImport.update({
-  id: '/api/public/hooks/mail-sync',
-  path: '/api/public/hooks/mail-sync',
+const ApiPublicThemeDotcssRoute = ApiPublicThemeDotcssRouteImport.update({
+  id: '/api/public/theme.css',
+  path: '/api/public/theme.css',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksEmailInboundRoute =
-  ApiPublicHooksEmailInboundRouteImport.update({
-    id: '/api/public/hooks/email-inbound',
-    path: '/api/public/hooks/email-inbound',
+const ApiPublicWebhookRoute = ApiPublicWebhookRouteImport.update({
+  id: '/api/public/webhook',
+  path: '/api/public/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MehlaAdminBillingIndexRoute = MehlaAdminBillingIndexRouteImport.update({
+  id: '/billing/',
+  path: '/billing/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminBillingIdRoute = MehlaAdminBillingIdRouteImport.update({
+  id: '/billing/$id',
+  path: '/billing/$id',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSalesIndexRoute = MehlaAdminSalesIndexRouteImport.update({
+  id: '/sales/',
+  path: '/sales/',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSalesIdRoute = MehlaAdminSalesIdRouteImport.update({
+  id: '/sales/$id',
+  path: '/sales/$id',
+  getParentRoute: () => MehlaAdminRouteRoute,
+} as any)
+const MehlaAdminSupportTicketIdRoute =
+  MehlaAdminSupportTicketIdRouteImport.update({
+    id: '/$ticketId',
+    path: '/$ticketId',
+    getParentRoute: () => MehlaAdminSupportRoute,
+  } as any)
+const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
+  id: '/api/public/doc/$token',
+  path: '/api/public/doc/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksCleanupSecureArtifactsRoute =
+  ApiPublicHooksCleanupSecureArtifactsRouteImport.update({
+    id: '/api/public/hooks/cleanup-secure-artifacts',
+    path: '/api/public/hooks/cleanup-secure-artifacts',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksEmailDispatchRoute =
@@ -699,15 +633,81 @@ const ApiPublicHooksEmailDispatchRoute =
     path: '/api/public/hooks/email-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksCleanupSecureArtifactsRoute =
-  ApiPublicHooksCleanupSecureArtifactsRouteImport.update({
-    id: '/api/public/hooks/cleanup-secure-artifacts',
-    path: '/api/public/hooks/cleanup-secure-artifacts',
+const ApiPublicHooksEmailInboundRoute =
+  ApiPublicHooksEmailInboundRouteImport.update({
+    id: '/api/public/hooks/email-inbound',
+    path: '/api/public/hooks/email-inbound',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicDocTokenRoute = ApiPublicDocTokenRouteImport.update({
-  id: '/api/public/doc/$token',
-  path: '/api/public/doc/$token',
+const ApiPublicHooksMailSyncRoute = ApiPublicHooksMailSyncRouteImport.update({
+  id: '/api/public/hooks/mail-sync',
+  path: '/api/public/hooks/mail-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksNotificationEmailsRoute =
+  ApiPublicHooksNotificationEmailsRouteImport.update({
+    id: '/api/public/hooks/notification-emails',
+    path: '/api/public/hooks/notification-emails',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksNotificationsDispatchRoute =
+  ApiPublicHooksNotificationsDispatchRouteImport.update({
+    id: '/api/public/hooks/notifications-dispatch',
+    path: '/api/public/hooks/notifications-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksOperationalRemindersRoute =
+  ApiPublicHooksOperationalRemindersRouteImport.update({
+    id: '/api/public/hooks/operational-reminders',
+    path: '/api/public/hooks/operational-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksOperationalScoreRoute =
+  ApiPublicHooksOperationalScoreRouteImport.update({
+    id: '/api/public/hooks/operational-score',
+    path: '/api/public/hooks/operational-score',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksOpsWatchdogRoute =
+  ApiPublicHooksOpsWatchdogRouteImport.update({
+    id: '/api/public/hooks/ops-watchdog',
+    path: '/api/public/hooks/ops-watchdog',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicOfficeEventRoute = ApiPublicOfficeEventRouteImport.update({
+  id: '/api/public/office/event',
+  path: '/api/public/office/event',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOfficeLeadRoute = ApiPublicOfficeLeadRouteImport.update({
+  id: '/api/public/office/lead',
+  path: '/api/public/office/lead',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPaymentsProviderRoute =
+  ApiPublicPaymentsProviderRouteImport.update({
+    id: '/api/public/payments/$provider',
+    path: '/api/public/payments/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWebhooksSlugRoute = ApiPublicWebhooksSlugRouteImport.update({
+  id: '/api/public/webhooks/$slug',
+  path: '/api/public/webhooks/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWhSlugRoute = ApiPublicWhSlugRouteImport.update({
+  id: '/api/public/wh/$slug',
+  path: '/api/public/wh/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicOfficeMediaSplatRoute =
@@ -1479,137 +1479,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/track': {
-      id: '/track'
-      path: '/track'
-      fullPath: '/track'
-      preLoaderRoute: typeof TrackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/security': {
-      id: '/security'
-      path: '/security'
-      fullPath: '/security'
-      preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pending-access': {
-      id: '/pending-access'
-      path: '/pending-access'
-      fullPath: '/pending-access'
-      preLoaderRoute: typeof PendingAccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/how-it-works': {
-      id: '/how-it-works'
-      path: '/how-it-works'
-      fullPath: '/how-it-works'
-      preLoaderRoute: typeof HowItWorksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mehla-admin': {
-      id: '/mehla-admin'
-      path: '/mehla-admin'
-      fullPath: '/mehla-admin'
-      preLoaderRoute: typeof MehlaAdminRouteRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1619,438 +1493,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/upload/': {
-      id: '/upload/'
-      path: '/upload'
-      fullPath: '/upload/'
-      preLoaderRoute: typeof UploadIndexRouteImport
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/': {
-      id: '/mehla-admin/'
-      path: '/'
-      fullPath: '/mehla-admin/'
-      preLoaderRoute: typeof MehlaAdminIndexRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/upload/$token': {
-      id: '/upload/$token'
-      path: '/upload/$token'
-      fullPath: '/upload/$token'
-      preLoaderRoute: typeof UploadTokenRouteImport
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign/$token': {
-      id: '/sign/$token'
-      path: '/sign/$token'
-      fullPath: '/sign/$token'
-      preLoaderRoute: typeof SignTokenRouteImport
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/share/$token': {
-      id: '/share/$token'
-      path: '/share/$token'
-      fullPath: '/share/$token'
-      preLoaderRoute: typeof ShareTokenRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/portal/$slug': {
-      id: '/portal/$slug'
-      path: '/portal/$slug'
-      fullPath: '/portal/$slug'
-      preLoaderRoute: typeof PortalSlugRouteImport
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/office/$slug': {
-      id: '/office/$slug'
-      path: '/office/$slug'
-      fullPath: '/office/$slug'
-      preLoaderRoute: typeof OfficeSlugRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/users': {
-      id: '/mehla-admin/users'
-      path: '/users'
-      fullPath: '/mehla-admin/users'
-      preLoaderRoute: typeof MehlaAdminUsersRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/support': {
-      id: '/mehla-admin/support'
-      path: '/support'
-      fullPath: '/mehla-admin/support'
-      preLoaderRoute: typeof MehlaAdminSupportRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/mehla-admin': {
+      id: '/mehla-admin'
+      path: '/mehla-admin'
+      fullPath: '/mehla-admin'
+      preLoaderRoute: typeof MehlaAdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/subscriptions': {
-      id: '/mehla-admin/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/mehla-admin/subscriptions'
-      preLoaderRoute: typeof MehlaAdminSubscriptionsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/staff': {
-      id: '/mehla-admin/staff'
-      path: '/staff'
-      fullPath: '/mehla-admin/staff'
-      preLoaderRoute: typeof MehlaAdminStaffRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/pending-access': {
+      id: '/pending-access'
+      path: '/pending-access'
+      fullPath: '/pending-access'
+      preLoaderRoute: typeof PendingAccessRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/sms': {
-      id: '/mehla-admin/sms'
-      path: '/sms'
-      fullPath: '/mehla-admin/sms'
-      preLoaderRoute: typeof MehlaAdminSmsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/settings': {
-      id: '/mehla-admin/settings'
-      path: '/settings'
-      fullPath: '/mehla-admin/settings'
-      preLoaderRoute: typeof MehlaAdminSettingsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/services': {
-      id: '/mehla-admin/services'
-      path: '/services'
-      fullPath: '/mehla-admin/services'
-      preLoaderRoute: typeof MehlaAdminServicesRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/seo': {
-      id: '/mehla-admin/seo'
-      path: '/seo'
-      fullPath: '/mehla-admin/seo'
-      preLoaderRoute: typeof MehlaAdminSeoRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/security': {
-      id: '/mehla-admin/security'
+    '/security': {
+      id: '/security'
       path: '/security'
-      fullPath: '/mehla-admin/security'
-      preLoaderRoute: typeof MehlaAdminSecurityRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/roles': {
-      id: '/mehla-admin/roles'
-      path: '/roles'
-      fullPath: '/mehla-admin/roles'
-      preLoaderRoute: typeof MehlaAdminRolesRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/revenue': {
-      id: '/mehla-admin/revenue'
-      path: '/revenue'
-      fullPath: '/mehla-admin/revenue'
-      preLoaderRoute: typeof MehlaAdminRevenueRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/rbac': {
-      id: '/mehla-admin/rbac'
-      path: '/rbac'
-      fullPath: '/mehla-admin/rbac'
-      preLoaderRoute: typeof MehlaAdminRbacRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/providers': {
-      id: '/mehla-admin/providers'
-      path: '/providers'
-      fullPath: '/mehla-admin/providers'
-      preLoaderRoute: typeof MehlaAdminProvidersRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/plans': {
-      id: '/mehla-admin/plans'
-      path: '/plans'
-      fullPath: '/mehla-admin/plans'
-      preLoaderRoute: typeof MehlaAdminPlansRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/organizations': {
-      id: '/mehla-admin/organizations'
-      path: '/organizations'
-      fullPath: '/mehla-admin/organizations'
-      preLoaderRoute: typeof MehlaAdminOrganizationsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/operations': {
-      id: '/mehla-admin/operations'
-      path: '/operations'
-      fullPath: '/mehla-admin/operations'
-      preLoaderRoute: typeof MehlaAdminOperationsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/notifications': {
-      id: '/mehla-admin/notifications'
-      path: '/notifications'
-      fullPath: '/mehla-admin/notifications'
-      preLoaderRoute: typeof MehlaAdminNotificationsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/monitoring': {
-      id: '/mehla-admin/monitoring'
-      path: '/monitoring'
-      fullPath: '/mehla-admin/monitoring'
-      preLoaderRoute: typeof MehlaAdminMonitoringRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/marketing': {
-      id: '/mehla-admin/marketing'
-      path: '/marketing'
-      fullPath: '/mehla-admin/marketing'
-      preLoaderRoute: typeof MehlaAdminMarketingRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/mail': {
-      id: '/mehla-admin/mail'
-      path: '/mail'
-      fullPath: '/mehla-admin/mail'
-      preLoaderRoute: typeof MehlaAdminMailRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/logs': {
-      id: '/mehla-admin/logs'
-      path: '/logs'
-      fullPath: '/mehla-admin/logs'
-      preLoaderRoute: typeof MehlaAdminLogsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/jobs': {
-      id: '/mehla-admin/jobs'
-      path: '/jobs'
-      fullPath: '/mehla-admin/jobs'
-      preLoaderRoute: typeof MehlaAdminJobsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/integrations': {
-      id: '/mehla-admin/integrations'
-      path: '/integrations'
-      fullPath: '/mehla-admin/integrations'
-      preLoaderRoute: typeof MehlaAdminIntegrationsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/hr': {
-      id: '/mehla-admin/hr'
-      path: '/hr'
-      fullPath: '/mehla-admin/hr'
-      preLoaderRoute: typeof MehlaAdminHrRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/flags': {
-      id: '/mehla-admin/flags'
-      path: '/flags'
-      fullPath: '/mehla-admin/flags'
-      preLoaderRoute: typeof MehlaAdminFlagsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/failures': {
-      id: '/mehla-admin/failures'
-      path: '/failures'
-      fullPath: '/mehla-admin/failures'
-      preLoaderRoute: typeof MehlaAdminFailuresRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/email': {
-      id: '/mehla-admin/email'
-      path: '/email'
-      fullPath: '/mehla-admin/email'
-      preLoaderRoute: typeof MehlaAdminEmailRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/design': {
-      id: '/mehla-admin/design'
-      path: '/design'
-      fullPath: '/mehla-admin/design'
-      preLoaderRoute: typeof MehlaAdminDesignRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/crm': {
-      id: '/mehla-admin/crm'
-      path: '/crm'
-      fullPath: '/mehla-admin/crm'
-      preLoaderRoute: typeof MehlaAdminCrmRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/content': {
-      id: '/mehla-admin/content'
-      path: '/content'
-      fullPath: '/mehla-admin/content'
-      preLoaderRoute: typeof MehlaAdminContentRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/backups': {
-      id: '/mehla-admin/backups'
-      path: '/backups'
-      fullPath: '/mehla-admin/backups'
-      preLoaderRoute: typeof MehlaAdminBackupsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/analytics': {
-      id: '/mehla-admin/analytics'
-      path: '/analytics'
-      fullPath: '/mehla-admin/analytics'
-      preLoaderRoute: typeof MehlaAdminAnalyticsRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/activity': {
-      id: '/mehla-admin/activity'
-      path: '/activity'
-      fullPath: '/mehla-admin/activity'
-      preLoaderRoute: typeof MehlaAdminActivityRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/invite/$token': {
-      id: '/invite/$token'
-      path: '/invite/$token'
-      fullPath: '/invite/$token'
-      preLoaderRoute: typeof InviteTokenRouteImport
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/verified': {
-      id: '/auth/verified'
-      path: '/auth/verified'
-      fullPath: '/auth/verified'
-      preLoaderRoute: typeof AuthVerifiedRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/webhook': {
-      id: '/api/webhook'
-      path: '/api/webhook'
-      fullPath: '/api/webhook'
-      preLoaderRoute: typeof ApiWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/team-performance': {
-      id: '/_authenticated/team-performance'
-      path: '/team-performance'
-      fullPath: '/team-performance'
-      preLoaderRoute: typeof AuthenticatedTeamPerformanceRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/team': {
-      id: '/_authenticated/team'
-      path: '/team'
-      fullPath: '/team'
-      preLoaderRoute: typeof AuthenticatedTeamRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/tasks': {
-      id: '/_authenticated/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof AuthenticatedTasksRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/support': {
-      id: '/_authenticated/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof AuthenticatedSupportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/subscription': {
-      id: '/_authenticated/subscription'
-      path: '/subscription'
-      fullPath: '/subscription'
-      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/search': {
-      id: '/_authenticated/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof AuthenticatedSearchRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/print-log': {
-      id: '/_authenticated/print-log'
-      path: '/print-log'
-      fullPath: '/print-log'
-      preLoaderRoute: typeof AuthenticatedPrintLogRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/office-page': {
-      id: '/_authenticated/office-page'
-      path: '/office-page'
-      fullPath: '/office-page'
-      preLoaderRoute: typeof AuthenticatedOfficePageRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/hearings': {
-      id: '/_authenticated/hearings'
-      path: '/hearings'
-      fullPath: '/hearings'
-      preLoaderRoute: typeof AuthenticatedHearingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/documents': {
-      id: '/_authenticated/documents'
-      path: '/documents'
-      fullPath: '/documents'
-      preLoaderRoute: typeof AuthenticatedDocumentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/deadlines': {
-      id: '/_authenticated/deadlines'
-      path: '/deadlines'
-      fullPath: '/deadlines'
-      preLoaderRoute: typeof AuthenticatedDeadlinesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/contracts': {
-      id: '/_authenticated/contracts'
-      path: '/contracts'
-      fullPath: '/contracts'
-      preLoaderRoute: typeof AuthenticatedContractsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/clients': {
-      id: '/_authenticated/clients'
-      path: '/clients'
-      fullPath: '/clients'
-      preLoaderRoute: typeof AuthenticatedClientsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/bayan': {
-      id: '/_authenticated/bayan'
-      path: '/bayan'
-      fullPath: '/bayan'
-      preLoaderRoute: typeof AuthenticatedBayanRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -2060,95 +1633,431 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/sales/': {
-      id: '/mehla-admin/sales/'
-      path: '/sales'
-      fullPath: '/mehla-admin/sales/'
-      preLoaderRoute: typeof MehlaAdminSalesIndexRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mehla-admin/billing/': {
-      id: '/mehla-admin/billing/'
-      path: '/billing'
-      fullPath: '/mehla-admin/billing/'
-      preLoaderRoute: typeof MehlaAdminBillingIndexRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/_authenticated/cases/': {
-      id: '/_authenticated/cases/'
-      path: '/cases'
-      fullPath: '/cases/'
-      preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
+    '/_authenticated/bayan': {
+      id: '/_authenticated/bayan'
+      path: '/bayan'
+      fullPath: '/bayan'
+      preLoaderRoute: typeof AuthenticatedBayanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/mehla-admin/support/$ticketId': {
-      id: '/mehla-admin/support/$ticketId'
-      path: '/$ticketId'
-      fullPath: '/mehla-admin/support/$ticketId'
-      preLoaderRoute: typeof MehlaAdminSupportTicketIdRouteImport
-      parentRoute: typeof MehlaAdminSupportRoute
-    }
-    '/mehla-admin/sales/$id': {
-      id: '/mehla-admin/sales/$id'
-      path: '/sales/$id'
-      fullPath: '/mehla-admin/sales/$id'
-      preLoaderRoute: typeof MehlaAdminSalesIdRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/mehla-admin/billing/$id': {
-      id: '/mehla-admin/billing/$id'
-      path: '/billing/$id'
-      fullPath: '/mehla-admin/billing/$id'
-      preLoaderRoute: typeof MehlaAdminBillingIdRouteImport
-      parentRoute: typeof MehlaAdminRouteRoute
-    }
-    '/api/public/webhook': {
-      id: '/api/public/webhook'
-      path: '/api/public/webhook'
-      fullPath: '/api/public/webhook'
-      preLoaderRoute: typeof ApiPublicWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/theme.css': {
-      id: '/api/public/theme.css'
-      path: '/api/public/theme.css'
-      fullPath: '/api/public/theme.css'
-      preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/leads': {
-      id: '/api/public/leads'
-      path: '/api/public/leads'
-      fullPath: '/api/public/leads'
-      preLoaderRoute: typeof ApiPublicLeadsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/health': {
-      id: '/api/public/health'
-      path: '/api/public/health'
-      fullPath: '/api/public/health'
-      preLoaderRoute: typeof ApiPublicHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/team-performance/$memberId': {
-      id: '/_authenticated/team-performance/$memberId'
-      path: '/$memberId'
-      fullPath: '/team-performance/$memberId'
-      preLoaderRoute: typeof AuthenticatedTeamPerformanceMemberIdRouteImport
-      parentRoute: typeof AuthenticatedTeamPerformanceRoute
-    }
-    '/_authenticated/cases/$id': {
-      id: '/_authenticated/cases/$id'
-      path: '/cases/$id'
-      fullPath: '/cases/$id'
-      preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
+    '/_authenticated/clients': {
+      id: '/_authenticated/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/_authenticated/contracts': {
+      id: '/_authenticated/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof AuthenticatedContractsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deadlines': {
+      id: '/_authenticated/deadlines'
+      path: '/deadlines'
+      fullPath: '/deadlines'
+      preLoaderRoute: typeof AuthenticatedDeadlinesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents': {
+      id: '/_authenticated/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof AuthenticatedDocumentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/hearings': {
+      id: '/_authenticated/hearings'
+      path: '/hearings'
+      fullPath: '/hearings'
+      preLoaderRoute: typeof AuthenticatedHearingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/office-page': {
+      id: '/_authenticated/office-page'
+      path: '/office-page'
+      fullPath: '/office-page'
+      preLoaderRoute: typeof AuthenticatedOfficePageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/print-log': {
+      id: '/_authenticated/print-log'
+      path: '/print-log'
+      fullPath: '/print-log'
+      preLoaderRoute: typeof AuthenticatedPrintLogRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/search': {
+      id: '/_authenticated/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AuthenticatedSearchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/team-performance': {
+      id: '/_authenticated/team-performance'
+      path: '/team-performance'
+      fullPath: '/team-performance'
+      preLoaderRoute: typeof AuthenticatedTeamPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/webhook': {
+      id: '/api/webhook'
+      path: '/api/webhook'
+      fullPath: '/api/webhook'
+      preLoaderRoute: typeof ApiWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verified': {
+      id: '/auth/verified'
+      path: '/auth/verified'
+      fullPath: '/auth/verified'
+      preLoaderRoute: typeof AuthVerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mehla-admin/': {
+      id: '/mehla-admin/'
+      path: '/'
+      fullPath: '/mehla-admin/'
+      preLoaderRoute: typeof MehlaAdminIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/activity': {
+      id: '/mehla-admin/activity'
+      path: '/activity'
+      fullPath: '/mehla-admin/activity'
+      preLoaderRoute: typeof MehlaAdminActivityRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/analytics': {
+      id: '/mehla-admin/analytics'
+      path: '/analytics'
+      fullPath: '/mehla-admin/analytics'
+      preLoaderRoute: typeof MehlaAdminAnalyticsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/backups': {
+      id: '/mehla-admin/backups'
+      path: '/backups'
+      fullPath: '/mehla-admin/backups'
+      preLoaderRoute: typeof MehlaAdminBackupsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/content': {
+      id: '/mehla-admin/content'
+      path: '/content'
+      fullPath: '/mehla-admin/content'
+      preLoaderRoute: typeof MehlaAdminContentRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/crm': {
+      id: '/mehla-admin/crm'
+      path: '/crm'
+      fullPath: '/mehla-admin/crm'
+      preLoaderRoute: typeof MehlaAdminCrmRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/design': {
+      id: '/mehla-admin/design'
+      path: '/design'
+      fullPath: '/mehla-admin/design'
+      preLoaderRoute: typeof MehlaAdminDesignRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/email': {
+      id: '/mehla-admin/email'
+      path: '/email'
+      fullPath: '/mehla-admin/email'
+      preLoaderRoute: typeof MehlaAdminEmailRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/failures': {
+      id: '/mehla-admin/failures'
+      path: '/failures'
+      fullPath: '/mehla-admin/failures'
+      preLoaderRoute: typeof MehlaAdminFailuresRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/flags': {
+      id: '/mehla-admin/flags'
+      path: '/flags'
+      fullPath: '/mehla-admin/flags'
+      preLoaderRoute: typeof MehlaAdminFlagsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/hr': {
+      id: '/mehla-admin/hr'
+      path: '/hr'
+      fullPath: '/mehla-admin/hr'
+      preLoaderRoute: typeof MehlaAdminHrRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/integrations': {
+      id: '/mehla-admin/integrations'
+      path: '/integrations'
+      fullPath: '/mehla-admin/integrations'
+      preLoaderRoute: typeof MehlaAdminIntegrationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/jobs': {
+      id: '/mehla-admin/jobs'
+      path: '/jobs'
+      fullPath: '/mehla-admin/jobs'
+      preLoaderRoute: typeof MehlaAdminJobsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/logs': {
+      id: '/mehla-admin/logs'
+      path: '/logs'
+      fullPath: '/mehla-admin/logs'
+      preLoaderRoute: typeof MehlaAdminLogsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/mail': {
+      id: '/mehla-admin/mail'
+      path: '/mail'
+      fullPath: '/mehla-admin/mail'
+      preLoaderRoute: typeof MehlaAdminMailRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/marketing': {
+      id: '/mehla-admin/marketing'
+      path: '/marketing'
+      fullPath: '/mehla-admin/marketing'
+      preLoaderRoute: typeof MehlaAdminMarketingRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/monitoring': {
+      id: '/mehla-admin/monitoring'
+      path: '/monitoring'
+      fullPath: '/mehla-admin/monitoring'
+      preLoaderRoute: typeof MehlaAdminMonitoringRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/notifications': {
+      id: '/mehla-admin/notifications'
+      path: '/notifications'
+      fullPath: '/mehla-admin/notifications'
+      preLoaderRoute: typeof MehlaAdminNotificationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/operations': {
+      id: '/mehla-admin/operations'
+      path: '/operations'
+      fullPath: '/mehla-admin/operations'
+      preLoaderRoute: typeof MehlaAdminOperationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/organizations': {
+      id: '/mehla-admin/organizations'
+      path: '/organizations'
+      fullPath: '/mehla-admin/organizations'
+      preLoaderRoute: typeof MehlaAdminOrganizationsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/plans': {
+      id: '/mehla-admin/plans'
+      path: '/plans'
+      fullPath: '/mehla-admin/plans'
+      preLoaderRoute: typeof MehlaAdminPlansRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/providers': {
+      id: '/mehla-admin/providers'
+      path: '/providers'
+      fullPath: '/mehla-admin/providers'
+      preLoaderRoute: typeof MehlaAdminProvidersRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/rbac': {
+      id: '/mehla-admin/rbac'
+      path: '/rbac'
+      fullPath: '/mehla-admin/rbac'
+      preLoaderRoute: typeof MehlaAdminRbacRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/revenue': {
+      id: '/mehla-admin/revenue'
+      path: '/revenue'
+      fullPath: '/mehla-admin/revenue'
+      preLoaderRoute: typeof MehlaAdminRevenueRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/roles': {
+      id: '/mehla-admin/roles'
+      path: '/roles'
+      fullPath: '/mehla-admin/roles'
+      preLoaderRoute: typeof MehlaAdminRolesRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/security': {
+      id: '/mehla-admin/security'
+      path: '/security'
+      fullPath: '/mehla-admin/security'
+      preLoaderRoute: typeof MehlaAdminSecurityRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/seo': {
+      id: '/mehla-admin/seo'
+      path: '/seo'
+      fullPath: '/mehla-admin/seo'
+      preLoaderRoute: typeof MehlaAdminSeoRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/services': {
+      id: '/mehla-admin/services'
+      path: '/services'
+      fullPath: '/mehla-admin/services'
+      preLoaderRoute: typeof MehlaAdminServicesRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/settings': {
+      id: '/mehla-admin/settings'
+      path: '/settings'
+      fullPath: '/mehla-admin/settings'
+      preLoaderRoute: typeof MehlaAdminSettingsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/sms': {
+      id: '/mehla-admin/sms'
+      path: '/sms'
+      fullPath: '/mehla-admin/sms'
+      preLoaderRoute: typeof MehlaAdminSmsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/staff': {
+      id: '/mehla-admin/staff'
+      path: '/staff'
+      fullPath: '/mehla-admin/staff'
+      preLoaderRoute: typeof MehlaAdminStaffRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/subscriptions': {
+      id: '/mehla-admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/mehla-admin/subscriptions'
+      preLoaderRoute: typeof MehlaAdminSubscriptionsRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/support': {
+      id: '/mehla-admin/support'
+      path: '/support'
+      fullPath: '/mehla-admin/support'
+      preLoaderRoute: typeof MehlaAdminSupportRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/mehla-admin/users': {
+      id: '/mehla-admin/users'
+      path: '/users'
+      fullPath: '/mehla-admin/users'
+      preLoaderRoute: typeof MehlaAdminUsersRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
+    }
+    '/office/$slug': {
+      id: '/office/$slug'
+      path: '/office/$slug'
+      fullPath: '/office/$slug'
+      preLoaderRoute: typeof OfficeSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal/$slug': {
+      id: '/portal/$slug'
+      path: '/portal/$slug'
+      fullPath: '/portal/$slug'
+      preLoaderRoute: typeof PortalSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign/$token': {
+      id: '/sign/$token'
+      path: '/sign/$token'
+      fullPath: '/sign/$token'
+      preLoaderRoute: typeof SignTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload/': {
+      id: '/upload/'
+      path: '/upload'
+      fullPath: '/upload/'
+      preLoaderRoute: typeof UploadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload/$token': {
+      id: '/upload/$token'
+      path: '/upload/$token'
+      fullPath: '/upload/$token'
+      preLoaderRoute: typeof UploadTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
@@ -2158,109 +2067,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/auth/webhook': {
-      id: '/lovable/email/auth/webhook'
-      path: '/lovable/email/auth/webhook'
-      fullPath: '/lovable/email/auth/webhook'
-      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/auth/preview': {
-      id: '/lovable/email/auth/preview'
-      path: '/lovable/email/auth/preview'
-      fullPath: '/lovable/email/auth/preview'
-      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+    '/_authenticated/cases/': {
+      id: '/_authenticated/cases/'
+      path: '/cases'
+      fullPath: '/cases/'
+      preLoaderRoute: typeof AuthenticatedCasesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cases/$id': {
+      id: '/_authenticated/cases/$id'
+      path: '/cases/$id'
+      fullPath: '/cases/$id'
+      preLoaderRoute: typeof AuthenticatedCasesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/team-performance/$memberId': {
+      id: '/_authenticated/team-performance/$memberId'
+      path: '/$memberId'
+      fullPath: '/team-performance/$memberId'
+      preLoaderRoute: typeof AuthenticatedTeamPerformanceMemberIdRouteImport
+      parentRoute: typeof AuthenticatedTeamPerformanceRoute
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/wh/$slug': {
-      id: '/api/public/wh/$slug'
-      path: '/api/public/wh/$slug'
-      fullPath: '/api/public/wh/$slug'
-      preLoaderRoute: typeof ApiPublicWhSlugRouteImport
+    '/api/public/leads': {
+      id: '/api/public/leads'
+      path: '/api/public/leads'
+      fullPath: '/api/public/leads'
+      preLoaderRoute: typeof ApiPublicLeadsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/webhooks/$slug': {
-      id: '/api/public/webhooks/$slug'
-      path: '/api/public/webhooks/$slug'
-      fullPath: '/api/public/webhooks/$slug'
-      preLoaderRoute: typeof ApiPublicWebhooksSlugRouteImport
+    '/api/public/theme.css': {
+      id: '/api/public/theme.css'
+      path: '/api/public/theme.css'
+      fullPath: '/api/public/theme.css'
+      preLoaderRoute: typeof ApiPublicThemeDotcssRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/$provider': {
-      id: '/api/public/payments/$provider'
-      path: '/api/public/payments/$provider'
-      fullPath: '/api/public/payments/$provider'
-      preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
+    '/api/public/webhook': {
+      id: '/api/public/webhook'
+      path: '/api/public/webhook'
+      fullPath: '/api/public/webhook'
+      preLoaderRoute: typeof ApiPublicWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/office/lead': {
-      id: '/api/public/office/lead'
-      path: '/api/public/office/lead'
-      fullPath: '/api/public/office/lead'
-      preLoaderRoute: typeof ApiPublicOfficeLeadRouteImport
-      parentRoute: typeof rootRouteImport
+    '/mehla-admin/billing/': {
+      id: '/mehla-admin/billing/'
+      path: '/billing'
+      fullPath: '/mehla-admin/billing/'
+      preLoaderRoute: typeof MehlaAdminBillingIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
-    '/api/public/office/event': {
-      id: '/api/public/office/event'
-      path: '/api/public/office/event'
-      fullPath: '/api/public/office/event'
-      preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
-      parentRoute: typeof rootRouteImport
+    '/mehla-admin/billing/$id': {
+      id: '/mehla-admin/billing/$id'
+      path: '/billing/$id'
+      fullPath: '/mehla-admin/billing/$id'
+      preLoaderRoute: typeof MehlaAdminBillingIdRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
-    '/api/public/hooks/ops-watchdog': {
-      id: '/api/public/hooks/ops-watchdog'
-      path: '/api/public/hooks/ops-watchdog'
-      fullPath: '/api/public/hooks/ops-watchdog'
-      preLoaderRoute: typeof ApiPublicHooksOpsWatchdogRouteImport
-      parentRoute: typeof rootRouteImport
+    '/mehla-admin/sales/': {
+      id: '/mehla-admin/sales/'
+      path: '/sales'
+      fullPath: '/mehla-admin/sales/'
+      preLoaderRoute: typeof MehlaAdminSalesIndexRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
-    '/api/public/hooks/operational-score': {
-      id: '/api/public/hooks/operational-score'
-      path: '/api/public/hooks/operational-score'
-      fullPath: '/api/public/hooks/operational-score'
-      preLoaderRoute: typeof ApiPublicHooksOperationalScoreRouteImport
-      parentRoute: typeof rootRouteImport
+    '/mehla-admin/sales/$id': {
+      id: '/mehla-admin/sales/$id'
+      path: '/sales/$id'
+      fullPath: '/mehla-admin/sales/$id'
+      preLoaderRoute: typeof MehlaAdminSalesIdRouteImport
+      parentRoute: typeof MehlaAdminRouteRoute
     }
-    '/api/public/hooks/operational-reminders': {
-      id: '/api/public/hooks/operational-reminders'
-      path: '/api/public/hooks/operational-reminders'
-      fullPath: '/api/public/hooks/operational-reminders'
-      preLoaderRoute: typeof ApiPublicHooksOperationalRemindersRouteImport
-      parentRoute: typeof rootRouteImport
+    '/mehla-admin/support/$ticketId': {
+      id: '/mehla-admin/support/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/mehla-admin/support/$ticketId'
+      preLoaderRoute: typeof MehlaAdminSupportTicketIdRouteImport
+      parentRoute: typeof MehlaAdminSupportRoute
     }
-    '/api/public/hooks/notifications-dispatch': {
-      id: '/api/public/hooks/notifications-dispatch'
-      path: '/api/public/hooks/notifications-dispatch'
-      fullPath: '/api/public/hooks/notifications-dispatch'
-      preLoaderRoute: typeof ApiPublicHooksNotificationsDispatchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/notification-emails': {
-      id: '/api/public/hooks/notification-emails'
-      path: '/api/public/hooks/notification-emails'
-      fullPath: '/api/public/hooks/notification-emails'
-      preLoaderRoute: typeof ApiPublicHooksNotificationEmailsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/mail-sync': {
-      id: '/api/public/hooks/mail-sync'
-      path: '/api/public/hooks/mail-sync'
-      fullPath: '/api/public/hooks/mail-sync'
-      preLoaderRoute: typeof ApiPublicHooksMailSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/email-inbound': {
-      id: '/api/public/hooks/email-inbound'
-      path: '/api/public/hooks/email-inbound'
-      fullPath: '/api/public/hooks/email-inbound'
-      preLoaderRoute: typeof ApiPublicHooksEmailInboundRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/email-dispatch': {
-      id: '/api/public/hooks/email-dispatch'
-      path: '/api/public/hooks/email-dispatch'
-      fullPath: '/api/public/hooks/email-dispatch'
-      preLoaderRoute: typeof ApiPublicHooksEmailDispatchRouteImport
+    '/api/public/doc/$token': {
+      id: '/api/public/doc/$token'
+      path: '/api/public/doc/$token'
+      fullPath: '/api/public/doc/$token'
+      preLoaderRoute: typeof ApiPublicDocTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/cleanup-secure-artifacts': {
@@ -2270,11 +2172,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCleanupSecureArtifactsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/doc/$token': {
-      id: '/api/public/doc/$token'
-      path: '/api/public/doc/$token'
-      fullPath: '/api/public/doc/$token'
-      preLoaderRoute: typeof ApiPublicDocTokenRouteImport
+    '/api/public/hooks/email-dispatch': {
+      id: '/api/public/hooks/email-dispatch'
+      path: '/api/public/hooks/email-dispatch'
+      fullPath: '/api/public/hooks/email-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksEmailDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-inbound': {
+      id: '/api/public/hooks/email-inbound'
+      path: '/api/public/hooks/email-inbound'
+      fullPath: '/api/public/hooks/email-inbound'
+      preLoaderRoute: typeof ApiPublicHooksEmailInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/mail-sync': {
+      id: '/api/public/hooks/mail-sync'
+      path: '/api/public/hooks/mail-sync'
+      fullPath: '/api/public/hooks/mail-sync'
+      preLoaderRoute: typeof ApiPublicHooksMailSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/notification-emails': {
+      id: '/api/public/hooks/notification-emails'
+      path: '/api/public/hooks/notification-emails'
+      fullPath: '/api/public/hooks/notification-emails'
+      preLoaderRoute: typeof ApiPublicHooksNotificationEmailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/notifications-dispatch': {
+      id: '/api/public/hooks/notifications-dispatch'
+      path: '/api/public/hooks/notifications-dispatch'
+      fullPath: '/api/public/hooks/notifications-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksNotificationsDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/operational-reminders': {
+      id: '/api/public/hooks/operational-reminders'
+      path: '/api/public/hooks/operational-reminders'
+      fullPath: '/api/public/hooks/operational-reminders'
+      preLoaderRoute: typeof ApiPublicHooksOperationalRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/operational-score': {
+      id: '/api/public/hooks/operational-score'
+      path: '/api/public/hooks/operational-score'
+      fullPath: '/api/public/hooks/operational-score'
+      preLoaderRoute: typeof ApiPublicHooksOperationalScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/ops-watchdog': {
+      id: '/api/public/hooks/ops-watchdog'
+      path: '/api/public/hooks/ops-watchdog'
+      fullPath: '/api/public/hooks/ops-watchdog'
+      preLoaderRoute: typeof ApiPublicHooksOpsWatchdogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/office/event': {
+      id: '/api/public/office/event'
+      path: '/api/public/office/event'
+      fullPath: '/api/public/office/event'
+      preLoaderRoute: typeof ApiPublicOfficeEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/office/lead': {
+      id: '/api/public/office/lead'
+      path: '/api/public/office/lead'
+      fullPath: '/api/public/office/lead'
+      preLoaderRoute: typeof ApiPublicOfficeLeadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/$provider': {
+      id: '/api/public/payments/$provider'
+      path: '/api/public/payments/$provider'
+      fullPath: '/api/public/payments/$provider'
+      preLoaderRoute: typeof ApiPublicPaymentsProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/$slug': {
+      id: '/api/public/webhooks/$slug'
+      path: '/api/public/webhooks/$slug'
+      fullPath: '/api/public/webhooks/$slug'
+      preLoaderRoute: typeof ApiPublicWebhooksSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/wh/$slug': {
+      id: '/api/public/wh/$slug'
+      path: '/api/public/wh/$slug'
+      fullPath: '/api/public/wh/$slug'
+      preLoaderRoute: typeof ApiPublicWhSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/office/media/$': {

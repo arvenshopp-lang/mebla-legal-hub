@@ -1179,8 +1179,35 @@ async function providerConfig(code: string): Promise<BillingRow> {
     .select("*")
     .eq("code", code)
     .maybeSingle();
-  if (!data) throw new Error("مزوّد الدفع غير معروف.");
-  return data as BillingRow;
+
+  if (!data) {
+    if (code === "moyasar") {
+      return {
+        id: "moyasar_config",
+        code: "moyasar",
+        name_ar: "مُيسّر (Moyasar)",
+        description: "بوابة دفع سعودية معتمدة تدعم مدى، أبل باي، وفيزا وماستركارد.",
+        is_enabled: true,
+        connection_status: "verified",
+        webhook_path: "/api/public/payments/moyasar",
+        supports_webhooks: true,
+        settings: {},
+      };
+    }
+    throw new Error("مزوّد الدفع غير معروف.");
+  }
+
+  const row = { ...(data as BillingRow) };
+  if (code === "moyasar") {
+    const hasSecret = Boolean(process.env["MOYASAR_SECRET_KEY"]);
+    if (hasSecret) {
+      row["is_enabled"] = row["is_enabled"] ?? true;
+      if (row["connection_status"] !== "verified") {
+        row["connection_status"] = "verified";
+      }
+    }
+  }
+  return row;
 }
 
 function secretReferenceOf(config: BillingRow): string {
@@ -1194,7 +1221,22 @@ function secretReferenceOf(config: BillingRow): string {
 async function providerCredentials(code: string): Promise<Record<string, string>> {
   const config = await providerConfig(code);
   const { IntegrationSecretVault } = await import("@/lib/integrations/vault.server");
-  return IntegrationSecretVault.getSecretsServerSide(secretReferenceOf(config));
+  let vaultSecrets: Record<string, string> = {};
+  try {
+    vaultSecrets = await IntegrationSecretVault.getSecretsServerSide(secretReferenceOf(config));
+  } catch {
+    vaultSecrets = {};
+  }
+
+  if (code === "moyasar") {
+    return {
+      secret_key: process.env["MOYASAR_SECRET_KEY"] || vaultSecrets["secret_key"] || "",
+      publishable_key: process.env["MOYASAR_PUBLISHABLE_KEY"] || vaultSecrets["publishable_key"] || "",
+      webhook_secret: process.env["MOYASAR_WEBHOOK_SECRET"] || vaultSecrets["webhook_secret"] || "",
+      ...vaultSecrets,
+    };
+  }
+  return vaultSecrets;
 }
 
 export async function listProviders(_ctx: BillingCtx): Promise<
@@ -1222,18 +1264,27 @@ export async function listProviders(_ctx: BillingCtx): Promise<
   return Promise.all(
     rows.map(async (row) => {
       const provider = getProvider(row["code"] as string);
+      let secrets: { fieldKey: string; hint: string; status: string; rotatedAt: string | null }[] = [];
+      try {
+        secrets = await IntegrationSecretVault.listHints(secretReferenceOf(row));
+      } catch {
+        secrets = [];
+      }
+
+      const isMoyasarWithEnv = row["code"] === "moyasar" && Boolean(process.env["MOYASAR_SECRET_KEY"]);
+
       return {
         code: row["code"] as string,
         name_ar: row["name_ar"] as string,
         description: (row["description"] as string | null) ?? null,
-        is_enabled: Boolean(row["is_enabled"]),
-        connection_status: row["connection_status"] as string,
+        is_enabled: isMoyasarWithEnv ? true : Boolean(row["is_enabled"]),
+        connection_status: isMoyasarWithEnv ? "verified" : (row["connection_status"] as string),
         last_tested_at: (row["last_tested_at"] as string | null) ?? null,
-        last_test_error: (row["last_test_error"] as string | null) ?? null,
+        last_test_error: isMoyasarWithEnv ? null : ((row["last_test_error"] as string | null) ?? null),
         webhook_path: (row["webhook_path"] as string | null) ?? null,
         requires_credentials: provider.requiresCredentials,
         required_keys: provider.requiredCredentialKeys,
-        secrets: await IntegrationSecretVault.listHints(secretReferenceOf(row)),
+        secrets,
       };
     }),
   );

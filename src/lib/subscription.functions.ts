@@ -84,3 +84,64 @@ export const signInvoiceUrl = createServerFn({ method: "POST" })
     if (signError || !signed) throw new Error("تعذّر تجهيز رابط الفاتورة.");
     return { url: signed.signedUrl };
   });
+
+/**
+ * إنشاء جلسة سداد فورية لترقية الباقة عبر بوابة مُيسّر (مدى، أبل باي، فيزا)
+ */
+export const createSubscriptionMoyasarPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        planCode: z.string().min(1),
+        billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getProvider } = await import("@/lib/billing/providers.server");
+
+    const { data: plan, error: planErr } = await supabaseAdmin
+      .from("subscription_plans")
+      .select("*")
+      .eq("code", data.planCode)
+      .maybeSingle();
+
+    if (planErr || !plan) throw new Error("الباقة المحددة غير موجودة.");
+
+    const amount = data.billingCycle === "yearly" ? (plan.price_yearly ?? (plan.price_monthly * 10)) : plan.price_monthly;
+    if (amount <= 0) throw new Error("هذه الباقة مجانية ولا تتطلب دفعاً.");
+
+    const moyasar = getProvider("moyasar");
+    const creds = {
+      secret_key: process.env["MOYASAR_SECRET_KEY"] || "",
+      publishable_key: process.env["MOYASAR_PUBLISHABLE_KEY"] || "",
+      webhook_secret: process.env["MOYASAR_WEBHOOK_SECRET"] || "",
+    };
+
+    const correlationId = `sub_${data.organizationId}_${data.planCode}_${Date.now()}`;
+    const payment = await moyasar.createPayment(
+      {
+        invoiceId: data.organizationId,
+        invoiceNumber: `SUB-${Date.now().toString(36).toUpperCase()}`,
+        amount,
+        currency: "SAR",
+        description: `ترقية اشتراك منصة مِهلة — باقة ${plan.name_ar}`,
+        callbackUrl: `https://mehlalex.com/subscription?payment=success&org=${data.organizationId}&plan=${data.planCode}`,
+        correlationId,
+      },
+      creds,
+    );
+
+    if (payment.status === "failed" || !payment.redirectUrl) {
+      throw new Error(payment.failureMessage || "تعذّر إنشاء رابط السداد عبر مُيسّر.");
+    }
+
+    return {
+      redirectUrl: payment.redirectUrl,
+      amount,
+      planName: plan.name_ar,
+    };
+  });

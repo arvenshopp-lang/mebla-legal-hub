@@ -40,8 +40,9 @@ const SEQUENCE_LABELS: Record<SequenceKind, string> = {
 
 const SECRET_LABELS: Record<string, string> = {
   api_key: "المفتاح السري (Secret Key)",
-  publishable_key: "المفتاح العلني (Publishable Key)",
-  webhook_secret: "سر توقيع الرسائل الواردة",
+  secret_key: "المفتاح السري (Secret Key)",
+  publishable_key: "المفتاح القابل للنشر (Publishable Key)",
+  webhook_secret: "رمز التحقق للرسائل الواردة (Webhook Secret)",
 };
 
 export function SettingsPanel() {
