@@ -166,7 +166,7 @@ export const verifyAndActivateSubscriptionPayment = createServerFn({ method: "PO
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1. Fetch plan
@@ -185,7 +185,24 @@ export const verifyAndActivateSubscriptionPayment = createServerFn({ method: "PO
         ? (plan.price_yearly ?? plan.price_monthly * 10)
         : plan.price_monthly;
 
-    // 2. Verify with Moyasar if ID provided
+    // 2. Fetch user email & id
+    const userId = context.userId;
+    let userEmail =
+      ((context.claims as Record<string, unknown>)?.["email"] as string) || "";
+
+    if (!userEmail) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("email")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profile?.email) userEmail = profile.email;
+    }
+    if (!userEmail) {
+      userEmail = "user@mehlalex.com";
+    }
+
+    // 3. Verify with Moyasar if ID provided
     if (data.moyasarId) {
       const secretKey = process.env["MOYASAR_SECRET_KEY"] || "";
       if (secretKey) {
@@ -220,18 +237,20 @@ export const verifyAndActivateSubscriptionPayment = createServerFn({ method: "PO
     const startsAt = new Date().toISOString();
     const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-    // 3. Deactivate any existing active subscriptions for this org
+    // 4. Deactivate any existing active subscriptions for this org
     await supabaseAdmin
       .from("subscriptions")
       .update({ status: "expired" })
       .eq("organization_id", data.organizationId)
       .eq("status", "active");
 
-    // 4. Insert new active subscription
+    // 5. Insert new active subscription
     const { data: newSub, error: subError } = await supabaseAdmin
       .from("subscriptions")
       .insert({
         organization_id: data.organizationId,
+        user_id: userId,
+        email: userEmail,
         plan_code: plan.code,
         plan_id: plan.id,
         plan_label: plan.name_ar,
@@ -241,18 +260,21 @@ export const verifyAndActivateSubscriptionPayment = createServerFn({ method: "PO
         starts_at: startsAt,
         ends_at: endsAt,
         auto_renew: true,
+        activation_method: "moyasar",
       })
       .select()
       .maybeSingle();
 
     if (subError) {
       console.error("[Subscription Activation Error]", subError);
-      throw new Error("تعذّر تسجيل الاشتراك الجديد.");
+      throw new Error(`تعذّر تسجيل الاشتراك الجديد: ${subError.message}`);
     }
 
-    // 5. Insert invoice record
+    // 6. Insert invoice record
     await supabaseAdmin.from("invoices").insert({
       organization_id: data.organizationId,
+      user_id: userId,
+      subscription_id: newSub?.id ?? null,
       number: `INV-${Date.now().toString(36).toUpperCase()}`,
       amount,
       currency: "SAR",
