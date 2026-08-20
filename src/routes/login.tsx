@@ -404,14 +404,27 @@ export function Field({
   label,
   children,
   hint,
+  required,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="text-label mb-1.5 block text-foreground">{label}</span>
+      <span className="text-label mb-1.5 block text-foreground">
+        {label}
+        {required && (
+          <>
+            <span className="font-bold text-danger" aria-hidden>
+              {" "}
+              *
+            </span>
+            <span className="sr-only"> (حقل إلزامي)</span>
+          </>
+        )}
+      </span>
       {children}
       {hint && <span className="text-caption mt-1 block">{hint}</span>}
     </label>
