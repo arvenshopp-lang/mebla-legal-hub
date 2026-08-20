@@ -281,3 +281,117 @@ ACR_01_STATUS = READY_FOR_REVIEW
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR ACR-01 SECURITY REVIEW
+
+---
+
+# MEHLA FILE SECURITY — ACR-01 REVISION 2 FINAL REVIEW PLAN
+
+مراجعة معمارية فقط. BASE_ARCHITECTURE_V5 = FROZEN · لا تنفيذ/Migration/أسرار/تخزين/نشر.
+
+## 1–2. إغلاق الأدلة (منهج، لا ادعاء)
+Call Graph لكل EP يجب أن يغطي: ENTRYPOINT → ACTOR → AUTHENTICATION → AUTHORIZATION → TENANT RESOLUTION → TOKEN/CAPABILITY → DB → STORAGE → RAW PROCESSING → EXTERNAL NETWORK → OUTPUT → DELIVERY → DELETE/CLEANUP. أي حلقة غير مقروءة سطرياً = NOT_PROVEN. الحالي 2/11 (EP-01, EP-02 فقط) ⇒ لا يجوز إعلان S0_ENTRYPOINT_COVERAGE = PROVEN.
+إغلاق FILE_OPERATION_SEARCH_COVERAGE يتطلب أداة جرد ثابتة (AST-based) تعدّ الاستدعاءات المباشرة وWrappers والاستيرادات المُسمّاة عبر: upload/download/copy/move/remove/delete/signed URL/public URL/stream/buffer/blob/file/multipart/formdata/attachment/media/document، وتطابقها بقائمة مسموحة تُفشل CI عند أي عنصر جديد. الهدف: EVIDENCE_COMPLETE (لم يتحقق بعد).
+
+## 3. SECURITY DEFINER HARDENING RULES (إلزامية)
+`SET search_path` ثابت آمن · مراجع كائنات مؤهلة بالكامل · المالك دور مخصص بلا تسجيل دخول ولا يساوي دور التطبيق · REVOKE EXECUTE FROM PUBLIC ثم GRANT للهوية المطلوبة فقط · تحقق صارم من المدخلات + المستأجر + الغرض + الحالة داخل الدالة · لا SQL ديناميكي ولا أسماء جداول/أعمدة من المستخدم · تسجيل كل استدعاء · ضوابط معدّل عند الحاجة.
+
+## 4. AUTHORITY DOMAINS (لا Super-Broker)
+سبع سلطات مستقلة، كل واحدة بهوية ومفتاح ونشر وسجل منفصل: UPLOAD CAPABILITY AUTHORITY · SCAN INPUT BROKER · SCAN RESULT INGESTION · DECISION AUTHORITY · EVIDENCE AUTHORITY · DELIVERY CAPABILITY AUTHORITY · SECURITY AUDIT AUTHORITY. لا سلطة تجمع read-all + write-all + mint-all + release-all.
+
+## 5. CAPABILITY ISSUER COMPROMISE MODEL
+كل قدرة تُصدَر فقط بالإشارة إلى سجل مصرّح قائم (Slot/Scan/Decision)، ولا تُبنى من `object_key` يرسله المنادي. كل قدرة تحمل: tenant · object · purpose · max TTL · nonce · audience · issuer · policy version · audit · rate limit. اختراق مُصدِر واحد لا يمنح قدرات على ملفات لا تملك سجلاً مصرّحاً.
+
+## 6–8. UPLOAD_SLOT STATE MACHINE
+ISSUED → CLAIMED → UPLOADING → UPLOADED → SEALED · وفروع EXPIRED / FAILED. حقول: slot_version, claim_id, attempt_id, expected_object_key, expected_tenant, expected size constraints, expires_at, claimed_at, sealed_at.
+Race: **claim ذري قبل أي استخدام مميّز** (CAS على slot_version)، والختم بعد اكتمال الرفع؛ المطالِب الثاني يُرفض. Finalize يعيد التحقق من slot_id + object_key + organization_id + وجود الكائن فعلياً + الحجم + بيانات وصفية مشتقة من الخادم + generation/version إن توفر. لا يبدأ Scanner قبل SEALED.
+
+## 9–11. DATABASE_COMPROMISE_CONTAINMENT_MODEL
+بافتراض اختراق Postgres وحده (KMS/العمّال/المدقّق/المخزن سليمة): المهاجم يستطيع تزوير صفوف الحالة والنتائج والقرارات، ولا يستطيع توليد توقيعات صالحة. لذلك: **صف قاعدة البيانات ليس مصدر الحقيقة الأمنية**. الإفراج يشترط تحقق متزامن من: حالة DB + توقيع القرار + شهادة الأدلة + بصمة الملف + المستأجر + إصدار السياسة، مع jti/nonce ضد إعادة استخدام قرار قديم. تغيير DB وحده ⇒ NO RELEASE.
+سلامة سجل التدقيق: hash-chain + ملخص موقّع بـKMS + نسخة خارجية غير قابلة للتعديل + **مدقّق دوري مستقل عن قاعدة التطبيق** يرفع SECURITY_AUDIT_INTEGRITY_ALERT عند انكسار السلسلة.
+
+## 12–13. BROKER & STORAGE COMPROMISE
+العامل يتلقى scan_id + file_id + tenant_id + expected_sha256 + قدرة كائن، ويعيد حساب SHA-256 بنفسه؛ عدم التطابق = INTEGRITY INCIDENT ورفض قبول أي نتيجة (يمنع Broker مخترقاً من تمرير ملف B تحت هوية A).
+الإفراج يعيد حساب البصمة قبل التسليم؛ HASH_BEFORE_RELEASE ≠ APPROVED_HASH ⇒ حجب وحادث. القاعدة العامة: HASH_BEFORE_EVERY_SECURITY_TRANSITION. القرار مرتبط بالمحتوى لا بالمسار.
+
+## 14–15. RETENTION SEMANTICS (مفصولة)
+Quarantine immutability = قفل احتفاظ أمني **قصير** يغطي فترة الرفع→الفحص→القرار→الإفراج لمنع TOCTOU فقط. Evidence Vault retention = طويل حسب سياسة الأدلة. Legal retention = سياسة قانونية للمكتب. Tenant deletion = حذف المحتوى. حذف المستند التجاري لا يمس تاريخ القرارات والبصمات وأحداث التدقيق وبيانات الحوادث، مع عدم الاحتفاظ بمحتوى شخصي أكثر من اللازم: CONTENT_RETENTION منفصلة عن SECURITY_METADATA_RETENTION.
+
+## 16–17. KEY HIERARCHY & ROTATION
+هرمية: مفاتيح توقيع القرار والأدلة والسياسة KMS-backed غير قابلة للتصدير؛ الخدمات تطلب عملية SIGN ولا تقرأ بايتات المفتاح الخاص. لا بيئة تطبيق واحدة تحمل كل المفاتيح.
+NORMAL_ROTATION: key_version + dual-read + نافذة تقاعد. EMERGENCY_COMPROMISE_ROTATION: إبطال فوري للمفتاح القديم، إبطال كل الرموز القائمة، إعادة إصدار الجلسات/التذاكر المتأثرة، تحديد السجلات المتأثرة، فتح حادث — بلا نافذة تسامح.
+
+## 18. HIGH-RISK SECURITY POLICY CHANGE
+تغيير المحركات المطلوبة أو قائمة الأنواع المسموحة أو حد عمر التواقيع أو اشتراط الصندوق الديناميكي أو سلوك الفشل أو متطلبات الأدلة أو سياسة الإفراج = عالي الخطورة: منشئ + معتمد مختلفان، MFA، سبب، diff، إصدار سياسة، حزمة سياسة موقّعة، فترة تهدئة عند الاقتضاء، تدقيق كامل.
+
+## 19–20. تصحيح صياغة AI/OCR والادعاءات التنظيمية
+EXTERNAL_THIRD_PARTY_DATA_EGRESS = OBSERVED_IN_CODE (إرسال إلى `ai.gateway.lovable.dev`) · PROCESSING_COUNTRY = NOT_PROVEN · DATA_RESIDENCY = NOT_PROVEN · PROVIDER_RETENTION = NOT_PROVEN · SUBPROCESSORS = NOT_PROVEN · TRAINING_USAGE = NOT_PROVEN · DPA = NOT_PROVEN. الحكم يبقى AI_OCR_EXTERNAL_DATA_FLOW_RISK = HIGH بسبب عدم الإثبات لا بسبب استنتاج جغرافي. **يُصحَّح CF-11 في السجل بهذه الصياغة.**
+كل ادعاء تنظيمي (إقامة البيانات، انطباق NCA، متطلبات PDPL، الاحتفاظ) يُوسم: VERIFIED / UNVERIFIED / REQUIRES_COMPLIANCE_CONFIRMATION. الحالة الآن: كلها REQUIRES_COMPLIANCE_CONFIRMATION.
+
+## 21–22. تصحيح CF-12 و CF-13
+CF-12: BACKGROUND_JOB_CREATION_PATH / ACCEPTED_FILE_STATES / AUTHORIZATION / CREDENTIAL / DATA_OUTPUT = **NOT_PROVEN** (سُحب وصف INFERRED كحقيقة).
+CF-13: CURRENT_CLEANUP_BLAST_RADIUS = **NOT_PROVEN** — يجب إثبات سطري لما يستطيع الـcron حذفه (Buckets، جداول، نطاق مستأجر، نطاق تاريخي، أنواع الآثار) قبل وصفه بأنه واسع.
+
+## 23–24. P0_PRODUCTION_PARITY_MATRIX
+مطابق: إصدار المخطط · فئة إعداد التخزين · نموذج RLS · إصدار وقت التشغيل · كود الأمن · إصدارات المحلّلات · صيغة حزمة السياسة.
+مختلف عمداً: بيانات صناعية · أسرار ومفاتيح منفصلة · لا حسابات إنتاج · لا مستندات إنتاج · لا service role إنتاجي.
+داخل P0 فقط تُثبت دلالات المزود: TTL رمز الرفع، إعادة الاستخدام، التزامن، سباق نفس المسار، upsert، القدرة المنتهية، الكتابة الفوقية، سياسات التخزين، versioning، الحذف، RLS. وثائق المزود وحدها لا تكفي.
+
+## 25–26. Shadow & Lab Data
+نتيجة Shadow لا تمنح Release أبداً؛ فشل Shadow لا يجعل ملفاً "نظيفاً". بيانات P0: ملفات صناعية سليمة، EICAR، صيغ مشوّهة صناعية، محاكاة قنابل آمنة، مجموعة fuzz آمنة — بلا مستندات عملاء وبلا عينات برمجيات خبيثة حقيقية خارج برنامج مختبر أمني منفصل.
+
+## 27–28. Trust Domains للتخزين والمشتقات
+QUARANTINE CREDENTIAL ≠ FINAL STORAGE CREDENTIAL · QUARANTINE WRITE AUTHORITY ≠ RELEASE WRITE AUTHORITY · الماسح بلا وصول للتخزين النهائي · الإفراج بلا تصفح حر للحجر.
+كل معاينة: كائن مستقل بمعرّف وبصمة وحالة أمنية ونسب للأصل؛ لا تُكتب في مسار الأصل ولا تسمح باستبداله؛ أصل المعاينة لا يملك قدرة قراءة الأصل إلا عبر خدمة التحويل المخوّلة.
+
+## 29. COMPLETE COMPROMISE MATRIX (مختصرة — لكل مكوّن: يكسب / لا يكسب / كشف / احتواء)
+| المكوّن | يكسب | لا يكسب | كشف | احتواء |
+|---|---|---|---|---|
+| Application | واجهات المستخدم وطلبات مصرّحة | إفراج بلا 2-of-2، بايتات خام (بعد S5) | تدقيق + معدلات شاذة | هوية تطبيق بلا مفاتيح أمنية |
+| Database | تزوير صفوف | توقيعات صالحة، إفراج | مدقّق سلسلة مستقل | التحقق المزدوج بالتوقيع |
+| service-role legacy | كل التخزين/الجداول (اليوم) | — (لهذا CF-06) | تدقيق وصول | Service Identity Separation |
+| Upload authority | إصدار قدرات لسجلات قائمة فقط | ملفات بلا Slot، مستأجر آخر | سجل إصدار | ربط سجل/مستأجر/كائن |
+| Quarantine storage | كائنات محجوزة | التخزين النهائي، الأدلة | فروق البصمة | قفل احتفاظ + بصمة قبل كل انتقال |
+| Scan broker | توجيه المدخلات | تزوير الهوية (يُكشف بالبصمة) | expected≠actual sha | رفض النتيجة + حادث |
+| Structural/AV-A/AV-B/YARA/Sandbox/CDR | ملف واحد لكل عامل | DB/أسرار/شبكة/تخزين نهائي | نبضات + نتائج شاذة | عامل مؤقت بلا شبكة |
+| Decision Engine | إصدار قرار زائف | إفراج (يحتاج الأدلة) | تعارض مع المدقّق | 2-of-2 |
+| Evidence Verifier | شهادة زائفة | إفراج (يحتاج القرار) | تعارض | 2-of-2 |
+| Release Service | تسليم ملف مُقرَّر واحد | صلاحية واسعة على Buckets | تدقيق تسليم | قدرة معنونة بالكائن |
+| Final Storage | كائنات نهائية | تجاوز التحقق بالبصمة عند التسليم | hash قبل الإفراج | ربط القرار بالمحتوى |
+| Preview Service | مشتقات | الأصل | نسب المشتقات | نطاق تحويل ضيق |
+| Audit DB | سجلات | كسر السلسلة بلا كشف | مدقّق خارجي | نسخة غير قابلة للتعديل |
+| KMS | توقيع (الأخطر) | — | مراقبة عمليات التوقيع | مفاتيح غير قابلة للتصدير + تدوير طارئ |
+| Admin account | إجراءات إدارية | تغيير سياسة منفرداً | تدقيق + موافقة ثنائية | Two-person policy change |
+| CI/CD | نشر كود | مفاتيح KMS الخاصة | تحقق توقيع الصور | صور مثبتة Digest |
+
+## 30. COMPOUND COMPROMISE ASSUMPTIONS
+2-of-2 لا يحمي إذا كان Decision و Evidence Verifier على نفس المضيف أو نفس مجال الأسرار. لذلك الافتراض المعلن: هويتان منفصلتان، مجالا نشر منفصلان، مفتاحا توقيع منفصلان، سجلان منفصلان. اختراق مشترك للاثنين = خارج نطاق الحماية ويُصرَّح به كمخاطرة متبقية معلنة.
+
+## 31. تحديث سجل الاكتشافات
+CF-01..CF-05 = OBSERVED_IN_CODE · CF-06, CF-07 = OBSERVED_IN_CODE · CF-08, CF-09, CF-10 = NOT_PROVEN · CF-11 = OBSERVED_IN_CODE للخروج فقط، وكل ما يخص الجغرافيا/الاحتفاظ NOT_PROVEN · CF-12 = NOT_PROVEN (مصحَّح) · CF-13 = NOT_PROVEN (مصحَّح).
+اكتشافات جديدة: **CF-14** خطر تحوّل Broker موحّد إلى جذر ثقة جديد (تصميمي) · **CF-15** الاعتماد على صف DB كمصدر حقيقة للإفراج · **CF-16** غياب هرمية مفاتيح ومسار تدوير طارئ · **CF-17** غياب مدقّق سلامة تدقيق مستقل عن قاعدة التطبيق · **CF-18** غياب بيئة تحقق غير إنتاجية مماثلة (P0) · **CF-19** إمكانية إصدار قدرة من `object_key` يرسله المنادي.
+
+## الناتج
+CALL_GRAPH_COVERAGE = NOT_PROVEN (2/11)
+FILE_OPERATION_SEARCH_COVERAGE = NOT_PROVEN (هدف: EVIDENCE_COMPLETE عبر جرد AST + حارس CI)
+PUBLIC_MEDIA_WRITE_PATH_COVERAGE = NOT_PROVEN
+ROOT_OF_TRUST_SEPARATION = DESIGNED
+SERVICE_IDENTITY_SEPARATION = DESIGNED (7 سلطات مستقلة)
+SECURITY_DEFINER_HARDENING_DESIGNED = YES
+UPLOAD_SLOT_STATE_MACHINE_DESIGNED = YES
+UPLOAD_RACE_CONTAINMENT_DESIGNED = YES (claim ذري قبل الاستخدام + ختم بعد الرفع)
+DATABASE_COMPROMISE_CONTAINMENT_DESIGNED = YES
+BROKER_COMPROMISE_CONTAINMENT_DESIGNED = YES (إعادة حساب SHA-256 داخل العامل)
+STORAGE_COMPROMISE_CONTAINMENT_DESIGNED = YES (بصمة قبل كل انتقال أمني)
+KMS_KEY_HIERARCHY_DESIGNED = YES (مشروط بتوفر KMS في البنية المختارة)
+EMERGENCY_KEY_ROTATION_DESIGNED = YES
+P0_PARITY_DESIGNED = YES
+AI_OCR_DATA_RESIDENCY_STATUS = NOT_PROVEN (الخروج OBSERVED_IN_CODE؛ الجغرافيا والاحتفاظ والمعالجات الفرعية والتدريب وDPA = NOT_PROVEN) · REQUIRES_COMPLIANCE_CONFIRMATION
+SINGLE_COMPONENT_MALICIOUS_RELEASE = NO (بالتصميم المستهدف) · YES (في الوضع الحالي قبل التنفيذ)
+SINGLE_COMPONENT_ALL_DOCUMENT_EXPOSURE = NO (بالتصميم المستهدف) · YES اليوم عبر service_role (CF-06)
+UNRESOLVED_CRITICAL_DESIGN_GAPS = آلية فصل هوية الخدمات الفعلية على Supabase · توفر KMS ومخزن Object Lock في بنية سعودية · دلالات قدرة الرفع لدى المزود · سيادة بيانات AI/OCR · تعريف نافذة قفل الاحتفاظ الأمني
+UNRESOLVED_EVIDENCE_GAPS = 9/11 Call Graphs · جرد عمليات الملفات الكامل · مسارات كتابة الوسائط العامة · سلوك الرفع الموقّع · immutability التخزين · مسار إنشاء وظائف الخلفية · نطاق حذف الـcron · سياسات Buckets وقت التشغيل
+BASE_ARCHITECTURE_V5 = FROZEN
+ACR_01_REVISION_2_STATUS = READY_FOR_REVIEW
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR ACR-01 REVISION 2 SECURITY REVIEW
