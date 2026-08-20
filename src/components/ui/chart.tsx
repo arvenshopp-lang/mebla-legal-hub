@@ -69,17 +69,24 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  // تُدرج القيم داخل <style>، لذلك تُنقّى المعرّفات والألوان بقائمة سماح صارمة
+  // لمنع الخروج من سياق CSS (XSS) عند مرور قيمة غير موثوقة في الإعدادات.
+  const safeId = sanitizeCssIdent(id);
+  if (!safeId) return null;
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart="${safeId}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    const safeKey = sanitizeCssIdent(key);
+    const safeColor = sanitizeCssColor(color);
+    return safeKey && safeColor ? `  --color-${safeKey}: ${safeColor};` : null;
   })
   .join("\n")}
 }
