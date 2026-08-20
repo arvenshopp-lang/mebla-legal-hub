@@ -158,3 +158,126 @@ FIRST_RECOMMENDED_IMPLEMENTATION_PHASE = S0 — BASELINE & INVENTORY (بلا أ�
 FIRST_PHASE_REQUIRES_APPROVAL = YES
 
 WAITING FOR IMPLEMENTATION PHASE 1 APPROVAL
+
+---
+
+# MEHLA FILE SECURITY — ACR-01 & S0 FINAL EVIDENCE CORRECTION PLAN
+
+BASE_ARCHITECTURE_V5 = FROZEN · ACR_01_STATUS = OPEN · لا تنفيذ ولا Migration ولا تغيير أسرار/تخزين/إنتاج.
+
+## 1. تصحيح تناقض S0.5
+كل ادعاء "PROVEN" في S0.5 يُخفَّض حيث كان الدليل ناقصاً. مستويات الثقة المعتمدة من الآن: OBSERVED_IN_CODE · OBSERVED_IN_DB · OBSERVED_AT_RUNTIME · DOCUMENTED_BY_PROVIDER · INFERRED · NOT_PROVEN. كلمة PROVEN ممنوعة لادعاء سلوك وقت تشغيل مدعوم بالكود فقط. ⇒ S0_ENTRYPOINT_COVERAGE = NOT_PROVEN حتى إغلاق البنود 2 و3 و13.
+
+## 2. FULL FILE-OPERATION SEARCH (نتيجة هذه الجلسة)
+تم تنفيذ أنماط: `storage`، `.from("documents")`، `createSignedUploadUrl|uploadToSignedUrl`، `createSignedUrl`، `.upload(`، `.download(`، `.move(|.copy(`، `.remove(`، `getPublicUrl`، `ArrayBuffer|Uint8Array|arrayBuffer()`، `FormData|multipart` على `src` و`scripts`.
+- سطح التخزين الحقيقي (OBSERVED_IN_CODE): `documents/intake.server.ts`، `email/attachments.server.ts`، `office-page.server.ts`، `office-public.server.ts`، `secure-view/secure-view.server.ts`، `secure-view/cleanup.server.ts`، `subscription.functions.ts`، `routes/upload.$token.tsx`، `routes/_authenticated/documents.tsx`.
+- `getPublicUrl` = لا نتائج · `.move(`/`.copy(` = لا نتائج (نشر الوسائط يتم download+upload) · `FormData/multipart` خادمياً في `email/transport/mime.server.ts` فقط.
+- ما لم يُغطَّ بعد: Wrappers غير مباشرة (دوال محلية تُغلّف الاستدعاء)، وأنماط `Blob/File/ReadableStream`، وملفات `src/lib/**` غير المفتوحة سطراً بسطر ⇒ FILE_OPERATION_SEARCH_COVERAGE = NOT_PROVEN (يُغلق بسكربت جرد ثابت `scripts/file-op-inventory.ts` يُقترح في P0، يعدّ كل استدعاء ويطابقه بقائمة مسموحة).
+
+## 3. COMPLETE CALL GRAPHS — نموذج الإغلاق المطلوب
+لكل EP-01..EP-11 يُطلب الشكل: ENTRYPOINT → AUTHORIZATION → TENANT RESOLUTION → SERVER FUNCTION → STORAGE/DB → RAW PROCESSOR → DELIVERY.
+مكتمل حالياً (OBSERVED_IN_CODE): EP-01 رفع داخلي، EP-02 رفع عبر رابط العميل.
+ناقص ويجب إغلاقه قبل S1: EP-03 عقود، EP-04 مرفقات بريد صادر، EP-09 email-inbound، EP-06 وسائط عامة، EP-07 repair، EP-08 HR، EP-10 background worker، EP-11 cron cleanup، EP-05 secure-view/طباعة.
+⇒ CALL_GRAPH_COVERAGE = NOT_PROVEN (2/11).
+
+## 4–5. SECURITY_ROOT_OF_TRUST_SEPARATION
+مجالات أسرار مستقلة تماماً، كل واحد بمفتاح خاص ونسخة مفتاح (key_version) ولا يشتق من غيره:
+`PORTAL_TOKEN_SECRET` · `CONTRACT_HMAC_SECRET` · `BLIND_INDEX_KEY` · `FILE_SECURITY_SIGNING_KEY` · `DECISION_KEY` · `EVIDENCE_VERIFIER_KEY` · `DELIVERY_KEY` · `SCANNER_IDENTITY` (≠ APPLICATION_IDENTITY).
+قاعدة الفصل: لا مجال يستطيع التحقق من رموز مجال آخر؛ كل رمز يحمل `aud` + `purpose` + `kid`، والتحقق يرفض أي `aud` غير مطابق. اختراق مجال واحد لا يمنح انتحال مجال آخر.
+
+## 6. NO INSECURE FALLBACK
+قاعدة: `MISSING_SECURITY_SECRET = FAIL_CLOSED` — إما فشل بدء الميزة (رفض العملية برسالة عربية عامة + معرّف تتبع) وليس fallback. ممنوع نهائياً: `SECRET || SERVICE_ROLE_KEY`، `SERVICE_ROLE_KEY || SUPABASE_URL`، `SECRET || "قيمة ثابتة"`.
+المواقع المرصودة (OBSERVED_IN_CODE): `contracts/contracts.server.ts:74`، `client-portal/portal-auth.server.ts:14`، `sms/otp.server.ts:119`. تُصلح في ACR-01-IMPL (مرحلة تنفيذ لاحقة بعد الاعتماد) لا الآن.
+حارس CI مقترح: فشل البناء عند ظهور نمط fallback في أي ملف `*.server.ts` ضمن مجالات الأمن.
+
+## 7. SECRET MIGRATION DESIGN (تصميم فقط)
+- **Portal token hashing**: إضافة `key_version` لصفوف التوكنات؛ dual-read (تحقق بالمفتاح الجديد ثم القديم)؛ التوكنات الجديدة بالمفتاح الجديد فقط؛ نافذة تقاعد = أقصى TTL للتوكنات القائمة؛ بعدها حذف مسار المفتاح القديم.
+- **Contract HMAC tickets**: التذاكر قصيرة الأجل (ساعة) ⇒ dual-verify لمدة نافذة واحدة فقط ثم retirement؛ لا حاجة لإعادة إصدار بيانات.
+- **Blind index key**: الأخطر — يتطلب re-index migration: عمود `phone_bidx_v2` يُحسب بالمفتاح الجديد، كتابة مزدوجة، backfill مجمّع، تحويل البحث إلى v2، ثم إسقاط v1. لا حذف بيانات ولا فقدان قابلية بحث في أي لحظة.
+
+## 8. SERVICE_IDENTITY_SEPARATION_MODEL
+لا نفترض تعدد مفاتيح service_role. آليات الفصل المتاحة فعلياً، بترتيب التفضيل:
+1) **Narrow RPC + SECURITY DEFINER محصورة**: كل خدمة أمنية تتحدث فقط عبر دوال محددة الغرض (تسجيل نتيجة فحص، طلب قدرة، تسجيل قرار)، لا SELECT عام.
+2) **PostgreSQL roles مخصصة** بصلاحيات جدول/عمود دقيقة، تُستدعى عبر Broker.
+3) **Backend broker مستقل** يحمل الاعتماد ويصدر قدرات معنونة بالكائن (object-scoped, purpose-bound, tenant-bound, TTL قصير).
+4) **service-specific credentials** لخدمات خارج Supabase (الماسحات) بلا أي اعتماد Supabase.
+النتيجة المستهدفة: اختراق OCR ≠ قراءة كل المستندات · اختراق Release ≠ حذف Buckets · اختراق بوابة العميل ≠ تجاوز RLS على مستوى المنصة.
+
+## 9. FILE SECURITY BROKER
+Scanner Worker: بلا service role، بلا DB، بلا وصول واسع للتخزين — يتلقى بايتات ملف واحد عبر قدرة قراءة لحظية ويعيد نتيجة موقّعة.
+Decision Engine و Evidence Verifier: لا وصول لبايتات خام إطلاقاً (أدلة موقّعة فقط).
+Release: لا يملك اعتماد تخزين رئيسي، فقط قدرة معنونة بالكائن. كل وصول: purpose-bound + file-bound + tenant-bound + short-lived + مسجَّل.
+
+## 10. QUARANTINE — ترقية المعيار
+| خيار | Immutability | التعقيد | الحكم |
+|---|---|---|---|
+| A) Supabase + application-enforced | ضعيف (لا Object Lock/Versioning مُثبت) | منخفض | مرحلي فقط |
+| B) تخزين كائنات سعودي بـ Object Lock/WORM/Versioning | قوي (منع الكتابة على مستوى المخزن) | مرتفع | **موصى به للحجر** |
+| C) مخزن حجر مخصص منفصل عن التخزين النهائي | متوسط–قوي حسب المزود | متوسط | إلزامي كبنية بأي خيار |
+التوصية: **B + C** — حجر منفصل على مخزن يدعم Object Lock أصلياً. NATIVE_IMMUTABILITY_REQUIRED = YES (لا تخفيض للمعيار؛ إن تعذّر عملياً يبقى الضابط DISABLED لا "مخفَّض صامتاً").
+
+## 11. UPLOAD_SLOT — رمز المزود ليس جذر ثقة
+`upload_slots`: `slot_id`, `organization_id`, `actor_ref`, `object_key`, `nonce`, `max_bytes`, `allowed_type_policy`, `expected_constraints`, `created_at`, `expires_at`, `consumed_at`.
+الاستهلاك ATOMIC SINGLE CONSUMPTION (UPDATE شرطي على `consumed_at IS NULL` داخل دالة محصورة). رمز المزود = Transport Capability فقط؛ Mehla Slot = Security Authorization. أي كائن يظهر في الحجر بلا Slot مطابق = يُصنَّف ORPHAN ولا يُفرَج عنه أبداً.
+
+## 12. STOLEN_UPLOAD_CAPABILITY_THREAT_MODEL
+بسرقة القدرة، يجب أن يستحيل: تغيير المستأجر (مثبت في الـSlot) · تغيير الكائن (`object_key` مثبت) · الرفع أكثر من مرة (استهلاك ذري) · نقل الملف إلى `released` (يتطلب 2-of-2) · الاستخدام بعد `expires_at` · إنشاء صف `documents` ثانٍ (فهرس فريد على object_key + ربط Slot واحد لصف واحد). كل محاولة تُسجَّل وتُرفع كحادث عند التكرار.
+
+## 13. PUBLIC MEDIA — مسار الإثبات
+سلسلة يجب تتبعها بالكامل: إنشاء المسودة → عمليات إدارية (`office-page.ops.server.ts`) → نسخ/رفع (download+upload، لا `.copy`) → النشر (لقطة منشورة) → التقديم العام (`routes/api/public/office/media/$.ts` → `office-public.server.ts:readPublishedMedia`) → الاستبدال/الحذف/التنظيف. الهدف: UNKNOWN_PUBLIC_MEDIA_WRITE_PATHS = 0 مع دليل سطري لكل حلقة. حالياً PUBLIC_MEDIA_WRITE_PATH_COVERAGE = NOT_PROVEN.
+
+## 14–17. نقاط الدخول الجديدة كمواطنين كاملين
+- **EP-08 HR**: لا استثناء — يدخل الحجر والفحص والقرار والإفراج والمعاينة والقديم وحرّاس CI وQA العدائي.
+- **EP-09 email-inbound**: `EXTERNAL_UNTRUSTED_SOURCE` — أعلى Baseline (Structural + AV-A + AV-B + YARA + Dynamic حيث تنطبق السياسة + CDR + rescan + release).
+- **EP-10 background worker**: Entrypoint وProcessor معاً. يجب إثبات: من يُنشئ Job، حالات الملف المقبولة، هل يعالج AVAILABLE مباشرة (المؤشر الحالي: نعم — INFERRED)، الاعتماد المستخدم، البيانات الخارجة. الهدف: BACKGROUND_PROCESSOR_BEFORE_RELEASE = 0.
+- **EP-11 cron cleanup**: صلاحية حذف محصورة بـ eligible expired artifacts فقط؛ يستحيل حذف أدلة مُفرَجة أو سجل تدقيق أمني أو ملفات نشطة لمستأجر آخر أو خزنة الأدلة.
+
+## 18. AI_OCR_EXTERNAL_DATA_FLOW_RISK
+OBSERVED_IN_CODE: `ocr.server.ts` يرسل بايتات صفحة/صورة بترميز base64 إلى `ai.gateway.lovable.dev` بمفتاح `LOVABLE_API_KEY`؛ `ai/bayan-*.server.ts` يرسل نصاً مستخرجاً من المستندات. المحتوى قد يشمل مستندات قانونية وبيانات هوية داخل الصور/النص.
+المخاطر: خروج بيانات قانونية حساسة إلى معالجة خارج المملكة (سيادة البيانات)، غياب تصنيف/تنقيح قبل الإرسال، غياب موافقة صريحة على مستوى المكتب، واحتمال احتفاظ المزود بالمحتوى (غير مُثبت).
+الحكم: AI_OCR_EXTERNAL_DATA_FLOW_RISK = HIGH — يتطلب قراراً معمارياً منفصلاً (معالجة داخلية/سعودية، أو تنقيح مسبق، أو موافقة مكتب صريحة + سجل خروج بيانات). لا تغيير الآن.
+
+## 19–20. P0 — ISOLATED FILE SECURITY VALIDATION ENVIRONMENT (تصميم فقط)
+مشروع/تخزين منفصل، أسرار منفصلة، Buckets منفصلة، بيانات صناعية فقط، بلا أي مستند إنتاجي وبلا service role إنتاجي. تُستخدم لإثبات: إعادة استخدام رمز الرفع، TTL، الرفع المتزامن، الكتابة الفوقية، سياسات التخزين، دلالات الحجر، RLS، آلة الحالة، اختبارات الفشل.
+Invariant: SECURITY_DESTRUCTIVE_TESTS_ON_PRODUCTION = 0 — كل اختبارات overwrite/replay/EICAR/fuzzing/bombs/scanner-compromise في Lab/Staging فقط، ثم Canary منضبط.
+
+## 21. REVISED IMPLEMENTATION ORDER
+S0 → S0.5 → **ACR-01** → **P0 (Security Lab)** → S1 → S2 … S30. لا S1 قبل اعتماد ACR-01 وتصميم P0.
+
+## 23. CRITICAL FINDINGS REGISTER
+| ID | الوصف | الدليل | سيناريو الهجوم | نطاق الأثر | الضابط المعماري | مرحلة التنفيذ | التحقق | الحالة |
+|---|---|---|---|---|---|---|---|---|
+| CF-01 | لا حجر — الرفع إلى التخزين النهائي مباشرة | OBSERVED_IN_CODE `intake.server.ts` | ملف خبيث يصبح متاحاً فوراً | كل المستندات | Immutable Quarantine | S3, S4 | Lab | OPEN |
+| CF-02 | معالجة بايتات خام قبل الإفراج الأمني | OBSERVED_IN_CODE `verifyUploadedObject`, `ocr`, `secure-view` | استغلال Parser داخل التطبيق | التطبيق الرئيسي | Zone H + عمّال معزولون | S5, S6 | Fuzz/Chaos | OPEN |
+| CF-03 | نشر وسائط عامة بلا بوابة إفراج | OBSERVED_IN_CODE `office-page.server.ts` | استضافة محتوى خبيث عام | سمعة + زوار | فحص+CDR قبل النشر | S23 | Lab | OPEN |
+| CF-04 | تجاوز AI/OCR للحالة الأمنية + خروج بيانات خارجي | OBSERVED_IN_CODE `ocr.server.ts` | ملف غير مفحوص يُعالَج/يخرج | خصوصية قانونية | بوابة حالة + قرار سيادة بيانات | S5, S12, قرار مستقل | مراجعة تدفق | OPEN |
+| CF-05 | تحديث مباشر للحالة بلا آلة حالة | OBSERVED_IN_CODE (لا أعمدة حالة أمنية) | ترقية حالة إلى released | كل الملفات | Trigger + SECURITY DEFINER | S2 | مصفوفة انتقالات | OPEN |
+| CF-06 | جذر ثقة واحد لمفتاح الخدمة، نطاق أثر كامل | OBSERVED_IN_CODE 60+ وحدة | اختراق وحدة = كل المستندات | كل المستأجرين | Service Identity Separation + Broker | ACR-01-IMPL, S18 | مراجعة صلاحيات | OPEN |
+| CF-07 | اقتران أسرار + fallback غير آمن | OBSERVED_IN_CODE `contracts:74`, `portal-auth:14`, `otp:119` | تزوير تذاكر/توكنات عند معرفة قيمة الرجوع | عقود + بوابة عميل + PII | فصل مجالات + FAIL_CLOSED | ACR-01-IMPL | حارس CI | OPEN |
+| CF-08 | دلالات قدرة الرفع (TTL/replay/one-time) غير مُثبتة | NOT_PROVEN | إعادة استخدام قدرة مسروقة | رفع غير مصرّح | UPLOAD_SLOT + استهلاك ذري | S4 | P0 Lab | OPEN |
+| CF-09 | immutability التخزين غير مُثبتة | NOT_PROVEN | استبدال ملف بعد الفحص (TOCTOU) | سلامة الأدلة | Object Lock أصلي (خيار B+C) | S3 | P0 Lab | OPEN |
+| CF-10 | مسارات كتابة الوسائط العامة غير مُثبتة | NOT_PROVEN | مسار كتابة غير مدرَج | وسائط عامة | جرد كامل + حارس CI | S0 إغلاق, S23 | تتبع سطري | OPEN |
+| CF-11 (جديد) | AI/OCR data egress خارج المملكة بلا تصنيف/موافقة | OBSERVED_IN_CODE | كشف مستند قانوني لجهة خارجية | سيادة بيانات | قرار معالجة داخلية/تنقيح/موافقة | قرار مستقل قبل S12 | مراجعة تدفق | OPEN |
+| CF-12 (جديد) | Background worker يعالج ملفات بحالة AVAILABLE بلا بوابة | INFERRED | معالجة ملف خبيث تلقائياً | معالجة خادمية | BACKGROUND_PROCESSOR_BEFORE_RELEASE = 0 | S5, S15 | Lab | OPEN |
+| CF-13 (جديد) | cron cleanup بصلاحية حذف واسعة بلا governance | OBSERVED_IN_CODE `cleanup-secure-artifacts.ts` | حذف أدلة/سجلات | أدلة وتدقيق | صلاحية محصورة بالمؤهل للانتهاء | S20, S24 | اختبار صلاحيات | OPEN |
+
+## 25. الناتج
+FILE_OPERATION_SEARCH_COVERAGE = NOT_PROVEN
+CALL_GRAPH_COVERAGE = NOT_PROVEN (2/11 مكتمل)
+PUBLIC_MEDIA_WRITE_PATH_COVERAGE = NOT_PROVEN
+S0_ENTRYPOINT_COVERAGE = NOT_PROVEN (تصحيح لتناقض S0.5)
+S0_FINAL_STATUS = NOT_PROVEN
+SERVICE_ROLE_BLAST_RADIUS = FULL
+SECRET_COUPLING_STATUS = CRITICAL — COUPLED
+INSECURE_SECRET_FALLBACKS_PRESENT = YES (3 مواقع)
+ROOT_OF_TRUST_SEPARATION_DESIGNED = YES
+SIGNED_UPLOAD_SECURITY_MODEL_DESIGNED = YES (UPLOAD_SLOT)
+NATIVE_IMMUTABILITY_REQUIRED = YES (الخيار الموصى به B + C)
+NON_PRODUCTION_SECURITY_LAB_DESIGNED = YES (P0)
+NEW_CRITICAL_FINDINGS = CF-11, CF-12, CF-13
+UNRESOLVED_CRITICAL_DESIGN_GAPS = إغلاق أدلة S0 (بنود 2/3/13)، توفر Object Lock في بنية سعودية، دلالات قدرة الرفع، سيادة بيانات AI/OCR، آلية فصل هوية الخدمات على Supabase
+BASE_ARCHITECTURE_V5 = FROZEN
+ACR_01_STATUS = READY_FOR_REVIEW
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR ACR-01 SECURITY REVIEW
