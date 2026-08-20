@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { FILE_SECURITY_LIMITS } from "@/lib/file-security/policy";
+
+/** مجلد المكتب في المخزن يجب أن يكون معرّف مكتب حقيقياً. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Retention / janitor pass for the secure document pipeline.
@@ -110,34 +114,63 @@ async function purgeTmpRenders(): Promise<number> {
   return stale.length ? removePaths(stale) : 0;
 }
 
-/** Deletes client-upload objects that never got a `documents` row. */
+/**
+ * Deletes client-upload objects that never got a `documents` row.
+ *
+ * CF-20 fix: the pass is scoped **per organization**. A folder is only touched
+ * when it maps to a real `organizations.id`, every candidate path must literally
+ * live under `<org>/client-uploads/`, the reference lookup is filtered by that
+ * same organization, and any lookup failure aborts the org (never deletes).
+ * A hard per-org ceiling caps the blast radius of a single pass.
+ */
 async function purgeOrphanUploads(): Promise<number> {
   const cutoff = hoursAgo(ORPHAN_UPLOAD_RETENTION_HOURS).getTime();
-  const orgFolders = (await listFolder("")).filter((entry) => !entry.id);
+  const folders = (await listFolder("")).filter((entry) => !entry.id);
+  const folderNames = folders.map((entry) => entry.name).filter((name) => UUID.test(name));
+  if (!folderNames.length) return 0;
 
-  const candidates: string[] = [];
-  for (const org of orgFolders) {
-    const files = await walkFiles(`${org.name}/client-uploads`, 2);
-    for (const file of files) {
-      if (file.created_at && new Date(file.created_at).getTime() >= cutoff) continue;
-      candidates.push(file.name);
-    }
-  }
-  if (!candidates.length) return 0;
-
-  const referenced = new Set<string>();
-  for (let i = 0; i < candidates.length; i += REMOVE_CHUNK) {
-    const chunk = candidates.slice(i, i + REMOVE_CHUNK);
-    const { data, error } = await supabaseAdmin
-      .from("documents")
-      .select("file_path")
-      .in("file_path", chunk);
+  // مجلد لا يقابل مكتباً حقيقياً لا يُحذف منه شيء إطلاقاً.
+  const knownOrgs = new Set<string>();
+  for (let i = 0; i < folderNames.length; i += REMOVE_CHUNK) {
+    const chunk = folderNames.slice(i, i + REMOVE_CHUNK);
+    const { data, error } = await supabaseAdmin.from("organizations").select("id").in("id", chunk);
     if (error) throw new Error(error.message);
-    data?.forEach((row) => referenced.add(row.file_path));
+    data?.forEach((row) => knownOrgs.add(row.id));
   }
 
-  const orphans = candidates.filter((path) => !referenced.has(path));
-  return orphans.length ? removePaths(orphans) : 0;
+  let removed = 0;
+  for (const organizationId of knownOrgs) {
+    const prefix = `${organizationId}/client-uploads`;
+    const files = await walkFiles(prefix, 2);
+    const candidates = files
+      .map((file) => file)
+      .filter((file) => file.name.startsWith(`${prefix}/`))
+      .filter((file) => !file.created_at || new Date(file.created_at).getTime() < cutoff)
+      .map((file) => file.name)
+      .slice(0, FILE_SECURITY_LIMITS.cleanupMaxObjectsPerOrg);
+    if (!candidates.length) continue;
+
+    // المراجع تُقرأ داخل نطاق المكتب نفسه فقط: مسار مملوك لمكتب آخر لا يُعد
+    // يتيماً هنا، ولا يمكن لهذا المرور أن يمسّ كائنات مكتب آخر.
+    const referenced = new Set<string>();
+    for (let i = 0; i < candidates.length; i += REMOVE_CHUNK) {
+      const chunk = candidates.slice(i, i + REMOVE_CHUNK);
+      const { data, error } = await supabaseAdmin
+        .from("documents")
+        .select("file_path")
+        .eq("organization_id", organizationId)
+        .in("file_path", chunk);
+      // فشل القراءة = لا حذف لهذا المكتب (Fail-Closed).
+      if (error) throw new Error(error.message);
+      data?.forEach((row) => referenced.add(row.file_path));
+    }
+
+    const orphans = candidates.filter(
+      (path) => !referenced.has(path) && path.startsWith(`${organizationId}/client-uploads/`),
+    );
+    if (orphans.length) removed += await removePaths(orphans);
+  }
+  return removed;
 }
 
 export async function runSecureArtifactCleanup(): Promise<CleanupReport> {

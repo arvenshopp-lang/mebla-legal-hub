@@ -280,7 +280,12 @@ export async function signedAttachmentUrl(
     is_quarantined: boolean;
   } | null;
   if (!row) throw new Error("المرفق غير موجود.");
-  if (row.is_quarantined) throw new Error("هذا المرفق محجور ولا يمكن تنزيله.");
+  // البوابة المركزية للمرفقات: تُمنع النسخ المحجورة أو التي لم تجتز التحقق
+  // البنيوي أو التي لا تحمل بصمة محتوى مسجّلة.
+  const { assertAttachmentReleasable } = await import(
+    "@/lib/file-security/release-gate.server"
+  );
+  await assertAttachmentReleasable(db as never, attachmentId);
 
   const signed = await db.storage
     .from(ATTACHMENT_BUCKET)
@@ -354,8 +359,17 @@ export async function buildAttachmentSection(
   const rows = await listAttachments(db, messageId);
   if (rows.length === 0) return { html: "", text: "", count: 0 };
 
+  const { assertAttachmentReleasable } = await import(
+    "@/lib/file-security/release-gate.server"
+  );
   const links: { name: string; url: string }[] = [];
   for (const row of rows) {
+    // لا يُدرج أي رابط تنزيل في رسالة صادرة قبل عبور بوابة الإفراج.
+    try {
+      await assertAttachmentReleasable(db as never, row.id);
+    } catch {
+      continue;
+    }
     const signed = await db.storage
       .from(ATTACHMENT_BUCKET)
       .createSignedUrl(row.storage_path, ttlSeconds, { download: row.file_name });
