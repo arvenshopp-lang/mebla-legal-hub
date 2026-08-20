@@ -131,13 +131,14 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       mime: string;
       size: number;
       sha256: string;
+      scan: Awaited<ReturnType<typeof verifyUploadedObject>>["scan"];
     }[] = [];
     try {
       for (const f of data.files) {
         const v = await verifyUploadedObject({ path: f.path, prefix, fileName: f.name });
         // منع إعادة استخدام مسار مرفوع سابقاً لإنشاء سجل مستند إضافي.
         await assertPathNotLinked(f.path);
-        verified.push({ file: f, mime: v.mime, size: v.size, sha256: v.sha256 });
+        verified.push({ file: f, mime: v.mime, size: v.size, sha256: v.sha256, scan: v.scan });
       }
     } catch (cause) {
       // تنظيف باقي كائنات هذه الدفعة حتى لا تبقى ملفات يتيمة.
@@ -193,6 +194,7 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
         declaredMime: match.mime,
         detectedMime: match.mime,
         actorId: null,
+        scan: match.scan,
       });
     }
 
