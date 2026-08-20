@@ -610,10 +610,13 @@ export function FormField({
       <span className="text-label mb-1.5 block text-foreground">
         {label}
         {required && (
-          <span className="text-danger" aria-hidden>
-            {" "}
-            *
-          </span>
+          <>
+            <span className="font-bold text-danger" aria-hidden>
+              {" "}
+              *
+            </span>
+            <span className="sr-only"> (حقل إلزامي)</span>
+          </>
         )}
         {!required && optional && <span className="font-normal text-text-muted"> (اختياري)</span>}
       </span>
