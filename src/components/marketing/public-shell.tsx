@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Menu, X } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Menu, UserCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
+import { useAuth } from "@/hooks/use-auth";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
 const NAV = [
@@ -16,8 +17,12 @@ const NAV = [
 
 function PublicHeader() {
   const [open, setOpen] = useState(false);
+  const { user, profile } = useAuth();
   const loginHref = useSurfaceHref("/login");
   const registerHref = useSurfaceHref("/register");
+
+  const displayName =
+    profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0];
 
   return (
     <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border bg-surface/90 backdrop-blur">
@@ -43,20 +48,41 @@ function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <a
-            href={loginHref}
-            className="inline-flex h-10 items-center rounded-[var(--radius-m)] px-4 text-[13.5px] font-medium transition hover:bg-surface-muted"
-          >
-            تسجيل الدخول
-          </a>
-          <a
-            href={registerHref}
-            className="inline-flex h-10 items-center rounded-[var(--radius-m)] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground transition hover:bg-primary-hover"
-          >
-            إنشاء حساب
-          </a>
-        </div>
+        {user ? (
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <Link
+              to="/subscription"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 text-[12.5px] font-semibold text-primary transition hover:bg-primary/10"
+              title="إدارة الاشتراك"
+            >
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>{displayName}</span>
+            </Link>
+            <Link
+              to="/dashboard"
+              className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-m)] bg-primary px-4 text-[13.5px] font-bold text-primary-foreground shadow-xs transition hover:bg-primary-hover"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              لوحة التحكم
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        ) : (
+          <div className="hidden items-center gap-2 lg:flex">
+            <a
+              href={loginHref}
+              className="inline-flex h-10 items-center rounded-[var(--radius-m)] px-4 text-[13.5px] font-medium transition hover:bg-surface-muted"
+            >
+              تسجيل الدخول
+            </a>
+            <a
+              href={registerHref}
+              className="inline-flex h-10 items-center rounded-[var(--radius-m)] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground transition hover:bg-primary-hover"
+            >
+              إنشاء حساب
+            </a>
+          </div>
+        )}
 
         <button
           type="button"
@@ -82,20 +108,37 @@ function PublicHeader() {
                 {n.label}
               </Link>
             ))}
-            <div className="mt-3 grid gap-2">
-              <a
-                href={loginHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] border border-border text-[14px] font-medium"
-              >
-                تسجيل الدخول
-              </a>
-              <a
-                href={registerHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] bg-primary text-[14px] font-semibold text-primary-foreground"
-              >
-                إنشاء حساب
-              </a>
-            </div>
+            {user ? (
+              <div className="mt-3 grid gap-2">
+                <div className="flex items-center gap-2 rounded-[var(--radius-m)] bg-surface-muted p-2.5 text-[13px]">
+                  <UserCircle className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-foreground">{displayName}</span>
+                </div>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary text-[14px] font-bold text-primary-foreground"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  الانتقال إلى لوحة التحكم
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-3 grid gap-2">
+                <a
+                  href={loginHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] border border-border text-[14px] font-medium"
+                >
+                  تسجيل الدخول
+                </a>
+                <a
+                  href={registerHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-m)] bg-primary text-[14px] font-semibold text-primary-foreground"
+                >
+                  إنشاء حساب
+                </a>
+              </div>
+            )}
           </nav>
         </div>
       )}

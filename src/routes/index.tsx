@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, X, ArrowLeft, SearchCheck } from "lucide-react";
+import { Menu, X, ArrowLeft, SearchCheck, LayoutDashboard, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
 import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
@@ -141,6 +142,11 @@ type SurfaceLinks = { loginHref: string; registerHref: string; trackHref: string
 function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   const scrolled = useScrolled();
   const [open, setOpen] = useState(false);
+  const { user, profile } = useAuth();
+
+  const displayName =
+    profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0];
+
   return (
     <header
       className={cn(
@@ -174,18 +180,39 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
             متابعة القضية
           </a>
-          <a
-            href={loginHref}
-            className={headerBtn.tertiary}
-          >
-            تسجيل الدخول
-          </a>
-          <a
-            href={registerHref}
-            className={headerBtn.primary}
-          >
-            ابدأ الآن
-          </a>
+          {user ? (
+            <div className="flex items-center gap-2.5">
+              <Link
+                to="/subscription"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 text-[12.5px] font-semibold text-primary transition hover:bg-primary/10"
+              >
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>{displayName}</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                className={headerBtn.primary}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                لوحة التحكم
+              </Link>
+            </div>
+          ) : (
+            <>
+              <a
+                href={loginHref}
+                className={headerBtn.tertiary}
+              >
+                تسجيل الدخول
+              </a>
+              <a
+                href={registerHref}
+                className={headerBtn.primary}
+              >
+                ابدأ الآن
+              </a>
+            </>
+          )}
         </div>
 
         <button
@@ -219,18 +246,37 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
                 <SearchCheck className={cn(publicBtnIcon, "text-primary")} aria-hidden />
                 متابعة القضية
               </a>
-              <a
-                href={loginHref}
-                className={sheetBtn.tertiary}
-              >
-                تسجيل الدخول
-              </a>
-              <a
-                href={registerHref}
-                className={sheetBtn.primary}
-              >
-                ابدأ الآن
-              </a>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 rounded-[var(--radius-m)] bg-surface-muted p-2.5 text-[13px]">
+                    <UserCircle className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-foreground">{displayName}</span>
+                  </div>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className={sheetBtn.primary}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    الانتقال إلى لوحة التحكم
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <a
+                    href={loginHref}
+                    className={sheetBtn.tertiary}
+                  >
+                    تسجيل الدخول
+                  </a>
+                  <a
+                    href={registerHref}
+                    className={sheetBtn.primary}
+                  >
+                    ابدأ الآن
+                  </a>
+                </>
+              )}
             </div>
           </nav>
         </div>

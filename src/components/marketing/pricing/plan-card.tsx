@@ -1,10 +1,15 @@
-import { ArrowLeft, Check, Clock3, CreditCard, Minus, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, Clock3, CreditCard, Loader2, Minus, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Riyal } from "@/components/ui/riyal";
 import { cn } from "@/lib/utils";
 import { fmtNumber } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
+import { createSubscriptionMoyasarPayment } from "@/lib/subscription.functions";
 import {
   cycleSuffix,
   monthlyEquivalent,
@@ -30,8 +35,9 @@ export function PlanCard({
   registerHref: string;
   contactSlot?: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, activeOrgId } = useAuth();
   const { overview } = useSubscription();
+  const payFn = useServerFn(createSubscriptionMoyasarPayment);
 
   const isCurrentPlan = Boolean(user && overview && overview.plan.code === plan.code);
   const isUpgrade = Boolean(
@@ -40,6 +46,33 @@ export function PlanCard({
   const isDowngrade = Boolean(
     user && overview && !isCurrentPlan && !isUpgrade && plan.price_monthly <= (overview.plan.price_monthly ?? 0),
   );
+
+  const upgradeMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeOrgId) {
+        window.location.href = `/subscription?plan=${plan.code}`;
+        return;
+      }
+      return payFn({
+        data: {
+          organizationId: activeOrgId,
+          planCode: plan.code,
+          billingCycle: cycle,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      if (!result) return;
+      const data = result as { redirectUrl: string; planName: string };
+      toast.success(`تم تجهيز الدفع لباقة ${data.planName}. جاري التحويل لصفحة السداد…`);
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "تعذّر بدء عملية الدفع.");
+    },
+  });
 
   const features = planFeatureCells(plan);
   const limits = planLimitRows(plan);
@@ -114,13 +147,25 @@ export function PlanCard({
             <Check className="h-4 w-4" /> باقتك الحالية — إدارة الاشتراك
           </Link>
         ) : isUpgrade ? (
-          <Link
-            to="/subscription"
-            className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-bold text-primary-foreground shadow-sm transition hover:bg-primary-hover"
+          <button
+            type="button"
+            disabled={upgradeMutation.isPending}
+            onClick={() => upgradeMutation.mutate()}
+            className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-bold text-primary-foreground shadow-sm transition hover:bg-primary-hover disabled:opacity-70 cursor-pointer"
           >
-            <CreditCard className="h-4 w-4" /> ترقية إلى {plan.name_ar}{" "}
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-          </Link>
+            {upgradeMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>جاري التحويل لصفحة السداد…</span>
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-4 w-4" />
+                <span>ترقية إلى {plan.name_ar}</span>
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+              </>
+            )}
+          </button>
         ) : isDowngrade ? (
           <Link
             to="/subscription"
@@ -129,12 +174,24 @@ export function PlanCard({
             مشمولة في باقتك الحالية
           </Link>
         ) : (
-          <Link
-            to="/subscription"
-            className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted"
+          <button
+            type="button"
+            disabled={upgradeMutation.isPending}
+            onClick={() => upgradeMutation.mutate()}
+            className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] border border-border-strong px-5 text-[14px] font-semibold transition hover:bg-surface-muted cursor-pointer"
           >
-            اختيار الباقة <ArrowLeft className="h-4 w-4" aria-hidden />
-          </Link>
+            {upgradeMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>جاري التحضير…</span>
+              </>
+            ) : (
+              <>
+                <span>اختيار الباقة</span>
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+              </>
+            )}
+          </button>
         )
       ) : (
         <a
