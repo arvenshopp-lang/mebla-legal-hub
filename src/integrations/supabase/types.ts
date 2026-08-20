@@ -2380,6 +2380,135 @@ export type Database = {
           },
         ]
       }
+      document_security_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          correlation_id: string | null
+          created_at: string
+          document_id: string | null
+          from_state:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+          id: string
+          metadata: Json
+          organization_id: string | null
+          purpose: string | null
+          reason: string | null
+          result: string
+          sha256: string | null
+          to_state:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          from_state?:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          purpose?: string | null
+          reason?: string | null
+          result: string
+          sha256?: string | null
+          to_state?:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          from_state?:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          purpose?: string | null
+          reason?: string | null
+          result?: string
+          sha256?: string | null
+          to_state?:
+            | Database["public"]["Enums"]["document_security_state_kind"]
+            | null
+        }
+        Relationships: []
+      }
+      document_security_state: {
+        Row: {
+          bytes: number | null
+          correlation_id: string | null
+          created_at: string
+          decided_at: string | null
+          decision_id: string | null
+          declared_mime: string | null
+          detected_mime: string | null
+          document_id: string
+          organization_id: string
+          reason: string | null
+          scan_attempts: number
+          sha256: string | null
+          state: Database["public"]["Enums"]["document_security_state_kind"]
+          updated_at: string
+        }
+        Insert: {
+          bytes?: number | null
+          correlation_id?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_id?: string | null
+          declared_mime?: string | null
+          detected_mime?: string | null
+          document_id: string
+          organization_id: string
+          reason?: string | null
+          scan_attempts?: number
+          sha256?: string | null
+          state?: Database["public"]["Enums"]["document_security_state_kind"]
+          updated_at?: string
+        }
+        Update: {
+          bytes?: number | null
+          correlation_id?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_id?: string | null
+          declared_mime?: string | null
+          detected_mime?: string | null
+          document_id?: string
+          organization_id?: string
+          reason?: string | null
+          scan_attempts?: number
+          sha256?: string | null
+          state?: Database["public"]["Enums"]["document_security_state_kind"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_security_state_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_security_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           case_id: string | null
@@ -10522,6 +10651,15 @@ export type Database = {
         | "indexing"
         | "completed"
         | "failed"
+      document_security_state_kind:
+        | "uploaded"
+        | "quarantined"
+        | "scanning"
+        | "clean"
+        | "malicious"
+        | "unscannable"
+        | "failed"
+        | "released"
       hearing_status:
         | "scheduled"
         | "completed"
@@ -10780,6 +10918,16 @@ export const Constants = {
         "indexing",
         "completed",
         "failed",
+      ],
+      document_security_state_kind: [
+        "uploaded",
+        "quarantined",
+        "scanning",
+        "clean",
+        "malicious",
+        "unscannable",
+        "failed",
+        "released",
       ],
       hearing_status: [
         "scheduled",
