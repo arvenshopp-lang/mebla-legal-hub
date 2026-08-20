@@ -560,3 +560,83 @@ CANONICAL_PLAN_READY_FOR_FINAL_REVIEW = YES
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR FINAL PRE-IMPLEMENTATION SECURITY REVIEW
+
+---
+
+# ACR-01 R4 — FINAL PRE-IMPLEMENTATION SECURITY GATE (ملحق للوثيقة الموحدة)
+
+لا تنفيذ/Migration/P0/تخزين/أسرار/نشر.
+
+## 1–2. FINAL_STORAGE_INTEGRITY_MODEL
+التخزين النهائي content-addressed: مفتاح الكائن يشتق من `sha256` (+ مساحة مستأجر)، بلا كتابة فوقية في المكان، مع ربط version/generation حيث يدعمه المزود. كل قرار أمني يشير إلى: الكائن بعينه + الإصدار/الجيل + sha256 + المستأجر + إصدار السياسة. أي محتوى جديد = كائن/إصدار جديد ⇒ سياق أمني جديد ⇒ قرار جديد. تغيّر الجيل/الإصدار بعد القرار ⇒ NO DELIVERY. `PREVIOUSLY_RELEASED = TRUSTED FOREVER` مرفوض صراحةً.
+الحماية المطلوبة: content-addressed append-only + version-bound no-overwrite كحدّ أدنى إلزامي، وimmutability أصلية مفضّلة عند توفرها. الهدف POST_RELEASE_OBJECT_REPLACEMENT_WITHOUT_RESCAN = 0.
+
+## 3. DELIVERY_INTEGRITY_VERIFICATION_MODEL
+ممنوع بثّ البايتات ثم كشف عدم تطابق البصمة. القاعدة: التحقق قبل البث، وبأرخص إثبات كافٍ:
+- المسار السريع (الافتراضي): تطابق version/generation + immutability المُثبتة ⇒ لا حاجة لإعادة قراءة كاملة لكل تنزيل.
+- إعادة حساب كامل قبل البث: عند غياب ربط الإصدار، أو أول إفراج، أو بعد أي إعادة تصنيف، أو عند تغيّر الوسم/الحجم، أو عيّنة عشوائية دورية.
+- ملفات كبيرة: تحقق تدريجي بشجرة بصمات (Merkle) محسوبة عند SEALED، فيُتحقق من كل مقطع قبل إرساله بلا تحميل كامل مسبق.
+هذا يوازن الأمن والزمن ويمنع SELF_INDUCED_HASHING_DOS.
+
+## 4–5. SIGNED POLICY REGISTRY + MONOTONIC FLOOR
+سجل سياسات موقّع خارج سلطة قاعدة البيانات: حزمة سياسة موقّعة بـKMS تحمل policy id · version · minimum accepted version · signature · not-before · status. كل من Decision/Evidence/Release/Policy Verifier يتحقق من التوقيع لا من صف قابل للتعديل. اختراق DB وحده لا يخفّض السقف.
+MONOTONIC_SECURITY_POLICY_FLOOR: الحد الأدنى لا يتراجع أبداً؛ أي تراجع شرعي يتطلب إجراء طوارئ صريحاً + موافقة ثنائية + تفويض تراجع موقّع + سبب + تدقيق. ممنوع إعادة استخدام رقم إصدار بعد تغيّر المحتوى.
+
+## 6–7. SIGNING_KEY_TRUST_REGISTRY_MODEL
+مصدر الحقيقة لحالة المفاتيح = حالة KMS + بيانات ثقة موقّعة، لا صفوف DB. لكل مفتاح: kid · not-before · not-after · status (active/retired/revoked). اختراق DB لا يُعيد صلاحية مفتاح مُبطَل.
+الانتشار: كل متحقق يجلب سجل الثقة بفاصل قصير محدد بالسياسة، مع Cache TTL قصير و`stale-if-error` **ممنوع** للعمليات الحرجة: إن تعذّر معرفة حالة المفتاح أو تجاوز السجل عمره الأقصى ⇒ FAIL CLOSED (لا إفراج، لا قبول توقيع). الإبطال الطارئ يُدفع فوراً لكل المتحققين ويُسجَّل كحادث.
+
+## 8–10. CI/CD تقسية إضافية
+شهادتا أثر مستقلتان: Decision artifact attestation وEvidence artifact attestation بسلطتي توقيع/اعتماد منفصلتين؛ الـAdmission لا يشغّل أي أثر أمني لا يحقق سياسة النشر (توقيع + provenance + digest مثبت). موافقة شخصين + توقيع أثر مستقل + تحقق provenance + فصل هوية النشر.
+Invariant: ONE_DEPLOYMENT_CREDENTIAL_CAN_MODIFY_BOTH_DECISION_AND_EVIDENCE = 0. إن لم تدعم البنية ذلك ⇒ UNPROVEN_INFRASTRUCTURE_ASSUMPTION، ولا يُدّعى تقليل الفشل المشترك كاملاً.
+كل أثر أمني (Decision · Evidence · Release · Scan Broker) مرتبط بـ: commit المصدر · قفل التبعيات · هوية الباني · طابع البناء · SBOM · provenance · digest · توقيع. أثر لا يُرجَع لمصدر معروف ⇒ DENY DEPLOYMENT.
+
+## 11–12. DNS و PREVIEW_ORIGIN_COMPROMISE_MODEL
+DNS: MFA على المُسجِّل · قفل النطاق · DNSSEC إن دعمه المزود والنطاق · سجل CAA · مدير DNS منفصل · تنبيهات التغيير · شهادات wildcard إلى أدنى حد · مراقبة CT. HSTS وحدها لا تحمي من اختراق DNS.
+أصل المعاينة: **لا كوكيز تطبيق ولا كوكيز جلسة عليه أبداً** · كوكيز host-only + SameSite=Strict على أصل التطبيق · لا wildcard domain للكوكيز · CORS بقائمة أصول صريحة · CORP/COEP · CSP صارمة بلا سكربت خارجي · `postMessage` بأصل هدف محدد وتحقق من المُرسِل · `rel=noopener` ومنع `window.opener` · `Referrer-Policy: no-referrer` · `nosniff` + Content-Type صارم. اختراق نطاق المعاينة لا يمنح: كوكيز جلسة، اعتماد API، اعتماد DB، سلطة على الملف الأصلي، وصولاً عبر المستأجرين.
+
+## 13. سياسة تدهور التدقيق (تفريق صريح)
+AUDIT INTEGRITY FAILURE (عدم تطابق بصمة/توقيع، أحداث مفقودة، فجوة تسلسل) ⇒ **IMMEDIATE RELEASE FREEZE** + حادث. AUDIT VERIFIER AVAILABILITY FAILURE ⇒ نافذة سماح محددة بالسياسة مع تنبيه، وبعد انتهائها RELEASE FREEZE. لا خلط بين الحالتين ولا فشل صامت.
+
+## 14. ADMINISTRATIVE COMMON-MODE TEST (لـP0 لاحقاً)
+اختبار: هل حساب إداري واحد يستطيع تعديل Decision + تعديل Evidence + تغيير سياسات KMS + تعطيل التدقيق + تعديل الاحتفاظ + نشر الخدمتين؟ المتوقع في الوضع النهائي: NO إلا عبر مسار break-glass مُدقَّق.
+
+## 15–20. حالة الأدلة (بصدق، بلا تخمين)
+- CALL GRAPH 11/11: لم يُنجَز في هذه البوابة. المكتمل 2/11 (EP-01, EP-02). السبب ليس نقص صلاحية بل أن الإغلاق يتطلب قراءة سطرية موسّعة لعشرات الملفات لم تُنفَّذ هنا ⇒ **NOT_PROVEN (PENDING_READ_ONLY_ANALYSIS)**، وهي أول مهمة قبل أي موافقة تنفيذ.
+- FILE OPERATION INVENTORY: بحث نصي واسع مُنفَّذ (upload/download/copy/move/remove/signed/public/buffer/formdata) وأنتج قائمة السطح في §2 من ACR-01؛ Wrappers والاستيرادات المُسمّاة غير مغطاة ⇒ NOT_PROVEN. `AST_GUARDRAIL = FUTURE_IMPLEMENTATION` (لا يُنشأ الآن لأنه تغيير كود).
+- PUBLIC MEDIA: السلسلة معروفة بالملفات (`office-page.server.ts` → `office-page.ops.server.ts` → نشر → `office-public.server.ts:readPublishedMedia` → `routes/api/public/office/media/$.ts`) لكن التتبع السطري للاستبدال/الحذف/التنظيف لم يُنجَز ⇒ NOT_PROVEN.
+- BACKGROUND WORKER (EP-10): كل البنود (مسار إنشاء الوظيفة، الحالات المقبولة، التفويض، فحص المستأجر، الاعتماد، الوصول للتخزين، المعالجة الخام، جهة الشبكة، البيانات الخارجة) = **NOT_PROVEN**. CF-12 يبقى NOT_PROVEN بلا ترقية.
+- CRON CLEANUP (EP-11): المُثبت OBSERVED_IN_CODE: نقطة الدخول `routes/api/public/hooks/cleanup-secure-artifacts.ts` محمية بـ`guardCronRequest` (سرّ cron خاص) وتنادي `runSecureArtifactCleanup` في `secure-view/cleanup.server.ts` عبر heartbeat؛ الوصف الوظيفي: تنظيف تذاكر العلامة المائية المنتهية وآثارها المؤقتة. أما الجداول والBuckets وعمليات الحذف الفعلية ومعايير الأهلية وفحوص المستأجر/الزمن وقدرة حذف كائنات نشطة أو أدلة/تدقيق ⇒ **NOT_PROVEN** (يتطلب قراءة `cleanup.server.ts` سطرياً). CURRENT_CLEANUP_BLAST_RADIUS = NOT_PROVEN.
+- BUCKET POLICY EVIDENCE: لم تُنفَّذ قراءات DB/Storage metadata في هذه البوابة (خارج نطاق المراجعة التصميمية المصرّح بها) ⇒ **BLOCKED_BY_SCOPE** لكل من documents / email-attachments / office-media-draft / office-public-media. لا تخمين.
+
+## 21–23. ثوابت باقية
+جدول TARGET vs CURRENT (§36 من الوثيقة الموحدة) يبقى دائماً حتى بعد التجميد.
+قرارات البنية تبقى شرطية: OCI Riyadh = STRONG_CANDIDATE (ليست SELECTED/VERIFIED) حتى إثبات retention الكائنات، Vault/KMS، فصل IAM، الشبكة الخاصة، السجلات، عزل الحوسبة، السعة، والتوفر التجاري للمستأجر. وكذلك MicroVM وKMS ومجالا النشر المنفصلان.
+AI_DATA_GOVERNANCE_GATE: تمكين OCR/AI على ملفات قانونية مُفرَجة يشترط إحدى الحالات: APPROVED_PROVIDER · SAUDI_PROCESSING · TENANT_OPT_IN، وإلا FEATURE_DISABLED. قرار الإقامة لا يعيق تصميم خط الحماية من البرمجيات الخبيثة.
+
+## الناتج
+S0_CALL_GRAPH_COVERAGE = 2/11 — NOT_PROVEN (PENDING_READ_ONLY_ANALYSIS)
+S0_FILE_OPERATION_COVERAGE = NOT_PROVEN (AST_GUARDRAIL = FUTURE_IMPLEMENTATION)
+S0_PUBLIC_MEDIA_COVERAGE = NOT_PROVEN
+BACKGROUND_WORKER_EVIDENCE = NOT_PROVEN
+CRON_CLEANUP_EVIDENCE = جزئي — نقطة الدخول والحماية OBSERVED_IN_CODE · نطاق الحذف NOT_PROVEN
+BUCKET_POLICY_EVIDENCE = BLOCKED_BY_SCOPE
+FINAL_STORAGE_INTEGRITY_MODEL_DESIGNED = YES
+POST_RELEASE_OBJECT_REPLACEMENT_PROTECTED = DESIGNED (TARGET = 0 · CURRENT = غير محمي)
+POLICY_ROLLBACK_PROTECTION_DESIGNED = YES
+SIGNED_POLICY_REGISTRY_DESIGNED = YES
+SIGNING_KEY_TRUST_REGISTRY_DESIGNED = YES
+KEY_REVOCATION_PROPAGATION_DESIGNED = YES (FAIL CLOSED عند سجل قديم/غير متاح)
+CI_CD_TWO_DOMAIN_DEPLOYMENT_DESIGNED = YES (مشروط بدعم البنية ⇒ UNPROVEN_INFRASTRUCTURE_ASSUMPTION)
+PREVIEW_ORIGIN_COMPROMISE_CONTAINED = DESIGNED
+AUDIT_INTEGRITY_FAIL_CLOSED_DESIGNED = YES (تجميد فوري للإفراج عند فشل السلامة · نافذة سماح للتوفر فقط)
+UNRESOLVED_CRITICAL_DESIGN_GAPS = دعم البنية لمجالي نشر منفصلين · توفر KMS/Vault وMicroVM وObject retention في الرياض · نموذج هوية Supabase غير مُثبت · قياس نافذة القفل الأمني · بوابة حكامة بيانات AI/OCR
+UNRESOLVED_CRITICAL_EVIDENCE_GAPS = 9/11 Call Graphs · جرد عمليات الملفات · مسارات كتابة الوسائط العامة · وظائف الخلفية · نطاق حذف الـcron · سلوك الرفع الموقّع · immutability التخزين · سجل مزود AI/OCR
+BLOCKED_BY_ACCESS = سياسات Buckets وبيانات التخزين الوصفية (BLOCKED_BY_SCOPE في هذه البوابة) · إثبات قدرات مزود البنية السعودية (يتطلب حساباً/عقداً)
+CANONICAL_PLAN_CONFLICTS = 0
+BASE_ARCHITECTURE_V5 = FROZEN
+ACR_01_R4_STATUS = DESIGN_CLOSED · EVIDENCE_OPEN
+CANONICAL_PLAN_FINAL_STATUS = FREEZE_CANDIDATE — التصميم مغلق، والتجميد النهائي مشروط بإغلاق فجوات أدلة S0
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR FINAL IMPLEMENTATION DECISION
