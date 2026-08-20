@@ -427,7 +427,7 @@ function HearingDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="القضية *">
+          <FormField label="القضية" required>
             <select
               value={form.case_id ?? ""}
               onChange={(e) => setForm({ ...form, case_id: e.target.value })}
@@ -445,7 +445,7 @@ function HearingDialog({
           </FormField>
         </div>
         <div className="md:col-span-2">
-          <FormField label="عنوان الجلسة *">
+          <FormField label="عنوان الجلسة" required>
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -454,7 +454,7 @@ function HearingDialog({
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
           </FormField>
         </div>
-        <FormField label="التاريخ والوقت *" hint={RIYADH_TZ_HINT}>
+        <FormField label="التاريخ والوقت" required hint={RIYADH_TZ_HINT}>
           <input
             type="datetime-local"
             value={form.hearing_date ?? ""}
@@ -465,7 +465,7 @@ function HearingDialog({
             <span className="text-xs text-danger">{errors.hearing_date}</span>
           )}
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "scheduled"}
             onChange={(e) =>

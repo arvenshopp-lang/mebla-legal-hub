@@ -195,7 +195,7 @@ function OrgTab({ orgId, canManage: canEdit }: { orgId: string | null; canManage
         </div>
       )}
       <fieldset disabled={!canEdit} className="grid gap-4 md:grid-cols-2 disabled:opacity-70">
-        <FormField label="اسم المكتب *">
+        <FormField label="اسم المكتب" required>
           <input
             value={form.name ?? ""}
             onChange={(e) => setForm({ ...form, name: e.target.value })}

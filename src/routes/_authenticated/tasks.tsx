@@ -463,7 +463,7 @@ function TaskDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="العنوان *">
+          <FormField label="العنوان" required>
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -508,7 +508,7 @@ function TaskDialog({
             className={inputCls}
           />
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "pending"}
             onChange={(e) => setForm({ ...form, status: e.target.value as Enums<"task_status"> })}
@@ -521,7 +521,7 @@ function TaskDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="الأولوية *">
+        <FormField label="الأولوية" required>
           <select
             value={form.priority ?? "medium"}
             onChange={(e) =>

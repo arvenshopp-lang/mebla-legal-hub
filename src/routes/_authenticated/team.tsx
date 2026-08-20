@@ -564,7 +564,7 @@ function InviteDialog({
       ) : (
         <>
           <div className="grid gap-4">
-            <FormField label="البريد الإلكتروني *">
+            <FormField label="البريد الإلكتروني" required>
               <input
                 type="email"
                 value={email}
@@ -574,7 +574,7 @@ function InviteDialog({
               />
               {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
             </FormField>
-            <FormField label="الدور *">
+            <FormField label="الدور" required>
               <select
                 value={role}
                 onChange={(e) =>

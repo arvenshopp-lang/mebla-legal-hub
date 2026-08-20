@@ -427,7 +427,7 @@ function UploadDialog({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="الملف *">
+          <FormField label="الملف" required>
             <input
               ref={fileRef}
               type="file"

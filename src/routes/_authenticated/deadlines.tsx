@@ -513,7 +513,7 @@ function DeadlineDialog({
       <DraftPrompt draft={draft as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <FormField label="العنوان *">
+          <FormField label="العنوان" required>
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -522,7 +522,7 @@ function DeadlineDialog({
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
           </FormField>
         </div>
-        <FormField label="النوع *">
+        <FormField label="النوع" required>
           <select
             value={form.deadline_type ?? "custom"}
             onChange={(e) =>
@@ -551,7 +551,7 @@ function DeadlineDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="تاريخ الاستحقاق *" hint={RIYADH_TZ_HINT}>
+        <FormField label="تاريخ الاستحقاق" required hint={RIYADH_TZ_HINT}>
           <input
             type="datetime-local"
             value={form.due_date ?? ""}
@@ -560,7 +560,7 @@ function DeadlineDialog({
           />
           {errors.due_date && <span className="text-xs text-danger">{errors.due_date}</span>}
         </FormField>
-        <FormField label="الحالة *">
+        <FormField label="الحالة" required>
           <select
             value={form.status ?? "active"}
             onChange={(e) =>
@@ -575,7 +575,7 @@ function DeadlineDialog({
             ))}
           </select>
         </FormField>
-        <FormField label="الأولوية *">
+        <FormField label="الأولوية" required>
           <select
             value={form.priority ?? "medium"}
             onChange={(e) =>
