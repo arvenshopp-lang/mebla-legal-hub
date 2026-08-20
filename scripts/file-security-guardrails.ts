@@ -21,12 +21,19 @@ const STORAGE_ALLOWLIST: Record<string, string> = {
   "src/lib/office-page.server.ts": "وسائط الصفحة العامة (مستودع منفصل)",
   "src/lib/subscription.functions.ts": "فواتير الاشتراك (مستودع منفصل)",
   "src/lib/admin-ops.functions.ts": "فحص صحة المخزن دون قراءة بايتات",
+  "src/lib/office-public.server.ts": "وسائط الصفحة العامة (مستودع منفصل)",
+  "src/lib/email/agentic/provider.server.ts": "إرسال المرفقات خلف بوابة الإفراج",
+  "src/lib/email/transport/hostinger.server.ts": "إرسال المرفقات خلف بوابة الإفراج",
+  "src/routes/_authenticated/documents.tsx": "رفع فقط برمز رفع موقّع (بلا قراءة بايتات)",
+  "src/routes/upload.$token.tsx": "رفع فقط برمز رفع موقّع (بلا قراءة بايتات)",
 };
 
 /** الملفات التي تُسلّم بايتات مستندات ويجب أن تعبر بوابة الإفراج. */
 const MUST_CALL_GATE = [
   "src/routes/api/public/doc.$token.ts",
   "src/lib/email/attachments.server.ts",
+  "src/lib/email/agentic/provider.server.ts",
+  "src/lib/email/transport/hostinger.server.ts",
 ];
 
 const STORAGE_PATTERN = /createSignedUrl\(|storage\s*\n?\s*\.from\(|\.createSignedUploadUrl\(/;
