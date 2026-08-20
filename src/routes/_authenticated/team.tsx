@@ -570,6 +570,8 @@ function InviteDialog({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                maxLength={FIELD_LIMITS.email}
+                dir="ltr"
                 className={inputCls}
                 placeholder="user@example.com"
               />

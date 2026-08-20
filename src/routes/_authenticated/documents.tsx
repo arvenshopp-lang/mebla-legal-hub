@@ -475,6 +475,7 @@ function UploadDialog({
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
             placeholder="عقد / محضر / حكم / ..."
           />
@@ -501,6 +502,7 @@ function UploadDialog({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
