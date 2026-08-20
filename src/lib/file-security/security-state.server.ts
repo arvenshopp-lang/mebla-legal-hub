@@ -64,10 +64,14 @@ export type SecurityStateRow = {
   detected_mime: string | null;
   decision_id: string | null;
   scan_attempts: number;
+  scan_engine_version: string | null;
+  safe_path: string | null;
+  safe_sha256: string | null;
+  safe_mime: string | null;
 };
 
 const STATE_COLUMNS =
-  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts";
+  "document_id, organization_id, state, sha256, bytes, declared_mime, detected_mime, decision_id, scan_attempts, scan_engine_version, safe_path, safe_sha256, safe_mime";
 
 export async function readSecurityState(documentId: string): Promise<SecurityStateRow | null> {
   const db = await admin();
