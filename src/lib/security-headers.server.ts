@@ -4,6 +4,18 @@ import { getRequestHeader } from "@tanstack/react-start/server";
  * Baseline security headers applied to every response.
  * Kept in one place so the policy is auditable.
  */
+/**
+ * في الإنتاج نمنع `'unsafe-eval'` تماماً؛ خادم التطوير (Vite/HMR) يحتاجه فقط أثناء
+ * التطوير المحلي، لذلك يُضاف شرطياً ولا يصل أبداً إلى الاستجابات الإنتاجية.
+ */
+const IS_PRODUCTION = process.env["NODE_ENV"] === "production";
+
+const SCRIPT_SRC = [
+  "script-src 'self' 'unsafe-inline'",
+  IS_PRODUCTION ? "" : " 'unsafe-eval'",
+  " https://www.googletagmanager.com https://www.google-analytics.com",
+].join("");
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -13,7 +25,7 @@ const CSP = [
   "frame-src 'self' blob:",
   "form-action 'self'",
   "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+  SCRIPT_SRC,
   // الخطوط مستضافة محلياً بالكامل — لا نسمح بأي مصدر خطوط خارجي
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",

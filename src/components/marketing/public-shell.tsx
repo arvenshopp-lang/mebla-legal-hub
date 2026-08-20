@@ -171,6 +171,8 @@ export type ContentSection = {
   paragraphs?: string[];
   items?: string[];
   note?: string;
+  /** عناوين فرعية (h3) داخل القسم لتوضيح البنية وتحسين الفهرسة. */
+  subsections?: { heading: string; paragraphs?: string[]; items?: string[] }[];
 };
 
 export function ContentSections({ sections }: { sections: ContentSection[] }) {
@@ -205,6 +207,32 @@ export function ContentSections({ sections }: { sections: ContentSection[] }) {
               {section.note}
             </p>
           )}
+          {section.subsections?.map((sub) => (
+            <div key={sub.heading} className="mt-6">
+              <h3 className="text-body font-semibold text-foreground">{sub.heading}</h3>
+              {sub.paragraphs?.map((p) => (
+                <p key={p} className="mt-2 text-body-sm leading-7 text-muted-foreground">
+                  {p}
+                </p>
+              ))}
+              {sub.items && (
+                <ul className="mt-2 space-y-2">
+                  {sub.items.map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2.5 text-body-sm leading-7 text-muted-foreground"
+                    >
+                      <span
+                        className="mt-3 h-1 w-3 shrink-0 rounded-full bg-border-strong"
+                        aria-hidden
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </section>
       ))}
     </div>

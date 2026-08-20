@@ -62,6 +62,22 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+/** يقبل المعرّفات الآمنة في CSS فقط (حروف وأرقام و - و _). */
+function sanitizeCssIdent(value: string): string | null {
+  return /^[A-Za-z0-9_-]+$/.test(value) ? value : null;
+}
+
+/** يقبل ألوان hex أو أسماء الألوان أو rgb/hsl أو var() المحدودة فقط. */
+function sanitizeCssColor(value: string | undefined): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  return /^(#[0-9A-Fa-f]{3,8}|[A-Za-z]+|(rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\)|var\(--[A-Za-z0-9_-]+\))$/.test(
+    v,
+  )
+    ? v
+    : null;
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([, config]) => config.theme || config.color);
 
@@ -69,17 +85,24 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  // تُدرج القيم داخل <style>، لذلك تُنقّى المعرّفات والألوان بقائمة سماح صارمة
+  // لمنع الخروج من سياق CSS (XSS) عند مرور قيمة غير موثوقة في الإعدادات.
+  const safeId = sanitizeCssIdent(id);
+  if (!safeId) return null;
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart="${safeId}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    const safeKey = sanitizeCssIdent(key);
+    const safeColor = sanitizeCssColor(color);
+    return safeKey && safeColor ? `  --color-${safeKey}: ${safeColor};` : null;
   })
   .join("\n")}
 }

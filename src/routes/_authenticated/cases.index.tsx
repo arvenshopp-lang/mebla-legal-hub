@@ -24,7 +24,9 @@ import {
   useDebounced,
   ConfirmDialog,
   Pagination,
+  sanitizeSearchTerm,
 } from "@/lib/list-utils";
+import { FIELD_LIMITS } from "@/lib/form-limits";
 import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Archive, ExternalLink } from "lucide-react";
 import { describeMutationError } from "@/lib/subscription.shared";
@@ -133,7 +135,7 @@ function Page() {
     setOpen(true);
   });
   const [archiving, setArchiving] = useState<CaseRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data: members } = useQuery({
     queryKey: ["members-basic", activeOrgId],
@@ -627,6 +629,7 @@ export function CaseDialog({
               onBlur={() => markTouched("case_title")}
               required
               aria-required
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
           </FormField>
@@ -635,6 +638,7 @@ export function CaseDialog({
           <input
             value={form.case_number ?? ""}
             onChange={(e) => setForm({ ...form, case_number: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -643,6 +647,7 @@ export function CaseDialog({
             value={form.case_type ?? ""}
             onChange={(e) => setForm({ ...form, case_type: e.target.value })}
             placeholder="تجاري، أحوال، عمالي…"
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -683,6 +688,7 @@ export function CaseDialog({
           <input
             value={form.opponent_name ?? ""}
             onChange={(e) => setForm({ ...form, opponent_name: e.target.value })}
+            maxLength={FIELD_LIMITS.name}
             className={inputCls}
           />
         </FormField>
@@ -690,6 +696,7 @@ export function CaseDialog({
           <input
             value={form.court_name ?? ""}
             onChange={(e) => setForm({ ...form, court_name: e.target.value })}
+            maxLength={FIELD_LIMITS.court}
             className={inputCls}
           />
         </FormField>
@@ -697,6 +704,7 @@ export function CaseDialog({
           <input
             value={form.court_branch ?? ""}
             onChange={(e) => setForm({ ...form, court_branch: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -704,6 +712,7 @@ export function CaseDialog({
           <input
             value={form.judicial_circuit ?? ""}
             onChange={(e) => setForm({ ...form, judicial_circuit: e.target.value })}
+            maxLength={FIELD_LIMITS.shortText}
             className={inputCls}
           />
         </FormField>
@@ -711,6 +720,7 @@ export function CaseDialog({
           <input
             value={form.judge_name ?? ""}
             onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
+            maxLength={FIELD_LIMITS.name}
             className={inputCls}
           />
         </FormField>
@@ -772,6 +782,7 @@ export function CaseDialog({
               rows={3}
               value={form.description ?? ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
@@ -783,6 +794,7 @@ export function CaseDialog({
                 rows={2}
                 value={form.internal_notes ?? ""}
                 onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
+                maxLength={FIELD_LIMITS.notes}
                 className={inputCls}
               />
             </FormField>
