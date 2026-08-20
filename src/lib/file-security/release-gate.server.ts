@@ -93,7 +93,8 @@ export async function assertReleasable(input: {
   if (!RELEASABLE_STATES.includes(row.state)) {
     return deny(row.state, `state_not_releasable:${row.state}`, releaseDenialMessage(row.state));
   }
-  if (!row.sha256 || !row.decision_id) {
+  const legacy = isLegacyGrandfathered(row);
+  if ((!row.sha256 && !legacy) || !row.decision_id) {
     return deny(row.state, "missing_integrity_binding", releaseDenialMessage("quarantined"));
   }
   if (!row.scan_engine_version) {
