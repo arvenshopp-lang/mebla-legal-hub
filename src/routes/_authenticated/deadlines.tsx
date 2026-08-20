@@ -519,6 +519,7 @@ function DeadlineDialog({
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
@@ -612,6 +613,7 @@ function DeadlineDialog({
               rows={2}
               value={form.notes ?? ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>

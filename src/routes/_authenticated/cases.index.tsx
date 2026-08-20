@@ -782,6 +782,7 @@ export function CaseDialog({
               rows={3}
               value={form.description ?? ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
@@ -793,6 +794,7 @@ export function CaseDialog({
                 rows={2}
                 value={form.internal_notes ?? ""}
                 onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
+                maxLength={FIELD_LIMITS.notes}
                 className={inputCls}
               />
             </FormField>

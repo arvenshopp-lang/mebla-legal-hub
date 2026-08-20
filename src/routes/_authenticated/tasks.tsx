@@ -469,6 +469,7 @@ function TaskDialog({
             <input
               value={form.title ?? ""}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              maxLength={FIELD_LIMITS.title}
               className={inputCls}
             />
             {errors.title && <span className="text-xs text-danger">{errors.title}</span>}
@@ -544,6 +545,7 @@ function TaskDialog({
               rows={3}
               value={form.description ?? ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={FIELD_LIMITS.notes}
               className={inputCls}
             />
           </FormField>
