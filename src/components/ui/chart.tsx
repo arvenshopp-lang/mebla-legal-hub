@@ -63,6 +63,23 @@ const ChartContainer = React.forwardRef<
 ChartContainer.displayName = "Chart";
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  /** يقبل المعرّفات الآمنة في CSS فقط (حروف وأرقام و - و _). */
+  function sanitizeCssIdent(value: string): string | null {
+    return /^[A-Za-z0-9_-]+$/.test(value) ? value : null;
+  }
+
+  /** يقبل ألوان hex أو rgb/hsl أو دوال var() المحدودة فقط. */
+  function sanitizeCssColor(value: string | undefined): string | null {
+    if (!value) return null;
+    const v = value.trim();
+    if (/[;{}<>()"'\\]/.test(v.replace(/^(rgb|rgba|hsl|hsla|var)\([^()]*\)$/, ""))) return null;
+    return /^(#[0-9A-Fa-f]{3,8}|[A-Za-z]+|(rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\)|var\(--[A-Za-z0-9_-]+\))$/.test(
+      v,
+    )
+      ? v
+      : null;
+  }
+
   const colorConfig = Object.entries(config).filter(([, config]) => config.theme || config.color);
 
   if (!colorConfig.length) {
