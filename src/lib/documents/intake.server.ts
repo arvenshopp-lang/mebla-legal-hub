@@ -71,7 +71,8 @@ export async function createUploadSlot(prefix: string, fileName: string) {
 export async function removeOrphanObject(path: string) {
   try {
     const db = await admin();
-    await db.storage.from(DOCUMENTS_BUCKET).remove([path]);
+    // النسخة الآمنة تُحذف مع الأصل دائماً حتى لا تبقى بايتات بلا سجل.
+    await db.storage.from(DOCUMENTS_BUCKET).remove([path, `${path}.safe.pdf`]);
   } catch {
     /* التنظيف أفضل-جهد؛ لا يجوز أن يُخفي سبب الرفض الأصلي */
   }
@@ -283,7 +284,7 @@ export async function purgeDocument(doc: { id: string; file_path: string }) {
   const db = await admin();
   const { data: removed, error: removeError } = await db.storage
     .from(DOCUMENTS_BUCKET)
-    .remove([doc.file_path]);
+    .remove([doc.file_path, `${doc.file_path}.safe.pdf`]);
   if (removeError) throw new Error("تعذّر إزالة ملف المستند من المخزن، لم يُحذف شيء.");
   // كائن مفقود مسبقاً: الحذف يكمل لتنظيف السجل المعلّق.
   if (!removed || removed.length === 0) {
