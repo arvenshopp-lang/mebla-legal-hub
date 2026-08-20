@@ -640,3 +640,55 @@ CANONICAL_PLAN_FINAL_STATUS = FREEZE_CANDIDATE — التصميم مغلق، و�
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR FINAL IMPLEMENTATION DECISION
+
+---
+
+# MEHLA DOCUMENT SECURITY — FINAL PRE-IMPLEMENTATION EVIDENCE REPORT (READ-ONLY)
+
+SNAPSHOT: repo مِهلة · فرع العمل الحالي · SNAPSHOT_SHA = `fae672ba2439` · Supabase Project ID = xklzpjocsiadnoglwryw · 2026-08-20 01:25 UTC. SNAPSHOT_CHANGED_DURING_REVIEW = YES (كان `29caf4fb70b2` في S0/S0.5) ⇒ أدلة هذا التقرير تُنسب إلى `fae672ba2439` فقط ولا تُخلط مع أدلة اللقطة السابقة.
+
+## ما أُغلق فعلياً في هذه البوابة (OBSERVED_IN_CODE)
+- **Service role**: عدد الوحدات في `src` التي تستورد `client.server` أو تقرأ `SUPABASE_SERVICE_ROLE_KEY` = **62**. تصنيف "الملفّية" منها لم يُحسب سطرياً ⇒ FILE_RELATED_SERVICE_ROLE_IMPORTS = NOT_PROVEN.
+- **Insecure secret fallbacks**: العدد النهائي = **3**، وهي حصراً: `client-portal/portal-auth.server.ts:14` (`SERVICE_ROLE_KEY || "mehla-portal-secure-salt-2026"`) · `sms/otp.server.ts:119` (`MEHLA_BLIND_INDEX_KEY_V1 ?? SERVICE_ROLE_KEY ?? ""`) · `contracts/contracts.server.ts:74` (`SERVICE_ROLE_KEY || SUPABASE_URL || ""`). لم تُصلَح.
+- **Cron cleanup (EP-11)** من `secure-view/cleanup.server.ts`: يعمل بـ`supabaseAdmin`؛ الجداول الممسوسة = `document_access_tokens` (DELETE بشرط `expires_at < cutoff`) و`documents` (قراءة لتحديد الكائنات اليتيمة)؛ التخزين = `storage.from(STORAGE_BUCKET)` مع `list` بترقيم صفحات و`remove` على دفعات؛ الأهلية = انتهاء الصلاحية أو كائن بلا صف مرتبط؛ **لا مرشّح مستأجر (tenant filter) في الحذف** ⇒ النطاق على مستوى المستودع لا المكتب. الجداول الأمنية/الأدلة غير موجودة أصلاً اليوم فلا تُمَس. CURRENT_CLEANUP_BLAST_RADIUS = حذف رموز وصول منتهية + كائنات آثار مؤقتة/يتيمة على مستوى المستودع بلا حصر مستأجر (OBSERVED_IN_CODE)؛ قدرة حذف كائنات نشطة تعتمد على دقة منطق "اليتيم" ⇒ هذا الجزء NOT_PROVEN.
+
+## ما لم يُغلق (بصراحة، بلا تخمين)
+- CALL_GRAPH: 2/11 فقط (EP-01 رفع داخلي، EP-02 رابط العميل). الحلقات المطلوبة لـEP-03..EP-11 بمستوى ملف+دالة+سطر لم تُقرأ في هذه البوابة ⇒ NOT_PROVEN.
+- FILE_OPERATION_INVENTORY: بحث نصي واسع أُنجز وأنتج قائمة السطح، لكن تتبّع Wrappers إلى العملية النهائية وجدول (Operation ID / caller / wrapper chain / bucket / credential / tenant check) لم يُبنَ ⇒ NOT_PROVEN. AST_GUARDRAIL = FUTURE_IMPLEMENTATION (لم يُنشأ، لأنه تغيير كود).
+- PUBLIC_MEDIA: NOT_PROVEN (سلسلة draft→publish→public معروفة بالملفات فقط).
+- BACKGROUND_WORKER (EP-10): كل البنود NOT_PROVEN. CURRENT_BACKGROUND_PROCESSOR_SECURITY_GATE = **ABSENT** بدلالة غير مباشرة قوية (لا توجد أعمدة/جداول حالة أمنية في المخطط) لكن مسار إنشاء الوظيفة والاعتماد والحالات المقبولة NOT_PROVEN.
+- OCR/AI: المعروف OBSERVED_IN_CODE أن `ocr.server.ts` يرسل صورة/بايتات base64 إلى بوابة AI خارجية و`ai/bayan-*.server.ts` يرسل نصاً مستخرجاً؛ التفصيل الدقيق لكل حلقة (job→extraction→OCR→document_pages→search→Bayan) NOT_PROVEN. بلد المعالجة NOT_PROVEN (لا استنتاج).
+- BUCKET_POLICY_EVIDENCE = **BLOCKED_BY_ACCESS**: قراءة `storage.buckets` / `storage.objects` وسياساتها لم تُنفَّذ؛ الدور المتاح للقراءة المباشرة مقيّد ولا يُنفّذ دوال، والفحص خارج نطاق هذه البوابة القرائية ⇒ لا تخمين لأي من documents / email-attachments / office-media-draft / office-public-media.
+- DELIVERY & RAW PROCESSOR INVENTORIES: القوائم موجودة من S0/S0.5 (6 مسارات تسليم، 10 معالجات) لكنها على اللقطة السابقة ولم تُعَد التحقق على `fae672ba2439` ⇒ NOT_PROVEN في هذه اللقطة.
+- ENTRYPOINT_ID_RECONCILIATION: تسمية EP-01..EP-11 مستقرة في ACR-01 R2/R3/R4 (EP-01 رفع داخلي · EP-02 بوابة العميل · EP-03 عقود · EP-04 مرفقات بريد صادر · EP-05 secure-view/طباعة · EP-06 وسائط عامة · EP-07 repair · EP-08 HR · EP-09 email-inbound · EP-10 background worker · EP-11 cron cleanup) ⇒ COMPLETE، بلا تعارض مرصود.
+
+NEW_CRITICAL_ARCHITECTURE_FINDINGS = **CF-20**: حذف آثار التخزين في `cleanup.server.ts` يعمل على مستوى المستودع بلا مرشّح مستأجر، فأي خطأ في منطق "الكائن اليتيم" يحذف كائنات مكاتب أخرى (OBSERVED_IN_CODE). لم يُصلَح، للمراجعة المنفصلة.
+
+## الناتج
+SNAPSHOT_SHA = fae672ba2439 (SNAPSHOT_CHANGED_DURING_REVIEW = YES)
+ENTRYPOINT_ID_RECONCILIATION = COMPLETE
+CALL_GRAPH_COVERAGE = 2/11
+UNKNOWN_CALL_GRAPH_EDGES = 9 نقاط دخول كاملة
+FILE_OPERATION_COVERAGE = NOT_PROVEN
+UNKNOWN_FILE_OPERATIONS = NOT_PROVEN
+PUBLIC_MEDIA_COVERAGE = NOT_PROVEN
+UNKNOWN_PUBLIC_MEDIA_WRITE_PATHS = NOT_PROVEN
+BACKGROUND_WORKER_EVIDENCE = NOT_PROVEN
+CURRENT_BACKGROUND_PROCESSOR_SECURITY_GATE = ABSENT (بدلالة المخطط) · تفاصيل المسار NOT_PROVEN
+CRON_CLEANUP_EVIDENCE = OBSERVED_IN_CODE (جزئي: الجداول والعمليات والأهلية مثبتة · دقة منطق اليتيم NOT_PROVEN)
+CURRENT_CLEANUP_BLAST_RADIUS = رموز وصول منتهية + آثار/كائنات يتيمة على مستوى المستودع بلا مرشّح مستأجر
+BUCKET_POLICY_EVIDENCE = BLOCKED_BY_ACCESS
+TOTAL_SERVICE_ROLE_IMPORTS = 62
+FILE_RELATED_SERVICE_ROLE_IMPORTS = NOT_PROVEN
+INSECURE_SECRET_FALLBACK_COUNT = 3 (المواقع الثلاثة المعروفة فقط؛ لا مواقع إضافية مرصودة)
+CURRENT_DELIVERY_PATH_COVERAGE = NOT_PROVEN على هذه اللقطة
+UNKNOWN_CURRENT_DELIVERY_PATHS = NOT_PROVEN
+RAW_PROCESSOR_COVERAGE = NOT_PROVEN على هذه اللقطة
+UNKNOWN_RAW_PROCESSORS = NOT_PROVEN
+NEW_CRITICAL_ARCHITECTURE_FINDINGS = CF-20
+BLOCKED_BY_ACCESS = سياسات Buckets وبيانات التخزين الوصفية
+S0_EVIDENCE_FINAL_STATUS = NOT_PROVEN
+DESIGN_STATUS = CLOSED
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR GO NO-GO IMPLEMENTATION DECISION
