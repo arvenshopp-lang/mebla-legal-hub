@@ -121,9 +121,12 @@ export const Route = createFileRoute("/api/public/doc/$token")({
 
           // البوابة المركزية: لا تُقرأ بايتات أي مستند قبل قرار إفراج صريح
           // مرتبط ببصمة المحتوى ومعرّف قرار وتطابق المكتب.
-          const { assertReleasable, assertContentMatchesDecision, ReleaseDenied } = await import(
-            "@/lib/file-security/release-gate.server"
-          );
+          const {
+            assertReleasable,
+            assertContentMatchesDecision,
+            deliverySource,
+            ReleaseDenied,
+          } = await import("@/lib/file-security/release-gate.server");
           let decision: Awaited<ReturnType<typeof assertReleasable>>;
           try {
             decision = await assertReleasable({
@@ -153,12 +156,16 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           }
 
           let storageRead: Awaited<ReturnType<typeof secure.readOriginal>>;
+          // مسارات العرض والمشاركة والطباعة تُخدَم من النسخة الآمنة المسطّحة، لا من الأصل.
+          const source = deliverySource(decision, doc.file_path);
           try {
-            storageRead = await secure.readOriginal(doc.file_path, {
+            storageRead = await secure.readOriginal(source.path, {
               allowProcessingFormat: resolved.kind === "process",
               documentId: resolved.documentId,
               organizationId: doc.organization_id,
-              declaredMime: doc.file_type,
+              declaredMime: source.isSafeCopy
+                ? (decision.safe?.mime ?? "application/pdf")
+                : doc.file_type,
             });
           } catch (error) {
             const trace = error instanceof secure.StorageReadError ? error.trace : undefined;
@@ -166,7 +173,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               document_id: resolved.documentId,
               temporary_link_id: resolved.id,
               bucket: trace?.bucket ?? "documents",
-              storage_path: trace?.storagePath ?? doc.file_path,
+              storage_path: trace?.storagePath ?? source.path,
               signed_url_host: trace?.signedUrlHost ?? null,
               response_status: trace?.status ?? null,
               content_type: trace?.contentType ?? null,
@@ -186,7 +193,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
               metadata: {
                 temporary_link_id: resolved.id,
                 bucket: trace?.bucket ?? "documents",
-                storage_path: trace?.storagePath ?? doc.file_path,
+                storage_path: trace?.storagePath ?? source.path,
                 signed_url_host: trace?.signedUrlHost ?? null,
                 response_status: trace?.status ?? null,
                 content_type: trace?.contentType ?? null,
@@ -237,7 +244,9 @@ export const Route = createFileRoute("/api/public/doc/$token")({
 
           // الصيغ غير القابلة للختم المباشر تُعرض كنسخة نصية مائية دائماً.
           const kind = storageRead.stampable
-            ? shared.viewableKind(doc.file_name, doc.file_type)
+            ? source.isSafeCopy
+              ? ("pdf" as const)
+              : shared.viewableKind(doc.file_name, doc.file_type)
             : ("text" as const);
           // النص المستخرج يُستخدم كنسخة عرض للصيغ غير القابلة للختم، وكذلك
           // كخطة بديلة إن كان الملف الأصلي تالفاً أو غير قابل للقراءة.
@@ -246,7 +255,7 @@ export const Route = createFileRoute("/api/public/doc/$token")({
           const pdf = await stamp.buildWatermarkedPdf({
             bytes: original,
             kind,
-            mimeType: doc.file_type,
+            mimeType: source.isSafeCopy ? "application/pdf" : doc.file_type,
             fallbackText,
             lines: [resolved.watermarkOffice, resolved.watermarkUser],
             note: resolved.watermarkNote,
