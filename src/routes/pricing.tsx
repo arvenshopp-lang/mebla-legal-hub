@@ -121,21 +121,13 @@ function PricingRoute() {
       <section className="container-page py-10 md:py-14">
         {/* شريط تنبيه المشترك المسجل */}
         {user && overview && (
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-l)] border border-primary/30 bg-primary/5 p-4 text-[13.5px]">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span>
-                أهلاً بك <strong>{user.user_metadata?.full_name || user.email}</strong> — باقة مكتبك الحالية هي:{" "}
-                <strong className="text-primary font-bold text-[14px]">«{overview.plan.name_ar}»</strong>.
-                يمكنك الترقية فوراً بالضغط على أي باقة أعلى أدناه.
-              </span>
-            </div>
-            <Link
-              to="/subscription"
-              className="inline-flex items-center gap-1.5 rounded-[var(--radius-m)] bg-primary px-3.5 py-1.5 text-[13px] font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"
-            >
-              <CreditCard className="h-3.5 w-3.5" /> صفحة الاشتراك والسداد <ArrowLeft className="h-3.5 w-3.5" />
-            </Link>
+          <div className="mb-8 flex items-center gap-3 rounded-[var(--radius-l)] border border-primary/25 bg-primary/5 px-5 py-3.5 text-[14px]">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+            <p className="text-foreground leading-normal">
+              أهلاً بك <strong>{user.user_metadata?.full_name || user.email}</strong> — باقة مكتبك الحالية هي:{" "}
+              <strong className="text-primary font-bold text-[14.5px]">«{overview.plan.name_ar}»</strong>.
+              يمكنك الترقية فوراً باختيار أي باقة أعلى أدناه.
+            </p>
           </div>
         )}
 

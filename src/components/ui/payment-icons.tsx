@@ -1,40 +1,44 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * أيقونة مدى (mada) الرسمية الحديثة
+ */
 export function MadaBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-[6px] border border-border bg-white px-2 py-1 shadow-xs transition-transform hover:scale-105",
+        "inline-flex h-7 items-center justify-center rounded-[6px] border border-border/80 bg-white px-2.5 shadow-2xs transition-transform hover:scale-105",
         className,
       )}
-      title="مدى — Mada"
-      aria-label="مدى (Mada)"
+      title="مدى — mada"
+      aria-label="مدى (mada)"
     >
       <svg
-        viewBox="0 0 54 20"
-        className="h-4 w-auto fill-current"
+        viewBox="0 0 52 18"
+        className="h-4 w-auto"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
-        {/* Mada Logo Paths */}
+        {/* Modern mada symbol: Green upper loop & Blue lower loop */}
         <path
-          d="M7.8 3.5C5.4 3.5 3.5 5.4 3.5 7.8v4.4c0 2.4 1.9 4.3 4.3 4.3h38.4c2.4 0 4.3-1.9 4.3-4.3V7.8c0-2.4-1.9-4.3-4.3-4.3H7.8z"
-          fill="#004B87"
-        />
-        <path
-          d="M7.8 3.5C5.4 3.5 3.5 5.4 3.5 7.8v1.2c1.2-.8 2.6-1.3 4.3-1.3h38.4c1.6 0 3.1.5 4.3 1.3V7.8c0-2.4-1.9-4.3-4.3-4.3H7.8z"
+          d="M6.2 3.8C8.5 3.8 10.3 5.4 10.8 7.6C10.2 7.2 9.5 7 8.7 7C6.6 7 5 8.6 5 10.7C5 11.1 5.1 11.6 5.2 12C3 11.6 1.5 9.7 1.5 7.4C1.5 5.4 3.6 3.8 6.2 3.8Z"
           fill="#86B817"
         />
+        <path
+          d="M8.8 14.2C6.5 14.2 4.7 12.6 4.2 10.4C4.8 10.8 5.5 11 6.3 11C8.4 11 10 9.4 10 7.3C10 6.9 9.9 6.4 9.8 6C12 6.4 13.5 8.3 13.5 10.6C13.5 12.6 11.4 14.2 8.8 14.2Z"
+          fill="#004F71"
+        />
+        {/* mada text */}
         <text
-          x="27"
-          y="13.2"
+          x="32"
+          y="12.5"
           textAnchor="middle"
-          fill="#FFFFFF"
-          fontSize="8.5"
-          fontWeight="bold"
-          fontFamily="system-ui, -apple-system, sans-serif"
-          letterSpacing="0.5"
+          fill="#004F71"
+          fontSize="10"
+          fontWeight="800"
+          fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          letterSpacing="0.8"
         >
           mada
         </text>
@@ -43,61 +47,70 @@ export function MadaBadge({ className }: { className?: string }) {
   );
 }
 
+/**
+ * أيقونة Apple Pay الرسمية الحديثة
+ */
 export function ApplePayBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-[6px] border border-black/10 bg-black px-2.5 py-1 text-white shadow-xs transition-transform hover:scale-105",
+        "inline-flex h-7 items-center justify-center rounded-[6px] border border-black/10 bg-black px-2.5 text-white shadow-2xs transition-transform hover:scale-105",
         className,
       )}
       title="Apple Pay"
       aria-label="Apple Pay"
     >
       <svg
-        viewBox="0 0 40 17"
+        viewBox="0 0 44 18"
         className="h-3.5 w-auto fill-current text-white"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
         {/* Apple Icon */}
-        <path d="M5.4 8.6c-.6.8-1.7 1.3-2.6 1.3-.2 0-.3 0-.4-.1.4-1.2 1.4-2.1 2.6-2.2.1.2.2.6.4 1zm.6-1.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-.9 1.6-.8 2.6 1 .1 1.9-.5 2.4-1.2zM7.5 9.7c-.5-.3-.9-.4-1.4-.4-.8 0-1.1.2-1.7.2s-.9-.2-1.6-.2c-1.3 0-2.5.8-3.1 1.9-.7 1.3-.5 3.2.5 4.7.5.7 1.1 1.5 1.9 1.5.8 0 1.1-.5 2.1-.5s1.3.5 2.1.5c.8 0 1.4-.7 1.9-1.5.6-.9.8-1.7.9-1.8-.1 0-1.6-.6-1.6-2.4 0-1.5 1.2-2.2 1.3-2.3-.7-1-1.7-1.1-2.1-1.1-.3 0-.6.1-.9.4z" />
+        <path d="M5.85 9.15c-.65.8-1.75 1.35-2.7 1.35-.15 0-.35 0-.45-.05.45-1.3 1.5-2.25 2.75-2.35.1.25.2.65.4 1.05zm.65-1.65c.65-.75 1.1-1.85 1-2.95-.95.05-2.05.65-2.7 1.4-.55.65-1 1.75-.85 2.85 1.1.1 2.05-.55 2.55-1.3zM8.15 10.3c-.55-.35-1-.45-1.55-.45-.9 0-1.2.25-1.85.25s-1-.25-1.75-.25c-1.45 0-2.75.9-3.4 2.1-.75 1.45-.55 3.5.55 5.15.55.8 1.2 1.65 2.1 1.65.9 0 1.2-.55 2.3-.55s1.45.55 2.3.55c.9 0 1.55-.75 2.1-1.65.65-1 .9-1.85 1-1.95-.1 0-1.75-.65-1.75-2.65 0-1.65 1.3-2.45 1.45-2.55-.75-1.1-1.85-1.25-2.3-1.25-.35 0-.65.1-1 .4z" />
         {/* Pay Text */}
-        <path d="M14.5 5.5h2.5c1.7 0 2.8.9 2.8 2.4 0 1.6-1.1 2.5-2.8 2.5h-1.3v3.8h-1.2V5.5zm2.4 3.8c1 0 1.6-.5 1.6-1.4 0-.8-.6-1.4-1.6-1.4h-1.2v2.8h1.2zM21.2 10.3c0-1.3 1-2.1 2.6-2.2l1.7-.1v-.5c0-.8-.5-1.2-1.4-1.2-.7 0-1.3.3-1.4.8l-1.1-.2c.2-1 1.2-1.6 2.6-1.6 1.6 0 2.5.8 2.5 2.1v4.8h-1.1v-1.1c-.5.8-1.3 1.2-2.2 1.2-1.3 0-2.2-.9-2.2-2.1zm4.3-.2v-.7l-1.6.1c-.9.1-1.5.5-1.5 1.2 0 .7.6 1.1 1.3 1.1.9 0 1.8-.7 1.8-1.7zM29.5 16.5l1.4-4.2-2.3-5.8h1.3l1.6 4.4 1.6-4.4h1.3l-3.7 8.7c-.4.9-1 1.3-2 1.3h-.9v-1.1h.7c.6.1 1-.3 1.3-1.1z" />
+        <path d="M15.8 5.8h2.7c1.85 0 3.05 1 3.05 2.65s-1.2 2.75-3.05 2.75h-1.4v4.1H15.8V5.8zm2.6 4.15c1.1 0 1.75-.55 1.75-1.5s-.65-1.5-1.75-1.5h-1.3v3h1.3zM23.1 11.05c0-1.45 1.1-2.3 2.85-2.4l1.85-.1v-.55c0-.9-.55-1.35-1.55-1.35-.75 0-1.4.35-1.55.9l-1.2-.25c.2-1.1 1.3-1.75 2.85-1.75 1.75 0 2.75.9 2.75 2.3v5.25h-1.2v-1.2c-.55.9-1.45 1.35-2.4 1.35-1.45 0-2.4-1-2.4-2.3zm4.7-.2v-.8l-1.75.1c-1 .1-1.65.55-1.65 1.35 0 .75.65 1.2 1.45 1.2 1 0 1.95-.8 1.95-1.85zM32.2 17.8l1.55-4.6-2.5-6.4h1.45l1.75 4.85 1.75-4.85h1.45l-4.1 9.55c-.45 1-1.1 1.45-2.2 1.45h-1v-1.2h.8c.7 0 1.1-.35 1.45-1.2z" />
       </svg>
     </span>
   );
 }
 
+/**
+ * أيقونة Visa الرسمية الحديثة
+ */
 export function VisaBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-[6px] border border-border bg-white px-2.5 py-1 shadow-xs transition-transform hover:scale-105",
+        "inline-flex h-7 items-center justify-center rounded-[6px] border border-border/80 bg-white px-2.5 shadow-2xs transition-transform hover:scale-105",
         className,
       )}
       title="Visa"
       aria-label="Visa"
     >
       <svg
-        viewBox="0 0 38 12"
+        viewBox="0 0 38 13"
         className="h-3.5 w-auto"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
         <path
-          d="M15.2 0.3L10 11.7H6.6L4 2.5C3.8 1.8 3.7 1.6 3.1 1.3 2.1 0.8 0.7 0.3 0 0.1L0.1 0.3H5.6C6.3 0.3 6.9 0.8 7 1.6L8.4 8.7 11.9 0.3H15.2ZM28.6 7.9C28.6 4.9 24.4 4.7 24.4 3.4c0-0.4 0.4-0.8 1.3-1 0.4-0.1 1.6-0.1 2.9 0.5l0.5-2.4C28.4 0.2 27.4 0 26.2 0c-2.9 0-4.9 1.5-4.9 3.7 0 1.6 1.5 2.5 2.6 3.1 1.1 0.5 1.5 0.9 1.5 1.4 0 0.8-0.9 1.1-1.8 1.1-1.5 0-2.3-0.2-3.5-0.8l-0.5 2.4c0.7 0.3 1.9 0.6 3.2 0.6 3.1 0 5.1-1.5 5.1-3.6zM37.1 11.7H40L37.5 0.3H34.9c-0.6 0-1.1 0.3-1.4 0.9L29 11.7h3.4l0.7-1.9h4.1l0.4 1.9zm-3.3-4.5l1.7-4.6 1 4.6h-2.7zM20.9 0.3L18.3 11.7H15.1L17.7 0.3h3.2z"
-          fill="#1A1F71"
+          d="M14.6 0.5L9.6 12.3H6.3L3.8 2.8C3.6 2.1 3.5 1.9 2.9 1.6 1.9 1.1 0.7 0.6 0 0.3L0.1 0.5H5.4C6.1 0.5 6.7 1 6.8 1.8L8.2 9.1 11.6 0.5H14.6ZM27.5 8.3C27.5 5.2 23.4 5 23.4 3.7c0-0.4 0.4-0.8 1.3-1 0.4-0.1 1.6-0.1 2.8 0.5l0.5-2.5C27.3 0.4 26.3 0.2 25.2 0.2c-2.8 0-4.7 1.6-4.7 3.8 0 1.6 1.5 2.6 2.5 3.2 1.1 0.5 1.5 0.9 1.5 1.5 0 0.8-0.9 1.2-1.8 1.2-1.5 0-2.2-0.2-3.4-0.8l-0.5 2.5c0.7 0.3 1.9 0.6 3.1 0.6 3 0 4.9-1.6 4.9-3.7zM35.7 12.3H38.5L36.1 0.5H33.6c-0.6 0-1.1 0.3-1.4 0.9L27.9 12.3h3.3l0.7-2h4l0.4 2zm-3.2-4.7l1.7-4.8 1 4.8h-2.7zM20.1 0.5L17.5 12.3H14.5L17.1 0.5h3z"
+          fill="#1434CB"
         />
       </svg>
     </span>
   );
 }
 
+/**
+ * أيقونة MasterCard الرسمية الحديثة
+ */
 export function MasterCardBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-[6px] border border-border bg-white px-2 py-1 shadow-xs transition-transform hover:scale-105",
+        "inline-flex h-7 items-center justify-center rounded-[6px] border border-border/80 bg-white px-2 shadow-2xs transition-transform hover:scale-105",
         className,
       )}
       title="MasterCard"
@@ -120,7 +133,9 @@ export function MasterCardBadge({ className }: { className?: string }) {
   );
 }
 
-/** شريط وسائل الدفع المعتمدة الشامل */
+/**
+ * شريط وسائل الدفع المعتمدة الحديث والأنيق
+ */
 export function PaymentMethodsBar({
   className,
   showLabel = true,
@@ -129,13 +144,13 @@ export function PaymentMethodsBar({
   showLabel?: boolean;
 }) {
   return (
-    <div className={cn("inline-flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("inline-flex flex-wrap items-center gap-2.5", className)}>
       {showLabel && (
-        <span className="text-[12.5px] font-medium text-muted-foreground ml-1">
-          وسائل الدفع المعتمدة:
+        <span className="text-[12.5px] font-semibold text-muted-foreground ml-1">
+          طرق الدفع المعتمدة:
         </span>
       )}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <MadaBadge />
         <ApplePayBadge />
         <VisaBadge />
