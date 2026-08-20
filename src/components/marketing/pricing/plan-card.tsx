@@ -118,7 +118,7 @@ export function PlanCard({
             to="/subscription"
             className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-m)] bg-primary px-5 text-[14px] font-bold text-primary-foreground shadow-sm transition hover:bg-primary-hover"
           >
-            <CreditCard className="h-4 w-4" /> ترقية إلى {plan.name_ar} عبر مُيسّر{" "}
+            <CreditCard className="h-4 w-4" /> ترقية إلى {plan.name_ar}{" "}
             <ArrowLeft className="h-4 w-4" aria-hidden />
           </Link>
         ) : isDowngrade ? (

@@ -6,6 +6,7 @@ import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { CycleToggle } from "@/components/marketing/pricing/cycle-toggle";
 import { PlanCard } from "@/components/marketing/pricing/plan-card";
 import { CompareTable } from "@/components/marketing/pricing/compare-table";
+import { PaymentMethodsBar } from "@/components/ui/payment-icons";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
 import { useAuth } from "@/hooks/use-auth";
@@ -204,6 +205,12 @@ function PricingRoute() {
               <PlansJsonLd plans={plans} />
             </>
           )}
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <div className="inline-flex items-center gap-3 rounded-full border border-border bg-surface px-5 py-2 shadow-xs">
+            <PaymentMethodsBar showLabel={true} />
+          </div>
         </div>
 
         <ul className="mx-auto mt-8 grid max-w-3xl gap-2">

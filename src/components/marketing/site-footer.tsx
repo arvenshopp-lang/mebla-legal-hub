@@ -9,6 +9,7 @@ import {
   supportContactEmail,
 } from "@/lib/public-site.shared";
 import { openCookiePreferences } from "@/lib/product-analytics";
+import { PaymentMethodsBar } from "@/components/ui/payment-icons";
 
 const ABOUT_LINKS = [
   { to: "/about", label: "من نحن" },
@@ -225,8 +226,9 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col items-center gap-2 border-t border-border pt-6 text-center text-[12.5px] text-text-muted sm:flex-row sm:items-center sm:justify-between sm:text-start">
+          <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-6 text-center text-[12.5px] text-text-muted md:flex-row md:items-center md:justify-between md:text-start">
             <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
+            <PaymentMethodsBar showLabel={false} />
             <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-4">
               {info.legal_name && <p>{info.legal_name}</p>}
               <p dir="ltr">mehlalex.com</p>

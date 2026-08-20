@@ -26,6 +26,7 @@ import {
   Th,
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
+import { PaymentMethodsBar } from "@/components/ui/payment-icons";
 import {
   buildFeatureRows,
   buildLimits,
@@ -100,7 +101,7 @@ function SubscriptionPage() {
     },
     onSuccess: (result) => {
       const data = result as { redirectUrl: string; planName: string };
-      toast.success(`تم إنشاء رابط السداد لباقة ${data.planName}. جاري التحويل لمُيسّر…`);
+      toast.success(`تم إنشاء رابط السداد لباقة ${data.planName}. جاري التحويل لصفحة السداد…`);
       if (data.redirectUrl) {
         window.location.href = data.redirectUrl;
       }
@@ -223,7 +224,7 @@ function SubscriptionPage() {
           {higherPlans.length > 0 && (
             <SectionCard
               title="ترقية الباقة وسداد فوري"
-              description="اختر باقتك المفضلة للدفع الفوري عبر مدى أو Apple Pay أو البطاقات الائتمانية عبر مُيسّر"
+              description="اختر باقتك المفضلة للدفع الفوري والتفعيل الآلي عبر مدى، Apple Pay، أو البطاقات الائتمانية"
             >
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {higherPlans.map((p) => (
@@ -254,21 +255,14 @@ function SubscriptionPage() {
                         loading={upgradingCode === p.code && upgradeMutation.isPending}
                         onClick={() => upgradeMutation.mutate(p.code)}
                       >
-                        <CreditCard className="h-4 w-4" /> ترقية وسداد عبر مُيسّر
+                        <CreditCard className="h-4 w-4" /> ترقية وسداد فوري
                       </Btn>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4 text-[12.5px] text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <span>💳 وسائل الدفع المعتمدة:</span>
-                  <span className="font-semibold text-foreground">مدى (Mada)</span>
-                  <span>·</span>
-                  <span className="font-semibold text-foreground">Apple Pay</span>
-                  <span>·</span>
-                  <span className="font-semibold text-foreground">Visa / MasterCard</span>
-                </div>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-[12.5px] text-muted-foreground">
+                <PaymentMethodsBar showLabel={true} />
                 <div className="flex flex-wrap gap-2">
                   <Link to="/pricing">
                     <Btn variant="ghost" size="sm">مقارنة الباقات</Btn>
