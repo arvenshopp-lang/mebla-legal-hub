@@ -395,3 +395,168 @@ ACR_01_REVISION_2_STATUS = READY_FOR_REVIEW
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR ACR-01 REVISION 2 SECURITY REVIEW
+
+---
+
+# MEHLA DOCUMENT SECURITY — FINAL CONSOLIDATED SECURITY PLAN (FREEZE CANDIDATE) · ACR-01 REVISION 3
+
+المرجع الوحيد المستقبلي. لا تنفيذ/Migration/أسرار/تخزين/نشر/مختبر.
+
+## 1. SUPERSESSION_MATRIX
+| القاعدة القديمة | تُلغى بـ |
+|---|---|
+| Master Plan S1: جداول أمنية service_role only | ACR-01 R3 §2 — private security schema + هويات خدمة مخصصة ودوال ضيقة |
+| Master Plan S0 → S1 مباشرة | ACR-01 R3 §35 — S0 EVIDENCE COMPLETE → ACR-01 FINAL → P0 DESIGN → P0 TESTS → S1 |
+| S5 كمرحلة واحدة | S5A (إخراج التحقق البنيوي) ثم S5B (إخراج OCR/AI/secure-view) |
+| "AV-B مطلوب حسب السياسة" (اختياري ضمناً) | AV-B إلزامي لمصادر EXTERNAL_UNTRUSTED (EP-09) |
+| V5: Broker موحّد | ACR-01 R2 §4 — سبع سلطات مستقلة |
+| R2 §13: HASH_BEFORE_EVERY_SECURITY_TRANSITION | R3 §14 — CONTENT_INTEGRITY_REVALIDATION_MATRIX |
+| S0.5: تسمية PROVEN لتغطية غير مكتملة | ACR-01 §1 — مستويات ثقة صريحة |
+| افتراض توفر Object Lock ضمناً | R3 §16–18 — قرار مزود بمعايير إثبات |
+| Dependency graph القديم | R3 §35 |
+CANONICAL_PLAN_CONFLICTS = 9 محلولة · 0 متبقية.
+
+## 2. private security schema (بدل service_role only)
+مخطط `security` غير مكشوف للـData API، بجداول: `upload_slots`, `secure_files`, `file_scans`, `file_scan_results`, `file_security_decisions`, `file_evidence_attestations`, `file_release_events`, `file_lineage`, `security_audit_events`, `file_ioc`, `policy_versions`.
+منح لكل مكوّن (دوال فقط، لا وصول جدولي عام):
+- Application: `request_upload_slot`, `claim_upload_slot`, `read_file_status` (مستأجره فقط).
+- Upload Authority: `issue_upload_capability`, `finalize_slot` (UPLOADED→SEALED) — لا release.
+- Scan Result Ingestion: `ingest_scan_result` (إدراج فقط، لا تعديل).
+- Decision: `record_decision` (قراءة نتائج، لا بايتات).
+- Evidence: `record_attestation` (قراءة أدلة موقّعة فقط).
+- Release: `authorize_release` (يقرأ القرار+الشهادة، لا يكتب نتائج).
+- Audit: قراءة append-only + تحقق سلسلة؛ لا حذف لأي مكوّن.
+
+## 3. SUPABASE IDENTITY FEASIBILITY MATRIX (تصميمي)
+| خيار | امتيازات DB | تخزين | RLS | عمر الاعتماد | تعرّض | نطاق مستأجر/كائن | إبطال | تدقيق | نطاق أثر | تعقيد |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A) Custom Storage Roles + RLS | متوسط | جيد | يُطبَّق | طويل | متوسط | جيد/محدود | متوسط | جيد | متوسط | متوسط |
+| B) أدوار PostgreSQL لكل خدمة | دقيق جداً | غير مباشر | يُطبَّق | طويل | مرتفع (كلمات مرور) | ممتاز | جيد | ممتاز | منخفض | مرتفع |
+| C) Narrow SECURITY DEFINER RPC | محصور بالدوال | غير مباشر | مُتجاوَز داخل الدالة بضوابط | تابع للمنادي | منخفض | ممتاز | فوري | ممتاز | منخفض | متوسط |
+| D) Backend capability broker | لا شيء مباشر | قدرات معنونة | خارج DB | قصير جداً | منخفض | ممتاز | فوري | ممتاز | منخفض | مرتفع |
+| E) Hybrid (B+C+D) | — | — | — | — | — | — | — | — | الأدنى | الأعلى |
+RECOMMENDED_SUPABASE_IDENTITY_MODEL = **E (Hybrid)**: أدوار Postgres مخصصة تملك الدوال، واجهة RPC ضيقة للتطبيق، وBroker قدرات للتخزين — مع بقاء كل عنصر NOT_PROVEN حتى P0.
+
+## 4. SERVICE_ROLE_ELIMINATION_REGISTER
+الهدف GENERAL_SERVICE_KEY_FILE_ACCESS = 0. الوحدات الملفّية ذات الأولوية (owner / purpose / replacement / phase / risk / status):
+`documents/intake.server.ts` (رفع → Upload Authority · S4 · عالي · OPEN) · `secure-view/*` (معاينة → Preview Service · S14 · عالي · OPEN) · `email/attachments.server.ts` (مرفقات → Ingestion Broker · S4 · عالي · OPEN) · `office-page(.ops).server.ts` + `office-public.server.ts` (وسائط → Publish Gate · S23 · متوسط · OPEN) · `contracts/*` (PDF → Delivery Authority · S18 · متوسط · OPEN) · `hr.functions.ts` (EP-08 · S4 · متوسط · OPEN) · `secure-view/cleanup.server.ts` (EP-11 → Cleanup Authority محصورة · S20 · متوسط · OPEN) · `document-ai/ocr` (EP-10 → Scan-gated · S5B · عالي · OPEN) · باقي الوحدات غير الملفّية تُجرد في S0 الموسّع (NOT_PROVEN). أي بقاء مبرَّر: مؤقت + مُدرج + بتاريخ إزالة.
+
+## 5. CLOUD_CONTROL_PLANE_COMPROMISE_MODEL
+بافتراض اختراق حساب إدارة السحابة: يستطيع تعديل نشر Decision/Evidence، تغيير سياسة KMS، منح نفسه SIGN، تعطيل التدقيق، تعديل احتفاظ التخزين والشبكة، وقراءة الأسرار المدارة. لذلك: فصل حسابات/compartments بين مجال الأمن ومجال التطبيق، سياسات KMS بموافقة ثنائية، احتفاظ تدقيق غير قابل للحذف إدارياً خلال نافذته، تنبيه فوري على أي تغيير سياسة، ونسخة تدقيق في مجال إداري منفصل. مخاطرة متبقية معلنة: اختراق مدير السحابة الأعلى يبقى سيناريو كارثي يُخفَّف ولا يُلغى.
+
+## 6–8. KMS · فصل الواجبات · Break-glass
+مفاتيح منفصلة + سياسات IAM منفصلة + هويات عمل منفصلة + خزائن/compartments منفصلة حيث تسمح البنية. لا Principal واحد يوقّع بمفتاحي Decision وEvidence في التشغيل الطبيعي ⇒ COMPROMISE_DECISION_SIGNING ≠ COMPROMISE_EVIDENCE_SIGNING.
+SEPARATION_OF_ADMINISTRATIVE_DUTIES: Platform Admin · Security Admin · KMS Admin · Deployment Admin · Audit Admin — لا شخص يجمع تعديل Decision + تعديل Evidence + منح SIGN بلا موافقة إضافية.
+Break-glass: هوية معطّلة بلا جلسة قائمة، MFA قوي، سبب إلزامي، مدة محددة، تنبيه فوري، تدقيق كامل، مراجعة بعد الحدث؛ ممنوع كحساب تشغيل.
+
+## 9–11. CI/CD كجذر ثقة
+افتراض اختراق كامل للـPipeline: يستطيع تغيير Decision وEvidence معاً وكسر 2-of-2 رغم مفاتيح KMS غير القابلة للتصدير. الضوابط: DECISION_DEPLOYMENT_AUTHORITY ≠ EVIDENCE_DEPLOYMENT_AUTHORITY، وإن تعذّر: اعتماد نشر مستقل لكل خدمة + توقيع الأثر + فروع محمية + CODEOWNERS أمني + provenance غير قابل للتغيير + admission verification + موافقة شخصين للخدمات الأمنية.
+كل أثر إنتاجي أمني: pinned digest · signed · SBOM · provenance · dependency lock · نتيجة فحص ثغرات · commit SHA. وقت التشغيل يرفض أي صورة غير معتمدة.
+HIGH_RISK_SECURITY_CHANGE: Decision · Evidence · Release · Scan broker · Policy evaluator · تكامل KMS · كود انتقالات الحالة.
+
+## 12–13. AUDIT_INDEPENDENCE_DOMAIN
+هوية وصلاحيات منفصلة، احتفاظ غير قابل للتعديل، لا حذف من التطبيق أو الماسح أو Decision/Evidence، وفصل الحساب/compartment الإداري حيث كان عملياً. عند توقف المدقّق أو اكتشاف فجوة سلسلة/عدم تطابق توقيع/تسلسل مفقود: تنبيه + حادث + `SECURITY_STATE = DEGRADED`. Severity عالية (كسر سلسلة أو توقيع) ⇒ إيقاف الإفراج؛ توقف مؤقت للمدقّق ⇒ استمرار مع تنبيه ومهلة قصوى ثم إيقاف. لا فشل تدقيق صامت.
+
+## 14–15. CONTENT_INTEGRITY_REVALIDATION_MATRIX
+البصمة المرجعية تُثبّت عند حد SEALED. إعادة الحساب إلزامية عند: أول قراءة في المنطقة العدائية · إنشاء أي مشتق · النسخ إلى التخزين النهائي · قبل أول إفراج · إعادة تصنيف حساسة للسلامة · أي عبور حدود ثقة. انتقالات الحالة الوصفية لا تتطلب تنزيلاً كاملاً ما دام ربط Generation/Version قائماً ⇒ حماية TOCTOU بلا SELF_INDUCED_HASHING_DOS.
+ربط الإصدار: ETag/generation/version id تُخزَّن مع sha256 وobject_key وslot وscan وdecision. **ETag ليس بديلاً عن SHA-256** إلا بإثبات صريح من المزود.
+
+## 16–19. QUARANTINE_PROVIDER_DECISION_RECORD
+معايير كل مرشح: توفر منطقة سعودية الآن · Object Storage · retention/WORM أصلي · immutability · شبكة خاصة · دقة IAM · مفاتيح مُدارة من العميل · سجلات تدقيق · التوفرية · SDK · التكلفة · التعقيد التشغيلي.
+- **OCI Saudi Arabia Central (Riyadh)**: OCI_QUARANTINE_CANDIDATE = STRONG_CANDIDATE · OCI_FINAL_FEASIBILITY = NOT_PROVEN (يتطلب إثبات retention في المستأجر/المنطقة المختارة، Vault/KMS، عزل الحوسبة، الشبكة الخاصة، السجلات، السعة).
+- مرشحون آخرون (سحابات محلية/إقليمية): CURRENTLY_UNAVAILABLE / NOT_PROVEN — لا يُبنى على منطقة معلنة مستقبلاً.
+- Supabase وحده: application-enforced فقط ⇒ غير كافٍ كهدف نهائي، مقبول كمرحلة انتقالية فقط.
+الهدف الحقيقي = **IMMUTABLE_BYTES_DURING_SECURITY_WINDOW**؛ Versioning ضابط مستقل قد يكون SUPPORTED / INCOMPATIBLE / UNNECESSARY حسب المزود، ولا يُشترط اقترانه بـObject Lock.
+صيغة نافذة القفل: `lock = max_scan_time + queue_delay_p99 + detonation_time + CDR_time + rescan_time + decision_time + release_reconciliation + safety_buffer`، تُشتق من قياسات P0 وتُراجَع مع كل تغيير سياسة — لا رقم تخميني الآن.
+
+## 20–22. UPLOAD SLOT — تصحيح الحقائق والسلطة
+SIGNED_UPLOAD_PROVIDER_TTL = DOCUMENTED_BY_PROVIDER = 2 hours · ONE_TIME_SEMANTICS / REPLAY_BEHAVIOR / CONCURRENCY_BEHAVIOR = NOT_PROVEN حتى P0. TTL مِهلة مستقل وأقصر، وهو الحاكم.
+أي كائن يصل بعد انتهاء الـSlot أو بعد مطالبة طرف آخر = ORPHAN / REJECTED ولا يبلغ الإفراج أبداً.
+UPLOADED → SEALED بيد **Finalize Authority** فقط (لا العميل)، تتحقق من الكائن والحجم والمستأجر والمفتاح والإصدار؛ ولا تملك أي صلاحية release. اختراقها = ختم كائن غير مطابق ⇒ يُكشف بإعادة حساب البصمة في المنطقة العدائية وبقرار 2-of-2.
+
+## 23–27. سلامة النتائج والسياسات والمفاتيح والوقت
+SCAN RESULT INGESTION تقبل فقط: هوية محرك معروفة + ربط بالوظيفة + scan_id + file_id + tenant + expected hash + إصدار المحرك + إصدار القواعد + إصدار السياسة + طابع زمني + nonce + مخطط نتيجة صارم. ترفض: محرك مجهول، نتيجة مكررة متعارضة، وظيفة/مستأجر/بصمة خاطئة، وظيفة قديمة، إعادة إرسال.
+Result replay: NEW SECURITY CONTEXT = NEW DECISION؛ لا HASH_CACHE = AUTOMATIC CLEAN؛ إعادة استخدام أدلة فقط إن سمحت السياسة وكانت إصدارات المحركات/القواعد حالية وفئة الثقة متوافقة مع تسجيل النسب.
+POLICY_ROLLBACK_PROTECTION: كل متحقق يقارن بـ CURRENT_MINIMUM_POLICY_VERSION لا بما في الرمز فقط.
+Key rollback: سجل مفاتيح نشطة + سجل ملغاة + not-before/not-after + kid؛ مفتاح متقاعد أو مُبطَل طارئاً لا يُقبل أبداً.
+Clock: NTP غير متاح / انحراف / رجوع / قفزة أمامية ⇒ Fail-Closed؛ لا رمز منتهٍ يصبح صالحاً بسبب خطأ وقت.
+
+## 28–29. P0_IDENTITY_ISOLATION_TEST_MATRIX
+Scanner لا يستعلم DB · Decision لا يقرأ التخزين · Evidence لا يقرأ بايتات خام · Release لا يسرد Bucket · Upload Authority لا تنزّل · Audit Authority لا تُفرِج · Application لا تستدعي دوال مالك الأمن مباشرة. وحدود IAM: هوية خدمة خاطئة، دور خاطئ، audience خاطئ، رمز عبر خدمات، اعتماد مُبطَل، اعتماد منتهٍ، محاولة تصعيد ⇒ المتوقع DENY في كل حالة.
+P0_PRODUCTION_PARITY كما في R2 §23.
+
+## 30–33. حالة الأدلة
+CALL_GRAPH: 2/11 (EP-01, EP-02) — الباقي يتطلب قراءة سطرية موسّعة لم تُنجَز في هذه البوابة ⇒ NOT_PROVEN.
+FILE_OPERATION_SEARCH: بحث نصي واسع أُجري (upload/download/copy/move/remove/signed/public/buffer/formdata) لكن Wrappers والاستيرادات المُسمّاة لم تُغطَّ بجرد AST ⇒ NOT_PROVEN.
+PUBLIC_MEDIA: NOT_PROVEN.
+BACKGROUND WORKER (EP-10): BACKGROUND_JOB_CREATION_PATH / ACCEPTED_FILE_STATES / AUTHORIZATION / CREDENTIAL / DATA_OUTPUT = **NOT_PROVEN**.
+CRON (EP-11): CURRENT_CLEANUP_BLAST_RADIUS = **NOT_PROVEN** (الجداول والBuckets وعمليات الحذف ومعايير الأهلية وفحوص المستأجر والزمن غير مثبتة سطرياً).
+AI/OCR EVIDENCE REGISTER — أسئلة إثبات مستقبلية، كلها NOT_PROVEN حتى مصدر رسمي/عقد: موقع المعالجة · إقامة البيانات · مدة الاحتفاظ · الاستخدام في التدريب · المعالجون الفرعيون · DPA · التشفير · الحذف · الإشعار بالحوادث.
+
+## 36. TARGET vs CURRENT (ثوابت مختارة)
+| الثابت | TARGET | CURRENT |
+|---|---|---|
+| SINGLE_COMPONENT_ALL_DOCUMENT_EXPOSURE | NO | **YES** (service_role) |
+| SINGLE_COMPONENT_MALICIOUS_RELEASE | NO | **YES** (لا بوابة إفراج) |
+| UNTRUSTED_BYTES_IN_MAIN_APP | 0 | **>0** |
+| QUARANTINE_EXISTS | YES | **NO** |
+| DIRECT_SECURITY_STATE_UPDATE | 0 | لا توجد حالة أمنية أصلاً |
+| MULTI_ENGINE_MALWARE_DETECTION | VERIFIED | **NONE** |
+| AUDIT_TAMPERING_DETECTABLE | YES | جزئي |
+| SECRET_DOMAIN_SEPARATION | YES | **NO** (CF-07) |
+
+## 37. COMPROMISE MATRIX V2 — إضافات
+| المكوّن | يكسب | لا يكسب | منع | كشف | احتواء | استرجاع | أقصى نطاق |
+|---|---|---|---|---|---|---|---|
+| Cloud account admin | نشر/سياسات/أسرار مُدارة | مفاتيح غير قابلة للتصدير خارج مجاله | فصل حسابات + موافقة ثنائية | تنبيه تغيير سياسة | مجال تدقيق مستقل | استعادة من مجال منفصل | كارثي (مخاطرة معلنة) |
+| KMS policy admin | منح SIGN | التوقيع بلا منح مرصود | فصل KMS Admin | سجل عمليات المفاتيح | تدوير طارئ | إعادة إصدار مفاتيح | مرتفع |
+| Deployment pipeline | كود الخدمات | مفاتيح خاصة | سلطتا نشر منفصلتان | provenance/admission | تجميد النشر | إعادة نشر موقّعة | مرتفع |
+| GitHub/repo admin | المصدر | نشر بلا موافقة | CODEOWNERS + فروع محمية | مراجعة التغيير | إبطال الأثر | rollback موقّع | مرتفع |
+| Upload finalize authority | ختم كائن غير مطابق | إفراج | فصل الصلاحية | إعادة حساب البصمة | رفض 2-of-2 | إعادة فحص | متوسط |
+| Scan result ingestion | إدخال نتيجة زائفة | تعديل نتائج سابقة | مخطط صارم + nonce | تعارض المحركات | رفض القرار | إعادة فحص | متوسط |
+| Capability signer | قدرات لسجلات قائمة | قدرات لملفات بلا سجل | ربط سجل/مستأجر/كائن | سجل إصدار | إبطال kid | تدوير | متوسط |
+| Independent audit verifier | إنكار/إنذار كاذب | تعديل السجل | صلاحية قراءة فقط | تناقض مع النسخة | تجاهل مؤقت موثّق | استبدال المدقّق | منخفض |
+| DNS/domain control | إعادة توجيه واجهات | اعتماد قاعدة البيانات | HSTS + تثبيت الشهادات + نطاق كوكيز | مراقبة الشهادات/DNS | إبطال الشهادات | استرجاع النطاق | مرتفع |
+
+## 38. DNS/DOMAIN
+TLS إلزامي + مراقبة شفافية الشهادات + HSTS + كوكيز جلسة مقصورة على أصل التطبيق و**ممنوعة على أصل المعاينة** + قائمة أصول مسموحة + مراقبة تغييرات DNS. اختراق DNS لا يمنح اعتمادات قاعدة البيانات.
+
+## 39. EVIDENCE PACK (تحديث للجهة الفاحصة الخارجية)
+يضاف: مصفوفة هويات الخدمات · فصل KMS · مصفوفة IAM · نموذج تهديد مستوى تحكم السحابة · provenance للـCI/CD · سباقات Upload Slot · سلوك المزود وقت التشغيل · immutability الحجر · مصفوفة تماثل P0 · مصفوفة الاختراق V2.
+
+## 35. FINAL DEPENDENCY GRAPH
+```text
+S0 EVIDENCE COMPLETE → ACR-01 FINAL → P0 DESIGN APPROVED → P0 CREATED (بموافقة صريحة)
+→ P0 PROVIDER/IDENTITY TESTS → S1 → S2 … S30 → ENFORCEMENT → CANARY
+```
+لا تنفيذ تلقائي في أي حلقة.
+
+## الناتج
+S0_CALL_GRAPH_COVERAGE = 2/11 (NOT_PROVEN)
+S0_FILE_OPERATION_COVERAGE = NOT_PROVEN (بحث نصي واسع؛ جرد AST مطلوب)
+S0_PUBLIC_MEDIA_COVERAGE = NOT_PROVEN
+CANONICAL_PLAN_CONFLICTS = 0 متبقية (9 مُلغاة في SUPERSESSION_MATRIX)
+SUPABASE_IDENTITY_MODEL = HYBRID (أدوار Postgres + RPC ضيقة + Capability Broker) — DESIGNED, NOT_PROVEN
+SERVICE_ROLE_ELIMINATION_DESIGNED = YES (سجل الإزالة مفتوح)
+CLOUD_CONTROL_PLANE_CONTAINMENT_DESIGNED = YES (مع مخاطرة متبقية معلنة)
+KMS_COMMON_MODE_FAILURE_REDUCED = YES (مفاتيح/سياسات/هويات/خزائن منفصلة)
+CI_CD_COMMON_MODE_FAILURE_REDUCED = YES (سلطتا نشر + توقيع أثر + موافقة شخصين)
+AUDIT_ADMINISTRATIVE_INDEPENDENCE_DESIGNED = YES
+QUARANTINE_PROVIDER_FEASIBILITY = NOT_PROVEN
+OCI_RIYADH_FEASIBILITY = STRONG_CANDIDATE / NOT_PROVEN
+KMS_FEASIBILITY = NOT_PROVEN
+MICROVM_FEASIBILITY = NOT_PROVEN
+SIGNED_UPLOAD_PROVIDER_TTL = DOCUMENTED_BY_PROVIDER = 2 hours (ليست سياسة مِهلة)
+SIGNED_UPLOAD_ONE_TIME = NOT_PROVEN
+SIGNED_UPLOAD_REPLAY = NOT_PROVEN
+P0_IDENTITY_TESTS_DESIGNED = YES
+P0_PROVIDER_TESTS_DESIGNED = YES
+UNRESOLVED_CRITICAL_DESIGN_GAPS = نموذج هوية Supabase غير مُثبت · مزود حجر بـimmutability أصلية · توفر KMS وMicroVM في الرياض · نافذة القفل تحتاج قياسات · سيادة بيانات AI/OCR
+UNRESOLVED_CRITICAL_EVIDENCE_GAPS = 9/11 Call Graphs · جرد عمليات الملفات (AST) · مسارات كتابة الوسائط العامة · سلوك الرفع الموقّع · immutability التخزين · مسار وظائف الخلفية · نطاق حذف الـcron · سياسات Buckets وقت التشغيل · سجل مزود AI/OCR
+UNPROVEN_INFRASTRUCTURE_ASSUMPTIONS = Object Lock · Versioning · KMS غير قابل للتصدير · MicroVM · شبكة خاصة · سلطتا نشر منفصلتان · فصل حسابات سحابية
+BASE_ARCHITECTURE_V5 = FROZEN
+ACR_01_FINAL_STATUS = READY_FOR_FINAL_REVIEW (مشروط بإغلاق فجوات أدلة S0)
+CANONICAL_PLAN_READY_FOR_FINAL_REVIEW = YES
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR FINAL PRE-IMPLEMENTATION SECURITY REVIEW
