@@ -50,7 +50,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
     to_state: event.toState ?? null,
     sha256: event.sha256 ?? null,
     correlation_id: event.correlationId ?? null,
-    metadata: event.metadata ?? {},
+    metadata: (event.metadata ?? {}) as never,
   });
 }
 
@@ -149,17 +149,26 @@ export async function transitionSecurityState(input: {
     throw new Error("الملف لا ينتمي إلى هذا المكتب.");
   }
 
-  const patch: Record<string, unknown> = {
+  const patch: {
+    state: DocumentSecurityState;
+    reason: string;
+    sha256?: string;
+    detected_mime?: string;
+    correlation_id?: string;
+    scan_attempts?: number;
+    decision_id?: string;
+    decided_at?: string;
+  } = {
     state: input.next,
     reason: input.reason,
   };
-  if (input.sha256) patch["sha256"] = input.sha256;
-  if (input.detectedMime) patch["detected_mime"] = input.detectedMime;
-  if (input.correlationId) patch["correlation_id"] = input.correlationId;
-  if (input.next === "scanning") patch["scan_attempts"] = current.scan_attempts + 1;
-  if (input.next === "released") patch["decision_id"] = crypto.randomUUID();
+  if (input.sha256) patch.sha256 = input.sha256;
+  if (input.detectedMime) patch.detected_mime = input.detectedMime;
+  if (input.correlationId) patch.correlation_id = input.correlationId;
+  if (input.next === "scanning") patch.scan_attempts = current.scan_attempts + 1;
+  if (input.next === "released") patch.decision_id = crypto.randomUUID();
   if (["released", "clean", "malicious", "unscannable"].includes(input.next)) {
-    patch["decided_at"] = new Date().toISOString();
+    patch.decided_at = new Date().toISOString();
   }
 
   const { error } = await db
