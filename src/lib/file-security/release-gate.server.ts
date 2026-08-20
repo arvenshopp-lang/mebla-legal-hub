@@ -1,6 +1,11 @@
 import type { DocumentSecurityState, ReleasePurpose } from "./policy";
 import { RAW_BYTE_PURPOSES, RELEASABLE_STATES, releaseDenialMessage } from "./policy";
-import { logSecurityEvent, readSecurityState } from "./security-state.server";
+import {
+  bindLegacyContentHash,
+  isLegacyGrandfathered,
+  logSecurityEvent,
+  readSecurityState,
+} from "./security-state.server";
 
 /**
  * البوابة المركزية الوحيدة لتسليم بايتات أي مستند.
