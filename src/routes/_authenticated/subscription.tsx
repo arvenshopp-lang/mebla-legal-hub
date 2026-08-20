@@ -43,7 +43,17 @@ import {
 } from "@/lib/subscription.shared";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    payment?: string;
+    org?: string;
+    plan?: string;
+    cycle?: string;
+    id?: string;
+    status?: string;
+    message?: string;
+  } => ({
     payment: typeof search.payment === "string" ? search.payment : undefined,
     org: typeof search.org === "string" ? search.org : undefined,
     plan: typeof search.plan === "string" ? search.plan : undefined,
