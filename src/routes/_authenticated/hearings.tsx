@@ -101,7 +101,7 @@ function Page() {
     setOpen(true);
   });
   const [deleting, setDeleting] = useState<HearingRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,

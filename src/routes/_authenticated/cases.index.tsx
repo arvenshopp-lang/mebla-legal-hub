@@ -133,7 +133,7 @@ function Page() {
     setOpen(true);
   });
   const [archiving, setArchiving] = useState<CaseRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data: members } = useQuery({
     queryKey: ["members-basic", activeOrgId],

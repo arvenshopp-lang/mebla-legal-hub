@@ -99,7 +99,7 @@ function Page() {
   const [deleting, setDeleting] = useState<DocumentListRow | null>(null);
   const [sharing, setSharing] = useState<SecureDoc | null>(null);
   const [viewingText, setViewingText] = useState<DocumentRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
   const secure = useSecureDocument();
 
   const { data, isLoading, isFetching, error } = useQuery({

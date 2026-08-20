@@ -104,7 +104,7 @@ function Page() {
   const [editing, setEditing] = useState<DeadlineRow | null>(null);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<DeadlineRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
 
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,

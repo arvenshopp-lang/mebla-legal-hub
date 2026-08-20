@@ -99,7 +99,7 @@ function Page() {
     setOpen(true);
   });
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
-  const q = useDebounced(search);
+  const q = sanitizeSearchTerm(useDebounced(search));
   const piiSearch = useServerFn(searchClientsByPii);
   const { data, isLoading, isFetching, error } = useQuery({
     placeholderData: keepPreviousData,
