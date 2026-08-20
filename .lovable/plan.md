@@ -692,3 +692,71 @@ DESIGN_STATUS = CLOSED
 IMPLEMENTATION_APPROVAL = NOT_GRANTED
 
 WAITING FOR GO NO-GO IMPLEMENTATION DECISION
+
+---
+
+# MEHLA FINAL EVIDENCE CLOSURE — E1 (EP-03 / EP-04 / EP-05)
+
+SNAPSHOT_SHA_START = fd3da4b20947 · SNAPSHOT_SHA_END = fd3da4b20947 · SNAPSHOT_STABLE = YES.
+
+## EP-03 — CONTRACTS (OBSERVED_IN_CODE، جزئي)
+- ENTRYPOINT: `contracts.functions.ts` (دوال خادمية) + مسار عام `routes/sign.$token.tsx`.
+- AUTH/AUTHZ/TENANT: المسارات الداخلية `.middleware([requireSupabaseAuth])` ثم `resolveContractOrg(context.supabase, ...)` (RLS بهوية المستخدم) + `assertEntitlement` لبوابة التوقيع. المسار العام بلا جلسة: `getPublicContractForSigningFn` / `signPublicContractFn` / `downloadSignedContractByTicketFn`.
+- TOKEN/CAPABILITY: رمز توقيع + **تذكرة تنزيل HMAC** (`issueContractDownloadTicket` / `resolveContractDownloadTicket`)، سرها من `contracts.server.ts:74` بنمط fallback غير آمن.
+- DATABASE: `contracts`, `contract_events`, `contract_versions`, `contract_signers`, `case_updates`, RPC `next_contract_number` — كلها عبر `supabaseAdmin` (استيراد على مستوى الوحدة، `contracts.server.ts:6`) ⇒ RLS متجاوز في هذا المسار.
+- STORAGE: لا عملية Storage مرصودة في `contracts.server.ts` ⇒ NOT_APPLICABLE.
+- RAW BYTES / PDF: توليد PDF في الذاكرة داخل التطبيق ثم Base64 في الرد (`downloadSignedContractByTicketFn`, `downloadContractPdfFn`) + QR متجهي. لا تحليل ملف مستخدم.
+- OUTPUT/DELIVERY: JSON يحمل base64 للمتصفح؛ التدقيق عبر `recordContractDownload` (`contract_events.event_type='exported_pdf'`).
+- CLEANUP: NOT_PROVEN. CURRENT SECURITY GATE: **ABSENT** (لا حالة أمنية للملف).
+- الحلقات غير المثبتة: انتهاء/إبطال تذكرة التنزيل وقت التشغيل، سلسلة `contract-lifecycle.server` كاملة ⇒ EP03_UNKNOWN_EDGES = 2.
+
+## EP-04 — EMAIL ATTACHMENTS (OBSERVED_IN_CODE، جزئي)
+- BUCKET: `ATTACHMENT_BUCKET` (خاص) في `email/attachments.server.ts`.
+- العمليات المرصودة: `storage.from(ATTACHMENT_BUCKET).remove([path])` (سطر 219 و337) · `createSignedUrl(row.storage_path, ATTACHMENT_LINK_TTL_SECONDS, {...})` (285–287) · `createSignedUrl(..., ttlSeconds, { download: row.file_name })` (359–361).
+- CREDENTIAL: عميل `db` خادمي (service role في هذه السلسلة) ⇒ RLS متجاوز.
+- RAW BYTES: المرفقات الصادرة تُبنى عبر `email/transport/mime.server.ts` (multipart) ⇒ قراءة بايتات داخل التطبيق مرجّحة لكن **غير مثبتة سطرياً** في هذه الجولة ⇒ NOT_PROVEN.
+- SECURITY GATE: لا فحص/إفراج أمني في السلسلة ⇒ ABSENT بدلالة غياب أي حالة أمنية في المخطط؛ سؤال "هل يمكن إرسال مستند AVAILABLE بلا Release؟" = **نعم بحكم غياب البوابة** (INFERRED من الغياب، لا من سطر يمنع/يسمح) ⇒ يُسجَّل NOT_PROVEN حتى قراءة مسار الإرسال كاملاً.
+- الوارد (inbound) عبر `routes/api/public/hooks/email-inbound.ts` = EP-09، خارج نطاق E1.
+- EP04_UNKNOWN_EDGES = 3 (قراءة البايتات، مسار الإرسال إلى المزود، تفويض/مستأجر عند التنزيل).
+
+## EP-05 — SECURE VIEW / PRINT (OBSERVED_IN_CODE، شبه مكتمل)
+- ENTRYPOINT: `routes/api/public/doc.$token.ts` — الطريق الوحيد الذي يلمس مستنداً مخزّناً.
+- CAPABILITY: رمز غير شفاف يُستهلك بـ`consumeAccessToken` (محدود المدة والاستخدامات)؛ تطابق المكتب يُفرض صراحةً (`doc.organization_id !== resolved.organizationId` ⇒ 403).
+- CREDENTIAL: `supabaseAdmin` عبر استيراد داخل الدالة (`secure-view.server.ts:84-85`) ⇒ RLS متجاوز.
+- STORAGE READ: `db.storage.from(trace.bucket).createSignedUrl(filePath, 60, ...)` (سطر 297) ثم `new Uint8Array(await response.arrayBuffer())` (354) ⇒ **قراءة بايتات خام داخل التطبيق مؤكدة**، Bucket = `documents` (خاص)، TTL الرابط الموقّع = 60 ثانية وخادمي بالكامل.
+- TRANSFORM: `stamp.buildWatermarkedPdf` (ختم مائي خادمي) + نص بديل من `loadExtractedText`؛ تذكرة `kind === "process"` تُعيد **البايتات الأصلية** لمحرك الاستخراج.
+- DELIVERY: PDF مباشر بترويسات `no-store`/`nosniff`/`accept-ranges: none`؛ تدقيق `logDocumentAccess` لمسار المشاركة.
+- CLEANUP: عبر EP-11 (`cleanup.server.ts`).
+- SECURITY GATE: **ABSENT** (لا شرط حالة أمنية قبل القراءة). إعادة استخدام الرمز/التزامن = NOT_PROVEN (يتطلب اختبار وقت تشغيل في P0).
+- EP05_UNKNOWN_EDGES = 1 (دلالات إعادة استخدام الرمز وقت التشغيل).
+
+## جدول العمليات المكتشفة في E1
+| OP_ID | EP | CALLER | WRAPPER_CHAIN | FINAL_OP | BUCKET | CREDENTIAL | TENANT_CHECK | RAW_BYTES | DELIVERY_IMPACT |
+|---|---|---|---|---|---|---|---|---|---|
+| OP-E1-01 | 05 | `doc.$token.ts` | `secure.readOriginal` → `db()` | `createSignedUrl(60s)` + fetch | documents | service role | نعم (org match) | نعم | PDF مائي للجمهور بالرمز |
+| OP-E1-02 | 05 | `doc.$token.ts` (kind=process) | نفس السلسلة | إعادة البايتات الأصلية | documents | service role | نعم | نعم | بايتات خام لمحرك الاستخراج |
+| OP-E1-03 | 04 | `attachments.server.ts:285` | `db.storage` | `createSignedUrl(TTL)` | email-attachments | service role | NOT_PROVEN | لا | رابط تنزيل مرفق |
+| OP-E1-04 | 04 | `attachments.server.ts:359` | `db.storage` | `createSignedUrl(ttl,{download})` | email-attachments | service role | NOT_PROVEN | لا | تنزيل مباشر |
+| OP-E1-05 | 04 | `attachments.server.ts:219,337` | `db.storage` | `remove([path])` | email-attachments | service role | NOT_PROVEN | لا | حذف |
+| OP-E1-06 | 03 | `contracts.functions.ts` | `generateContractPdf` | توليد PDF بالذاكرة | — | service role (DB) | نعم داخلياً / تذكرة عامة | نعم (مولّدة) | base64 للمتصفح |
+
+## الناتج
+SNAPSHOT_SHA_START = fd3da4b20947
+SNAPSHOT_SHA_END = fd3da4b20947
+SNAPSHOT_STABLE = YES
+EP03_CALL_GRAPH = NOT_PROVEN (جزئي — حلقتان ناقصتان)
+EP04_CALL_GRAPH = NOT_PROVEN (جزئي — ثلاث حلقات ناقصة)
+EP05_CALL_GRAPH = NOT_PROVEN (شبه مكتمل — حلقة واحدة ناقصة تعتمد على وقت التشغيل)
+EP03_UNKNOWN_EDGES = 2 · EP04_UNKNOWN_EDGES = 3 · EP05_UNKNOWN_EDGES = 1
+NEW_FILE_OPERATIONS_FOUND = 6 (OP-E1-01..06)
+NEW_DELIVERY_PATHS_FOUND = 3 (تذكرة تنزيل عقد HMAC · روابط مرفقات موقّعة · بايتات خام لتذكرة `process`)
+NEW_RAW_PROCESSORS_FOUND = 1 (مسار `kind=process` يعيد البايتات الأصلية بلا ختم)
+NEW_SERVICE_ROLE_USAGE_FOUND = 3 وحدات مؤكدة (contracts, secure-view, email/attachments)
+NEW_CRITICAL_FINDINGS = CF-21: تذكرة `kind="process"` تُخرج البايتات الأصلية غير المفحوصة عبر مسار عام (`/api/public/doc/$token`) بلا أي بوابة أمنية (OBSERVED_IN_CODE، `doc.$token.ts:178-186`) — لم يُصلَح
+CF20_STATUS = GLOBAL_CLEANUP_BLAST_RADIUS OBSERVED_IN_CODE
+CROSS_TENANT_DELETION_EXPLOITABILITY = NOT_PROVEN (يُغلق في E3)
+TOTAL_CALL_GRAPH_COVERAGE = 2/11 مكتمل + 3 جزئية (لا يُرقّى إلى 5/11)
+DESIGN_STATUS = CLOSED
+IMPLEMENTATION_APPROVAL = NOT_GRANTED
+
+WAITING FOR E1 SECURITY REVIEW
