@@ -126,13 +126,18 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       await import("@/lib/documents/intake.server");
 
     // لا يُربط أي كائن بسجل مستند قبل تحقق خادمي كامل من المسار والبايتات.
-    const verified: { file: (typeof data.files)[number]; mime: string; size: number }[] = [];
+    const verified: {
+      file: (typeof data.files)[number];
+      mime: string;
+      size: number;
+      sha256: string;
+    }[] = [];
     try {
       for (const f of data.files) {
         const v = await verifyUploadedObject({ path: f.path, prefix, fileName: f.name });
         // منع إعادة استخدام مسار مرفوع سابقاً لإنشاء سجل مستند إضافي.
         await assertPathNotLinked(f.path);
-        verified.push({ file: f, mime: v.mime, size: v.size });
+        verified.push({ file: f, mime: v.mime, size: v.size, sha256: v.sha256 });
       }
     } catch (cause) {
       // تنظيف باقي كائنات هذه الدفعة حتى لا تبقى ملفات يتيمة.
@@ -160,7 +165,10 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       client_ip: ip,
     }));
 
-    const { error: insErr } = await supabaseAdmin.from("documents").insert(rows);
+    const { data: insertedRows, error: insErr } = await supabaseAdmin
+      .from("documents")
+      .insert(rows)
+      .select("id, file_path");
     if (insErr) {
       // مسار مرتبط بمستند قائم: لا يجوز حذف كائناته.
       if (isDuplicatePathError(insErr)) {
@@ -168,6 +176,24 @@ export const submitUploadRequest = createServerFn({ method: "POST" })
       }
       for (const v of verified) await removeOrphanObject(v.file.path);
       throw new Error("تعذّر حفظ المستندات، حاول مرة أخرى.");
+    }
+
+    // ملفات العميل الخارجي تمر بنفس خط الحجر والفحص والإفراج قبل أن تُتاح.
+    const { runIntakeReleasePipeline } = await import(
+      "@/lib/file-security/security-state.server"
+    );
+    for (const row of insertedRows ?? []) {
+      const match = verified.find((v) => v.file.path === row.file_path);
+      if (!match) continue;
+      await runIntakeReleasePipeline({
+        documentId: row.id,
+        organizationId: req.organization_id,
+        sha256: match.sha256,
+        bytes: match.size,
+        declaredMime: match.mime,
+        detectedMime: match.mime,
+        actorId: null,
+      });
     }
 
     await supabaseAdmin
