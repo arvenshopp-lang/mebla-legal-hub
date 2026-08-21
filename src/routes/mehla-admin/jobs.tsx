@@ -19,12 +19,13 @@ import { fmtDateTime } from "@/lib/enums";
 import { getJobsOverview, retryEmailJob } from "@/lib/admin-console.functions";
 import { fmtNumber, type JobQueue } from "@/lib/admin-console.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/jobs")({
   head: () => ({
     meta: [
       { title: "مهام النظام · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: JobsPage,

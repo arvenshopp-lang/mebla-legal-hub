@@ -1,4 +1,7 @@
-import { getRequestHeader } from "@tanstack/react-start/server";
+import { getRequest, getRequestHeader } from "@tanstack/react-start/server";
+
+import { indexingDecision } from "@/config/indexing";
+
 
 /**
  * Baseline security headers applied to every response.
@@ -73,6 +76,40 @@ function isBinaryDocument(response: Response) {
   return type.startsWith("application/pdf") || type.startsWith("image/");
 }
 
+/** ملفات إرشاد الزواحف نفسها لا تُوسم بـ noindex حتى لا تتعارض الإشارات. */
+const CRAWLER_CONTROL_PATHS = new Set(["/robots.txt", "/sitemap.xml"]);
+
+/**
+ * حوكمة الفهرسة على مستوى الاستجابة: `X-Robots-Tag` مشتقة من نفس دالة القرار
+ * المركزية التي تُشتق منها Meta robots داخل الصفحات، مع سياق الطلب الكامل
+ * (المسار + Query Parameters)، فلا يمكن أن تختلف الإشارتان.
+ */
+function applyIndexingHeaders(response: Response) {
+  let pathname = "/";
+  let search = "";
+  try {
+    const url = new URL(getRequest().url);
+    pathname = url.pathname;
+    search = url.search;
+  } catch {
+    return;
+  }
+  if (CRAWLER_CONTROL_PATHS.has(pathname)) return;
+
+  const decision = indexingDecision({ pathname, search });
+  if (!decision.indexable) {
+    response.headers.set("x-robots-tag", `${decision.robots}, noarchive`);
+  } else {
+    response.headers.delete("x-robots-tag");
+  }
+  if (decision.noStore) {
+    response.headers.set("cache-control", "private, no-store, max-age=0");
+  }
+  if (decision.noReferrer) {
+    response.headers.set("referrer-policy", "no-referrer");
+  }
+}
+
 export function applySecurityHeaders(response: Response) {
   const headers = response.headers;
   headers.set("content-security-policy", isBinaryDocument(response) ? BINARY_CSP : CSP);
@@ -82,6 +119,7 @@ export function applySecurityHeaders(response: Response) {
   headers.set("permissions-policy", PERMISSIONS_POLICY);
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("x-permitted-cross-domain-policies", "none");
+  applyIndexingHeaders(response);
   if (isBinaryDocument(response)) {
     headers.set("x-robots-tag", "noindex, nofollow, noarchive, nosnippet");
   }
@@ -90,3 +128,4 @@ export function applySecurityHeaders(response: Response) {
   }
   return response;
 }
+

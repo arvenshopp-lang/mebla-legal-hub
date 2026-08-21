@@ -41,6 +41,7 @@ import {
   type LimitRow,
   type SubscriptionState,
 } from "@/lib/subscription.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
   validateSearch: (
@@ -69,7 +70,7 @@ export const Route = createFileRoute("/_authenticated/subscription")({
         name: "description",
         content: "حالة اشتراك مكتبك في مِهلة: الباقة، المدة المتبقية، الحدود المستخدمة والفواتير.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: SubscriptionPage,

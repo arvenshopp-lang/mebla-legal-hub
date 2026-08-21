@@ -19,6 +19,7 @@ import {
 import { lookupCaseStatus } from "@/lib/client-portal.functions";
 import { CaseCodeField } from "@/components/track/case-code-field";
 import { CASE_STATUS, fmtDate, fmtDateTime } from "@/lib/enums";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/track")({
   ssr: false,
@@ -29,17 +30,8 @@ export const Route = createFileRoute("/track")({
         name: "description",
         content: "أدخل رمز القضية المكوّن من 10 أرقام لمتابعة حالة قضيتك وآخر تحديثاتها ومواعيدها.",
       },
-      { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "متابعة القضية — مِهلة" },
-      {
-        property: "og:description",
-        content: "متابعة حالة القضية عبر رمز القضية المكوّن من 10 أرقام.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/track" },
-      { name: "twitter:card", content: "summary" },
+      NOINDEX_META,
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/track" }],
   }),
   component: TrackPage,
 });

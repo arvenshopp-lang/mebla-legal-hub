@@ -52,6 +52,7 @@ import {
 } from "@/lib/contracts/contracts.shared";
 import { toast } from "sonner";
 import { describeMutationError } from "@/lib/subscription.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/contracts")({
   component: ContractsPage,
@@ -64,7 +65,7 @@ export const Route = createFileRoute("/_authenticated/contracts")({
       },
       { property: "og:title", content: "العقود والاتفاقيات | مِهلة" },
       { property: "og:type", content: "website" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
 });

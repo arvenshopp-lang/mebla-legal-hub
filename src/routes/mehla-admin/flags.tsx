@@ -33,6 +33,7 @@ import {
   Th,
   inputCls,
 } from "@/lib/list-utils";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/flags")({
   head: () => ({
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/mehla-admin/flags")({
         name: "description",
         content: "إدارة مفاتيح تفعيل الميزات وقواعد إرسال الإشعارات في منصة مِهلة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: FlagsPage,

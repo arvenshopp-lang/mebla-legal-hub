@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NOINDEX_META } from "@/config/indexing";
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/product-analytics";
@@ -45,20 +46,9 @@ export const Route = createFileRoute("/register")({
     typeof search.invite === "string" && isValidInviteToken(search.invite)
       ? { invite: search.invite }
       : {},
+  // صفحة وظيفية: غير قابلة للفهرسة ولا تحمل canonical ولا Open Graph.
   head: () => ({
-    meta: [
-      { title: "إنشاء حساب | مِهلة" },
-      { name: "description", content: "أنشئ حساباً مجانياً في منصة مِهلة لإدارة قضايا مكتبك." },
-      { property: "og:title", content: "إنشاء حساب | مِهلة" },
-      {
-        property: "og:description",
-        content: "أنشئ حساب مكتبك على منصة مِهلة وابدأ إدارة القضايا والجلسات والمهل النظامية.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/register" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/register" }],
+    meta: [{ title: "إنشاء حساب | مِهلة" }, NOINDEX_META],
   }),
 });
 

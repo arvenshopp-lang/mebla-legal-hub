@@ -22,11 +22,13 @@ import {
   useDebounced,
 } from "@/lib/list-utils";
 import { ExtractedTextDialog, type DocumentRow } from "@/components/documents/text-intel";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/search")({
   component: Page,
   head: () => ({
     meta: [
+      NOINDEX_META,
       { title: "البحث في المستندات | مِهلة" },
       {
         name: "description",

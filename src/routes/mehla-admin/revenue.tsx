@@ -13,12 +13,13 @@ import {
 } from "@/lib/list-utils";
 import { getRevenueSummary } from "@/lib/admin.functions";
 import { Money } from "@/components/ui/money";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/revenue")({
   head: () => ({
     meta: [
       { title: "الإيرادات والتقارير · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: RevenuePage,

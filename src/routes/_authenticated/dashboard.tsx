@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardHome,
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
         name: "description",
         content: "لوحة متابعة قضايا المكتب وجلسات المحاكم والمهل النظامية والعقود ومطالبات الأتعاب.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "لوحة التحكم الرئيسية | مِهلة" },
       {
         property: "og:description",

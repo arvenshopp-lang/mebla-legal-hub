@@ -27,12 +27,13 @@ import {
 } from "@/lib/list-utils";
 import { fmtDate } from "@/lib/enums";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/staff")({
   head: () => ({
     meta: [
       { title: "فريق الإدارة · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: StaffPage,

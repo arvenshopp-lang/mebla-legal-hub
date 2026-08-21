@@ -33,12 +33,13 @@ import {
   listAuditLogs,
   type AuditLogRow,
 } from "@/lib/admin-ops.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/logs")({
   head: () => ({
     meta: [
       { title: "سجل التدقيق · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: LogsPage,

@@ -62,6 +62,7 @@ import { extractableKind } from "@/lib/document-ai.shared";
 import { DocumentRepairButton } from "@/components/documents/repair-panel";
 import type { Tables } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   component: Page,
@@ -72,7 +73,7 @@ export const Route = createFileRoute("/_authenticated/documents")({
         name: "description",
         content: "أرشيف مستندات القضايا مع رفع آمن ومعاينة محمية بعلامة مائية وفهرسة نصية.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "المستندات | مِهلة" },
       {
         property: "og:description",

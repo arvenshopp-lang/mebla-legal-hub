@@ -19,12 +19,13 @@ import {
 import { fmtDate, fmtDateTime } from "@/lib/enums";
 import { getGrowthSeries } from "@/lib/admin-console.functions";
 import { fmtBytes, fmtMoney, fmtNumber, type GrowthPoint } from "@/lib/admin-console.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/analytics")({
   head: () => ({
     meta: [
       { title: "التحليلات والنمو · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: AnalyticsPage,

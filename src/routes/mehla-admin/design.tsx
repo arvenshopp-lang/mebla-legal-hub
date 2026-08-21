@@ -42,6 +42,7 @@ import {
   rollbackDesign,
   saveDesignDraft,
 } from "@/lib/design/theme.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 /** محرر CSS احترافي — يُحمّل عند فتح تبويب CSS فقط لتقليل حجم الحزمة. */
 const CodeMirrorEditor = lazy(() => import("@/components/admin/css-code-editor"));
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/mehla-admin/design")({
   head: () => ({
     meta: [
       { title: "محرر تصميم المنصة · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: DesignStudioPage,

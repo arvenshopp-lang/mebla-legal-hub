@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/upload/")({
   head: () => ({
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/upload/")({
         name: "description",
         content: "خدمة رفع المستندات الآمنة لعملاء مكاتب المحاماة عبر رابط خاص.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: Page,

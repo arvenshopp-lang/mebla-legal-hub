@@ -33,10 +33,11 @@ import {
 } from "@/lib/list-utils";
 import { fmtDate, fmtDateTime, fmtSize } from "@/lib/enums";
 import { fmtDecimal } from "@/lib/format";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/subscriptions")({
   head: () => ({
-    meta: [{ title: "الاشتراكات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "الاشتراكات · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: SubscriptionsPage,
 });

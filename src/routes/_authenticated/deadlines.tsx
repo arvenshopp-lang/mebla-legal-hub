@@ -42,6 +42,7 @@ import { Pencil, Trash2, Check } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   component: Page,
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/deadlines")({
         name: "description",
         content: "متابعة المهل النظامية والاعتراضات ومواعيد التقديم قبل انقضائها.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "المهل النظامية | مِهلة" },
       {
         property: "og:description",

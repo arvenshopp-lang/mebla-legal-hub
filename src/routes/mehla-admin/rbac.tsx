@@ -17,6 +17,7 @@ import { AuditPanel } from "@/components/admin/rbac/audit-panel";
 import { OverviewPanel } from "@/components/admin/rbac/overview-panel";
 import type { RbacOverview } from "@/components/admin/rbac/shared";
 import { cn } from "@/lib/utils";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/rbac")({
   head: () => ({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/mehla-admin/rbac")({
         name: "description",
         content: "إدارة أدوار المنصة وصلاحياتها وأقسامها والمنح والاعتمادات والجلسات.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: RbacPage,

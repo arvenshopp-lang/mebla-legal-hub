@@ -30,6 +30,7 @@ import {
   type ActivityEvent,
   type ActivitySource,
 } from "@/lib/admin-observability.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 const SOURCES: ActivitySource[] = ["admin", "tenant", "failure"];
 const PAGE_SIZES = [25, 50, 100];
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/mehla-admin/activity")({
         name: "description",
         content: "سجل موحّد لعمليات الإدارة ونشاط المكاتب والأعطال المسجّلة في منصة مِهلة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: ActivityPage,

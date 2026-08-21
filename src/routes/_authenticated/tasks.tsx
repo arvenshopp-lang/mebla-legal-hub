@@ -36,6 +36,7 @@ import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { useWorkItemCaptureNotice } from "@/hooks/use-work-item-capture-notice";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import { WorkItemTimeline } from "@/components/work-items/work-item-timeline";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   component: Page,
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
         name: "description",
         content: "توزيع مهام الفريق ومتابعة أولوياتها وتواريخ استحقاقها داخل المكتب.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "المهام | مِهلة" },
       {
         property: "og:description",

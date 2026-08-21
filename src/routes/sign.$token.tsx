@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ContractSigningView } from "@/components/contracts/contract-signing-view";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/sign/$token")({
   head: () => ({
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/sign/$token")({
         name: "description",
         content: "مراجعة بنود العقد وتوقيعه إلكترونياً برابط آمن صادر من مكتب المحاماة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: PublicSignContractPage,

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch, useHydrated } from "@tanstack/react-router";
+import { NOINDEX_META } from "@/config/indexing";
 import { useState, useEffect } from "react";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,25 +18,12 @@ export const Route = createFileRoute("/login")({
     ...(s.reason === "inactive" ? { reason: "inactive" as const } : {}),
   }),
   component: LoginPage,
+  // صفحة وظيفية: غير قابلة للفهرسة ولا تحمل canonical ولا Open Graph.
   head: () => ({
-    meta: [
-      { title: "تسجيل الدخول | مِهلة" },
-      {
-        name: "description",
-        content: "سجّل الدخول إلى حسابك في منصة مِهلة لمتابعة القضايا والجلسات.",
-      },
-      { property: "og:title", content: "تسجيل الدخول | مِهلة" },
-      {
-        property: "og:description",
-        content: "سجّل الدخول إلى منصة مِهلة لمتابعة قضايا مكتبك وجلساته ومهله النظامية.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/login" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/login" }],
+    meta: [{ title: "تسجيل الدخول | مِهلة" }, NOINDEX_META],
   }),
 });
+
 
 function LoginPage() {
   const { redirect, reason } = useSearch({ from: "/login" });

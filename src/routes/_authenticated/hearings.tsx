@@ -35,6 +35,7 @@ import { DataView, type Column } from "@/components/data/data-view";
 import { Pencil, Trash2 } from "lucide-react";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/hearings")({
   component: Page,
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/hearings")({
         name: "description",
         content: "جدول جلسات المحاكم مع المحكمة والدائرة وحالة الجلسة ونتائجها.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "الجلسات | مِهلة" },
       {
         property: "og:description",

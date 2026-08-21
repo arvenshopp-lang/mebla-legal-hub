@@ -26,12 +26,13 @@ import {
   saveEmailTemplate,
   savePlatformSettings,
 } from "@/lib/admin-ops.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/email")({
   head: () => ({
     meta: [
       { title: "البريد والقوالب · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: EmailPage,

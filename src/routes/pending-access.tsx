@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthShell } from "./login";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/pending-access")({
   ssr: false,
@@ -14,17 +15,8 @@ export const Route = createFileRoute("/pending-access")({
         content:
           "تابع حالة عضويتك في مكتب المحاماة على منصة مِهلة، وتعرّف على ما إذا كان طلب انضمامك بانتظار موافقة مالك المكتب أو موقوفاً مؤقتاً.",
       },
-      { property: "og:title", content: "حالة العضوية | مِهلة" },
-      {
-        property: "og:description",
-        content: "متابعة حالة طلب انضمامك إلى مكتب المحاماة على منصة مِهلة.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/pending-access" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/pending-access" }],
   }),
 });
 

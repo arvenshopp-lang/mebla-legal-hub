@@ -42,6 +42,7 @@ import {
   type JobHeartbeatRow,
   type QueueHealthRow,
 } from "@/lib/observability/incidents.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/operations")({
   head: () => ({
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/mehla-admin/operations")({
         name: "description",
         content: "الحوادث التشغيلية ونبضات المهام الدورية وصحة الطوابير في منصة مِهلة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: OperationsPage,

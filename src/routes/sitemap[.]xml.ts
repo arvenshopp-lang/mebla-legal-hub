@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
+import { isIndexablePath, normalizePathname } from "@/config/indexing";
+
 const BASE_URL = "https://mehlalex.com";
 
 interface SitemapEntry {
@@ -13,7 +15,9 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        const entries: SitemapEntry[] = [
+        // الصفحات الرسمية فقط. أي مسار غير مسموح بفهرسته في `src/config/indexing.ts`
+        // يُستبعد آلياً هنا، فلا يمكن أن تتعارض خريطة الموقع مع سياسة الفهرسة.
+        const candidates: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/pricing", changefreq: "weekly", priority: "0.9" },
           { path: "/about", changefreq: "monthly", priority: "0.8" },
@@ -22,27 +26,17 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/security", changefreq: "monthly", priority: "0.7" },
           { path: "/contact", changefreq: "monthly", priority: "0.7" },
           { path: "/docs", changefreq: "monthly", priority: "0.7" },
-          { path: "/track", changefreq: "monthly", priority: "0.6" },
           { path: "/privacy", changefreq: "yearly", priority: "0.5" },
           { path: "/terms", changefreq: "yearly", priority: "0.5" },
-          { path: "/login", changefreq: "yearly", priority: "0.4" },
-          { path: "/register", changefreq: "yearly", priority: "0.5" },
         ];
 
-        // الصفحات العامة المنشورة للمكاتب (المنشور فقط، وبلا أي بيانات خاصة).
-        try {
-          const { listPublishedOfficeSlugs } = await import("@/lib/office-public.server");
-          for (const slug of await listPublishedOfficeSlugs()) {
-            entries.push({ path: `/office/${slug}`, changefreq: "weekly", priority: "0.8" });
-          }
-        } catch {
-          // خريطة الموقع الأساسية تبقى صالحة حتى لو تعذّر جلب الصفحات العامة.
-        }
+        const entries = candidates.filter((entry) => isIndexablePath(entry.path));
 
         const urls = entries.map((e) =>
           [
             `  <url>`,
-            `    <loc>${BASE_URL}${e.path}</loc>`,
+            `    <loc>${BASE_URL}${normalizePathname(e.path) === "/" ? "/" : normalizePathname(e.path)}</loc>`,
+
             e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
             e.priority ? `    <priority>${e.priority}</priority>` : null,
             `  </url>`,

@@ -7,12 +7,13 @@ import { AdminShell } from "@/components/admin/shell";
 import { Btn, FormField, LoadingBlock, SectionCard, inputCls } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { getPlatformSettings, savePlatformSettings } from "@/lib/admin-ops.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/settings")({
   head: () => ({
     meta: [
       { title: "إعدادات المنصة · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: SettingsPage,

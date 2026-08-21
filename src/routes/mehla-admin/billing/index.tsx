@@ -13,6 +13,7 @@ import { ReconciliationPanel } from "@/components/admin/billing/reconciliation-p
 import { WebhooksPanel } from "@/components/admin/billing/webhooks-panel";
 import { SettingsPanel } from "@/components/admin/billing/settings-panel";
 import { ReportsPanel } from "@/components/admin/billing/reports-panel";
+import { NOINDEX_META } from "@/config/indexing";
 
 type TabKey =
   | "invoices"
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/mehla-admin/billing/")({
   head: () => ({
     meta: [
       { title: "المركز المالي · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   validateSearch: (search: Record<string, unknown>) => ({

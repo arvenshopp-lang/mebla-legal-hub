@@ -40,12 +40,13 @@ import {
   RefundStatusBadge,
 } from "@/components/admin/billing/shared";
 import { useState } from "react";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/billing/$id")({
   head: () => ({
     meta: [
       { title: "تفاصيل الفاتورة · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: InvoiceDetailPage,

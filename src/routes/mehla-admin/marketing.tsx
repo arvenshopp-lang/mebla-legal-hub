@@ -13,6 +13,7 @@ import { ConversionsPanel } from "@/components/admin/marketing/conversions-panel
 import { ReferralsPanel } from "@/components/admin/marketing/referrals-panel";
 import { ProvidersPanel } from "@/components/admin/marketing/providers-panel";
 import { fmtNumber } from "@/lib/format";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/marketing")({
   head: () => ({
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/mehla-admin/marketing")({
         content:
           "متابعة أداء الحملات التسويقية وأحداث التحويل وبرامج الإحالة ومزوّدي القياس في منصة مِهلة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: MarketingPage,

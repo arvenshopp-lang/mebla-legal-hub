@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/auth/verified")({
   ssr: false,
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/auth/verified")({
     meta: [
       { title: "تم تأكيد بريدك الإلكتروني | مِهلة" },
       { name: "description", content: "تم تأكيد بريدك الإلكتروني بنجاح في منصة مِهلة." },
-      { name: "robots", content: "noindex" },
+      NOINDEX_META,
       { property: "og:title", content: "تم تأكيد بريدك الإلكتروني | مِهلة" },
       { property: "og:description", content: "تم تأكيد بريدك الإلكتروني بنجاح في منصة مِهلة." },
     ],

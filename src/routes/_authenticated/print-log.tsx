@@ -21,6 +21,7 @@ import {
   type Classification,
   type PrintAction,
 } from "@/lib/print/print.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/print-log")({
   component: Page,
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/print-log")({
         name: "description",
         content: "سجل غير قابل للتعديل لكل عملية طباعة أو تصدير أو تنزيل داخل مكتبك.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
 });

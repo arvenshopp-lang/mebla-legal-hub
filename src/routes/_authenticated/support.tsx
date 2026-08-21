@@ -26,6 +26,7 @@ import {
   SectionCard,
   inputCls,
 } from "@/lib/list-utils";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/support")({
   head: () => ({
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/support")({
       { property: "og:description", content: "تذاكر الدعم والمحادثات المباشرة مع فريق مِهلة." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: SupportPage,

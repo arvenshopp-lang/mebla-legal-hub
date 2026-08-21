@@ -42,6 +42,7 @@ import {
   type MemberKpi,
   type PeriodPreset,
 } from "@/lib/kpi/kpi.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/team-performance")({
   component: Page,
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/team-performance")({
         name: "description",
         content: "مؤشرات أداء أعضاء المكتب المبنية على المهل والمهام الفعلية داخل منصة مِهلة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "أداء الفريق | مِهلة" },
       {
         property: "og:description",

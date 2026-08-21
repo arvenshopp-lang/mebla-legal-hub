@@ -24,12 +24,13 @@ import {
   listSystemFailures,
   type SystemFailureRow,
 } from "@/lib/observability/failure-log.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/failures")({
   head: () => ({
     meta: [
       { title: "سجل الأعطال · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: FailuresPage,

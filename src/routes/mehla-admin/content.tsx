@@ -28,12 +28,13 @@ import {
 } from "@/lib/admin-console.functions";
 import { CONTENT_KINDS, type ContentKind, type ContentPage } from "@/lib/admin-console.shared";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/content")({
   head: () => ({
     meta: [
       { title: "إدارة المحتوى · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: ContentPage_,
