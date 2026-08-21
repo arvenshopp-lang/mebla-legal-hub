@@ -36,7 +36,7 @@ export const styles = {
   logo: {
     display: "block",
     height: "34px",
-    width: "auto",
+    width: "65px",
     margin: "0 0 6px",
   },
   rule: {
