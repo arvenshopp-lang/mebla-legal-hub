@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { useAuth } from "@/hooks/use-auth";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 const NAV = [
   { to: "/about", label: "من نحن" },
@@ -29,10 +30,10 @@ function PublicHeader() {
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link
           to="/"
-          className="inline-flex min-h-[44px] items-center text-[17px] font-bold tracking-tight"
+          aria-label="مِهلة | الصفحة الرئيسية"
+          className="inline-flex min-h-[44px] items-center text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          مِهلة <span className="text-text-muted">·</span>{" "}
-          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+          <MehlaLogo size="sm" className="sm:h-9" />
         </Link>
 
         <nav aria-label="روابط الموقع" className="hidden items-center gap-6 lg:flex">

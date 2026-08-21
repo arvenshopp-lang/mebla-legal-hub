@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
 import { visibleGroups, isNavActive } from "./nav";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 /**
  * القائمة الجانبية لمساحة عمل المكتب — سطح داكن مؤسسي على يمين الشاشة.
@@ -36,15 +37,11 @@ export function WorkspaceSidebar({
           onClick={onNavigate}
           className="inline-flex min-h-10 min-w-0 items-center gap-2.5 truncate text-sm font-bold tracking-tight text-nav-foreground group"
         >
-          <div
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-nav-accent/50 bg-gradient-to-br from-nav-accent/20 to-primary/40 text-sm font-black text-nav-accent shadow-sm transition group-hover:scale-105"
-            aria-hidden
-          >
-            م
-          </div>
-          {!mini && (
-            <div className="flex flex-col">
-              <span className="truncate text-sm font-extrabold text-white">مِهلة · MEHLA</span>
+          {mini ? (
+            <MehlaLogo size="xs" className="mx-auto text-white" />
+          ) : (
+            <div className="flex flex-col gap-1">
+              <MehlaLogo size="sm" className="text-white" />
               <span className="text-[10px] font-medium text-nav-muted">المنصة القانونية الذكية</span>
             </div>
           )}

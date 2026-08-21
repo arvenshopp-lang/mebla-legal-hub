@@ -9,6 +9,7 @@ import { resendSignupConfirmation } from "@/lib/auth-actions";
 import { GoogleIcon } from "@/components/google-icon";
 import { inputCls as fieldInputCls } from "@/lib/list-utils";
 import { INACTIVITY_MESSAGE } from "@/lib/session-activity";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (
@@ -439,10 +440,10 @@ export function AuthShell({
       >
         <Link
           to="/"
-          className="mb-8 flex min-h-[44px] items-center justify-center rounded-[var(--radius-m)] text-center text-[17px] font-bold tracking-tight text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          aria-label="مِهلة | الصفحة الرئيسية"
+          className="mb-8 flex min-h-[44px] items-center justify-center rounded-[var(--radius-m)] text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          مِهلة <span className="text-text-muted">·</span>{" "}
-          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+          <MehlaLogo size="lg" />
         </Link>
         <div
           className={
