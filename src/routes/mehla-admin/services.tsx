@@ -23,12 +23,13 @@ import {
 import { fmtDateTime } from "@/lib/enums";
 import { getServiceHealth } from "@/lib/admin-console.functions";
 import { fmtBytes, fmtNumber, type ServiceIntegration } from "@/lib/admin-console.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/services")({
   head: () => ({
     meta: [
       { title: "حالة الخدمات · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: ServicesPage,

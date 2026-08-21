@@ -4,8 +4,12 @@ import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlatformAdminProvider, usePlatformStaffQuery } from "@/hooks/use-platform-admin";
 import { useQuery } from "@tanstack/react-query";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin")({
+  head: () => ({
+    meta: [{ title: "إدارة منصة مِهلة" }, NOINDEX_META],
+  }),
   ssr: false,
   component: AdminGate,
 });

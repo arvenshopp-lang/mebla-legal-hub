@@ -41,11 +41,13 @@ import {
   type IntegrationView,
   type SecretFieldKey,
 } from "@/lib/integrations/integrations.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/integrations")({
   component: IntegrationsHubPage,
   head: () => ({
     meta: [
+      NOINDEX_META,
       { title: "مركز التكاملات | إدارة مِهلة" },
       {
         name: "description",

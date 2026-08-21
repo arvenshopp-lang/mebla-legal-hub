@@ -46,12 +46,13 @@ import {
   formatDate,
   formatDateTime,
 } from "@/components/admin/sales/shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/sales/$id")({
   head: () => ({
     meta: [
       { title: "تفاصيل المستند · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: SalesDocumentPage,

@@ -30,6 +30,7 @@ import {
   verifyClientOtp,
   getClientPortalDashboard,
 } from "@/lib/client-portal/portal-auth.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/portal/$slug")({
   component: PortalPage,
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/portal/$slug")({
     meta: [
       { title: "بوابة الموكلين | مِهلة" },
       { name: "description", content: "بوابة الموكلين الخاصة بالمكتب لمتابعة القضايا والجلسات والمستندات." },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
 });

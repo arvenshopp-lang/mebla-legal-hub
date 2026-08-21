@@ -7,10 +7,11 @@ import { AdminShell } from "@/components/admin/shell";
 import { Badge, Btn, FormField, LoadingBlock, SectionCard, inputCls } from "@/lib/list-utils";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { getPlatformSettings, savePlatformSettings } from "@/lib/admin-ops.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/seo")({
   head: () => ({
-    meta: [{ title: "إدارة SEO · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "إدارة SEO · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: SeoPage,
 });

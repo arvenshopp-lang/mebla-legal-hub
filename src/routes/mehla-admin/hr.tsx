@@ -45,6 +45,7 @@ import {
   type EmployeeFormValues,
 } from "@/components/admin/hr/employee-form-modal";
 import { EmployeeDocumentsModal } from "@/components/admin/hr/employee-documents-modal";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/hr")({
   head: () => ({
@@ -54,7 +55,7 @@ export const Route = createFileRoute("/mehla-admin/hr")({
         name: "description",
         content: "سجل موظفي منصة مِهلة، أقسامهم، حالاتهم الوظيفية، ومستنداتهم.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: HrPage,

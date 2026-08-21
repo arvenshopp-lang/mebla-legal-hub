@@ -8,6 +8,7 @@ import { fmtDateTime } from "@/lib/enums";
 import { getSystemHealth } from "@/lib/admin-ops.functions";
 import { getMonitoringSnapshot } from "@/lib/admin-observability.functions";
 import { fmtNumber } from "@/lib/admin-console.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/monitoring")({
   head: () => ({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/mehla-admin/monitoring")({
         name: "description",
         content: "زمن الاستجابة والطوابير والجلسات ومؤشرات الأمان في منصة مِهلة بقيم فعلية.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: MonitoringPage,

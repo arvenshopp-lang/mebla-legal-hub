@@ -39,6 +39,7 @@ import { saveCasePartySecure } from "@/lib/pii.functions";
 import { deleteCaseParty, getMyCasePartyPermissions } from "@/lib/case-parties.functions";
 import { PiiSecureInput, useMaskedPii } from "@/components/security/pii-value";
 import type { Enums, Tables } from "@/integrations/supabase/types";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/cases/$id")({
   component: Page,
@@ -49,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/cases/$id")({
         name: "description",
         content: "ملف القضية الكامل: الأطراف والجلسات والمهل والمهام والمستندات وسجل التحديثات.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "ملف القضية | مِهلة" },
       {
         property: "og:description",

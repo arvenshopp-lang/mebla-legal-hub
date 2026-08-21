@@ -58,12 +58,13 @@ import {
   Stars,
   channelLabel,
 } from "@/components/admin/support/shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/support/$ticketId")({
   head: () => ({
     meta: [
       { title: "تفاصيل تذكرة الدعم · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: TicketDetailPage,

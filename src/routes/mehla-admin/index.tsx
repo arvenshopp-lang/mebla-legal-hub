@@ -41,6 +41,7 @@ import {
   SummaryRows,
   Widget,
 } from "@/components/admin/command-center/widgets";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/")({
   head: () => ({
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/mehla-admin/")({
         content:
           "مركز قيادة تشغيل منصة مِهلة: ما يحتاج انتباهك، مؤشرات النمو والإيراد، وصحة الخدمات.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: AdminDashboard,

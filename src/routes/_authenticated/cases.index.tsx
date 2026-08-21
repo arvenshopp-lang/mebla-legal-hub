@@ -33,6 +33,7 @@ import { describeMutationError } from "@/lib/subscription.shared";
 import type { Enums, Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/cases/")({
   component: Page,
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/cases/")({
         name: "description",
         content: "إدارة قضايا المكتب: الأطراف، المحكمة، الحالة، والأولوية مع بحث وترتيب سريع.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "القضايا | مِهلة" },
       {
         property: "og:description",

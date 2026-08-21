@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AuthShell, Field, inputCls } from "./login";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPage,
@@ -14,17 +15,8 @@ export const Route = createFileRoute("/forgot-password")({
         content:
           "استعد الوصول إلى حسابك في منصة مِهلة: أدخل بريدك الإلكتروني المسجّل ليصلك رابط آمن لإعادة تعيين كلمة المرور خلال دقائق.",
       },
-      { property: "og:title", content: "استعادة كلمة المرور | مِهلة" },
-      {
-        property: "og:description",
-        content: "رابط آمن لإعادة تعيين كلمة مرور حسابك في منصة مِهلة القانونية.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/forgot-password" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, follow" },
+      NOINDEX_META,
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/forgot-password" }],
   }),
 });
 

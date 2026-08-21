@@ -285,7 +285,7 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
   );
 }
 
-/** معاينة واقعية تفاعلية لواجهة النظام — تبرز القضايا والجلسات والمطالبات المالية. */
+/** معاينة واقعية تفاعلية لواجهة النظام — تبرز القضايا والجلسات والمهل والعقود. */
 function AppPreview() {
   return (
     <div className="surface-card overflow-hidden rounded-[var(--radius-l)] border border-border shadow-xl">
@@ -335,7 +335,7 @@ function AppPreview() {
               ["قضايا منظورة", "24 قضية", "bg-primary", "text-primary"],
               ["جلسات اليوم", "3 جلسات", "bg-emerald-500", "text-emerald-600 dark:text-emerald-400"],
               ["مهل خلال 7 أيام", "6 مهل", "bg-amber-500", "text-amber-600 dark:text-amber-400"],
-              ["أتعاب محصلة (الشهر)", "48,500", "bg-sky-500", "text-sky-600 dark:text-sky-400"],
+              ["عقود قيد التوقيع", "8 عقود", "bg-sky-500", "text-sky-600 dark:text-sky-400"],
             ].map(([l, v, barColor, txtColor]) => (
               <div
                 key={l}
@@ -343,17 +343,7 @@ function AppPreview() {
               >
                 <span className={cn("absolute inset-y-0 right-0 w-[3.5px]", barColor)} aria-hidden />
                 <p className="text-[11.5px] font-medium text-muted-foreground">{l}</p>
-                <p className={cn("mt-1.5 text-[18px] font-bold tabular-nums", txtColor)}>
-                  {l === "أتعاب محصلة (الشهر)" ? (
-                    <span className="inline-flex items-center gap-1" dir="ltr">
-                      {v}
-                      <Riyal />
-                      <span className="sr-only">ريال سعودي</span>
-                    </span>
-                  ) : (
-                    v
-                  )}
-                </p>
+                <p className={cn("mt-1.5 text-[18px] font-bold tabular-nums", txtColor)}>{v}</p>
               </div>
             ))}
           </div>
@@ -385,27 +375,24 @@ function AppPreview() {
 
             <div className="rounded-[var(--radius-m)] border border-border bg-background">
               <div className="flex items-center justify-between border-b border-border px-4 py-3 text-[13px] font-bold">
-                <span>أحدث مطالبات الأتعاب</span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">مسددة</span>
+                <span>أحدث العقود الرقمية</span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">موقّعة</span>
               </div>
               <ul className="divide-y divide-border">
                 {[
-                  ["مطالبة أتعاب صياغة لائحة", "CLM-2026-8374", "7,000", "مسددة"],
-                  ["عرض أتعاب تمثيل قضائي", "QTE-2026-0042", "15,000", "سارية"],
-                  ["إشعار مطالبة أتعاب وساطة", "CLM-2026-8210", "4,500", "مسددة"],
-                ].map(([t, ref, amount, status]) => (
+                  ["عقد خدمات قانونية — شركة نماء", "MHL-4F2A1-9C7B3", "موقّع"],
+                  ["عقد تمثيل قضائي — م. القحطاني", "MHL-8B31D-2E5A9", "بانتظار التوقيع"],
+                  ["عقد استشارات شهرية — مؤسسة الأفق", "MHL-1C9E7-6D4A2", "موقّع"],
+                ].map(([t, ref, status]) => (
                   <li key={ref} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-semibold text-foreground">{t}</span>
                       <span className="block truncate text-[11px] font-mono text-muted-foreground">{ref}</span>
                     </span>
                     <div className="text-left shrink-0">
-                      <span className="flex items-center justify-end gap-1 text-[13px] font-bold tabular-nums text-foreground" dir="ltr">
-                        {amount}
-                        <Riyal />
-                        <span className="sr-only">ريال سعودي</span>
+                      <span className="rounded bg-surface-muted px-2 py-0.5 text-[11.5px] font-medium text-muted-foreground">
+                        {status}
                       </span>
-                      <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">{status}</span>
                     </div>
                   </li>
                 ))}
@@ -431,11 +418,11 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           <h1 className="text-display mt-6 tracking-tight">
             مِهلة — إدارة قانونية أوضح.
             <br />
-            متابعة دقيقة للمهل والجلسات والأتعاب.
+            متابعة دقيقة للمهل والجلسات والمستندات.
           </h1>
 
           <p className="mt-5 text-body-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات الذكية ومطالبات الأتعاب في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
+            مِهلة تجمع القضايا والعملاء والجلسات والمهل والمستندات والعقود الرقمية في مساحة عمل واحدة منظمة، لتعرف في كل لحظة ما يحتاج إجراءً اليوم وما يقترب موعده.
           </p>
         </div>
 
@@ -479,18 +466,18 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
 const CAPABILITIES = [
   {
     title: "مساحة عمل لكل قضية",
-    body: "بيانات القضية والأطراف والجلسات والمستندات والمهام والملخص المالي وسجل النشاط في صفحة واحدة، دون تشتت بين أدوات متفرقة.",
+    body: "بيانات القضية والأطراف والجلسات والمستندات والمهام وسجل النشاط في صفحة واحدة، دون تشتت بين أدوات متفرقة.",
     points: [
       "تصنيف حسب المحكمة والدائرة والحالة",
       "خط زمني تفاعلي لتحديثات القضية",
-      "بطاقة مالية مدمجة للأتعاب والمطالبات",
+      "مهام وتنبيهات مرتبطة بكل قضية",
     ],
   },
   {
-    title: "حساب المهل والجلسات القضائية",
-    body: "تتبّع دقيق للمواعيد النظامية والجلسات القادمة بترتيب زمني، مع تنبيهات استباقية قبل انتهاء مهل الاعتراض والاستئناف.",
+    title: "متابعة المهل والجلسات القضائية",
+    body: "تتبّع دقيق للمواعيد النظامية والجلسات القادمة بترتيب زمني، مع تنبيهات استباقية قبل انتهاء المهل التي يسجّلها المكتب. تحديد المهلة نظاماً واحتساب بدايتها يبقى مسؤولية المحامي المختص.",
     points: [
-      "حساب تلقائي لمدد المهل القضائية",
+      "تاريخ انتهاء محسوب من تاريخ البداية والمدة المُدخلة",
       "تذكيرات مجدولة قبل الجلسات",
       "تمييز بصري فوري للمهل الحرجة",
     ],
@@ -505,12 +492,12 @@ const CAPABILITIES = [
     ],
   },
   {
-    title: "عروض الأسعار ومطالبات الأتعاب",
-    body: "إصدار عروض أتعاب مهنية وإشعارات مطالبات وسندات قبض بصيغة PDF أنيقة تحمل هوية وشعار وبيانات مكتبك.",
+    title: "العقود الرقمية والتوقيع الإلكتروني",
+    body: "إعداد العقود واعتمادها وتوقيعها إلكترونياً، ثم إصدار نسخة PDF نهائية بهوية مكتبك تحمل رقم تحقق ورمز QR للتثبّت من صحتها.",
     points: [
-      "عروض أسعار ومطالبات أتعاب مرقمة",
-      "تصدير PDF فاخر بهوية وشعار المكتب",
-      "تسجيل الدفعات وسندات القبض الفورية",
+      "دورة اعتماد وتوقيع موثّقة بالكامل",
+      "بصمة SHA-256 لكل نسخة نهائية",
+      "صفحة تحقق عامة برقم العقد ورمز QR",
     ],
   },
   {
@@ -612,7 +599,7 @@ const HOW_STEPS: HowStep[] = [
     key: "hearing",
     label: "٢. الجلسة",
     title: "سجّل الجلسة وتابع نتيجتها",
-    body: "تُضاف الجلسة بموعدها ومكانها، وتُذكّرك المنصة قبلها، ثم تُدوّن نتيجتها فتتحوّل تلقائياً إلى المهلة المترتبة عليها.",
+    body: "تُضاف الجلسة بموعدها ومكانها، وتُذكّرك المنصة قبلها، ثم تُدوّن نتيجتها وتُسجّل المهلة المترتبة عليها مرتبطة بالجلسة.",
     example: {
       kind: "جلسة قادمة",
       heading: "الجلسة الثانية · الأحد ١٤ رجب",
@@ -693,7 +680,7 @@ function HowItWorks() {
           <p className="text-label">كيف تعمل مِهلة</p>
           <h2 className="text-h2 mt-2">من فتح القضية إلى إبلاغ العميل — بمثال حقيقي</h2>
           <p className="mt-3 text-body text-muted-foreground">
-            اختر أي خطوة لترى كيف تظهر داخل المنصة فعلياً: جلسة مجدولة، مهلة نظامية تُحسب تلقائياً،
+            اختر أي خطوة لترى كيف تظهر داخل المنصة فعلياً: جلسة مجدولة، مهلة نظامية مسجّلة بمدتها،
             وتحديث يصل للعميل بإذنك.
           </p>
         </div>

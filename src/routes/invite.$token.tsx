@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NOINDEX_META } from "@/config/indexing";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +22,9 @@ import {
 
 export const Route = createFileRoute("/invite/$token")({
   ssr: false,
+  head: () => ({
+    meta: [{ title: "دعوة انضمام | مِهلة" }, NOINDEX_META],
+  }),
   component: InvitePage,
 });
 

@@ -10,6 +10,7 @@ import { SecurityTab } from "@/components/security/security-tab";
 import { UsageAnalyticsCard } from "@/components/settings/usage-analytics-card";
 import { PublicRankingConsentCard } from "@/components/settings/public-ranking-consent-card";
 import type { TablesInsert, Tables } from "@/integrations/supabase/types";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: Page,
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
         name: "description",
         content: "إعدادات المكتب والحساب والأمان وتوثيق الجوال وتفضيلات التنبيهات.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "الإعدادات | مِهلة" },
       {
         property: "og:description",

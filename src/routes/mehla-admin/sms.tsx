@@ -20,11 +20,13 @@ import {
   type SmsHealthStatus,
   type SmsProvider,
 } from "@/lib/sms/sms.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/sms")({
   component: SmsSettingsPage,
   head: () => ({
     meta: [
+      NOINDEX_META,
       { title: "خدمة الرسائل وتوثيق الجوال | إدارة مِهلة" },
       {
         name: "description",

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { fetchWatermarkedPdf } from "@/lib/secure-view/fetch-watermarked";
+import { NOINDEX_META } from "@/config/indexing";
 
 /**
  * Public share surface. The recipient only ever sees the watermarked copy that
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/share/$token")({
         content:
           "نسخة عرض مؤقتة تحمل علامة مائية باسم المكتب والمستخدم الذي أنشأ المشاركة، عبر منصة مِهلة لإدارة أعمال المحاماة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "مستند مشترك — مِهلة | MehlaLex" },
       {
         property: "og:description",

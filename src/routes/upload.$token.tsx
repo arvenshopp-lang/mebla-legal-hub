@@ -19,6 +19,7 @@ import {
 } from "@/lib/client-portal.shared";
 import { fmtDateTime, fmtSize } from "@/lib/enums";
 import { errMsg } from "@/lib/errors";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/upload/$token")({
   ssr: false,
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/upload/$token")({
     meta: [
       { title: "رفع المستندات — مِهلة" },
       { name: "description", content: "صفحة آمنة لرفع المستندات المطلوبة إلى مكتب المحاماة." },
-      { name: "robots", content: "noindex, nofollow, noarchive" },
+      NOINDEX_META,
       { httpEquiv: "Cache-Control", content: "no-store, max-age=0" },
     ],
   }),

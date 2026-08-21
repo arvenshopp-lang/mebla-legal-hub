@@ -31,6 +31,7 @@ import { inviteTeamMember } from "@/lib/invitations.functions";
 import { CasePartyPermissionsPanel } from "@/components/team/case-party-permissions";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: Page,
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/team")({
         name: "description",
         content: "إدارة أعضاء المكتب وأدوارهم ودعوات الانضمام وحالات العضوية.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "الفريق | مِهلة" },
       {
         property: "og:description",

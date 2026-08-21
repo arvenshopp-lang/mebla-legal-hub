@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { NOINDEX_META } from "@/config/indexing";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -14,25 +15,16 @@ import { fmtDateTime } from "@/lib/enums";
 export const Route = createFileRoute("/verify")({
   ssr: false,
   validateSearch: z.object({ id: z.string().optional() }),
+  /**
+   * صفحة التحقق تعرض نتيجة تخص عقداً بعينه (بمعرّف في الرابط أو بإدخال يدوي
+   * دون تغيير الرابط)، ولا يمكن إثبات فصل حالة "بلا نتيجة" عن حالة "نتيجة
+   * ظاهرة" على مستوى المستند؛ لذلك المسار كامله ممنوع من الفهرسة، وهو مطابق
+   * تماماً لترويسة `X-Robots-Tag` الصادرة من `indexingDecision`.
+   */
   head: () => ({
-    meta: [
-      { title: "التحقق من عقد إلكتروني — مِهلة" },
-      {
-        name: "description",
-        content:
-          "تحقق من رقم العقد وحالته ومطابقة نسخته النهائية الموقّعة إلكترونياً عبر منصة مِهلة، دون عرض محتوى العقد.",
-      },
-      { property: "og:title", content: "التحقق من عقد إلكتروني — مِهلة" },
-      {
-        property: "og:description",
-        content: "أدخل رقم التحقق للاطلاع على حالة العقد ومطابقة نسخته النهائية دون كشف محتواه.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/verify" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/verify" }],
+    meta: [{ title: "التحقق من عقد إلكتروني — مِهلة" }, NOINDEX_META],
   }),
+
   component: VerifyContractPage,
 });
 

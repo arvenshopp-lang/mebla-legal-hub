@@ -16,12 +16,13 @@ import {
   securityRevealFeed,
 } from "@/lib/admin-security.functions";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/security")({
   head: () => ({
     meta: [
       { title: "مركز الأمان · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: SecurityCenterPage,

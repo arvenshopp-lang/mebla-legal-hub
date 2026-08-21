@@ -11,6 +11,7 @@ import { OfficeLeadsPanel } from "@/components/office/leads-panel";
 import { OfficeAnalyticsPanel } from "@/components/office/analytics-panel";
 import { OfficePublicPage } from "@/components/office/public-page";
 import { cn } from "@/lib/utils";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/office-page")({
   component: Page,
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/office-page")({
         name: "description",
         content: "تحرير صفحة مكتبك العامة ونشرها ومتابعة طلبات الاستشارة وإحصاءات الزيارات.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "الصفحة العامة للمكتب | مِهلة" },
       {
         property: "og:description",

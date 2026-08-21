@@ -39,6 +39,7 @@ import {
   type BackupKind,
   type BackupSource,
 } from "@/lib/backups.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/backups")({
   head: () => ({
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/mehla-admin/backups")({
         name: "description",
         content: "سجل النسخ الاحتياطية وطلبات الاستعادة واعتماداتها بمبدأ الرقابة المزدوجة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: BackupsPage,

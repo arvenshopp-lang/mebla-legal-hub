@@ -30,6 +30,7 @@ import {
 import { DocumentFormModal, emptyDraft } from "@/components/admin/sales/document-form";
 import { TemplatesPanel } from "@/components/admin/sales/templates-panel";
 import { KindBadge, Money, StatusBadge, formatDate } from "@/components/admin/sales/shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 type TabKey = SalesDocKind | "all" | "templates";
 
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/mehla-admin/sales/")({
   head: () => ({
     meta: [
       { title: "العروض والعقود · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   validateSearch: (search: Record<string, unknown>) => ({

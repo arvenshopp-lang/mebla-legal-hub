@@ -20,6 +20,7 @@ import {
   type ProviderDomain,
   type ProviderReadiness,
 } from "@/lib/providers/readiness.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/providers")({
   component: ProvidersReadinessPage,
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/mehla-admin/providers")({
         content:
           "حالة كل مزوّد خارجي في مِهلة: الدفع والرسائل وواتساب الرسمي، مع الحقول الناقصة وفحص الاتصال الفعلي.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "جاهزية المزوّدين · إدارة مِهلة" },
       {
         property: "og:description",

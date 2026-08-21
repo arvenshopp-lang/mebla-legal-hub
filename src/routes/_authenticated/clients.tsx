@@ -38,6 +38,7 @@ import { useDialogDraft } from "@/lib/drafts/use-dialog-draft";
 import { DraftPrompt, DraftStatus } from "@/lib/drafts/draft-ui";
 import type { Enums } from "@/integrations/supabase/types";
 import { errMsg } from "@/lib/errors";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: Page,
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/clients")({
         name: "description",
         content: "سجل عملاء المكتب مع بيانات التواصل والهويات المشفّرة وربطهم بالقضايا.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "العملاء | مِهلة" },
       {
         property: "og:description",

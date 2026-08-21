@@ -29,10 +29,11 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { buildCsv } from "@/lib/csv";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/support")({
   head: () => ({
-    meta: [{ title: "مركز الدعم · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "مركز الدعم · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: SupportPage,
 });

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { OfficePublicPage } from "@/components/office/public-page";
 import { getPublicOfficePage } from "@/lib/office-page.public.functions";
-import { officePageUrl } from "@/lib/office-page.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/office/$slug")({
   loader: async ({ params }) => {
@@ -9,75 +9,19 @@ export const Route = createFileRoute("/office/$slug")({
     if (!view) throw notFound();
     return { view };
   },
-  head: ({ loaderData, params }) => {
-    if (!loaderData) {
-      return {
-        meta: [
-          { title: "الصفحة غير متاحة | مِهلة" },
-          { name: "robots", content: "noindex, follow" },
-        ],
-      };
-    }
-    const { view } = loaderData;
-    const title = view.seo.title || `${view.officeName} | مكتب محاماة`;
-    const description =
-      view.seo.description ||
-      (view.tagline || view.about).slice(0, 155) ||
-      `صفحة ${view.officeName} للتواصل وطلب استشارة قانونية.`;
-    const url = officePageUrl(params.slug);
-    const image = view.seo.ogImageUrl?.startsWith("https://") ? view.seo.ogImageUrl : "";
-
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "profile" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: url },
-        { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-        ...(image
-          ? [
-              { property: "og:image", content: image },
-              { name: "twitter:image", content: image },
-            ]
-          : []),
-      ],
-      links: [{ rel: "canonical", href: url }],
-      scripts: [
-        {
-          type: "application/ld+json",
-          children: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "LegalService",
-            name: view.officeName,
-            description,
-            url,
-            ...(image ? { image } : {}),
-            ...(view.phone ? { telephone: view.phone } : {}),
-            ...(view.email ? { email: view.email } : {}),
-            ...(view.city || view.address
-              ? {
-                  address: {
-                    "@type": "PostalAddress",
-                    addressCountry: "SA",
-                    ...(view.city ? { addressLocality: view.city } : {}),
-                    ...(view.address ? { streetAddress: view.address } : {}),
-                  },
-                }
-              : {}),
-            areaServed: "SA",
-          }),
-        },
-      ],
-    };
-  },
+  /**
+   * صفحات المكاتب ليست صفحات مِهلة الرسمية: تبقى متاحة لمن يملك الرابط، لكنها
+   * ممنوعة من الفهرسة، ولا تنشر أي بيانات مشترك (اسم المكتب أو هاتفه أو
+   * بريده أو عنوانه) في Metadata أو Open Graph أو Schema.org.
+   */
+  head: () => ({
+    meta: [{ title: "صفحة مكتب — مِهلة" }, NOINDEX_META],
+  }),
   errorComponent: () => <Unavailable />,
   notFoundComponent: () => <Unavailable />,
   component: OfficeRoute,
 });
+
 
 function OfficeRoute() {
   const { view } = Route.useLoaderData();

@@ -8,6 +8,7 @@ import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 import { PasswordInput } from "@/components/password-input";
 import { usePasswordStrength } from "@/hooks/use-password-strength";
 import { translateAuthError } from "@/lib/auth-errors";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -19,17 +20,8 @@ export const Route = createFileRoute("/reset-password")({
         content:
           "اختر كلمة مرور جديدة قوية لحسابك في منصة مِهلة عبر الرابط الآمن المُرسل إلى بريدك، ثم عد إلى متابعة قضايا مكتبك وجلساته.",
       },
-      { property: "og:title", content: "تعيين كلمة مرور جديدة | مِهلة" },
-      {
-        property: "og:description",
-        content: "تعيين كلمة مرور جديدة لحسابك في منصة مِهلة عبر رابط آمن.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/reset-password" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/reset-password" }],
   }),
   component: ResetPage,
 });

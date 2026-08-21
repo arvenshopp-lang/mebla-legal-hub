@@ -17,10 +17,11 @@ import {
 } from "@/lib/list-utils";
 import { fmtDateTime } from "@/lib/enums";
 import { listBroadcasts, sendBroadcast } from "@/lib/admin-ops.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/notifications")({
   head: () => ({
-    meta: [{ title: "الإشعارات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "الإشعارات · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: NotificationsPage,
 });

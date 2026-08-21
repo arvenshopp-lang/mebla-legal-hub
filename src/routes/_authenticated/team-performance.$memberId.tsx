@@ -29,6 +29,7 @@ import {
   type MemberKpi,
   type PeriodPreset,
 } from "@/lib/kpi/kpi.shared";
+import { NOINDEX_META } from "@/config/indexing";
 
 type PerformanceSearch = { preset: PeriodPreset; from?: string; to?: string };
 
@@ -57,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/team-performance/$memberId
         name: "description",
         content: "شرح تفصيلي لدرجة أداء عضو المكتب بالأرقام الفعلية للمهل والمهام.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
       { property: "og:title", content: "تفصيل أداء العضو | مِهلة" },
       {
         property: "og:description",

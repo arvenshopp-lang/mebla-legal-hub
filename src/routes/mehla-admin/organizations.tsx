@@ -36,10 +36,11 @@ import {
   updateOrganization,
   type AdminOrgRow,
 } from "@/lib/admin-orgs.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/organizations")({
   head: () => ({
-    meta: [{ title: "المكاتب · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "المكاتب · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: OrganizationsPage,
 });

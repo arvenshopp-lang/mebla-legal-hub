@@ -9,11 +9,55 @@ Disallow: /deadlines
 Disallow: /tasks
 Disallow: /documents
 Disallow: /team
+Disallow: /team-performance
+Disallow: /contracts
+Disallow: /print-log
+Disallow: /support
+Disallow: /bayan
 Disallow: /settings
+Disallow: /subscription
 Disallow: /onboarding
 Disallow: /pending-access
 Disallow: /reset-password
+Disallow: /forgot-password
 Disallow: /auth
 Disallow: /upload
+Disallow: /share
+Disallow: /sign
+Disallow: /invite
+Disallow: /portal
+Disallow: /mehla-admin
+Disallow: /api/
+Disallow: /.mcp
+Disallow: /mcp
+
+# محرك بحث ChatGPT: مسموح بالزحف للصفحات الرسمية فقط (الباقي noindex على مستوى الاستجابة)
+User-agent: OAI-SearchBot
+Allow: /
+
+# جامعو بيانات تدريب الذكاء الاصطناعي: ممنوعون بالكامل
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
 
 Sitemap: https://mehlalex.com/sitemap.xml

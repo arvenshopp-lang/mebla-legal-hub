@@ -57,6 +57,7 @@ import {
   updateMailbox,
   uploadMailAttachment,
 } from "@/lib/email/email.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/mail")({
   validateSearch: (search: Record<string, unknown>): { thread?: string } => ({
@@ -65,7 +66,7 @@ export const Route = createFileRoute("/mehla-admin/mail")({
   head: () => ({
     meta: [
       { title: "مركز البريد · إدارة مِهلة" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
   component: MailWorkspacePage,

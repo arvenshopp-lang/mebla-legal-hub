@@ -13,8 +13,14 @@ import { ContactsPanel } from "@/components/admin/crm/contacts-panel";
 import { DealsPanel } from "@/components/admin/crm/deals-panel";
 import { StagesPanel } from "@/components/admin/crm/stages-panel";
 import { ActivitiesPanel } from "@/components/admin/crm/activities-panel";
+import { NOINDEX_META } from "@/config/indexing";
 
-export const Route = createFileRoute("/mehla-admin/crm")({ component: CrmPage });
+export const Route = createFileRoute("/mehla-admin/crm")({
+  head: () => ({
+    meta: [{ title: "إدارة العلاقات | مِهلة" }, NOINDEX_META],
+  }),
+  component: CrmPage,
+});
 
 const TABS = [
   { id: "overview", label: "نظرة عامة" },

@@ -36,10 +36,11 @@ import {
   transferOrganizationOwnership,
   type AdminUserRow,
 } from "@/lib/admin-users.functions";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/users")({
   head: () => ({
-    meta: [{ title: "المستخدمون · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "المستخدمون · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: UsersPage,
 });

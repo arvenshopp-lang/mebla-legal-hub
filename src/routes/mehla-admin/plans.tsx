@@ -19,10 +19,11 @@ import {
   SectionCard,
   inputCls,
 } from "@/lib/list-utils";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/mehla-admin/plans")({
   head: () => ({
-    meta: [{ title: "الباقات · إدارة مِهلة" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [{ title: "الباقات · إدارة مِهلة" }, NOINDEX_META],
   }),
   component: PlansPage,
 });

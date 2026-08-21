@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendBayanMessage } from "@/lib/ai/bayan-chat.functions";
 import { bayanErrorMessage } from "@/lib/ai/bayan-error";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/_authenticated/bayan")({
   component: BayanWorkbenchPage,
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/bayan")({
         name: "description",
         content: "المستشارة القانونية الذكية والباحثة القضائية لمنصة مِهلة وفق الأنظمة السعودية المحدثة.",
       },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
   }),
 });

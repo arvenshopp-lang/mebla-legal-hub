@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { getMyPhoneStatus, getSmsPublicConfig } from "@/lib/sms/sms.functions";
 import { PhoneVerificationCard } from "@/components/security/phone-card";
 import { AuthShell, Field, inputCls } from "./login";
+import { NOINDEX_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/onboarding")({
   ssr: false,
@@ -19,17 +20,8 @@ export const Route = createFileRoute("/onboarding")({
         content:
           "أنشئ مكتب المحاماة الخاص بك على منصة مِهلة في خطوة واحدة: اسم المكتب ومدينته، ثم ابدأ بإضافة العملاء والقضايا والجلسات مباشرة.",
       },
-      { property: "og:title", content: "تهيئة مكتبك | مِهلة" },
-      {
-        property: "og:description",
-        content: "أنشئ مكتب المحاماة الخاص بك على منصة مِهلة وابدأ إدارة قضاياك.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/onboarding" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, nofollow" },
+      NOINDEX_META,
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/onboarding" }],
   }),
   component: OnboardingPage,
 });
