@@ -19,6 +19,7 @@ import { PublicBayanCopilot } from "@/components/public/public-bayan-copilot";
 import { BayanHeroShowcase } from "@/components/marketing/bayan-hero-showcase";
 import { PaymentMethodsBar } from "@/components/ui/payment-icons";
 import { PUBLIC_BAYAN_MARKETING_ENABLED, PUBLIC_PAYMENT_LOGOS_ENABLED } from "@/config/public-marketing";
+import { OG_IMAGE, ORGANIZATION_LOGO_URL, socialPreviewMeta } from "@/config/brand-assets";
 
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
@@ -50,14 +51,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/" },
       { property: "og:site_name", content: "مِهلة | MehlaLex" },
-      { property: "og:image", content: "https://mehlalex.com/og-mehlalex-v3.jpg" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "مِهلة | MehlaLex" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESCRIPTION },
-      { name: "twitter:image", content: "https://mehlalex.com/og-mehlalex-v3.jpg" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/" }],
     scripts: [
@@ -72,7 +66,8 @@ export const Route = createFileRoute("/")({
               name: "مِهلة | MehlaLex",
               alternateName: "MehlaLex",
               url: "https://mehlalex.com/",
-              logo: "https://mehlalex.com/og-mehlalex-v3.jpg",
+              logo: ORGANIZATION_LOGO_URL,
+              image: OG_IMAGE.url,
               description: DESCRIPTION,
               areaServed: { "@type": "Country", name: "السعودية" },
             },
