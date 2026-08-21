@@ -11,9 +11,9 @@ export const PUBLIC_BAYAN_MARKETING_ENABLED = false;
 
 /**
  * شعارات وسائل الدفع في الصفحات العامة.
- * تبقى مغلقة حتى يُفعَّل مزود دفع فعلي ويُختبر في الإنتاج.
+ * مفعّلة بعد اعتماد مزود الدفع والتحقق من جاهزيته في الإنتاج.
  */
-export const PUBLIC_PAYMENT_LOGOS_ENABLED = false;
+export const PUBLIC_PAYMENT_LOGOS_ENABLED = true;
 
 /**
  * زر «إعدادات ملفات تعريف الارتباط» في التذييل.
