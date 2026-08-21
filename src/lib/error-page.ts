@@ -14,7 +14,7 @@ export function renderErrorPage(): string {
              font:15px/1.8 "Tajawal", system-ui, -apple-system, sans-serif; }
       .card { width:100%; max-width:30rem; background:var(--surface); border:1px solid var(--border);
               border-radius:12px; padding:2rem; }
-      .brand { font-size:15px; font-weight:700; letter-spacing:0; margin:0 0 1.5rem; }
+      .brand { display:block; height:44px; width:auto; margin:0 0 1.5rem; }
       h1 { font-size:1.25rem; margin:0 0 .5rem; line-height:1.4; }
       p { color:var(--muted); margin:0 0 1.75rem; }
       .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
@@ -30,7 +30,7 @@ export function renderErrorPage(): string {
   </head>
   <body>
     <main class="card">
-      <p class="brand">مِهلة · MEHLA</p>
+      <img class="brand" src="/favicon.svg" width="150" height="78" alt="مِهلة | MEHLA" />
       <h1>تعذّر عرض هذه الصفحة</h1>
       <p>حدث خطأ غير متوقع أثناء تحميل الصفحة. يمكنك المحاولة مرة أخرى أو العودة إلى الصفحة الرئيسية.</p>
       <div class="actions">
