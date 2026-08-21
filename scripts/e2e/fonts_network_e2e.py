@@ -66,7 +66,7 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
     await page.goto(f"{BASE}{path}", wait_until="domcontentloaded")
     await page.wait_for_timeout(1200)
     final = page.url.replace(BASE, "") or "/"
-    timing_entries = await page.evaluate("""() => performance.getEntriesByType('resource')
+    timing_entries = await page.evaluate(r"""() => performance.getEntriesByType('resource')
       .filter(entry => /\.(woff2?|ttf|otf|eot)$/.test(new URL(entry.name).pathname))
       .map(entry => new URL(entry.name).pathname.split('/').pop())""")
     await page.close()
