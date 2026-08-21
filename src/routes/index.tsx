@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck, LayoutDashboard, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
 import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query";
