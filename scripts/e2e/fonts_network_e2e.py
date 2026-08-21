@@ -5,6 +5,7 @@ MEHLA · تدقيق شبكة الخطوط (E2E)
   2) لا طلب ملف خط بحالة 404 أو أي حالة غير 200/304.
   3) لا تحميل مزدوج شبكي لأي ملف خط (التكرار من الذاكرة/الكاش مسموح).
   4) لا أي ملف ibm-plex-*.
+  5) أوزان الرسم الأول 400 و700 محمّلة مسبقاً وتستخدم block لمنع تبديل مرئي.
 التشغيل: python3 scripts/e2e/fonts_network_e2e.py
 الجلسة: تُستعاد تلقائياً من متغيرات معاينة Lovable إن وُجدت؛ بدونها
 تُدقّق المسارات العامة فقط ويظهر تحذير واضح للمسارات المحمية.
@@ -80,6 +81,44 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
     record(not ibm, f"{label} · لا ملفات ibm-plex", ", ".join(ibm))
 
 
+async def audit_cold_font_render(browser) -> None:
+    context = await browser.new_context(viewport={"width": 390, "height": 844})
+    page = await context.new_page()
+    client = await context.new_cdp_session(page)
+    await client.send("Network.enable")
+    await client.send(
+        "Network.emulateNetworkConditions",
+        {
+            "offline": False,
+            "latency": 150,
+            "downloadThroughput": 200_000,
+            "uploadThroughput": 100_000,
+            "connectionType": "cellular4g",
+        },
+    )
+    await page.goto(BASE, wait_until="domcontentloaded")
+    preloads = await page.locator('link[rel="preload"][as="font"]').evaluate_all(
+        "links => links.map(link => link.getAttribute('href'))"
+    )
+    record(
+        "/ · preload للأوزان الحرجة",
+        "/fonts/plex-arabic-400.woff2" in preloads
+        and "/fonts/plex-arabic-700.woff2" in preloads,
+    )
+    displays = await page.evaluate(
+        """() => [...document.fonts]
+          .filter(face => face.family.includes('IBM Plex Sans Arabic'))
+          .map(face => face.display)"""
+    )
+    record(bool(displays) and all(value == "block" for value in displays), "/ · منع تبديل الخط المرئي")
+    await page.evaluate("document.fonts.ready")
+    heading = page.locator("h1").first
+    family = await heading.evaluate("node => getComputedStyle(node).fontFamily")
+    weight = await heading.evaluate("node => getComputedStyle(node).fontWeight")
+    record("IBM Plex Sans Arabic" in family and weight == "700", "/ · وزن العنوان النهائي", f"{family} / {weight}")
+    await context.close()
+
+
 async def main() -> int:
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -87,6 +126,8 @@ async def main() -> int:
         page = await context.new_page()
         has_session = await restore_session(context, page)
         await page.close()
+
+        await audit_cold_font_render(browser)
 
         for route in PUBLIC_ROUTES:
             await audit_route(context, route, expect_authed=False)
