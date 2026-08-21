@@ -63,9 +63,10 @@ for (const file of files) {
   }
 
   if (!indexable) {
-    if (!source.includes("NOINDEX_META")) {
+    if (!/NOINDEX_META|NOINDEX_FOLLOW_META/.test(source)) {
       failures.push(`${file}: المسار ${path} غير مسموح بفهرسته ولا يعرّف NOINDEX_META في head()`);
     }
+
     if (/rel:\s*"canonical"/.test(source)) {
       failures.push(`${file}: المسار ${path} ممنوع من الفهرسة ولا يجوز أن يحمل canonical`);
     }
