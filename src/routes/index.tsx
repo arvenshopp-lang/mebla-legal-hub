@@ -16,7 +16,8 @@ import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 import { PublicBayanCopilot } from "@/components/public/public-bayan-copilot";
 import { BayanHeroShowcase } from "@/components/marketing/bayan-hero-showcase";
-import { PUBLIC_BAYAN_MARKETING_ENABLED } from "@/config/public-marketing";
+import { PaymentMethodsBar } from "@/components/ui/payment-icons";
+import { PUBLIC_BAYAN_MARKETING_ENABLED, PUBLIC_PAYMENT_LOGOS_ENABLED } from "@/config/public-marketing";
 
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
@@ -462,6 +463,15 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           <p className="mt-4 text-[13px] text-muted-foreground">
             لا يتطلب إدخال بطاقة دفع · إنشاء المكتب خلال دقائق · واجهة عربية RTL بالكامل
           </p>
+
+          {PUBLIC_PAYMENT_LOGOS_ENABLED && (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <span className="text-[12.5px] font-medium text-muted-foreground">
+                بوابات الدفع المعتمدة
+              </span>
+              <PaymentMethodsBar showLabel={false} />
+            </div>
+          )}
 
         </div>
 
