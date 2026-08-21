@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Body, Container, Head, Heading, Hr, Html, Preview, Text } from "@react-email/components";
+import { Body, Container, Head, Heading, Html, Preview, Text } from "@react-email/components";
 
 import { styles } from "./brand";
 import { BrandHeader } from "./brand-header";

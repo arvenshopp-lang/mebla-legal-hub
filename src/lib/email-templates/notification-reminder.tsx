@@ -5,7 +5,6 @@ import {
   Container,
   Head,
   Heading,
-  Hr,
   Html,
   Preview,
   Text,
