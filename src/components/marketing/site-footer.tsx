@@ -197,7 +197,8 @@ export function SiteFooter() {
                         href={s.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-9 items-center rounded-[var(--radius-s)] border border-border px-3 text-[12.5px] text-muted-foreground transition hover:text-foreground"
+                        aria-label={`مِهلة على ${s.label}`}
+                        className="inline-flex min-h-9 items-center rounded-[var(--radius-s)] border border-border px-3 text-[12.5px] text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                       >
                         {s.label}
                       </a>
