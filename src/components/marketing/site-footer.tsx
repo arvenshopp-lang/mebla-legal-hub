@@ -32,10 +32,7 @@ const linkCls =
 /** فوتر موحّد لكل الصفحات العامة — بيانات التواصل تأتي من إعدادات المنصة، بلا قيم تجريبية. */
 export function SiteFooter() {
   const { data: info } = useSuspenseQuery(publicSiteQueryOptions());
-  const loginHref = useSurfaceHref("/login");
-  const registerHref = useSurfaceHref("/register");
   const trackHref = useSurfaceHref("/track");
-  const uploadHref = useSurfaceHref("/upload");
   const socials = activeSocialLinks(info);
   const publicEmail = publicContactEmail(info);
   const supportEmail = supportContactEmail(info);
@@ -77,11 +74,6 @@ export function SiteFooter() {
                   <li>
                     <a href={trackHref} className={linkCls}>
                       متابعة القضية
-                    </a>
-                  </li>
-                  <li>
-                    <a href={uploadHref} className={linkCls}>
-                      رفع مستند
                     </a>
                   </li>
                 </ul>
@@ -183,16 +175,6 @@ export function SiteFooter() {
                       )}
                     </li>
                   )}
-                  <li className="pt-1">
-                    <a href={loginHref} className={linkCls}>
-                      تسجيل الدخول
-                    </a>
-                  </li>
-                  <li>
-                    <a href={registerHref} className={linkCls}>
-                      إنشاء حساب
-                    </a>
-                  </li>
                 </ul>
               </nav>
             </div>
@@ -226,12 +208,14 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-6 text-center text-[12.5px] text-text-muted md:flex-row md:items-center md:justify-between md:text-start">
-            <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
-            <PaymentMethodsBar showLabel={false} />
-            <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-4">
+          <div className="mt-10 border-t border-border pt-6 text-center text-[12.5px] text-text-muted">
+            <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-1.5">
+              <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
               {info.legal_name && <p>{info.legal_name}</p>}
               <p dir="ltr">mehlalex.com</p>
+            </div>
+            <div className="mt-5 flex justify-center border-t border-border/60 pt-5">
+              <PaymentMethodsBar showLabel={false} />
             </div>
           </div>
         </div>
