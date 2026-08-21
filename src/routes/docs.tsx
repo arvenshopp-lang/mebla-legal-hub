@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-react";
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
