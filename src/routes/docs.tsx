@@ -1,57 +1,70 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-react";
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
+import { NOINDEX_FOLLOW_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/docs")({
   loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({
+    // المحتوى قيد الإعداد: الصفحة تبقى متاحة (لا كسر للروابط) وممنوعة من الفهرسة مؤقتاً.
     meta: [
       { title: "مركز المساعدة — مِهلة" },
       {
         name: "description",
-        content: "دليل استخدام منصة مِهلة، الأسئلة الشائعة، توثيق API، الشروط وسياسة الخصوصية.",
+        content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
+      NOINDEX_FOLLOW_META,
       { property: "og:title", content: "مركز المساعدة — مِهلة" },
       {
         property: "og:description",
-        content:
-          "دليل الاستخدام، الأسئلة الشائعة، وتوثيق واجهة API لمنصة مِهلة لإدارة الممارسة القانونية.",
+        content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/docs" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/docs" }],
   }),
   component: Page,
 });
 
+
+/** أقسام تشير إلى صفحات موجودة فعلاً — بلا أقسام «قريباً» بلا رابط. */
 const SECTIONS = [
   {
     icon: BookOpen,
-    title: "دليل الاستخدام",
-    body: "خطوات إنشاء المكتب، إضافة العملاء والقضايا، وإدارة الجلسات والمهل.",
+    title: "كيف تستخدم مِهلة",
+    body: "خطوات إنشاء المكتب وإضافة العملاء والقضايا وإدارة الجلسات والمهل.",
+    to: "/how-it-works" as const,
   },
   {
     icon: HelpCircle,
     title: "الأسئلة الشائعة",
-    body: "إجابات عن الاشتراك، الصلاحيات، عزل بيانات المكاتب، واستعادة الحساب.",
+    body: "إجابات عن الحساب والاشتراك والصلاحيات ومتابعة العميل والمستندات.",
+    to: "/faq" as const,
   },
   {
-    icon: FileText,
-    title: "توثيق API",
-    body: "واجهة مِهلة الرسمية على api.mehlalex.com عبر REST وWebhooks.",
+    icon: ShieldCheck,
+    title: "الأمان وحماية البيانات",
+    body: "الضوابط المطبّقة فعلياً في المنصة لعزل بيانات المكاتب وحماية المستندات.",
+    to: "/security" as const,
   },
   {
     icon: ScrollText,
     title: "الشروط والأحكام",
     body: "شروط استخدام المنصة والتزامات المكتب والمستخدمين.",
+    to: "/terms" as const,
   },
   {
-    icon: ShieldCheck,
+    icon: FileText,
     title: "سياسة الخصوصية",
-    body: "كيفية حفظ البيانات وحمايتها ومشاركتها داخل المنصة.",
+    body: "فئات البيانات وأغراض المعالجة وحقوق صاحب البيانات.",
+    to: "/privacy" as const,
+  },
+  {
+    icon: HelpCircle,
+    title: "تواصل مع فريق مِهلة",
+    body: "لم تجد ما تبحث عنه؟ راسل فريق الدعم وسنعود إليك.",
+    to: "/contact" as const,
   },
 ];
 
@@ -61,25 +74,24 @@ function Page() {
       <PageHeading
         eyebrow="الدعم"
         title="مركز المساعدة"
-        intro="نعمل على إثراء هذا المركز بالمحتوى الكامل. تجد أدناه أقسام الدعم الرسمية للمنصة."
+        intro="مقالات الدعم التفصيلية قيد الإعداد. حتى ذلك الحين تجد أدناه الصفحات الرسمية التي تجيب عن أكثر الأسئلة تكراراً."
       />
       <div className="container-page max-w-3xl py-10 md:py-14">
         <div className="grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
-            <section
+            <Link
               key={s.title}
-              className="rounded-[var(--radius-l)] border border-border bg-surface p-6"
+              to={s.to}
+              className="rounded-[var(--radius-l)] border border-border bg-surface p-6 transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <s.icon className="h-5 w-5 text-gold" />
+              <s.icon className="h-5 w-5 text-gold" aria-hidden />
               <h2 className="mt-3 text-sm font-bold">{s.title}</h2>
               <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{s.body}</p>
-              <span className="mt-3 inline-block rounded-full bg-surface-muted px-2.5 py-1 text-[10px] text-muted-foreground">
-                قريباً
-              </span>
-            </section>
+            </Link>
           ))}
         </div>
       </div>
     </PublicShell>
   );
 }
+

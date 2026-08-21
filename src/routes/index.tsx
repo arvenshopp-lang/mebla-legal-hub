@@ -16,6 +16,8 @@ import { fmtNumber } from "@/lib/format";
 import { highlightedPlanCode, planLimitRows, yearlySavingPercent } from "@/lib/pricing.shared";
 import { PublicBayanCopilot } from "@/components/public/public-bayan-copilot";
 import { BayanHeroShowcase } from "@/components/marketing/bayan-hero-showcase";
+import { PUBLIC_BAYAN_MARKETING_ENABLED } from "@/config/public-marketing";
+
 
 const TITLE = "مِهلة | منصة متابعة القضايا والجلسات والمهل للمحامين";
 const DESCRIPTION =
@@ -24,12 +26,19 @@ const DESCRIPTION =
 export const Route = createFileRoute("/")({
   component: MehlaLanding,
   loader: async ({ context }) => {
+    // ننتظر البيانات العامة كلها: أي prefetch غير منتظر يجعل HTML الخادم
+    // مختلفاً عن أول تصيير في المتصفح ويسبب Hydration Mismatch (React #418).
     await Promise.all([
-      context.queryClient.prefetchQuery(publicPlansQueryOptions()),
-      context.queryClient.prefetchQuery(publicRankingQueryOptions()),
+      context.queryClient
+        .ensureQueryData(publicPlansQueryOptions())
+        .catch(() => undefined),
+      context.queryClient
+        .ensureQueryData(publicRankingQueryOptions())
+        .catch(() => undefined),
       context.queryClient.ensureQueryData(publicSiteQueryOptions()),
     ]);
   },
+
   head: () => ({
     meta: [
       { title: TITLE },
@@ -451,8 +460,9 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
           </div>
 
           <p className="mt-4 text-[13px] text-muted-foreground">
-            لا يتطلب إدخال بطاقة دفع · تفعيل فوري خلال دقيقة واحدة · متوافق مع الأنظمة السعودية
+            لا يتطلب إدخال بطاقة دفع · إنشاء المكتب خلال دقائق · واجهة عربية RTL بالكامل
           </p>
+
         </div>
 
         <div className="mt-12 md:mt-16 max-w-5xl mx-auto">
@@ -511,11 +521,12 @@ const CAPABILITIES = [
   },
   {
     title: "الأمان وعزل المستأجرين (RBAC)",
-    body: "حماية تامة وسرية مطلقة للبيانات مع عزل صارم بين المكاتب وتشفير الهويات الوطنية والسجلات التجارية.",
+    body: "عزل صارم لبيانات كل مكتب مع صلاحيات دقيقة وتشفير الهويات الوطنية والسجلات التجارية داخل قاعدة البيانات.",
     points: [
       "مصفوفة صلاحيات دقيقة للمحامين والمساعدين",
-      "عزل تام على مستوى قاعدة البيانات (RLS)",
+      "عزل البيانات على مستوى الصفوف في قاعدة البيانات (RLS)",
       "سجل تدقيق غير قابل للتعديل لكافة العمليات",
+
     ],
   },
 ];
@@ -993,7 +1004,9 @@ function MehlaLanding() {
       <Header {...links} />
       <main id="product">
         <Hero {...links} />
-        <BayanHeroShowcase onOpenChat={() => setBayanOpen(true)} />
+        {PUBLIC_BAYAN_MARKETING_ENABLED && (
+          <BayanHeroShowcase onOpenChat={() => setBayanOpen(true)} />
+        )}
         <Capabilities />
         <HowItWorks />
         <Workflow />
@@ -1002,8 +1015,11 @@ function MehlaLanding() {
         <PricingTeaser />
         <CTA registerHref={registerHref} trackHref={trackHref} />
       </main>
-      <SiteFooter />
-      <PublicBayanCopilot initialOpen={bayanOpen} onCloseExternal={() => setBayanOpen(false)} />
+      <SiteFooter showCta={false} />
+      {PUBLIC_BAYAN_MARKETING_ENABLED && (
+        <PublicBayanCopilot initialOpen={bayanOpen} onCloseExternal={() => setBayanOpen(false)} />
+      )}
     </div>
   );
 }
+

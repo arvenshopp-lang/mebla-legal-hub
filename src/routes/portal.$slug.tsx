@@ -516,7 +516,7 @@ function PortalPage() {
             {/* Security Assurance */}
             <div className="text-center mt-6 text-xs text-slate-500 flex items-center justify-center gap-2">
               <Lock size={13} className="text-slate-400" />
-              اتصال مشفر وآمن بالكامل بتوافق مع نظام حماية البيانات الشخصية السعودي (PDPL)
+              اتصال مشفر ووصول محدود بما تسمح به إدارة المكتب
             </div>
           </div>
         ) : loadingDashboard ? (
