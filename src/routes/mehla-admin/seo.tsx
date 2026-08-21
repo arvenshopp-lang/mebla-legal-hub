@@ -176,7 +176,7 @@ function SeoPage() {
                 className={inputCls}
                 value={form.og_image}
                 onChange={(e) => set("og_image", e.target.value)}
-                placeholder="https://mehlalex.com/og-mehlalex-v2.jpg"
+                placeholder="https://mehlalex.com/og-mehlalex-v3.jpg"
                 dir="ltr"
                 disabled={!canManage}
               />
