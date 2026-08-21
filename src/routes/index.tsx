@@ -26,12 +26,19 @@ const DESCRIPTION =
 export const Route = createFileRoute("/")({
   component: MehlaLanding,
   loader: async ({ context }) => {
+    // ننتظر البيانات العامة كلها: أي prefetch غير منتظر يجعل HTML الخادم
+    // مختلفاً عن أول تصيير في المتصفح ويسبب Hydration Mismatch (React #418).
     await Promise.all([
-      context.queryClient.prefetchQuery(publicPlansQueryOptions()),
-      context.queryClient.prefetchQuery(publicRankingQueryOptions()),
+      context.queryClient
+        .ensureQueryData(publicPlansQueryOptions())
+        .catch(() => undefined),
+      context.queryClient
+        .ensureQueryData(publicRankingQueryOptions())
+        .catch(() => undefined),
       context.queryClient.ensureQueryData(publicSiteQueryOptions()),
     ]);
   },
+
   head: () => ({
     meta: [
       { title: TITLE },
