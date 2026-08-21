@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { NOINDEX_META } from "@/config/indexing";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 export const Route = createFileRoute("/upload/")({
   head: () => ({
@@ -26,7 +27,7 @@ function Page() {
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-[var(--radius-l)] bg-surface-muted">
           <ShieldCheck className="h-6 w-6 text-muted-foreground" />
         </div>
-        <div className="text-lg font-extrabold tracking-tight">مِهلة</div>
+        <MehlaLogo size="md" className="mx-auto text-primary" />
         <h1 className="mt-3 text-base font-bold">هذه الصفحة تعمل عبر رابط خاص</h1>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
           لرفع مستنداتك، استخدم الرابط الذي أرسله لك مكتب المحاماة. كل رابط صالح لمرة واحدة وتنتهي

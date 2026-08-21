@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ArrowLeft, SearchCheck, LayoutDashboard, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { publicPlansQueryOptions } from "@/lib/pricing.query";
 import { publicRankingQueryOptions } from "@/lib/operational-score/ranking.query";
@@ -49,14 +50,14 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/" },
       { property: "og:site_name", content: "مِهلة | MehlaLex" },
-      { property: "og:image", content: "https://mehlalex.com/og-mehlalex-v2.jpg" },
+      { property: "og:image", content: "https://mehlalex.com/og-mehlalex-v3.jpg" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { property: "og:image:alt", content: "مِهلة | MehlaLex" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
-      { name: "twitter:image", content: "https://mehlalex.com/og-mehlalex-v2.jpg" },
+      { name: "twitter:image", content: "https://mehlalex.com/og-mehlalex-v3.jpg" },
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/" }],
     scripts: [
@@ -71,7 +72,7 @@ export const Route = createFileRoute("/")({
               name: "مِهلة | MehlaLex",
               alternateName: "MehlaLex",
               url: "https://mehlalex.com/",
-              logo: "https://mehlalex.com/og-mehlalex-v2.jpg",
+              logo: "https://mehlalex.com/og-mehlalex-v3.jpg",
               description: DESCRIPTION,
               areaServed: { "@type": "Country", name: "السعودية" },
             },
@@ -165,9 +166,8 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
       )}
     >
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <a href="/" className="text-[17px] font-bold tracking-tight">
-          مِهلة <span className="text-text-muted">·</span>{" "}
-          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+        <a href="/" aria-label="مِهلة | MEHLA — الصفحة الرئيسية" className="text-primary">
+          <MehlaLogo size="sm" />
         </a>
 
         <nav aria-label="روابط الموقع" className="hidden items-center gap-7 md:flex">

@@ -6,13 +6,13 @@ import {
   Container,
   Head,
   Heading,
-  Hr,
   Html,
   Preview,
   Text,
 } from "@react-email/components";
 
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 interface RecoveryEmailProps {
   siteName: string;
@@ -25,8 +25,7 @@ export const RecoveryEmail = ({ siteName, confirmationUrl }: RecoveryEmailProps)
     <Preview>إعادة تعيين كلمة المرور في {siteName}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Text style={styles.brand}>{siteName}</Text>
-        <Hr style={styles.rule} />
+        <BrandHeader />
         <Heading style={styles.h1}>إعادة تعيين كلمة المرور</Heading>
         <Text style={styles.text}>
           وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك في {siteName}. اضغط الزر التالي لتعيين

@@ -17,6 +17,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB }
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { shapeArabicRun } from "./arabic.server";
 import { drawRiyalGlyph, riyalAdvance } from "./riyal-glyph";
+import { mehlaLogoPngBytes } from "@/lib/pdf/mehla-logo.server";
 
 /* ------------------------------------------------------------- نموذج المستند */
 
@@ -414,20 +415,32 @@ type EmbeddedLogo = { image: PDFImage; width: number; height: number };
 
 async function embedLogo(doc: PDFDocument, brand: PdfBrand): Promise<EmbeddedLogo | null> {
   const logo = brand.logo;
-  if (!logo || logo.bytes.byteLength === 0) return null;
+  const useCustom = Boolean(logo && logo.bytes.byteLength > 0);
   try {
-    const image = /png/i.test(logo.mime)
-      ? await doc.embedPng(logo.bytes)
-      : await doc.embedJpg(logo.bytes);
+    const image =
+      useCustom && logo
+        ? /png/i.test(logo.mime)
+          ? await doc.embedPng(logo.bytes)
+          : await doc.embedJpg(logo.bytes)
+        : await doc.embedPng(mehlaLogoPngBytes());
     const maxHeight = 40;
     const maxWidth = 96;
     const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
     return { image, width: image.width * scale, height: image.height * scale };
   } catch {
-    // شعار تالف أو بصيغة غير مدعومة لا يجوز أن يعطّل إصدار المستند المالي.
-    return null;
+    // شعار تالف أو بصيغة غير مدعومة لا يجوز أن يعطّل إصدار المستند المالي:
+    // نعود إلى شعار مِهلة الرسمي، وإذا تعذّر ذلك نصدر المستند بلا شعار.
+    if (!useCustom) return null;
+    try {
+      const fallback = await doc.embedPng(mehlaLogoPngBytes());
+      const scale = Math.min(96 / fallback.width, 40 / fallback.height, 1);
+      return { image: fallback, width: fallback.width * scale, height: fallback.height * scale };
+    } catch {
+      return null;
+    }
   }
 }
+
 
 function header(
   ctx: Ctx,

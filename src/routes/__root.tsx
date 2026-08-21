@@ -29,14 +29,13 @@ import { startThemeVersionSync } from "../lib/design/theme-version-sync";
 import "../lib/zod-ar";
 import { Toaster } from "sonner";
 import { installFontBudgetWatcher } from "../lib/perf/font-budget-watcher";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 function NotFoundComponent() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-muted px-4 py-12">
       <div className="w-full max-w-md rounded-[var(--radius-l)] border border-border bg-surface p-8 text-center">
-        <p className="text-sm font-bold tracking-tight text-foreground">
-          مِهلة <span className="text-gold">·</span> MEHLA
-        </p>
+        <MehlaLogo size="md" className="mx-auto text-primary" />
         <p className="mt-6 text-5xl font-bold tabular-nums text-primary/25">404</p>
         <h1 className="mt-3 text-xl font-bold text-foreground">الصفحة غير موجودة</h1>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
@@ -63,9 +62,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-muted px-4 py-12">
       <div className="w-full max-w-md rounded-[var(--radius-l)] border border-border bg-surface p-8 text-center">
-        <p className="text-sm font-bold tracking-tight text-foreground">
-          مِهلة <span className="text-gold">·</span> MEHLA
-        </p>
+        <MehlaLogo size="md" className="mx-auto text-primary" />
         <h1 className="mt-6 text-xl font-bold tracking-tight text-foreground">
           تعذّر عرض هذه الصفحة
         </h1>
@@ -140,9 +137,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ...(loaderData?.hasTheme
         ? [{ rel: "stylesheet", href: `/api/public/theme.css?v=${loaderData.cacheVersion}` }]
         : []),
-      { rel: "icon", href: "/favicon-mehla-v2.ico", type: "image/x-icon" },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v2.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v2.png" },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v3.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
       { rel: "manifest", href: "/site.webmanifest" },
       // الخطوط مستضافة محلياً وتُحمَّل عبر @font-face مع font-display: swap
       // (بدون preload: وسوم preload كانت تُنتج تحذير "preloaded but not used" في المتصفح)

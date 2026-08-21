@@ -10,6 +10,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import { BrandHeader } from "./brand-header";
 
 export type BillingEventKind =
   | "invoice_issued"
@@ -93,7 +94,7 @@ export function BillingEventEmail(props: BillingEventEmailProps) {
       <Preview>{`${title} — ${props.invoiceNumber}`}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Text style={brand}>مِهلة | MEHLA</Text>
+          <BrandHeader />
           <Heading style={heading}>{title}</Heading>
           <Text style={text}>
             {props.customerName ? `عناية ${props.customerName}،` : "مرحباً،"}
@@ -123,13 +124,6 @@ const main = {
   fontFamily: "'IBM Plex Sans Arabic', Arial, sans-serif",
 };
 const container = { padding: "28px 24px", maxWidth: "560px", margin: "0 auto" };
-const brand = {
-  color: "#173F35",
-  fontSize: "15px",
-  fontWeight: 700,
-  letterSpacing: "0.5px",
-  margin: "0 0 18px",
-};
 const heading = { color: "#173F35", fontSize: "21px", margin: "0 0 14px" };
 const text = { color: "#33403c", fontSize: "15px", lineHeight: "26px", margin: "0 0 12px" };
 const box = {

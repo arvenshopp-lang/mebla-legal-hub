@@ -6,13 +6,13 @@ import {
   Container,
   Head,
   Heading,
-  Hr,
   Html,
   Preview,
   Text,
 } from "@react-email/components";
 
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 interface EmailChangeEmailProps {
   siteName: string;
@@ -38,8 +38,7 @@ export const EmailChangeEmail = ({
     <Preview>تأكيد تغيير البريد الإلكتروني في {siteName}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Text style={styles.brand}>{siteName}</Text>
-        <Hr style={styles.rule} />
+        <BrandHeader />
         <Heading style={styles.h1}>تأكيد تغيير البريد الإلكتروني</Heading>
         <Text style={styles.text}>
           تم طلب تغيير البريد الإلكتروني لحسابك في {siteName} من <span style={ltr}>{oldEmail}</span>{" "}

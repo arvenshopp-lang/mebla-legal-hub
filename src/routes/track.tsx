@@ -20,6 +20,7 @@ import { lookupCaseStatus } from "@/lib/client-portal.functions";
 import { CaseCodeField } from "@/components/track/case-code-field";
 import { CASE_STATUS, fmtDate, fmtDateTime } from "@/lib/enums";
 import { NOINDEX_META } from "@/config/indexing";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 export const Route = createFileRoute("/track")({
   ssr: false,
@@ -101,10 +102,10 @@ function TrackPage() {
         <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
           <a
             href="/"
-            className="inline-flex min-h-[44px] items-center text-[16px] font-bold tracking-tight"
+            aria-label="مِهلة | الصفحة الرئيسية"
+            className="inline-flex min-h-[44px] items-center text-primary"
           >
-            مِهلة <span className="text-text-muted">·</span>{" "}
-            <span className="text-[12px] tracking-[0.18em]">MEHLA</span>
+            <MehlaLogo size="sm" />
           </a>
           <Link
             to="/"
