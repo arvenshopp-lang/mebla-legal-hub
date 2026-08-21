@@ -11,7 +11,7 @@ export function renderErrorPage(): string {
       * { box-sizing: border-box; }
       body { margin:0; padding:1.5rem; min-height:100dvh; display:grid; place-items:center;
              background:var(--bg); color:var(--text);
-             font:15px/1.8 "Tajawal", system-ui, -apple-system, sans-serif; }
+             font:15px/1.8 "IBM Plex Sans Arabic", system-ui, sans-serif; }
       .card { width:100%; max-width:30rem; background:var(--surface); border:1px solid var(--border);
               border-radius:12px; padding:2rem; }
       .brand { display:block; height:44px; width:auto; margin:0 0 1.5rem; }

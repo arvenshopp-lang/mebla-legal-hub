@@ -1,6 +1,7 @@
 /**
- * حاجز الخطوط — يمنع أي عودة لخط IBM Plex، ويوحّد عائلات الخطوط
- * في الواجهة والطباعة على Tajawal + Cairo فقط (بدون خطوط احتياطية مسمّاة).
+ * حاجز الخطوط — يوحّد عائلات الخطوط في الواجهة والطباعة على
+ * IBM Plex Sans Arabic فقط (خط المنصة الرسمي المستضاف محلياً)،
+ * ويمنع أي عودة لـ Tajawal أو Cairo أو أي خط من Google Fonts/CDN.
  * الاستثناء الوحيد: قوالب البريد الصادر (تُعرض في عميل بريد خارجي ولا تُحمّل خطوطنا).
  * التشغيل: bun run fonts:check
  */
@@ -16,17 +17,21 @@ const EXEMPT = [
   /^src\/routes\/lovable\/email\//,
   // خط مصغّر مدمج (base64) داخل ملفات PDF على الخادم — لا يصدر أي طلب شبكي
   /^src\/lib\/secure-view\/watermark-font\.ts$/,
+  // مُنشئات HTML لرسائل بريد صادرة (تُعرض في عميل بريد خارجي بخطوطه)
+  /^src\/lib\/support\/csat\.server\.ts$/,
+  /^src\/components\/admin\/mail\/compose-modal\.tsx$/,
 ];
-const FORBIDDEN = /IBM\s*Plex|ibm-plex/i;
+const FORBIDDEN = /Tajawal|tajawal|Cairo(?![a-z])|cairo-|fonts\.googleapis\.com|fonts\.gstatic\.com/;
 
 /**
  * العائلات المسموحة داخل أي تعريف font-family في الواجهة/الطباعة:
- * الخطان الرسميان + العائلات العامة فقط. أي خط مسمّى آخر (Arial, Segoe UI,
- * system-ui, Tahoma…) ممنوع لأنه يغيّر الهوية أو يفتح باباً لتحميل خارجي.
+ * خط الهوية + الخط الاحتياطي المعايَر + العائلات العامة فقط. أي خط مسمّى آخر
+ * (Arial, Segoe UI, Tahoma…) ممنوع لأنه يغيّر الهوية أو يفتح باباً لتحميل خارجي.
  */
 const ALLOWED_FAMILIES = new Set([
-  "tajawal",
-  "cairo",
+  "ibm plex sans arabic",
+  "mehla fallback",
+  "system-ui",
   "sans-serif",
   "serif",
   "monospace",
@@ -79,9 +84,13 @@ for (const root of ROOTS) {
 }
 
 if (violations.length > 0) {
-  console.error("FAIL — مخالفات الخطوط (المعتمد فقط: Tajawal + Cairo أو var(--font-*)):");
+  console.error(
+    "FAIL — مخالفات الخطوط (المعتمد فقط: IBM Plex Sans Arabic أو var(--font-*)):",
+  );
   for (const v of violations) console.error("  " + v);
   console.error(`\nإجمالي المخالفات: ${violations.length}`);
   process.exit(1);
 }
-console.log("PASS — الواجهة والطباعة تعتمد Tajawal + Cairo فقط، ولا أثر لخط IBM Plex.");
+console.log(
+  "PASS — الواجهة والطباعة تعتمد IBM Plex Sans Arabic فقط، ولا أثر لـ Tajawal/Cairo أو خطوط خارجية.",
+);

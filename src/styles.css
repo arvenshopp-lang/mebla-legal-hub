@@ -113,12 +113,12 @@
 }
 
 @theme inline {
-  /* خطوط المنصة — مستضافة محلياً (src/styles/fonts.css)
-     Tajawal: خط الواجهة والنص والجداول والنماذج
-     Cairo (--font-display): العناوين الكبرى والأرقام البارزة
-     الاحتياطي: خطوط النظام فقط */
-  --font-sans: "IBM Plex Sans Arabic", "Tajawal", "Cairo", system-ui, -apple-system, sans-serif;
-  --font-display: "IBM Plex Sans Arabic", "Cairo", "Tajawal", system-ui, sans-serif;
+  /* خط المنصة الرسمي الوحيد — IBM Plex Sans Arabic مستضاف محلياً
+     (التعريفات في src/styles/fonts.css · لا طلب خطوط خارجي)
+     الاحتياطي: "Mehla Fallback" معايَر المقاسات ثم خطوط النظام */
+  --font-sans: "IBM Plex Sans Arabic", "Mehla Fallback", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Arabic", "Mehla Fallback", system-ui, sans-serif;
+
   --font-serif: var(--font-display);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 

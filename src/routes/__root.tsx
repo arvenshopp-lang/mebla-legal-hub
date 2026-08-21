@@ -129,6 +129,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
+      // خط الهوية أولاً: preload قبل ورقة الأنماط حتى يجهز الخط في أول رسم
+      // ولا يحدث أي تبديل خط مرئي (يُستخدم مع font-display: optional).
+      // نُعلن فقط الأوجه المستخدمة فعلاً في كل صفحة: العربي 400/600 واللاتيني 400.
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/plex-arabic-400.woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/plex-arabic-600.woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/plex-latin-400.woff2",
+        crossOrigin: "anonymous",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -142,9 +166,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v3.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
       { rel: "manifest", href: "/site.webmanifest" },
-      // الخطوط مستضافة محلياً وتُحمَّل عبر @font-face مع font-display: swap
-      // (بدون preload: وسوم preload كانت تُنتج تحذير "preloaded but not used" في المتصفح)
     ],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,
