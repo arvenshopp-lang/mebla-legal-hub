@@ -30,6 +30,7 @@ import "../lib/zod-ar";
 import { Toaster } from "sonner";
 import { installFontBudgetWatcher } from "../lib/perf/font-budget-watcher";
 import { MehlaLogo } from "@/components/brand/mehla-logo";
+import { BRAND_ICONS } from "@/config/brand-assets";
 
 function NotFoundComponent() {
   return (
@@ -161,10 +162,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ...(loaderData?.hasTheme
         ? [{ rel: "stylesheet", href: `/api/public/theme.css?v=${loaderData.cacheVersion}` }]
         : []),
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-mehla-32-v3.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
+      { rel: "icon", href: BRAND_ICONS.ico, type: "image/x-icon" },
+      { rel: "icon", type: "image/svg+xml", href: BRAND_ICONS.svg },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: BRAND_ICONS.png16 },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: BRAND_ICONS.png32 },
+      { rel: "apple-touch-icon", sizes: "180x180", href: BRAND_ICONS.appleTouch },
       { rel: "manifest", href: "/site.webmanifest" },
     ],
 

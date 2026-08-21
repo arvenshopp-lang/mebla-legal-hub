@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, type LegalSection } from "@/components/marketing/legal-page";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "سياسة الخصوصية — مِهلة";
 const DESCRIPTION =
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/privacy")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/privacy" },
-      { name: "twitter:card", content: "summary" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/privacy" }],
   }),

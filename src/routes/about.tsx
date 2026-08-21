@@ -9,6 +9,7 @@ import {
   PublicShell,
   type ContentSection,
 } from "@/components/marketing/public-shell";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "من نحن — مِهلة | MEHLA";
 const DESCRIPTION =
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/about")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/about" },
-      { name: "twitter:card", content: "summary" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/about" }],
   }),

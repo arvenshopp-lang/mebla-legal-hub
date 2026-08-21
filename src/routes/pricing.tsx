@@ -23,6 +23,7 @@ import {
   type PublicPlan,
 } from "@/lib/pricing.shared";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "أسعار وباقات مِهلة — منصة إدارة مكاتب المحاماة";
 const DESCRIPTION =
@@ -49,9 +50,7 @@ export const Route = createFileRoute("/pricing")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: URL },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESCRIPTION },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: URL }],
   }),

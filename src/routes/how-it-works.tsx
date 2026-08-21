@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { useSurfaceHref } from "@/hooks/use-surface-guard";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "كيف تستخدم مِهلة — دليل البدء";
 const DESCRIPTION =
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/how-it-works")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/how-it-works" },
-      { name: "twitter:card", content: "summary" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/how-it-works" }],
     scripts: [
