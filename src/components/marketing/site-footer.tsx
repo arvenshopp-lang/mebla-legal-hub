@@ -175,16 +175,6 @@ export function SiteFooter() {
                       )}
                     </li>
                   )}
-                  <li className="pt-1">
-                    <a href={loginHref} className={linkCls}>
-                      تسجيل الدخول
-                    </a>
-                  </li>
-                  <li>
-                    <a href={registerHref} className={linkCls}>
-                      إنشاء حساب
-                    </a>
-                  </li>
                 </ul>
               </nav>
             </div>
