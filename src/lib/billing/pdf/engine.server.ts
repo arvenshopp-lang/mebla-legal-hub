@@ -17,6 +17,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB }
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { shapeArabicRun } from "./arabic.server";
 import { drawRiyalGlyph, riyalAdvance } from "./riyal-glyph";
+import { fitPdfLogo } from "@/config/brand-logo-sizing";
 import { mehlaLogoPngBytes } from "@/lib/pdf/mehla-logo.server";
 
 /* ------------------------------------------------------------- نموذج المستند */
@@ -423,18 +424,14 @@ async function embedLogo(doc: PDFDocument, brand: PdfBrand): Promise<EmbeddedLog
           ? await doc.embedPng(logo.bytes)
           : await doc.embedJpg(logo.bytes)
         : await doc.embedPng(mehlaLogoPngBytes());
-    const maxHeight = 40;
-    const maxWidth = 96;
-    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-    return { image, width: image.width * scale, height: image.height * scale };
+    return { image, ...fitPdfLogo(image.width, image.height) };
   } catch {
     // شعار تالف أو بصيغة غير مدعومة لا يجوز أن يعطّل إصدار المستند المالي:
     // نعود إلى شعار مِهلة الرسمي، وإذا تعذّر ذلك نصدر المستند بلا شعار.
     if (!useCustom) return null;
     try {
       const fallback = await doc.embedPng(mehlaLogoPngBytes());
-      const scale = Math.min(96 / fallback.width, 40 / fallback.height, 1);
-      return { image: fallback, width: fallback.width * scale, height: fallback.height * scale };
+      return { image: fallback, ...fitPdfLogo(fallback.width, fallback.height) };
     } catch {
       return null;
     }

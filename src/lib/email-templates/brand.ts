@@ -1,3 +1,5 @@
+import { EMAIL_LOGO_HEIGHT, EMAIL_LOGO_WIDTH } from "@/config/brand-logo-sizing";
+
 // هوية مِهلة البصرية لرسائل البريد (قيم مضمّنة inline لأن عملاء البريد لا يدعمون CSS خارجي)
 export const BRAND = {
   green: "#123C32",
@@ -35,8 +37,8 @@ export const styles = {
   },
   logo: {
     display: "block",
-    height: "44px",
-    width: "84px",
+    height: `${EMAIL_LOGO_HEIGHT}px`,
+    width: `${EMAIL_LOGO_WIDTH}px`,
     margin: "0 0 6px",
   },
   rule: {
