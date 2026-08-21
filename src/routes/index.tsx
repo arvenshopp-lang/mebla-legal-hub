@@ -464,6 +464,15 @@ function Hero({ loginHref, registerHref, trackHref }: SurfaceLinks) {
             لا يتطلب إدخال بطاقة دفع · إنشاء المكتب خلال دقائق · واجهة عربية RTL بالكامل
           </p>
 
+          {PUBLIC_PAYMENT_LOGOS_ENABLED && (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <span className="text-[12.5px] font-medium text-muted-foreground">
+                بوابات الدفع المعتمدة
+              </span>
+              <PaymentMethodsBar showLabel={false} />
+            </div>
+          )}
+
         </div>
 
         <div className="mt-12 md:mt-16 max-w-5xl mx-auto">
