@@ -17,6 +17,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB }
 import { watermarkFontBytes } from "@/lib/secure-view/watermark-font";
 import { shapeArabicRun } from "./arabic.server";
 import { drawRiyalGlyph, riyalAdvance } from "./riyal-glyph";
+import { mehlaLogoPngBytes } from "@/lib/pdf/mehla-logo.server";
 
 /* ------------------------------------------------------------- نموذج المستند */
 
