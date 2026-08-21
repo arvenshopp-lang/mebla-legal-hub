@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 interface MagicLinkEmailProps {
   siteName: string;
@@ -25,8 +26,7 @@ export const MagicLinkEmail = ({ siteName, confirmationUrl }: MagicLinkEmailProp
     <Preview>رابط الدخول إلى {siteName}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Text style={styles.brand}>{siteName}</Text>
-        <Hr style={styles.rule} />
+        <BrandHeader />
         <Heading style={styles.h1}>رابط الدخول إلى حسابك</Heading>
         <Text style={styles.text}>
           اضغط الزر التالي لتسجيل الدخول إلى {siteName}. هذا الرابط صالح لفترة قصيرة ولمرة واحدة

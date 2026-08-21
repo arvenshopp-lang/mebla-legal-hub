@@ -1,5 +1,6 @@
 import React from "react";
 import {
+import { BrandHeader } from "./brand-header";
   Body,
   Container,
   Head,
@@ -93,7 +94,7 @@ export function BillingEventEmail(props: BillingEventEmailProps) {
       <Preview>{`${title} — ${props.invoiceNumber}`}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Text style={brand}>مِهلة | MEHLA</Text>
+          <BrandHeader />
           <Heading style={heading}>{title}</Heading>
           <Text style={text}>
             {props.customerName ? `عناية ${props.customerName}،` : "مرحباً،"}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Body, Button, Container, Head, Heading, Hr, Html, Preview, Text } from "@react-email/components";
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 export interface NotificationSupportTicketCreatedProps {
   actionUrl: string;
@@ -16,8 +17,7 @@ export function NotificationSupportTicketCreatedEmail({
       <Preview>استلمنا طلب الدعم الخاص بك</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>مِهلة | MEHLA</Text>
-          <Hr style={styles.rule} />
+          <BrandHeader />
           <Heading style={styles.h1}>استلمنا طلب الدعم</Heading>
           <Text style={styles.text}>
             تم فتح تذكرة دعم جديدة باسم حسابك، وسيتابعها فريق الدعم وفق مدة الاستجابة المعتمدة.

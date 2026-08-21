@@ -14,6 +14,7 @@ import {
 } from "@react-email/components";
 
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 interface SignupEmailProps {
   siteName: string;
@@ -33,8 +34,7 @@ export const SignupEmail = ({
     <Preview>تأكيد بريدك الإلكتروني في {siteName}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Text style={styles.brand}>{siteName}</Text>
-        <Hr style={styles.rule} />
+        <BrandHeader />
         <Heading style={styles.h1}>تأكيد البريد الإلكتروني</Heading>
         <Text style={styles.text}>
           شكراً لانضمامك إلى{" "}

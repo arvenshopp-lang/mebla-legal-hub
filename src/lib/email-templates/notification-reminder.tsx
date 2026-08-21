@@ -11,6 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 export interface NotificationReminderProps {
   /** رابط داخل المنصة — لا يحمل أي بيانات حساسة. */
@@ -32,8 +33,7 @@ export function NotificationReminderEmail({ actionUrl, heading, body }: Notifica
       <Preview>{heading}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>مِهلة | MEHLA</Text>
-          <Hr style={styles.rule} />
+          <BrandHeader />
           <Heading style={styles.h1}>{heading}</Heading>
           <Text style={styles.text}>{body} يمكنك مراجعة التفاصيل الكاملة داخل المنصة.</Text>
           <Button href={actionUrl} style={styles.button}>

@@ -33,6 +33,12 @@ export const styles = {
     letterSpacing: "0.5px",
     margin: "0 0 4px",
   },
+  logo: {
+    display: "block",
+    height: "34px",
+    width: "auto",
+    margin: "0 0 6px",
+  },
   rule: {
     borderColor: BRAND.gold,
     borderWidth: "0 0 2px",

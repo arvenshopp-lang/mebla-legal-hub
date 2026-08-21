@@ -14,6 +14,7 @@ import {
 } from "@react-email/components";
 
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 interface InviteEmailProps {
   siteName: string;
@@ -40,8 +41,7 @@ export const InviteEmail = ({
     <Preview>{orgName ? `دعوة للانضمام إلى ${orgName}` : `دعوة للانضمام إلى ${siteName}`}</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Text style={styles.brand}>{siteName}</Text>
-        <Hr style={styles.rule} />
+        <BrandHeader />
         <Heading style={styles.h1}>لديك دعوة للانضمام</Heading>
         <Text style={styles.text}>
           {inviterName ? <b>{inviterName}</b> : "أحد مسؤولي المكتب"} دعاك للانضمام إلى فريق العمل

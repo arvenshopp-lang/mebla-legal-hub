@@ -1,6 +1,7 @@
 import React from "react";
 import { Body, Button, Container, Head, Heading, Hr, Html, Preview, Text } from "@react-email/components";
 import { styles } from "./brand";
+import { BrandHeader } from "./brand-header";
 
 export interface NotificationSupportReplyProps {
   actionUrl: string;
@@ -14,8 +15,7 @@ export function NotificationSupportReplyEmail({ actionUrl }: NotificationSupport
       <Preview>وصلك رد جديد من فريق دعم مِهلة</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>مِهلة | MEHLA</Text>
-          <Hr style={styles.rule} />
+          <BrandHeader />
           <Heading style={styles.h1}>رد جديد من فريق الدعم</Heading>
           <Text style={styles.text}>
             سجّل فريق دعم مِهلة رداً جديداً على إحدى تذاكرك. لحماية خصوصية بياناتك لا نُرسل نص الرد
