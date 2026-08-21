@@ -1,3 +1,4 @@
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
@@ -19,9 +20,8 @@ export function LegalPage({
     <div dir="rtl" className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="border-b border-border bg-surface">
         <div className="container-page flex h-16 items-center justify-between gap-4">
-          <a href="/" className="text-[17px] font-bold tracking-tight">
-            مِهلة <span className="text-text-muted">·</span>{" "}
-            <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+          <a href="/" aria-label="مِهلة | MEHLA — الصفحة الرئيسية" className="text-primary">
+            <MehlaLogo size="sm" />
           </a>
           <a
             href="/"

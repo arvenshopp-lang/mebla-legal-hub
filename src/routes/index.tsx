@@ -165,9 +165,8 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
       )}
     >
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <a href="/" className="text-[17px] font-bold tracking-tight">
-          مِهلة <span className="text-text-muted">·</span>{" "}
-          <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
+        <a href="/" aria-label="مِهلة | MEHLA — الصفحة الرئيسية" className="text-primary">
+          <MehlaLogo size="sm" />
         </a>
 
         <nav aria-label="روابط الموقع" className="hidden items-center gap-7 md:flex">
