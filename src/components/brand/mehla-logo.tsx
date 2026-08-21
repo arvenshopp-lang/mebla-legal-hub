@@ -3,18 +3,14 @@
  * المسارات متجهية ومُلوّنة بـ currentColor، فيتلوّن الشعار تلقائياً بلون النص المحيط:
  * أخضر الهوية على الخلفيات الفاتحة وأبيض على الخلفيات الداكنة.
  */
+import {
+  LOGO_VIEWBOX,
+  WEB_LOGO_CLASSES,
+  type MehlaLogoSize,
+} from "@/config/brand-logo-sizing";
 import { cn } from "@/lib/utils";
 
-/** أحجام معتمدة — الارتفاع بالبكسل مضبوط ليبقى سطر MEHLA مقروءاً. */
-const SIZES = {
-  xs: "h-6",
-  sm: "h-7",
-  md: "h-9",
-  lg: "h-12",
-  xl: "h-16",
-} as const;
-
-export type MehlaLogoSize = keyof typeof SIZES;
+export type { MehlaLogoSize };
 
 export function MehlaLogo({
   size = "md",
@@ -27,11 +23,18 @@ export function MehlaLogo({
 }) {
   return (
     <svg
-      viewBox="381 582 744 388"
+      viewBox={`${LOGO_VIEWBOX.x} ${LOGO_VIEWBOX.y} ${LOGO_VIEWBOX.width} ${LOGO_VIEWBOX.height}`}
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={title}
       focusable="false"
-      className={cn("w-auto shrink-0", SIZES[size], className)}
+      className={cn(
+        // العرض تابع للارتفاع (نسبة محفوظة)، shrink-0 يمنع ضغط الشعار،
+        // و max-w-full يمنعه من تجاوز حاويته فيدفع النص إلى الالتفاف.
+        "block w-auto max-w-full shrink-0",
+        WEB_LOGO_CLASSES[size],
+        className,
+      )}
       xmlns="http://www.w3.org/2000/svg"
     >
       <title>{title}</title>
