@@ -8,14 +8,14 @@
  */
 
 export const FONT_BUDGET = {
-  /** أقصى عدد ملفات خطوط تُحمَّل فعلياً عبر الشبكة في عرض صفحة واحد (Tajawal 3 أوزان + Cairo، عربي/لاتيني) */
+  /** أقصى عدد ملفات خطوط تُحمَّل فعلياً عبر الشبكة في عرض صفحة واحد (IBM Plex Sans Arabic — 4 أوزان × عربي/لاتيني) */
   maxFilesPerPage: 8,
   /** أقصى حجم نقل تراكمي لملفات الخطوط في عرض صفحة واحد (بايت) */
-  maxTransferBytesPerPage: 140 * 1024,
+  maxTransferBytesPerPage: 270 * 1024,
   /** أقصى حجم لملف خط واحد (بايت) */
-  maxFileBytes: 40 * 1024,
+  maxFileBytes: 48 * 1024,
   /** أقصى حجم تراكمي لكل ملفات الخطوط المستضافة محلياً (بايت) */
-  maxTotalAssetBytes: 200 * 1024,
+  maxTotalAssetBytes: 280 * 1024,
 } as const;
 
 export type FontResourceSample = {

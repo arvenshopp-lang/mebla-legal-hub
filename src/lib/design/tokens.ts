@@ -22,17 +22,13 @@ export type TokenDef = {
 export type TokenGroup = { id: string; label: string; description?: string; tokens: TokenDef[] };
 
 /**
- * خطوط المنصة الرسمية — Tajawal للواجهة وCairo للعناوين، مستضافة محلياً.
+ * خط المنصة الرسمي — IBM Plex Sans Arabic مستضاف محلياً، وهو الخيار الوحيد.
  * لا يُسمح بأي خط خارجي أو رابط CDN، ولا بخيار خط نظام قد يُغيّر الهوية أو يضيف تحميلات.
  */
 export const APPROVED_FONTS: { value: string; label: string }[] = [
   {
-    value: '"Tajawal", sans-serif',
-    label: "Tajawal (خط الواجهة الرسمي)",
-  },
-  {
-    value: '"Cairo", sans-serif',
-    label: "Cairo (خط العناوين الرسمي)",
+    value: '"IBM Plex Sans Arabic", sans-serif',
+    label: "IBM Plex Sans Arabic (خط المنصة الرسمي)",
   },
 ];
 
@@ -108,26 +104,26 @@ export const TOKEN_GROUPS: TokenGroup[] = [
   {
     id: "typography",
     label: "الخطوط",
-    description: "خطوط معتمدة فقط (Google Fonts موثوقة أو خطوط النظام).",
+    description: "خط المنصة الرسمي المستضاف محلياً فقط — لا خطوط خارجية.",
     tokens: [
       {
         key: "--font-arabic",
         label: "الخط العربي الأساسي",
         type: "font",
-        fallback: "Tajawal",
+        fallback: "IBM Plex Sans Arabic",
         applyTo: { selector: "html", prop: "font-family" },
       },
       {
         key: "--font-english",
         label: "الخط اللاتيني",
         type: "font",
-        fallback: "Tajawal",
+        fallback: "IBM Plex Sans Arabic",
       },
       {
         key: "--font-headings",
         label: "خط العناوين",
         type: "font",
-        fallback: "Cairo",
+        fallback: "IBM Plex Sans Arabic",
         applyTo: { selector: "h1, h2, h3, h4, h5, h6", prop: "font-family" },
       },
       {
