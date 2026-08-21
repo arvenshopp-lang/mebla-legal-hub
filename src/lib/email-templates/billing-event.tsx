@@ -1,6 +1,5 @@
 import React from "react";
 import {
-import { BrandHeader } from "./brand-header";
   Body,
   Container,
   Head,
@@ -11,6 +10,7 @@ import { BrandHeader } from "./brand-header";
   Section,
   Text,
 } from "@react-email/components";
+import { BrandHeader } from "./brand-header";
 
 export type BillingEventKind =
   | "invoice_issued"
