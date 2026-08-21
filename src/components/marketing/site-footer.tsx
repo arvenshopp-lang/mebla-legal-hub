@@ -106,76 +106,78 @@ export function SiteFooter() {
                 <h2 id="footer-support" className="text-[13px] font-bold">
                   الدعم والتواصل
                 </h2>
-                <ul className="mt-3 space-y-1">
-                  <li>
-                    <Link to="/contact" className={linkCls}>
-                      تواصل معنا
-                    </Link>
-                  </li>
-                  {info.support_center_url && (
+                <address className="not-italic">
+                  <ul className="mt-3 space-y-1">
                     <li>
-                      <a
-                        href={info.support_center_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={linkCls}
-                      >
-                        مركز الدعم
-                      </a>
+                      <Link to="/contact" className={linkCls}>
+                        تواصل معنا
+                      </Link>
                     </li>
-                  )}
-                  <li>
-                    <a href={`mailto:${publicEmail}`} dir="ltr" className={linkCls}>
-                      <Mail className="ms-0 me-1.5 h-3.5 w-3.5" aria-hidden />
-                      {publicEmail}
-                    </a>
-                  </li>
-                  <li>
-                    <a href={`mailto:${supportEmail}`} dir="ltr" className={linkCls}>
-                      <Mail className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                      {supportEmail}
-                    </a>
-                  </li>
-                  {info.phone && (
-                    <li>
-                      <a href={`tel:${info.phone}`} dir="ltr" className={linkCls}>
-                        <Phone className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                        {info.phone}
-                      </a>
-                    </li>
-                  )}
-                  {info.whatsapp && (
-                    <li>
-                      <a
-                        href={`https://wa.me/${info.whatsapp.replace("+", "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        dir="ltr"
-                        className={linkCls}
-                      >
-                        <MessageCircle className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                        {info.whatsapp}
-                      </a>
-                    </li>
-                  )}
-                  {info.address && (
-                    <li className="flex items-start gap-1.5 py-1 text-[13.5px] text-muted-foreground">
-                      <MapPin className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
-                      {info.maps_url ? (
+                    {info.support_center_url && (
+                      <li>
                         <a
-                          href={info.maps_url}
+                          href={info.support_center_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="transition hover:text-foreground"
+                          className={linkCls}
                         >
-                          {info.address}
+                          مركز الدعم
                         </a>
-                      ) : (
-                        <span>{info.address}</span>
-                      )}
+                      </li>
+                    )}
+                    <li>
+                      <a href={`mailto:${publicEmail}`} dir="ltr" className={linkCls}>
+                        <Mail className="ms-0 me-1.5 h-3.5 w-3.5" aria-hidden />
+                        {publicEmail}
+                      </a>
                     </li>
-                  )}
-                </ul>
+                    <li>
+                      <a href={`mailto:${supportEmail}`} dir="ltr" className={linkCls}>
+                        <Mail className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                        {supportEmail}
+                      </a>
+                    </li>
+                    {info.phone && (
+                      <li>
+                        <a href={`tel:${info.phone}`} dir="ltr" className={linkCls}>
+                          <Phone className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                          {info.phone}
+                        </a>
+                      </li>
+                    )}
+                    {info.whatsapp && (
+                      <li>
+                        <a
+                          href={`https://wa.me/${info.whatsapp.replace("+", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          dir="ltr"
+                          className={linkCls}
+                        >
+                          <MessageCircle className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                          {info.whatsapp}
+                        </a>
+                      </li>
+                    )}
+                    {info.address && (
+                      <li className="flex items-start gap-1.5 py-1 text-[13.5px] text-muted-foreground">
+                        <MapPin className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {info.maps_url ? (
+                          <a
+                            href={info.maps_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-[var(--radius-s)] px-1 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                          >
+                            {info.address}
+                          </a>
+                        ) : (
+                          <span>{info.address}</span>
+                        )}
+                      </li>
+                    )}
+                  </ul>
+                </address>
               </nav>
             </div>
 
