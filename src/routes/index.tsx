@@ -299,17 +299,23 @@ function Header({ loginHref, registerHref, trackHref }: SurfaceLinks) {
 function AppPreview() {
   return (
     <div className="surface-card overflow-hidden rounded-[var(--radius-l)] border border-border shadow-xl">
-      <div className="flex items-center justify-between border-b border-border bg-surface-muted/80 px-4 py-3">
-        <div className="flex items-center gap-2 text-[12.5px] font-medium text-muted-foreground">
-          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
-          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
-          <span className="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden />
-          <span className="mr-2 font-mono text-[11.5px]">app.mehlalex.com · مساحة عمل المكتب</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface-muted/80 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground sm:gap-2">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
+          <span
+            className="ms-1 truncate font-mono text-[11.5px] sm:ms-2"
+            title="app.mehlalex.com · مساحة عمل المكتب"
+          >
+            app.mehlalex.com<span className="hidden sm:inline"> · مساحة عمل المكتب</span>
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> متصل ومؤمن
+        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-emerald-600 sm:text-[11px] dark:text-emerald-400">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 animate-pulse" /> متصل ومؤمن
         </span>
       </div>
+
       <div className="grid grid-cols-[1fr] md:grid-cols-[200px_1fr]" dir="rtl">
         <aside className="hidden border-l border-border bg-surface-muted/30 p-3 md:block">
           {[
