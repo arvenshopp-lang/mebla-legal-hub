@@ -33,7 +33,7 @@ function PublicHeader() {
           aria-label="مِهلة | الصفحة الرئيسية"
           className="inline-flex min-h-[44px] items-center text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <MehlaLogo size="sm" className="sm:h-9" />
+          <MehlaLogo size="sm" />
         </Link>
 
         <nav aria-label="روابط الموقع" className="hidden items-center gap-6 lg:flex">
