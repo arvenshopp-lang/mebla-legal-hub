@@ -130,9 +130,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
-      // خط الهوية أولاً: preload قبل ورقة الأنماط حتى يجهز الخط في أول رسم
-      // ولا يحدث أي تبديل خط مرئي (يُستخدم مع font-display: optional).
-      // نُعلن فقط الأوجه المستخدمة فعلاً في كل صفحة: العربي 400/600 واللاتيني 400.
+      // خط الهوية أولاً: النص العربي العادي وعناوين 700 هما الوجهان الحرجان
+      // فوق الطية. لا نحمّل 600 أو اللاتيني مسبقاً كي لا ينافسا رسم العنوان.
       {
         rel: "preload",
         as: "font",
@@ -144,14 +143,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/plex-arabic-600.woff2",
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "preload",
-        as: "font",
-        type: "font/woff2",
-        href: "/fonts/plex-latin-400.woff2",
+        href: "/fonts/plex-arabic-700.woff2",
         crossOrigin: "anonymous",
       },
       {

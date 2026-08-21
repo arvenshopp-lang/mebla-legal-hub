@@ -207,6 +207,8 @@
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     font-family: var(--font-sans);
+    /* لا تسمح لـ Safari بتصنيع سماكة مؤقتة قبل وصول ملف الوزن الحقيقي. */
+    font-synthesis: none;
   }
 
   body {
