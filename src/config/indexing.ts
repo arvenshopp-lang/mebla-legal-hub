@@ -29,11 +29,21 @@ export const INDEXABLE_PATHS = [
   "/pricing",
   "/faq",
   "/security",
-  "/docs",
   "/contact",
   "/privacy",
   "/terms",
 ] as const;
+
+/** قيمة robots لصفحة موجودة لكن محتواها غير جاهز للفهرسة — تُتبع روابطها ولا تُفهرس. */
+export const NOINDEX_FOLLOW_ROBOTS = "noindex, follow";
+
+/**
+ * صفحات عامة قائمة لكن محتواها غير مكتمل: تبقى مساراتها تعمل (لا كسر للروابط)
+ * وتُمنع من الفهرسة مؤقتاً مع السماح بتتبع روابطها الداخلية.
+ * `/docs` — مركز المساعدة بلا مقالات فعلية بعد.
+ */
+export const NOINDEX_FOLLOW_PATHS = ["/docs"] as const;
+
 
 export type IndexablePath = (typeof INDEXABLE_PATHS)[number];
 
@@ -174,9 +184,11 @@ export function indexingDecision(context: IndexingContext): IndexingDecision {
   const noReferrer = NO_REFERRER_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 
   const indexable = isIndexablePath(pathname) && !sensitive;
+  const noindexFollow =
+    !indexable && (NOINDEX_FOLLOW_PATHS as readonly string[]).includes(pathname) && !sensitive;
   return {
     indexable,
-    robots: indexable ? INDEX_ROBOTS : NOINDEX_ROBOTS,
+    robots: indexable ? INDEX_ROBOTS : noindexFollow ? NOINDEX_FOLLOW_ROBOTS : NOINDEX_ROBOTS,
     noStore,
     noReferrer,
   };
@@ -184,3 +196,7 @@ export function indexingDecision(context: IndexingContext): IndexingDecision {
 
 /** نص Meta robots الجاهز للاستخدام في `head()` لأي مسار ممنوع. */
 export const NOINDEX_META = { name: "robots", content: NOINDEX_ROBOTS } as const;
+
+/** Meta robots لصفحة قائمة بمحتوى غير مكتمل: لا فهرسة مع تتبع الروابط. */
+export const NOINDEX_FOLLOW_META = { name: "robots", content: NOINDEX_FOLLOW_ROBOTS } as const;
+
