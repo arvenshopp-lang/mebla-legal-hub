@@ -33,8 +33,14 @@ export const Route = createFileRoute("/pricing")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(publicSiteQueryOptions());
     // كتالوج الباقات غير حاجز للعرض: تعذّر القراءة يُعالج داخل الصفحة برسالة وإعادة محاولة.
-    await context.queryClient.prefetchQuery(publicPlansQueryOptions());
+    // ننتظر النتيجة حتى يتطابق HTML الخادم مع أول تصيير في المتصفح (تفادي Hydration Mismatch).
+    try {
+      await context.queryClient.ensureQueryData(publicPlansQueryOptions());
+    } catch {
+      /* تُعرض حالة الخطأ داخل المكوّن عبر useQuery */
+    }
   },
+
   head: () => ({
     meta: [
       { title: TITLE },
