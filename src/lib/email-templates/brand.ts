@@ -35,13 +35,15 @@ export const styles = {
   },
   logo: {
     display: "block",
-    height: "34px",
-    width: "auto",
+    height: "44px",
+    width: "84px",
     margin: "0 0 6px",
   },
   rule: {
-    borderColor: BRAND.gold,
-    borderWidth: "0 0 2px",
+    // عملاء البريد يطبّقون border الافتراضي لعنصر <hr> من react-email، لذا
+    // نصرّح بالحد العلوي كاملاً (عرض + نمط + لون) حتى لا يسقط الفاصل الذهبي.
+    border: "none",
+    borderTop: `2px solid ${BRAND.gold}`,
     width: "48px",
     margin: "0 0 24px auto",
   },
