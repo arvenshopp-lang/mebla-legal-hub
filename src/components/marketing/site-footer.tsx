@@ -32,10 +32,7 @@ const linkCls =
 /** فوتر موحّد لكل الصفحات العامة — بيانات التواصل تأتي من إعدادات المنصة، بلا قيم تجريبية. */
 export function SiteFooter() {
   const { data: info } = useSuspenseQuery(publicSiteQueryOptions());
-  const loginHref = useSurfaceHref("/login");
-  const registerHref = useSurfaceHref("/register");
   const trackHref = useSurfaceHref("/track");
-  const uploadHref = useSurfaceHref("/upload");
   const socials = activeSocialLinks(info);
   const publicEmail = publicContactEmail(info);
   const supportEmail = supportContactEmail(info);
