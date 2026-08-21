@@ -93,7 +93,7 @@ export async function requestCsat(
         cc: [],
         bcc: [],
         subject: `[${ref}] تقييم خدمة الدعم`,
-        html: `<div dir="rtl" style="font-family:'Tajawal',Tahoma,Arial,sans-serif;line-height:1.9">
+        html: `<div dir="rtl" style="font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;line-height:1.9">
           <p>أُغلقت تذكرة الدعم <strong>${ref}</strong> بشأن: ${escapeHtml(String(ticket["subject"] ?? ""))}.</p>
           <p>تقييمكم يساعدنا على تحسين مستوى الخدمة، ولا يستغرق أكثر من دقيقة:</p>
           <p><a href="${link}" style="background:#123C32;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">تقييم الخدمة</a></p>
