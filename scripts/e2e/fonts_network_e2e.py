@@ -66,6 +66,9 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
     await page.goto(f"{BASE}{path}", wait_until="domcontentloaded")
     await page.wait_for_timeout(1200)
     final = page.url.replace(BASE, "") or "/"
+    timing_entries = await page.evaluate("""() => performance.getEntriesByType('resource')
+      .filter(entry => /\.(woff2?|ttf|otf|eot)$/.test(new URL(entry.name).pathname))
+      .map(entry => new URL(entry.name).pathname.split('/').pop())""")
     await page.close()
 
     label = f"{path}"
@@ -75,7 +78,12 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
 
     record(not external, f"{label} · لا خطوط خارجية", ", ".join(external))
     record(not bad_status, f"{label} · جميع ملفات الخطوط 200/304", ", ".join(bad_status))
-    dupes = [f"{n}×{c}" for n, c in font_requests.items() if c > 1]
+    # response قد يلتقط استجابة preload ثم إعادة استخدام CSS لها في بيئة Vite؛
+    # Resource Timing هو المصدر الصحيح لعدد عمليات النقل الفعلية من الشبكة.
+    timing_counts = defaultdict(int)
+    for name in timing_entries:
+        timing_counts[name] += 1
+    dupes = [f"{n}×{c}" for n, c in timing_counts.items() if c > 1]
     record(not dupes, f"{label} · لا تحميل مزدوج شبكي", ", ".join(dupes))
     ibm = [n for n in font_requests if "ibm-plex" in n]
     record(not ibm, f"{label} · لا ملفات ibm-plex", ", ".join(ibm))
