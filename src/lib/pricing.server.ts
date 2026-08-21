@@ -4,6 +4,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { PublicPlan } from "@/lib/pricing.shared";
+import { applyApprovedPricing } from "@/config/commercial-pricing";
 
 const COLUMNS = [
   "code",
@@ -50,7 +51,7 @@ export async function listPublicPlans(): Promise<PublicPlan[]> {
       plan[key] === null || plan[key] === undefined ? null : Number(plan[key]);
     const flag = (key: string): boolean => Boolean(plan[key]);
 
-    return {
+    const publicPlan = {
       code: String(plan.code),
       name_ar: String(plan.name_ar),
       description: (plan.description as string | null) ?? null,
@@ -74,5 +75,8 @@ export async function listPublicPlans(): Promise<PublicPlan[]> {
       client_upload_enabled: flag("client_upload_enabled"),
       public_office_page: flag("public_office_page"),
     } satisfies PublicPlan;
+
+    // العرض العام يعتمد السعر التجاري المعتمد؛ الفوترة تبقى على قيم الكتالوج.
+    return applyApprovedPricing(publicPlan);
   });
 }
