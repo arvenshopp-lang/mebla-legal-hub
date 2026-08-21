@@ -1,86 +1,101 @@
-# تقرير المرحلة A — حوكمة الفهرسة وظهور مِهلة (Read-only)
+# مِهلة | MEHLA — خطة Phase B: حوكمة الفهرسة وظهور المنصة
 
-## 1. تأكيد المشروع والمراجع
-- المشروع: مِهلة | MEHLA — Lovable ID `0ac4f813-8ba3-4f48-9bc7-432613df3dae`.
-- Supabase Production المتصل فعلياً بالمشروع: `xklzpjocsiadnoglwryw` — **مؤكد**. لم يُلمَس `pmiyheweosmbysywzqhw` ولا يوجد له أي أثر في الكود.
-- `SUPABASE_CHANGE`: مطلوب فقط لبيانات اختبار (بند 5)، لا Schema ولا RLS.
+## 0. حالة المراجع الملزمة (تحقق فعلي)
+- **Supabase Production = `xklzpjocsiadnoglwryw`** — ✅ مؤكد؛ هو المشروع المتصل فعلياً بالمشروع، ولم يُلمَس `pmiyheweosmbysywzqhw` ولا يوجد له أثر في الكود.
+- **GitHub `arvenshopp-lang/mebla-legal-hub`** — ❌ غير مُثبت. الـ remote الوحيد المتاح في بيئة العمل هو مستودع Lovable الداخلي (`git.private.lovable-gcp…` ومرآة S3). لا يوجد remote يشير إلى المستودع، والمحاولة السابقة عبر موصل GitHub API أعادت 404 وقائمة مستودعات فارغة.
+- آخر Commit محلي: `7d35570` "Added legacy file binding" (2026-08-20 21:40 UTC)، وشجرة العمل نظيفة.
 
-## 2. GitHub SHA مقابل Production SHA — تعذّر الإثبات
-- الـ remote الوحيد في بيئة العمل هو مستودع Lovable الداخلي (`git.private.lovable-gcp…` + مرآة S3). لا يوجد remote باسم `arvenshopp-lang/mebla-legal-hub` يمكن قراءته من هنا.
-- آخر Commit محلي: `7d35570` — "Added legacy file binding" (2026-08-20 21:40 UTC)، شجرة العمل نظيفة، والفرع الحالي فرع تحرير مؤقت.
-- المحاولة السابقة لقراءة المستودع عبر موصل GitHub API أعادت 404 وقائمة مستودعات فارغة (الرمز بلا صلاحية مستودع).
-- النتيجة: `GITHUB_SOURCE_OF_TRUTH = BLOCKED` حتى تُفعّل مزامنة Git Sync أو يُمنح الموصل صلاحية قراءة المستودع. لا يمكنني كذلك حساب Production SHA أو تنفيذ Clean Build من نسخة GitHub قبل ذلك.
-- ملاحظة: `supabase/migrations/` موجود ومحدَّث (153 ملفاً). `supabase/functions/` **غير موجود** — لا Edge Functions؛ كل منطق الخادم في `src/routes/api/*` و`*.functions.ts` داخل الكود، وهذا في صالح قابلية النقل.
+**النتيجة الحالية: BLOCKED — GITHUB SYNC REQUIRED — NO CHANGES MADE.**
 
-## 3. تصنيف المسارات (من الكود الفعلي)
-A — مسموح بالفهرسة (11): `/`، `/about`، `/how-it-works`، `/pricing`، `/faq`، `/security`، `/docs`، `/contact`، `/privacy`، `/terms`، `/verify`.
+بحسب أمرك، لا يبدأ أي تعديل ملف قبل اجتياز بوابة GitHub. المطلوب منك خطوة واحدة: قائمة **(+)** في مربع المحادثة ← **GitHub** ← **Connect project** ← حساب `arvenshopp-lang` ← المستودع `mebla-legal-hub`. بمجرد ظهور "Connected" أعيد فحص البوابة (وجود remote، صلاحية إنشاء Branch، Merge Base صحيح) وأبدأ Stage B1 فقط عند نجاحها الكامل. لا مسار بديل، ولا حفظ داخلي بلا إثبات في GitHub.
 
-B — عامة وظيفياً وممنوعة من الفهرسة: `/office/$slug`، `/portal/$slug`، `/track`، `/share/$token`، `/sign/$token`، `/upload`، `/upload/$token`، `/invite/$token`، `/api/public/*`.
+---
 
-C — خاصة/إدارية: `/login`، `/register`، `/forgot-password`، `/reset-password`، `/onboarding`، `/pending-access`، `/auth/*`، كل `/_authenticated/*` (dashboard، clients، cases، hearings، deadlines، tasks، documents، team، settings، subscription، support، contracts، bayan، print-log، office-page، search، team-performance)، كل `/mehla-admin/*` (45 مساراً)، `/mcp`، `/.mcp/*`، `/.well-known/*`، `/lovable/*`.
+## Stage B1 — تعديل الكود + Migration غير مُطبقة + اختبارات + PR (يتوقف عند PR)
 
-## 4. المشاكل المكتشفة (بدليل)
-| # | Severity | الدليل |
-|---|---|---|
-| 1 | **Critical** | `src/routes/office.$slug.tsx` يضع `noindex` **فقط** في حالة عدم توفر البيانات (سطر 17). الصفحة المنشورة تُصدر `canonical` + `og:*` + JSON-LD `LegalService` بالكامل → صفحات المكاتب قابلة للفهرسة فعلياً، وتحمل اسم المكتب وهاتفه وبريده وعنوانه في Metadata وSchema. مخالِف مباشر للقرار النهائي. |
-| 2 | **Critical** | `src/routes/sitemap[.]xml.ts` يضيف كل صفحة مكتب منشورة عبر `listPublishedOfficeSlugs()`، ويضيف كذلك `/login`، `/register`، `/track` (وهي ممنوعة). |
-| 3 | **Critical** | `office_public_pages` في Production يحتوي صفحة اختبار منشورة: `slug = qa-f01-alpha` (منشورة 2026-08-09، غير موقوفة) — وهي التي ظهرت في محركات البحث. توجد كذلك مسودات QA: `qa-plan2-20260809-mktb-b`، `qa-live-20260809-mktb-alrshyd-llmhamah-w` (غير منشورة، فلا تُفهرَس اليوم لكنها قابلة للنشر بالخطأ). صفحة حقيقية واحدة منشورة: `mktb-salh`. |
-| 4 | High | لا يوجد ترويسة `X-Robots-Tag` للمسارات العامة الممنوعة. `applySecurityHeaders` في `src/lib/security-headers.server.ts` تضعها للملفات الثنائية فقط. |
-| 5 | High | لا توجد Allowlist مركزية للفهرسة؛ السلوك الافتراضي «مسموح» — أي Route جديد يصبح قابلاً للفهرسة تلقائياً. لا يوجد اختبار CI يمنع تسرّب مسار خاص إلى Sitemap. |
-| 6 | Medium | `public/robots.txt` قائمة حظر جزئية بأسلوب Blacklist: لا تشمل `/mehla-admin`، `/office`، `/portal`، `/track`، `/share`، `/sign`، `/invite`، `/login`، `/register`، `/api`، ولا أي سياسة لزواحف الذكاء الاصطناعي (OAI-SearchBot / GPTBot). |
-| 7 | Medium | صفحات مسموحة تُصدر canonical لكن لا توجد Schema موحّدة على مستوى الموقع (Organization / SoftwareApplication / WebSite / BreadcrumbList)، وFAQPage غير مؤكدة الوجود على `/faq`. |
-| 8 | Low | صفحات خاصة (login/register/onboarding/pending-access/forgot-password/reset-password) تحمل `canonical` — لا ضرر أمني، لكنه يعزّز فهرستها ويجب حذفه مع noindex. |
+### B1.0 بوابة إيقاف
+فحص remote المستودع، صلاحية Push لفرع جديد، ومقارنة آخر Commit في GitHub مع النسخة الحالية والتأكد من Merge Base. ممنوع Force Push / Reset / Clean / Overwrite / Push إلى `main`. أي فشل ⇒ `BLOCKED — GITHUB SYNC REQUIRED — NO CHANGES MADE` وتوقف.
 
-## 5. تعارضات المحتوى والادعاءات
-- `src/routes/index.tsx:493` يعِد بـ **«حساب تلقائي لمدد المهل القضائية»**، و`:696` «مهلة نظامية تُحسب تلقائياً»، بينما `src/content/faq.ts:21-23` ينص صراحة على أن المنصة **لا** تحدد المهلة نظاماً. تعارض صريح يجب توحيده.
-- `src/routes/index.tsx:485` يذكر «بطاقة مالية مدمجة للأتعاب والمطالبات» — وحدة الأتعاب والمطالبات **محذوفة** من المنصة. ميزة معلنة غير موجودة.
-- لم أجد في الصفحات الرسمية أي ادعاء امتثال NCA/PDPL أو عبارة «مستوى مصرفي» — سليم؛ نصوص `/security` وصفية وقابلة للإثبات.
+### B1.1 Branch
+`chore/indexing-governance-ai-discoverability` — كل العمل داخله فقط.
 
-## 6. نواقص SEO / AEO / GEO
-موجود: عناوين ووصف وcanonical لكل صفحة رسمية، خط محلي، robots + sitemap، محتوى مُصيَّر من الخادم (SSR).
-ناقص: Allowlist، X-Robots-Tag، Schema سيتية موحّدة، BreadcrumbList، إفصاح «بيانات توضيحية افتراضية» على واجهات العرض في الصفحة الرئيسية، سياسة زواحف AI، IndexNow، اسم المراجع وتاريخ آخر مراجعة للمحتوى الحساس (`/security`، `/privacy`، `/terms`)، وثائق التشغيل والخروج، واختبارات CI للفهرسة.
+### B1.2 Allowlist مركزية — ملف جديد `src/config/indexing.ts`
+مصدر الحقيقة الوحيد: `NOINDEX_BY_DEFAULT = true`، `INDEXABLE_PATHS`، `FORBIDDEN_PREFIXES`، ودالة واحدة `isIndexablePath(pathname)`. أي مسار غير مُدرَج = noindex تلقائياً. لا تُكرَّر أي قائمة في ملف آخر.
 
-## 7. خطة التنفيذ بعد الموافقة (Phase B)
-1. `src/config/indexing.ts` — مصدر حقيقة واحد: `NOINDEX_BY_DEFAULT = true`، `INDEXABLE_PATHS` (المسارات الـ11 فقط)، `FORBIDDEN_PREFIXES`.
-2. حقن `noindex,nofollow,nosnippet,noimageindex` في `head()` لكل مسار غير مُدرَج (تعديل موضعي لكل ملف مسار ممنوع يفتقدها)، وحذف `canonical` من الصفحات الممنوعة.
-3. `src/lib/security-headers.server.ts` — إضافة `X-Robots-Tag` تُحسب من نفس Allowlist لكل استجابة، مع `Cache-Control: private, no-store` و`Referrer-Policy: no-referrer` لمسارات التوكن.
-4. `src/routes/sitemap[.]xml.ts` — يُبنى من Allowlist فقط؛ حذف صفحات المكاتب و`/login` و`/register` و`/track`، وإزالة استدعاء `listPublishedOfficeSlugs` من خريطة الموقع.
-5. `src/routes/office.$slug.tsx` — noindex دائم، حذف canonical وog:*، وحذف JSON-LD `LegalService` بالكامل. الوظيفة (الرابط/QR/النموذج) تبقى كما هي بلا تغيير سلوكي.
-6. `public/robots.txt` — Allow للصفحات الرسمية، Disallow لكل Prefix خاص، وقسم مستقل لـ OAI-SearchBot. **GPTBot يبقى بانتظار قرارك.** لن نمنع Crawl عن `/office/*` مباشرة حتى تُقرأ الـ noindex/410 (بند 12).
-7. Schema للصفحات الرسمية فقط: Organization + WebSite + SoftwareApplication في `__root.tsx`، FAQPage على `/faq`، BreadcrumbList على الصفحات الفرعية.
-8. توحيد نص المهل في `index.tsx` إلى الصياغة الدقيقة التي اعتمدتها، وحذف ادعاء «الأتعاب والمطالبات»، وإضافة إفصاح «بيانات توضيحية افتراضية…» أسفل واجهات العرض.
-9. اختبارات: `scripts/indexing-guardrails.ts` يفشل عند دخول Prefix ممنوع إلى Sitemap، أو غياب noindex عن مسار ممنوع، أو ظهور Schema مكتب مشترك، أو مسار جديد غير مصنَّف.
-10. وثائق: `docs/SEO_INDEXING_POLICY.md`، `docs/AI_DISCOVERABILITY.md`، `docs/PUBLIC_PRIVATE_ROUTE_MATRIX.md`، `docs/EXIT_READINESS.md`، `docs/ENVIRONMENT_VARIABLES.md`، وتحديث `.env.example` (أسماء فقط).
+`INDEXABLE_PATHS` (الصفحات الرسمية الموجودة فعلاً فقط): `/`، `/about`، `/how-it-works`، `/pricing`، `/faq`، `/security`، `/docs`، `/contact`، `/privacy`، `/terms` (+ `/verify` وفق B1.6).
 
-## 8. Supabase — مطلوب جزئياً
-`SUPABASE_CHANGE: REQUIRED (data-only)` — Migration مُرقّمة تُحوّل صفحات QA الثلاث إلى `status='archived'` (أو حذفها) دون لمس `mktb-salh` ولا أي Schema/RLS/Auth/Storage. تُحفظ في `supabase/migrations/` وتُعتمد منك قبل التطبيق. سيرجع `/office/qa-f01-alpha` بعدها **410 Gone** ليُسقطه المحرك من الفهرس.
+`FORBIDDEN_PREFIXES`: `/office`، `/portal`، `/track`، `/share`، `/sign`، `/upload`، `/invite`، `/api`، `/login`، `/register`، `/forgot-password`، `/reset-password`، `/onboarding`، `/pending-access`، `/auth`، `/_authenticated`، `/mehla-admin`، `/mcp`، `/.mcp`، `/lovable`، `/.well-known`.
 
-## 9. الحفظ في GitHub
-فرع `chore/indexing-governance-ai-discoverability` عبر PR، بلا لمس `main` وبلا أي Secret. **هذا محجوب حالياً** — يلزم تفعيل Git Sync إلى `arvenshopp-lang/mebla-legal-hub` (قائمة `+` ← GitHub ← Connect project) لأتمكن من إثبات Commit SHA وقائمة الملفات وClean Build.
+### B1.3 Meta لكل مسار ممنوع
+إضافة `noindex,nofollow,nosnippet,noimageindex` في `head()` لكل مسار ممنوع يفتقدها أو يحمل صيغة أضعف، وحذف `canonical` من المسارات الممنوعة (login، register، forgot-password، reset-password، onboarding، pending-access، track). لا تغيير في المكوّنات أو رحلة المستخدم.
 
-## 10. مخاطر الانتقال من Lovable
-- لا Edge Functions ولا `supabase/functions/` → لا منطق خادمي خارج المستودع. جيد.
-- تبعيات مرتبطة بـ Lovable يجب توثيقها لا حذفها: مسارات `src/routes/lovable/*`، `src/integrations/lovable/`، بوابة الموصلات (PostHog/Resend/Moyasar) عبر `LOVABLE_API_KEY`، وقيم `VITE_SUPABASE_*`.
-- خطر عالٍ حالي: `.env` يحتوي أسراراً حقيقية (Resend, Moyasar Live) ويجب أن يبقى خارج التتبع؛ سيتحقق من ذلك اختبار الأسرار.
+### B1.4 HTTP Headers — `src/lib/security-headers.server.ts`
+إضافة `X-Robots-Tag: noindex, nofollow, nosnippet, noimageindex` مشتقة من `isIndexablePath` وحدها، و`Cache-Control: private, no-store` + `Referrer-Policy: no-referrer` لمسارات التوكن (`/share`، `/sign`، `/upload`، `/invite`، `/api/public/doc`). بلا أي مساس بـ CSP أو HSTS أو باقي الترويسات.
 
-## 11. الاختبارات وRollback
-اختبارات: guardrails الفهرسة + Sitemap + Headers، `tsgo`، Lint، Build، وفحص يدوي لرحلة `/track` و`/upload/$token` و`/share/$token` و`/office/mktb-salh` للتأكد أن الوظيفة لم تتأثر.
-Rollback: كل التغيير في ملفات كود قابلة للعكس بـ Revert للـ PR؛ Migration بيانات QA لها Migration معاكسة تعيد `status='published'` عند الحاجة؛ لا تغيير مدمّر على أي بيانات مكتب حقيقي.
+### B1.5 صفحات المكاتب — `src/routes/office.$slug.tsx`
+noindex دائم (منشورة أو لا)، حذف canonical الخاص بالمكتب، حذف JSON-LD `LegalService` بالكامل، وإزالة اسم/هاتف/بريد/عنوان المكتب من كل Metadata وOpen Graph. يُسمح بـ og عام باسم «مِهلة» فقط لمنع تعطل معاينة الرابط. **لا تغيير وظيفي**: الرابط والصفحة ونموذج التواصل كما هي. لا QR ولا Apple Wallet.
 
-## 12. قرارات تحتاج موافقتك
-1. **GPTBot**: سماح (استخدام المحتوى في التدريب) أم منع؟ — `DECISION_REQUIRED`.
-2. **صفحة المكتب الحقيقية `mktb-salh`**: سيتم إخراجها من الفهرسة كلياً حسب القرار النهائي — تأكيد مطلوب لأنها صفحة مشترك حقيقي منشورة.
-3. **صفحات QA**: أرشفة (استرجاعية) أم حذف نهائي من Production؟
-4. **`/verify`**: تبقى قابلة للفهرسة كصفحة رسمية للتحقق من المستندات؟
-5. **Git Sync**: تفعيله الآن حتى يكون GitHub مصدر الحقيقة فعلاً.
+`/office/mktb-salh` تبقى منشورة وعاملة بالرابط المباشر وغير قابلة للفهرسة؛ ممنوع حذفها أو أرشفتها أو تعديل بياناتها أو نموذجها.
 
-## النتيجة النهائية
-`FIX_REQUIRED` + `DECISION_REQUIRED` + `BLOCKED` (على شق GitHub وحده).
-- SUBSCRIBER_INDEXABLE_ROUTES = 2 (`/office/mktb-salh`, `/office/qa-f01-alpha`) — يجب أن تصير 0
-- PRIVATE_ROUTES_IN_SITEMAP = 5 (صفحتا مكتب + login + register + track)
-- TEST_ROUTES_IN_PRODUCTION_INDEX = 1
-- SUBSCRIBER_DATA_IN_METADATA / SCHEMA_ENTITIES > 0
-- CLAIM_CONTRADICTIONS = 2
-- PRODUCTION_SUPABASE_CONFIRMED = xklzpjocsiadnoglwryw
+### B1.6 `/verify`
+سيتم فحص `src/routes/verify.tsx` أولاً. تبقى قابلة للفهرسة **فقط** إذا كانت الصفحة الأساسية خدمة عامة بلا أي بيانات مكتب/عميل/مستند، وأمكن فصل حالة النتيجة: canonical ذاتي للصفحة الأساسية فقط، وnoindex + `Cache-Control: private, no-store` لأي نتيجة أو Query Parameter أو Token، ولا نتائج في Sitemap ولا بيانات مشترك في Metadata/Schema. إذا تعذر الفصل الآمن ⇒ `/verify` بالكامل noindex ويُسجَّل ذلك في التقرير بدل حل غير مؤكد.
+
+### B1.7 Sitemap — `src/routes/sitemap[.]xml.ts`
+يُبنى من Allowlist وحدها. حذف صفحات المكاتب واستدعاء `listPublishedOfficeSlugs()` و`/login` و`/register` و`/track`. صفر URL ديناميكي تابع لمشترك.
+
+### B1.8 `public/robots.txt` وزواحف AI
+- `User-agent: *` — Allow للصفحات الرسمية، Disallow لكل Prefix ممنوع، **باستثناء `/office/`** الذي يبقى قابلاً للزحف مؤقتاً حتى يقرأ المحرك noindex/410 (ترتيب الإزالة).
+- `OAI-SearchBot` — الصفحات الرسمية فقط.
+- `GPTBot` — **منع كامل** (قرار معتمد).
+- ترتيب الإزالة: noindex/410 ← إخراج من Sitemap والروابط الداخلية ← تحقق من استجابة Production ← تسليمك خطوات الإزالة اليدوية في Search Console وBing. لا يُنفَّذ أي إجراء داخل حسابي Google أو Bing.
+
+### B1.9 Schema للصفحات الرسمية
+`Organization` + `WebSite` + `SoftwareApplication` في `__root.tsx`، `FAQPage` مطابقة حرفياً للأسئلة الظاهرة في `/faq`، `BreadcrumbList` للصفحات الفرعية الفعلية. بلا اسم قانوني أو سجل أو اعتماد أو سعر أو تقييم غير مُثبت، وبلا `LegalService` أو `ProfilePage` أو أي بيانات مشترك.
+
+### B1.10 تصحيح المحتوى — `src/routes/index.tsx`
+- حذف «حساب تلقائي لمدد المهل القضائية» (سطر ~493) و«مهلة نظامية تُحسب تلقائياً» (سطر ~696)، واستخدام الصياغة المعتمدة: «تتابع مِهلة تاريخ الاستحقاق بناءً على التاريخ والمدة اللذين يدخلهما المكتب، وتعرض التنبيهات وفق الإعدادات المحددة. ولا تحدد المنصة المدة النظامية نيابة عن المحامي.»
+- حذف «بطاقة مالية مدمجة للأتعاب والمطالبات» (سطر ~485) بلا بديل ادعائي.
+- إضافة «بيانات توضيحية افتراضية لا تمثل مكتباً أو عميلاً أو قضية حقيقية.» قرب واجهات العرض.
+- لا تعديل على التصميم أو الهوية أو ترتيب الأقسام إلا بالقدر اللازم لإضافة النص.
+
+### B1.11 Migration أرشفة QA — تُنشأ ولا تُطبق
+تحقق مسبق إلزامي: تأكيد `xklzpjocsiadnoglwryw`، قراءة أسماء أعمدة `office_public_pages` والقيم المسموحة في `status`، تأكيد وجود السجلات الثلاث بالضبط (`qa-f01-alpha`، `qa-plan2-20260809-mktb-b`، `qa-live-20260809-mktb-alrshyd-llmhamah-w`)، وتأكيد أن `mktb-salh` خارج نطاق التحديث. إن لم تكن `archived` قيمة مسموحة: تُستخدم آلية التعطيل القائمة إن وُجدت، وإلا `BLOCKED` بلا تعديل Schema وبلا قيمة مخترعة. أي اختلاف في عدد السجلات المستهدفة ⇒ توقف.
+
+Migration مُرقّمة في `supabase/migrations/` — **Data-only**: لا Schema، لا RLS، لا Auth، لا Storage، لا Functions، لا Triggers، لا Policies، لا Grants. لا Migration عكسية تُعيد نشر صفحات QA. تُحفظ في GitHub ولا تُطبَّق في Stage B1.
+
+### B1.12 Guardrails واختبارات
+ملف جديد `scripts/indexing-guardrails.ts` يفشل عند: دخول Prefix ممنوع أو صفحة مكتب إلى Sitemap؛ غياب noindex عن مسار ممنوع؛ وجود `LegalService` أو Schema مشترك؛ ظهور اسم/هاتف/بريد مكتب في Metadata أو JSON-LD؛ ظهور Route جديد غير مصنَّف؛ فهرسة `login`/`register`/`track`؛ ظهور صفحة QA ضمن القابل للفهرسة. يُضاف إلى CI القائمة (`.github/workflows/security.yml` + script في `package.json`) دون إعادة بناء CI.
+
+يُنفَّذ: Typecheck، Lint، Build، الاختبارات القائمة، Guardrails الجديدة والقائمة (`security:check`)، فحص Sitemap المُصيَّر، فحص Headers، فحص HTML الخادمي، وفحص عدم وجود Secrets في الملفات المتتبعة. أي Secret متتبَّع أو في التاريخ ⇒ `SECURITY_DECISION_REQUIRED` بلا كشف قيمة وبلا حذف تاريخ وبلا تدوير.
+
+### B1.13 اختبارات عدم الانحدار (بيانات اختبار فقط، بلا إرسال حقيقي)
+`/office/mktb-salh`، `/track`، `/upload/$token`، `/share/$token`، `/sign/$token`، `/verify`، `/login`، `/register` تعمل جميعها وnoindex وفق السياسة؛ المسارات المحمية بلا تغيير؛ بلا أثر على البريد أو الدفع أو التنبيهات أو الصلاحيات أو RLS أو بيانات المكتب الحقيقي. لا بريد ولا دفع ولا SMS ولا واتساب حقيقي.
+
+### B1.14 وثائق
+`docs/SEO_INDEXING_POLICY.md`، `docs/AI_DISCOVERABILITY.md`، `docs/PUBLIC_PRIVATE_ROUTE_MATRIX.md`، `docs/EXIT_READINESS.md`، `docs/ENVIRONMENT_VARIABLES.md`، و`.env.example` (أسماء متغيرات فقط، بلا قيم، وبلا تغيير أسماء متغيرات Moyasar أو Resend). `EXIT_READINESS.md` يوضح صراحة أن ملفات تكامل **Moyasar وResend موجودة في GitHub وليست ميزات Lovable-only**؛ ولا يُصنَّف أي عنصر كتبعية Lovable-only بلا دليل Runtime مباشر. أي استخدام فعلي لـ `LOVABLE_API_KEY` يُوثَّق فقط (الملف، الوظيفة، الـEndpoint، الميزة المتأثرة) بلا تعديل. IndexNow وSearch Console يُذكران كخطوات مستقبلية فقط.
+
+### B1.15 Commit / Push / PR
+Commit واضح ← Push للفرع ← فتح PR إن توفرت الصلاحية. بلا Force Push وبلا Merge إلى `main`. لا يُعتبر العمل محفوظاً قبل إثبات وجود الـCommit على GitHub Remote. ثم **توقف** وأسلّم تقرير Stage B1 (Remote، Branch، SHA، PR، الملفات المتغيرة، نتائج كل فحص).
+
+---
+
+## Stage B2 — التطبيق على Production (لا يبدأ إلا بموافقة مستقلة منك بعد Stage B1)
+1. إثبات أن Migration محفوظة فعلاً على GitHub.
+2. نشر تغييرات الكود عبر مسار النشر المعتاد للمشروع أولاً (حتى يكون مسار 410 جاهزاً).
+3. تطبيق Migration الأرشفة على `xklzpjocsiadnoglwryw` فقط، مع عدّ السجلات قبل/بعد وإثبات أن `mktb-salh` لم يُلمَس.
+4. تحقق حي على Production: Headers وSitemap و`/office/qa-f01-alpha` (410) و`/office/mktb-salh` (يعمل + noindex) و`/verify`.
+5. تسليم خطوات الإزالة اليدوية في Search Console وBing.
+6. أي فشل تحقق ⇒ Revert للـPR بلا حذف بيانات. بلا فصل Lovable وبلا تغيير DNS.
+
+---
+
+## خارج النطاق (لا يُنفَّذ)
+QR، Apple Wallet، IndexNow، إجراءات Search Console/Bing، صفحات SEO أو مدونة جديدة، Marketplace، دليل مكاتب، تغييرات تصميم واسعة، Moyasar، Resend، PostHog، البريد، الدفع، Schema/RLS/Auth/Storage، DNS، نقل الاستضافة، حذف Lovable Cloud، تغيير `LOVABLE_API_KEY`، تدوير Secrets، أي اختبار دفع أو إرسال حقيقي.
+
+## معايير القبول التي ستُثبت بالأدلة
+`SUBSCRIBER_INDEXABLE_ROUTES=0`، `PRIVATE_ROUTES_IN_SITEMAP=0`، `TEST_ROUTES_IN_PRODUCTION_INDEXABLE=0`، `SUBSCRIBER_DATA_IN_METADATA=0`، `SUBSCRIBER_SCHEMA_ENTITIES=0`، `CLAIM_CONTRADICTIONS=0`، `SCHEMA_VALIDATION_ERRORS=0`، `OFFICIAL_PAGES_WITH_UNIQUE_METADATA=100%`، `GITHUB_SOURCE_OF_TRUTH=PASS`، `CLEAN_BUILD_FROM_GITHUB=PASS`، `SECRETS_COMMITTED=0`، `PRODUCTION_SUPABASE=xklzpjocsiadnoglwryw`، `MOYASAR_CHANGED=NO`، `RESEND_CHANGED=NO`، `QR_CREATED=NO`، `APPLE_WALLET_CREATED=NO`، `REAL_OFFICE_DATA_CHANGED=NO`، `RLS_CHANGED=NO`، `AUTH_CHANGED=NO`، `STORAGE_CHANGED=NO`.
+
+## التصنيف الحالي
+`BLOCKED` — بانتظار تفعيل Git Sync إلى `arvenshopp-lang/mebla-legal-hub`. `PRODUCTION_SUPABASE` مؤكد.
 
 STOP — NO CHANGES MADE
