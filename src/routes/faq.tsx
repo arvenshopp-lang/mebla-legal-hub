@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { ContentSections, PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { FAQ_SECTIONS } from "@/content/faq";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "الأسئلة الشائعة — مِهلة";
 const DESCRIPTION =
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/faq")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/faq" },
-      { name: "twitter:card", content: "summary" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/faq" }],
     scripts: [

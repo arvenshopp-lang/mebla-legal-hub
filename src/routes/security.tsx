@@ -8,6 +8,7 @@ import {
   PublicShell,
   type ContentSection,
 } from "@/components/marketing/public-shell";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 const TITLE = "الأمان وحماية البيانات — مِهلة";
 const DESCRIPTION =
@@ -72,7 +73,7 @@ export const Route = createFileRoute("/security")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://mehlalex.com/security" },
-      { name: "twitter:card", content: "summary" },
+      ...socialPreviewMeta({ title: TITLE, description: DESCRIPTION }),
     ],
     links: [{ rel: "canonical", href: "https://mehlalex.com/security" }],
   }),
