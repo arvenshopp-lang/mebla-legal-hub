@@ -27,7 +27,7 @@ const TRUST_LINKS = [
 const HELP_LINKS = [{ to: "/docs", label: "مركز المساعدة" }] as const;
 
 const linkCls =
-  "inline-flex min-h-9 items-center text-[13.5px] text-muted-foreground transition hover:text-foreground";
+  "inline-flex min-h-9 items-center rounded-[var(--radius-s)] px-1 text-[13.5px] text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 /** فوتر موحّد لكل الصفحات العامة — بيانات التواصل تأتي من إعدادات المنصة، بلا قيم تجريبية. */
 export function SiteFooter() {
@@ -106,76 +106,78 @@ export function SiteFooter() {
                 <h2 id="footer-support" className="text-[13px] font-bold">
                   الدعم والتواصل
                 </h2>
-                <ul className="mt-3 space-y-1">
-                  <li>
-                    <Link to="/contact" className={linkCls}>
-                      تواصل معنا
-                    </Link>
-                  </li>
-                  {info.support_center_url && (
+                <address className="not-italic">
+                  <ul className="mt-3 space-y-1">
                     <li>
-                      <a
-                        href={info.support_center_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={linkCls}
-                      >
-                        مركز الدعم
-                      </a>
+                      <Link to="/contact" className={linkCls}>
+                        تواصل معنا
+                      </Link>
                     </li>
-                  )}
-                  <li>
-                    <a href={`mailto:${publicEmail}`} dir="ltr" className={linkCls}>
-                      <Mail className="ms-0 me-1.5 h-3.5 w-3.5" aria-hidden />
-                      {publicEmail}
-                    </a>
-                  </li>
-                  <li>
-                    <a href={`mailto:${supportEmail}`} dir="ltr" className={linkCls}>
-                      <Mail className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                      {supportEmail}
-                    </a>
-                  </li>
-                  {info.phone && (
-                    <li>
-                      <a href={`tel:${info.phone}`} dir="ltr" className={linkCls}>
-                        <Phone className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                        {info.phone}
-                      </a>
-                    </li>
-                  )}
-                  {info.whatsapp && (
-                    <li>
-                      <a
-                        href={`https://wa.me/${info.whatsapp.replace("+", "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        dir="ltr"
-                        className={linkCls}
-                      >
-                        <MessageCircle className="me-1.5 h-3.5 w-3.5" aria-hidden />
-                        {info.whatsapp}
-                      </a>
-                    </li>
-                  )}
-                  {info.address && (
-                    <li className="flex items-start gap-1.5 py-1 text-[13.5px] text-muted-foreground">
-                      <MapPin className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
-                      {info.maps_url ? (
+                    {info.support_center_url && (
+                      <li>
                         <a
-                          href={info.maps_url}
+                          href={info.support_center_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="transition hover:text-foreground"
+                          className={linkCls}
                         >
-                          {info.address}
+                          مركز الدعم
                         </a>
-                      ) : (
-                        <span>{info.address}</span>
-                      )}
+                      </li>
+                    )}
+                    <li>
+                      <a href={`mailto:${publicEmail}`} dir="ltr" className={linkCls}>
+                        <Mail className="ms-0 me-1.5 h-3.5 w-3.5" aria-hidden />
+                        {publicEmail}
+                      </a>
                     </li>
-                  )}
-                </ul>
+                    <li>
+                      <a href={`mailto:${supportEmail}`} dir="ltr" className={linkCls}>
+                        <Mail className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                        {supportEmail}
+                      </a>
+                    </li>
+                    {info.phone && (
+                      <li>
+                        <a href={`tel:${info.phone}`} dir="ltr" className={linkCls}>
+                          <Phone className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                          {info.phone}
+                        </a>
+                      </li>
+                    )}
+                    {info.whatsapp && (
+                      <li>
+                        <a
+                          href={`https://wa.me/${info.whatsapp.replace("+", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          dir="ltr"
+                          className={linkCls}
+                        >
+                          <MessageCircle className="me-1.5 h-3.5 w-3.5" aria-hidden />
+                          {info.whatsapp}
+                        </a>
+                      </li>
+                    )}
+                    {info.address && (
+                      <li className="flex items-start gap-1.5 py-1 text-[13.5px] text-muted-foreground">
+                        <MapPin className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {info.maps_url ? (
+                          <a
+                            href={info.maps_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-[var(--radius-s)] px-1 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                          >
+                            {info.address}
+                          </a>
+                        ) : (
+                          <span>{info.address}</span>
+                        )}
+                      </li>
+                    )}
+                  </ul>
+                </address>
               </nav>
             </div>
 
@@ -197,7 +199,8 @@ export function SiteFooter() {
                         href={s.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-9 items-center rounded-[var(--radius-s)] border border-border px-3 text-[12.5px] text-muted-foreground transition hover:text-foreground"
+                        aria-label={`مِهلة على ${s.label}`}
+                        className="inline-flex min-h-9 items-center rounded-[var(--radius-s)] border border-border px-3 text-[12.5px] text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                       >
                         {s.label}
                       </a>
@@ -208,14 +211,19 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <div className="mt-10 border-t border-border pt-6 text-center text-[12.5px] text-text-muted">
-            <div className="flex justify-center">
+          <div className="mt-10 flex flex-col items-center gap-5 border-t border-border pt-6 text-center text-[12.5px] text-text-muted">
+            <div
+              className="flex h-12 items-center justify-center"
+              aria-label="بوابات الدفع المعتمدة"
+            >
               <PaymentMethodsBar showLabel={false} />
             </div>
-            <div className="mt-5 flex flex-col items-center gap-1.5 border-t border-border/60 pt-5 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-1.5">
-              <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
-              {info.legal_name && <p>{info.legal_name}</p>}
-              <p dir="ltr">mehlalex.com</p>
+            <div className="w-full border-t border-border/60 pt-5">
+              <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-1.5">
+                <p>© {new Date().getFullYear()} مِهلة | MehlaLex — جميع الحقوق محفوظة.</p>
+                {info.legal_name && <p>{info.legal_name}</p>}
+                <p dir="ltr">mehlalex.com</p>
+              </div>
             </div>
           </div>
         </div>
