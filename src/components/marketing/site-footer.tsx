@@ -76,11 +76,6 @@ export function SiteFooter() {
                       متابعة القضية
                     </a>
                   </li>
-                  <li>
-                    <a href={uploadHref} className={linkCls}>
-                      رفع مستند
-                    </a>
-                  </li>
                 </ul>
               </nav>
             </div>
