@@ -31,6 +31,7 @@ import {
   getClientPortalDashboard,
 } from "@/lib/client-portal/portal-auth.functions";
 import { NOINDEX_META } from "@/config/indexing";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 export const Route = createFileRoute("/portal/$slug")({
   component: PortalPage,
@@ -799,7 +800,7 @@ function PortalPage() {
           <p>© 2026 {office.name} — جميع الحقوق محفوظة</p>
           <div className="flex items-center gap-1.5 text-slate-400">
             <span>مشغلة بأمان عبر</span>
-            <span className="font-bold text-amber-400">منصة مِهلة</span>
+            <MehlaLogo size="xs" className="text-slate-200" />
           </div>
         </div>
       </footer>

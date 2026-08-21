@@ -5,6 +5,7 @@ import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { activeSocialLinks } from "@/lib/public-site.shared";
 import { PUBLIC_DOCS_LINK_ENABLED } from "@/config/public-marketing";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 type FooterLink = { label: string; to?: string; href?: string; external?: boolean };
 type FooterGroup = { id: string; title: string; links: FooterLink[] };
@@ -115,10 +116,7 @@ export function SiteFooter({ showCta = true }: { showCta?: boolean } = {}) {
             <div className="grid gap-8 lg:grid-cols-[1.4fr_2.4fr] lg:gap-12">
               {/* كتلة الهوية */}
               <div className="text-start">
-                <p className="text-[17px] font-bold tracking-tight">
-                  مِهلة <span className="text-text-muted">·</span>{" "}
-                  <span className="text-[13px] tracking-[0.18em]">MEHLA</span>
-                </p>
+                <MehlaLogo size="md" className="text-primary" />
                 <p className="mt-3 max-w-xs text-body-sm leading-7 text-muted-foreground">
                   منصة تقنية لإدارة أعمال مكاتب المحاماة. مِهلة ليست مكتب محاماة ولا تقدّم استشارات
                   قانونية.

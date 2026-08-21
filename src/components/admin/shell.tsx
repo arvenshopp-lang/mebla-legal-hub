@@ -17,6 +17,7 @@ import {
 } from "@/lib/admin-nav";
 import { SectionTabs } from "@/components/admin/section-tabs";
 import { PERMISSION_LABELS } from "@/lib/admin-permissions";
+import { MehlaLogo } from "@/components/brand/mehla-logo";
 
 const COLLAPSED_STORAGE_PREFIX = "mehla-admin-nav-collapsed";
 
@@ -162,8 +163,10 @@ export function AdminShell({
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
         <Link to="/mehla-admin" className="min-w-0 truncate">
-          <span className="block text-[15px] font-bold tracking-tight">مِهلة · الإدارة</span>
-          <span className="block text-[11px] text-muted-foreground">Platform Control</span>
+          <MehlaLogo size="sm" className="text-primary" />
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            الإدارة · Platform Control
+          </span>
         </Link>
         <button
           className="-m-2 grid h-11 w-11 place-items-center rounded-[var(--radius-s)] text-muted-foreground hover:bg-surface-muted lg:hidden"
@@ -279,7 +282,8 @@ export function AdminShell({
           >
             <Menu className="h-5 w-5" aria-hidden />
           </button>
-          <span className="truncate text-sm font-semibold">لوحة إدارة منصة مِهلة</span>
+          <MehlaLogo size="xs" className="text-primary" />
+          <span className="truncate text-sm font-semibold">لوحة الإدارة</span>
           <button
             onClick={() => palette.setOpen(true)}
             aria-label="البحث العالمي (Ctrl أو ⌘ ثم K)"
