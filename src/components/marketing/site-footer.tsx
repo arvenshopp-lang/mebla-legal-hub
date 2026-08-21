@@ -27,7 +27,7 @@ const TRUST_LINKS = [
 const HELP_LINKS = [{ to: "/docs", label: "مركز المساعدة" }] as const;
 
 const linkCls =
-  "inline-flex min-h-9 items-center text-[13.5px] text-muted-foreground transition hover:text-foreground";
+  "inline-flex min-h-9 items-center rounded-[var(--radius-s)] px-1 text-[13.5px] text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 /** فوتر موحّد لكل الصفحات العامة — بيانات التواصل تأتي من إعدادات المنصة، بلا قيم تجريبية. */
 export function SiteFooter() {
