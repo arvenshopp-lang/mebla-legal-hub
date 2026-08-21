@@ -10,6 +10,7 @@ import {
   Text,
 } from "@react-email/components";
 import { serviceLabel } from "@/lib/office-page.shared";
+import { BrandHeader } from "./brand-header";
 
 export interface OfficeLeadEmailProps {
   officeName: string;
@@ -51,6 +52,7 @@ export function OfficeLeadEmail({
             padding: 28,
           }}
         >
+          <BrandHeader />
           <Heading style={{ color: "#123C32", fontSize: 20, margin: "0 0 12px" }}>
             طلب استشارة جديد
           </Heading>
