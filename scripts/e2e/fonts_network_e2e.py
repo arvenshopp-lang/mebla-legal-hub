@@ -101,9 +101,9 @@ async def audit_cold_font_render(browser) -> None:
         "links => links.map(link => link.getAttribute('href'))"
     )
     record(
-        "/ · preload للأوزان الحرجة",
         "/fonts/plex-arabic-400.woff2" in preloads
         and "/fonts/plex-arabic-700.woff2" in preloads,
+        "/ · preload للأوزان الحرجة",
     )
     displays = await page.evaluate(
         """() => [...document.fonts]
