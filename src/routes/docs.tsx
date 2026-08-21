@@ -2,30 +2,31 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-react";
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
+import { NOINDEX_FOLLOW_META } from "@/config/indexing";
 
 export const Route = createFileRoute("/docs")({
   loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
   head: () => ({
+    // المحتوى قيد الإعداد: الصفحة تبقى متاحة (لا كسر للروابط) وممنوعة من الفهرسة مؤقتاً.
     meta: [
       { title: "مركز المساعدة — مِهلة" },
       {
         name: "description",
-        content: "دليل استخدام منصة مِهلة، الأسئلة الشائعة، توثيق API، الشروط وسياسة الخصوصية.",
+        content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
+      NOINDEX_FOLLOW_META,
       { property: "og:title", content: "مركز المساعدة — مِهلة" },
       {
         property: "og:description",
-        content:
-          "دليل الاستخدام، الأسئلة الشائعة، وتوثيق واجهة API لمنصة مِهلة لإدارة الممارسة القانونية.",
+        content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://mehlalex.com/docs" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://mehlalex.com/docs" }],
   }),
   component: Page,
 });
+
 
 const SECTIONS = [
   {
