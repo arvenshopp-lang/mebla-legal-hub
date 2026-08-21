@@ -5,6 +5,7 @@ MEHLA · تدقيق شبكة الخطوط (E2E)
   2) لا طلب ملف خط بحالة 404 أو أي حالة غير 200/304.
   3) لا تحميل مزدوج شبكي لأي ملف خط (التكرار من الذاكرة/الكاش مسموح).
   4) لا أي ملف ibm-plex-*.
+  5) أوزان الرسم الأول 400 و700 محمّلة مسبقاً وتستخدم block لمنع تبديل مرئي.
 التشغيل: python3 scripts/e2e/fonts_network_e2e.py
 الجلسة: تُستعاد تلقائياً من متغيرات معاينة Lovable إن وُجدت؛ بدونها
 تُدقّق المسارات العامة فقط ويظهر تحذير واضح للمسارات المحمية.
@@ -65,6 +66,9 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
     await page.goto(f"{BASE}{path}", wait_until="domcontentloaded")
     await page.wait_for_timeout(1200)
     final = page.url.replace(BASE, "") or "/"
+    timing_entries = await page.evaluate(r"""() => performance.getEntriesByType('resource')
+      .filter(entry => /\.(woff2?|ttf|otf|eot)$/.test(new URL(entry.name).pathname))
+      .map(entry => new URL(entry.name).pathname.split('/').pop())""")
     await page.close()
 
     label = f"{path}"
@@ -74,10 +78,53 @@ async def audit_route(context, path: str, expect_authed: bool) -> None:
 
     record(not external, f"{label} · لا خطوط خارجية", ", ".join(external))
     record(not bad_status, f"{label} · جميع ملفات الخطوط 200/304", ", ".join(bad_status))
-    dupes = [f"{n}×{c}" for n, c in font_requests.items() if c > 1]
+    # response قد يلتقط استجابة preload ثم إعادة استخدام CSS لها في بيئة Vite؛
+    # Resource Timing هو المصدر الصحيح لعدد عمليات النقل الفعلية من الشبكة.
+    timing_counts = defaultdict(int)
+    for name in timing_entries:
+        timing_counts[name] += 1
+    dupes = [f"{n}×{c}" for n, c in timing_counts.items() if c > 1]
     record(not dupes, f"{label} · لا تحميل مزدوج شبكي", ", ".join(dupes))
     ibm = [n for n in font_requests if "ibm-plex" in n]
     record(not ibm, f"{label} · لا ملفات ibm-plex", ", ".join(ibm))
+
+
+async def audit_cold_font_render(browser) -> None:
+    context = await browser.new_context(viewport={"width": 390, "height": 844})
+    page = await context.new_page()
+    client = await context.new_cdp_session(page)
+    await client.send("Network.enable")
+    await client.send(
+        "Network.emulateNetworkConditions",
+        {
+            "offline": False,
+            "latency": 150,
+            "downloadThroughput": 200_000,
+            "uploadThroughput": 100_000,
+            "connectionType": "cellular4g",
+        },
+    )
+    await page.goto(BASE, wait_until="domcontentloaded")
+    preloads = await page.locator('link[rel="preload"][as="font"]').evaluate_all(
+        "links => links.map(link => link.getAttribute('href'))"
+    )
+    record(
+        "/fonts/plex-arabic-400.woff2" in preloads
+        and "/fonts/plex-arabic-700.woff2" in preloads,
+        "/ · preload للأوزان الحرجة",
+    )
+    displays = await page.evaluate(
+        """() => [...document.fonts]
+          .filter(face => face.family.includes('IBM Plex Sans Arabic'))
+          .map(face => face.display)"""
+    )
+    record(bool(displays) and all(value == "block" for value in displays), "/ · منع تبديل الخط المرئي")
+    await page.evaluate("document.fonts.ready")
+    heading = page.locator("h1").first
+    family = await heading.evaluate("node => getComputedStyle(node).fontFamily")
+    weight = await heading.evaluate("node => getComputedStyle(node).fontWeight")
+    record("IBM Plex Sans Arabic" in family and weight == "700", "/ · وزن العنوان النهائي", f"{family} / {weight}")
+    await context.close()
 
 
 async def main() -> int:
@@ -87,6 +134,8 @@ async def main() -> int:
         page = await context.new_page()
         has_session = await restore_session(context, page)
         await page.close()
+
+        await audit_cold_font_render(browser)
 
         for route in PUBLIC_ROUTES:
             await audit_route(context, route, expect_authed=False)

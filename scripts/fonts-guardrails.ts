@@ -83,6 +83,24 @@ for (const root of ROOTS) {
   }
 }
 
+// الصفحة الأولى تستخدم عنواناً عربياً بوزن 700؛ يجب أن يسبق ملفه الرسم الأول.
+const rootRoute = readFileSync("src/routes/__root.tsx", "utf8");
+for (const criticalFont of ["plex-arabic-400.woff2", "plex-arabic-700.woff2"]) {
+  if (!rootRoute.includes(`rel: "preload"`) || !rootRoute.includes(criticalFont)) {
+    violations.push(`src/routes/__root.tsx  ملف الخط الحرج غير محمّل مسبقاً: ${criticalFont}`);
+  }
+}
+
+const appFonts = readFileSync("src/styles/fonts.css", "utf8");
+if (appFonts.includes("font-display: optional") || appFonts.includes("font-display: swap")) {
+  violations.push(
+    "src/styles/fonts.css  سلوك عرض الخط يسمح بتبديل مرئي بعد الرسم الأول؛ استخدم font-display: block",
+  );
+}
+if (!readFileSync("src/styles.css", "utf8").includes("font-synthesis: none")) {
+  violations.push("src/styles.css  يجب تعطيل تصنيع أوزان الخط عبر font-synthesis: none");
+}
+
 if (violations.length > 0) {
   console.error(
     "FAIL — مخالفات الخطوط (المعتمد فقط: IBM Plex Sans Arabic أو var(--font-*)):",
