@@ -30,7 +30,7 @@ import "../lib/zod-ar";
 import { Toaster } from "sonner";
 import { installFontBudgetWatcher } from "../lib/perf/font-budget-watcher";
 import { MehlaLogo } from "@/components/brand/mehla-logo";
-import { BRAND_ICONS } from "@/config/brand-assets";
+import { BRAND_ICON_HREFS } from "@/config/brand-assets";
 
 function NotFoundComponent() {
   return (
