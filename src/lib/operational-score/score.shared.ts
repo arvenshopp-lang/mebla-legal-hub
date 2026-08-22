@@ -56,6 +56,62 @@ export const PUBLIC_SECTION_INTRO =
 export const PUBLIC_RANKING_DISCLAIMER =
   "يعكس المؤشر مستوى الإنجاز التشغيلي داخل مِهلة ولا يمثل تقييماً لجودة الخدمات القانونية أو نتائج القضايا.";
 
+/** رسالة الخصوصية المختصرة المعروضة مع القائمة العامة. */
+export const PUBLIC_PRIVACY_NOTE =
+  "لا نطّلع على مستندات المكاتب ولا بيانات عملائها — يُحتسب المؤشر من مواعيد الأعمال وحالات إنجازها فقط.";
+
+/** مسار صفحة شرح المنهجية العامة — مصدر واحد للروابط. */
+export const METHODOLOGY_PATH = "/operational-score";
+export const METHODOLOGY_LINK_LABEL = "كيف يُحسب المؤشر؟";
+
+/** الحقول الوحيدة التي تظهر للعامة عند موافقة المكتب. */
+export const PUBLIC_VISIBLE_FIELDS = [
+  "اسم المكتب المعتمد",
+  "شعار المكتب",
+  "نسبة مؤشر الإنجاز التشغيلي",
+  "الترتيب داخل القائمة",
+] as const;
+
+/** ما لا يدخل الحساب ولا يظهر للعامة إطلاقاً. */
+export const PUBLIC_EXCLUDED_DATA = [
+  "عناوين القضايا وأرقامها وتفاصيلها",
+  "أسماء العملاء أو بياناتهم",
+  "محتوى المستندات أو أسماء الملفات",
+  "الفواتير والمبالغ وأي بيان مالي",
+  "الملاحظات الداخلية والمراسلات",
+  "أسماء الموظفين ومؤشرات أدائهم",
+] as const;
+
+/** قراءة تشغيلية بلغة واضحة للمشترك — مشتقة من نفس النتيجة بلا معايير جديدة. */
+export type OperationalReadingTone = "steady" | "watch" | "delayed";
+
+export const OPERATIONAL_READING_THRESHOLDS = { steady: 85, watch: 70 } as const;
+
+export const OPERATIONAL_READING_LABELS: Record<OperationalReadingTone, string> = {
+  steady: "التشغيل منتظم",
+  watch: "تأخير محدود",
+  delayed: "تأخير يحتاج معالجة",
+};
+
+export function operationalReadingTone(score: number): OperationalReadingTone {
+  if (score >= OPERATIONAL_READING_THRESHOLDS.steady) return "steady";
+  if (score >= OPERATIONAL_READING_THRESHOLDS.watch) return "watch";
+  return "delayed";
+}
+
+/** أضعف بُعد مُطبَّق — يُستخدم كسبب مفهوم للقراءة التشغيلية. */
+export function weakestAppliedDimension(
+  dimensions: Record<ScoreDimensionKey, ScoreDimension>,
+): ScoreDimension | null {
+  const applied = (Object.values(dimensions) as ScoreDimension[]).filter(
+    (d) => d.applied && d.value !== null,
+  );
+  if (applied.length === 0) return null;
+  return applied.reduce((worst, current) =>
+    (current.value ?? 1) < (worst.value ?? 1) ? current : worst,
+  );
+}
+
 /** العقد العام للترتيب — لا يحتوي على أي معرّف داخلي أو بيانات حساسة. */
 export type PublicOperationalRankingItem = {
   rank: number;
