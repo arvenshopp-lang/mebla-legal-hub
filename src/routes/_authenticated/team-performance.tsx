@@ -198,6 +198,11 @@ function Page() {
               />
             </div>
 
+            <TeamHighlights
+              members={[...data.ranked, ...data.insufficient]}
+              search={{ preset, from, to }}
+            />
+
             {data.ranked.length === 0 ? (
               <div className="surface-card">
                 <EmptyState
