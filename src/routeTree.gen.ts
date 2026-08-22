@@ -19,6 +19,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PendingAccessRouteImport } from './routes/pending-access'
+import { Route as OperationalScoreRouteImport } from './routes/operational-score'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
@@ -174,6 +175,11 @@ const PricingRoute = PricingRouteImport.update({
 const PendingAccessRoute = PendingAccessRouteImport.update({
   id: '/pending-access',
   path: '/pending-access',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperationalScoreRoute = OperationalScoreRouteImport.update({
+  id: '/operational-score',
+  path: '/operational-score',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -735,6 +741,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
+  '/operational-score': typeof OperationalScoreRoute
   '/pending-access': typeof PendingAccessRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -851,6 +858,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
+  '/operational-score': typeof OperationalScoreRoute
   '/pending-access': typeof PendingAccessRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -970,6 +978,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
+  '/operational-score': typeof OperationalScoreRoute
   '/pending-access': typeof PendingAccessRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -1089,6 +1098,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/onboarding'
+    | '/operational-score'
     | '/pending-access'
     | '/pricing'
     | '/privacy'
@@ -1205,6 +1215,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/onboarding'
+    | '/operational-score'
     | '/pending-access'
     | '/pricing'
     | '/privacy'
@@ -1323,6 +1334,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/onboarding'
+    | '/operational-score'
     | '/pending-access'
     | '/pricing'
     | '/privacy'
@@ -1442,6 +1454,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
+  OperationalScoreRoute: typeof OperationalScoreRoute
   PendingAccessRoute: typeof PendingAccessRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -1560,6 +1573,13 @@ declare module '@tanstack/react-router' {
       path: '/pending-access'
       fullPath: '/pending-access'
       preLoaderRoute: typeof PendingAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operational-score': {
+      id: '/operational-score'
+      path: '/operational-score'
+      fullPath: '/operational-score'
+      preLoaderRoute: typeof OperationalScoreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -2478,6 +2498,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
+  OperationalScoreRoute: OperationalScoreRoute,
   PendingAccessRoute: PendingAccessRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,

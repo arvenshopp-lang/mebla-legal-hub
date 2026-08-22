@@ -28,6 +28,7 @@ import {
   StatCard,
   TrendChip,
 } from "@/components/team/performance/kpi-ui";
+import { TeamHighlights } from "@/components/team/performance/team-highlights";
 import {
   getTeamPerformance,
   getPerformanceDrilldown,
@@ -197,6 +198,11 @@ function Page() {
                 tone={data.summary.overdueTasks > 0 ? "warning" : undefined}
               />
             </div>
+
+            <TeamHighlights
+              members={[...data.ranked, ...data.insufficient]}
+              search={{ preset, from, to }}
+            />
 
             {data.ranked.length === 0 ? (
               <div className="surface-card">

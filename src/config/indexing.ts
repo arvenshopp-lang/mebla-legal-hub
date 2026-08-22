@@ -29,6 +29,7 @@ export const INDEXABLE_PATHS = [
   "/pricing",
   "/faq",
   "/security",
+  "/operational-score",
   "/contact",
   "/privacy",
   "/terms",

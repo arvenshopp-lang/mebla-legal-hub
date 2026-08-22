@@ -8,9 +8,14 @@
  * - Contains no internal IDs, client data, case data, or raw metrics.
  */
 
+import { Link } from "@tanstack/react-router";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtPercent } from "@/lib/format";
 import {
+  METHODOLOGY_LINK_LABEL,
+  METHODOLOGY_PATH,
+  PUBLIC_PRIVACY_NOTE,
   PUBLIC_RESULTS_COUNT,
   PUBLIC_SECTION_INTRO,
   PUBLIC_SECTION_TITLE,
@@ -102,6 +107,16 @@ export function TopOffices({ ranking }: { ranking: PublicOperationalRanking }) {
         <header className="mb-8 md:mb-10">
           <h2 className="text-h2">{PUBLIC_SECTION_TITLE}</h2>
           <p className="measure mt-3 text-body-lg text-muted-foreground">{PUBLIC_SECTION_INTRO}</p>
+          <p className="measure mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] leading-6 text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <span>{PUBLIC_PRIVACY_NOTE}</span>
+            <Link
+              to={METHODOLOGY_PATH}
+              className="min-h-[24px] font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {METHODOLOGY_LINK_LABEL}
+            </Link>
+          </p>
         </header>
 
         <ol

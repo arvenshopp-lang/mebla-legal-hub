@@ -1015,6 +1015,7 @@ function MehlaLanding() {
       <Header {...links} />
       <main id="product">
         <Hero {...links} />
+        <TopOfficesSection />
         {PUBLIC_BAYAN_MARKETING_ENABLED && (
           <BayanHeroShowcase onOpenChat={() => setBayanOpen(true)} />
         )}
@@ -1022,7 +1023,6 @@ function MehlaLanding() {
         <HowItWorks />
         <Workflow />
         <Security />
-        <TopOfficesSection />
         <PricingTeaser />
         <CTA registerHref={registerHref} trackHref={trackHref} />
       </main>
