@@ -154,12 +154,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ...(loaderData?.hasTheme
         ? [{ rel: "stylesheet", href: `/api/public/theme.css?v=${loaderData.cacheVersion}` }]
         : []),
-      { rel: "icon", href: BRAND_ICONS.ico, type: "image/x-icon" },
-      { rel: "icon", type: "image/svg+xml", href: BRAND_ICONS.svg },
-      { rel: "icon", type: "image/png", sizes: "16x16", href: BRAND_ICONS.png16 },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: BRAND_ICONS.png32 },
-      { rel: "apple-touch-icon", sizes: "180x180", href: BRAND_ICONS.appleTouch },
-      { rel: "manifest", href: "/site.webmanifest" },
+      { rel: "icon", href: BRAND_ICON_HREFS.ico, type: "image/x-icon" },
+      { rel: "icon", type: "image/svg+xml", href: BRAND_ICON_HREFS.svg },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: BRAND_ICON_HREFS.png16 },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: BRAND_ICON_HREFS.png32 },
+      { rel: "apple-touch-icon", sizes: "180x180", href: BRAND_ICON_HREFS.appleTouch },
+      { rel: "manifest", href: BRAND_ICON_HREFS.manifest },
     ],
 
   }),
