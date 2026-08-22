@@ -28,6 +28,7 @@ import {
   StatCard,
   TrendChip,
 } from "@/components/team/performance/kpi-ui";
+import { TeamHighlights } from "@/components/team/performance/team-highlights";
 import {
   getTeamPerformance,
   getPerformanceDrilldown,
