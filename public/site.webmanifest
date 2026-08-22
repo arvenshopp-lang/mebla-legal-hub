@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "مِهلة | MehlaLex",
   "short_name": "مِهلة",
   "description": "منصة سعودية لإدارة القضايا والمكاتب القانونية.",
@@ -10,6 +11,9 @@
   "theme_color": "#173F35",
   "background_color": "#F5F3EE",
   "icons": [
+    { "src": "/favicon-mehla-16-v3.png", "sizes": "16x16", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-mehla-32-v3.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+    { "src": "/apple-touch-icon-v3.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
     { "src": "/icon-mehla-192-v3.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-mehla-512-v3.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     {
@@ -17,6 +21,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
+    },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

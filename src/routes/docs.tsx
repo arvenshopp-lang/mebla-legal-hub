@@ -3,6 +3,7 @@ import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { NOINDEX_FOLLOW_META } from "@/config/indexing";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 export const Route = createFileRoute("/docs")({
   loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
@@ -21,7 +22,12 @@ export const Route = createFileRoute("/docs")({
         content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      // نفس شعار مِهلة المعتمد في كل الصفحات العامة (المصدر المركزي).
+      ...socialPreviewMeta({
+        title: "مركز المساعدة — مِهلة",
+        description:
+          "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
+      }),
     ],
   }),
   component: Page,
