@@ -5,11 +5,18 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 import { getMyOperationalScore } from "@/lib/operational-score/score.functions";
 import {
   INSUFFICIENT_DATA_LABEL,
+  METHODOLOGY_LINK_LABEL,
+  METHODOLOGY_PATH,
+  OPERATIONAL_READING_LABELS,
   SCORE_DIMENSION_HINTS,
+  operationalReadingTone,
+  weakestAppliedDimension,
+  type OperationalReadingTone,
   type ScoreDimension,
   type ScoreDimensionKey,
 } from "@/lib/operational-score/score.shared";
@@ -17,6 +24,12 @@ import { SectionCard, SectionLoader } from "@/lib/list-utils";
 import { fmtPercent } from "@/lib/format";
 
 const ORDER: ScoreDimensionKey[] = ["deadlines", "tasks", "hearings"];
+
+const READING_TONE_CLASS: Record<OperationalReadingTone, string> = {
+  steady: "bg-success-soft text-success",
+  watch: "bg-warning-soft text-warning",
+  delayed: "bg-danger-soft text-danger",
+};
 
 function DimensionRow({ dimension, eligible }: { dimension: ScoreDimension; eligible: boolean }) {
   const isHearings = dimension.key === "hearings";
