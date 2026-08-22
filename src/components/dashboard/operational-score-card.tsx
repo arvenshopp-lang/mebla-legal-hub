@@ -21,6 +21,7 @@ import {
   type ScoreDimensionKey,
 } from "@/lib/operational-score/score.shared";
 import { SectionCard, SectionLoader } from "@/lib/list-utils";
+import { useSurfaceHref } from "@/hooks/use-surface-guard";
 import { fmtPercent } from "@/lib/format";
 
 const ORDER: ScoreDimensionKey[] = ["deadlines", "tasks", "hearings"];
@@ -65,6 +66,7 @@ function DimensionRow({ dimension, eligible }: { dimension: ScoreDimension; elig
 
 export function OperationalScoreCard({ organizationId }: { organizationId: string | null }) {
   const fetchScore = useServerFn(getMyOperationalScore);
+  const methodologyHref = useSurfaceHref(METHODOLOGY_PATH);
   const { data, isLoading, error } = useQuery({
     queryKey: ["operational-score", organizationId],
     enabled: !!organizationId,
@@ -126,7 +128,7 @@ export function OperationalScoreCard({ organizationId }: { organizationId: strin
               أداء الفريق
             </Link>
             <a
-              href={METHODOLOGY_PATH}
+              href={methodologyHref}
               className="text-[12.5px] font-semibold text-muted-foreground underline-offset-4 hover:underline"
             >
               {METHODOLOGY_LINK_LABEL}
