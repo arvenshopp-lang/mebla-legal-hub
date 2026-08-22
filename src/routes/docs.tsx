@@ -21,7 +21,12 @@ export const Route = createFileRoute("/docs")({
         content: "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      // نفس شعار مِهلة المعتمد في كل الصفحات العامة (المصدر المركزي).
+      ...socialPreviewMeta({
+        title: "مركز المساعدة — مِهلة",
+        description:
+          "مركز مساعدة مِهلة قيد الإعداد. للحصول على مساعدة الآن تواصل مع فريق مِهلة.",
+      }),
     ],
   }),
   component: Page,
