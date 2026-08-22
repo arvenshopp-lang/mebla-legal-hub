@@ -26,6 +26,7 @@ export default defineConfig({
         // pdf-lib يعتمد على tslib بصيغة CommonJS، وحزمة عامل الحوسبة الطرفية
         // تفشل عند تفكيك صادراته (`__extends`) ما يعطّل كل مسارات الختم والطباعة
         // في بيئة الإنتاج. الربط بنسخة ESM يعيد الصادرات المسماة بشكل صحيح.
+        { find: /^pdf-lib$/, replacement: "pdf-lib/dist/pdf-lib.js" },
         { find: /^tslib$/, replacement: "tslib/tslib.es6.js" },
         // React Email يعتمد على entities@4.5.0؛ أي نسخة أحدث مدسوسة تُعطّل SSR.
         {
