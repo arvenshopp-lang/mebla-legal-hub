@@ -3,6 +3,7 @@ import { BookOpen, FileText, HelpCircle, ScrollText, ShieldCheck } from "lucide-
 import { PageHeading, PublicShell } from "@/components/marketing/public-shell";
 import { publicSiteQueryOptions } from "@/lib/public-site.query";
 import { NOINDEX_FOLLOW_META } from "@/config/indexing";
+import { socialPreviewMeta } from "@/config/brand-assets";
 
 export const Route = createFileRoute("/docs")({
   loader: ({ context }) => context.queryClient.ensureQueryData(publicSiteQueryOptions()),
